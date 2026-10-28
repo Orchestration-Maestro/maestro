@@ -66,7 +66,8 @@ fn observe_foreground(
 }
 
 impl<C: FnMut() -> u128> App<C> {
-    /// Routes pane commands to their handlers; commands of undelivered families fail.
+    /// Routes pane and layout commands to their handlers; commands of undelivered families
+    /// fail.
     pub(super) async fn dispatch_pane_request(
         &mut self,
         command: RpcCommand,
@@ -112,6 +113,9 @@ impl<C: FnMut() -> u128> App<C> {
                 self.handle_pane_clear_agent_authority(params)
             }
             RpcCommand::PaneReleaseAgent(params) => self.handle_pane_release_agent(params),
+            RpcCommand::LayoutExport(params) => self.handle_layout_export(&params),
+            RpcCommand::LayoutApply(params) => self.handle_layout_apply(params).await,
+            RpcCommand::LayoutSetSplitRatio(params) => self.handle_layout_set_split_ratio(&params),
             _ => Err(api_error("not_implemented", "method not implemented yet")),
         }
     }

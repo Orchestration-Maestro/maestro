@@ -1,7 +1,7 @@
 //! Tab commands: list, get, create, focus, rename, move and close.
 
 use super::{
-    super::{App, state::Mode},
+    super::{App, creation::RootLaunch, state::Mode},
     env::normalize_launch_env,
     responses::{api_error, tab_not_found, workspace_not_found},
 };
@@ -51,9 +51,13 @@ impl<C: FnMut() -> u128> App<C> {
             Some(cwd) => PathBuf::from(cwd),
             None => self.new_tab_cwd(workspace).await,
         };
-        let extra_env = normalize_launch_env(params.env)?;
+        let root = RootLaunch {
+            cwd,
+            extra_env: normalize_launch_env(params.env)?,
+            argv: None,
+        };
         let tab = self
-            .create_tab_with_launch_env(workspace, cwd, extra_env)
+            .create_tab_with_launch(workspace, root)
             .map_err(|error| api_error("tab_create_failed", error.to_string()))?;
         if let Some(label) = params.label
             && let Some(tab_id) = self.state.public_tab_id(workspace, tab)

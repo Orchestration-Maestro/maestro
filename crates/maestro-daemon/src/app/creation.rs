@@ -182,11 +182,15 @@ impl<C: FnMut() -> u128> App<C> {
             self.state
                 .topology
                 .new_with_tab(initial_cwd, home.as_deref(), |pane, request| {
+                    let root = RootLaunch {
+                        cwd,
+                        extra_env,
+                        argv: None,
+                    };
                     spawn_root(
                         launch.runtime_config(config, pane, size),
                         config,
-                        cwd.clone(),
-                        extra_env,
+                        root,
                         request,
                     )
                 })?;
@@ -207,16 +211,15 @@ impl<C: FnMut() -> u128> App<C> {
         Ok(index)
     }
 
-    /// Adds a tab to `workspace` whose root pane starts in `cwd` with the `extra_env` pairs,
-    /// returning the new tab's display position.
+    /// Adds a tab to `workspace` whose root pane starts as `root` says, returning the new
+    /// tab's display position.
     ///
     /// # Errors
     /// Returns the native spawn error, or "workspace disappeared" for a missing workspace.
-    pub(super) fn create_tab_with_launch_env(
+    pub(super) fn create_tab_with_launch(
         &mut self,
         workspace: usize,
-        cwd: PathBuf,
-        extra_env: Vec<(String, String)>,
+        root: RootLaunch,
     ) -> io::Result<usize> {
         let size = self.state.estimate_pane_size();
         let launch = &self.launch;
@@ -228,8 +231,7 @@ impl<C: FnMut() -> u128> App<C> {
                 spawn_root(
                     launch.runtime_config(config, pane, size),
                     config,
-                    cwd,
-                    extra_env,
+                    root,
                     request,
                 )
             })
@@ -285,7 +287,11 @@ impl<C: FnMut() -> u128> App<C> {
     }
 
     /// The live directory of `pane` in `workspace`, else its terminal's last known one.
-    async fn pane_cwd_in_workspace(&self, workspace: usize, pane: PaneId) -> Option<PathBuf> {
+    pub(super) async fn pane_cwd_in_workspace(
+        &self,
+        workspace: usize,
+        pane: PaneId,
+    ) -> Option<PathBuf> {
         let terminal = self
             .state
             .topology
@@ -304,27 +310,39 @@ impl<C: FnMut() -> u128> App<C> {
     }
 }
 
+/// What a new root process runs and where: its directory, its extra environment and, when
+/// given, the literal program that replaces the configured shell.
+pub(super) struct RootLaunch {
+    /// Directory the process starts in.
+    pub(super) cwd: PathBuf,
+    /// Environment pairs added beside the pane's managed identity.
+    pub(super) extra_env: Vec<(String, String)>,
+    /// Program and arguments to run without a shell; the configured shell when absent.
+    pub(super) argv: Option<Vec<String>>,
+}
+
 /// Spawns the root process of a new tab with this pane's managed identity and the caller's
 /// extra environment, returning its terminal record and runtime.
 pub(super) fn spawn_root(
     runtime_config: crate::pane::runtime::PaneRuntimeConfig,
     config: &crate::settings::model::Config,
-    cwd: PathBuf,
-    extra_env: Vec<(String, String)>,
+    root: RootLaunch,
     request: maestro_workspace::tab::SpawnRequest,
 ) -> io::Result<(TerminalState, PaneRuntime)> {
-    let environment = PaneLaunchEnv::from_extra(extra_env).with_identity(
+    let environment = PaneLaunchEnv::from_extra(root.extra_env).with_identity(
         request.workspace_id.clone(),
         public_tab_id_for_number(&request.workspace_id, request.tab_number),
         public_pane_id_for_number(&request.workspace_id, request.pane_number),
     );
-    let runtime = PaneRuntime::spawn(
-        runtime_config,
-        PaneShellConfig::new(&config.terminal.default_shell, config.terminal.shell_mode),
-        cwd.clone(),
-        &environment,
-    )?;
-    Ok((TerminalState::new(request.terminal_id, cwd), runtime))
+    let terminal = TerminalState::new(request.terminal_id, root.cwd.clone());
+    if let Some(argv) = root.argv {
+        let runtime =
+            PaneRuntime::spawn_argv_command(runtime_config, &argv, root.cwd, &environment)?;
+        return Ok((terminal.with_launch_argv(argv), runtime));
+    }
+    let shell = PaneShellConfig::new(&config.terminal.default_shell, config.terminal.shell_mode);
+    let runtime = PaneRuntime::spawn(runtime_config, shell, root.cwd, &environment)?;
+    Ok((terminal, runtime))
 }
 
 impl<C: FnMut() -> u128> App<C> {
@@ -420,15 +438,23 @@ impl<C: FnMut() -> u128> App<C> {
         self.emit_layout_updated_event(index, 0);
     }
 
-    /// Publishes a new tab and its root pane.
+    /// Publishes a new tab and each of its panes in layout order, then its layout.
     pub(super) async fn emit_tab_created_events(&self, workspace: usize, tab: usize) {
         let Some(tab_record) = self.tab_info(workspace, tab) else {
             return;
         };
-        if let Some(root_pane) = self.root_pane_info(workspace, tab).await {
-            self.emit_tab_and_pane_created_events(tab_record, root_pane);
-            self.emit_layout_updated_event(workspace, tab);
+        let Some(record) = self.state.topology.workspaces[workspace].tabs.get(tab) else {
+            return;
+        };
+        self.event_hub
+            .push(maestro_protocol::events::EventData::TabCreated { tab: tab_record });
+        for pane in record.layout.pane_ids() {
+            if let Some(pane) = self.pane_info(workspace, pane).await {
+                self.event_hub
+                    .push(maestro_protocol::events::EventData::PaneCreated { pane });
+            }
         }
+        self.emit_layout_updated_event(workspace, tab);
     }
 
     /// Publishes a created tab, then its root pane.
