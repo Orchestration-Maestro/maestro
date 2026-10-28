@@ -509,8 +509,8 @@ builds are unchanged.
 Before guest-authoring tests, nextest's shell launcher locates the active
 artifact directory through its documented platform library search path. It runs
 the `prepare_author_component` example that the test build put in that directory,
-as long as the example is newer than its source, the shared build module, the
-package manifest and `Cargo.lock`. Running it through Cargo instead would resolve
+as long as the example is newer than its source, the shared component and Cargo
+build modules, the package manifest and `Cargo.lock`. Running it through Cargo instead would resolve
 features for that one package and recompile the engine. When the example is missing
 or older, as after a `--lib` or filtered selection, the launcher builds and runs it
 through Cargo in the same target directory and profile.
@@ -518,11 +518,12 @@ The launcher fails if the directory cannot be resolved rather than building
 elsewhere. It uses `NEXTEST_LD_LIBRARY_PATH` on Linux,
 `NEXTEST_DYLD_FALLBACK_LIBRARY_PATH` on macOS and `PATH` through Git's shell
 on Windows, where the shell converts the search list to colon-separated paths.
-The example builds the author component, warms the Wasmtime compilation cache
-in the default user cache and exports its path to the tests' processes.
-The Git-pinned engine partitions cached code by host executable modification
-time. On Linux, the launcher therefore runs the runtime integration binary's
-ignored `compilation_cache::warm_prepared_components` test after exporting the
+The example builds the components and exports their paths without compiling
+native code. The Git-pinned engine partitions cached code by host executable
+modification time, so compiling inside the setup example would create entries
+that no test binary could reuse. On Linux, the launcher therefore runs the
+runtime integration binary's ignored `compilation_cache::warm_prepared_components`
+test after exporting the
 prepared paths. It compiles the context, hook and Git-checkpoint components
 once before concurrent tests start. This runs in each shard, including after
 archive extraction changes executable timestamps. Later processes of that
