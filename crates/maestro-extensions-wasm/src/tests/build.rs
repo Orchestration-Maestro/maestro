@@ -56,6 +56,27 @@ pub fn compile(path: &Path) -> wasmtime::Result<(Engine, Component)> {
     Ok((engine, component))
 }
 
+/// Compiles each component through the test host's cache on a few threads.
+///
+/// # Errors
+/// Returns a compile failure, or a message when a worker thread panicked.
+#[cfg(test)]
+pub fn warm(_paths: &[PathBuf]) -> Result<(), String> {
+    Err("warming is not implemented".to_owned())
+}
+
+/// Runs `work` once for every path from one shared queue, on a few threads.
+///
+/// # Errors
+/// Returns a worker's failure, or a message when a worker thread panicked.
+#[cfg(test)]
+pub fn warm_with<F>(_paths: &[PathBuf], _work: F) -> Result<(), String>
+where
+    F: Fn(&Path) -> Result<(), String> + Sync,
+{
+    Err("warming is not implemented".to_owned())
+}
+
 /// Creates an async component engine with the optional user cache.
 ///
 /// # Errors
