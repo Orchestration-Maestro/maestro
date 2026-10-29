@@ -37,6 +37,13 @@ pub fn command(program: impl AsRef<OsStr>) -> Command {
     command
 }
 
+/// Prepare a fixture compiler command in its supplied workspace.
+pub fn fixture_command(program: impl AsRef<OsStr>, root: &std::path::Path) -> Command {
+    let mut command = command(program);
+    command.current_dir(root);
+    command
+}
+
 /// The resolved toolchain that compiled this test, independent of runtime overrides.
 pub fn channel() -> Option<&'static str> {
     option_env!("RUSTUP_TOOLCHAIN")
