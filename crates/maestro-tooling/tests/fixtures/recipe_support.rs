@@ -32,6 +32,25 @@ pub fn install_executable(source: &Path, target: &Path) {
     assert!(status.success());
 }
 
+/// Build the fake-command tool into the target shared by every recipe fixture.
+pub fn build_tool(root: &Path) -> PathBuf {
+    let manifest =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/recipe_tools/Cargo.toml");
+    let target = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/recipe-tools");
+    record("phase: recipe tool cargo build");
+    let status = setup_status(
+        super::toolchain_support::command("cargo")
+            .current_dir(root)
+            .args(["build", "--locked", "--manifest-path"])
+            .arg(manifest)
+            .arg("--target-dir")
+            .arg(&target),
+    );
+    record(format!("phase: recipe tool cargo complete {status}"));
+    assert!(status.success());
+    target.join("debug/recipe-command")
+}
+
 impl Workspace {
     pub fn new() -> Self {
         static TOOL: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
@@ -52,22 +71,7 @@ impl Workspace {
             root.join("justfile"),
         )
         .unwrap();
-        let tool = TOOL.get_or_init(|| {
-            let manifest = Path::new(env!("CARGO_MANIFEST_DIR"))
-                .join("tests/fixtures/recipe_tools/Cargo.toml");
-            let target = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/recipe-tools");
-            record("phase: recipe tool cargo build");
-            let status = setup_status(
-                super::toolchain_support::command("cargo")
-                    .args(["build", "--locked", "--manifest-path"])
-                    .arg(manifest)
-                    .arg("--target-dir")
-                    .arg(&target),
-            );
-            record(format!("phase: recipe tool cargo complete {status}"));
-            assert!(status.success());
-            target.join("debug/recipe-command")
-        });
+        let tool = TOOL.get_or_init(|| build_tool(workspace.parent.path()));
         install_executable(tool, &root.join("bin/cargo"));
         for name in ["mise", "prek", "watchexec", "trunk", "miniserve"] {
             install_executable(tool, &root.join("bin").join(name));

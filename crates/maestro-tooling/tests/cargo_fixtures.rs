@@ -1,6 +1,6 @@
 //! Cargo fixture cache isolation through the shared command builder.
 
-use crate::toolchain_support;
+use crate::{recipe_support, toolchain_support};
 use maestro_test_directory::Scratch;
 use std::fs;
 
@@ -85,5 +85,16 @@ fn fixture_cargo_resolution_uses_supplied_sources() {
             .unwrap()
             .iter()
             .any(|package| package["manifest_path"] == expected)
+    );
+}
+
+/// The recipe tool builds under a private Cargo home, not the shared package cache.
+#[test]
+fn recipe_tool_build_uses_a_private_cargo_home() {
+    let root = Scratch::new().unwrap();
+    assert!(recipe_support::build_tool(root.path()).is_file());
+    assert!(
+        root.path().join("cargo-home/.package-cache").is_file(),
+        "the tool build must lock its private package cache"
     );
 }
