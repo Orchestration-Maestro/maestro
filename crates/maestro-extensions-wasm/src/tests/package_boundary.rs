@@ -38,3 +38,35 @@ fn malformed_package_results_are_rejected_at_the_guest_boundary() {
         super::block_on(exports.start::<MalformedPackages>()).unwrap();
     }
 }
+
+/// A factory whose outcome is the typed descriptors' decoding, from both entry points.
+struct ResolvesPackages;
+impl Extension for ResolvesPackages {
+    fn load(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
+        Box::pin(async move {
+            let packages = DefaultPackageManager::new(api);
+            let listed = packages.resolve().await;
+            let explicit = packages
+                .resolve_extension_sources(vec!["./empty".into()], OperationScope::Project)
+                .await;
+            assert_eq!(listed.is_ok(), explicit.is_ok());
+            listed.and(explicit).map(drop)
+        })
+    }
+}
+
+#[test]
+fn package_scopes_the_host_operation_cannot_address_are_rejected() {
+    let started = |scope: &str| {
+        let host = Controlled::default();
+        host.observe().host_operation_result = Some(Ok(json!([{
+            "source": "./empty", "identity": "local:/agent/empty",
+            "scope": scope, "installedPath": "/agent/empty",
+        }])));
+        super::block_on(Exports::new(host).start::<ResolvesPackages>())
+    };
+    started("user").unwrap();
+    started("project").unwrap();
+    let error = started("workspace").unwrap_err();
+    assert!(error.contains("unknown variant `workspace`"), "{error}");
+}
