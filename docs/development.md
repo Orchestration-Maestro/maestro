@@ -559,7 +559,10 @@ own test binary does not build on its output. Without that information, any newe
 library output outdates the executable. A skipped test binary compiles its components
 itself on first use. A skipped example would warm code that no test binary reads, so
 normalization then exits with status 3 and the launcher rebuilds the example through
-Cargo before it runs. The Git-pinned engine includes that timestamp in its cache
+Cargo before it runs. Cargo ignores some library outputs that normalization counts, such
+as the check-only metadata a lint run writes, so the example can stay outdated after that
+build. The launcher then logs one line and runs it anyway. Test binaries do not read the
+code it warms, which costs a cache miss and never fails setup. The Git-pinned engine includes that timestamp in its cache
 namespace, so the preparer and consuming test binaries share compiled code.
 The example builds every exported component, warms its Wasmtime compilation cache
 in the default user cache on up to four threads and exports its path to the tests'

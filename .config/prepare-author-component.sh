@@ -41,7 +41,15 @@ for directory in $paths; do
         --profile "$profile"
     example="$directory/examples/prepare_author_component"
     [ -f "$example" ] || example="$example.exe"
-    sh "$(dirname "$0")/normalize-component-cache.sh" "$directory"
+    # Cargo ignores some library outputs that normalization counts, such as the metadata a
+    # lint run writes, so the example can stay outdated. That only costs a cache miss.
+    status=0
+    sh "$(dirname "$0")/normalize-component-cache.sh" "$directory" || status=$?
+    if [ "$status" -eq 3 ]; then
+        echo 'Cargo kept the setup example; test binaries may compile components again.' >&2
+    elif [ "$status" -ne 0 ]; then
+        exit "$status"
+    fi
     exec "$example"
 done
 echo 'Cannot resolve the nextest artifact directory from its library search path.' >&2
