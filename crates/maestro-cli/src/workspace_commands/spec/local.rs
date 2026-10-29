@@ -1,6 +1,7 @@
 //! Local discovery and miscellaneous workspace command metadata.
 
 use super::{env, flag, option, path, required};
+use crate::packages::package_manager_cli::{CONFIG_DESCRIPTION, PackageCommand, description};
 use clap::{Arg, Command};
 
 /// Describe attaching without changing bare-chat startup.
@@ -198,14 +199,14 @@ fn action_pane_open() -> Command {
 pub(super) fn packages() -> [Command; 5] {
     [
         Command::new("install")
-            .about("Install a package source")
+            .about(description(PackageCommand::Install))
             .args([required("source"), flag("local").short('l')]),
         Command::new("remove")
             .visible_alias("uninstall")
-            .about("Remove a package source")
+            .about(description(PackageCommand::Remove))
             .args([required("source"), flag("local").short('l')]),
         Command::new("update")
-            .about("Update Maestro or installed packages")
+            .about(description(PackageCommand::Update))
             .args([
                 Arg::new("source"),
                 flag("self"),
@@ -213,8 +214,8 @@ pub(super) fn packages() -> [Command; 5] {
                 option("extension", "SOURCE"),
                 flag("force"),
             ]),
-        Command::new("list").about("List installed package sources"),
-        Command::new("config").about("Select enabled package resources"),
+        Command::new("list").about(description(PackageCommand::List)),
+        Command::new("config").about(CONFIG_DESCRIPTION),
     ]
 }
 
