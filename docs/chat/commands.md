@@ -282,7 +282,7 @@ viewer URL. It takes no argument: `/share extra` is prompt text.
 /share
 ```
 
-The command runs in four steps, each with its own answer on the transcript:
+The command runs in four steps:
 
 1. It runs `gh auth status`. A program that is missing or cannot be executed shows
    `GitHub CLI (gh) is not installed. Install it from https://cli.github.com/`;

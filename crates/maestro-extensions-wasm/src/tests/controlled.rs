@@ -284,6 +284,20 @@ impl Controlled {
         }
     }
 
+    /// Drops the custom footer, its handle and the factory that built it, as a host that
+    /// discards them does.
+    pub fn release_footer(&self) {
+        let slot = self.observed.borrow_mut().ui.footer.custom.take();
+        if let Some(slot) = slot {
+            drop(self.widgets.borrow_mut().remove(&slot.component));
+            self.observed.borrow_mut().drop_identity(slot.component);
+        }
+        let factory = self.observed.borrow_mut().ui.footer.factory.take();
+        if let Some(factory) = factory {
+            crate::component_adapter::release(factory);
+        }
+    }
+
     /// The component the custom footer shows.
     pub fn footer(&self) -> Option<crate::Component> {
         let slot = self
@@ -1735,6 +1749,8 @@ impl Imports for Controlled {
     }
     fn event_emit(&self, channel: String, data: String) -> ExtensionFuture<'_, ()> {
         Box::pin(async move {
+            let hold = self.observed.borrow_mut().bus.emission_holds.pop_front();
+            super::observed::pause(hold).await;
             self.callback_emit(&super::bus_host::Emitter { key: 0 }, &channel, &data)
         })
     }
@@ -2205,6 +2221,7 @@ impl Imports for Controlled {
         drop(old);
         if let Some(factory) = factory {
             let component = self.build(factory, true)?;
+            self.observed.borrow_mut().ui.footer.factory = Some(factory.id);
             self.observed.borrow_mut().ui.footer.custom = Some(super::ui_host::WidgetSlot {
                 key: "footer".to_owned(),
                 component,

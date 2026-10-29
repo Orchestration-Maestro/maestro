@@ -188,7 +188,9 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   dependencies, including the path utility. It lists one directory's entries sorted
   by file name on every platform. Only resources, theme, the toolkit, tools,
   session and the application may depend on it, on native targets; callers keep
-  kind filtering, name decoding and further ordering.
+  kind filtering, name decoding and further ordering. Guest-authoring examples may
+  also use it through a portable development dependency from `maestro-extensions-wasm`,
+  never a normal or build dependency.
 - `maestro-listeners` is a declared core leaf below layer 0 with no workspace
   dependencies. It retains callbacks in live registration order and admits one per
   identity, or one per registration as an event-emitter listener list keeps them.
