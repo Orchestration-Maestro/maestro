@@ -12,6 +12,29 @@ use crate::recipe_support;
 use recipe_support::ProcessGroup;
 use recipe_support::{Workspace, install_executable, write_input};
 
+/// Component tests receive their composition tool from the caller's CI tool installation.
+#[test]
+fn component_tests_declare_composition_tool() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let tools: toml::Table = fs::read_to_string(root.join("mise.toml"))
+        .unwrap()
+        .parse()
+        .unwrap();
+    let ci: toml::Table = fs::read_to_string(root.join(".github/ci.toml"))
+        .unwrap()
+        .parse()
+        .unwrap();
+    assert_eq!(ci["test_tools"].as_bool(), Some(true));
+    assert_eq!(
+        tools["tools"]
+            .get("github:bytecodealliance/wasm-tools")
+            .and_then(|tool| tool.get("version"))
+            .and_then(toml::Value::as_str),
+        Some("1.262.0"),
+        "component composition requires the documented wasm-tools version on test shards"
+    );
+}
+
 #[test]
 fn maestro_workspace_recipes_keep_phase_order() {
     let workspace = Workspace::new();
