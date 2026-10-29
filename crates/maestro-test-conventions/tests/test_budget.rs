@@ -106,3 +106,33 @@ fn nextest_rejects_unbounded_exceptions_and_raised_other_profiles() {
         assert!(error.contains("30-second budget"), "{error}");
     }
 }
+
+#[test]
+fn component_class_timeout_preserves_every_specific_exception() {
+    let config: toml::Value =
+        toml::from_str(include_str!("../../../.config/nextest.toml")).unwrap();
+    let overrides = config["profile"]["default"]["overrides"]
+        .as_array()
+        .unwrap();
+    let class_filter = "package(=maestro-extensions-wasm) | package(=maestro-extensions-wasmtime)";
+    let class_index = overrides
+        .iter()
+        .position(|entry| entry["filter"].as_str() == Some(class_filter))
+        .unwrap();
+    let mut specific_count = 0;
+    for (index, entry) in overrides.iter().enumerate() {
+        let filter = entry["filter"].as_str().unwrap();
+        if entry.get("slow-timeout").is_some()
+            && filter.contains("test(")
+            && (filter.contains("package(=maestro-extensions-wasm)")
+                || filter.contains("package(=maestro-extensions-wasmtime)"))
+        {
+            assert!(index < class_index, "specific timeout shadowed: {filter}");
+            specific_count += 1;
+        }
+    }
+    assert!(
+        specific_count > 0,
+        "specific exceptions must remain covered"
+    );
+}
