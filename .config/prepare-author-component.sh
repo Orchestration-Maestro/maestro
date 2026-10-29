@@ -25,17 +25,39 @@ for directory in $paths; do
         fresh=true
         for source in crates/maestro-extensions-wasm/examples/prepare_author_component.rs \
             crates/maestro-extensions-wasm/src/tests/build.rs \
+            crates/maestro-extensions-wasm/src/tests/build/*.rs \
             crates/maestro-tooling/src/example_files.rs \
+            crates/maestro-tooling/src/example_files/*.rs \
             crates/maestro-extensions-wasm/Cargo.toml Cargo.lock; do
             [ "$example" -nt "$source" ] || fresh=false
         done
-        [ "$fresh" = false ] || exec "$example"
+        if [ "$fresh" = true ]; then
+            status=0
+            sh "$(dirname "$0")/normalize-component-cache.sh" "$directory" || status=$?
+            if [ "$status" -eq 0 ]; then
+                exec "$example"
+            fi
+            # Status 3: a library the example builds on is newer, so only a rebuild updates it.
+            [ "$status" -eq 3 ] || exit "$status"
+        fi
     done
     profile=$(basename "$directory")
     [ "$profile" != debug ] || profile=dev
-    exec "${CARGO:-cargo}" run --quiet --locked -p maestro-extensions-wasm \
+    "${CARGO:-cargo}" build --quiet --locked -p maestro-extensions-wasm \
         --example prepare_author_component --target-dir "$(dirname "$directory")" \
         --profile "$profile"
+    example="$directory/examples/prepare_author_component"
+    [ -f "$example" ] || example="$example.exe"
+    # Cargo ignores some library outputs that normalization counts, such as the metadata a
+    # lint run writes, so the example can stay outdated. That only costs a cache miss.
+    status=0
+    sh "$(dirname "$0")/normalize-component-cache.sh" "$directory" || status=$?
+    if [ "$status" -eq 3 ]; then
+        echo 'Cargo kept the setup example; test binaries may compile components again.' >&2
+    elif [ "$status" -ne 0 ]; then
+        exit "$status"
+    fi
+    exec "$example"
 done
 echo 'Cannot resolve the nextest artifact directory from its library search path.' >&2
 exit 1
