@@ -156,6 +156,8 @@ fn component_setup_shares_compiled_bytes_across_executables() {
             )
             .env("XDG_CACHE_HOME", scratch.path().join("cache"))
             .env("XDG_CONFIG_HOME", scratch.path().join("config"))
+            .env_remove("TEST_ARCHIVE")
+            .env_remove("TEST_PREPARE_OUTPUT")
             .shell_setup("/bin/sh", shell)
             .output()
             .unwrap();
@@ -168,9 +170,24 @@ fn component_setup_shares_compiled_bytes_across_executables() {
     }
 }
 
+/// Whether setup exported `path` from a prepared bundle, which carries no host to warm the
+/// cache: archived runs compile each component once, on first use, in their shared namespace.
+fn exported_from_prepared_bundle(path: &Path) -> bool {
+    let Some(bundle) = std::env::var_os("TEST_PREPARE_OUTPUT") else {
+        return false;
+    };
+    match (std::fs::canonicalize(path), std::fs::canonicalize(bundle)) {
+        (Ok(path), Ok(bundle)) => path.starts_with(bundle),
+        _ => false,
+    }
+}
+
 #[test]
 fn component_setup_warms_exported_examples() {
     let path = std::env::var("MAESTRO_LOCATION_COMPONENT").unwrap();
+    if exported_from_prepared_bundle(Path::new(&path)) {
+        return;
+    }
     assert!(
         cached_compile(Path::new(&path)) > 0,
         "setup did not warm the exported example for the consuming executable"
