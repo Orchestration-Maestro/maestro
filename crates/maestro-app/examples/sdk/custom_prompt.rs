@@ -76,6 +76,21 @@ fn configure_prompt(
 mod tests {
     use super::*;
 
+    /// Each configuration is announced before its streamed answer.
+    #[test]
+    fn custom_prompt_prints_observations_in_order() -> Result<(), Error> {
+        let output = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+        support::execute(|mut sample| {
+            sample.output = output.clone();
+            run(sample)
+        })?;
+        assert_eq!(
+            String::from_utf8(output.borrow().clone())?,
+            "=== Replace prompt ===\nFour, Arrr!\n\n=== Modify prompt ===\n- Safety\n- Speed\n- Tooling\n"
+        );
+        Ok(())
+    }
+
     /// Both prompt configurations perform a real conversation through the controlled model.
     #[test]
     fn custom_prompt_invokes_both_configurations() -> Result<(), Error> {
