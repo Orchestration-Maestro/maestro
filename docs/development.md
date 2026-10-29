@@ -749,6 +749,58 @@ read them. A file owned by another workspace member already selects that member
 and its dependents. Only otherwise unowned, undeclared paths use the all-or-none fallback:
 they select every test, or none when the file is Markdown or under `docs/`.
 
+### Cargo state of tooling fixtures
+
+Cargo locks the package cache of its home while it resolves, even with
+`--offline`, so two tests that start `cargo` in one home wait for each other.
+Tooling fixtures therefore run Cargo in a private `CARGO_HOME` that
+`toolchain_support::fixture_command` creates beside the fixture. The recipe
+tool build, every `Workspace` command, the consumer workspaces and their hook
+runs, the standalone asset and wasm probe fixtures, and lock generation and
+metadata queries on the browser fixture manifest use one.
+
+A fixture that resolves registry crates reads one offline source configuration.
+The nextest setup script `.config/prepare-fixture-sources.sh` vendors the crates
+named by `fixtures/registry_sources/Cargo.toml`, at the versions the workspace
+lock selects, together with the browser fixture's crates. It runs once per run,
+writes `target/fixture-sources/<hash>/`, and reuses that directory while the
+inputs stay unchanged. The set stays small because Cargo reads every vendored
+package on each run; a test checks that every registry crate the tooling crates
+declare is named in that manifest. The script exports the configuration path as
+`MAESTRO_TEST_CARGO_SOURCES`; outside nextest the first test that needs it runs
+the same script. A fixture opts in with `Workspace::use_prepared_sources` or
+`Browser::cargo`, which copy the configuration into its private home. A fixture
+without registry dependencies copies nothing. The cold browser build still
+vendors the whole workspace for itself, because it compiles every dependency.
+
+Cargo builds that share the test build's target directory keep the shared home.
+A registry crate's fingerprint includes its source path, so a private home with
+vendored sources recompiles every registry dependency in that target, and going
+back to the shared home recompiles them again. The browser recipe and native
+builds (`Browser::command` and `Browser::native_command`) are such builds; the
+`browser-author` group and the browser file lock already run them one at a time.
+Queries of the whole workspace, tests in other crates that build it, and the
+in-process `maestro_tooling::run` calls on dependency-free fixtures also keep the
+shared home. A watch recipe starts `cargo run` and, beneath it, `cargo build` in one
+home, so its first build prints a wait on its own `cargo run`, not on another
+test.
+
+A private home also changes what the compiler cache sees. `sccache` hashes every
+`CARGO_*` variable into the key of each rustc call, so a fixture's home path gives
+its registry crates a key that no other fixture shares. The five tests that build
+the tooling crate in a fixture (`prepare_tooling_owner`) compile its registry
+dependencies in every run, where the shared home let a warm cache answer them. One
+at a time they took 11.5 to 16.9 s instead of 6.4 to 7.1 s, and three at a time
+reached the 30 s flag. Hosted runs do not show it. #3671 tracks hiding
+`CARGO_HOME` from the compiler wrapper.
+
+Three tests (`workspace_fixtures_never_reach_the_shared_cargo_home`,
+`browser_resolution_never_reaches_the_shared_cargo_home` and
+`consumer_workspace_never_reaches_the_shared_cargo_home`) rerun a recipe
+workspace, a browser resolution and a consumer workspace in a child whose shared
+`CARGO_HOME` holds a directory where Cargo expects its lock file. A fixture that
+still reaches the shared home fails at once instead of waiting for another test.
+
 ### Child-process tests
 
 A test that re-runs one test in a fresh process starts it through

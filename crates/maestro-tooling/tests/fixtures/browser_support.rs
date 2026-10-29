@@ -103,10 +103,18 @@ impl Browser {
         browser
     }
 
+    /// Resolve the fixture manifest's crates from the run's prepared sources, in a private Cargo
+    /// home. Builds that share the test build's target, and resolution of the whole workspace,
+    /// keep the shared home, so their compiled dependencies stay fresh.
+    pub fn cargo(&self) -> Command {
+        self.workspace.use_prepared_sources();
+        self.workspace.toolchain_command(env!("CARGO"))
+    }
+
     pub fn generate_lockfile(&self) {
         record("phase: cargo generate-lockfile");
         let status = super::recipe_support::setup_status(
-            super::toolchain_support::command("cargo")
+            self.cargo()
                 .args(["generate-lockfile", "--offline", "--manifest-path"])
                 .arg(self.fixture("Cargo.toml")),
         );

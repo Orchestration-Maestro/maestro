@@ -10,6 +10,13 @@ command = "sh .config/prepare-author-component.sh"
 filter = "package(maestro-extensions-wasm) | package(maestro-extensions-wasmtime) | (package(maestro) & (test(startup_modes::) | test(model_streams::) | test(component_output_stays_between_complete_host_frames) | test(native_io::) | test(/_example::/)))"
 setup = "author-component"
 
+[scripts.setup.fixture-sources]
+command = "sh .config/prepare-fixture-sources.sh"
+
+[[profile.default.scripts]]
+filter = "package(maestro-tooling)"
+setup = "fixture-sources"
+
 [test-groups.file-trigger]
 max-threads = 1
 
