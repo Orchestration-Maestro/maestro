@@ -72,7 +72,7 @@ fn measured_priorities_order_tests_without_changing_shards() {
 /// Run one-worker nextest and retain completion order, including the intentional failure.
 /// A private Cargo home avoids registry-cache locks held by unrelated builds.
 fn run_nextest(root: &Path, config: &Path, partition: Option<&str>) -> Vec<String> {
-    let mut command = toolchain_support::fixture_command("cargo", root);
+    let mut command = toolchain_support::fixture_command("cargo", root, None).unwrap();
     command
         .args([
             "nextest",

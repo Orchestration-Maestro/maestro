@@ -38,12 +38,19 @@ pub fn command(program: impl AsRef<OsStr>) -> Command {
 }
 
 /// Keep a fixture compiler's Cargo state inside its supplied workspace.
-pub fn fixture_command(program: impl AsRef<OsStr>, root: &std::path::Path) -> Command {
+///
+/// # Errors
+/// Returns an error when the private home cannot be created.
+pub fn fixture_command(
+    program: impl AsRef<OsStr>,
+    root: &std::path::Path,
+    _sources: Option<&std::path::Path>,
+) -> std::io::Result<Command> {
+    let home = root.join("cargo-home");
+    std::fs::create_dir_all(&home)?;
     let mut command = command(program);
-    command
-        .current_dir(root)
-        .env("CARGO_HOME", root.join("cargo-home"));
-    command
+    command.current_dir(root).env("CARGO_HOME", home);
+    Ok(command)
 }
 
 /// The resolved toolchain that compiled this test, independent of runtime overrides.
