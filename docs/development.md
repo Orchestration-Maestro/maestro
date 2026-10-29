@@ -752,6 +752,15 @@ shared home. A watch recipe starts `cargo run` and, beneath it, `cargo build` in
 home, so its first build prints a wait on its own `cargo run`, not on another
 test.
 
+A private home also changes what the compiler cache sees. `sccache` hashes every
+`CARGO_*` variable into the key of each rustc call, so a fixture's home path gives
+its registry crates a key that no other fixture shares. The five tests that build
+the tooling crate in a fixture (`prepare_tooling_owner`) compile its registry
+dependencies in every run, where the shared home let a warm cache answer them. One
+at a time they took 11.5 to 16.9 s instead of 6.4 to 7.1 s, and three at a time
+reached the 30 s flag. Hosted runs do not show it. #3671 tracks hiding
+`CARGO_HOME` from the compiler wrapper.
+
 Three tests (`workspace_fixtures_never_reach_the_shared_cargo_home`,
 `browser_resolution_never_reaches_the_shared_cargo_home` and
 `consumer_workspace_never_reaches_the_shared_cargo_home`) rerun a recipe
