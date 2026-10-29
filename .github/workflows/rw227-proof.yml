@@ -21,7 +21,7 @@ jobs:
   report:
     needs: tests
     if: always() && needs.tests.result == 'failure'
-    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/post-landing.yml@f7194483e21d11621c26496f13d52abe3ba11528
+    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/post-landing.yml@79f878e6f114ccf167898c19483410adb2aee64f
     with:
       run-id: ${{ github.run_id }}
       proof: true
