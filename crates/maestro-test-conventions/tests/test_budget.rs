@@ -133,7 +133,7 @@ fn component_class_timeout_preserves_every_specific_exception() {
         .position(|entry| entry["filter"].as_str() == Some(class_filter))
         .unwrap();
     let class_limit = timeout_seconds(&overrides[class_index]);
-    assert_eq!(class_limit, 90);
+    assert_eq!(class_limit, 120);
     let mut specific_count = 0;
     for (index, entry) in overrides.iter().enumerate() {
         let filter = entry["filter"].as_str().unwrap();
