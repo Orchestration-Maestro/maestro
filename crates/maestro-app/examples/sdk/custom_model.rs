@@ -72,6 +72,24 @@ async fn run(sample: Sample) -> Result<Value, Error> {
 mod tests {
     use super::*;
 
+    /// Catalog observations appear before the streamed greeting.
+    #[test]
+    fn custom_model_prints_observations_in_order() -> Result<(), Error> {
+        let output = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+        support::execute(|mut sample| {
+            sample.output = output.clone();
+            run(sample)
+        })?;
+        let text = String::from_utf8(output.borrow().clone())?;
+        let lines: Vec<_> = text.lines().collect();
+        assert_eq!(lines[0], "Found model: anthropic/claude-opus-4-5");
+        assert_eq!(lines[1], "Found custom model: faux/faux-1");
+        assert!(lines[2].starts_with("Available models: "));
+        assert!(lines[2].contains("faux/faux-1"));
+        assert_eq!(lines[3..], ["Hello."]);
+        Ok(())
+    }
+
     /// Explicit model selection keeps the caller's catalog and clamps unsupported thinking.
     #[test]
     fn custom_model_selects_and_prompts_the_catalog_model() -> Result<(), Error> {
