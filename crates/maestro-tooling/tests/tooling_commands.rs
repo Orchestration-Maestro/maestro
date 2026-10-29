@@ -3534,6 +3534,7 @@ fn example_index_refreshes_guide_lock_after_guest_dependency_change() {
         .path()
         .join("crates/maestro-extensions-wasmtime/tests/fixtures/hello-extension/Cargo.lock");
     let before = fs::read(&lock).unwrap();
+    assert!(String::from_utf8_lossy(&before).contains("name = \"hello-extension\""));
     let guest = root
         .path()
         .join("crates/maestro-extensions-wasm/Cargo.toml");
