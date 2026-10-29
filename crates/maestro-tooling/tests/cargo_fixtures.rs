@@ -101,6 +101,71 @@ fn recipe_tool_build_uses_a_private_cargo_home() {
     );
 }
 
+/// The compiler wrapper behind a fixture command never sees the private Cargo home, so the
+/// compiler cache keys of the fixture's dependencies do not depend on the fixture that builds them.
+#[cfg(unix)]
+#[test]
+fn fixture_command_hides_cargo_home_from_the_compiler_wrapper() {
+    use maestro_test_process::TestProcess;
+    use std::os::unix::fs::PermissionsExt;
+
+    const ROOT: &str = "MAESTRO_FIXTURE_WRAPPER_ROOT";
+    if let Some(root) = std::env::var_os(ROOT) {
+        let root = Path::new(&root);
+        let output = toolchain_support::fixture_command(env!("CARGO"), root, None)
+            .unwrap()
+            .args(["build", "--offline", "--target-dir"])
+            .arg(root.join("target"))
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        return;
+    }
+    let root = Scratch::new().unwrap();
+    fs::create_dir(root.path().join("src")).unwrap();
+    fs::write(root.path().join("src/lib.rs"), "").unwrap();
+    fs::write(
+        root.path().join("Cargo.toml"),
+        "[package]\nname = 'wrapper-fixture'\nversion = '0.0.0'\nedition = '2024'\n[workspace]\n",
+    )
+    .unwrap();
+    let tools = Scratch::new().unwrap();
+    let recorder = tools.path().join("recorder.sh");
+    fs::write(
+        &recorder,
+        "#!/bin/sh\necho \"${CARGO_HOME-unset}\" >> \"$0.log\"\nexec \"$@\"\n",
+    )
+    .unwrap();
+    fs::set_permissions(&recorder, fs::Permissions::from_mode(0o755)).unwrap();
+    let output = TestProcess::current("fixture_command_hides_cargo_home_from_the_compiler_wrapper")
+        .unwrap()
+        .nocapture()
+        .env(ROOT, root.path())
+        .env("RUSTC_WRAPPER", &recorder)
+        .env_remove("__CARGO_LLVM_COV_RUSTC_WRAPPER")
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let log = fs::read_to_string(tools.path().join("recorder.sh.log")).unwrap();
+    assert!(!log.is_empty(), "the compiler wrapper must run");
+    assert!(
+        log.lines().all(|home| home == "unset"),
+        "the wrapper saw a Cargo home: {log}"
+    );
+    assert!(
+        root.path().join("cargo-home/.package-cache").is_file(),
+        "Cargo keeps its private home"
+    );
+}
+
 /// The run's prepared sources resolve a registry crate without the shared package cache.
 #[test]
 fn prepared_sources_resolve_registry_crates_offline() {
