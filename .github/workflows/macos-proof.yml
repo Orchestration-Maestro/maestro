@@ -1,0 +1,117 @@
+# Push-only native test evidence; never merge this branch.
+name: Native macOS workspace test proof
+"on":
+  push:
+    branches: ["ci/2819-final"]
+permissions:
+  contents: read
+jobs:
+  tests:
+    name: Tests (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 150
+    defaults:
+      run:
+        shell: bash
+    env:
+      CARGO_BUILD_JOBS: 3
+      MISE_TRUSTED_CONFIG_PATHS: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Host
+        run: |
+          uname -a
+          if [ "$(uname -s)" = Darwin ]; then sw_vers; sysctl hw.pagesize hw.logicalcpu hw.memsize; else nproc; getconf PAGESIZE; fi
+          git rev-parse HEAD 'HEAD^{tree}'
+          rustup show
+          echo "RUSTUP_TOOLCHAIN=$(rustup show active-toolchain | cut -d ' ' -f 1)" >> "$GITHUB_ENV"
+          echo 'CACHE=cold (no compile cache restored or saved)'
+      - name: Mise bootstrap
+        timeout-minutes: 10
+        run: |
+          version=2026.10.2
+          case "$(uname -s):$(uname -m)" in
+            Linux:x86_64) platform=linux-x64 digest=8f5f6660336f572830e33cd9b378d3131e529a0d4c4f0c553776be90a1ba302a ;;
+            Linux:aarch64) platform=linux-arm64 digest=8d230a5a23ac559ea24ec65280867f437000b37473d967a9bb954837592490a8 ;;
+            Darwin:arm64) platform=macos-arm64 digest=66d49acecca413c8b334922584982a4907a10588912829873d6c55d0c6d42612 ;;
+            *) echo 'Unsupported runner host' >&2; exit 1 ;;
+          esac
+          bin=$(mktemp -d "$RUNNER_TEMP/maestro-mise.XXXXXX")
+          curl --fail --retry 3 --location "https://github.com/jdx/mise/releases/download/v$version/mise-v$version-$platform" --output "$bin/mise"
+          printf '%s  %s\n' "$digest" "$bin/mise" | shasum -a 256 --check --status
+          chmod +x "$bin/mise"
+          echo "$bin" >> "$GITHUB_PATH"
+      - name: Test tools
+        timeout-minutes: 10
+        run: |
+          mise install
+          mise bin-paths >> "$GITHUB_PATH"
+          case "$(uname -s):$(uname -m)" in
+            Linux:aarch64) asset=ripgrep-15.2.0-aarch64-unknown-linux-gnu digest=a740b91c82eaf9914cfedd353572f2791cbe0162c84101ee0951058f4dcbc90d ;;
+            Linux:x86_64) asset=ripgrep-15.2.0-x86_64-unknown-linux-musl digest=33e15bcf1624b25cdd2a55813a47a2f95dbe126268203e76aa6a585d1e7b149c ;;
+            Darwin:arm64) asset=ripgrep-15.2.0-aarch64-apple-darwin digest=3750b2e93f37e0c692657da574d7019a101c0084da05a790c83fd335bad973e4 ;;
+          esac
+          bin=$(mktemp -d "$RUNNER_TEMP/maestro-search-bin.XXXXXX")
+          archive=$(mktemp)
+          curl --fail --retry 3 --location "https://github.com/BurntSushi/ripgrep/releases/download/15.2.0/$asset.tar.gz" --output "$archive"
+          printf '%s  %s\n' "$digest" "$archive" | shasum -a 256 --check --status
+          tar -xzf "$archive" -C "$bin" --strip-components=1 "$asset/rg"
+          "$bin/rg" --version
+          echo "$bin" >> "$GITHUB_PATH"
+      - name: Fetch locked manifests
+        run: |
+          cargo fetch --locked
+          for manifest in crates/maestro-tooling/tests/fixtures/browser_author/Cargo.toml crates/maestro-web/tests/fixtures/browser_modules/module_a/Cargo.toml crates/maestro-web/tests/fixtures/browser_modules/module_b/Cargo.toml; do
+            cargo fetch --locked --manifest-path "$manifest"
+          done
+      - name: Isolated tests
+        timeout-minutes: 120
+        run: |
+          cargo_home=$(cd "${CARGO_HOME:-$HOME/.cargo}" && pwd)
+          rustup_home=$(cd "${RUSTUP_HOME:-$HOME/.rustup}" && pwd)
+          diagnostics="$PWD/target/browser-author-diagnostics"
+          mkdir -p "$diagnostics"
+          isolation=$(mktemp -d "$RUNNER_TEMP/maestro-tests.XXXXXX")
+          mkdir "$isolation"/{home,tmp,config,data,cache,state,runtime,config-dirs,data-dirs}
+          run_isolated() {
+            env -i PATH="$PATH" CARGO_HOME="$cargo_home" RUSTUP_HOME="$rustup_home" RUSTUP_TOOLCHAIN="$RUSTUP_TOOLCHAIN" \
+              CARGO_BUILD_JOBS="$CARGO_BUILD_JOBS" HOME="$isolation/home" TMPDIR="$isolation/tmp" TMP="$isolation/tmp" TEMP="$isolation/tmp" \
+              XDG_CONFIG_HOME="$isolation/config" XDG_DATA_HOME="$isolation/data" \
+              XDG_CACHE_HOME="$isolation/cache" XDG_STATE_HOME="$isolation/state" \
+              XDG_RUNTIME_DIR="$isolation/runtime" XDG_CONFIG_DIRS="$isolation/config-dirs" \
+              XDG_DATA_DIRS="$isolation/data-dirs" MAESTRO_NO_LOCAL_LLM=1 MAESTRO_TEST_DIAGNOSTICS_DIR="$diagnostics" \
+              "$@"
+          }
+          set +e
+          started=$SECONDS
+          run_isolated cargo nextest run --workspace --locked --retries 0 --no-fail-fast 2>&1 | tee nextest.log
+          tests=${PIPESTATUS[0]}
+          echo "NEXTEST exit=$tests wall_seconds=$((SECONDS - started))"
+          started=$SECONDS
+          run_isolated cargo test --doc --workspace --locked 2>&1 | tee doctests.log
+          doctests=${PIPESTATUS[0]}
+          echo "DOCTESTS exit=$doctests wall_seconds=$((SECONDS - started))"
+          [ "$tests" = 0 ] && [ "$doctests" = 0 ]
+      - name: Interactive walkthrough
+        if: always()
+        timeout-minutes: 40
+        run: |
+          brew install tmux
+          cargo build --locked -p maestro
+          bash .github/proof/walkthrough.sh "$PWD/target/debug/maestro" "$PWD/walkthrough"
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: test-logs-${{ matrix.os }}
+          path: |
+            nextest.log
+            doctests.log
+            walkthrough
+          if-no-files-found: ignore
