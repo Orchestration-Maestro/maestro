@@ -152,6 +152,7 @@ resolving conflicts, then regenerate the table.
 | `rainbow_editor.rs` | Highlights `ultrathink` in the editor with an animated rainbow shine. |
 | `reload_runtime.md` | Reload runtime |
 | `reload_runtime.rs` | A command that reloads runtime resources and a tool that queues that command. |
+| `rpc_demo.rs` | A companion extension exercising the terminal client's RPC UI methods. |
 | `send_user_message.md` | Send user message |
 | `send_user_message.rs` | User-message delivery: commands that send ordinary, steering, follow-up and structured messages, so a user can reach the agent from an extension. |
 | `session_name.md` | Session name |
@@ -200,6 +201,8 @@ resolving conflicts, then regenerate the table.
 | `widget_placement.rs` | A startup extension that places text widgets above and below the editor. |
 | `with-deps.md` | With deps |
 | `with-deps/main.rs` | A duration tool registered by an extension that declares its own parsing dependency. |
+| `working_indicator.md` | Working indicator |
+| `working_indicator.rs` | A command that selects static, animated, hidden or default working indicators. |
 | `working_message_test.md` | Working message test |
 | `working_message_test.rs` | A startup extension that requests a custom working text and indicator. |
 <!-- example-index:end -->

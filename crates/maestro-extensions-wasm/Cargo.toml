@@ -254,6 +254,11 @@ name = "sdk_standard_component"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "rpc_demo"
+path = "../../examples/extensions/rpc_demo.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "send_user_message"
 path = "../../examples/extensions/send_user_message.rs"
 crate-type = ["cdylib"]
@@ -353,6 +358,11 @@ path = "../../examples/extensions/with-deps/main.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "working_indicator"
+path = "../../examples/extensions/working_indicator.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "working_message_test"
 path = "../../examples/extensions/working_message_test.rs"
 crate-type = ["cdylib"]
@@ -376,6 +386,7 @@ regex.workspace = true
 ryu-js.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-test-directory.workspace = true
 maestro-models = { path = "../maestro-models" }
 wasmtime = { git = "https://github.com/bytecodealliance/wasmtime", rev = "ffff2e2db24a291f02429f123aba1631fa8eea67", default-features = false, features = ["std", "runtime", "cranelift", "component-model-async", "cache"] }
 wasmtime-wasi = { git = "https://github.com/bytecodealliance/wasmtime", rev = "ffff2e2db24a291f02429f123aba1631fa8eea67", default-features = false, features = ["p2", "p3"] }
