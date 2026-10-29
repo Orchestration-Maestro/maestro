@@ -40,6 +40,10 @@ fn recorded_virtual(value: serde_json::Value, root: &str) -> serde_json::Value {
 /// Default wrappers retain native byte counts, unlimited search, ignore scope and path handling.
 #[test]
 fn builtin_defaults_preserve_individual_corrections() {
+    if !super::builtin_author::with_search_tools("builtin_defaults_preserve_individual_corrections")
+    {
+        return;
+    }
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -874,6 +878,10 @@ async fn native_write_result(content: &str) -> serde_json::Value {
 /// Every operation family preserves errors at its reached phase; edit access consumes supplied codes.
 #[test]
 fn builtin_operation_errors_keep_codes_and_messages() {
+    if !super::builtin_author::with_search_tools("builtin_operation_errors_keep_codes_and_messages")
+    {
+        return;
+    }
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -1531,6 +1539,11 @@ async fn native_find(request: &serde_json::Value) -> Result<serde_json::Value, S
 /// Real ripgrep matches remain native while ready and pending callbacks supply context.
 #[test]
 fn builtin_grep_callbacks_preserve_native_search_and_context() {
+    if !super::builtin_author::with_search_tools(
+        "builtin_grep_callbacks_preserve_native_search_and_context",
+    ) {
+        return;
+    }
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -1674,6 +1687,9 @@ impl maestro_extensions::GrepOperations for GrepAnswer {
 /// A broken managed program, then the real ripgrep, proves the supplied manager is consumed.
 #[test]
 fn builtin_grep_uses_application_tool_services() {
+    if !super::builtin_author::with_search_tools("builtin_grep_uses_application_tool_services") {
+        return;
+    }
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -1683,7 +1699,7 @@ fn builtin_grep_uses_application_tool_services() {
         let bin=scratch.path().join("app-bin");
         std::fs::create_dir(&bin).unwrap();
         let binary=format!("rg{}",std::env::consts::EXE_SUFFIX);
-        let source=std::env::split_paths(&std::env::var_os("PATH").unwrap()).map(|dir|dir.join(&binary)).find(|path|path.is_file()).expect("ripgrep is installed for native search tests");
+        let source=std::path::PathBuf::from(std::env::var_os("MAESTRO_TEST_SEARCH_BIN").unwrap()).join(&binary);
         let installed=bin.join(binary);
         std::fs::write(&installed,"not an executable").unwrap();
         let file=scratch.path().join("雪.txt");
