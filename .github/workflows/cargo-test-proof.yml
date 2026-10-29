@@ -1,0 +1,11 @@
+name: Cargo test scheduling proof
+"on":
+  push:
+    branches: [ci/3640-*]
+permissions:
+  contents: read
+jobs:
+  proof:
+    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/ci.yml@be12ba727a7870cd044f6e29cedddeb3d7f709cc # v0.15.6
+    with:
+      concurrency-key: cargo-test-ff-candidate
