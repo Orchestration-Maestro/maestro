@@ -58,6 +58,21 @@ fn merge_skills(mut base: maestro_app::LoadSkillsResult) -> maestro_app::LoadSki
 mod tests {
     use super::*;
 
+    /// Skill names precede the session-created observation.
+    #[test]
+    fn skills_prints_observations_in_order() -> Result<(), Error> {
+        let output = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+        support::execute(|mut sample| {
+            sample.output = output.clone();
+            run(sample)
+        })?;
+        assert_eq!(
+            String::from_utf8(output.borrow().clone())?,
+            "Discovered skills: browser, my-skill\nSession created with filtered skills\n"
+        );
+        Ok(())
+    }
+
     /// Filtering preserves discovered provenance while the custom skill retains its SDK source.
     #[test]
     fn skills_filters_discovery_and_preserves_custom_provenance() -> Result<(), Error> {
