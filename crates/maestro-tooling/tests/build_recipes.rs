@@ -1353,13 +1353,15 @@ fn maestro_offline_recipe_is_explicit_only() {
         ("test", "key=true auth=true flag=kept\n"),
         ("check", "key=true auth=true flag=kept\n"),
     ] {
-        let output = workspace
-            .command(recipe)
+        let mut command = workspace.command(recipe);
+        if recipe == "test-offline" {
+            command.env("MAESTRO_DEVELOPMENT", env!("CARGO_BIN_EXE_development"));
+        }
+        let output = command
             .env("HOME", &home)
             .env("OPENAI_API_KEY", "controlled")
             .env("MAESTRO_NO_LOCAL_LLM", "kept")
             .env("MAESTRO_ENV_RESULT", workspace.path().join("env-result"))
-            .env("MAESTRO_DEVELOPMENT", env!("CARGO_BIN_EXE_development"))
             .output()
             .unwrap();
         assert!(
@@ -1373,6 +1375,11 @@ fn maestro_offline_recipe_is_explicit_only() {
         );
         assert_eq!(fs::read(&auth).unwrap(), b"synthetic authentication");
     }
+    assert!(
+        workspace
+            .log()
+            .contains("development|--|example-index|--check")
+    );
     let output = workspace
         .command("test")
         .env("HOME", &home)
