@@ -46,32 +46,52 @@ fn main() -> Result<(), String> {
     Ok(())
 }
 
-/// Resolves a pinned development tool before tests replace their search PATH.
+/// Resolves a pinned development tool from the supplied search PATH.
 ///
 /// # Errors
 ///
-/// Returns an error if mise cannot resolve the tool, its output is not UTF-8,
-/// or the returned path is not absolute or does not name a file.
+/// Returns an error if the pin cannot be read, PATH has no absolute executable,
+/// the executable fails or reports another version, or its path or output is not UTF-8.
 fn pinned_search_tool(name: &str, tool: &str) -> Result<String, String> {
     let config = concat!(env!("CARGO_MANIFEST_DIR"), "/../../mise.toml");
     let version = mise_output(&["config", "get", "--file", config, &format!("tools.{tool}")])?;
-    let path = mise_output(&["which", name, "--tool", &format!("{tool}@{version}")])?;
-    if !std::path::Path::new(&path).is_absolute() || !std::path::Path::new(&path).is_file() {
+    let search = std::env::var_os("PATH").ok_or_else(|| "PATH is not set".to_owned())?;
+    let executable = format!("{name}{}", std::env::consts::EXE_SUFFIX);
+    let path = std::env::split_paths(&search)
+        .map(|directory| directory.join(&executable))
+        .find(|candidate| candidate.is_file())
+        .ok_or_else(|| format!("{name}: no executable on PATH"))?;
+    if !path.is_absolute() {
         return Err(format!(
-            "{name}: mise returned no absolute executable path: {path}"
+            "{name}: executable path is not absolute: {}",
+            path.display()
         ));
     }
-    Ok(path)
+    let output = std::process::Command::new(&path)
+        .arg("--version")
+        .output()
+        .map_err(|error| format!("{} --version: {error}", path.display()))?;
+    let reported =
+        String::from_utf8(output.stdout).map_err(|error| format!("{name} --version: {error}"))?;
+    let mut words = reported.split_whitespace();
+    if !output.status.success() || words.next() != Some(tool) || words.next() != Some(&version) {
+        return Err(format!(
+            "{name}: expected {tool} {version}, got {reported:?}"
+        ));
+    }
+    path.into_os_string()
+        .into_string()
+        .map_err(|path| format!("{name}: executable path is not UTF-8: {}", path.display()))
 }
 
-/// Reads stored pins or resolves installed binaries without evaluating project configuration.
+/// Reads stored tool pins without evaluating project configuration.
 ///
 /// # Errors
 ///
 /// Returns an error if mise cannot run, exits unsuccessfully or returns invalid UTF-8.
 fn mise_output(args: &[&str]) -> Result<String, String> {
     let output = std::process::Command::new("mise")
-        // Reading stored pins needs no trust; binary lookup must not evaluate project hooks.
+        // Reading stored pins needs no trust and must not evaluate project hooks.
         .env("MISE_NO_CONFIG", "1")
         .args(args)
         .output()
