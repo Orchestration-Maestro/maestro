@@ -748,6 +748,13 @@ home. A watch recipe starts `cargo run` and, beneath it, `cargo build` in one
 home, so its first build prints a wait on its own `cargo run`, not on another
 test.
 
+Three tests (`workspace_fixtures_never_reach_the_shared_cargo_home`,
+`browser_resolution_never_reaches_the_shared_cargo_home` and
+`consumer_workspace_never_reaches_the_shared_cargo_home`) rerun a recipe
+workspace, a browser resolution and a consumer workspace in a child whose shared
+`CARGO_HOME` holds a directory where Cargo expects its lock file. A fixture that
+still reaches the shared home fails at once instead of waiting for another test.
+
 ### Child-process tests
 
 A test that re-runs one test in a fresh process starts it through
