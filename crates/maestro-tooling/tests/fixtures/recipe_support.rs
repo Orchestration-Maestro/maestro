@@ -33,8 +33,30 @@ pub fn install_executable(source: &Path, target: &Path) {
 }
 
 /// The source configuration for registry crates, prepared once per run.
+///
+/// Nextest runs the setup script and exports the path. Outside nextest the first caller runs the
+/// same script, which reuses sources already vendored for the current locks.
 pub fn prepared_sources() -> PathBuf {
-    PathBuf::new()
+    static SOURCES: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
+    SOURCES
+        .get_or_init(|| {
+            if let Some(config) = std::env::var_os("MAESTRO_TEST_CARGO_SOURCES") {
+                return PathBuf::from(config);
+            }
+            record("phase: fixture sources preparation");
+            let output = Command::new("sh")
+                .arg(".config/prepare-fixture-sources.sh")
+                .current_dir(Path::new(env!("CARGO_MANIFEST_DIR")).join("../.."))
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "{}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+            PathBuf::from(String::from_utf8(output.stdout).unwrap().trim_end())
+        })
+        .clone()
 }
 
 /// Build the fake-command tool into the target shared by every recipe fixture.
