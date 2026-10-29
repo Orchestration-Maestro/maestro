@@ -1,4 +1,6 @@
 //! Supply credentials, a model, preferences, tools and resources explicitly.
+#[path = "support/stream.rs"]
+mod stream;
 mod support;
 use serde_json::{Value, json};
 use support::{Error, Sample};
@@ -26,6 +28,7 @@ async fn run(sample: Sample) -> Result<Value, Error> {
                 FauxAssistantMessageOptions::default(),
             ),
         ))]);
+    let finish = stream::subscribe(&created.session, std::rc::Rc::clone(&sample.output));
     created
         .session
         .prompt(
@@ -33,6 +36,8 @@ async fn run(sample: Sample) -> Result<Value, Error> {
             PromptOptions::default(),
         )
         .await?;
+    finish()?;
+    writeln!(sample.output.borrow_mut())?;
     let loader = created.session.resource_loader();
     let messages = serde_json::to_value(
         &*created
