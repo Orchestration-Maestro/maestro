@@ -795,7 +795,10 @@ The revert names the original PR and failure issue. It runs normal required
 checks and enters the merge queue like any other PR; automation never pushes
 the revert directly to main. Repeated handling reuses the existing issue and
 open or closed revert PR, including when an earlier attempt only pushed the
-revert branch. Passing suites create neither artifact.
+revert branch. When the merge queue squashes several PRs in one push, only the
+last commit has a suite run: the issue then names every PR in that push, newest
+first, and the reporter fails with the run link without a revert. Revert the
+culprit in a normal reviewed PR. Passing suites create neither artifact.
 
 The reporting job needs read access to Actions runs and contents. Writes use
 the existing release App's repository-scoped token, minted from
@@ -810,5 +813,4 @@ Unknown PR attribution, missing permissions or a revert conflict fails the
 reporter with the original run link. Inspect that run and the failure issue;
 resolve a conflict in a reviewed PR. Do not bypass required checks or push to
 main to recover. The workflow-run listener becomes active after it lands on
-the default branch. Controlled proofs use push-only `ci/rw227-` branches and
-shared reporter proof mode, never a failing landing on main.
+the default branch.
