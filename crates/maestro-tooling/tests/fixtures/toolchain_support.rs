@@ -40,14 +40,17 @@ pub fn command(program: impl AsRef<OsStr>) -> Command {
 /// Keep a fixture compiler's Cargo state inside its supplied workspace.
 ///
 /// # Errors
-/// Returns an error when the private home cannot be created.
+/// Returns an error when creating the private home or copying its source configuration fails.
 pub fn fixture_command(
     program: impl AsRef<OsStr>,
     root: &std::path::Path,
-    _sources: Option<&std::path::Path>,
+    sources: Option<&std::path::Path>,
 ) -> std::io::Result<Command> {
     let home = root.join("cargo-home");
     std::fs::create_dir_all(&home)?;
+    if let Some(sources) = sources {
+        std::fs::copy(sources, home.join("config.toml"))?;
+    }
     let mut command = command(program);
     command.current_dir(root).env("CARGO_HOME", home);
     Ok(command)
