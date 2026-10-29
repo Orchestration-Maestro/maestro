@@ -735,6 +735,9 @@ fn trigger_compact_factory_instances_keep_separate_usage() -> Result<(), String>
 /// The built component produces the recorded requests for every case.
 #[test]
 fn trigger_compact_component_matches_host_requests() -> Result<(), String> {
+    if std::env::var_os("NEXTEST").is_some() {
+        assert!(std::env::var_os("MAESTRO_TRIGGER_COMPACT_COMPONENT").is_some(), "nextest must prepare the compaction component outside the test");
+    }
     for row in corpus().rows {
         let instances = row.registrations.len() / 2;
         let mut host = ComponentHost::start(instances)?;

@@ -82,6 +82,12 @@ fn progress(
 
 #[test]
 fn subagent_parallel_limit_and_abort_reach_every_owned_child() {
+    if std::env::var_os("NEXTEST").is_some() {
+        assert!(
+            std::env::var_os("MAESTRO_SUBAGENT_COMPONENT").is_some(),
+            "nextest must prepare the subagent component outside the test"
+        );
+    }
     let component = component_build::example_component("maestro-subagents", "component").unwrap();
     if child_fixture(
         "subagent_example::cancellation::subagent_parallel_limit_and_abort_reach_every_owned_child",
