@@ -55,10 +55,13 @@ mod tests {
     #[test]
     fn custom_prompt_invokes_both_configurations() -> Result<(), Error> {
         let value = support::execute(run)?;
-        assert_eq!(value["messages"][0][0]["content"], "What is 2 + 2?");
+        assert_eq!(
+            value["messages"][0][0]["content"][0]["text"],
+            "What is 2 + 2?"
+        );
         assert_eq!(value["messages"][0][1]["content"][0]["text"], "Four, Arrr!");
         assert_eq!(
-            value["messages"][1][0]["content"],
+            value["messages"][1][0]["content"][0]["text"],
             "List 3 benefits of Rust."
         );
         assert_eq!(
