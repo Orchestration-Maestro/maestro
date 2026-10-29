@@ -33,6 +33,47 @@ fn archived_author_setup_reuses_relocated_components() {
     assert_eq!(fs::read_to_string(root.join("builds")).unwrap(), "build\n");
 }
 
+/// Missing, edited or incomplete reusable outputs fail without starting Cargo.
+#[test]
+fn archived_author_setup_rejects_missing_and_stale_outputs() {
+    for change in [
+        "directory",
+        "component",
+        "source",
+        "added",
+        "removed",
+        "lock",
+        "corrupt",
+    ] {
+        let scratch = Scratch::new().unwrap();
+        let root = scratch.path();
+        fixture(root);
+        assert_success(&prepare(root));
+        let prepared = root.join("target/test-setup");
+        match change {
+            "directory" => fs::rename(&prepared, root.join("unused")).unwrap(),
+            "component" => fs::remove_file(prepared.join("MAESTRO_AUTHOR_COMPONENT.wasm")).unwrap(),
+            "source" => fs::write(root.join("crates/example/src/lib.rs"), "edited source").unwrap(),
+            "added" => fs::write(root.join("crates/example/src/new.rs"), "new source").unwrap(),
+            "removed" => fs::remove_file(root.join("crates/example/src/lib.rs")).unwrap(),
+            "lock" => fs::write(root.join("Cargo.lock"), "new dependencies").unwrap(),
+            "corrupt" => {
+                fs::write(prepared.join("MAESTRO_AUTHOR_COMPONENT.wasm"), "broken").unwrap();
+            }
+            _ => unreachable!(),
+        }
+        let output = export(root, &prepared);
+        assert!(!output.status.success(), "accepted {change}");
+        let diagnostic = String::from_utf8_lossy(&output.stderr);
+        assert!(
+            diagnostic.contains(prepared.to_str().unwrap()),
+            "{diagnostic}"
+        );
+        assert!(!root.join("nextest-env").exists());
+        assert_eq!(fs::read_to_string(root.join("builds")).unwrap(), "build\n");
+    }
+}
+
 /// Give the standalone command a controlled Cargo boundary and source checkout.
 fn fixture(root: &Path) {
     use std::os::unix::fs::PermissionsExt;
