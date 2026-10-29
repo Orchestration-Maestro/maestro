@@ -800,8 +800,7 @@ revert branch. Passing suites create neither artifact.
 The reporting job needs read access to Actions runs and contents. Writes use
 the existing release App's repository-scoped token, minted from
 `RELEASE_APP_CLIENT_ID` and `RELEASE_APP_PRIVATE_KEY`, with contents, issues and
-pull requests write access, plus workflows write access so it can revert CI
-changes. The App must be installed here and the organization
+pull requests write access. The App must be installed here and the organization
 secret available here. This token lets the revert trigger checks; test jobs do
 not receive it. The reporting workflow alone is declared in
 `privileged_trigger_workflows` for the existing trigger audit.
