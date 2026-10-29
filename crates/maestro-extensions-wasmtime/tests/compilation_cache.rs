@@ -168,6 +168,15 @@ fn component_setup_shares_compiled_bytes_across_executables() {
 }
 
 #[test]
+fn component_setup_warms_exported_examples() {
+    let path = std::env::var("MAESTRO_LOCATION_COMPONENT").unwrap();
+    assert!(
+        cached_compile(Path::new(&path)) > 0,
+        "setup did not warm the exported example for the consuming executable"
+    );
+}
+
+#[test]
 fn component_load_populates_the_user_compilation_cache() {
     if isolated("component_load_populates_the_user_compilation_cache") {
         return;
