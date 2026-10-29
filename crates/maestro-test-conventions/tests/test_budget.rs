@@ -185,3 +185,37 @@ fn nextest_rejects_unbounded_exceptions_and_raised_other_profiles() {
         assert!(error.contains(expected), "{section}: {error}");
     }
 }
+
+#[test]
+fn nextest_sizes_exceptions_to_the_fewest_periods_covering_the_measurement() {
+    let workspace = workspace();
+    for (measured, count) in [
+        ("143.549", 6),
+        ("143.549", 7),
+        ("120.335", 6),
+        ("150.001", 5),
+    ] {
+        configure(
+            &workspace,
+            &exception(
+                &format!("# Measured: {measured}s; cause: repeated metadata subprocesses; #3589"),
+                &format!("{{ period = '30s', terminate-after = {count} }}"),
+            ),
+        );
+        let error = check_workspace(workspace.root.path()).unwrap_err();
+        assert!(
+            error.contains("fewest whole periods that cover Measured"),
+            "{measured}s x {count}: {error}"
+        );
+    }
+    for (measured, count) in [("120.335", 5), ("150.0", 5), ("150.001", 6)] {
+        configure(
+            &workspace,
+            &exception(
+                &format!("# Measured: {measured}s; cause: repeated metadata subprocesses; #3589"),
+                &format!("{{ period = '30s', terminate-after = {count} }}"),
+            ),
+        );
+        check_workspace(workspace.root.path()).unwrap();
+    }
+}
