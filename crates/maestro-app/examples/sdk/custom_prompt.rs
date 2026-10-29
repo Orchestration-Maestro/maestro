@@ -1,4 +1,6 @@
 //! Replace the system prompt or append instructions while keeping default discovery.
+#[path = "support/stream.rs"]
+mod stream;
 mod support;
 use serde_json::{Value, json};
 use support::{Error, Sample};
@@ -36,10 +38,22 @@ async fn run(sample: Sample) -> Result<Value, Error> {
                     maestro_models::FauxAssistantMessageOptions::default(),
                 ),
             ))]);
+        writeln!(
+            sample.output.borrow_mut(),
+            "=== {} prompt ===",
+            if replace { "Replace" } else { "Modify" }
+        )?;
+        let finish = stream::subscribe(&created.session, std::rc::Rc::clone(&sample.output));
         created
             .session
             .prompt(question, maestro_app::PromptOptions::default())
             .await?;
+        finish()?;
+        writeln!(
+            sample.output.borrow_mut(),
+            "{}",
+            if replace { "\n" } else { "" }
+        )?;
         messages.push(serde_json::to_value(
             &*created
                 .session
