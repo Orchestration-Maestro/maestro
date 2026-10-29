@@ -174,7 +174,7 @@ fn input(editor: &dyn EditorComponent<Signal = maestro_tui::Cancellation>, data:
 struct Silent;
 
 /// The suggestion future of a native provider.
-type Pending<'a> = std::pin::Pin<
+pub(super) type Pending<'a> = std::pin::Pin<
     Box<
         dyn std::future::Future<
                 Output = Result<

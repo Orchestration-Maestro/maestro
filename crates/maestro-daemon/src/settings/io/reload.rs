@@ -2,48 +2,42 @@
 
 use std::path::Path;
 
-use maestro_settings::{SettingsError, SettingsManager, SettingsScope};
+use maestro_settings::{SettingsError, SettingsErrorKind, SettingsManager, SettingsScope};
 
 use super::{
     super::model::{Config, ConfigReloadReport, ConfigReloadStatus, LoadedConfig},
-    project_global_settings,
+    AcceptedAreas, project_global_settings,
 };
 
 /// Load startup preferences from the supplied, newly initialized manager.
 ///
-/// Global read/parse failures use defaults and emit startup warnings. Project
-/// errors are returned separately for their existing reporting path.
+/// Global read/parse failures use the base with an empty user scope and emit
+/// warnings. Project errors are returned separately for their existing reporting path.
 pub fn load_config(
     manager: &mut SettingsManager,
     agent_dir: &Path,
 ) -> (LoadedConfig, Vec<SettingsError>) {
-    let (global, other): (Vec<_>, Vec<_>) = manager
-        .drain_errors()
-        .into_iter()
-        .partition(|error| error.scope == SettingsScope::Global);
+    let earlier = manager.drain_errors();
+    let mut settings = manager.effective_global_settings();
+    let (global, mut other, mut diagnostics) = drain_load_errors(manager, earlier);
     if !global.is_empty() {
-        let diagnostics = global
-            .iter()
-            .map(|error| {
-                if is_parse_error(error) {
-                    tracing::warn!(err = %error.error, "config parse error, using defaults");
-                } else {
-                    tracing::warn!(err = %error.error, "config read error, using defaults");
-                }
-                document_diagnostic(error, "using defaults")
-            })
-            .collect();
-        return (
-            LoadedConfig {
-                config: Config::default(),
-                diagnostics,
-                invalid_sections: Vec::new(),
-            },
-            other,
-        );
+        diagnostics.extend(global.iter().map(|error| {
+            if is_parse_error(error) {
+                tracing::warn!(err = %error.error, "config parse error, using defaults");
+            } else {
+                tracing::warn!(err = %error.error, "config read error, using defaults");
+            }
+            document_diagnostic(error, "using defaults")
+        }));
+        settings = manager.global_base_settings();
     }
-    let mut loaded = project_global_settings(&manager.get_global_settings(), agent_dir);
-    if !loaded.invalid_sections.is_empty() {
+    let mut loaded = project_global_settings(&settings, agent_dir);
+    AcceptedAreas::default().recover(&mut loaded, manager, agent_dir);
+    if loaded
+        .diagnostics
+        .iter()
+        .any(|message| message.starts_with("invalid "))
+    {
         tracing::warn!(err = ?loaded.diagnostics, "config parse error, using defaults");
         for diagnostic in &mut loaded.diagnostics {
             if let Some((message, _)) = diagnostic.split_once("; keeping current ") {
@@ -51,6 +45,8 @@ pub fn load_config(
             }
         }
     }
+    loaded.diagnostics.append(&mut diagnostics);
+    collect_recovery_errors(manager, &mut loaded, &mut other);
     (loaded, other)
 }
 
@@ -60,12 +56,15 @@ pub fn load_config(
 /// new global read failure rejects this reload. No storage or manager is created.
 pub async fn reload_config(
     manager: &mut SettingsManager,
-    current: &mut Config,
+    current: &mut LoadedConfig,
     agent_dir: &Path,
 ) -> (ConfigReloadReport, Vec<SettingsError>) {
-    let (loaded, other) = load_live_config(manager, agent_dir).await;
+    let (loaded, other) = load_live_config(manager, &current.accepted_areas, agent_dir).await;
     let report = match loaded {
-        Ok(loaded) => apply_loaded(current, loaded),
+        Ok(loaded) => {
+            current.accepted_areas.clone_from(&loaded.accepted_areas);
+            apply_loaded(&mut current.config, loaded)
+        }
         Err(diagnostics) => ConfigReloadReport {
             status: ConfigReloadStatus::Failed,
             diagnostics,
@@ -78,15 +77,15 @@ pub async fn reload_config(
 /// Global document errors reject the load; project errors retain their separate reporting path.
 pub async fn load_live_config(
     manager: &mut SettingsManager,
+    accepted: &AcceptedAreas,
     agent_dir: &Path,
 ) -> (Result<LoadedConfig, Vec<String>>, Vec<SettingsError>) {
     manager.flush().await;
     let mut other = manager.drain_errors();
     manager.reload().await;
-    let (global, project): (Vec<_>, Vec<_>) = manager
-        .drain_errors()
-        .into_iter()
-        .partition(|error| error.scope == SettingsScope::Global);
+    let earlier = manager.drain_errors();
+    let settings = manager.effective_global_settings();
+    let (global, project, mut diagnostics) = drain_load_errors(manager, earlier);
     other.extend(project);
     if !global.is_empty() {
         return (
@@ -97,13 +96,51 @@ pub async fn load_live_config(
             other,
         );
     }
-    (
-        Ok(project_global_settings(
-            &manager.get_global_settings(),
-            agent_dir,
-        )),
-        other,
-    )
+    let mut loaded = project_global_settings(&settings, agent_dir);
+    accepted.recover(&mut loaded, manager, agent_dir);
+    loaded.diagnostics.append(&mut diagnostics);
+    collect_recovery_errors(manager, &mut loaded, &mut other);
+    (Ok(loaded), other)
+}
+
+/// Returns recovery resolutions once and preserves unrelated errors for their caller.
+fn collect_recovery_errors(
+    manager: &mut SettingsManager,
+    loaded: &mut LoadedConfig,
+    other: &mut Vec<SettingsError>,
+) {
+    let (failures, project, diagnostics) = drain_load_errors(manager, Vec::new());
+    other.extend(failures);
+    other.extend(project);
+    loaded.diagnostics.extend(diagnostics);
+    loaded.diagnostics.sort();
+    loaded.diagnostics.dedup();
+}
+
+/// Keep fresh global resolutions, failures and unrelated project errors.
+/// Earlier global resolutions may describe the project layer or an obsolete base.
+fn drain_load_errors(
+    manager: &mut SettingsManager,
+    earlier: Vec<SettingsError>,
+) -> (Vec<SettingsError>, Vec<SettingsError>, Vec<String>) {
+    let (global, other): (Vec<_>, Vec<_>) = manager
+        .drain_errors()
+        .into_iter()
+        .chain(earlier.into_iter().filter(|error| {
+            error.scope != SettingsScope::Global
+                || error.kind != SettingsErrorKind::StoredValueIgnored
+        }))
+        .partition(|error| error.scope == SettingsScope::Global);
+    let (ignored, failures): (Vec<_>, Vec<_>) = global
+        .into_iter()
+        .partition(|error| error.kind == SettingsErrorKind::StoredValueIgnored);
+    let mut diagnostics: Vec<_> = ignored
+        .iter()
+        .map(|error| error.error.to_string())
+        .collect();
+    diagnostics.sort();
+    diagnostics.dedup();
+    (failures, other, diagnostics)
 }
 
 /// Apply original semantic areas without coupling their namespace placement.

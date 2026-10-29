@@ -46,7 +46,7 @@ mod tests {
         storage
             .with_lock(SettingsScope::Project, &mut |_| Ok(Some("{".into())))
             .unwrap();
-        let mut current = loaded.config;
+        let mut current = loaded;
         let runtime = tokio::runtime::Builder::new_current_thread()
             .build()
             .unwrap();
@@ -55,9 +55,9 @@ mod tests {
         assert_eq!(report.status, ConfigReloadStatus::Applied);
         assert_eq!(errors.len(), 1);
         assert_eq!(errors[0].scope, SettingsScope::Project);
-        assert_eq!(current.terminal.default_shell, "global");
-        assert!(!current.ui.mouse_capture.0);
-        assert!(!current.update.version_check);
+        assert_eq!(current.config.terminal.default_shell, "global");
+        assert!(!current.config.ui.mouse_capture.0);
+        assert!(!current.config.update.version_check);
     }
 
     /// Read failure is supplied independently of malformed stored JSON.
@@ -114,7 +114,7 @@ mod tests {
         let runtime = tokio::runtime::Builder::new_current_thread()
             .build()
             .unwrap();
-        let mut current = loaded.config;
+        let mut current = loaded;
         let report = runtime
             .block_on(reload_config(&mut manager, &mut current, Path::new(".")))
             .0;
@@ -137,7 +137,7 @@ mod tests {
             assert!(errors.is_empty());
             assert_eq!(report.status, ConfigReloadStatus::Failed);
             assert!(report.diagnostics[0].ends_with("keeping current config"));
-            assert_eq!(current, previous);
+            assert_eq!(current.config, previous.config);
             assert!(output.text().is_empty());
         }
     }
