@@ -254,9 +254,12 @@ fn child_toolchain_keeps_parent_counters_while_building_wasm() {
     )
     .unwrap();
     let binary = compile_toolchain_probe(&fixture);
+    let home = fixture.root.path().join("cargo-home");
+    fs::remove_dir_all(&home).unwrap();
     let profile = fixture.root.path().join("parent.profraw");
     let parent = Command::new(&binary)
         .current_dir(fixture.root.path())
+        .env("CARGO_HOME", &home)
         .env("MAESTRO_PROBE_CARGO", env!("CARGO"))
         .env("CARGO_TARGET_DIR", fixture.root.path().join("target"))
         .env("RUSTFLAGS", "-C instrument-coverage")
@@ -276,17 +279,32 @@ fn child_toolchain_keeps_parent_counters_while_building_wasm() {
             .join("target/wasm32-unknown-unknown/debug/libwasm_child.rlib")
             .is_file()
     );
+    assert!(
+        home.join(".package-cache").is_file(),
+        "the probe's wasm build must use the private Cargo home"
+    );
     assert_profile_counters(&profile);
+}
+
+/// Generate a fixture's lock file with its Cargo state kept in a private home.
+fn generate_private_lock(root: &Path) {
+    assert!(
+        toolchain_support::command(env!("CARGO"))
+            .arg("generate-lockfile")
+            .current_dir(root)
+            .status()
+            .unwrap()
+            .success()
+    );
+    assert!(
+        root.join("cargo-home/.package-cache").is_file(),
+        "lock generation must use a private Cargo home"
+    );
 }
 
 /// Compile an instrumented parent independently of the integration runner's instrumentation.
 fn compile_toolchain_probe(fixture: &Fixture) -> PathBuf {
-    let lock = toolchain_support::command(env!("CARGO"))
-        .current_dir(fixture.root.path())
-        .arg("generate-lockfile")
-        .output()
-        .unwrap();
-    assert!(lock.status.success());
+    generate_private_lock(fixture.root.path());
     fs::write(
         fixture.root.path().join("toolchain_support.rs"),
         include_str!("fixtures/toolchain_support.rs"),
@@ -1369,14 +1387,7 @@ fn maestro_standalone_assets_preserve_recursive_layout() {
         "[workspace]\nmembers = ['assets-source']\nresolver = '3'\n",
     )
     .unwrap();
-    assert!(
-        toolchain_support::command(env!("CARGO"))
-            .arg("generate-lockfile")
-            .current_dir(fixture.root.path())
-            .status()
-            .unwrap()
-            .success()
-    );
+    generate_private_lock(fixture.root.path());
     let args = [
         "copy-binary-assets".into(),
         source.clone().into_os_string(),
@@ -2517,6 +2528,28 @@ fn maestro_hook_selects_extra_steps_from_original_paths() {
 
 #[cfg(unix)]
 #[test]
+fn consumer_workspace_cargo_state_stays_beside_the_checkout() {
+    let scratch = Scratch::new().unwrap();
+    let workspace = consumer_workspace(scratch.path());
+    let home = scratch.path().join("cargo-home");
+    assert!(
+        home.join(".package-cache").is_file(),
+        "lock generation must use a private Cargo home"
+    );
+    fs::remove_dir_all(&home).unwrap();
+    let metadata = consumer_cargo(
+        &workspace,
+        &["metadata", "--offline", "--format-version", "1"],
+    );
+    assert!(metadata.status.success());
+    assert!(
+        home.join(".package-cache").is_file(),
+        "consumer Cargo runs must use the private Cargo home"
+    );
+}
+
+#[cfg(unix)]
+#[test]
 fn maestro_hook_checks_only_selected_packages() {
     drive();
     let scratch = Scratch::new().unwrap();
@@ -2524,12 +2557,19 @@ fn maestro_hook_checks_only_selected_packages() {
     let leaf = workspace.join("leaf/src/lib.rs");
     fs::write(&leaf, LEAF_SOURCE.replace("    7", "    8")).unwrap();
     git(&workspace, &["add", "--", "leaf/src/lib.rs"]);
+    let home = scratch.path().join("cargo-home");
+    // The hook's own Cargo runs must recreate the private home the workspace setup left.
+    let _ = fs::remove_dir_all(&home);
     let output = run_consumer_hook("maestro_hook_checks_only_selected_packages", &workspace);
     assert!(
         output.status.success(),
         "{}\n{}",
         stdout(&output),
         String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(
+        home.join(".package-cache").is_file(),
+        "the hook's Cargo runs must use the private Cargo home"
     );
     let text = stdout(&output);
     assert!(text.contains("Selected crates: leaf, caller\n"), "{text}");
