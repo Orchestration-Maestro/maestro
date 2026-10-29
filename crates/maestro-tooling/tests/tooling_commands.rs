@@ -3358,6 +3358,8 @@ fn run_author_setup(root: &Path, profile: &Path) -> String {
             Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.config/prepare-author-component.sh"),
         )
         .current_dir(root)
+        .env_remove("TEST_PREPARE_OUTPUT")
+        .env_remove("TEST_ARCHIVE")
         .env("NEXTEST_LD_LIBRARY_PATH", profile)
         .env("NEXTEST_DYLD_FALLBACK_LIBRARY_PATH", profile)
         .env("CARGO", root.join("cargo"))

@@ -19,8 +19,9 @@ fn archived_author_setup_reuses_relocated_components() {
     let moved = root.join("relocated setup");
     fs::rename(root.join("target/test-setup"), &moved).unwrap();
     fs::remove_file(root.join("component.wasm")).unwrap();
-    let output = export(root, &moved);
-    assert_success(&output);
+    for archived in [false, true] {
+        assert_success(&export(root, &moved, archived));
+    }
     let environment = fs::read_to_string(root.join("nextest-env")).unwrap();
     for variable in ["MAESTRO_AUTHOR_COMPONENT", "MAESTRO_CONTEXT_COMPONENT"] {
         let path = environment
@@ -62,7 +63,7 @@ fn archived_author_setup_rejects_missing_and_stale_outputs() {
             }
             _ => unreachable!(),
         }
-        let output = export(root, &prepared);
+        let output = export(root, &prepared, true);
         assert!(!output.status.success(), "accepted {change}");
         let diagnostic = String::from_utf8_lossy(&output.stderr);
         assert!(
@@ -71,6 +72,35 @@ fn archived_author_setup_rejects_missing_and_stale_outputs() {
         );
         assert!(!root.join("nextest-env").exists());
         assert_eq!(fs::read_to_string(root.join("builds")).unwrap(), "build\n");
+    }
+}
+
+/// Local and warm runs without a prepared bundle keep automatic preparation.
+#[test]
+fn author_setup_without_prepared_outputs_builds_locally() {
+    for mode in ["local", "warm"] {
+        let scratch = Scratch::new().unwrap();
+        let root = scratch.path();
+        fixture(root);
+        let profile = root.join("target/debug");
+        fs::create_dir_all(profile.join("deps")).unwrap();
+        let mut command = Command::new("sh");
+        command
+            .arg(script("prepare-author-component.sh"))
+            .current_dir(root)
+            .env("CARGO", root.join("cargo"))
+            .env("NEXTEST_ENV", root.join("nextest-env"))
+            .env("NEXTEST_LD_LIBRARY_PATH", &profile)
+            .env("NEXTEST_DYLD_FALLBACK_LIBRARY_PATH", &profile)
+            .env_remove("TEST_ARCHIVE")
+            .env_remove("TEST_PREPARE_OUTPUT");
+        if mode == "warm" {
+            command.env("TEST_PREPARE_OUTPUT", root.join("target/test-setup"));
+        }
+        assert_success(&command.output().unwrap());
+        assert_eq!(fs::read_to_string(root.join("builds")).unwrap(), "build\n");
+        assert!(root.join("nextest-env").is_file());
+        assert!(!root.join("target/test-setup").exists());
     }
 }
 
@@ -111,8 +141,14 @@ fn prepare(root: &Path) -> Output {
 }
 
 /// Run the real nextest setup entry point with archived-shard environment.
-fn export(root: &Path, prepared: &Path) -> Output {
-    Command::new("sh")
+fn export(root: &Path, prepared: &Path, archived: bool) -> Output {
+    let mut command = Command::new("sh");
+    if archived {
+        command.env("TEST_ARCHIVE", "1");
+    } else {
+        command.env_remove("TEST_ARCHIVE");
+    }
+    command
         .arg(script("prepare-author-component.sh"))
         .current_dir(root)
         .env("CARGO", root.join("cargo"))
