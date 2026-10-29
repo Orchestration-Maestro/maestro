@@ -409,23 +409,47 @@ fn workspace_token_expiry_publishes_the_remaining_snapshot() {
         )
         .is_ok()
     );
-    let deadline = app
-        .next_headless_loop_deadline(Instant::now(), false)
+    let deadline = app.state.topology.workspaces[0]
+        .metadata_tokens
+        .next_expiry()
         .unwrap();
     assert!(deadline >= before + Duration::from_secs(60));
     let sequence = app.event_hub.current_sequence();
-    block_on(app.handle_scheduled_tasks(
-        deadline.checked_sub(Duration::from_nanos(1)).unwrap(),
-        &paths,
-    ));
-    assert_eq!(
-        tokens(&app),
-        values(&[("lasting", "kept"), ("summary", "temporary")])
-    );
-    block_on(app.handle_scheduled_tasks(deadline, &paths));
-    assert_eq!(tokens(&app), values(&[("lasting", "kept")]));
-    block_on(app.handle_scheduled_tasks(deadline + Duration::from_secs(1), &paths));
-    assert_eq!(published(&app, sequence), [values(&[("lasting", "kept")])]);
+    block_on(async {
+        let mut now = before;
+        let mut earlier_deadlines = 0;
+        while let Some(next) = app.next_headless_loop_deadline(now, false)
+            && next < deadline
+        {
+            // Repository refresh shares the timer but must not expire metadata early.
+            app.handle_scheduled_tasks(next, &paths).await;
+            assert!(published(&app, sequence).is_empty());
+            assert_eq!(
+                tokens(&app),
+                values(&[("lasting", "kept"), ("summary", "temporary")])
+            );
+            now = next;
+            earlier_deadlines += 1;
+        }
+        assert!(earlier_deadlines > 0);
+        assert_eq!(app.next_headless_loop_deadline(now, false), Some(deadline));
+        app.handle_scheduled_tasks(
+            deadline.checked_sub(Duration::from_nanos(1)).unwrap(),
+            &paths,
+        )
+        .await;
+        assert!(published(&app, sequence).is_empty());
+        assert_eq!(
+            tokens(&app),
+            values(&[("lasting", "kept"), ("summary", "temporary")])
+        );
+        app.handle_scheduled_tasks(deadline, &paths).await;
+        assert_eq!(tokens(&app), values(&[("lasting", "kept")]));
+        assert_eq!(published(&app, sequence), [values(&[("lasting", "kept")])]);
+        app.handle_scheduled_tasks(deadline + Duration::from_secs(1), &paths)
+            .await;
+        assert_eq!(published(&app, sequence), [values(&[("lasting", "kept")])]);
+    });
 }
 
 #[test]
