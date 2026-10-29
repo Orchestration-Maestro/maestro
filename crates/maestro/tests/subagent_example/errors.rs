@@ -227,3 +227,34 @@ fn subagent_retains_native_signal_termination_as_failure() {
         })
     });
 }
+
+#[test]
+#[cfg(unix)]
+fn subagent_spawn_rejection_keeps_diagnostics_and_removes_private_prompt() {
+    if let Some(root) = child_fixture(
+        "subagent_example::errors::subagent_spawn_rejection_keeps_diagnostics_and_removes_private_prompt",
+        None,
+    ) {
+        assert!(!root.path().join("maestro-child").exists());
+        return;
+    }
+    let program = std::env::var("MAESTRO_BIN_PATH").unwrap();
+    std::fs::remove_file(&program).unwrap();
+    run(|local| {
+        Box::pin(async move {
+            let root = Root::new();
+            controlled_role(&root, "agent/agents");
+            let session = loaded(&root, local).await;
+            let result = execute(&session, json!({"agent":"role","task":"inspect"})).await;
+            let child = &result["details"]["results"][0];
+            assert_eq!(child["exitCode"], 1, "{result}");
+            assert_eq!(child["messages"], json!([]));
+            let error = child["stderr"].as_str().unwrap();
+            assert!(error.contains("No such file or directory"), "{result}");
+            assert_eq!(
+                result["content"][0]["text"],
+                format!("Agent failed: {error}")
+            );
+        })
+    });
+}

@@ -131,3 +131,99 @@ fn subagent_renderers_show_calls_full_outputs_usage_and_live_progress() {
         })
     });
 }
+
+#[test]
+fn subagent_usage_rounds_decimal_ties_in_component_views() {
+    run(|local| {
+        Box::pin(async move {
+            let root = Root::new();
+            let session = loaded(&root, local).await;
+            let mut details = details("single");
+            details["results"][0]["usage"] = json!({"input":1250,"output":1_250_000,"cacheRead":0,"cacheWrite":0,"cost":0.03125,"contextTokens":1250,"turns":1});
+            for expanded in [false, true] {
+                let text = rendered(&session, &json!({}), &details, expanded);
+                assert!(text.contains("↑1.3k ↓1.3M $0.0313 ctx:1.3k"), "{text}");
+            }
+        })
+    });
+}
+
+#[test]
+#[cfg(unix)]
+fn subagent_tool_paths_keep_literal_backslashes_outside_home() {
+    run(|local| {
+        Box::pin(async move {
+            let root = Root::new();
+            let session = loaded(&root, local).await;
+            let home = std::env::var("HOME").unwrap();
+            for (path, expected) in [
+                (home.clone(), "~".into()),
+                (format!("{home}/file.rs"), "~/file.rs".into()),
+                (format!("{home}\\file.rs"), format!("{home}\\file.rs")),
+            ] {
+                let mut details = details("single");
+                details["results"][0]["messages"][0]["content"][1]["arguments"]["path"] =
+                    json!(path);
+                let text = rendered(&session, &json!({}), &details, true);
+                assert!(text.contains(&format!("read {expected}:2-4")), "{text}");
+            }
+        })
+    });
+}
+
+#[test]
+fn subagent_call_previews_bound_single_parallel_and_chain_arguments() {
+    run(|local| {
+        Box::pin(async move {
+            let root = Root::new();
+            let session = loaded(&root, local).await;
+            let binding = session
+                .get_tool_definition("subagent")
+                .unwrap()
+                .definition
+                .renderer_binding()
+                .unwrap();
+            for (args, expected, preview, hidden) in [
+                (
+                    json!({"agent":"solo","task":"s".repeat(61)}),
+                    "solo [user]",
+                    format!("{}...", "s".repeat(60)),
+                    "s".repeat(61),
+                ),
+                (
+                    json!({"tasks":[{"agent":"one","task":"p".repeat(41)},{"agent":"two","task":"second"}]}),
+                    "parallel (2 tasks) [user]",
+                    format!("{}...", "p".repeat(40)),
+                    "p".repeat(41),
+                ),
+                (
+                    json!({"chain":[{"agent":"one","task":"{previous} first"},{"agent":"two","task":"second"},{"agent":"three","task":"third"},{"agent":"hidden","task":"secret"}]}),
+                    "chain (4 steps) [user]",
+                    "... +1 more".into(),
+                    "secret".into(),
+                ),
+                (
+                    json!({"tasks":vec![json!({"agent":"role","task":"p".repeat(41)});4]}),
+                    "parallel (4 tasks) [user]",
+                    "... +1 more".into(),
+                    "p".repeat(41),
+                ),
+            ] {
+                let rows = ToolRendererState::default();
+                let context = crate::tic_tac_toe_example::renderers::context(&args, &rows);
+                let call = binding.render_call.as_ref().unwrap()(
+                    Some(&args),
+                    &crate::support::theme(),
+                    &context,
+                )
+                .unwrap();
+                let text =
+                    maestro_app::strip_ansi(&call.try_render(120).unwrap().join("\n")).unwrap();
+                assert!(text.contains(expected), "{text}");
+                assert!(text.contains(&preview), "{text}");
+                assert!(!text.contains(&hidden), "{text}");
+                assert!(!text.contains("{previous}"), "{text}");
+            }
+        })
+    });
+}
