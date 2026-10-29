@@ -1668,3 +1668,44 @@ fn refused_compaction_selection_preserves_session_and_footer() {
         },
     );
 }
+
+/// Refused preferences retain both the panel value and the live presentation.
+#[test]
+fn refused_panel_preferences_keep_display_and_show_message() {
+    isolated(
+        "refused_panel_preferences_keep_display_and_show_message",
+        async |directory| {
+            for query in ["Hide", "padding", "hardware", "images", "quiet"] {
+                let world = started_settings(directory).await;
+                let session = world.host.session();
+                session
+                    .settings_manager()
+                    .borrow_mut()
+                    .register_decider(std::sync::Arc::new(RefuseBehaviour))
+                    .unwrap();
+                let list = open(&world);
+                search(&list, query);
+                let before = list.render(100);
+                let editor = world.mode.editor.render(60);
+                let raw = session.settings_manager().borrow().get_global_settings();
+                press(&list, "\r");
+                assert_eq!(list.render(100), before, "{query}: panel value");
+                assert_eq!(world.mode.editor.render(60), editor, "{query}: editor");
+                assert!(!world.mode.hide_thinking_block.get());
+                assert_eq!(
+                    session.settings_manager().borrow().get_global_settings().0,
+                    raw.0
+                );
+                assert!(
+                    world
+                        .mode
+                        .chat_container
+                        .render(100)
+                        .join("\n")
+                        .contains("release refuses behaviour changes")
+                );
+                drop(world.runtime.settle());
+            }
+        },
+    );
+}
