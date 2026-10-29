@@ -85,6 +85,21 @@ async fn configured_options(
 mod tests {
     use super::*;
 
+    /// Disk preferences precede the configured and in-memory session observations.
+    #[test]
+    fn settings_prints_observations_in_order() -> Result<(), Error> {
+        let output = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+        support::execute(|mut sample| {
+            sample.output = output.clone();
+            run(sample)
+        })?;
+        assert_eq!(
+            String::from_utf8(output.borrow().clone())?,
+            "Current settings: {}\nSession created with custom settings\nTest session created with in-memory settings\n"
+        );
+        Ok(())
+    }
+
     /// Overrides affect the session while the explicit setter crosses the durability boundary.
     #[test]
     fn settings_applies_overrides_and_flushes_explicit_changes() -> Result<(), Error> {
