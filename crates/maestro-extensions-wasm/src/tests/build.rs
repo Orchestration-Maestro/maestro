@@ -1,6 +1,7 @@
 //! Builds and compiles the author component for test harnesses.
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use wasmtime::component::Component;
 use wasmtime::{Cache, Config, Engine};
@@ -60,21 +61,45 @@ pub fn compile(path: &Path) -> wasmtime::Result<(Engine, Component)> {
 ///
 /// # Errors
 /// Returns a compile failure, or a message when a worker thread panicked.
-#[cfg(test)]
-pub fn warm(_paths: &[PathBuf]) -> Result<(), String> {
-    Err("warming is not implemented".to_owned())
+pub fn warm(paths: &[PathBuf]) -> Result<(), String> {
+    warm_with(paths, |path| {
+        compile(path).map(drop).map_err(|error| error.to_string())
+    })
 }
 
 /// Runs `work` once for every path from one shared queue, on a few threads.
 ///
 /// # Errors
 /// Returns a worker's failure, or a message when a worker thread panicked.
-#[cfg(test)]
-pub fn warm_with<F>(_paths: &[PathBuf], _work: F) -> Result<(), String>
+pub fn warm_with<F>(paths: &[PathBuf], work: F) -> Result<(), String>
 where
     F: Fn(&Path) -> Result<(), String> + Sync,
 {
-    Err("warming is not implemented".to_owned())
+    let next = AtomicUsize::new(0);
+    let threads = std::thread::available_parallelism()
+        .map_or(1, usize::from)
+        .min(4);
+    std::thread::scope(|scope| {
+        let workers: Vec<_> = (0..threads)
+            .map(|_| scope.spawn(|| drain(paths, &next, &work)))
+            .collect();
+        workers.into_iter().try_for_each(|worker| {
+            worker
+                .join()
+                .unwrap_or_else(|_| Err("a warming thread panicked".to_owned()))
+        })
+    })
+}
+
+/// Takes paths from the shared queue until none remain or `work` fails.
+fn drain<F>(paths: &[PathBuf], next: &AtomicUsize, work: &F) -> Result<(), String>
+where
+    F: Fn(&Path) -> Result<(), String>,
+{
+    while let Some(path) = paths.get(next.fetch_add(1, Ordering::Relaxed)) {
+        work(path)?;
+    }
+    Ok(())
 }
 
 /// Creates an async component engine with the optional user cache.
