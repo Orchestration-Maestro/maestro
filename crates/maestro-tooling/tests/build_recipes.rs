@@ -792,6 +792,7 @@ fn prepare_watch_workspace(workspace: &Workspace) {
 }
 
 fn prepare_tooling_owner(workspace: &Workspace) {
+    workspace.use_prepared_sources();
     let source = Path::new(env!("CARGO_MANIFEST_DIR"));
     let root = workspace.path().join("crates/maestro-tooling");
     copy_tree(&source.join("src"), &root.join("src"));

@@ -37,6 +37,30 @@ pub fn command(program: impl AsRef<OsStr>) -> Command {
     command
 }
 
+/// The private Cargo home of a fixture rooted at `root`.
+pub fn home(root: &std::path::Path) -> std::path::PathBuf {
+    root.join("cargo-home")
+}
+
+/// Keep a fixture compiler's Cargo state inside its supplied workspace.
+///
+/// # Errors
+/// Returns an error when creating the private home or copying its source configuration fails.
+pub fn fixture_command(
+    program: impl AsRef<OsStr>,
+    root: &std::path::Path,
+    sources: Option<&std::path::Path>,
+) -> std::io::Result<Command> {
+    let home = home(root);
+    std::fs::create_dir_all(&home)?;
+    if let Some(sources) = sources {
+        std::fs::copy(sources, home.join("config.toml"))?;
+    }
+    let mut command = command(program);
+    command.current_dir(root).env("CARGO_HOME", home);
+    Ok(command)
+}
+
 /// The resolved toolchain that compiled this test, independent of runtime overrides.
 pub fn channel() -> Option<&'static str> {
     option_env!("RUSTUP_TOOLCHAIN")

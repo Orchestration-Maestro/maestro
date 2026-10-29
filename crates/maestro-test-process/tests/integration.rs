@@ -3,6 +3,7 @@
 
 mod checked_runs;
 mod environment_groups;
+mod user_cache;
 mod windows_console;
 
 use std::ffi::OsStr;

@@ -1,4 +1,5 @@
 //! Play Space Invaders in a custom terminal view with session-entry saves.
+// maestro-component: MAESTRO_SPACE_INVADERS_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
