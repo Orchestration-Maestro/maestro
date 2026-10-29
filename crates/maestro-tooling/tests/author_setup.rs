@@ -19,9 +19,15 @@ fn archived_author_setup_reuses_relocated_components() {
     let moved = root.join("relocated setup");
     fs::rename(root.join("target/test-setup"), &moved).unwrap();
     fs::remove_file(root.join("component.wasm")).unwrap();
+    fs::remove_dir_all(root.join("target/test-prepare")).unwrap();
     for archived in [false, true] {
         assert_success(&export(root, &moved, archived));
     }
+    let author = moved.join("MAESTRO_AUTHOR_COMPONENT.wasm");
+    assert_eq!(
+        fs::read_to_string(root.join("seen")).unwrap(),
+        format!("unset\n{0}\n{0}\n", author.display())
+    );
     let environment = fs::read_to_string(root.join("nextest-env")).unwrap();
     for variable in ["MAESTRO_AUTHOR_COMPONENT", "MAESTRO_CONTEXT_COMPONENT"] {
         let path = environment
@@ -71,12 +77,14 @@ fn archived_author_setup_rejects_missing_and_stale_outputs() {
             "{diagnostic}"
         );
         assert!(!root.join("nextest-env").exists());
+        assert!(!root.join("target/debug/examples").exists());
+        assert_eq!(fs::read_to_string(root.join("seen")).unwrap(), "unset\n");
         assert_eq!(fs::read_to_string(root.join("builds")).unwrap(), "build\n");
     }
 }
 
-/// Archived runs give every extracted executable one modification time, so test processes
-/// share a compile-cache namespace even though no setup example warms it.
+/// Archived runs give every extracted executable, and the installed setup example, one
+/// modification time so test processes share a compile-cache namespace with the warm-up.
 #[test]
 fn archived_author_setup_aligns_executable_times() {
     let scratch = Scratch::new().unwrap();
@@ -84,12 +92,16 @@ fn archived_author_setup_aligns_executable_times() {
     fixture(root);
     assert_success(&prepare(root));
     assert_success(&export(root, &root.join("target/test-setup"), true));
-    for name in ["older", "newer"] {
-        let modified = fs::metadata(root.join("target/debug/deps").join(name))
+    let modified = |name: &str| {
+        fs::metadata(root.join("target/debug").join(name))
             .unwrap()
             .modified()
-            .unwrap();
-        assert_eq!(modified, at(200), "{name}");
+            .unwrap()
+    };
+    let example = modified("examples/prepare_author_component");
+    assert!(example > at(200), "{example:?}");
+    for name in ["deps/older", "deps/newer"] {
+        assert_eq!(modified(name), example, "{name}");
     }
 }
 
@@ -122,8 +134,14 @@ fn author_setup_without_prepared_outputs_builds_locally() {
     }
 }
 
-/// The nextest environment entries every fixture preparation step writes.
-const EXPORT: &str = r#"printf 'MAESTRO_AUTHOR_COMPONENT=%s/component.wasm\nMAESTRO_CONTEXT_COMPONENT=%s/component.wasm\n' "$PWD" "$PWD" > "$NEXTEST_ENV""#;
+/// The fixture setup example: it records the author component it was given and writes
+/// nextest's environment file from the components it was given, or from the checkout.
+const EXAMPLE: &str = r#"#!/bin/sh
+echo "${MAESTRO_AUTHOR_COMPONENT-unset}" >> "$PWD/seen"
+printf 'MAESTRO_AUTHOR_COMPONENT=%s\nMAESTRO_CONTEXT_COMPONENT=%s\n' \
+    "${MAESTRO_AUTHOR_COMPONENT:-$PWD/component.wasm}" \
+    "${MAESTRO_CONTEXT_COMPONENT:-$PWD/component.wasm}" > "$NEXTEST_ENV"
+"#;
 
 /// Give the standalone command a controlled Cargo boundary and source checkout.
 fn fixture(root: &Path) {
@@ -137,10 +155,11 @@ fn fixture(root: &Path) {
     fs::write(
         root.join("cargo"),
         format!(
-            "#!/bin/sh\nset -eu\necho build >> builds\nif [ \"$1\" = build ]; then\n\
-             mkdir -p target/debug/examples\n\
-             cat > target/debug/examples/prepare_author_component <<'EXAMPLE'\n#!/bin/sh\n{EXPORT}\nEXAMPLE\n\
-             chmod +x target/debug/examples/prepare_author_component\nelse\n{EXPORT}\nfi\n"
+            "#!/bin/sh\nset -eu\necho build >> builds\nmode=$1\n\
+             while [ $# -gt 0 ]; do\n    if [ \"$1\" = --target-dir ]; then target=$2; fi\n    shift\ndone\n\
+             example=$target/debug/examples/prepare_author_component\nmkdir -p \"${{example%/*}}\"\n\
+             cat > \"$example\" <<'EXAMPLE'\n{EXAMPLE}EXAMPLE\nchmod +x \"$example\"\n\
+             if [ \"$mode\" = run ]; then \"$example\"; fi\n"
         ),
     )
     .unwrap();
@@ -180,6 +199,7 @@ fn prepare(root: &Path) -> Output {
         .arg("prepare")
         .current_dir(root)
         .env("CARGO", root.join("cargo"))
+        .env("CARGO_TARGET_DIR", root.join("target/test-prepare"))
         .env("TEST_PREPARE_OUTPUT", root.join("target/test-setup"))
         .output()
         .unwrap()
