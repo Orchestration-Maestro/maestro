@@ -103,6 +103,8 @@ mod tests {
     #[test]
     fn api_keys_keeps_runtime_overrides_out_of_persistent_credentials() -> Result<(), Error> {
         let value = support::execute(run)?;
+        assert_eq!(value["sameCustomRegistry"], true);
+        assert_eq!(value["customModelName"], "Custom location model");
         assert_eq!(value["stored"], "stored-example-key");
         assert_eq!(value["resolved"], "runtime-example-key");
         assert_eq!(value["restored"], "stored-example-key");

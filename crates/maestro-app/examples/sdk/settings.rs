@@ -118,12 +118,14 @@ mod tests {
                 run(sample).await
             }
         });
-        assert!(result.is_err());
+        let value = result?;
+        assert_eq!(value["memoryRetry"], false);
         let text = String::from_utf8(output.borrow().clone())?;
         assert!(
             text.lines()
                 .any(|line| line.starts_with("Warning (global settings): "))
         );
+        assert!(text.ends_with("Test session created with in-memory settings\n"));
         Ok(())
     }
 
