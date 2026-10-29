@@ -75,7 +75,8 @@ pub(super) async fn retained(with_healthy: bool) {
     assert_eq!(
         observed,
         json!({"stale":STALE,"history":"live original history", "cwd":"/retained-original",
-        "catalog":["live original catalog"], "aborted":true, "model":"owned before suspension"})
+        "catalog":["live original catalog"], "aborted":true, "model":"owned before suspension"}),
+        "B063: original raw owners remain usable after retirement"
     );
     teardown.await.unwrap();
     assert!(

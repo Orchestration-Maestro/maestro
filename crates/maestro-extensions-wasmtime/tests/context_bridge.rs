@@ -11,6 +11,24 @@ use std::rc::Rc;
 
 mod bound;
 mod commands;
+mod live;
+mod retirement;
+
+#[test]
+fn native_context_live_bindings_preserve_retained_identity() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, live::observe());
+}
+
+#[test]
+fn native_context_retirement_keeps_catchable_errors_and_raw_handles() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, retirement::observe());
+}
 
 #[test]
 fn native_context_bound_actions_preserve_values_and_errors() {
@@ -140,7 +158,13 @@ async fn observe_hook(runner: &ExtensionRunner<Local>, request: &str) -> String 
     }));
     let mut event = SessionStartEvent {
         reason: SessionStartReason::Startup,
-        previous_session_file: Presence::Present(format!("context matrix {request}")),
+        previous_session_file: Presence::Present(
+            if let Some(request) = request.strip_prefix("retained ") {
+                format!("context retained {request}")
+            } else {
+                format!("context matrix {request}")
+            },
+        ),
     };
     assert!(runner.emit(&mut event).await.unwrap().is_none());
     unsubscribe();

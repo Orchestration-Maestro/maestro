@@ -8,11 +8,18 @@ use maestro_extensions_wasm::{ExtensionCommandContext, ExtensionContext};
 use serde_json::{Value, json};
 use std::{cell::Cell, rc::Rc};
 
+#[path = "context_matrix/retained.rs"]
+mod retained;
+pub(super) use retained::register;
+
 /// Performs one operation so native tests can distinguish its result and side effects.
 pub(super) async fn observe(
     context: &ExtensionCommandContext,
     request: &str,
 ) -> Result<Value, String> {
+    let (request, checked) = request
+        .strip_suffix(" checked")
+        .map_or((request, false), |request| (request, true));
     let (member, options) = request.split_once(' ').unwrap_or((request, "none"));
     let callbacks = Rc::new(Cell::new(0));
     let result = match member {
@@ -43,7 +50,11 @@ pub(super) async fn observe(
         "reload" => context.reload().await.map(|()| Value::Null),
         _ => return base(context, member, options),
     };
-    result.map(|value| json!({"value": value, "callbacks": callbacks.get()}))
+    if checked {
+        Ok(json!({"result":result,"callbacks":callbacks.get()}))
+    } else {
+        result.map(|value| json!({"value": value, "callbacks": callbacks.get()}))
+    }
 }
 
 /// Observes a matrix request carried by an ordinary session-start event.
@@ -142,7 +153,37 @@ fn new_options(
                 },
             ) as maestro_extensions_wasm::SetupSession
         }),
-        with_session: full.then(|| continuation(callbacks)),
+        with_session: if options == "retired" {
+            Some(retired_continuation())
+        } else {
+            full.then(|| continuation(callbacks))
+        },
+    })
+}
+
+/// Reads a retired replacement while its separately owned message operations remain usable.
+fn retired_continuation() -> maestro_extensions_wasm::WithSession {
+    Box::new(move |context| {
+        Box::pin(async move {
+            let cwd = context.cwd();
+            let wait = context.wait_for_idle().await;
+            let custom = context
+                .send_message(
+                    serde_json::from_value(json!({
+                        "customType":"retired", "content":"note", "display":false,
+                    }))
+                    .map_err(|error| error.to_string())?,
+                    None,
+                )
+                .await;
+            let user = context
+                .send_user_message(
+                    maestro_extensions_wasm::UserContent::Text("note".into()),
+                    None,
+                )
+                .await;
+            Err(json!({"cwd":cwd,"wait":wait,"custom":custom,"user":user}).to_string())
+        })
     })
 }
 

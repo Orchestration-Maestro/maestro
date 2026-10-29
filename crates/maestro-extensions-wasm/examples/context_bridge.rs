@@ -219,7 +219,7 @@ fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
                 }),
             },
         )?;
-        api.on("session_start", Rc::new(session_start))
+        context_matrix::register(&api)
     })
 }
 
