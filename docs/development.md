@@ -179,6 +179,22 @@ The host bundle's digest must match before and after the run. Logs identify each
 identify loaded pages, resolved exports, pointer dispatch and pointer acknowledgments
 so an interrupted run retains its last observed browser phase.
 
+The driver regression `expected_policy_error_matches_once` has a measured
+30-second test-time exception tracked in
+[#3600](https://github.com/Orchestration-Maestro/maestro/issues/3600). A local
+profile took 36.293 seconds for 270 fresh pages: one inventory preflight and
+269 exports. Cumulative operation times were 32.574 seconds creating pages,
+14.179 seconds installing 1,350 bindings, 9.220 seconds navigating,
+7.986 seconds evaluating and 2.707 seconds closing pages. These totals overlap
+because two pages run concurrently; they are not wall-clock phases. The earlier
+unprofiled observations were 29.542 seconds serial and 37.764 seconds paired.
+This fixture's empty export bodies leave browser orchestration as the cost.
+A smaller inventory would stop checking every export's START/PASS record and
+fresh page; reusing pages or stubbing bindings would bypass the runner path.
+Keep those checks and the real browser, with no deadline override. The hosted
+merge-group Chromium export loop must beat the ten-run serial baseline median
+of 436.179 seconds; otherwise revert the two-page scheduling change.
+
 After each native sandbox click completes, the driver checks the selected
 fixture document for a fresh trusted click whose composed path contains its
 `#target`. Missing, untrusted or wrong-target delivery fails with
