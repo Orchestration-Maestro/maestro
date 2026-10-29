@@ -30,7 +30,7 @@ application re-exports.
 `RpcResponse` carries the original `command` and optional correlation `id`,
 `type: "response"`, and a boolean `success`. A successful workspace operation
 has typed `data`. A workspace failure has a string `error` and an open string
-`code`, preserving machine-readable failure kinds without parsing prose. Session
+`code`, so a client reads the failure kind without parsing prose. Session
 failures keep their established shape without a workspace `code` field.
 Old `method`/`params` requests and result/error-object envelopes are not supported.
 Unknown command types and malformed known parameters fail deserialization;

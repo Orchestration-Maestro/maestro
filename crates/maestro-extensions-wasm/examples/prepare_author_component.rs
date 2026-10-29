@@ -30,17 +30,16 @@ fn main() -> Result<(), String> {
         path.display(),
         context.display()
     );
-    for folder in [
-        root.join("examples"),
-        root.join("../../examples/extensions"),
-    ] {
-        entries.push_str(
-            &example_files::prepare(&folder, |name, variable| {
-                build::component(name, variable).map_err(std::io::Error::other)
-            })
-            .map_err(|error| error.to_string())?,
-        );
-    }
+    entries.push_str(
+        &example_files::prepare(
+            &[
+                root.join("examples"),
+                root.join("../../examples/extensions"),
+            ],
+            |name, variable| build::component(name, variable).map_err(std::io::Error::other),
+        )
+        .map_err(|error| error.to_string())?,
+    );
     if let Some(environment) = std::env::var_os("NEXTEST_ENV") {
         std::fs::write(environment, entries).map_err(|error| error.to_string())?;
     }

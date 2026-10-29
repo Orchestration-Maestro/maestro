@@ -32,7 +32,7 @@ fn messages(session: &AgentSession, details: &Value) {
                 .call(
                     Rc::new(serde_json::from_value(message.clone()).unwrap()),
                     MessageRenderOptions { expanded },
-                    super::ui::theme(),
+                    crate::support::theme(),
                 )
                 .unwrap()
                 .unwrap();
@@ -54,9 +54,12 @@ fn tools(session: &AgentSession, details: &Value) {
         let args = json!({"action":"play"});
         let rows = ToolRendererState::default();
         let context = context(&args, &rows);
-        let call =
-            binding.render_call.expect("call renderer")(Some(&args), &super::ui::theme(), &context)
-                .unwrap();
+        let call = binding.render_call.expect("call renderer")(
+            Some(&args),
+            &crate::support::theme(),
+            &context,
+        )
+        .unwrap();
         assert!(
             maestro_app::strip_ansi(&call.try_render(80).unwrap().join("\n"))
                 .unwrap()
@@ -79,7 +82,7 @@ fn tools(session: &AgentSession, details: &Value) {
                         expanded,
                         is_partial: false,
                     },
-                    &super::ui::theme(),
+                    &crate::support::theme(),
                     &context,
                 )
                 .unwrap();
@@ -108,7 +111,7 @@ fn context<'a>(
         environment: Rc::new(ToolRenderEnvironment {
             runtime: crate::tools_example::manual_runtime::ManualRuntime::new().handle(),
             readme_path: String::new(),
-            live_theme: super::ui::theme(),
+            live_theme: crate::support::theme(),
             highlighter: Rc::new(maestro_theme::SyntectHighlighter::new().unwrap()),
             terminal_image: maestro_tui::TerminalImage::default(),
         }),
@@ -159,7 +162,7 @@ pub(super) fn errors(session: &AgentSession) {
                         expanded,
                         is_partial: false,
                     },
-                    &super::ui::theme(),
+                    &crate::support::theme(),
                     &context,
                 )
                 .unwrap();

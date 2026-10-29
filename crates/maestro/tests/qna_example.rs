@@ -1,4 +1,5 @@
 //! Runs the shipped question extractor through the production component runner.
+use crate::support::theme;
 use maestro_app::{
     AgentSession, CustomComponentFactory, CustomFactoryOutcome, CustomUIOptions, EventError,
     ExtensionBindings, ExtensionUIContext, ExtensionUIContextPort, ExtensionUIFuture,
@@ -6,19 +7,6 @@ use maestro_app::{
 };
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
-
-/// A prepared shipped theme for loader decoration and editor styling.
-fn theme() -> maestro_theme::LiveTheme {
-    let theme = maestro_theme::load_theme_from_path(
-        concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../maestro-theme/assets/theme/dark.json"
-        ),
-        Some(maestro_theme::ColorMode::Truecolor),
-    )
-    .unwrap();
-    maestro_theme::LiveTheme::from_theme(Rc::new(theme))
-}
 
 /// The editor contents and literal notifications from the command.
 #[derive(Default)]

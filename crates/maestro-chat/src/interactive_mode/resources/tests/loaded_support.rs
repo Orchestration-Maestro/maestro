@@ -19,18 +19,6 @@ const FIXTURES: &str = include_str!("../../../../tests/fixtures/interactive_load
 /// The width recorded listings render at unless a case names one.
 pub(super) const WIDTH: usize = 240;
 
-/// One recorded case.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Case {
-    /// The witness the case belongs to.
-    test: String,
-    /// The recorded operation.
-    input: Input,
-    /// The recorded observation.
-    expected: Expected,
-}
-
 /// The recorded operations.
 #[derive(Deserialize)]
 #[serde(tag = "op", rename_all = "kebab-case", deny_unknown_fields)]
@@ -381,14 +369,7 @@ pub(super) enum Expected {
 
 /// The recorded cases of `test`.
 pub(super) fn cases(test: &str) -> Vec<(Input, Expected)> {
-    let all: Vec<Case> = serde_json::from_str(FIXTURES).unwrap();
-    let cases: Vec<_> = all
-        .into_iter()
-        .filter(|case| case.test == test)
-        .map(|case| (case.input, case.expected))
-        .collect();
-    assert!(!cases.is_empty());
-    cases
+    crate::interactive_mode::tests::cases(FIXTURES, test)
 }
 
 /// One listing call over a built mode.

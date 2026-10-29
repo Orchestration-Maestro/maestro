@@ -1,8 +1,9 @@
 # Standalone account commands
 
 `maestro_cli::model_login::cli` presents the account command a user runs without
-starting an agent session: `help`, `list` and `login` over the OAuth providers
-the account file holds. It is a library, not a process.
+starting an agent session: `help`, `list` and `login` over the OAuth providers in
+the snapshot the caller supplies, which exists before any account file does. It is
+a library, not a process.
 [Command-line input](cli.md) covers the session frontend that shares this crate;
 the two argument grammars stay separate.
 

@@ -311,7 +311,7 @@ native-extension authoring instructions.
 | Messages, tool selection, model selection, thinking and session entries | [Guest actions](extensions/guest.md#ordinary-actions), [action bindings](extensions/registration.md#actions-and-provider-binding) |
 | Persistence across restarts | [Session entries](extensions/guest.md#session-entries), [entry records](entry.md) |
 | Event channels between extensions | [Event bus](extensions/event_bus.md), [guest event channels](extensions/guest.md#event-channels) |
-| Model invocation, streaming and provider registration | [Guest model streams](extensions/guest_streams.md) |
+| Provider endpoints, account flows and custom streaming | [Provider author guide](extensions/providers.md), [guest model streams](extensions/guest_streams.md) |
 | Dialogs, widgets, editors, overlays and custom rendering | [Guest UI](extensions/guest_ui.md), [UI and headless results](extensions/ui.md) |
 | Child processes, waits, HTTP bodies, watches and built-in tool wrappers | [Guest native operations](extensions/guest_operations.md) |
 | Files, environment, network access and platform limitations | [Operating environment](extensions/host_io.md) |
