@@ -1774,3 +1774,96 @@ fn all_panel_preference_callbacks_refuse_before_live_effects() {
         },
     );
 }
+
+#[test]
+fn refused_thinking_shortcut_preserves_flag_transcript_and_settings() {
+    isolated(
+        "refused_thinking_shortcut_preserves_flag_transcript_and_settings",
+        async |directory| {
+            let world = started_settings(directory).await;
+            append_messages(
+                &world,
+                vec![transcript::assistant(
+                    &json!([{"type": "thinking", "thinking": "RETAINED THOUGHT"},
+                {"type": "text", "text": "ANSWER"}]),
+                    "stop",
+                    None,
+                )],
+            );
+            world.mode.render_initial_messages().unwrap();
+            let session = world.host.session();
+            session
+                .settings_manager()
+                .borrow_mut()
+                .register_decider(std::sync::Arc::new(RefuseBehaviour))
+                .unwrap();
+            let before = session.settings_manager().borrow().get_global_settings().0;
+            world.terminal.send_input("\x14");
+            assert!(
+                world
+                    .mode
+                    .chat_container
+                    .render(100)
+                    .join("\n")
+                    .contains("RETAINED THOUGHT")
+            );
+            assert!(!world.mode.hide_thinking_block.get());
+            assert_eq!(
+                session.settings_manager().borrow().get_global_settings().0,
+                before
+            );
+            assert!(
+                world
+                    .mode
+                    .chat_container
+                    .render(100)
+                    .join("\n")
+                    .contains("release refuses behaviour changes")
+            );
+            assert!(world.runtime.drain_futures().is_empty());
+            drop(world.runtime.settle());
+        },
+    );
+}
+
+#[test]
+fn refused_extension_theme_preserves_published_theme_and_settings() {
+    isolated(
+        "refused_extension_theme_preserves_published_theme_and_settings",
+        async |directory| {
+            let world = started_settings(directory).await;
+            let session = world.host.session();
+            session
+                .settings_manager()
+                .borrow_mut()
+                .register_decider(std::sync::Arc::new(RefuseBehaviour))
+                .unwrap();
+            let before = session.settings_manager().borrow().get_global_settings().0;
+            let theme = published(&world);
+            let outcome = maestro_app::ExtensionUIContextPort::set_theme(
+                &*world.mode,
+                maestro_app::ThemeSelection::Name("light".into()),
+            )
+            .unwrap();
+            assert!(!outcome.success);
+            assert_eq!(
+                outcome.error.as_deref(),
+                Some("release refuses behaviour changes")
+            );
+            assert_eq!(published(&world), theme);
+            assert_eq!(
+                session.settings_manager().borrow().get_global_settings().0,
+                before
+            );
+            assert!(
+                world
+                    .mode
+                    .chat_container
+                    .render(100)
+                    .join("\n")
+                    .contains("release refuses behaviour changes")
+            );
+            drop(world.runtime.settle());
+        },
+    );
+}
