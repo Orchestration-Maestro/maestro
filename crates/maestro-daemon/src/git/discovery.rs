@@ -5,7 +5,7 @@ use std::{ffi::OsStr, path::Path, process::Output};
 pub use maestro_workspace::workspace::git::discovery::{
     GitSpaceMetadata, GitWorktreeInfo, automatic_workspace_label, canonicalize_best_effort_path,
     derive_label_from_cwd, fallback_label_from_cwd, git_repo_root, git_space_metadata,
-    git_worktree_info,
+    git_space_metadata_from_info, git_worktree_info,
 };
 pub use maestro_workspace::workspace::git::native::{
     GitPaths, authored_git_dir_for_repo_root, discover_git_paths, git_ref_storage_is_reftable,
@@ -33,6 +33,12 @@ pub fn git_rev_parse_verify(repo_root: &Path, revision: &str) -> Option<String> 
     git_trimmed_stdout(repo_root, &["rev-parse", "--verify", revision])
 }
 
+/// Read the full reference `HEAD` names, absent for a detached head.
+#[must_use]
+pub fn git_symbolic_head_full(repo_root: &Path) -> Option<String> {
+    git_trimmed_stdout(repo_root, &["symbolic-ref", "--quiet", "HEAD"])
+}
+
 /// Run a noninteractive Git command in `dir` through the process owner and capture its output.
 ///
 /// # Errors
@@ -56,7 +62,7 @@ pub(crate) fn git_output(
 }
 
 /// Run a noninteractive Git query and return its trimmed, nonempty standard output.
-fn git_trimmed_stdout(repo_root: &Path, args: &[&str]) -> Option<String> {
+pub(super) fn git_trimmed_stdout(repo_root: &Path, args: &[&str]) -> Option<String> {
     let output = git_output(repo_root, args).ok()?;
     if !output.status.success() {
         return None;

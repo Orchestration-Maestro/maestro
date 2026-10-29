@@ -278,6 +278,13 @@ the host invokes the tail separately. Releasing the listener does not release a 
 already announced. The callback emitter cannot be retained by that tail: capture an
 owned `EventBus` for later asynchronous emissions instead.
 
+A component has no task of its own that outlives a callback. `Background::new(api.events())`
+registers one listener that turns announced work into tails, and
+`background.spawn(work).await` announces `work` and returns its `BackgroundTask`. The host
+polls the work on that tail until the work ends; dropping the task stops it, dropping any
+pending wait, and settles the tail. A refused announcement fails the start, and the work
+never runs. A failure of the work goes to the host's event-bus reporter.
+
 ## Session readers
 
 Ordinary and command contexts expose `session_manager()`, which acquires the currently

@@ -88,7 +88,7 @@ pub fn git_space_metadata(cwd: &Path) -> Option<GitSpaceMetadata> {
 
 /// Project repository grouping independently of the checkout's automatic label.
 #[must_use]
-fn git_space_metadata_from_info(info: &GitWorktreeInfo) -> GitSpaceMetadata {
+pub fn git_space_metadata_from_info(info: &GitWorktreeInfo) -> GitSpaceMetadata {
     let common_name = info
         .git_common_dir
         .file_name()

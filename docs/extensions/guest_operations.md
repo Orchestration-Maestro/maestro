@@ -536,6 +536,8 @@ native host's home and filesystem, not the component's environment. They keep
 the native authored-path policy and existing-spelling fallback order.
 `tools::path_utils::basename(&api, path)` returns the final path component using
 the host's path flavor, preserving literal backslashes on POSIX hosts.
+`tools::path_utils::shorten_path(&api, path)` shows the host home as `~` for the
+home itself and the paths below it, and leaves every other path unchanged.
 
 `tools::path_utils::resolve(&api, &[cwd, path])` resolves operands lexically
 with the host platform's path rules. It reduces `.` and `..` segments and

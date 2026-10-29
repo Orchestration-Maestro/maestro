@@ -747,6 +747,12 @@ Terminal construction, state reads, palette updates and effective-colour rules i
 under Apache-2.0. The implementation uses owned Rust screen storage instead of
 foreign-library handles.
 
+The application keybinding backup/reset operation in
+`crates/maestro-app/src/presentation_data/keybindings/reset.rs` derives from the
+configuration reset command under the same license. It validates the JSON
+object, preserves non-multiplexer actions and uses the shared atomic publisher
+instead of rewriting the source file in place.
+
 The daemon protocol records, schema and tests in `crates/maestro-protocol/` and
 `docs/daemon-protocol.schema.json`, the socket transport and path selection in
 `crates/maestro-ipc/`, and the topology in `crates/maestro-workspace/` derive from
@@ -780,6 +786,13 @@ The worktree names, checkout paths and Git commands in
 same license. Changes include operands that cannot be read as options, native path bytes
 in the listing, a supplied home directory, and a leftover-checkout check that follows
 links to the repository.
+The status snapshots, fingerprints and cache keys in
+`crates/maestro-daemon/src/git/status.rs` and the refresh scheduling in
+`crates/maestro-daemon/src/app/git_refresh.rs` derive from the repository status and
+refresh modules under the same license. Changes include a tracking-configuration read kept
+while its files are unchanged in place of cached repository context, a packed-reference
+search that skips an unreadable line, supplied user files and home directory, and a refresh
+that publishes its result when its task panics.
 
 The resume records and argument plans, retained pane state, presentation metadata,
 terminal title normalization and host theme in `crates/maestro-daemon/` derive from
@@ -833,9 +846,13 @@ and `instances.rs` derive from the session, persistence I/O, detection catalog,
 action paths, announcement and remote path sources. The action component encoder
 and its hash and reserved-stem helpers derive from the action paths and API
 schema helpers under the same license. Their tests retain the source cases.
-The retained-endpoint client in `crates/maestro-daemon/src/api/client.rs`
-and its tests derive from the API client under the same license. It reuses the
-shared JSONL framing and caller-supplied daemon selection.
+The retained-endpoint client in `crates/maestro-daemon/src/api/client.rs`,
+the live status in `api/status.rs`, the graceful stop in `instances/stop.rs` and
+their tests derive from the API client, API status and session sources under the
+same license. They reuse the shared JSONL framing and caller-supplied daemon
+selection. The status read also treats a Unix receive timeout as no status.
+The detached-daemon check in `crates/maestro-process/src/foreground.rs` derives
+from the platform module and uses safe process-id calls.
 
 The environment vocabulary, structured events, synchronized rotating file writer
 and daemon snapshot wrappers in `crates/maestro-daemon/src/` derive from the pane,

@@ -130,8 +130,9 @@ fn startup_selection_keeps_installed_tool_discovery() {
         let manager =
             ToolsManager::new(bin.text(), Some(counting_fetch(&calls))).with_offline(Some(true));
         assert_eq!(
-            manager.get_tool_path(SearchTool::Fd).await,
-            Some(format!("{}/fd", bin.text()))
+            manager.ensure_tool(SearchTool::Fd, None).await,
+            Some(format!("{}/fd", bin.text())),
+            "an offline selection still uses an installed program"
         );
         assert_eq!(calls.load(Ordering::SeqCst), 0);
     });

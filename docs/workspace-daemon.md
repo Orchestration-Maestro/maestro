@@ -508,8 +508,33 @@ Explicit selection ignores inherited socket overrides. Implicit API overrides
 win over client-only overrides; either avoids validating an unused inherited
 name. Attach, stop and restart guidance names the selected daemon and warns that
 stopping exits pane processes. A custom API socket is retained in restart
-guidance. Selection does not dispatch commands, launch a process or implement
-graceful stop.
+guidance. Selection does not dispatch commands or launch a process.
+
+`instances::stop_session` sends one `server.stop` request to the selected API
+socket, then waits until neither the API socket nor the client socket accepts a
+connection. The whole stop has one 15 s budget, enough for a slow graceful
+shutdown. A reply that never arrives, an empty reply or a dropped connection
+proves nothing, so the stop keeps checking the sockets. A refusal from the daemon,
+an undecodable reply or another transport failure ends the stop with that error.
+At the deadline the error names every socket that still accepts connections.
+
+## Daemon client and status
+
+`api::client::DaemonClient` keeps one endpoint: a named-daemon selection or an
+explicit socket path, kept exactly as given. Each request opens its own
+connection, writes one canonical line and reads one reply line. Ordinary requests
+set no timeout. `request_value_with_timeout` applies the supplied duration to
+both the send and the receive of that connection, and a zero duration fails with
+the platform's invalid-input error. `request` decodes the shared response and
+returns a failure with its correlation, command, code and message.
+
+Status is a live ping, never a file. `DaemonClient::status` and
+`api::read_runtime_status_at` return the daemon's version, protocol and
+capabilities. The reader returns no status for an absent socket, a refused
+connection or a daemon that does not answer in time; any other failure keeps its
+original diagnostic. `platform::current_process_is_detached_server_daemon`
+reports whether the process leads its own session, which is how a detached
+daemon runs.
 
 ## Environment names
 
@@ -697,6 +722,45 @@ exist names no folder. Any other directory stays and Git's message is returned.
 `list` returns the entries of `git worktree list --porcelain -z` with their branch and their
 bare, detached and prunable flags. Paths keep the bytes Git printed, including bytes that
 text cannot hold and line breaks.
+
+### Repository status
+
+`git::status::git_status_snapshot_for_cwd_with_demand` observes the checkout around a
+directory and returns a snapshot of its label, branch, ahead/behind counts and grouping,
+with the cache entry to keep. The entry carries a fingerprint: what `HEAD` names (a branch
+and its commit, or a detached commit) and, when the counts are wanted, the branch's
+upstream and its commit. Loose references are read first, then `packed-refs`; reftable
+storage is read through the `git` command. The tracking configuration comes from
+`read_branch_config` and is kept while `ConfigRead::is_current` holds and the discovered
+checkout is the one it was read for, so a `.git` file retargeted to other metadata is read
+again.
+
+`git rev-list --left-right --count` runs through the process owner only when the
+fingerprint differs from the cached one; otherwise the cached counts are reused. A
+directory outside any repository is remembered for thirty seconds. The cache key of a
+checkout is its canonical root, so each linked worktree has its own, and workspace
+creation takes its key from the same helper.
+
+### Status refresh
+
+The daemon loop refreshes status on its one timer and starts no other scheduler. A
+refresh is wanted while a workspace exists and either a sidebar row shows `branch` or
+`git_status`, or a terminal has reported its directory; a report asks once for a fresh
+branch and label whichever rows are shown. A refresh is due 1.5 seconds after the last
+one ended, or at once when made due. The deadline is one of those the loop already waits
+for, and it does not depend on attached clients.
+
+At most one refresh runs at a time. It runs on the blocking pool and publishes
+`AppEvent::GitStatusRefreshed`, also when it panics, so the running flag cannot stay set.
+A request made while one runs is kept and applied when its result arrives. Workspaces in
+one repository share one observation. After a directory report and every five minutes,
+remembered cache keys are discarded and repositories are found again; making a refresh
+due also drops the results cached for directories outside repositories.
+
+`DaemonState::apply_workspace_git_statuses` applies a result only while its workspace
+still follows the directory the result was requested for. The branch and the counts change
+only when they were demanded, and worktree membership never changes. The loop requests a
+render only when a visible value changed.
 
 ## Retained tab-bar status
 
