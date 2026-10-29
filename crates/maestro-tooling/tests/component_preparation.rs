@@ -94,3 +94,78 @@ fn component_build_reuses_the_prepared_example() {
         std::path::PathBuf::from(std::env::var_os("MAESTRO_PREPARED_FIXTURE_COMPONENT").unwrap())
     );
 }
+
+/// Seconds after the epoch, as the timestamps these fixtures assign.
+#[cfg(unix)]
+fn at(seconds: u64) -> std::time::SystemTime {
+    std::time::UNIX_EPOCH + std::time::Duration::from_secs(seconds)
+}
+
+/// Writes an executable or a library output into `deps` with a fixed modification time.
+#[cfg(unix)]
+fn output(deps: &Path, name: &str, executable: bool, seconds: u64) -> std::path::PathBuf {
+    use std::os::unix::fs::PermissionsExt;
+    let path = deps.join(name);
+    fs::create_dir_all(deps).unwrap();
+    fs::write(&path, b"#!/bin/sh\n").unwrap();
+    let mode = if executable { 0o755 } else { 0o644 };
+    fs::set_permissions(&path, fs::Permissions::from_mode(mode)).unwrap();
+    fs::File::open(&path)
+        .unwrap()
+        .set_modified(at(seconds))
+        .unwrap();
+    path
+}
+
+/// Runs the cache normalization over a fake profile directory.
+#[cfg(unix)]
+fn normalize(profile: &Path) {
+    let output = std::process::Command::new("sh")
+        .arg(
+            Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../.config/normalize-component-cache.sh"),
+        )
+        .arg(profile)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+/// Cargo rebuilds a test binary only while it looks older than a dependency's output, so
+/// normalization may not advance a binary that a rebuilt library has outdated.
+#[cfg(unix)]
+#[test]
+fn cache_normalization_leaves_stale_test_binaries_alone() {
+    let scratch = Scratch::new().unwrap();
+    let profile = scratch.path().join("target/debug");
+    let deps = profile.join("deps");
+    let stale = output(&deps, "stale-1", true, 50);
+    output(&deps, "libdependency-1.rlib", false, 100);
+    let fresh = output(&deps, "fresh-1", true, 150);
+    let newest = output(&deps, "fresh-2", true, 200);
+    normalize(&profile);
+    let modified = |path: &Path| fs::metadata(path).unwrap().modified().unwrap();
+    assert_eq!(modified(&stale), at(50));
+    assert_eq!(modified(&fresh), at(200));
+    assert_eq!(modified(&newest), at(200));
+}
+
+/// A run whose binaries are all outdated has nothing to advance, and setup still proceeds.
+#[cfg(unix)]
+#[test]
+fn cache_normalization_accepts_a_profile_with_only_stale_binaries() {
+    let scratch = Scratch::new().unwrap();
+    let profile = scratch.path().join("target/debug");
+    let deps = profile.join("deps");
+    let older = output(&deps, "older-1", true, 50);
+    let newer = output(&deps, "newer-1", true, 60);
+    output(&deps, "libdependency-1.rlib", false, 100);
+    normalize(&profile);
+    let modified = |path: &Path| fs::metadata(path).unwrap().modified().unwrap();
+    assert_eq!(modified(&older), at(50));
+    assert_eq!(modified(&newer), at(60));
+}
