@@ -5,6 +5,7 @@ use maestro_app::{
     CreateAgentSessionRuntimeOptions, CreateAgentSessionRuntimeResult, ExtensionBindings,
     SessionManager,
 };
+use maestro_extensions::types::{NewSessionCommandOptions, SwitchSessionOptions};
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
 use support::{Error, Sample};
@@ -16,10 +17,70 @@ fn main() -> Result<(), Error> {
 
 /// Create, replace and resume the session while observing its live queues.
 async fn run(sample: Sample) -> Result<Value, Error> {
-    use maestro_app::{PromptOptions, create_agent_session_runtime};
-    use maestro_extensions::types::{NewSessionCommandOptions, SwitchSessionOptions};
-    use maestro_models::{FauxAssistantMessageOptions, FauxResponseStep, faux_assistant_message};
     let sample = Rc::new(sample);
+    let runtime = initial_runtime(Rc::clone(&sample)).await?;
+    let first = runtime
+        .session()
+        .session_file()
+        .ok_or("missing session file")?;
+    writeln!(sample.output.borrow_mut(), "Initial session: {first}")?;
+    let queues = Rc::new(RefCell::new(Vec::new()));
+    let unsubscribe = bind(
+        runtime.session(),
+        Rc::clone(&queues),
+        Rc::clone(&sample.output),
+    )
+    .await?;
+    runtime.session().steer("first queue", &[])?;
+    unsubscribe()?;
+    runtime
+        .new_session(NewSessionCommandOptions::default())
+        .await?;
+    let different = runtime.session().session_file().as_ref() != Some(&first);
+    writeln!(
+        sample.output.borrow_mut(),
+        "After newSession(): {}",
+        runtime.session().session_file().ok_or("missing new file")?
+    )?;
+    let unsubscribe = bind(
+        runtime.session(),
+        Rc::clone(&queues),
+        Rc::clone(&sample.output),
+    )
+    .await?;
+    runtime.session().follow_up("new queue", &[])?;
+    unsubscribe()?;
+    runtime
+        .switch_session(&first, None, SwitchSessionOptions::default())
+        .await?;
+    let unsubscribe = bind(
+        runtime.session(),
+        Rc::clone(&queues),
+        Rc::clone(&sample.output),
+    )
+    .await?;
+    writeln!(
+        sample.output.borrow_mut(),
+        "After switchSession(): {}",
+        runtime
+            .session()
+            .session_file()
+            .ok_or("missing resumed file")?
+    )?;
+    runtime.session().steer("resumed queue", &[])?;
+    let result = json!({"newIsDifferent": different,
+        "resumedOriginal": runtime.session().session_file().as_ref() == Some(&first),
+        "queues": *queues.borrow(),
+        "messages": runtime.session().messages().read().map_err(|error| error.to_string())?.len()});
+    unsubscribe()?;
+    runtime.dispose().await?;
+    Ok(result)
+}
+
+/// Create the first directory-bound runtime with the reusable session factory.
+async fn initial_runtime(sample: Rc<Sample>) -> Result<maestro_app::AgentSessionRuntime, Error> {
+    use maestro_app::{PromptOptions, create_agent_session_runtime};
+    use maestro_models::{FauxAssistantMessageOptions, FauxResponseStep, faux_assistant_message};
     let retained = Rc::clone(&sample);
     let factory: CreateAgentSessionRuntimeFactory =
         Rc::new(move |options| Box::pin(create_runtime(Rc::clone(&retained), options)));
@@ -43,52 +104,40 @@ async fn run(sample: Sample) -> Result<Value, Error> {
         .session()
         .prompt("Remember this runtime.", PromptOptions::default())
         .await?;
-    let first = runtime
-        .session()
-        .session_file()
-        .ok_or("missing session file")?;
-    let queues = Rc::new(RefCell::new(Vec::new()));
-    let unsubscribe = bind(runtime.session(), Rc::clone(&queues)).await?;
-    runtime.session().steer("first queue", &[])?;
-    unsubscribe();
-    runtime
-        .new_session(NewSessionCommandOptions::default())
-        .await?;
-    let different = runtime.session().session_file().as_ref() != Some(&first);
-    let unsubscribe = bind(runtime.session(), Rc::clone(&queues)).await?;
-    runtime.session().follow_up("new queue", &[])?;
-    unsubscribe();
-    runtime
-        .switch_session(&first, None, SwitchSessionOptions::default())
-        .await?;
-    let unsubscribe = bind(runtime.session(), Rc::clone(&queues)).await?;
-    runtime.session().steer("resumed queue", &[])?;
-    let result = json!({"newIsDifferent": different,
-        "resumedOriginal": runtime.session().session_file().as_ref() == Some(&first),
-        "queues": *queues.borrow(),
-        "messages": runtime.session().messages().read().map_err(|error| error.to_string())?.len()});
-    unsubscribe();
-    runtime.dispose().await?;
-    Ok(result)
+    Ok(runtime)
 }
 
 /// Rebind extensions and subscribe only to the current session's queue updates.
 async fn bind(
     session: Rc<AgentSession>,
     queues: Rc<RefCell<Vec<usize>>>,
-) -> Result<Box<dyn Fn()>, Error> {
+    output: Rc<RefCell<dyn std::io::Write>>,
+) -> Result<Box<dyn Fn() -> Result<(), Error>>, Error> {
     session
         .bind_extensions(ExtensionBindings::default())
         .await?;
-    Ok(Box::new(session.subscribe(Rc::new(move |event| {
+    let error = Rc::new(RefCell::new(None));
+    let failed = Rc::clone(&error);
+    let unsubscribe = session.subscribe(Rc::new(move |event| {
         if let AgentSessionEvent::QueueUpdate {
             steering,
             follow_up,
         } = event
         {
-            queues.borrow_mut().push(steering.len() + follow_up.len());
+            let count = steering.len() + follow_up.len();
+            queues.borrow_mut().push(count);
+            if failed.borrow().is_none() {
+                *failed.borrow_mut() = writeln!(output.borrow_mut(), "Queued: {count}").err();
+            }
         }
-    }))))
+    }));
+    Ok(Box::new(move || {
+        unsubscribe();
+        match error.borrow_mut().take() {
+            Some(error) => Err(error.into()),
+            None => Ok(()),
+        }
+    }))
 }
 
 /// Build real directory-bound services for each replacement, using the same controlled model.
