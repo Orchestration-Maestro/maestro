@@ -501,10 +501,8 @@ for runner-only flags or target selection. `tui-test-ansi` runs only nextest.
 
 Nextest fails a test at 30 seconds by default. Fix slow tests at their cause;
 do not raise the default or add headroom to an exception. A temporary exception
-in `.config/nextest.toml` must select one test, one shared fixture group, or the
-temporary component-compilation class in `maestro-extensions-wasm`,
-`maestro-extensions-wasmtime` and `maestro` (#3608), and name the measured
-work and an open issue that will remove it:
+in `.config/nextest.toml` must select one test or one shared fixture group, and
+name the measured work and an open issue that will remove it:
 
 ```toml
 [[profile.default.overrides]]

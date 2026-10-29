@@ -44,22 +44,8 @@ filter = "package(=maestro-app) & test(=pptx_attachments::pptx_extracted_output_
 # Measured: 38.749s; cause: creating and extracting a PPTX fixture exceeding 512 MiB; #3589
 slow-timeout = { period = "39s", terminate-after = 1 }
 
-# Author-host diagnostic: Component::from_file costs 12.117s of the 12.150s
-# component_release_is_not_dispose test, despite setup already warming its
-# own executable. The process-local compiled map cannot cross test processes.
-# Example-host diagnostic: trigger_compact starts 37 corpus rows, spending
-# 21.704s in nested Cargo builds and 12.441s in Component::from_file, versus
-# 0.045s replaying/releasing, of 34.728s total. Compilation includes a 7.627s
-# first load; subsequent loads total 4.813s. The loaders, not callbacks, dominate.
-# Preserve all corpus/lifecycle assertions while #3589 fixes prepared reuse.
-
-# Runtime phase evidence published in #3592: cold Component::from_file costs
-# 12.782s (context), 7.872s (hook) and 6.967s (checkpoint); cache reads cost
-# 0.168-0.224s. The cache namespace includes the consuming executable's
-# timestamp: warming only the setup executable does not warm test processes.
-# Context-using tests fall from 12.7-15.1s to 0.257-0.472s with that cause fixed.
-# Retain these CI exceptions until the consuming-executable fix lands through
-# main and CI confirms it; #3589 owns removal, not extra timeout headroom.
+# These per-test limits retain previous CI coverage maxima. #3589 owns their
+# coverage qualification and any remaining work beyond shared fixture loading.
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasmtime) & test(=authored_streams::generic_callbacks_reenter_outside_callback_storage)"
@@ -336,13 +322,3 @@ slow-timeout = { period = "126s", terminate-after = 1 }
 filter = "package(=maestro-tooling) & test(=build_recipes::maestro_selected_watch_rebuilds_cargo_configuration)"
 # Measured: 43.741s; cause: nested Cargo/watch builds of disposable recipe workspaces; #3589
 slow-timeout = { period = "44s", terminate-after = 1 }
-
-# These RPC children reach the same runtime Component::from_file owner in
-# factory.rs as the runtime family measured above. Each fresh executable has
-# its own compilation-cache namespace; setup warming is not a substitute.
-# Keep real guest loading/reloading while #3589 fixes consuming-process reuse.
-
-[[profile.default.overrides]]
-filter = "package(=maestro-extensions-wasm) | package(=maestro-extensions-wasmtime) | (package(maestro) & (test(startup_modes::) | test(model_streams::) | test(component_output_stays_between_complete_host_frames) | test(native_io::) | test(/_example::/)))"
-# Measured: 11.6s; cause: per-process Wasmtime component compilation, reaching 30-38s on hosted runners under parallel load; #3608
-slow-timeout = { period = "30s", terminate-after = 3 }
