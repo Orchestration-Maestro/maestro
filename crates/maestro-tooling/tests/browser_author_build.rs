@@ -66,6 +66,33 @@ fn browser_setup_errors_reach_stderr_and_transcript() {
     assert!(failures.is_empty(), "{}", failures.join("\n"));
 }
 
+/// Lockfile regeneration resolves the fixture's crates from the run's prepared sources.
+#[test]
+fn browser_lockfile_generation_resolves_prepared_sources() {
+    let browser = Browser::new();
+    browser.generate_lockfile();
+    assert!(
+        browser
+            .workspace
+            .path()
+            .with_file_name("cargo-home/config.toml")
+            .is_file(),
+        "lockfile generation must resolve through a private source configuration"
+    );
+}
+
+/// Cold builds start from the run's prepared configuration instead of vendoring again.
+#[test]
+fn browser_cold_sources_reuse_the_prepared_configuration() {
+    let browser = Browser::cold();
+    let (home, target) = browser_support::cold_sources(&browser);
+    assert_eq!(
+        fs::read_to_string(home.join("config.toml")).unwrap(),
+        fs::read_to_string(recipe_support::prepared_sources()).unwrap()
+    );
+    assert_eq!(fs::read_dir(target).unwrap().count(), 0);
+}
+
 #[test]
 fn browser_clean_preserves_authored_inputs() {
     let browser = Browser::new();
