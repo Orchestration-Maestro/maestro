@@ -31,6 +31,9 @@ max-threads = 1
 filter = "package(maestro-tooling) & test(/^browser_author_build::/) & !test(browser_author_bootstraps_from_empty_build_state)"
 test-group = "browser-author"
 
+# Priorities rank successful whole-test durations above 30s in merge-group
+# run 40795869386, longest first (100 downwards). Other tests keep priority 0.
+# See docs/development.md#slowest-first-test-order for evidence and refresh steps.
 # Measured entries below retain whole-test CI maxima. Diagnostic phase
 # timings come from separate non-coverage runs; they do not size the limits.
 
@@ -175,6 +178,7 @@ slow-timeout = { period = "43s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasm) & test(=tests::component_driver::message_renderer_example::message_renderer_truncates_numeric_timestamps)"
+priority = 61
 # Measured: 41.174s; cause: per-process Wasmtime compilation and instantiation of the author/example component fixture; #3589
 slow-timeout = { period = "42s", terminate-after = 1 }
 
@@ -205,6 +209,7 @@ slow-timeout = { period = "40s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasm) & test(=tests::component_driver::schema_qualification::schema_callbacks_preserve_supplied_errors_on_owning_guest)"
+priority = 57
 # Measured: 38.063s; cause: per-process Wasmtime compilation and instantiation of the author/example component fixture; #3589
 slow-timeout = { period = "39s", terminate-after = 1 }
 
@@ -315,6 +320,7 @@ slow-timeout = { period = "42s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasm) & test(=tests::model_status_example::model_status_component_runs_selection_hook)"
+priority = 65
 # Measured: 38.635s; cause: per-process Wasmtime compilation and instantiation of the author/example component fixture; #3589
 slow-timeout = { period = "39s", terminate-after = 1 }
 
@@ -330,11 +336,13 @@ slow-timeout = { period = "61s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasm) & test(=tests::notify_example::notify_component_windows_command_is_controlled)"
+priority = 68
 # Measured: 48.572s; cause: per-process Wasmtime compilation and instantiation of the author/example component fixture; #3589
 slow-timeout = { period = "49s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasm) & test(=tests::permission_gate_example::permission_gate_component_preserves_patterns_and_decisions)"
+priority = 66
 # Measured: 54.259s; cause: per-process Wasmtime compilation and instantiation of the author/example component fixture; #3589
 slow-timeout = { period = "55s", terminate-after = 1 }
 
@@ -345,6 +353,7 @@ slow-timeout = { period = "45s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasm) & test(=tests::pirate_example::pirate_factories_keep_separate_state)"
+priority = 55
 # Measured: 61.413s; cause: per-process Wasmtime compilation and instantiation of the author/example component fixture; #3589
 slow-timeout = { period = "62s", terminate-after = 1 }
 
@@ -360,11 +369,13 @@ slow-timeout = { period = "42s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasm) & test(=tests::preset_example::preset_cycles_restore_original_settings_and_persist_cleared_branch_state)"
+priority = 37
 # Measured: 54.359s; cause: per-process Wasmtime compilation and instantiation of the author/example component fixture; #3589
 slow-timeout = { period = "55s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasm) & test(=tests::preset_example::preset_layers_restore_branch_instructions_without_reapplying_settings)"
+priority = 76
 # Measured: 51.971s; cause: per-process Wasmtime compilation and instantiation of the author/example component fixture; #3589
 slow-timeout = { period = "52s", terminate-after = 1 }
 
@@ -380,6 +391,7 @@ slow-timeout = { period = "48s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasm) & test(=tests::preset_example::preset_startup_flag_is_applied_before_returning_and_overrides_saved_name)"
+priority = 45
 # Measured: 34.840s; cause: per-process Wasmtime compilation and instantiation of the author/example component fixture; #3589
 slow-timeout = { period = "35s", terminate-after = 1 }
 
@@ -390,6 +402,7 @@ slow-timeout = { period = "38s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasm) & test(=tests::protected_paths_example::protected_paths_component_matches_the_hook)"
+priority = 72
 # Measured: 58.555s; cause: per-process Wasmtime compilation and instantiation of the author/example component fixture; #3589
 slow-timeout = { period = "59s", terminate-after = 1 }
 
@@ -425,6 +438,7 @@ slow-timeout = { period = "44s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasm) & test(=tests::questionnaire_example::questionnaire_headless_and_empty_return_errors)"
+priority = 49
 # Measured: 41.638s; cause: per-process Wasmtime compilation and instantiation of the author/example component fixture; #3589
 slow-timeout = { period = "42s", terminate-after = 1 }
 
@@ -435,6 +449,7 @@ slow-timeout = { period = "56s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasm) & test(=tests::questionnaire_example::questionnaire_retains_supplied_question_metadata)"
+priority = 50
 # Measured: 49.740s; cause: per-process Wasmtime compilation and instantiation of the author/example component fixture; #3589
 slow-timeout = { period = "50s", terminate-after = 1 }
 
@@ -465,6 +480,7 @@ slow-timeout = { period = "48s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasm) & test(=tests::shutdown_example::shutdown_component_runs_every_registration)"
+priority = 78
 # Measured: 49.832s; cause: per-process Wasmtime compilation and instantiation of the author/example component fixture; #3589
 slow-timeout = { period = "50s", terminate-after = 1 }
 
@@ -475,6 +491,7 @@ slow-timeout = { period = "44s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasm) & test(=tests::snake_example::snake_controls_apply_arrow_and_letter_turns)"
+priority = 62
 # Measured: 60.228s; cause: per-process Wasmtime compilation and instantiation of the author/example component fixture; #3589
 slow-timeout = { period = "61s", terminate-after = 1 }
 
@@ -485,6 +502,7 @@ slow-timeout = { period = "35s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasm) & test(=tests::snake_example::snake_headless_command_requires_interactive_mode)"
+priority = 42
 # Measured: 31.535s; cause: per-process Wasmtime compilation and instantiation of the author/example component fixture; #3589
 slow-timeout = { period = "32s", terminate-after = 1 }
 
@@ -515,6 +533,7 @@ slow-timeout = { period = "45s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasm) & test(=tests::snake_example::snake_ticks_move_grow_turn_and_save_through_session_entries)"
+priority = 48
 # Measured: 42.254s; cause: per-process Wasmtime compilation and instantiation of the author/example component fixture; #3589
 slow-timeout = { period = "43s", terminate-after = 1 }
 
@@ -530,6 +549,7 @@ slow-timeout = { period = "47s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasm) & test(=tests::space_invaders_example::space_invaders_resume_redraws_current_controls_without_losing_save)"
+priority = 54
 # Measured: 33.410s; cause: per-process Wasmtime compilation and instantiation of the author/example component fixture; #3589
 slow-timeout = { period = "34s", terminate-after = 1 }
 
@@ -550,6 +570,7 @@ slow-timeout = { period = "45s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasm) & test(=tests::space_invaders_example::space_invaders_ticks_match_reference_movement_fire_and_collisions)"
+priority = 53
 # Measured: 64.379s; cause: per-process Wasmtime compilation and instantiation of the author/example component fixture; #3589
 slow-timeout = { period = "65s", terminate-after = 1 }
 
@@ -560,6 +581,7 @@ slow-timeout = { period = "38s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasm) & test(=tests::status_line_example::status_line_component_preserves_count_after_host_rejection)"
+priority = 63
 # Measured: 37.077s; cause: per-process Wasmtime compilation and instantiation of the author/example component fixture; #3589
 slow-timeout = { period = "38s", terminate-after = 1 }
 
@@ -580,6 +602,7 @@ slow-timeout = { period = "50s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasm) & test(=tests::titlebar_spinner_example::titlebar_spinner_component_runs_lifecycle)"
+priority = 56
 # Measured: 34.233s; cause: per-process Wasmtime compilation and instantiation of the author/example component fixture; #3589
 slow-timeout = { period = "35s", terminate-after = 1 }
 
@@ -600,6 +623,7 @@ slow-timeout = { period = "36s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasm) & test(=tests::trigger_compact_example::trigger_compact_component_matches_host_requests)"
+priority = 81
 # Measured: 71.970s; cause: 37 nested Cargo builds plus guest compilation (21.704s/12.441s diagnostic phases); #3589
 slow-timeout = { period = "72s", terminate-after = 1 }
 
@@ -623,6 +647,7 @@ slow-timeout = { period = "40s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasmtime) & test(=factory::tests::faulted_store_drops_once_only_after_the_last_admission_ends)"
+priority = 44
 # Measured: 37.489s; cause: per-process Wasmtime compilation and instantiation of the guest component fixture; #3589
 slow-timeout = { period = "38s", terminate-after = 1 }
 
@@ -633,6 +658,7 @@ slow-timeout = { period = "33s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasmtime) & test(=tests::builtin_factories::builtin_factory_construction_is_lazy_and_fresh)"
+priority = 43
 # Measured: 33.264s; cause: per-process Wasmtime compilation and instantiation of the guest component fixture; #3589
 slow-timeout = { period = "34s", terminate-after = 1 }
 
@@ -653,6 +679,7 @@ slow-timeout = { period = "36s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasmtime) & test(=tests::builtin_operations::builtin_bash_initial_progress_failure_prevents_exec)"
+priority = 46
 # Measured: 39.637s; cause: per-process Wasmtime compilation and instantiation of the guest component fixture; #3589
 slow-timeout = { period = "40s", terminate-after = 1 }
 
@@ -683,6 +710,7 @@ slow-timeout = { period = "31s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasmtime) & test(=tests::builtin_operations::builtin_find_callbacks_receive_pattern_root_ignore_and_limit)"
+priority = 39
 # Measured: 31.673s; cause: per-process Wasmtime compilation and instantiation of the guest component fixture; #3589
 slow-timeout = { period = "32s", terminate-after = 1 }
 
@@ -708,6 +736,7 @@ slow-timeout = { period = "33s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasmtime) & test(=tests::builtin_operations::builtin_mutations_release_after_error_and_alias_paths)"
+priority = 40
 # Measured: 34.390s; cause: per-process Wasmtime compilation and instantiation of the guest component fixture; #3589
 slow-timeout = { period = "35s", terminate-after = 1 }
 
@@ -738,6 +767,7 @@ slow-timeout = { period = "32s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasmtime) & test(=tests::builtin_operations::builtin_read_options_preserve_reverse_operations)"
+priority = 41
 # Measured: 32.663s; cause: per-process Wasmtime compilation and instantiation of the guest component fixture; #3589
 slow-timeout = { period = "33s", terminate-after = 1 }
 
@@ -778,6 +808,7 @@ slow-timeout = { period = "42s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasmtime) & test(=asynchronous_reentry::routed_completion_keeps_its_prefix_and_absent_result)"
+priority = 69
 # Measured: 36.701s; cause: per-process Wasmtime compilation and instantiation of the guest component fixture; #3589
 slow-timeout = { period = "37s", terminate-after = 1 }
 
@@ -793,6 +824,7 @@ slow-timeout = { period = "31s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasmtime) & test(=asynchronous_reentry::routed_retained_setup_runs_its_prefix_before_its_first_poll_returns)"
+priority = 58
 # Measured: 34.547s; cause: per-process Wasmtime compilation and instantiation of the guest component fixture; #3589
 slow-timeout = { period = "35s", terminate-after = 1 }
 
@@ -813,6 +845,7 @@ slow-timeout = { period = "40s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasmtime) & test(=authored_streams::ending_without_a_result_keeps_observation_pending)"
+priority = 60
 # Measured: 36.431s; cause: per-process Wasmtime compilation and instantiation of the guest component fixture; #3589
 slow-timeout = { period = "37s", terminate-after = 1 }
 
@@ -863,6 +896,7 @@ slow-timeout = { period = "36s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasmtime) & test(=canonical_schema::native_registration_and_enumeration_preserve_authored_schema_kinds)"
+priority = 83
 # Measured: 144.375s; cause: per-process Wasmtime compilation and instantiation of the guest component fixture; #3589
 slow-timeout = { period = "145s", terminate-after = 1 }
 
@@ -873,6 +907,7 @@ slow-timeout = { period = "129s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasmtime) & test(=canonical_theme::canonical_standalone_theme_keeps_live_palette_without_ui)"
+priority = 93
 # Measured: 160.205s; cause: per-process Wasmtime compilation and instantiation of the guest component fixture; #3589
 slow-timeout = { period = "161s", terminate-after = 1 }
 
@@ -918,6 +953,7 @@ slow-timeout = { period = "36s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasmtime) & test(=canonical_theme::canonical_theme_strikethrough)"
+priority = 91
 # Measured: 126.970s; cause: per-process Wasmtime compilation and instantiation of the guest component fixture; #3589
 slow-timeout = { period = "127s", terminate-after = 1 }
 
@@ -988,11 +1024,13 @@ slow-timeout = { period = "36s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasmtime) & test(=compilation_cache::component_load_populates_the_user_compilation_cache)"
+priority = 52
 # Measured: 37.866s; cause: per-process Wasmtime compilation and instantiation of the guest component fixture; #3589
 slow-timeout = { period = "38s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasmtime) & test(=component_events::component_handler_presence_tracks_registration)"
+priority = 92
 # Measured: 150.366s; cause: per-process Wasmtime compilation and instantiation of the guest component fixture; #3589
 slow-timeout = { period = "151s", terminate-after = 1 }
 
@@ -1003,11 +1041,13 @@ slow-timeout = { period = "150s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasmtime) & test(=component_events::component_tool_results_consume_prior_content)"
+priority = 90
 # Measured: 147.313s; cause: per-process Wasmtime compilation and instantiation of the guest component fixture; #3589
 slow-timeout = { period = "148s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasmtime) & test(=component_events::input::component_input_chains_text_preserves_images_and_forwards_sources)"
+priority = 96
 # Measured: 102.702s; cause: per-process Wasmtime compilation and instantiation of the guest component fixture; #3589
 slow-timeout = { period = "103s", terminate-after = 1 }
 
@@ -1028,11 +1068,13 @@ slow-timeout = { period = "32s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasmtime) & test(=extension_guide::extension_guide_builds_and_loads_from_a_clean_folder)"
+priority = 84
 # Measured: 92.773s; cause: per-process Wasmtime compilation and instantiation of the guest component fixture; #3589
 slow-timeout = { period = "93s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasmtime) & test(=git_checkpoint_example::git_checkpoint_component_clears_checkpoints_but_keeps_current_entry)"
+priority = 59
 # Measured: 86.335s; cause: per-process Wasmtime compilation and instantiation of the guest component fixture; #3589
 slow-timeout = { period = "87s", terminate-after = 1 }
 
@@ -1043,6 +1085,7 @@ slow-timeout = { period = "121s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasmtime) & test(=git_checkpoint_example::git_checkpoint_component_requires_checkpoint_ui_and_yes)"
+priority = 88
 # Measured: 91.486s; cause: per-process Wasmtime compilation and instantiation of the guest component fixture; #3589
 slow-timeout = { period = "92s", terminate-after = 1 }
 
@@ -1090,6 +1133,7 @@ slow-timeout = { period = "33s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-markdown) & test(=tests::container_depth::deep_indented_list_parses_on_a_small_stack)"
+priority = 67
 # Measured: 46.722s; cause: repeated parsing of deeply nested container stress fixtures under coverage; #3589
 slow-timeout = { period = "47s", terminate-after = 1 }
 
@@ -1100,6 +1144,7 @@ slow-timeout = { period = "47s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-markdown) & test(=tests::container_depth::repeated_quote_list_resumption_keeps_reference_depth)"
+priority = 75
 # Measured: 75.673s; cause: repeated parsing of deeply nested container stress fixtures under coverage; #3589
 slow-timeout = { period = "76s", terminate-after = 1 }
 
@@ -1109,6 +1154,7 @@ slow-timeout = { period = "76s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-models) & test(=browser_build::maestro_browser_environment_has_no_key)"
+priority = 89
 # Measured: 94.942s; cause: nested wasm Cargo build of browser_import_check; #3589
 slow-timeout = { period = "95s", terminate-after = 1 }
 
@@ -1118,6 +1164,7 @@ slow-timeout = { period = "95s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-test-conventions) & test(=architecture::forbidden_direct_edges_are_rejected)"
+priority = 47
 # Measured: 42.236s; cause: repeated policy-matrix metadata acquisition and JSON rewriting; #3589
 slow-timeout = { period = "43s", terminate-after = 1 }
 
@@ -1128,6 +1175,7 @@ slow-timeout = { period = "43s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-test-conventions) & test(=architecture::real_workspace_obeys_crate_rules)"
+priority = 80
 # Measured: 46.380s; cause: repeated Rust parsing and workspace source scans; #3589
 slow-timeout = { period = "47s", terminate-after = 1 }
 
@@ -1146,6 +1194,7 @@ slow-timeout = { period = "44s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-test-conventions) & test(=boundaries::runtime_dependencies_stay_in_the_runtime_adapter)"
+priority = 51
 # Measured: 35.271s; cause: metadata acquisition/parsing for every dependency-matrix case; #3589
 slow-timeout = { period = "36s", terminate-after = 1 }
 
@@ -1159,31 +1208,37 @@ slow-timeout = { period = "36s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-tooling) & test(=browser_author_build::browser_assets_follow_relative_selected_identity)"
+priority = 87
 # Measured: 74.698s; cause: nested Cargo/Trunk builds and browser fixture preparation; #3589
 slow-timeout = { period = "75s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_bootstraps_from_empty_build_state)"
+priority = 99
 # Measured: 207.925s; cause: nested Cargo/Trunk builds and browser fixture preparation; #3589
 slow-timeout = { period = "208s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_check_preserves_adjacent_locks)"
+priority = 98
 # Measured: 291.917s; cause: nested Cargo/Trunk builds and browser fixture preparation; #3589
 slow-timeout = { period = "292s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_checks_accept_valid_sources)"
+priority = 97
 # Measured: 136.638s; cause: nested Cargo/Trunk builds and browser fixture preparation; #3589
 slow-timeout = { period = "137s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_hook_uses_resolved_configuration_directory)"
+priority = 86
 # Measured: 67.984s; cause: nested Cargo/Trunk builds and browser fixture preparation; #3589
 slow-timeout = { period = "68s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_included_files_rebuild_without_source_changes)"
+priority = 77
 # Measured: 64.409s; cause: nested Cargo/Trunk builds and browser fixture preparation; #3589
 slow-timeout = { period = "65s", terminate-after = 1 }
 
@@ -1194,11 +1249,13 @@ slow-timeout = { period = "42s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_preparation_is_route_local)"
+priority = 94
 # Measured: 111.944s; cause: nested Cargo/Trunk builds and browser fixture preparation; #3589
 slow-timeout = { period = "112s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_projection_failure_prevents_dependent_build)"
+priority = 38
 # Measured: 35.833s; cause: nested Cargo/Trunk builds and browser fixture preparation; #3589
 slow-timeout = { period = "36s", terminate-after = 1 }
 
@@ -1209,36 +1266,43 @@ slow-timeout = { period = "42s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_trunk_rejects_stale_lock_without_writes)"
+priority = 85
 # Measured: 55.436s; cause: nested Cargo/Trunk builds and browser fixture preparation; #3589
 slow-timeout = { period = "56s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_unrelated_workspace_bump_keeps_fixture_lock)"
+priority = 64
 # Measured: 52.191s; cause: nested Cargo/Trunk builds and browser fixture preparation; #3589
 slow-timeout = { period = "53s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_watch_ignores_generated_outputs_and_keeps_authored_roots)"
+priority = 82
 # Measured: 52.361s; cause: nested Cargo/Trunk builds and browser fixture preparation; #3589
 slow-timeout = { period = "53s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-tooling) & test(=browser_author_build::browser_build_emits_wasm_and_prepared_assets)"
+priority = 79
 # Measured: 56.471s; cause: nested Cargo/Trunk builds and browser fixture preparation; #3589
 slow-timeout = { period = "57s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-tooling) & test(=browser_author_build::browser_build_rejects_missing_or_failing_inputs)"
+priority = 74
 # Measured: 45.750s; cause: nested Cargo/Trunk builds and browser fixture preparation; #3589
 slow-timeout = { period = "46s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-tooling) & test(=browser_author_build::browser_check_repairs_formatting)"
+priority = 100
 # Measured: 250.575s; cause: nested Cargo/Trunk builds and browser fixture preparation; #3589
 slow-timeout = { period = "251s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-tooling) & test(=browser_author_build::browser_compile_watch_rebuilds_external_identity)"
+priority = 70
 # Measured: 52.733s; cause: nested Cargo/Trunk builds and browser fixture preparation; #3589
 slow-timeout = { period = "53s", terminate-after = 1 }
 
@@ -1249,11 +1313,13 @@ slow-timeout = { period = "35s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-tooling) & test(=browser_author_build::browser_example_development_serves_rebuilt_external_assets)"
+priority = 73
 # Measured: 54.337s; cause: nested Cargo/Trunk builds and browser fixture preparation; #3589
 slow-timeout = { period = "55s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-tooling) & test(=browser_author_build::browser_native_checks_keep_inputs_and_refuse_bad_sources)"
+priority = 95
 # Measured: 125.482s; cause: nested Cargo/Trunk builds and browser fixture preparation; #3589
 slow-timeout = { period = "126s", terminate-after = 1 }
 
@@ -1264,6 +1330,7 @@ slow-timeout = { period = "126s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-tooling) & test(=build_recipes::maestro_selected_watch_rebuilds_cargo_configuration)"
+priority = 71
 # Measured: 43.741s; cause: nested Cargo/watch builds of disposable recipe workspaces; #3589
 slow-timeout = { period = "44s", terminate-after = 1 }
 
