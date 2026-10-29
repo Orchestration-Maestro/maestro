@@ -27,6 +27,7 @@ warm() {
     export MAESTRO_WARM_COMPONENT="$1"
     test=compilation_cache::warm_selected_component
     found=false
+    # Nextest gives setup scripts no active binary identity, so every retained one is warmed.
     for binary in "$directory"/deps/integration-*; do
         [ -f "$binary" ] && [ -x "$binary" ] || continue
         if "$binary" --list --exact "$test" | grep -Fq "$test: test"; then
