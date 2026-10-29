@@ -1,4 +1,5 @@
 //! Opt-in confirmation before replacing or forking a session.
+// maestro-component: MAESTRO_CONFIRM_DESTRUCTIVE_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

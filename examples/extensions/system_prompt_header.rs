@@ -3,6 +3,7 @@
 //! The length the widget shows counts UTF-16 code units of the prompt the host supplies
 //! when the handler runs, including whitespace and combining characters. Nothing is
 //! trimmed, rebuilt or cached, and shutdown removes the status it set.
+// maestro-component: MAESTRO_SYSTEM_PROMPT_HEADER_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
