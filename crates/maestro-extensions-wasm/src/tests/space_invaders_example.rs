@@ -53,7 +53,7 @@ fn frame_helpers(observed: &mut Observed, frame: &[String]) {
 }
 /// Starts the actual component with the host's supplied random source and keyboard replies.
 fn host(column: u64) -> Result<Harness, String> {
-    let path = super::build::example_component("space_invaders")?;
+    let path = super::build::example_component("maestro-extensions-wasm", "space_invaders")?;
     let mut host = super::block_on(Harness::start(&path)).map_err(|e| e.to_string())?;
     let mut wasi = wasmtime_wasi::WasiCtxBuilder::new();
     wasi.secure_random(wasmtime_wasi::random::Deterministic::new(

@@ -513,7 +513,7 @@ fn dynamic_tools_host_failures_keep_prior_state() -> Result<(), String> {
 /// The built single copy replays every recorded row through the callbacks it registered.
 #[test]
 fn dynamic_tools_component_matches_registered_callbacks() -> Result<(), String> {
-    let path = super::build::example_component("dynamic_tools")?;
+    let path = super::build::example_component("maestro-extensions-wasm", "dynamic_tools")?;
     let (engine, component) = super::build::compile(&path).map_err(|error| error.to_string())?;
     replay(
         |_| true,

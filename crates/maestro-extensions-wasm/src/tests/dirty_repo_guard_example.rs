@@ -225,7 +225,7 @@ fn dirty_repo_guard_session_changes() -> Result<(), String> {
 /// The built component replays every case with the same requests and verdicts.
 #[test]
 fn dirty_repo_guard_component_session_changes() -> Result<(), String> {
-    let path = super::build::example_component("dirty_repo_guard")?;
+    let path = super::build::example_component("maestro-extensions-wasm", "dirty_repo_guard")?;
     let mut harness =
         super::block_on(super::host::Harness::start(&path)).map_err(|e| e.to_string())?;
     for row in cases() {

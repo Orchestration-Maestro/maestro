@@ -124,7 +124,7 @@ struct ComponentHost {
 impl ComponentHost {
     /// Instantiates the built example and looks up its registration.
     fn new() -> Result<Self, String> {
-        let path = super::build::example_component("bookmark")?;
+        let path = super::build::example_component("maestro-extensions-wasm", "bookmark")?;
         let (engine, component) =
             super::build::compile(&path).map_err(|error| error.to_string())?;
         let harness = super::block_on(Harness::from_compiled_with_clock(
@@ -486,7 +486,7 @@ fn bookmark_component_replays_recorded_cases() -> Result<(), String> {
 /// A component the test never gives a clock reads the host wall clock.
 #[test]
 fn bookmark_component_reads_host_clock() -> Result<(), String> {
-    let path = super::build::example_component("bookmark")?;
+    let path = super::build::example_component("maestro-extensions-wasm", "bookmark")?;
     let mut harness =
         super::block_on(super::host::Harness::start(&path)).map_err(|error| error.to_string())?;
     harness.observed().readers.control(

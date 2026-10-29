@@ -210,7 +210,7 @@ fn component_event(harness: &mut super::host::Harness, event: &Value) -> Result<
 /// Every recorded transition also runs against the single shipped component.
 #[test]
 fn working_indicator_component_matches_registered_callbacks() -> Result<(), String> {
-    let path = super::build::example_component("working_indicator")?;
+    let path = super::build::example_component("maestro-extensions-wasm", "working_indicator")?;
     let (engine, component) = super::build::compile(&path).map_err(|e| e.to_string())?;
     for steps in corpus().values() {
         let mut harness = super::block_on(super::host::Harness::from_compiled(&engine, &component))

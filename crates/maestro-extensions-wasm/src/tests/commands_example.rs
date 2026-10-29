@@ -317,7 +317,7 @@ fn commands_notifies_source_paths_only_after_confirmation() -> Result<(), String
 
 /// Instantiates the shipped component and returns the host that serves its requests.
 fn component() -> Result<super::host::Harness, String> {
-    let path = super::build::example_component("commands")?;
+    let path = super::build::example_component("maestro-extensions-wasm", "commands")?;
     let (engine, component) = super::build::compile(&path).map_err(|error| error.to_string())?;
     super::block_on(super::host::Harness::from_compiled(&engine, &component))
         .map_err(|error| error.to_string())

@@ -127,7 +127,7 @@ fn loader(io: Rc<dyn NativeIo>) -> maestro_app::ModuleLoader<maestro_app::Local>
 }
 
 /// Creates the normal embedding session with an explicitly swapped native capability.
-pub(super) async fn session(
+pub(crate) async fn session(
     root: &Root,
     local: &Rc<tokio::task::LocalSet>,
     io: Rc<dyn NativeIo>,

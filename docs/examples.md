@@ -23,6 +23,9 @@ from the package directory, so a source run and a standalone build expose the
 same path. The standalone copy reads the README, the release history, the
 documentation and the examples from the package directory.
 
+The [authored subagent component](packages/subagents.md) lives in its own package
+crate. Build its `component` example rather than the shared extension-example crate.
+
 ## Adding an extension example
 
 1. Add `examples/extensions/<name>.rs` with an opening `//!` description and a

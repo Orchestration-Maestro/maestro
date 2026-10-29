@@ -109,7 +109,7 @@ fn check(rows: &[Case]) -> Result<(), String> {
 
 /// Runs the identical decisions in the compiled shipped component with supplied host replies.
 fn check_component(rows: &[Case]) -> Result<(), String> {
-    let path = super::build::example_component("input_transform")?;
+    let path = super::build::example_component("maestro-extensions-wasm", "input_transform")?;
     let (engine, component) = super::build::compile(&path).map_err(|e| e.to_string())?;
     let mut host = super::block_on(super::host::Harness::from_compiled(&engine, &component))
         .map_err(|e| e.to_string())?;
