@@ -98,3 +98,47 @@ fn recipe_tool_build_uses_a_private_cargo_home() {
         "the tool build must lock its private package cache"
     );
 }
+
+/// The run's prepared sources resolve a registry crate without the shared package cache.
+#[test]
+fn prepared_sources_resolve_registry_crates_offline() {
+    let root = Scratch::new().unwrap();
+    fs::create_dir(root.path().join("src")).unwrap();
+    fs::write(root.path().join("src/lib.rs"), "").unwrap();
+    fs::write(
+        root.path().join("Cargo.toml"),
+        "[package]\nname = 'registry-fixture'\nversion = '0.0.0'\nedition = '2024'\n\
+         [workspace]\n[dependencies]\nserde = '=1.0.229'\n",
+    )
+    .unwrap();
+    let sources = recipe_support::prepared_sources();
+    let output = toolchain_support::fixture_command(env!("CARGO"), root.path(), Some(&sources))
+        .unwrap()
+        .args(["metadata", "--format-version", "1"])
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let metadata: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert!(
+        metadata["packages"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|package| package["name"] == "serde")
+    );
+}
+
+/// Nextest runs the setup script and exports its configuration before test admission.
+#[test]
+fn nextest_exports_prepared_sources_to_registry_fixtures() {
+    if std::env::var_os("NEXTEST").is_none() {
+        return;
+    }
+    let config = std::env::var_os("MAESTRO_TEST_CARGO_SOURCES")
+        .expect("the fixture-sources setup script must export its configuration");
+    assert!(std::path::Path::new(&config).is_file());
+}

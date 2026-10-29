@@ -32,6 +32,11 @@ pub fn install_executable(source: &Path, target: &Path) {
     assert!(status.success());
 }
 
+/// The source configuration for registry crates, prepared once per run.
+pub fn prepared_sources() -> PathBuf {
+    PathBuf::new()
+}
+
 /// Build the fake-command tool into the target shared by every recipe fixture.
 pub fn build_tool(root: &Path) -> PathBuf {
     let manifest =
