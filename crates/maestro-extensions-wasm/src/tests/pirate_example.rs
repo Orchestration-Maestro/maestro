@@ -219,7 +219,7 @@ fn group(corpus: &Corpus, want: Group) -> Vec<&Row> {
 
 /// Builds `count` independent instances of the shipped component.
 fn components(count: usize) -> Result<Vec<ComponentHost>, String> {
-    let path = super::build::example_component("pirate")?;
+    let path = super::build::example_component("maestro-extensions-wasm", "pirate")?;
     (0..count).map(|_| ComponentHost::new(&path)).collect()
 }
 

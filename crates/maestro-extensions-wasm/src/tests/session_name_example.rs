@@ -91,7 +91,7 @@ struct ComponentHost {
 impl ComponentHost {
     /// Instantiates the built example and looks up its command registration.
     fn new() -> Result<Self, String> {
-        let path = super::build::example_component("session_name")?;
+        let path = super::build::example_component("maestro-extensions-wasm", "session_name")?;
         let (engine, component) =
             super::build::compile(&path).map_err(|error| error.to_string())?;
         let harness = super::block_on(Harness::from_compiled(&engine, &component))
@@ -257,7 +257,7 @@ fn refused_registration(case: &Case) {
 
 /// The built component's refused registration, observed through the host it ran on.
 fn refused_in_component(case: &Case) -> Result<(), String> {
-    let path = super::build::example_component("session_name")?;
+    let path = super::build::example_component("maestro-extensions-wasm", "session_name")?;
     let (engine, component) = super::build::compile(&path).map_err(|error| error.to_string())?;
     let error = case.expected.error.clone().unwrap_or_default();
     let (mut harness, outcome) = super::block_on(Harness::from_compiled_refusing(

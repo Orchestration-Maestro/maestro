@@ -396,7 +396,7 @@ impl WidgetHost for Harness {
 #[test]
 fn widget_placement_component_runs_session_start() -> Result<(), String> {
     super::block_on(async {
-        let path = super::build::example_component("widget_placement")?;
+        let path = super::build::example_component("maestro-extensions-wasm", "widget_placement")?;
         let mut harness = Harness::start(&path)
             .await
             .map_err(|error| error.to_string())?;

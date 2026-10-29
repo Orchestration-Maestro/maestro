@@ -12,6 +12,7 @@ mod example_helpers;
 mod integration_tests;
 mod json_dependencies;
 mod message_renderer_ownership;
+mod package_crates;
 mod quality;
 mod repetition;
 mod rpc_ownership;

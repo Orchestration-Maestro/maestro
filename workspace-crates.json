@@ -35,6 +35,7 @@
   "maestro-rpc": "core",
   "maestro-session": "core",
   "maestro-settings": "core",
+  "maestro-subagents": "package",
   "maestro-terminal": "core",
   "maestro-test-conventions": "dedicated",
   "maestro-test-directory": "dedicated",

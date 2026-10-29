@@ -430,7 +430,7 @@ fn component_step(
 /// Runs every recorded sequence against a fresh guest of the built single-copy example.
 #[test]
 fn hidden_thinking_label_component_runs_registered_callbacks() -> Result<(), String> {
-    let path = super::build::example_component("hidden_thinking_label")?;
+    let path = super::build::example_component("maestro-extensions-wasm", "hidden_thinking_label")?;
     let (engine, component) = super::build::compile(&path).map_err(|error| error.to_string())?;
     let metadata = corpus().metadata;
     for case in corpus().cases {
