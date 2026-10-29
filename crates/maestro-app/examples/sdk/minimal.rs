@@ -81,6 +81,31 @@ mod tests {
         Ok(())
     }
 
+    /// Stored user text supports both plain and mixed block content.
+    #[test]
+    fn minimal_prints_plain_and_mixed_user_content() -> Result<(), Error> {
+        support::execute(|sample| async move {
+            let output = Rc::new(RefCell::new(Vec::new()));
+            let mut sample = sample;
+            sample.output = output.clone();
+            let messages = json!([
+                {"role": "user", "content": "Plain input", "timestamp": 0},
+                {"role": "user", "content": [
+                    {"type": "text", "text": "Before image"},
+                    {"type": "image", "data": "", "mimeType": "image/png"},
+                    {"type": "text", "text": "After image"}
+                ], "timestamp": 0}
+            ]);
+            print_messages(&sample, &messages)?;
+            assert_eq!(
+                String::from_utf8(output.borrow().clone())?,
+                "User: Plain input\nUser: Before image\nUser: After image\n"
+            );
+            Ok(Value::Null)
+        })?;
+        Ok(())
+    }
+
     /// A streamed answer also becomes part of the session's public history.
     #[test]
     fn minimal_streams_and_retains_the_answer() -> Result<(), Error> {
