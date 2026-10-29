@@ -3302,49 +3302,67 @@ fn maestro_hook_scoped_docs_still_deny_missing_documentation() {
     );
 }
 
-/// Run the test build's author preparation only while it is newer than its sources.
+/// The files the test build's author preparation is checked against.
+const AUTHOR_SETUP_SOURCES: [&str; 8] = [
+    "crates/maestro-extensions-wasm/examples/prepare_author_component.rs",
+    "crates/maestro-extensions-wasm/src/tests/build.rs",
+    "crates/maestro-extensions-wasm/src/tests/build/cargo.rs",
+    "crates/maestro-tooling/src/example_files.rs",
+    "crates/maestro-tooling/src/example_files/components.rs",
+    "crates/maestro-tooling/src/example_files/preparation.rs",
+    "crates/maestro-extensions-wasm/Cargo.toml",
+    "Cargo.lock",
+];
+
+/// Gives `path` the modification time `age` seconds ago.
 #[cfg(unix)]
-#[test]
-fn author_setup_runs_the_built_example_only_while_fresh() {
+fn set_age(path: &Path, age: std::time::Duration) {
+    fs::File::options()
+        .write(true)
+        .open(path)
+        .unwrap()
+        .set_modified(std::time::SystemTime::now() - age)
+        .unwrap();
+}
+
+/// Lays out a profile directory with a built example, a fake Cargo that rebuilds it and every
+/// source an hour old. Returns the profile directory and the example.
+#[cfg(unix)]
+fn author_setup_checkout(root: &Path) -> (std::path::PathBuf, std::path::PathBuf) {
     use std::os::unix::fs::PermissionsExt;
-    use std::time::{Duration, SystemTime};
-    let scratch = Scratch::new().unwrap();
-    let root = scratch.path();
     let profile = root.join("target/debug");
     fs::create_dir_all(profile.join("deps")).unwrap();
     fs::create_dir_all(profile.join("examples")).unwrap();
-    let sources = [
-        "crates/maestro-extensions-wasm/examples/prepare_author_component.rs",
-        "crates/maestro-extensions-wasm/src/tests/build.rs",
-        "crates/maestro-extensions-wasm/src/tests/build/cargo.rs",
-        "crates/maestro-tooling/src/example_files.rs",
-        "crates/maestro-tooling/src/example_files/components.rs",
-        "crates/maestro-tooling/src/example_files/preparation.rs",
-        "crates/maestro-extensions-wasm/Cargo.toml",
-        "Cargo.lock",
-    ];
-    let earlier = SystemTime::now() - Duration::from_secs(3600);
-    for source in sources {
+    for source in AUTHOR_SETUP_SOURCES {
         let path = root.join(source);
         fs::create_dir_all(path.parent().unwrap()).unwrap();
-        fs::File::create(path)
-            .unwrap()
-            .set_modified(earlier)
-            .unwrap();
+        fs::File::create(&path).unwrap();
+        set_age(&path, std::time::Duration::from_secs(3600));
     }
     let example = profile.join("examples/prepare_author_component");
-    for (path, name) in [(&example, "example"), (&root.join("cargo"), "cargo")] {
-        fs::write(path, format!("#!/bin/sh\necho {name} \"$@\"\n")).unwrap();
-        fs::set_permissions(path, fs::Permissions::from_mode(0o755)).unwrap();
-    }
+    fs::write(&example, "#!/bin/sh\necho example\n").unwrap();
     fs::write(
         root.join("cargo"),
         "#!/bin/sh\necho cargo \"$@\"\nprintf '#!/bin/sh\\necho example\\n' > target/debug/examples/prepare_author_component\nchmod +x target/debug/examples/prepare_author_component\n",
     )
     .unwrap();
+    for path in [&example, &root.join("cargo")] {
+        fs::set_permissions(path, fs::Permissions::from_mode(0o755)).unwrap();
+    }
+    (profile, example)
+}
+
+/// Run the test build's author preparation only while it is newer than its sources.
+#[cfg(unix)]
+#[test]
+fn author_setup_runs_the_built_example_only_while_fresh() {
+    use std::time::{Duration, SystemTime};
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    let (profile, example) = author_setup_checkout(root);
     let run = || run_author_setup(root, &profile);
     assert_eq!(run(), "example\n");
-    for source in sources {
+    for source in AUTHOR_SETUP_SOURCES {
         let file = fs::File::options()
             .write(true)
             .open(root.join(source))
@@ -3352,10 +3370,39 @@ fn author_setup_runs_the_built_example_only_while_fresh() {
         file.set_modified(SystemTime::now() + Duration::from_secs(60))
             .unwrap();
         assert!(run().starts_with("cargo build "), "{source}");
-        file.set_modified(earlier).unwrap();
+        set_age(&root.join(source), Duration::from_secs(3600));
     }
     fs::remove_file(&example).unwrap();
     assert!(run().starts_with("cargo build "));
+}
+
+/// A library the example builds on, rebuilt after the example, outdates it as well, and
+/// only a rebuild of the example brings its code up to date.
+#[cfg(unix)]
+#[test]
+fn author_setup_rebuilds_an_example_that_a_library_has_outdated() {
+    use std::time::Duration;
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    let (profile, example) = author_setup_checkout(root);
+    fs::write(
+        root.join("Cargo.lock"),
+        "[[package]]\nname = \"maestro-extensions-wasm\"\ndependencies = [\n \"maestro-request\",\n]\n\n[[package]]\nname = \"maestro-request\"\n",
+    )
+    .unwrap();
+    set_age(&root.join("Cargo.lock"), Duration::from_secs(3600));
+    fs::write(
+        profile.join("examples/prepare_author_component.d"),
+        "prepare_author_component: crates/maestro-extensions-wasm/examples/prepare_author_component.rs\n",
+    )
+    .unwrap();
+    set_age(&example, Duration::from_mins(30));
+    let library = profile.join("deps/libmaestro_request-1.rlib");
+    fs::write(&library, b"").unwrap();
+    set_age(&library, Duration::from_mins(15));
+    let output = run_author_setup(root, &profile);
+    assert!(output.starts_with("cargo build "), "{output}");
+    assert!(output.ends_with("example\n"), "{output}");
 }
 
 /// Run the author setup script from `root` with `profile` as nextest's artifact directory.
