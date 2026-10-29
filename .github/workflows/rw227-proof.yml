@@ -1,0 +1,29 @@
+name: Controlled landing safeguard proof
+
+on:
+  push:
+    branches: [ci/rw227-proof]
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Controlled failed landing
+        shell: python
+        run: |
+          print('FAIL controlled_landing_failure', flush=True)
+          assert False, 'controlled landing failure; never merge this proof'
+  report:
+    needs: tests
+    if: always() && needs.tests.result == 'failure'
+    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/post-landing.yml@f7194483e21d11621c26496f13d52abe3ba11528
+    with:
+      run-id: ${{ github.run_id }}
+      proof: true
+    secrets:
+      RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
