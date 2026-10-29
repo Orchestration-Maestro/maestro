@@ -1,12 +1,11 @@
 //! Invoke a session with default tools and stream its text updates without a paid request.
+#[path = "support/stream.rs"]
+mod stream;
 mod support;
-use maestro_agent::AgentEvent;
-use maestro_app::{AgentSessionEvent, PromptOptions, create_agent_session};
-use maestro_models::{
-    AssistantMessageEvent, FauxAssistantMessageOptions, FauxResponseStep, faux_assistant_message,
-};
+use maestro_app::{PromptOptions, create_agent_session};
+use maestro_models::{FauxAssistantMessageOptions, FauxResponseStep, faux_assistant_message};
 use serde_json::{Value, json};
-use std::{cell::RefCell, rc::Rc};
+use std::rc::Rc;
 use support::{Error, Sample};
 
 /// Run the offline example and print its observed session state.
@@ -25,19 +24,7 @@ async fn run(sample: Sample) -> Result<Value, Error> {
             ),
         ))]);
     let created = create_agent_session(sample.options()?).await?;
-    let text = Rc::new(RefCell::new(String::new()));
-    let streamed = Rc::clone(&text);
-    let unsubscribe = created.session.subscribe(Rc::new(move |event| {
-        if let AgentSessionEvent::Agent(event) = event
-            && let Ok(event) = event.read()
-            && let AgentEvent::MessageUpdate {
-                assistant_message_event: AssistantMessageEvent::TextDelta { delta, .. },
-                ..
-            } = &*event
-        {
-            streamed.borrow_mut().push_str(delta);
-        }
-    }));
+    let finish = stream::subscribe(&created.session, Rc::clone(&sample.output));
     created
         .session
         .prompt(
@@ -45,19 +32,39 @@ async fn run(sample: Sample) -> Result<Value, Error> {
             PromptOptions::default(),
         )
         .await?;
-    unsubscribe();
+    let text = finish()?;
+    writeln!(sample.output.borrow_mut())?;
     let messages = created.session.messages();
     let result = json!({
-        "text": *text.borrow(), "messages": *messages.read().map_err(|error| error.to_string())?,
+        "text": text, "messages": *messages.read().map_err(|error| error.to_string())?,
         "tools": created.session.get_active_tool_names(),
     });
+    print_messages(&sample, &result["messages"])?;
     created.session.dispose();
     Ok(result)
+}
+
+/// Show each stored text message after the live answer.
+fn print_messages(sample: &Sample, messages: &Value) -> Result<(), Error> {
+    for message in messages.as_array().ok_or("missing messages")? {
+        let role = match message["role"].as_str() {
+            Some("user") => "User",
+            Some("assistant") => "Assistant",
+            _ => continue,
+        };
+        for block in message["content"].as_array().ok_or("missing content")? {
+            if let Some(text) = block["text"].as_str() {
+                writeln!(sample.output.borrow_mut(), "{role}: {text}")?;
+            }
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::cell::RefCell;
 
     /// Console text precedes the readable stored-message observations.
     #[test]

@@ -88,13 +88,13 @@ impl Sample {
     }
 }
 
-/// Run a sample on its caller-owned local executor and print the observed result.
+/// Run a sample on its caller-owned local executor with live console observations.
 pub fn launch<F, Fut>(run: F) -> Result<(), Error>
 where
     F: FnOnce(Sample) -> Fut,
     Fut: Future<Output = Result<Value, Error>>,
 {
-    println!("{}", serde_json::to_string_pretty(&execute(run)?)?);
+    execute(run)?;
     Ok(())
 }
 
