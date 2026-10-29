@@ -1870,6 +1870,30 @@ fn terminal_example_brand_edge_is_development_only() {
 }
 
 #[test]
+fn guest_listing_example_edge_is_portable_development_only() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-extensions-wasm", "maestro-listing"]);
+    for kind in [
+        "dev-dependencies",
+        "target.'cfg(target_arch = \"wasm32\")'.dev-dependencies",
+    ] {
+        workspace.member("maestro-extensions-wasm", "maestro-extensions-wasm", &format!("[{kind}]\nlisting = {{ package = \"maestro-listing\", path = \"../maestro-listing\" }}"));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()), "{kind}");
+    }
+    for (kind, extra) in DECLARATIONS {
+        workspace.member("maestro-extensions-wasm", "maestro-extensions-wasm", &format!("[{kind}]\nlisting = {{ package = \"maestro-listing\", path = \"../maestro-listing\"{extra} }}"));
+        assert_eq!(
+            check_workspace(workspace.root.path()),
+            Err(
+                "forbidden production dependency: maestro-extensions-wasm -> maestro-listing"
+                    .into()
+            ),
+            "{kind}{extra}"
+        );
+    }
+}
+
+#[test]
 fn native_component_fixture_edges_are_development_only() {
     for dependency in [
         "maestro-catalog",
@@ -2617,6 +2641,7 @@ const DIRECTORY_CALLERS: &[&str] = &[
     "maestro-detection",
     "maestro-export",
     "maestro-extensions",
+    "maestro-extensions-wasm",
     "maestro-extensions-wasmtime",
     "maestro-ipc",
     "maestro-listing",

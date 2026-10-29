@@ -1,7 +1,8 @@
 //! Effective settings view composition for scoped readers.
 
 use super::{
-    BaseSettingsLayer, Settings, SettingsManager, SettingsScope, conversion::merge_one_level,
+    BaseSettingsLayer, Settings, SettingsErrorKind, SettingsManager, SettingsScope,
+    conversion::merge_one_level,
 };
 use serde_json::{Map, Value};
 
@@ -26,8 +27,9 @@ impl SettingsManager {
                     .rev()
                     .find(|(_, document)| overrides_path(document, path))
                     .map_or(SettingsScope::Global, |(scope, _)| *scope);
-                self.queue.record_error(
+                self.queue.record(
                     scope,
+                    SettingsErrorKind::StoredValueIgnored,
                     layer.lock_message(path, "Stored value ignored").into(),
                 );
             });
@@ -35,7 +37,11 @@ impl SettingsManager {
         restore(&mut view.0);
         if let Some(decider) = &self.decider {
             for message in decider.resolve(&mut view) {
-                self.report_refusal(SettingsScope::Global, message);
+                self.queue.record(
+                    SettingsScope::Global,
+                    SettingsErrorKind::StoredValueIgnored,
+                    message.into(),
+                );
             }
         }
         restore(&mut view.0);

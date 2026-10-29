@@ -5,6 +5,7 @@ use serde_json::{Value, json};
 mod faults;
 mod file_trigger;
 mod http;
+mod reload;
 mod watch;
 
 /// Loads the compiled native-operation component through normal startup.

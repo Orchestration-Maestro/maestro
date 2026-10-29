@@ -146,8 +146,9 @@ fn format_display_path(path: &str, home: &HomeLookup<'_>) -> io::Result<String> 
     Ok(shorten_home_path(path, Some(&home()?)))
 }
 
-/// Displays a context file relative to `cwd` when it lies inside it, otherwise as an
-/// absolute path with the home prefix abbreviated; both operands resolve lexically.
+/// Displays a context file relative to `cwd` when it lies inside it. A file elsewhere, or
+/// one whose relative path starts with `..`, keeps its absolute path with the home prefix
+/// abbreviated. Both operands resolve lexically.
 ///
 /// # Errors
 /// Returns the working-directory error of a resolution that needed it, or the failure
@@ -387,7 +388,8 @@ impl InteractiveMode {
     }
 
     /// Appends a spacer and the context section: compact paths in discovery order, or
-    /// each full path on its own row.
+    /// each path on its own row in the spelling the loader supplied, with the home prefix
+    /// abbreviated.
     ///
     /// # Errors
     /// Returns the failure of a path resolution, the home lookup or the theme's colours.

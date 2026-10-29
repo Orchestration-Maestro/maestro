@@ -165,7 +165,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
 - `maestro-watch` is a core leaf below layer 0 without workspace dependencies.
   `maestro-lock` depends only on `maestro-path` for `native_homedir` and uses the
   existing external sha2 for canonical target identity. Only theme/application
-  may depend on watch; only settings/credentials/workspace/detection/session may depend on lock. Follow the
+  may depend on watch; only settings/credentials/workspace/detection/session/application may depend on lock. Follow the
   [shared filesystem effect contract](docs/specs/maestro-port.md#crates-and-delivery-order):
   watch owns creation/close helpers, injected watch/timer interfaces and native
   notifications; lock owns bounded and waiting acquisition, canonical target identity and
@@ -188,7 +188,9 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   dependencies, including the path utility. It lists one directory's entries sorted
   by file name on every platform. Only resources, theme, the toolkit, tools,
   session and the application may depend on it, on native targets; callers keep
-  kind filtering, name decoding and further ordering.
+  kind filtering, name decoding and further ordering. Guest-authoring examples may
+  also use it through a portable development dependency from `maestro-extensions-wasm`,
+  never a normal or build dependency.
 - `maestro-listeners` is a declared core leaf below layer 0 with no workspace
   dependencies. It retains callbacks in live registration order and admits one per
   identity, or one per registration as an event-emitter listener list keeps them.
