@@ -3316,7 +3316,10 @@ fn author_setup_runs_the_built_example_only_while_fresh() {
     let sources = [
         "crates/maestro-extensions-wasm/examples/prepare_author_component.rs",
         "crates/maestro-extensions-wasm/src/tests/build.rs",
+        "crates/maestro-extensions-wasm/src/tests/build/cargo.rs",
         "crates/maestro-tooling/src/example_files.rs",
+        "crates/maestro-tooling/src/example_files/components.rs",
+        "crates/maestro-tooling/src/example_files/preparation.rs",
         "crates/maestro-extensions-wasm/Cargo.toml",
         "Cargo.lock",
     ];
