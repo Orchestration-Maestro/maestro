@@ -191,9 +191,9 @@ fn recomputed_prepared_list_preserves_key_and_scope() {
 #[test]
 fn numeric_preference_admission_keeps_normalization_and_nan() {
     for (input, padding, height, width) in [
-        (-1.5, json!(0.0), json!(3.0), json!(1.0)),
-        (2.75, json!(2.0), json!(3.0), json!(2.0)),
-        (50.5, json!(3.0), json!(20.0), json!(50.0)),
+        (-1.5, json!(0), json!(3), json!(1)),
+        (2.75, json!(2), json!(3), json!(2)),
+        (50.5, json!(3), json!(20), json!(50)),
         (f64::NAN, json!(null), json!(null), json!(null)),
     ] {
         let mut manager = SettingsManager::in_memory(maestro_settings::Settings::default());
