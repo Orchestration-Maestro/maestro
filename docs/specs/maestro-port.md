@@ -330,6 +330,9 @@ descriptions below also permit the [native feature-unifier exception](#native-fe
 including leaves and exact sets. An em dash means no domain dependencies apart
 from the optional foundation utility described below.
 
+The table lists production edges. Guest-authoring examples also have a portable
+development-only edge from `maestro-extensions-wasm` to `maestro-listing`.
+
 | Crate | One job | Allowed internal dependencies | Layer |
 |---|---|---|---|
 | `maestro-text` | implement common text operations (whitespace, lexical comparison, markup escaping, CSS string serialization, locale construction and number formatting) | — | below 0 |
@@ -569,7 +572,9 @@ case-insensitive name order on NTFS. The JavaScript runtime sorts its listing on
 Unix only; that platform difference is a runtime mechanic, so the leaf does not
 copy it. Only resources, theme, the terminal toolkit, tools, session and the
 application may depend on it, and only on native targets. Callers keep their own kind filtering,
-name decoding and any further ordering.
+name decoding and any further ordering. Guest-authoring examples may also use the leaf
+through one portable development dependency from `maestro-extensions-wasm`; this
+permits no normal or build edge.
 
 `maestro-listeners` is a core leaf below layer 0 with no workspace dependencies.
 It owns one job: retaining callbacks in live registration order. A callback is
@@ -704,6 +709,9 @@ not make the interactive frontend a terminal owner.
 `maestro-extensions-wasm` to `maestro-models`, declared as a native-only,
 non-optional development dependency, lets component tests pass retained schema
 callbacks to the native argument validator. It permits no normal or build edge.
+`maestro-extensions-wasm` to `maestro-listing`, declared as a portable development
+dependency, supplies name-ordered directory reads to the guest examples. It permits
+no normal or build dependency on the listing leaf.
 These edges remain subject to test-graph cycle checks, including aliases and
 platform-specific declarations. Add the example dependency and replace its local
 projection only after this contract lands.
@@ -765,7 +773,7 @@ utility permission. Its only incoming edges are non-optional development
 dependencies under `cfg(not(target_arch = "wasm32"))` from `maestro`, `maestro-app`,
 `maestro-catalog`, `maestro-chat`, `maestro-cli`, `maestro-credentials`,
 `maestro-daemon`, `maestro-detection`, `maestro-export`, `maestro-extensions`,
-`maestro-extensions-wasmtime`,
+`maestro-extensions-wasm`, `maestro-extensions-wasmtime`,
 `maestro-ipc`, `maestro-listing`, `maestro-lock`, `maestro-models`,
 `maestro-packages`, `maestro-process`, `maestro-resources`, `maestro-rpc`,
 `maestro-session`, `maestro-settings`, `maestro-terminal`, `maestro-test-conventions`,
