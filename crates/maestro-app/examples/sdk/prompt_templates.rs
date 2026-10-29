@@ -52,6 +52,21 @@ fn merge_templates(mut base: maestro_app::LoadPromptsResult) -> maestro_app::Loa
 mod tests {
     use super::*;
 
+    /// Template names and descriptions precede the actual merged count.
+    #[test]
+    fn prompt_templates_prints_observations_in_order() -> Result<(), Error> {
+        let output = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+        support::execute(|mut sample| {
+            sample.output = output.clone();
+            run(sample)
+        })?;
+        assert_eq!(
+            String::from_utf8(output.borrow().clone())?,
+            "Discovered prompt templates:\n  /review: Review the changes.\n  /deploy: Deploy the application\nSession created with 2 prompt templates\n"
+        );
+        Ok(())
+    }
+
     /// Both templates survive loading and the SDK template expands with its source intact.
     #[test]
     fn prompt_templates_merges_and_expands_the_sdk_template() -> Result<(), Error> {
