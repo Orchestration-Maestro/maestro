@@ -35,8 +35,8 @@ async fn run(sample: Sample) -> Result<Value, Error> {
     for error in &errors {
         writeln!(
             sample.output.borrow_mut(),
-            "Warning ({:?} settings): {}",
-            error.scope,
+            "Warning ({} settings): {}",
+            error.scope.label(),
             error.error
         )?;
     }
