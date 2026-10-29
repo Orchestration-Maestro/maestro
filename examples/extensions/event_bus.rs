@@ -1,4 +1,5 @@
 //! A command that emits events for other extensions, and a listener that reports them.
+// maestro-component: MAESTRO_EVENT_BUS_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

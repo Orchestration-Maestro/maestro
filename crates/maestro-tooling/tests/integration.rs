@@ -4,6 +4,7 @@
 mod browser_author_build;
 mod build_recipes;
 mod cargo_fixtures;
+mod component_preparation;
 mod nextest_priorities;
 mod tooling_commands;
 

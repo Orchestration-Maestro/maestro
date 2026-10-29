@@ -634,30 +634,45 @@ To refresh the ranks:
 
 ### Test time budget
 
-Nextest fails a test at 30 seconds by default. Fix slow tests at their cause;
-do not raise the default or add headroom to an exception. A temporary exception
-in `.config/nextest.toml` must select exactly one test, or one shared fixture
+Nextest flags a test as slow every 30 seconds and kills it after four periods,
+at 120 seconds. The 30-second flag is the budget: fix a slow test at its cause,
+and do not approve one on headroom. The 120-second kill is a hang limit, not a
+budget. It stops a hung test and leaves a busy shared runner room to finish a
+test that normally runs well inside it. The default profile sets both:
+
+```toml
+[profile.default]
+slow-timeout = { period = "30s", terminate-after = 4 }
+```
+
+A test that needs more than 120 seconds gets an exception in
+`.config/nextest.toml`. It must select exactly one test, or one shared fixture
 group, and name the measured work and an open issue that will remove it:
 
 ```toml
 [[profile.default.overrides]]
 filter = "package(=maestro-example) & test(=component::loads)"
-# Measured: 43.549s; cause: compiling the component fixture; #3589
-slow-timeout = { period = "44s", terminate-after = 1 }
+# Measured: 143.549s; cause: compiling the component fixture; #3589
+slow-timeout = { period = "30s", terminate-after = 5 }
 ```
 
-Use the measured duration, rounded up to whole seconds, as the temporary limit.
-Write `period` as positive whole seconds (`"Ns"`) and set a positive
-`terminate-after`; their product is the test's limit. Keep the `Measured:`
-seconds, `cause:` description and `#NNNN` issue in comments immediately above
-`slow-timeout`. Each exception needs its own comment; another override's comment
-does not apply. A limit of 30 seconds or less needs no exception comment.
+Keep `period = "30s"` so the test still prints SLOW every 30 seconds, and set
+`terminate-after` to the fewest whole periods that cover the measured duration.
+If a hosted run killed the test, record the kill time as the lower bound and say
+so in the `cause:` text. Keep the `Measured:` seconds (over 120), `cause:`
+description and `#NNNN` issue in comments immediately above `slow-timeout`. Each
+exception needs its own comment; another override's comment does not apply. A
+test that finishes within 120 seconds needs no exception.
 
-The conventions check rejects unbounded limits, defaults over 30 seconds and
-undocumented raised overrides in every profile. It checks references offline;
-the author and reviewer verify with GitHub that the linked issue is still open.
-The change fixing the slowness must delete its override as well as close the
-issue. Existing measured exceptions are tracked in #3589.
+The conventions check rejects a default other than the flag and hang limit, a
+profile limit above the hang limit, a profile that changes the 30-second
+period, an exception that changes the 30-second period or that the hang limit
+already covers, an undocumented exception and an exception whose
+`terminate-after` is not the fewest periods covering its `Measured:` seconds.
+It checks references offline; the author and reviewer verify with GitHub that
+the linked issue is still open. The change fixing the slowness must delete its
+override as well as close the issue. Each existing exception has its own issue,
+and #3589 tracks them together.
 
 Development and test profiles use `debug = "line-tables-only"` for workspace crates:
 backtraces retain file:line for workspace code, without debugger variable views.
@@ -672,21 +687,39 @@ builds are unchanged.
 Before guest-authoring tests, nextest's shell launcher locates the active
 artifact directory through its documented platform library search path. It runs
 the `prepare_author_component` example that the test build put in that directory,
-as long as the example is newer than its source, the shared build module, the
-package manifest and `Cargo.lock`. Running it through Cargo instead would resolve
-features for that one package and recompile the engine. When the example is missing
-or older, as after a `--lib` or filtered selection, the launcher builds and runs it
-through Cargo in the same target directory and profile.
+as long as the example is newer than its source, the shared build and component
+discovery sources, the package manifest and `Cargo.lock`. Running it through Cargo instead would resolve features for
+that one package and recompile the engine. When the example is missing or older, as
+after a `--lib` or filtered selection, the launcher builds it through Cargo in the
+same target directory and profile before running it directly.
 The launcher fails if the directory cannot be resolved rather than building
 elsewhere. It uses `NEXTEST_LD_LIBRARY_PATH` on Linux,
 `NEXTEST_DYLD_FALLBACK_LIBRARY_PATH` on macOS and `PATH` through Git's shell
 on Windows, where the shell converts the search list to colon-separated paths.
-The example builds the author component, warms the Wasmtime compilation cache
-in the default user cache and exports its path to the tests' processes.
-The Git-pinned engine partitions cached code by host executable modification
-time, so setup does not warm another binary's entries; nextest processes of
-the same test binary reuse its compiled bytes after their first load.
-The component build removes `RUSTC_WRAPPER`, where the coverage tool puts its
+Before running the example, `normalize-component-cache.sh` gives executable
+artifacts in the profile directory, `deps` and `examples` their newest existing
+modification time. This advances older outputs without making them older than
+their compiler inputs. It skips an executable that a workspace library it builds on
+has outdated: Cargo rebuilds an executable only while a dependency's output is newer
+than it, so advancing a binary that a rebuilt library has outdated would hide the
+rebuild. The libraries an executable builds on come from the crate named in its
+dependency information and the workspace crates `Cargo.lock` lists for it; a library's
+own test binary does not build on its output. Without that information, any newer
+library output outdates the executable. A skipped test binary compiles its components
+itself on first use. A skipped example would warm code that no test binary reads, so
+normalization then exits with status 3 and the launcher rebuilds the example through
+Cargo before it runs. Cargo ignores some library outputs that normalization counts, such
+as the check-only metadata a lint run writes, so the example can stay outdated after that
+build. The launcher then logs one line and runs it anyway. Test binaries do not read the
+code it warms, which costs a cache miss and never fails setup. The Git-pinned engine
+includes the shared modification time in its cache namespace, so the preparer and
+consuming test binaries share compiled code.
+The example builds every exported component, warms its Wasmtime compilation cache
+in the default user cache on up to four threads and exports its path to the tests'
+processes. Component contents, compiler settings and CPU features still determine
+cache compatibility.
+The shared component builder resolves these source-marked paths before invoking
+Cargo. The component build removes `RUSTC_WRAPPER`, where the coverage tool puts its
 instrumenting wrapper, and keeps `CARGO_BUILD_RUSTC_WRAPPER`, where shared CI
 sets the compile cache. So the component stays uninstrumented while its
 compiles still reach the cache.
@@ -820,7 +853,9 @@ fixture parse, so don't spawn a child per case yourself. A case that needs a fre
 process for other state, such as a process-wide counter or files created per
 case, keeps its own child. Use `TestProcess::case(id)` to select that case. Set a
 child's temporary directory with `TestProcess::temp_dir(path)`, which writes the
-variables each platform reads, never `TMPDIR` alone.
+variables each platform reads, never `TMPDIR` alone. A child that replaces `HOME`
+and loads a prepared component passes `user_cache_home()` as `XDG_CACHE_HOME`,
+which only Linux reads, so it reuses the setup's compiled code instead of compiling the component again.
 Read child roles through `maestro_test_process::selection()`, not environment
 variables. `selection.is_child()` distinguishes the parent from a child.
 `selection.runs_case(id)` accepts the parent, wildcard children and the child
