@@ -2,7 +2,7 @@ name: Full suite after landing
 
 on:
   push:
-    branches: [main]
+    branches: [ci/rw227-proof-v0170]
 
 permissions:
   contents: read
