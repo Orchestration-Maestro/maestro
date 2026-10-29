@@ -67,8 +67,8 @@ fn main() -> Result<(), String> {
                 root.join("examples"),
                 root.join("../../examples/extensions"),
             ],
-            |name, variable| {
-                let path = build::component(name, variable).map_err(std::io::Error::other)?;
+            |name, _| {
+                let path = build::example_component(name).map_err(std::io::Error::other)?;
                 components.push(path.clone());
                 Ok(path)
             },
