@@ -15,6 +15,7 @@ async fn run(sample: Sample) -> Result<Value, Error> {
         "Discovered append text",
     )?;
     let mut prompts = Vec::new();
+    let mut messages = Vec::new();
     for replace in [true, false] {
         let mut options = sample.options()?;
         if let maestro_app::SessionResources::Default(resources) = &mut options.resources {
@@ -22,9 +23,33 @@ async fn run(sample: Sample) -> Result<Value, Error> {
         }
         let created = maestro_app::create_agent_session(options).await?;
         prompts.push(created.session.system_prompt());
+        let (question, answer) = if replace {
+            ("What is 2 + 2?", "Four, Arrr!")
+        } else {
+            ("List 3 benefits of Rust.", "- Safety\n- Speed\n- Tooling")
+        };
+        sample
+            .provider
+            .set_responses(vec![maestro_models::FauxResponseStep::Message(Box::new(
+                maestro_models::faux_assistant_message(
+                    answer,
+                    maestro_models::FauxAssistantMessageOptions::default(),
+                ),
+            ))]);
+        created
+            .session
+            .prompt(question, maestro_app::PromptOptions::default())
+            .await?;
+        messages.push(serde_json::to_value(
+            &*created
+                .session
+                .messages()
+                .read()
+                .map_err(|error| error.to_string())?,
+        )?);
         created.session.dispose();
     }
-    Ok(json!(prompts))
+    Ok(json!({"prompts": prompts, "messages": messages}))
 }
 
 /// Select replacement or appended instructions on the real resource loader.
@@ -75,8 +100,10 @@ mod tests {
     #[test]
     fn custom_prompt_replaces_or_appends_instructions() -> Result<(), Error> {
         let value = support::execute(run)?;
-        let replaced = value[0].as_str().ok_or("missing replacement")?;
-        let appended = value[1].as_str().ok_or("missing appended prompt")?;
+        let replaced = value["prompts"][0].as_str().ok_or("missing replacement")?;
+        let appended = value["prompts"][1]
+            .as_str()
+            .ok_or("missing appended prompt")?;
         assert!(replaced.starts_with("You are a helpful assistant that speaks like a pirate."));
         assert!(replaced.contains("Always end responses with \"Arrr!\""));
         assert!(!replaced.contains("Discovered append text"));
