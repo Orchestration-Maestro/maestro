@@ -79,14 +79,19 @@ void exports_maestro_doom_engine_key(bool pressed, uint8_t key) {
     write_key = next;
 }
 
+void exports_maestro_doom_engine_dimensions(game_tuple2_u32_u32_t *ret) {
+    ret->f0 = DOOMGENERIC_RESX;
+    ret->f1 = DOOMGENERIC_RESY;
+}
+
 void exports_maestro_doom_engine_frame(game_list_u8_t *frame) {
     frame->ptr = NULL;
     frame->len = 0;
     if (!initialized || !DG_ScreenBuffer) return;
-    frame->ptr = malloc(640 * 400 * 4);
+    frame->ptr = malloc((size_t)DOOMGENERIC_RESX * DOOMGENERIC_RESY * 4);
     if (!frame->ptr) return;
-    frame->len = 640 * 400 * 4;
-    for (size_t index = 0; index < 640 * 400; ++index) {
+    frame->len = (size_t)DOOMGENERIC_RESX * DOOMGENERIC_RESY * 4;
+    for (size_t index = 0; index < (size_t)DOOMGENERIC_RESX * DOOMGENERIC_RESY; ++index) {
         uint32_t pixel = DG_ScreenBuffer[index];
         frame->ptr[index * 4] = (pixel >> 16) & 255;
         frame->ptr[index * 4 + 1] = (pixel >> 8) & 255;

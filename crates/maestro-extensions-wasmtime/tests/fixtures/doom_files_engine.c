@@ -60,6 +60,12 @@ void exports_maestro_doom_engine_key(bool pressed, uint8_t key) {
     if (pressed && key == 0xa2) failed = !save("save.dat", wad, wad_len);
 }
 
+void exports_maestro_doom_engine_dimensions(game_tuple2_u32_u32_t *ret) {
+    bool small = wad_len == 11 && memcmp(wad, "small-frame", 11) == 0;
+    ret->f0 = small ? 320 : 640;
+    ret->f1 = small ? 200 : 400;
+}
+
 void exports_maestro_doom_engine_frame(game_list_u8_t *frame) {
     size_t width = wad_len == 11 && memcmp(wad, "small-frame", 11) == 0 ? 320 : 640;
     size_t height = width == 320 ? 200 : 400;

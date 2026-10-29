@@ -36,6 +36,11 @@ bool exports_maestro_doom_engine_tick(uint32_t milliseconds, game_string_t *err)
     return true;
 }
 
+void exports_maestro_doom_engine_dimensions(game_tuple2_u32_u32_t *ret) {
+    ret->f0 = 1;
+    ret->f1 = 1;
+}
+
 void exports_maestro_doom_engine_frame(game_list_u8_t *ret) {
     ret->ptr = malloc(4);
     ret->len = 4;

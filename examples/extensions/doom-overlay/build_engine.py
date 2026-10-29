@@ -24,6 +24,13 @@ def main():
     output = options.output.resolve()
     if source.is_relative_to(repo) or output.is_relative_to(repo):
         raise SystemExit("Keep engine source and output outside the shipped workspace.")
+    try:
+        width = int(os.environ.get("DOOM_RESX", "640"))
+        height = int(os.environ.get("DOOM_RESY", "400"))
+    except ValueError as error:
+        raise SystemExit("DOOM_RESX and DOOM_RESY must be positive integers.") from error
+    if width <= 0 or height <= 0 or width * height * 4 > 0xffffffff:
+        raise SystemExit("DOOM_RESX and DOOM_RESY must fit a nonempty wasm32 RGBA frame.")
     sdk = os.environ.get("WASI_SDK_PATH")
     compiler = shutil.which("clang", path=str(Path(sdk) / "bin")) if sdk else None
     if not compiler:
@@ -43,7 +50,7 @@ def main():
         wraps = ["I_Error", "exit", "printf", "puts", "putchar", "fprintf", "vfprintf", "fwrite"]
         subprocess.run([compiler, "--target=wasm32-wasip2", "-mexec-model=reactor",
                         "-std=gnu17", "-O2", "-DNDEBUG", "-DNORMALUNIX", "-D_DEFAULT_SOURCE", "-fno-builtin",
-                        "-DDOOMGENERIC_RESX=640", "-DDOOMGENERIC_RESY=400",
+                        f"-DDOOMGENERIC_RESX={width}", f"-DDOOMGENERIC_RESY={height}",
                         "-mllvm", "-wasm-enable-sjlj", "-mllvm", "-wasm-use-legacy-eh=false",
                         f"-ffile-prefix-map={work}=.", f"-ffile-prefix-map={repo}=.", f"-ffile-prefix-map={source}=.",
                         f"-I{here}", f"-I{work}", f"-I{engine}", *sources,

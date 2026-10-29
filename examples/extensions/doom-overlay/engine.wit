@@ -6,7 +6,9 @@ interface engine {
     init: func(wad: list<u8>, root: string) -> result<_, string>;
     /// Advances the game at the supplied elapsed time in milliseconds.
     tick: func(milliseconds: u32) -> result<_, string>;
-    /// Returns a 640 by 400 framebuffer in RGBA byte order.
+    /// Returns the framebuffer width and height in pixels.
+    dimensions: func() -> tuple<u32, u32>;
+    /// Returns a framebuffer in RGBA byte order.
     frame: func() -> list<u8>;
     /// Enqueues one press or release using the engine's key codes.
     key: func(pressed: bool, key: u8);

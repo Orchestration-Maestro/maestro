@@ -85,14 +85,18 @@ impl DoomOverlayComponent {
                 return Ok(());
             }
             if let Err(error) = self.engine.tick() {
-                self.close()?;
-                return self.ui.notify(
-                    &format!("DOOM stopped: {error}. Run /doom-overlay to restart."),
-                    Some(NotificationType::Error),
-                );
+                return self.stop(&error);
             }
             self.tui.request_render(false)?;
         }
+    }
+    /// Closes a failed view and reports why the engine needs replacement.
+    fn stop(&self, error: &str) -> ExtensionResult<()> {
+        self.close()?;
+        self.ui.notify(
+            &format!("DOOM stopped: {error}. Run /doom-overlay to restart."),
+            Some(NotificationType::Error),
+        )
     }
     /// Stops the timer, releases held input and pauses exactly once.
     /// # Errors
@@ -141,7 +145,14 @@ impl DoomOverlayComponent {
 }
 impl ComponentView for DoomOverlayComponent {
     fn render(&self, width: u32, _: CallbackEmitter<'_>) -> ExtensionResult<Vec<String>> {
-        let mut lines = render_half_block(&self.engine.get_frame_rgba()?, width)?;
+        let frame = match self.engine.get_frame_rgba() {
+            Ok(frame) => frame,
+            Err(error) => {
+                self.stop(&error)?;
+                return Err(error);
+            }
+        };
+        let mut lines = render_half_block(&frame, self.engine.dimensions(), width)?;
         let columns = usize::try_from(width).map_err(|e| e.to_string())?;
         lines.push(format!(
             "\x1b[2m{}\x1b[0m",
@@ -172,17 +183,21 @@ impl ComponentView for DoomOverlayComponent {
     }
 }
 /// Samples both pixels of each cell without stretching the terminal aspect ratio.
-fn render_half_block(rgba: &[u8], width: u32) -> ExtensionResult<Vec<String>> {
+fn render_half_block(
+    rgba: &[u8],
+    dimensions: (u32, u32),
+    width: u32,
+) -> ExtensionResult<Vec<String>> {
     let rows = (width / 16 * 5 + width % 16 * 5 / 16).max(10);
     let mut lines = Vec::new();
     for row in 0..rows {
-        let y1 = u64::from(row) * 400 / u64::from(rows);
-        let y2 = (u64::from(row) * 2 + 1) * 400 / (u64::from(rows) * 2);
+        let y1 = u64::from(row) * u64::from(dimensions.1) / u64::from(rows);
+        let y2 = (u64::from(row) * 2 + 1) * u64::from(dimensions.1) / (u64::from(rows) * 2);
         let mut line = String::new();
         for column in 0..width {
-            let x = u64::from(column) * 640 / u64::from(width);
-            let top = color(rgba, x, y1)?;
-            let bottom = color(rgba, x, y2)?;
+            let x = u64::from(column) * u64::from(dimensions.0) / u64::from(width);
+            let top = color(rgba, x, y1, dimensions.0)?;
+            let bottom = color(rgba, x, y2, dimensions.0)?;
             write!(
                 line,
                 "\x1b[38;2;{};{};{}m\x1b[48;2;{};{};{}m▀",
@@ -194,8 +209,8 @@ fn render_half_block(rgba: &[u8], width: u32) -> ExtensionResult<Vec<String>> {
     }
     Ok(lines)
 }
-/// Reads one RGB triplet from the validated 640 by 400 frame.
-fn color(rgba: &[u8], x: u64, y: u64) -> ExtensionResult<&[u8]> {
-    let offset = usize::try_from((y * 640 + x) * 4).map_err(|e| e.to_string())?;
+/// Reads one RGB triplet using the validated frame stride.
+fn color(rgba: &[u8], x: u64, y: u64, stride: u32) -> ExtensionResult<&[u8]> {
+    let offset = usize::try_from((y * u64::from(stride) + x) * 4).map_err(|e| e.to_string())?;
     Ok(&rgba[offset..offset + 3])
 }

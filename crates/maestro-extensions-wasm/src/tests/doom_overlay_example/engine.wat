@@ -44,6 +44,10 @@
     (func (export "key") (param $pressed i32) (param $code i32)
       local.get $pressed global.set $held
       local.get $code global.set $key)
+    (func (export "dimensions") (result i32)
+      i32.const 40 i32.const 640 i32.store
+      i32.const 44 i32.const 400 i32.store
+      i32.const 40)
     (func (export "frame") (result i32)
       (local $offset i32)
       loop $pixel
@@ -64,6 +68,8 @@
     (canon lift (core func $core "init") (memory (core memory $core "memory")) (realloc (core func $core "realloc"))))
   (func $tick (param "milliseconds" u32) (result $outcome)
     (canon lift (core func $core "tick") (memory (core memory $core "memory")) (realloc (core func $core "realloc"))))
+  (func $dimensions (result (tuple u32 u32))
+    (canon lift (core func $core "dimensions") (memory (core memory $core "memory"))))
   (func $frame (result $bytes)
     (canon lift (core func $core "frame") (memory (core memory $core "memory")) (realloc (core func $core "realloc"))))
   (func $key (param "pressed" bool) (param "key" u8)
@@ -71,6 +77,7 @@
   (instance $engine
     (export "init" (func $init))
     (export "tick" (func $tick))
+    (export "dimensions" (func $dimensions))
     (export "frame" (func $frame))
     (export "key" (func $key)))
   (export "maestro:doom/engine@0.1.0" (instance $engine)))

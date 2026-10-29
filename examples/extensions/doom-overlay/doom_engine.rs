@@ -12,6 +12,10 @@ use std::cell::Cell;
 pub struct DoomEngine {
     /// Completed frame-clock advances, retained while the overlay is closed.
     ticks: Cell<u32>,
+    /// Validated framebuffer width and height supplied by the engine.
+    dimensions: (u32, u32),
+    /// Complete RGBA length for the validated dimensions.
+    frame_bytes: usize,
     /// Whether an engine operation has failed.
     failed: Cell<bool>,
 }
@@ -21,8 +25,17 @@ impl DoomEngine {
     /// Returns the engine's initialization error.
     pub fn new(wad: &[u8], root: &str) -> ExtensionResult<Self> {
         engine::init(wad, root)?;
+        let (width, height) = engine::dimensions();
+        let bytes = width
+            .checked_mul(height)
+            .and_then(|pixels| pixels.checked_mul(4))
+            .filter(|_| width > 0 && height > 0)
+            .ok_or("DOOM returned invalid framebuffer dimensions")?;
+        let frame_bytes = usize::try_from(bytes).map_err(|error| error.to_string())?;
         Ok(Self {
             ticks: Cell::new(0),
+            dimensions: (width, height),
+            frame_bytes,
             failed: Cell::new(false),
         })
     }
@@ -43,14 +56,20 @@ impl DoomEngine {
     /// Returns a framebuffer length mismatch.
     pub fn get_frame_rgba(&self) -> ExtensionResult<Vec<u8>> {
         let frame = engine::frame();
-        if frame.len() != 640 * 400 * 4 {
+        if frame.len() != self.frame_bytes {
             self.failed.set(true);
             return Err(format!(
-                "DOOM returned {} framebuffer bytes; expected 1024000",
-                frame.len()
+                "DOOM returned {} framebuffer bytes; expected {}",
+                frame.len(),
+                self.frame_bytes
             ));
         }
         Ok(frame)
+    }
+    /// Returns the validated framebuffer width and height in pixels.
+    #[must_use]
+    pub fn dimensions(&self) -> (u32, u32) {
+        self.dimensions
     }
     /// Whether this component needs replacement after a failed engine operation.
     #[must_use]

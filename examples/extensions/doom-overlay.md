@@ -35,6 +35,10 @@ composed artifact in the shipped workspace or package.
 Install Python 3.9 or newer, Git, wasi-sdk 34, wit-bindgen-cli 0.62.0 and wasm-tools 1.262.0.
 Put `wit-bindgen` and `wasm-tools` on PATH and set `WASI_SDK_PATH` to the SDK root.
 Install the component target with `rustup target add wasm32-wasip2`.
+The engine defaults to 640×400 pixels. Set `DOOM_RESX` and `DOOM_RESY` before
+building to select another resolution, for example `DOOM_RESX=320 DOOM_RESY=200`.
+Both dimensions must be positive and their RGBA buffer must fit wasm32 memory.
+The player reads the built engine's dimensions for frame validation and sampling.
 From the workspace root, using an empty external build directory:
 
 ```sh
