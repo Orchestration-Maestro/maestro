@@ -1,7 +1,9 @@
 # Workspace daemon libraries
 
-`maestro-ipc` uses `interprocess =2.4.2` on Unix with default features disabled.
-No Tokio or asynchronous feature is enabled. It uses the Apache-2.0 licence option.
+`maestro-ipc` uses `interprocess =2.4.2` on Unix with default features disabled and
+its `tokio` feature enabled, for the daemon's asynchronous API socket. The feature adds
+edges to the already-locked `tokio =1.53.3` and `futures-core =0.3.34`, not new
+packages. It uses the Apache-2.0 licence option.
 It also uses the already-locked `rustix =1.1.5` on Unix with default features
 disabled and `std` and `net` enabled, under the MIT OR Apache-2.0 licence.
 `rustix` supplies the bounded connection attempts and the named native

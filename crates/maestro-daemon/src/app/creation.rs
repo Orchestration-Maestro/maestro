@@ -6,8 +6,9 @@ use crate::{
     settings::model::NewTerminalCwdConfig,
     terminal::state::TerminalState,
 };
+use maestro_protocol::schema::{ErrorBody, WorkspaceCreateParams};
 use maestro_workspace::workspace::{public_pane_id_for_number, public_tab_id_for_number};
-use std::{io, path::PathBuf};
+use std::{collections::HashMap, io, path::PathBuf};
 
 /// Expands only an exact `~` or a leading `~/` (`~\` on Windows), joining the rest as a
 /// native path and keeping every other spelling without reading the home directory.
@@ -59,28 +60,48 @@ fn resolve_new_terminal_cwd(policy: &NewTerminalCwdConfig, follow_cwd: Option<Pa
 }
 
 impl<C: FnMut() -> u128> App<C> {
-    /// Retains creation intent or creates immediately when no name prompt is configured.
+    /// Retains creation intent or creates immediately, through the workspace command
+    /// handler, when no name prompt is configured.
     ///
     /// # Errors
-    /// Returns a native pane-spawn error without adding a workspace.
-    pub async fn begin_workspace_create(&mut self) -> io::Result<()> {
-        let follow = self.workspace_creation_source();
-        let follow = match follow {
-            Some(workspace) => self.workspace_creation_cwd(workspace).await,
-            None => None,
-        };
-        let cwd = resolve_new_terminal_cwd(&self.config.terminal.new_cwd, follow);
+    /// Returns the handler's `workspace_create_failed` failure without adding a workspace.
+    pub async fn begin_workspace_create(&mut self) -> Result<(), ErrorBody> {
         if self.state.prompt_new_workspace_name.0 {
-            self.state.pending_workspace_create_cwd = Some(cwd);
+            self.state.pending_workspace_create_cwd = Some(self.new_workspace_cwd().await);
             return Ok(());
         }
-        let result = self.create_workspace_with_options(cwd, true).map(|_| ());
+        let result = self
+            .handle_workspace_create(WorkspaceCreateParams {
+                cwd: None,
+                focus: true,
+                label: None,
+                env: HashMap::new(),
+            })
+            .await
+            .map(|_| ());
         self.state.mode = if self.state.active.is_some() {
             Mode::Terminal
         } else {
             Mode::Navigate
         };
         result
+    }
+
+    /// The directory a new workspace starts in: the creation source's focused directory
+    /// under the configured policy.
+    pub(super) async fn new_workspace_cwd(&self) -> PathBuf {
+        let follow = match self.workspace_creation_source() {
+            Some(workspace) => self.workspace_creation_cwd(workspace).await,
+            None => None,
+        };
+        resolve_new_terminal_cwd(&self.config.terminal.new_cwd, follow)
+    }
+
+    /// The directory a new tab of `workspace` starts in: its focused pane's directory under
+    /// the configured policy.
+    pub(super) async fn new_tab_cwd(&self, workspace: usize) -> PathBuf {
+        let follow = self.focused_pane_cwd_in_workspace(workspace).await;
+        resolve_new_terminal_cwd(&self.config.terminal.new_cwd, follow)
     }
 
     /// Cancels the daemon's pending creation intent without allocating a workspace.
@@ -106,6 +127,27 @@ impl<C: FnMut() -> u128> App<C> {
         }
     }
 
+    /// Opens a focused workspace in the starting server's `cwd` when no workspace exists yet.
+    pub fn seed_startup_workspace(&mut self, cwd: Option<PathBuf>) {
+        let Some(cwd) = cwd.filter(|cwd| !cwd.as_os_str().is_empty()) else {
+            return;
+        };
+        if !self.state.topology.workspaces.is_empty() {
+            tracing::info!(
+                cwd = %cwd.display(),
+                "restored session already has workspaces; ignoring startup cwd"
+            );
+            return;
+        }
+        match self.create_workspace_with_options(cwd.clone(), true) {
+            Ok(_) => tracing::info!(cwd = %cwd.display(), "created startup workspace"),
+            Err(error) => {
+                tracing::warn!(cwd = %cwd.display(), err = %error, "failed to create startup workspace");
+                self.state.mode = Mode::Navigate;
+            }
+        }
+    }
+
     /// Creates the native root inside the topology's consuming spawn transaction.
     ///
     /// # Errors
@@ -114,6 +156,19 @@ impl<C: FnMut() -> u128> App<C> {
         &mut self,
         initial_cwd: PathBuf,
         focus: bool,
+    ) -> io::Result<usize> {
+        self.create_workspace_with_launch_env(initial_cwd, focus, Vec::new())
+    }
+
+    /// Creates a workspace whose root pane also receives the `extra_env` pairs.
+    ///
+    /// # Errors
+    /// Returns the native spawn error without publishing topology or runtime ownership.
+    pub(super) fn create_workspace_with_launch_env(
+        &mut self,
+        initial_cwd: PathBuf,
+        focus: bool,
+        extra_env: Vec<(String, String)>,
     ) -> io::Result<usize> {
         let size = self.state.estimate_pane_size();
         let launch = &self.launch;
@@ -124,21 +179,13 @@ impl<C: FnMut() -> u128> App<C> {
             self.state
                 .topology
                 .new_with_tab(initial_cwd, home.as_deref(), |pane, request| {
-                    let environment = PaneLaunchEnv::default().with_identity(
-                        request.workspace_id.clone(),
-                        public_tab_id_for_number(&request.workspace_id, request.tab_number),
-                        public_pane_id_for_number(&request.workspace_id, request.pane_number),
-                    );
-                    let runtime = PaneRuntime::spawn(
+                    spawn_root(
                         launch.runtime_config(config, pane, size),
-                        PaneShellConfig::new(
-                            &config.terminal.default_shell,
-                            config.terminal.shell_mode,
-                        ),
+                        config,
                         cwd.clone(),
-                        &environment,
-                    )?;
-                    Ok((TerminalState::new(request.terminal_id, cwd), runtime))
+                        extra_env,
+                        request,
+                    )
                 })?;
         self.terminal_runtimes.insert(terminal.id.clone(), runtime);
         self.state.terminals.insert(terminal.id.clone(), terminal);
@@ -157,6 +204,39 @@ impl<C: FnMut() -> u128> App<C> {
         Ok(index)
     }
 
+    /// Adds a tab to `workspace` whose root pane starts in `cwd` with the `extra_env` pairs,
+    /// returning the new tab's display position.
+    ///
+    /// # Errors
+    /// Returns the native spawn error, or "workspace disappeared" for a missing workspace.
+    pub(super) fn create_tab_with_launch_env(
+        &mut self,
+        workspace: usize,
+        cwd: PathBuf,
+        extra_env: Vec<(String, String)>,
+    ) -> io::Result<usize> {
+        let size = self.state.estimate_pane_size();
+        let launch = &self.launch;
+        let config = &self.config;
+        let (pane, (terminal, runtime)) = self
+            .state
+            .topology
+            .create_tab_with_runtime(workspace, |pane, request| {
+                spawn_root(
+                    launch.runtime_config(config, pane, size),
+                    config,
+                    cwd,
+                    extra_env,
+                    request,
+                )
+            })
+            .ok_or_else(|| io::Error::other("workspace disappeared"))??;
+        self.terminal_runtimes.insert(terminal.id.clone(), runtime);
+        self.state.terminals.insert(terminal.id.clone(), terminal);
+        self.state.pane_id_aliases.remove(&pane.raw());
+        Ok(self.state.topology.workspaces[workspace].tabs.len() - 1)
+    }
+
     /// Chooses navigation selection before active input focus, matching creation intent.
     fn workspace_creation_source(&self) -> Option<usize> {
         let selected = self
@@ -173,27 +253,56 @@ impl<C: FnMut() -> u128> App<C> {
 
     /// Follows the focused process, falling back to the workspace's root identity.
     async fn workspace_creation_cwd(&self, index: usize) -> Option<PathBuf> {
-        let workspace = self.state.topology.workspaces.get(index)?;
-        let focused = workspace
-            .tabs
-            .get(workspace.active_tab)
-            .and_then(|tab| tab.terminal_id(tab.layout.focused()));
-        if let Some(terminal) = focused {
-            if let Some(runtime) = self.terminal_runtimes.get(terminal)
-                && let Some(cwd) = runtime.follow_cwd().await
-            {
-                return Some(cwd);
-            }
-            if let Some(terminal) = self.state.terminals.get(terminal) {
-                return Some(terminal.cwd.clone());
-            }
+        if let Some(cwd) = self.focused_pane_cwd_in_workspace(index).await {
+            return Some(cwd);
         }
         crate::workspace::resolved_identity_cwd_from(
-            workspace,
+            self.state.topology.workspaces.get(index)?,
             &self.state.terminals,
             &self.terminal_runtimes,
         )
     }
+
+    /// The live directory of the focused pane of `index`, else its terminal's last known one.
+    async fn focused_pane_cwd_in_workspace(&self, index: usize) -> Option<PathBuf> {
+        let workspace = self.state.topology.workspaces.get(index)?;
+        let terminal = workspace
+            .tabs
+            .get(workspace.active_tab)
+            .and_then(|tab| tab.terminal_id(tab.layout.focused()))?;
+        if let Some(runtime) = self.terminal_runtimes.get(terminal)
+            && let Some(cwd) = runtime.follow_cwd().await
+        {
+            return Some(cwd);
+        }
+        self.state
+            .terminals
+            .get(terminal)
+            .map(|terminal| terminal.cwd.clone())
+    }
+}
+
+/// Spawns the root process of a new tab with this pane's managed identity and the caller's
+/// extra environment, returning its terminal record and runtime.
+fn spawn_root(
+    runtime_config: crate::pane::runtime::PaneRuntimeConfig,
+    config: &crate::settings::model::Config,
+    cwd: PathBuf,
+    extra_env: Vec<(String, String)>,
+    request: maestro_workspace::tab::SpawnRequest,
+) -> io::Result<(TerminalState, PaneRuntime)> {
+    let environment = PaneLaunchEnv::from_extra(extra_env).with_identity(
+        request.workspace_id.clone(),
+        public_tab_id_for_number(&request.workspace_id, request.tab_number),
+        public_pane_id_for_number(&request.workspace_id, request.pane_number),
+    );
+    let runtime = PaneRuntime::spawn(
+        runtime_config,
+        PaneShellConfig::new(&config.terminal.default_shell, config.terminal.shell_mode),
+        cwd.clone(),
+        &environment,
+    )?;
+    Ok((TerminalState::new(request.terminal_id, cwd), runtime))
 }
 
 impl<C: FnMut() -> u128> App<C> {
@@ -268,5 +377,85 @@ impl<C: FnMut() -> u128> App<C> {
                 is_linked_worktree: space.is_linked_worktree,
             }),
         })
+    }
+}
+
+impl<C: FnMut() -> u128> App<C> {
+    /// Publishes a new workspace with its first tab and that tab's root pane.
+    pub(super) async fn emit_workspace_open_events(&self, index: usize) {
+        let Some(workspace) = self.workspace_info(index) else {
+            return;
+        };
+        let Some(tab) = self.tab_info(index, 0) else {
+            return;
+        };
+        let Some(root_pane) = self.root_pane_info(index, 0).await else {
+            return;
+        };
+        self.event_hub
+            .push(maestro_protocol::events::EventData::WorkspaceCreated { workspace });
+        self.emit_tab_and_pane_created_events(tab, root_pane);
+    }
+
+    /// Publishes a new tab and its root pane.
+    pub(super) async fn emit_tab_created_events(&self, workspace: usize, tab: usize) {
+        let Some(tab_record) = self.tab_info(workspace, tab) else {
+            return;
+        };
+        if let Some(root_pane) = self.root_pane_info(workspace, tab).await {
+            self.emit_tab_and_pane_created_events(tab_record, root_pane);
+        }
+    }
+
+    /// Publishes a created tab, then its root pane.
+    fn emit_tab_and_pane_created_events(
+        &self,
+        tab: maestro_protocol::schema::TabInfo,
+        pane: maestro_protocol::schema::PaneInfo,
+    ) {
+        use maestro_protocol::events::EventData;
+        self.event_hub.push(EventData::TabCreated { tab });
+        self.event_hub.push(EventData::PaneCreated { pane });
+    }
+
+    /// The result of creating the workspace at `index`: it, its first tab and root pane.
+    pub(super) async fn workspace_created_result(
+        &self,
+        index: usize,
+    ) -> Option<maestro_protocol::schema::ResponseResult> {
+        Some(maestro_protocol::schema::ResponseResult::WorkspaceCreated {
+            workspace: self.workspace_info(index)?,
+            tab: self.tab_info(index, 0)?,
+            root_pane: self.root_pane_info(index, 0).await?,
+        })
+    }
+
+    /// The result of creating a tab: it and its root pane.
+    pub(super) async fn tab_created_result(
+        &self,
+        workspace: usize,
+        tab: usize,
+    ) -> Option<maestro_protocol::schema::ResponseResult> {
+        Some(maestro_protocol::schema::ResponseResult::TabCreated {
+            tab: self.tab_info(workspace, tab)?,
+            root_pane: self.root_pane_info(workspace, tab).await?,
+        })
+    }
+
+    /// The record of a tab's root pane.
+    async fn root_pane_info(
+        &self,
+        workspace: usize,
+        tab: usize,
+    ) -> Option<maestro_protocol::schema::PaneInfo> {
+        let root = self
+            .state
+            .topology
+            .workspaces
+            .get(workspace)?
+            .tabs
+            .get(tab)?
+            .root_pane;
+        self.pane_info(workspace, root).await
     }
 }

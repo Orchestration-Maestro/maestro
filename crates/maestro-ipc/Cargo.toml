@@ -7,9 +7,9 @@ license = "Apache-2.0"
 repository.workspace = true
 
 [target.'cfg(unix)'.dependencies]
-interprocess = { workspace = true }
-socket2 = { version = "=0.6.5", default-features = false }
+interprocess = { workspace = true, features = ["tokio"] }
 rustix = { version = "=1.1.5", default-features = false, features = ["std", "net"] }
+socket2 = { version = "=0.6.5", default-features = false }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true

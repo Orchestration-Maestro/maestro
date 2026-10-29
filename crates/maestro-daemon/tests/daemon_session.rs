@@ -175,7 +175,12 @@ fn run_consumes_due_work_and_queued_observations_before_final_save() {
         .enable_all()
         .build()
         .unwrap()
-        .block_on(app.run(&paths, std::future::ready(())));
+        .block_on(app.run(
+            &paths,
+            &mut tokio::sync::mpsc::unbounded_channel().1,
+            &mut crate::support::api::settings(),
+            std::future::ready(()),
+        ));
     assert!(app.state.should_quit.0);
     assert!(app.state.config_diagnostic.is_none());
     assert!(app.state.copy_feedback.is_none());
