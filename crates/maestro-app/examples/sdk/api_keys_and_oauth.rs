@@ -21,11 +21,7 @@ async fn run(sample: Sample) -> Result<Value, Error> {
             json!({"type": "api_key", "key": "stored-example-key"}),
         )?,
     );
-    let custom_dir = sample.root.path().join("custom");
-    std::fs::create_dir(&custom_dir)?;
-    let custom = Arc::new(AuthStorage::create(
-        &custom_dir.join("auth.json").display().to_string(),
-    ));
+    let custom = custom_auth(&sample)?;
     let commands = Arc::new(ProcessConfigValueOperations::new(|| {
         maestro_tools::utils::shell::get_shell_config(None).map(|shell| (shell.shell, shell.args))
     }));
@@ -55,6 +51,13 @@ async fn run(sample: Sample) -> Result<Value, Error> {
             &selected
         ));
         result["sessions"] = json!(index + 1);
+        let label = match index {
+            0 => "default auth storage and model registry",
+            1 => "custom auth storage location",
+            2 => "runtime API key override",
+            _ => "only built-in models",
+        };
+        writeln!(sample.output.borrow_mut(), "Session with {label}")?;
         created.session.dispose();
     }
     result["resolved"] = json!(auth.get_api_key("faux", false, &*commands).await?);
@@ -63,6 +66,18 @@ async fn run(sample: Sample) -> Result<Value, Error> {
     auth.remove_runtime_api_key("faux");
     result["restored"] = json!(auth.get_api_key("faux", false, &*commands).await?);
     Ok(result)
+}
+
+/// Open a second credential file inside the sample's disposable tree.
+fn custom_auth(sample: &Sample) -> Result<std::sync::Arc<maestro_app::AuthStorage>, Error> {
+    use maestro_app::AuthStorage;
+    use std::sync::Arc;
+    let custom_dir = sample.root.path().join("custom");
+    std::fs::create_dir(&custom_dir)?;
+    let custom = Arc::new(AuthStorage::create(
+        &custom_dir.join("auth.json").display().to_string(),
+    ));
+    Ok(custom)
 }
 
 #[cfg(test)]
