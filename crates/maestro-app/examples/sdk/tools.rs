@@ -39,6 +39,21 @@ async fn run(sample: Sample) -> Result<Value, Error> {
 mod tests {
     use super::*;
 
+    /// All four tool configurations are announced in their creation order.
+    #[test]
+    fn tools_prints_observations_in_order() -> Result<(), Error> {
+        let output = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+        support::execute(|mut sample| {
+            sample.output = output.clone();
+            run(sample)
+        })?;
+        assert_eq!(
+            String::from_utf8(output.borrow().clone())?,
+            "Read-only session created\nCustom tools session created\nCustom cwd session created\nSpecific tools with custom cwd session created\n"
+        );
+        Ok(())
+    }
+
     /// Allowlisted tools stay in order, including sessions rooted in another directory.
     #[test]
     fn tools_selects_read_only_and_custom_cwd_tools() -> Result<(), Error> {
