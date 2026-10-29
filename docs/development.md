@@ -634,30 +634,45 @@ To refresh the ranks:
 
 ### Test time budget
 
-Nextest fails a test at 30 seconds by default. Fix slow tests at their cause;
-do not raise the default or add headroom to an exception. A temporary exception
-in `.config/nextest.toml` must select exactly one test, or one shared fixture
+Nextest flags a test as slow every 30 seconds and kills it after four periods,
+at 120 seconds. The 30-second flag is the budget: fix a slow test at its cause,
+and do not approve one on headroom. The 120-second kill is a hang limit, not a
+budget. It stops a hung test and leaves a busy shared runner room to finish a
+test that normally runs well inside it. The default profile sets both:
+
+```toml
+[profile.default]
+slow-timeout = { period = "30s", terminate-after = 4 }
+```
+
+A test that needs more than 120 seconds gets an exception in
+`.config/nextest.toml`. It must select exactly one test, or one shared fixture
 group, and name the measured work and an open issue that will remove it:
 
 ```toml
 [[profile.default.overrides]]
 filter = "package(=maestro-example) & test(=component::loads)"
-# Measured: 43.549s; cause: compiling the component fixture; #3589
-slow-timeout = { period = "44s", terminate-after = 1 }
+# Measured: 143.549s; cause: compiling the component fixture; #3589
+slow-timeout = { period = "30s", terminate-after = 5 }
 ```
 
-Use the measured duration, rounded up to whole seconds, as the temporary limit.
-Write `period` as positive whole seconds (`"Ns"`) and set a positive
-`terminate-after`; their product is the test's limit. Keep the `Measured:`
-seconds, `cause:` description and `#NNNN` issue in comments immediately above
-`slow-timeout`. Each exception needs its own comment; another override's comment
-does not apply. A limit of 30 seconds or less needs no exception comment.
+Keep `period = "30s"` so the test still prints SLOW every 30 seconds, and set
+`terminate-after` to the fewest whole periods that cover the measured duration.
+If a hosted run killed the test, record the kill time as the lower bound and say
+so in the `cause:` text. Keep the `Measured:` seconds (over 120), `cause:`
+description and `#NNNN` issue in comments immediately above `slow-timeout`. Each
+exception needs its own comment; another override's comment does not apply. A
+test that finishes within 120 seconds needs no exception.
 
-The conventions check rejects unbounded limits, defaults over 30 seconds and
-undocumented raised overrides in every profile. It checks references offline;
-the author and reviewer verify with GitHub that the linked issue is still open.
-The change fixing the slowness must delete its override as well as close the
-issue. Existing measured exceptions are tracked in #3589.
+The conventions check rejects a default other than the flag and hang limit, a
+profile limit above the hang limit, a profile that changes the 30-second
+period, an exception that changes the 30-second period or that the hang limit
+already covers, an undocumented exception and an exception whose
+`terminate-after` is not the fewest periods covering its `Measured:` seconds.
+It checks references offline; the author and reviewer verify with GitHub that
+the linked issue is still open. The change fixing the slowness must delete its
+override as well as close the issue. Each existing exception has its own issue,
+and #3589 tracks them together.
 
 Development and test profiles use `debug = "line-tables-only"` for workspace crates:
 backtraces retain file:line for workspace code, without debugger variable views.
