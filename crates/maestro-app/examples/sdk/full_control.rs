@@ -81,6 +81,21 @@ fn configured_options(sample: &Sample) -> Result<maestro_app::CreateAgentSession
 mod tests {
     use super::*;
 
+    /// Explicit configuration still presents the model's text as a live answer.
+    #[test]
+    fn full_control_prints_observations_in_order() -> Result<(), Error> {
+        let output = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+        support::execute(|mut sample| {
+            sample.output = output.clone();
+            run(sample)
+        })?;
+        assert_eq!(
+            String::from_utf8(output.borrow().clone())?,
+            "Only the supplied read and bash tools are available.\n"
+        );
+        Ok(())
+    }
+
     /// Explicit resources exclude disk instructions and the tool allowlist reaches the session.
     #[test]
     fn full_control_uses_only_the_supplied_configuration() -> Result<(), Error> {
