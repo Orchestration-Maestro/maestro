@@ -2,7 +2,7 @@
 
 use maestro_test_directory::Scratch;
 use maestro_test_process::{TestProcess, selection};
-use std::{collections::HashSet, fs, path::Path};
+use std::{collections::HashMap, fs, path::Path};
 
 #[path = "../../maestro-extensions-wasm/src/tests/build/cargo.rs"]
 mod component_build;
@@ -10,14 +10,14 @@ mod component_build;
 #[test]
 fn component_consumers_have_prepared_examples() {
     let workspace = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let mut prepared = HashSet::new();
+    let mut prepared = HashMap::new();
     maestro_tooling::example_files::prepare(
         &[
             workspace.join("crates/maestro-extensions-wasm/examples"),
             workspace.join("examples/extensions"),
         ],
-        |name, _| {
-            prepared.insert(name.to_owned());
+        |name, variable| {
+            prepared.insert(name.to_owned(), variable.to_owned());
             Ok(name.into())
         },
     )
@@ -35,19 +35,28 @@ fn component_consumers_have_prepared_examples() {
     }
 }
 
-/// Checks the literal example operands accepted by the shared test builders.
-fn assert_prepared_consumers(file: &Path, prepared: &HashSet<String>) {
+/// Checks the literal example operands accepted by the shared test builders, and that no
+/// caller reads the example's setup variable, which the builder already looks up.
+fn assert_prepared_consumers(file: &Path, prepared: &HashMap<String, String>) {
     let source = fs::read_to_string(file).unwrap();
-    for call in ["example_component(", "Harness::example(", "\"--example\","] {
+    for call in [
+        "example_component(",
+        "Harness::example(",
+        "build::component(",
+        "\"--example\",",
+    ] {
         for (offset, _) in source.match_indices(call) {
             let arguments = source[offset + call.len()..].trim_start();
             let Some(arguments) = arguments.strip_prefix('"') else {
                 continue;
             };
             let name = arguments.split('"').next().unwrap();
+            let variable = prepared
+                .get(name)
+                .unwrap_or_else(|| panic!("setup does not prepare {name}: {}", file.display()));
             assert!(
-                prepared.contains(name),
-                "setup does not prepare {name}: {}",
+                !source.contains(&format!("\"{variable}\"")),
+                "{} looks up {variable} beside the builder for {name}",
                 file.display()
             );
         }
