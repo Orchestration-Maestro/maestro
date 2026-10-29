@@ -6,8 +6,10 @@ changing the WAD replaces the engine before opening the new selection.
 
 ## WAD files
 
-An explicit path overrides discovery. Without one, the example checks the
-component's directory, `./doom1.wad`, `./DOOM1.WAD`, `~/doom1.wad` and
+An explicit path overrides the remembered WAD selection. Without one, the
+example reuses the remembered selection before trying discovery. If there is no
+remembered selection, it checks the component's directory, `./doom1.wad`,
+`./DOOM1.WAD`, `~/doom1.wad` and
 `~/.doom/doom1.wad`, in that order. If no local file exists, it downloads the
 shareware WAD beside the component. Custom WAD files are not required to match
 the shareware checksum.
