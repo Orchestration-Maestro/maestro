@@ -3,10 +3,10 @@
 """Build a separate headless engine from an external pinned source checkout."""
 import argparse
 import os
-from pathlib import Path
 import re
 import shutil
 import subprocess
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 PIN = "e257a09527062bfb986b6e5e0780839b6cbd5b71"
@@ -25,8 +25,8 @@ def main():
     if source.is_relative_to(repo) or output.is_relative_to(repo):
         raise SystemExit("Keep engine source and output outside the shipped workspace.")
     try:
-        width = int(os.environ.get("DOOM_RESX", "640"))
-        height = int(os.environ.get("DOOM_RESY", "400"))
+        width = int(os.environ.get("DOOM_RESX") or "640")
+        height = int(os.environ.get("DOOM_RESY") or "400")
     except ValueError as error:
         raise SystemExit("DOOM_RESX and DOOM_RESY must be positive integers.") from error
     if width <= 0 or height <= 0 or width * height * 4 > 0xffffffff:
