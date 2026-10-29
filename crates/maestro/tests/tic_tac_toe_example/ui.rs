@@ -1,4 +1,5 @@
 //! A retained terminal view driven by the same input interface as the interactive host.
+use crate::support::theme;
 use maestro_app::{
     CustomComponentFactory, CustomFactoryOutcome, CustomUIOptions, EventError,
     ExtensionUIContextPort, ExtensionUIFuture,
@@ -49,18 +50,6 @@ impl Ui {
             .try_render(width)
             .unwrap()
     }
-}
-/// A real prepared theme, shared with the custom-message and tool renderers.
-pub(super) fn theme() -> maestro_theme::LiveTheme {
-    let theme = maestro_theme::load_theme_from_path(
-        concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../maestro-theme/assets/theme/dark.json"
-        ),
-        Some(maestro_theme::ColorMode::Truecolor),
-    )
-    .unwrap();
-    maestro_theme::LiveTheme::from_theme(Rc::new(theme))
 }
 impl ExtensionUIContextPort for Ui {
     fn theme(&self) -> maestro_theme::LiveTheme {

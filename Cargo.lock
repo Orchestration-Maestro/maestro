@@ -3782,6 +3782,7 @@ dependencies = [
  "maestro-json",
  "maestro-listeners",
  "maestro-listing",
+ "maestro-lock",
  "maestro-markdown",
  "maestro-models",
  "maestro-packages",
@@ -3942,6 +3943,7 @@ dependencies = [
  "maestro-tui",
  "maestro-workspace",
  "regex",
+ "rustix",
  "serde",
  "serde_json",
  "sha2 0.11.0",
@@ -4016,6 +4018,7 @@ dependencies = [
  "simd-adler32",
  "slab",
  "smallvec",
+ "socket2",
  "stable_deref_trait",
  "syn 2.0.119",
  "syn 3.0.6",
@@ -4124,8 +4127,10 @@ dependencies = [
  "maestro-dependencies",
  "maestro-entry",
  "maestro-json",
+ "maestro-listing",
  "maestro-models",
  "maestro-request",
+ "maestro-test-directory",
  "maestro-text",
  "maestro-tool",
  "num-traits",
@@ -4171,6 +4176,7 @@ dependencies = [
  "maestro-test-directory",
  "maestro-test-process",
  "rustix",
+ "socket2",
 ]
 
 [[package]]

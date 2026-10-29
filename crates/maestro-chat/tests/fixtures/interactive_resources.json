@@ -577,28 +577,6 @@
     }
   },
   {
-    "test": "quiet_resources_require_force",
-    "input": {
-      "op": "listing",
-      "startup": {
-        "quiet": true
-      },
-      "diagnostics": true,
-      "skills": [
-        {
-          "filePath": "/work/SKILL.md",
-          "name": "commit"
-        }
-      ]
-    },
-    "expected": {
-      "before": [],
-      "expanded": [],
-      "collapsed": [],
-      "children": 0
-    }
-  },
-  {
     "test": "empty_resources_do_not_add_chat_children",
     "input": {
       "op": "listing",

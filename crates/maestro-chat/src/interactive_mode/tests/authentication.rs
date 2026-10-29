@@ -11,7 +11,7 @@ use super::models::{
     replace_session, replaceable, scope, shows_only, submit_held,
 };
 use super::typed::{poll, recalled, submit, waiting};
-use super::{World, isolated, started_with};
+use super::{World, isolated, isolated_case, started_with};
 use crate::components::session_selector::list::tests::session_picker::decode_cases;
 use crate::{
     AuthSelectorProvider, AuthType, ExtensionSelectorComponent, LoginDialogComponent,
@@ -21,7 +21,7 @@ use maestro_app::{
     AuthCredential, AuthStorage, BoxFuture, Fetch, Model, OAuthCallbacks, OAuthCredentials,
     OAuthError, OAuthProviderInterface, ReadonlyFooterDataProvider, SharedHandle,
 };
-use maestro_tui::Component;
+use maestro_tui::{Component, Focusable, KeybindingKeys};
 use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::{Map, Value, json};
 use std::{
@@ -287,6 +287,10 @@ fn position(world: &World, selected: &str) -> usize {
 /// Moves the picker to `position` with its own key bindings, confirms it and settles the
 /// removal it starts.
 fn select(world: &World, position: usize) {
+    assert!(
+        !world.mode.editor.focus_flag().get(),
+        "the picker holds the keyboard until the removal starts"
+    );
     select_on(
         world,
         &picker(world).expect("the picker is shown"),
@@ -294,16 +298,33 @@ fn select(world: &World, position: usize) {
     );
 }
 
-/// Moves `panel` to `position`, confirms it and settles the removal it starts.
+/// Moves `panel` to `position`, confirms it and settles the removal it starts, then the
+/// frame it requested. The terminal holds only what the removal painted.
 fn select_on(world: &World, panel: &OAuthSelectorComponent, position: usize) {
     for _ in 0..position {
         panel.handle_input("\x1b[B").unwrap();
     }
+    world.runtime.settle().unwrap();
+    world.terminal.clear_writes();
     panel.handle_input("\r").unwrap();
     assert!(
         world.runtime.drain_futures().is_empty(),
         "the removal reports no unhandled failure"
     );
+    world.runtime.settle().unwrap();
+}
+
+/// Whether the terminal was written `text`, however the frame wrapped it: every word of
+/// `text` appears, in order, in what the terminal received.
+fn painted(world: &World, text: &str) -> bool {
+    let frame = maestro_app::strip_ansi(&world.terminal.writes().concat()).unwrap();
+    let mut rest = frame.as_str();
+    text.split_whitespace().all(|word| {
+        rest.find(word).is_some_and(|at| {
+            rest = &rest[at + word.len()..];
+            true
+        })
+    })
 }
 
 /// The authentication kind of `option` as its case records it.
@@ -530,6 +551,10 @@ fn removed(world: &World, expected: &Removed) {
     match (&expected.message, &expected.error) {
         (Some(message), None) => {
             assert!(notes(world, message), "the chosen success text is shown");
+            assert!(
+                painted(world, message),
+                "the success text reaches the terminal"
+            );
             assert!(!notes(world, "Error: "), "no failure is shown");
         }
         (None, Some(error)) => {
@@ -537,59 +562,75 @@ fn removed(world: &World, expected: &Removed) {
                 notes(world, &format!("Error: {error}")),
                 "the failure is shown"
             );
+            assert!(
+                painted(world, &format!("Error: {error}")),
+                "the failure reaches the terminal"
+            );
             assert!(!notes(world, "Logged out of") && !notes(world, "Removed stored API key"));
         }
         _ => panic!("a removal either succeeds or fails"),
     }
+    assert!(
+        editor_focused(world),
+        "the keyboard is back on the editor after the outcome"
+    );
 }
 
 #[test]
 fn logout_options_keep_saved_kinds_and_stable_names() {
     const TEST: &str = "logout_options_keep_saved_kinds_and_stable_names";
-    isolated(TEST, async |directory| {
-        for (index, (input, expected)) in cases::<Listing, Listed>(TEST).into_iter().enumerate() {
-            assert!(!input.case.is_empty());
-            let auth = document_store(directory, index, &input.stored);
-            let world = started_with(directory, Some(auth)).await;
-            for provider in &input.configured {
-                register_one(&world, provider);
+    // The fixture orders `Ångström` before `zebra`, as English collation does. The child's
+    // environment is cleared already; the pin states the assumption where it is made.
+    isolated_case(
+        TEST,
+        "child",
+        &[("LC_ALL", "en_US.UTF-8")],
+        async |directory| {
+            for (index, (input, expected)) in cases::<Listing, Listed>(TEST).into_iter().enumerate()
+            {
+                assert!(!input.case.is_empty());
+                let auth = document_store(directory, index, &input.stored);
+                let world = started_with(directory, Some(auth)).await;
+                for provider in &input.configured {
+                    register_one(&world, provider);
+                }
+                for entry in &input.stored {
+                    register_named(&world, &entry.id, entry.name.clone());
+                }
+                let options = world.mode.logout_provider_options().unwrap();
+                let listed: Vec<_> = options
+                    .iter()
+                    .map(|option| (option.id.as_str(), option.name.as_str(), kind(option)))
+                    .collect();
+                let recorded: Vec<_> = expected
+                    .options
+                    .iter()
+                    .map(|choice| {
+                        (
+                            choice.id.as_str(),
+                            choice.name.as_str(),
+                            choice.auth_type.as_str(),
+                        )
+                    })
+                    .collect();
+                assert_eq!(listed, recorded, "{}", input.case);
+                if options.is_empty() {
+                    submit_held(&world, "/logout");
+                    assert!(picker(&world).is_none(), "{}", input.case);
+                    continue;
+                }
+                let panel = open(&world);
+                let rows = panel.render(WIDE).concat();
+                let mut read = 0;
+                for choice in &expected.options {
+                    let at = rows[read..]
+                        .find(&choice.name)
+                        .unwrap_or_else(|| panic!("{}: {} is listed", input.case, choice.name));
+                    read += at + choice.name.len();
+                }
             }
-            for entry in &input.stored {
-                register_named(&world, &entry.id, entry.name.clone());
-            }
-            let options = world.mode.logout_provider_options().unwrap();
-            let listed: Vec<_> = options
-                .iter()
-                .map(|option| (option.id.as_str(), option.name.as_str(), kind(option)))
-                .collect();
-            let recorded: Vec<_> = expected
-                .options
-                .iter()
-                .map(|choice| {
-                    (
-                        choice.id.as_str(),
-                        choice.name.as_str(),
-                        choice.auth_type.as_str(),
-                    )
-                })
-                .collect();
-            assert_eq!(listed, recorded, "{}", input.case);
-            if options.is_empty() {
-                submit_held(&world, "/logout");
-                assert!(picker(&world).is_none(), "{}", input.case);
-                continue;
-            }
-            let panel = open(&world);
-            let rows = panel.render(WIDE).concat();
-            let mut read = 0;
-            for choice in &expected.options {
-                let at = rows[read..]
-                    .find(&choice.name)
-                    .unwrap_or_else(|| panic!("{}: {} is listed", input.case, choice.name));
-                read += at + choice.name.len();
-            }
-        }
-    });
+        },
+    );
 }
 
 #[test]
@@ -662,8 +703,13 @@ fn status_notice() -> String {
 fn logout_selection_removes_only_chosen_saved_credential() {
     const TEST: &str = "logout_selection_removes_only_chosen_saved_credential";
     isolated(TEST, async |directory| {
-        for (input, expected) in cases::<Removal, Removed>(TEST) {
-            let world = started_with(directory, None).await;
+        for (index, (input, expected)) in cases::<Removal, Removed>(TEST).into_iter().enumerate() {
+            // The credentials live in a file and a model configuration sits in the agent
+            // directory: a removal may change only the file.
+            let auth = document_store(directory, index, &input.stored);
+            let configuration = directory.join("models.json");
+            std::fs::write(&configuration, "{\n  \"providers\": {}\n}\n").unwrap();
+            let world = started_with(directory, Some(auth)).await;
             prepare(&world, &input);
             let chosen = position(&world, &input.selected);
             open(&world);
@@ -685,8 +731,43 @@ fn logout_selection_removes_only_chosen_saved_credential() {
             }
             select(&world, chosen);
             removed(&world, &expected);
+            let backing = directory.join(format!("store{index}")).join("auth.json");
+            assert_stored_without(&backing, &input);
+            assert_eq!(
+                std::fs::read_to_string(&configuration).unwrap(),
+                "{\n  \"providers\": {}\n}\n",
+                "the model configuration is unchanged"
+            );
         }
     });
+}
+
+/// Checks that the file at `backing` holds every saved credential of `input` but the
+/// chosen one, each as it was recorded.
+fn assert_stored_without(backing: &Path, input: &Removal) {
+    let document: Map<String, Value> =
+        serde_json::from_str(&std::fs::read_to_string(backing).unwrap()).unwrap();
+    let mut kept: Vec<&str> = document.keys().map(String::as_str).collect();
+    kept.sort_unstable();
+    let mut expected: Vec<&str> = input
+        .stored
+        .iter()
+        .map(|entry| entry.id.as_str())
+        .filter(|id| *id != input.selected)
+        .collect();
+    expected.sort_unstable();
+    assert_eq!(kept, expected, "the file loses the chosen credential only");
+    for entry in input
+        .stored
+        .iter()
+        .filter(|entry| entry.id != input.selected)
+    {
+        assert_eq!(
+            document[&entry.id], entry.record,
+            "{} is kept as it was",
+            entry.id
+        );
+    }
 }
 
 #[test]
@@ -918,6 +999,49 @@ fn logout_cancel_keeps_saved_credentials_and_restores_editor() {
             );
         }
     });
+}
+
+#[test]
+fn logout_cancel_follows_the_configured_key_and_leaves_the_file_as_it_was() {
+    isolated(
+        "logout_cancel_follows_the_configured_key_and_leaves_the_file_as_it_was",
+        async |directory| {
+            let recorded = "logout_cancel_keeps_saved_credentials_and_restores_editor";
+            for (index, (input, expected)) in
+                cases::<Removal, Removed>(recorded).into_iter().enumerate()
+            {
+                let auth = document_store(directory, index, &input.stored);
+                let world = started_with(directory, Some(auth)).await;
+                prepare(&world, &input);
+                let backing = directory.join(format!("store{index}")).join("auth.json");
+                let before = std::fs::read(&backing).unwrap();
+                // Cancel is Ctrl+X here, so Escape and Ctrl+C stop cancelling.
+                maestro_tui::get_keybindings().set_user_bindings(vec![(
+                    "tui.select.cancel".to_owned(),
+                    Some(KeybindingKeys::Single("ctrl+x".to_owned())),
+                )]);
+                let panel = open(&world);
+                for old in ["\x1b", "\x03"] {
+                    panel.handle_input(old).unwrap();
+                    assert!(picker(&world).is_some(), "{old:?} no longer cancels");
+                }
+                world.terminal.clear_writes();
+                panel.handle_input("\x18").unwrap();
+                world.runtime.settle().unwrap();
+                assert!(editor_restored(&world), "the configured key cancels");
+                assert!(!world.terminal.writes().is_empty(), "a frame is requested");
+                assert!(editor_focused(&world), "the keyboard is back on the editor");
+                assert_eq!(accepted(&world), expected.accepted);
+                assert_eq!(count(&world).to_bits(), expected.count.to_bits());
+                assert!(!notes(&world, "Logged out of") && !notes(&world, "Error: "));
+                assert_eq!(
+                    std::fs::read(&backing).unwrap(),
+                    before,
+                    "cancelling leaves the credential file byte for byte as it was"
+                );
+            }
+        },
+    );
 }
 
 #[test]
