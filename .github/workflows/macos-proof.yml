@@ -71,7 +71,7 @@ jobs:
             cargo fetch --locked --manifest-path "$manifest"
           done
       - name: Isolated tests
-        timeout-minutes: 120
+        timeout-minutes: 35
         run: |
           cargo_home=$(cd "${CARGO_HOME:-$HOME/.cargo}" && pwd)
           rustup_home=$(cd "${RUSTUP_HOME:-$HOME/.rustup}" && pwd)
@@ -90,26 +90,17 @@ jobs:
           }
           set +e
           started=$SECONDS
-          run_isolated cargo test --workspace --locked --no-run || exit "$?"
-          environment="$PWD/author-component.env"
-          run_isolated env NEXTEST_ENV="$environment" "$PWD/target/debug/examples/prepare_author_component" || exit "$?"
-          run_isolated bash -c "set -a; . \"\$1\"; set +a; cargo test --workspace --locked" _ "$environment" 2>&1 | tee cargo-test.log
+          run_isolated env MAESTRO_RPC_PROBE="$PWD/rpc-trace.log" cargo test --locked -p maestro-app --test integration rpc_client_lifecycle::stderr_is_forwarded_and_retained_during_start_and_stop -- --exact 2>&1 | tee cargo-test.log
           tests=${PIPESTATUS[0]}
           echo "CARGO_TEST exit=$tests wall_seconds=$((SECONDS - started))"
           exit "$tests"
-      - name: Interactive walkthrough
-        if: always()
-        timeout-minutes: 40
-        run: |
-          brew install tmux
-          cargo build --locked -p maestro
-          bash .github/proof/walkthrough.sh "$PWD/target/debug/maestro" "$PWD/walkthrough"
       - name: Upload logs
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: test-logs-${{ matrix.os }}
           path: |
+            rpc-trace.log
             cargo-test.log
             walkthrough
           if-no-files-found: ignore

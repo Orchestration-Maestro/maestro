@@ -241,9 +241,25 @@ fn startup_observes_the_hundred_millisecond_boundary() {
 /// More diagnostic text than a pipe holds, so an unread standard error blocks its writer.
 const FILL: usize = 1 << 20;
 
+/// Records checkpoints without changing the forwarded byte stream.
+fn trace_forwarding(message: &str) {
+    use std::io::Write;
+    let path = std::env::var("MAESTRO_RPC_PROBE").unwrap();
+    writeln!(
+        std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(path)
+            .unwrap(),
+        "{message}"
+    )
+    .unwrap();
+}
+
 /// Runs a client whose child writes more diagnostic text than this process's unread
 /// standard error holds, then reports the retained text and waits for the parent.
 fn forwarding_child() {
+    trace_forwarding("child entered");
     let peer = Peer::new();
     let script = format!(
         r"
@@ -258,11 +274,16 @@ for line in commands(): respond(json.loads(line))
         let client = RpcClient::new(peer.options(&script));
         let mut events = events(&client);
         client.start().await.unwrap();
+        trace_forwarding("child started");
         next_of(&mut events, "peer_ready").await;
+        trace_forwarding("child ready");
         client.abort().await.unwrap();
+        trace_forwarding("child aborted");
         client.stop().await.unwrap();
+        trace_forwarding("child stopped");
         let retained = client.get_stderr().replace(&"x".repeat(FILL), "<fill>");
         println!("PROBE {}", json!(retained));
+        trace_forwarding("child reported");
     });
     // The parent lets this process end once it has read the forwarded text.
     let _ = std::io::stdin().read_line(&mut String::new());
@@ -284,6 +305,7 @@ fn stderr_is_forwarded_and_retained_during_start_and_stop() {
     .case("*")
     .spawn()
     .unwrap();
+    trace_forwarding("parent spawned child");
     let mut stdout = std::io::BufReader::new(child.stdout.take().unwrap());
     let mut stderr = child.stderr.take().unwrap();
     // The stop ends once the forwarded text is written, so it is read meanwhile.
@@ -294,6 +316,7 @@ fn stderr_is_forwarded_and_retained_during_start_and_stop() {
             let read = stderr.read(&mut chunk).unwrap();
             assert!(read > 0, "the forwarded text arrives before the child ends");
             seen.extend_from_slice(&chunk[..read]);
+            trace_forwarding(&format!("parent read stderr {}", seen.len()));
         }
         seen
     });
@@ -303,6 +326,7 @@ fn stderr_is_forwarded_and_retained_during_start_and_stop() {
             stdout.read_line(&mut line).unwrap() > 0,
             "the child reports"
         );
+        trace_forwarding(&format!("parent stdout {line:?}"));
         if let Some(probe) = line.strip_prefix("PROBE ") {
             break probe.trim_end().to_owned();
         }
