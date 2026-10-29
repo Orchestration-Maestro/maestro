@@ -1,12 +1,11 @@
 #!/bin/sh
 # Nextest supplies its active artifact directory in the platform library search path.
 set -eu
+prepared=false
 if [ "${TEST_ARCHIVE-}" = 1 ] || {
     [ -n "${TEST_PREPARE_OUTPUT-}" ] && [ -f "$TEST_PREPARE_OUTPUT/components.json" ]
 }; then
-    TEST_PREPARE_OUTPUT=${TEST_PREPARE_OUTPUT:-target/test-setup}
-    export TEST_PREPARE_OUTPUT
-    exec python3 "$(dirname "$0")/prepare-test-setup.py" export
+    prepared=true
 fi
 case "$(uname -s)" in
     Darwin) paths=${NEXTEST_DYLD_FALLBACK_LIBRARY_PATH-}; separator=: ;;
@@ -16,6 +15,14 @@ esac
 IFS=$separator
 for directory in $paths; do
     [ -d "$directory/deps" ] || continue
+    if [ "$prepared" = true ]; then
+        # No example runs here, so only the shared modification time is left to set; status 3
+        # reports an outdated example that this route never uses.
+        sh "$(dirname "$0")/normalize-component-cache.sh" "$directory" || [ $? -eq 3 ]
+        TEST_PREPARE_OUTPUT=${TEST_PREPARE_OUTPUT:-target/test-setup}
+        export TEST_PREPARE_OUTPUT
+        exec python3 "$(dirname "$0")/prepare-test-setup.py" export
+    fi
     # The test build's own example keeps its resolved features; a single-package
     # `cargo run` resolves fewer and recompiles the engine. Use it only while it is
     # newer than its sources, so a filtered build never runs outdated preparation.

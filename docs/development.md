@@ -554,8 +554,10 @@ Archived CI shards receive `TEST_ARCHIVE=1` and `TEST_PREPARE_OUTPUT` pointing t
 The standalone `test_prepare` command in `.github/ci.toml` runs the existing
 component-discovery example in a separate build directory, then stages only
 component files and a content manifest. Shared CI transfers these files separately
-from the native test archive. The nextest launcher checks source and artifact
-hashes before exporting absolute paths through `NEXTEST_ENV`. Archived runs require
+from the native test archive. The nextest launcher gives the extracted executables
+one modification time, as below, so test processes share a compile-cache namespace.
+It then checks source and artifact hashes before exporting absolute paths through
+`NEXTEST_ENV`. No setup example warms the cache on this route. Archived runs require
 the bundle and fail without starting Cargo when it is missing or stale. Other
 runs reuse an existing manifest, rejecting stale or incomplete files; without a
 manifest they keep local auto-build. This includes warm-cache runs, which receive
