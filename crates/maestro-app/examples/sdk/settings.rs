@@ -107,6 +107,26 @@ async fn configured_options(
 mod tests {
     use super::*;
 
+    /// Settings failures identify their scope without exposing a debug representation.
+    #[test]
+    fn settings_warns_with_scope_names() -> Result<(), Error> {
+        let output = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+        let result = support::execute(|mut sample| {
+            sample.output = output.clone();
+            async move {
+                std::fs::create_dir(sample.root.path().join("settings.json"))?;
+                run(sample).await
+            }
+        });
+        assert!(result.is_err());
+        let text = String::from_utf8(output.borrow().clone())?;
+        assert!(
+            text.lines()
+                .any(|line| line.starts_with("Warning (global settings): "))
+        );
+        Ok(())
+    }
+
     /// Disk preferences precede the configured and in-memory session observations.
     #[test]
     fn settings_prints_observations_in_order() -> Result<(), Error> {
