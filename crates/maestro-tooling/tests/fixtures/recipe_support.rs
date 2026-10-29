@@ -157,7 +157,7 @@ impl Drop for ProcessGroup {
     }
 }
 
-/// Open this test attempt's transcript outside disposable fixture directories.
+/// Open this test attempt's readable transcript outside disposable fixture directories.
 pub fn transcript() -> fs::File {
     let thread = std::thread::current();
     let name = thread.name().unwrap_or("unnamed").replace("::", "_");
@@ -169,6 +169,7 @@ pub fn transcript() -> fs::File {
     fs::OpenOptions::new()
         .create(true)
         .append(true)
+        .read(true)
         .open(directory.join(format!("{}-{name}.log", std::process::id())))
         .unwrap()
 }

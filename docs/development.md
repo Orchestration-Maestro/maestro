@@ -552,20 +552,31 @@ builds are unchanged.
 Before guest-authoring tests, nextest's shell launcher locates the active
 artifact directory through its documented platform library search path. It runs
 the `prepare_author_component` example that the test build put in that directory,
-as long as the example is newer than its source, the shared build module, the
-package manifest and `Cargo.lock`. Running it through Cargo instead would resolve
-features for that one package and recompile the engine. When the example is missing
+as long as the example is newer than its source, the shared component and Cargo
+build modules, the package manifest and `Cargo.lock`. Running it through Cargo
+instead would resolve features for that one package and recompile the engine. When the example is missing
 or older, as after a `--lib` or filtered selection, the launcher builds and runs it
 through Cargo in the same target directory and profile.
 The launcher fails if the directory cannot be resolved rather than building
 elsewhere. It uses `NEXTEST_LD_LIBRARY_PATH` on Linux,
 `NEXTEST_DYLD_FALLBACK_LIBRARY_PATH` on macOS and `PATH` through Git's shell
 on Windows, where the shell converts the search list to colon-separated paths.
-The example builds the author component, warms the Wasmtime compilation cache
-in the default user cache and exports its path to the tests' processes.
-The Git-pinned engine partitions cached code by host executable modification
-time, so setup does not warm another binary's entries; nextest processes of
-the same test binary reuse its compiled bytes after their first load.
+The example builds the components and exports their paths without compiling
+native code. The Git-pinned engine partitions cached code by host executable
+modification time, so compiling inside the setup example would create entries
+that no test binary could reuse. On Linux, consumer-filtered setup steps run
+the runtime integration binary's ignored `compilation_cache::warm_selected_component`
+test before concurrent tests start. Each warms only its selected context, hook
+or Git-checkpoint family; a shard without checkpoint consumers does not compile
+that component. Nextest runs these steps in declaration order after the single
+component builder. Since setup steps do not inherit earlier exported variables,
+the builder copies its path exports to a run-scoped file in the active artifact
+directory; a missing file fails the warm step clearly. This also works after
+archive extraction changes executable timestamps. Later processes of that
+binary reuse these entries; `prepared_components_hit_compilation_cache` checks
+that every prepared component is a cache hit. Neither cache helper rebuilds a
+component. Keep the context consumer filter aligned with direct and retained
+context-component loaders.
 The component build removes `RUSTC_WRAPPER`, where the coverage tool puts its
 instrumenting wrapper, and keeps `CARGO_BUILD_RUSTC_WRAPPER`, where shared CI
 sets the compile cache. So the component stays uninstrumented while its
@@ -578,7 +589,16 @@ host set to a single space, exercising manual fallback without a listener.
 Callback tests that still bind a fixed port belong in an `oauth_callback` module,
 which joins a single-thread nextest group. Browser author-build tests also
 join a single-thread group because Trunk shares binding/optimizer intermediates;
-their file lock keeps plain Cargo tests safe. Other tests remain parallel.
+their file lock keeps plain Cargo tests safe. The full browser checks share one
+cached fixture in `browser_check_scenario`: valid sources, formatter repair,
+lock preservation, invalid syntax, warnings and native-adapter checks remain
+named steps with their own failure context and timing. A regression checks
+that the scenario creates its fixture once. Restoring identical source bytes
+keeps their timestamps; restoring edited bytes invalidates compiled output.
+The scenario and empty-state bootstrap retain explicit six-minute exceptions
+in the runner configuration. The scenario pays for one cold native/browser
+compilation rather than one per shard; the bootstrap must start with an empty
+Cargo home and target directory. Other tests remain parallel.
 
 Only `test-offline` sets local-model suppression, removes its explicit
 provider variables and temporarily moves `$HOME/.maestro/agent/auth.json` to the

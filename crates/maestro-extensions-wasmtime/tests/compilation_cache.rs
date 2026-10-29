@@ -39,8 +39,45 @@ fn cached_compile(path: &Path) -> usize {
     config.wasm_component_model_async(true);
     config.cache(Some(cache.clone()));
     let engine = Engine::new(&config).unwrap();
+    let started = std::time::Instant::now();
     Component::from_file(&engine, path).unwrap();
+    eprintln!(
+        "component compile: {} {:?}, hits={}, misses={}",
+        path.display(),
+        started.elapsed(),
+        cache.cache_hits(),
+        cache.cache_misses()
+    );
     cache.cache_hits()
+}
+
+/// Large components compiled once before the runtime tests start concurrently.
+const PREPARED_COMPONENTS: [&str; 3] = [
+    "MAESTRO_CONTEXT_COMPONENT",
+    "MAESTRO_HOOK_COMPONENT",
+    "MAESTRO_GIT_CHECKPOINT_COMPONENT",
+];
+
+/// Warm the one prepared artifact selected by this consumer family's setup.
+#[test]
+#[ignore = "Run by the selected consumer's setup before concurrent tests"]
+fn warm_selected_component() {
+    let variable = std::env::var("MAESTRO_WARM_COMPONENT").unwrap();
+    let path = std::env::var_os(&variable)
+        .unwrap_or_else(|| panic!("missing prepared component path: {variable}"));
+    cached_compile(Path::new(&path));
+}
+
+/// Prepared artifacts must be reusable by later processes of the runtime test executable.
+#[test]
+fn prepared_components_hit_compilation_cache() {
+    for variable in PREPARED_COMPONENTS {
+        let path = std::env::var_os(variable).unwrap();
+        assert!(
+            cached_compile(Path::new(&path)) > 0,
+            "cold component: {variable}"
+        );
+    }
 }
 
 #[test]

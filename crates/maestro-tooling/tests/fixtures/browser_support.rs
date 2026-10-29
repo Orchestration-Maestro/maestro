@@ -89,15 +89,26 @@ impl Browser {
         let mut browser = Self::new();
         let path = Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../../target/Maestro's browser 東京 checkout");
+        let sources = [
+            format!("{FIXTURE}/src/main.rs"),
+            "crates/maestro-web/src/lib.rs".to_owned(),
+        ];
+        let modified = sources.each_ref().map(|source| {
+            let previous = path.join(source);
+            let restored = fs::read(browser.path(source)).unwrap();
+            match fs::read(&previous) {
+                Ok(bytes) if bytes == restored => {
+                    fs::metadata(previous).unwrap().modified().unwrap()
+                }
+                _ => std::time::SystemTime::now(),
+            }
+        });
         browser.workspace.cache_at(&path);
-        // Restored mutable sources must be newer than any compiled edited version.
-        for source in [
-            browser.fixture("src/main.rs"),
-            browser.path("crates/maestro-web/src/lib.rs"),
-        ] {
-            fs::File::open(source)
+        // Changed bytes invalidate compiled edits; identical bytes keep the warm fingerprint.
+        for (source, modified) in sources.into_iter().zip(modified) {
+            fs::File::open(browser.path(&source))
                 .unwrap()
-                .set_modified(std::time::SystemTime::now())
+                .set_modified(modified)
                 .unwrap();
         }
         browser
@@ -353,8 +364,9 @@ fn collect(path: &Path, result: &mut std::collections::BTreeMap<PathBuf, Vec<u8>
     }
 }
 
-/// Stage complete locked sources and create initially empty cold compilation directories.
+/// Report locked-source staging time before creating initially empty build directories.
 pub fn cold_sources(browser: &Browser) -> (PathBuf, PathBuf) {
+    let started = std::time::Instant::now();
     let sources = browser.path("local-sources");
     record("phase: cargo vendor cold sources");
     let mut child = super::toolchain_support::command(env!("CARGO"))
@@ -372,7 +384,11 @@ pub fn cold_sources(browser: &Browser) -> (PathBuf, PathBuf) {
     let staged = child.wait_with_output().unwrap();
     reader.join().unwrap();
     drop(receive);
-    record(format!("phase: cargo vendor complete {}", staged.status));
+    record(format!(
+        "phase: cargo vendor complete {} in {:?}",
+        staged.status,
+        started.elapsed()
+    ));
     success(&staged);
     let home = browser.path("cold-home");
     let target = browser.path("cold-target");

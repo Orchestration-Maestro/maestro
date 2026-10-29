@@ -180,10 +180,78 @@ fn browser_compile_watch_starts_no_server() {
     assert!(!log.contains("serve") && !log.contains("clear"));
 }
 
+/// Recreating identical inputs must retain their compiler-visible modification times.
 #[test]
-fn browser_check_repairs_formatting() {
+fn browser_cached_sources_keep_unchanged_timestamps() {
+    let modified = || {
+        let browser = Browser::cached();
+        [
+            browser.fixture("src/main.rs"),
+            browser.path("crates/maestro-web/src/lib.rs"),
+        ]
+        .map(|path| fs::metadata(path).unwrap().modified().unwrap())
+    };
+    let before = modified();
+    assert_eq!(modified(), before);
+}
+
+/// Keep full browser validation in one fixture with each failure's original step context.
+#[test]
+fn browser_check_scenario() {
+    use std::io::{Read, Seek, SeekFrom};
+    let mut transcript = recipe_support::transcript();
+    transcript.seek(SeekFrom::End(0)).unwrap();
     let browser = Browser::cached();
-    browser.workspace_sources();
+    for (name, step) in [
+        (
+            "valid sources",
+            browser_author_checks_accept_valid_sources as fn(&Browser),
+        ),
+        ("formatting repair", browser_check_repairs_formatting),
+        (
+            "adjacent locks",
+            browser_author_check_preserves_adjacent_locks,
+        ),
+        (
+            "invalid fixture syntax",
+            browser_checks_reject_invalid_fixture_syntax,
+        ),
+        (
+            "invalid library syntax",
+            browser_checks_reject_invalid_library_syntax,
+        ),
+        ("fixture warnings", browser_checks_reject_fixture_warnings),
+        (
+            "native checks",
+            browser_native_checks_keep_inputs_and_refuse_bad_sources,
+        ),
+    ] {
+        let started = std::time::Instant::now();
+        if let Err(failure) =
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| step(&browser)))
+        {
+            let reason = failure
+                .downcast_ref::<String>()
+                .map(String::as_str)
+                .or_else(|| failure.downcast_ref::<&str>().copied())
+                .unwrap_or("non-text panic");
+            panic!("browser-check step {name}: {reason}");
+        }
+        let timing = format!("browser-check step {name}: {:?}", started.elapsed());
+        recipe_support::record(&timing);
+        eprintln!("{timing}");
+    }
+    let mut text = String::new();
+    transcript.read_to_string(&mut text).unwrap();
+    assert_eq!(
+        text.matches("phase: browser setup / lock open").count(),
+        1,
+        "browser checks must share one fixture: {text}"
+    );
+}
+
+/// Repair both authored Rust surfaces in the shared checkout.
+fn browser_check_repairs_formatting(browser: &Browser) {
     let sources = [
         browser.fixture("src/main.rs"),
         browser.path("crates/maestro-web/src/lib.rs"),
@@ -199,43 +267,43 @@ fn browser_check_repairs_formatting() {
     }
 }
 
-#[test]
-fn browser_author_checks_accept_valid_sources() {
-    let browser = Browser::cached();
+/// Accept the complete valid author fixture without producing a distribution.
+fn browser_author_checks_accept_valid_sources(browser: &Browser) {
     success(&browser.run("browser-check"));
-    assert_no_browser_distribution(&browser);
+    assert_no_browser_distribution(browser);
 }
 
-#[test]
-fn browser_checks_reject_invalid_fixture_syntax() {
+/// Reject malformed authored fixture syntax.
+fn browser_checks_reject_invalid_fixture_syntax(browser: &Browser) {
     assert_browser_source_rejected(
+        browser,
         "crates/maestro-tooling/tests/fixtures/browser_author/src/main.rs",
         "\nnot Rust",
     );
 }
 
-#[test]
-fn browser_checks_reject_invalid_library_syntax() {
-    assert_browser_source_rejected("crates/maestro-web/src/lib.rs", "\nnot Rust");
+/// Reject malformed browser library syntax.
+fn browser_checks_reject_invalid_library_syntax(browser: &Browser) {
+    assert_browser_source_rejected(browser, "crates/maestro-web/src/lib.rs", "\nnot Rust");
 }
 
-#[test]
-fn browser_checks_reject_fixture_warnings() {
+/// Treat authored fixture warnings as failures.
+fn browser_checks_reject_fixture_warnings(browser: &Browser) {
     assert_browser_source_rejected(
+        browser,
         "crates/maestro-tooling/tests/fixtures/browser_author/src/main.rs",
         "\nfn unused() {}\n",
     );
 }
 
 /// Exercise each refusal independently while keeping the full authored fixture.
-fn assert_browser_source_rejected(relative: &str, invalid: &str) {
-    let browser = Browser::cached();
+fn assert_browser_source_rejected(browser: &Browser, relative: &str, invalid: &str) {
     let path = browser.path(relative);
     let original = fs::read_to_string(&path).unwrap();
     fs::write(&path, format!("{original}{invalid}")).unwrap();
     assert!(!browser.run("browser-check").status.success());
     fs::write(path, original).unwrap();
-    assert_no_browser_distribution(&browser);
+    assert_no_browser_distribution(browser);
 }
 
 /// Checks must not produce either browser distribution, including after a refusal.
@@ -1422,23 +1490,22 @@ fn browser_author_hook_status_propagates() {
     );
 }
 
-#[test]
-fn browser_author_check_preserves_adjacent_locks() {
-    let browser = Browser::cached();
-    let before = browser_support::authored(&browser);
+/// Keep both lockfiles and authored bytes intact across success and refusal.
+fn browser_author_check_preserves_adjacent_locks(browser: &Browser) {
+    let before = browser_support::authored(browser);
     success(&browser.run("browser-example-check"));
-    assert_eq!(browser_support::authored(&browser), before);
+    assert_eq!(browser_support::authored(browser), before);
     for path in [browser.fixture("Cargo.lock"), browser.path("Cargo.lock")] {
         let original = fs::read(&path).unwrap();
         fs::write(&path, "version = 4\n").unwrap();
-        let damaged = browser_support::authored(&browser);
+        let damaged = browser_support::authored(browser);
         assert!(!browser.run("browser-example-check").status.success());
-        assert_eq!(browser_support::authored(&browser), damaged);
+        assert_eq!(browser_support::authored(browser), damaged);
         fs::write(path, original).unwrap();
         success(&browser.run("browser-example-check"));
     }
     success(&browser.run("browser-check"));
-    assert_eq!(browser_support::authored(&browser), before);
+    assert_eq!(browser_support::authored(browser), before);
     for route in ["library", "example", "debug"] {
         assert!(
             !browser
@@ -1713,14 +1780,26 @@ fn browser_author_bootstraps_from_empty_build_state() {
     let (home, target) = browser_support::cold_sources(&browser);
     let before = browser_support::authored(&browser);
     let command = |recipe: &str| {
-        let mut command = browser.command(recipe);
-        command
+        let started = std::time::Instant::now();
+        let output = browser
+            .command(recipe)
             .env("CARGO_HOME", &home)
             .env("CARGO_TARGET_DIR", &target)
-            .env("CARGO_NET_OFFLINE", "true");
-        command
+            .env("CARGO_NET_OFFLINE", "true")
+            .output()
+            .unwrap();
+        let timing = format!(
+            "phase: cold {recipe} complete {} in {:?}\n{}\n{}",
+            output.status,
+            started.elapsed(),
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        recipe_support::record(&timing);
+        eprintln!("{timing}");
+        output
     };
-    success(&command("browser-library-build").output().unwrap());
+    success(&command("browser-library-build"));
     let first = browser_support::wasm(&browser, "library");
     assert_eq!(&first[..8], b"\0asm\x01\0\0\0");
     let output = browser.path("target/maestro-browser/library");
@@ -1738,7 +1817,7 @@ fn browser_author_bootstraps_from_empty_build_state() {
     let mut value: serde_json::Value = serde_json::from_slice(&original_pack).unwrap();
     value["wordmark"] = "cold-included-rebuild".into();
     fs::write(&pack, serde_json::to_vec_pretty(&value).unwrap()).unwrap();
-    success(&command("browser-library-build").output().unwrap());
+    success(&command("browser-library-build"));
     assert!(
         browser_support::wasm(&browser, "library")
             .windows(b"cold-included-rebuild".len())
@@ -1748,22 +1827,15 @@ fn browser_author_bootstraps_from_empty_build_state() {
     let source = browser.fixture("src/main.rs");
     let original = fs::read(&source).unwrap();
     fs::write(&source, "fn main() { missing(); }").unwrap();
-    assert!(
-        !command("browser-library-build")
-            .output()
-            .unwrap()
-            .status
-            .success()
-    );
+    assert!(!command("browser-library-build").status.success());
     fs::write(source, original).unwrap();
-    success(&command("browser-library-build").output().unwrap());
+    success(&command("browser-library-build"));
     assert_eq!(browser_support::authored(&browser), before);
 }
 
-#[test]
-fn browser_native_checks_keep_inputs_and_refuse_bad_sources() {
-    let browser = Browser::new();
-    browser_support::bootstrap_source(&browser);
+/// Keep the native adapter's generated inputs, strict checks and lockfile guarantees.
+fn browser_native_checks_keep_inputs_and_refuse_bad_sources(browser: &Browser) {
+    browser_support::bootstrap_source(browser);
     let locks = [browser.path("Cargo.lock"), browser.fixture("Cargo.lock")];
     let before = locks.each_ref().map(|path| fs::read(path).unwrap());
     let check = |operation| {
@@ -1775,7 +1847,7 @@ fn browser_native_checks_keep_inputs_and_refuse_bad_sources() {
     };
     success(&check("example-check"));
     let directory = browser.path("target/maestro-browser/.author/example");
-    assert_authored_target(&browser, &directory.join("Trunk.json"), "index.html");
+    assert_authored_target(browser, &directory.join("Trunk.json"), "index.html");
     for file in ["wordmark.txt", "brand.css", "watch-dirs.json"] {
         assert!(
             !fs::read(directory.join("inputs").join(file))
