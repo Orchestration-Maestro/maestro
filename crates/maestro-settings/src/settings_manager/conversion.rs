@@ -1,4 +1,4 @@
-//! Stored-format conversions and the one-level merge.
+//! Stored-format conversions.
 
 use serde_json::{Map, Value};
 
@@ -19,23 +19,6 @@ pub(crate) fn number(value: f64) -> Value {
         }
     }
     serde_json::Number::from_f64(value).map_or(Value::Null, Value::Number)
-}
-
-/// Merges `over` onto `base`: object pairs merge one level, everything else
-/// in `over` replaces.
-pub(crate) fn merge_one_level(
-    mut base: Map<String, Value>,
-    over: Map<String, Value>,
-) -> Map<String, Value> {
-    for (key, value) in over {
-        match (base.get_mut(&key), value) {
-            (Some(Value::Object(inner)), Value::Object(outer)) => inner.extend(outer),
-            (_, value) => {
-                base.insert(key, value);
-            }
-        }
-    }
-    base
 }
 
 /// Parses stored text into a converted document; empty text is an empty document.

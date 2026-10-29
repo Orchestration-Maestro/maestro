@@ -15,6 +15,12 @@ pub enum Need {
 
 /// Classifies a pin observation.
 #[must_use]
-pub fn need(_status: &GitPinStatus) -> Need {
-    Need::Clean
+pub fn need(status: &GitPinStatus) -> Need {
+    if status.is_clean() {
+        Need::Clean
+    } else if status.expected_commit.is_none() && status.head_commit.is_none() {
+        Need::Missing
+    } else {
+        Need::Drifted
+    }
 }

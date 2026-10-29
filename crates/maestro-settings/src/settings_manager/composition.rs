@@ -1,9 +1,7 @@
 //! Effective settings view composition for scoped readers.
 
-use super::{
-    BaseSettingsLayer, Settings, SettingsErrorKind, SettingsManager, SettingsScope,
-    conversion::merge_one_level,
-};
+use super::{BaseSettingsLayer, Settings, SettingsErrorKind, SettingsManager, SettingsScope};
+use maestro_json::merge_one_level;
 use serde_json::{Map, Value};
 
 impl SettingsManager {

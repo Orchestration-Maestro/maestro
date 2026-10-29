@@ -2,6 +2,8 @@
 
 use std::fmt;
 
+use crate::selection::split_pin;
+
 /// A refusal to load the manifest.
 #[derive(Debug, PartialEq, Eq)]
 pub struct Failure {
@@ -17,13 +19,17 @@ pub struct Failure {
 
 impl fmt::Display for Failure {
     /// Writes `<file>: <source>: <problem>. Fix: <fix>`.
-    fn fmt(&self, _formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Ok(())
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            formatter,
+            "{}: {}: {}. Fix: {}",
+            self.file, self.source, self.problem, self.fix
+        )
     }
 }
 
 /// The problem for a release that has no manifest root.
 #[must_use]
-pub fn no_manifest_root(_source: &str) -> String {
-    String::new()
+pub fn no_manifest_root(source: &str) -> String {
+    format!("release {} has no manifests/ folder", split_pin(source).1)
 }

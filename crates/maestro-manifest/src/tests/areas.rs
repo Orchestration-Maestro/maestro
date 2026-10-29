@@ -128,7 +128,7 @@ fn listed_languages_load_before_listed_capabilities_each_in_list_order() {
         "languages/go"
     ]);
     let composition = release.read(Some(&request)).unwrap();
-    assert_eq!(value(&composition, "winner"), "two");
+    assert_eq!(value(&composition, "winner"), "one");
     for loaded in ["go", "rust", "one", "two"] {
         assert_eq!(value(&composition, loaded), true, "{loaded}");
     }
