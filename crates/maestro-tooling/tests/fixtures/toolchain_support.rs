@@ -37,10 +37,12 @@ pub fn command(program: impl AsRef<OsStr>) -> Command {
     command
 }
 
-/// Prepare a fixture compiler command in its supplied workspace.
+/// Keep a fixture compiler's Cargo state inside its supplied workspace.
 pub fn fixture_command(program: impl AsRef<OsStr>, root: &std::path::Path) -> Command {
     let mut command = command(program);
-    command.current_dir(root);
+    command
+        .current_dir(root)
+        .env("CARGO_HOME", root.join("cargo-home"));
     command
 }
 
