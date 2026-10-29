@@ -312,7 +312,9 @@ submenu before considering value cycling. `update_value` updates the first match
 without invoking change notification. A submenu's repeatable completion callable can be
 retained: a supplied value is stored and notified before the child closes; no supplied
 value only closes it. Completion restores the saved opener index when one remains.
-Constructor records are owned; theme callables can read their own live captured state.
+Change callbacks return `true` to accept the value, or `false` to restore the
+previous displayed value. Constructor records are owned; theme callables can read
+their own live captured state.
 
 An empty original list shows `  No settings available`; an empty search result shows
 `  No matching settings`. The main-list hint is

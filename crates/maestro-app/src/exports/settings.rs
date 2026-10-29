@@ -7,7 +7,8 @@ pub use maestro_settings::{
 pub use maestro_settings::{PackageSource, Settings, SettingsListEntry, SettingsManager};
 
 pub use maestro_settings::{
-    BaseSettingsLayer, DecisionRequest, SettingsChange, SettingsDecider, SettingsScope,
+    BaseSettingsLayer, DecisionRequest, PreparedSettingsEdit, SettingsChange, SettingsDecider,
+    SettingsEdit, SettingsScope,
 };
 
 pub use maestro_settings::{SettingsStorage, SettingsStorageError, SettingsUpdate};

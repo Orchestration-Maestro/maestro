@@ -83,6 +83,7 @@ pub struct SettingsConfig {
     pub warnings: WarningSettings,
 }
 /// Immediate notifications for the selected setting.
+/// Preference callbacks return false on refusal, retaining the previous displayed value.
 pub struct SettingsCallbacks {
     /// On auto compact change.
     pub on_auto_compact_change: Rc<dyn Fn(bool) -> bool>,

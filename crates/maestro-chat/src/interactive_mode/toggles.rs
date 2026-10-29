@@ -7,7 +7,7 @@ use crate::{
     CustomMessageComponent, SkillInvocationMessageComponent, ToolExecutionComponent,
 };
 use maestro_app::agent_session::CycleDirection;
-use maestro_app::{EventError, Local};
+use maestro_app::{EventError, Local, SettingsEdit};
 use maestro_theme::ThemeError;
 use maestro_tui::Component;
 use std::{any::Any, error::Error, rc::Rc};
@@ -126,12 +126,20 @@ impl InteractiveMode {
     /// Returns the failure of the replay or of the published theme.
     fn toggle_thinking_block_visibility(&self) -> Result<(), Box<dyn Error>> {
         let hide = !self.hide_thinking_block.get();
-        self.hide_thinking_block.set(hide);
         let session = self.runtime_host.session();
+        let admitted = session
+            .settings_manager()
+            .borrow()
+            .admit_settings_edit(SettingsEdit::new(&["hideThinkingBlock"], hide.into()));
+        let edit = match admitted {
+            Ok(edit) => edit,
+            Err(message) => return self.show_error(&message).map_err(Into::into),
+        };
+        self.hide_thinking_block.set(hide);
         session
             .settings_manager()
             .borrow_mut()
-            .set_hide_thinking_block(hide);
+            .apply_prepared_edit(edit);
         self.rebuild_chat_from_messages()
             .map_err(|error| -> Box<dyn Error> { error })?;
         let streaming = self.streaming.borrow().clone();

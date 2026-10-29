@@ -66,6 +66,15 @@ struct SharedSetting {
     /// Submenu factory.
     submenu: Option<Submenu>,
 }
+impl SharedSetting {
+    /// Publishes a choice during notification and restores it if refused.
+    fn change(&self, value: &str, notify: &Change) {
+        let previous = self.value.replace(value.to_owned());
+        if !notify(&self.id, value) {
+            self.value.replace(previous);
+        }
+    }
+}
 /// Active view state held weakly by completion callbacks.
 #[derive(Default)]
 struct SettingsState {
@@ -107,6 +116,7 @@ pub struct SettingsList {
 }
 impl SettingsList {
     /// Owns settings and styling, retaining notification callables.
+    /// A change callback returning false restores the previous displayed value.
     #[must_use]
     pub fn new(
         items: Vec<SettingItem>,
@@ -301,8 +311,7 @@ impl SettingsList {
                 .position(|value| *value == *item.value.borrow())
                 .map_or(0, |index| (index + 1) % values.len());
             let value = values[next].clone();
-            item.value.replace(value.clone());
-            (self.on_change)(&item.id, &value);
+            item.change(&value, &self.on_change);
         }
     }
     /// Opens a child whose completion retains the original setting.
@@ -316,8 +325,7 @@ impl SettingsList {
         let done: Done = Rc::new(move |value| {
             completion.set(true);
             if let Some(value) = value {
-                item.value.replace(value.clone());
-                change(&item.id, &value);
+                item.change(&value, &change);
             }
             if let Some(state) = owner.upgrade() {
                 state.close();

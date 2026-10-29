@@ -286,8 +286,12 @@ fn warnings(
         Rc::new(submenus::WarningSettingsSubmenu::new(
             initial,
             Rc::new(move |value| {
-                state.replace(value.clone());
-                callback(value)
+                let previous = state.replace(value.clone());
+                if callback(value) {
+                    return true;
+                }
+                state.replace(previous);
+                false
             }),
             Rc::new(move || done(None)),
             theme.clone(),
@@ -353,6 +357,12 @@ fn themes(
         let callback = callbacks.on_theme_change.clone();
         let preview = callbacks.on_theme_preview.clone();
         let restore = current.clone();
+        let restore: Rc<dyn Fn()> = Rc::new(move || {
+            if let Some(preview) = &preview {
+                preview(&restore);
+            }
+        });
+        let refused = restore.clone();
         Rc::new(submenus::SelectSubmenu::new(
             submenus::Selection {
                 title: "Theme",
@@ -369,13 +379,14 @@ fn themes(
             },
             submenus::SelectionCallbacks {
                 select: Rc::new(move |value| {
-                    callback(value);
-                    done(Some(value.into()));
+                    let accepted = callback(value);
+                    if !accepted {
+                        refused();
+                    }
+                    done(accepted.then(|| value.into()));
                 }),
                 cancel: Rc::new(move || {
-                    if let Some(preview) = &preview {
-                        preview(&restore);
-                    }
+                    restore();
                     cancel(None);
                 }),
                 preview: callbacks.on_theme_preview.clone(),
