@@ -137,6 +137,21 @@ fn tool()
 mod tests {
     use super::*;
 
+    /// The inline lifecycle observation precedes the live model answer.
+    #[test]
+    fn extensions_prints_observations_in_order() -> Result<(), Error> {
+        let output = Rc::new(RefCell::new(Vec::new()));
+        support::execute(|mut sample| {
+            sample.output = output.clone();
+            run(sample)
+        })?;
+        assert_eq!(
+            String::from_utf8(output.borrow().clone())?,
+            "[Inline Extension] Agent starting\nDone.\n"
+        );
+        Ok(())
+    }
+
     /// A real inline factory receives lifecycle events and executes both registered operations.
     #[test]
     fn extensions_dispatches_commands_events_and_model_requested_tools() -> Result<(), Error> {
