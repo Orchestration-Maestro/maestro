@@ -3,6 +3,7 @@
 
 mod browser_author_build;
 mod build_recipes;
+mod component_preparation;
 mod tooling_commands;
 
 #[path = "fixtures/toolchain_support.rs"]
