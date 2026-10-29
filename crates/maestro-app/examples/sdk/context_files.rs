@@ -35,6 +35,25 @@ async fn run(sample: Sample) -> Result<Value, Error> {
 mod tests {
     use super::*;
 
+    /// Context paths and sizes precede the session's actual file count.
+    #[test]
+    fn context_files_prints_observations_in_order() -> Result<(), Error> {
+        let output = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+        let mut root = String::new();
+        support::execute(|mut sample| {
+            root = sample.root.path().display().to_string();
+            sample.output = output.clone();
+            run(sample)
+        })?;
+        assert_eq!(
+            String::from_utf8(output.borrow().clone())?,
+            format!(
+                "Discovered context files:\n  - {root}/AGENTS.md (29 chars)\n  - /virtual/AGENTS.md (26 chars)\nSession created with 2 context files\n"
+            )
+        );
+        Ok(())
+    }
+
     /// Discovered and supplied files both reach the public prompt with their paths.
     #[test]
     fn context_files_merges_discovered_and_supplied_instructions() -> Result<(), Error> {
