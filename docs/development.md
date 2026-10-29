@@ -561,9 +561,19 @@ the advertised redirect URI remains unchanged. Public protocol, account and
 provider checks run in checked child processes with only the child's callback
 host set to a single space, exercising manual fallback without a listener.
 Callback tests that still bind a fixed port belong in an `oauth_callback` module,
-which joins a single-thread nextest group. Browser author-build tests also
-join a single-thread group because Trunk shares binding/optimizer intermediates;
-their file lock keeps plain Cargo tests safe. Other tests remain parallel.
+which joins a single-thread nextest group.
+
+Tests that launch Cargo share the single-thread `cargo-build` nextest group:
+tooling tests (browser authoring, recipes, watchers and fixture preparation),
+conventions metadata checks, guest-authoring example modules, native runtime
+component-building example/extension-guide/built-in-renderer modules, and the
+models browser compiler check. Cargo takes an exclusive package-cache lock during dependency resolution,
+even offline with cached dependencies. Grouping only browser tests leaves other
+Cargo callers free to hold that lock while a browser test's time budget expires.
+Ordinary component callback tests remain parallel. File-trigger and OAuth callback
+tests keep their existing groups and use setup-prepared component paths.
+Browser tests retain their file lock for Trunk's shared binding/optimizer
+intermediates when run through plain Cargo. Other tests remain parallel.
 
 Only `test-offline` sets local-model suppression, removes its explicit
 provider variables and temporarily moves `$HOME/.maestro/agent/auth.json` to the
