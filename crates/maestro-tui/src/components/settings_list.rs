@@ -14,7 +14,7 @@ type Done = Rc<dyn Fn(Option<String>)>;
 /// Submenu factory receiving the current value.
 type Submenu = Rc<dyn Fn(String, Done) -> Rc<dyn Component>>;
 /// Setting change notification.
-type Change = Rc<dyn Fn(&str, &str)>;
+type Change = Rc<dyn Fn(&str, &str) -> bool>;
 /// Row styling with selected state.
 type RowStyle = Rc<dyn Fn(&str, bool) -> String>;
 /// A displayed setting with optional activation behavior.

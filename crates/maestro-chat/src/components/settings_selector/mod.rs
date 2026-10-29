@@ -160,7 +160,10 @@ impl SettingsSelectorComponent {
             10,
             maestro_theme::get_settings_list_theme(theme.clone()),
             (
-                Rc::new(move |id, value| items::change(&callbacks, id, value)),
+                Rc::new(move |id, value| {
+                    items::change(&callbacks, id, value);
+                    true
+                }),
                 cancel,
             ),
             SettingsListOptions {

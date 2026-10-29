@@ -52,6 +52,7 @@ impl WarningSettingsSubmenu {
                         state.clone()
                     };
                     change(snapshot);
+                    true
                 }),
                 cancel,
             ),
