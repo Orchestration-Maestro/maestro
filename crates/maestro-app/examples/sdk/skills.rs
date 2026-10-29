@@ -26,6 +26,27 @@ async fn run(sample: Sample) -> Result<Value, Error> {
     }
     let created = maestro_app::create_agent_session(options).await?;
     let skills = created.session.resource_loader().get_skills();
+    writeln!(
+        sample.output.borrow_mut(),
+        "Discovered skills: {}",
+        skills
+            .skills
+            .iter()
+            .map(|skill| skill.name.as_str())
+            .collect::<Vec<_>>()
+            .join(", ")
+    )?;
+    for diagnostic in &skills.diagnostics {
+        writeln!(
+            sample.output.borrow_mut(),
+            "Warning: {}",
+            diagnostic.message
+        )?;
+    }
+    writeln!(
+        sample.output.borrow_mut(),
+        "Session created with filtered skills"
+    )?;
     let result = json!({"skills": skills.skills, "prompt": created.session.system_prompt()});
     created.session.dispose();
     Ok(result)
