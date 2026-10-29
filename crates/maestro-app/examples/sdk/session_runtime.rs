@@ -149,6 +149,30 @@ async fn create_runtime(
 mod tests {
     use super::*;
 
+    /// Runtime replacement observations precede queue updates on each rebound session.
+    #[test]
+    fn session_runtime_prints_observations_in_order() -> Result<(), Error> {
+        let output = Rc::new(RefCell::new(Vec::new()));
+        support::execute(|mut sample| {
+            sample.output = output.clone();
+            run(sample)
+        })?;
+        let text = String::from_utf8(output.borrow().clone())?;
+        let lines: Vec<_> = text.lines().collect();
+        let first = lines[0]
+            .strip_prefix("Initial session: ")
+            .ok_or("missing initial path")?;
+        assert_eq!(lines[1], "Queued: 1");
+        let new = lines[2]
+            .strip_prefix("After newSession(): ")
+            .ok_or("missing new path")?;
+        assert_ne!(first, new);
+        assert_eq!(lines[3], "Queued: 1");
+        assert_eq!(lines[4], format!("After switchSession(): {first}"));
+        assert_eq!(lines[5..], ["Queued: 1"]);
+        Ok(())
+    }
+
     /// New and resumed sessions get fresh subscriptions rather than retaining the old session.
     #[test]
     fn session_runtime_rebinds_after_new_and_resumed_sessions() -> Result<(), Error> {
