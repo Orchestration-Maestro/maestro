@@ -110,7 +110,7 @@ impl Workspace {
 
     /// Resolve registry crates from the run's prepared sources instead of the shared cache.
     pub fn use_prepared_sources(&self) {
-        let _ = &self.sources;
+        self.sources.get_or_init(prepared_sources);
     }
 
     /// The currently selected checkout below the retained disposable parent.
@@ -144,9 +144,15 @@ impl Workspace {
         self.name = path.as_os_str().to_owned();
     }
 
-    /// Keeps build output inside the fixture's configured target directory.
+    /// Keeps build output inside the fixture's configured target directory and Cargo state
+    /// beside the checkout, so the shared package cache is never locked.
     pub fn toolchain_command(&self, program: impl AsRef<OsStr>) -> Command {
-        let mut command = super::toolchain_support::command(program);
+        let mut command = super::toolchain_support::fixture_command(
+            program,
+            self.parent.path(),
+            self.sources.get().map(PathBuf::as_path),
+        )
+        .unwrap();
         command
             .current_dir(self.path())
             .env_remove("CARGO_TARGET_DIR");
