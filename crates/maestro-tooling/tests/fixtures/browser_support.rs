@@ -365,15 +365,9 @@ fn collect(path: &Path, result: &mut std::collections::BTreeMap<PathBuf, Vec<u8>
 pub fn cold_sources(browser: &Browser) -> (PathBuf, PathBuf) {
     let home = browser.path("cold-home");
     let target = browser.path("cold-target");
-    fs::create_dir(&home).unwrap();
     fs::create_dir(&target).unwrap();
-    assert_eq!(fs::read_dir(&home).unwrap().count(), 0);
-    assert_eq!(fs::read_dir(&target).unwrap().count(), 0);
-    fs::copy(
-        super::recipe_support::prepared_sources(),
-        home.join("config.toml"),
-    )
-    .unwrap();
+    super::toolchain_support::private_home(&home, Some(&super::recipe_support::prepared_sources()))
+        .unwrap();
     (home, target)
 }
 

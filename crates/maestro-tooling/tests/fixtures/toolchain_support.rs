@@ -37,6 +37,26 @@ pub fn command(program: impl AsRef<OsStr>) -> Command {
     command
 }
 
+/// The private Cargo home of a fixture rooted at `root`.
+pub fn home(root: &std::path::Path) -> std::path::PathBuf {
+    root.join("cargo-home")
+}
+
+/// Create a Cargo home holding the supplied source configuration, when there is one.
+///
+/// # Errors
+/// Returns an error when creating the home or copying the configuration fails.
+pub fn private_home(
+    home: &std::path::Path,
+    sources: Option<&std::path::Path>,
+) -> std::io::Result<()> {
+    std::fs::create_dir_all(home)?;
+    if let Some(sources) = sources {
+        std::fs::copy(sources, home.join("config.toml"))?;
+    }
+    Ok(())
+}
+
 /// Keep a fixture compiler's Cargo state inside its supplied workspace.
 ///
 /// # Errors
@@ -46,11 +66,8 @@ pub fn fixture_command(
     root: &std::path::Path,
     sources: Option<&std::path::Path>,
 ) -> std::io::Result<Command> {
-    let home = root.join("cargo-home");
-    std::fs::create_dir_all(&home)?;
-    if let Some(sources) = sources {
-        std::fs::copy(sources, home.join("config.toml"))?;
-    }
+    let home = home(root);
+    private_home(&home, sources)?;
     let mut command = command(program);
     command.current_dir(root).env("CARGO_HOME", home);
     Ok(command)

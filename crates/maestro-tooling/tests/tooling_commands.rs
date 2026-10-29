@@ -3185,7 +3185,10 @@ fn consumer_hook_command(test: &str, workspace: &Path) -> TestProcess {
         .env("MAESTRO_FIXTURE_CARGO", workspace.join("bin/cargo"))
         .env("MAESTRO_RECEIPT", workspace.join("receipt"))
         .env("CARGO_TARGET_DIR", workspace.join("target"))
-        .env("CARGO_HOME", workspace.with_file_name("cargo-home"))
+        .env(
+            "CARGO_HOME",
+            toolchain_support::home(workspace.parent().unwrap()),
+        )
         .env(
             "PATH",
             format!(
