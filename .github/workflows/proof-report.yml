@@ -1,0 +1,17 @@
+name: Failed landing report proof
+
+on:
+  push:
+    branches: [ci/rw227-proof-v0170]
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  report:
+    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/post-landing.yml@af2552cbc360332522e2b6c75f5a291b863a9701 # v0.17.0
+    with:
+      run-id: "40924512009"
+    secrets:
+      RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
