@@ -888,10 +888,55 @@ full coverage test graph, then runs only the tests selected by
 so the author component's compiles enter the snapshot that merge-queue test
 shards restore. The snapshot is capped at 1 GiB and evicts its least recently
 used entries, so the selection stays narrow. The warm-up is never a required
-check, and a newer push cancels a running one. Its `uses:` pin moves with each shared-CI
-release re-pin
-([Orchestration-Maestro/.github#231](https://github.com/Orchestration-Maestro/.github/issues/231)).
-A stale pin fails nothing; it only costs snapshot hits.
+check, and a newer push cancels a running one. Its `uses:` pin follows the rule in
+[Full-suite runs after landing](#full-suite-runs-after-landing).
+
+## Full-suite runs after landing
+
+`Full suite after landing` runs the shared Rust CI on the exact commit of every
+push to main. It runs all test shards, doctests and declared Chromium tests,
+even when the merge queue selected fewer crates. Later pushes do not cancel
+or replace queued landing runs. This is separate from the compile-cache warm
+build and from required merge checks.
+
+Push runs never read a coverage baseline: the lookup runs only for merge
+groups. The suite caller still grants `actions: read`, because the shared
+declaration job declares it and a caller that grants less makes the run fail to
+start. The suite caller, the reporter caller and `warm-cache.yml` pin the
+released shared CI commit that the organization rulesets require. Each pin
+moves with every shared-CI release re-pin
+([Orchestration-Maestro/.github#231](https://github.com/Orchestration-Maestro/.github/issues/231));
+a stale warm-up pin only costs snapshot hits.
+
+`Failed landing reports` listens for the completed main-push run. The shared
+reporter creates one failure issue per landing commit with the merged PR,
+failed-test log lines and run link, then proposes a revert PR against main.
+The revert names the original PR and failure issue. It runs normal required
+checks and enters the merge queue like any other PR; automation never pushes
+the revert directly to main. Repeated handling reuses the existing issue and
+open or closed revert PR, including when an earlier attempt only pushed the
+revert branch. When the merge queue squashes several PRs in one push, only the
+last commit has a suite run: the issue then names every PR in that push, newest
+first, and the reporter fails with the run link without a revert. Revert the
+culprit in a normal reviewed PR. Passing suites create neither artifact.
+
+The reporting job needs read access to Actions runs and contents. Writes use
+the existing release App's repository-scoped token, minted from
+`RELEASE_APP_CLIENT_ID` and `RELEASE_APP_PRIVATE_KEY`, with contents, issues and
+pull requests write access, plus workflows write access so it can revert CI
+changes. The App must be installed here and the organization
+secret available here. This token lets the revert trigger checks; test jobs do
+not receive it. The reporting workflow alone is declared in
+`privileged_trigger_workflows` for the existing trigger audit.
+
+Unknown PR attribution, missing permissions or a revert conflict fails the
+reporter with the original run link. The reporter also stops without an issue
+or a revert when no earlier full-suite run on main bounds the push (the first
+landing), or when the run did not pass but has no failed test, doctest or
+Chromium job, such as a cancelled run. Inspect that run and the failure issue;
+resolve a conflict in a reviewed PR. Do not bypass required checks or push to
+main to recover. The workflow-run listener becomes active after it lands on
+the default branch.
 
 ## Fuzzing
 
@@ -1000,44 +1045,3 @@ policies.
 
 Select individual toolkit tests through `tui-test` using their module-qualified
 names, for example `just tui-test -- ansi_wrapping::name --exact`.
-
-
-## Full-suite runs after landing
-
-`Full suite after landing` runs the shared Rust CI on the exact commit of every
-push to main. It runs all test shards, doctests and declared Chromium tests,
-even when the merge queue selected fewer crates. Later pushes do not cancel
-or replace queued landing runs. This is separate from the compile-cache warm
-build and from required merge checks.
-
-The suite caller grants `actions: read`, which the shared declaration job needs
-to read the coverage baseline that narrowed merge-queue runs compare against;
-without it the run fails to start. Both callers pin the released shared CI
-commit that the organization rulesets require. Update their pins together.
-
-`Failed landing reports` listens for the completed main-push run. The shared
-reporter creates one failure issue per landing commit with the merged PR,
-failed-test log lines and run link, then proposes a revert PR against main.
-The revert names the original PR and failure issue. It runs normal required
-checks and enters the merge queue like any other PR; automation never pushes
-the revert directly to main. Repeated handling reuses the existing issue and
-open or closed revert PR, including when an earlier attempt only pushed the
-revert branch. When the merge queue squashes several PRs in one push, only the
-last commit has a suite run: the issue then names every PR in that push, newest
-first, and the reporter fails with the run link without a revert. Revert the
-culprit in a normal reviewed PR. Passing suites create neither artifact.
-
-The reporting job needs read access to Actions runs and contents. Writes use
-the existing release App's repository-scoped token, minted from
-`RELEASE_APP_CLIENT_ID` and `RELEASE_APP_PRIVATE_KEY`, with contents, issues and
-pull requests write access, plus workflows write access so it can revert CI
-changes. The App must be installed here and the organization
-secret available here. This token lets the revert trigger checks; test jobs do
-not receive it. The reporting workflow alone is declared in
-`privileged_trigger_workflows` for the existing trigger audit.
-
-Unknown PR attribution, missing permissions or a revert conflict fails the
-reporter with the original run link. Inspect that run and the failure issue;
-resolve a conflict in a reviewed PR. Do not bypass required checks or push to
-main to recover. The workflow-run listener becomes active after it lands on
-the default branch.
