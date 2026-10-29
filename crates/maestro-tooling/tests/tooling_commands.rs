@@ -3303,6 +3303,7 @@ fn maestro_hook_scoped_docs_still_deny_missing_documentation() {
 }
 
 /// The files the test build's author preparation is checked against.
+#[cfg(unix)]
 const AUTHOR_SETUP_SOURCES: [&str; 8] = [
     "crates/maestro-extensions-wasm/examples/prepare_author_component.rs",
     "crates/maestro-extensions-wasm/src/tests/build.rs",
