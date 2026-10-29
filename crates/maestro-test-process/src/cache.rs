@@ -9,5 +9,8 @@ use std::path::PathBuf;
 /// otherwise start with an empty user cache and compile every component again.
 #[must_use]
 pub fn user_cache_home() -> Option<PathBuf> {
-    None
+    std::env::var_os("XDG_CACHE_HOME")
+        .map(PathBuf::from)
+        .filter(|path| path.is_absolute())
+        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".cache")))
 }

@@ -26,6 +26,7 @@ impl Root {
             .env_clear()
             .current_dir(self.path("project"))
             .env("HOME", self.scratch.path())
+            .envs(maestro_test_process::user_cache_home().map(|path| ("XDG_CACHE_HOME", path)))
             .env("PATH", std::env::var_os("PATH").unwrap_or_default())
             // A Windows process without its system root cannot open sockets.
             .envs(std::env::var_os("SYSTEMROOT").map(|root| ("SYSTEMROOT", root)))
