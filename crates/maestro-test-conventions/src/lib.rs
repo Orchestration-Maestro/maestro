@@ -26,6 +26,8 @@ mod repetition;
 mod source;
 /// Test-owned temporary directory checks.
 mod temp_directories;
+/// Nextest's default budget and documented slow-test exceptions.
+mod test_budget;
 /// Test-owned timed-wait and optional polling checks.
 mod time_limits;
 
@@ -49,6 +51,11 @@ mod time_limits;
 /// and one runnable `integration` target at `tests/integration.rs`, whose root
 /// declares each other top-level test file as an unconditional out-of-line module.
 /// Each failing member is reported.
+///
+/// Nextest profiles must terminate tests within 30 seconds by default. Raised
+/// per-test overrides require adjacent comments naming measured seconds, the cause
+/// and a removal issue. Issue references are checked offline; reviewers verify
+/// that each issue is open. Periods use positive whole seconds (`"Ns"`).
 ///
 /// Reads workspace manifests and Rust files, invoking Cargo and the compiler
 /// for metadata. Emits no output. Legal included fragments are counted without
@@ -89,6 +96,7 @@ mod time_limits;
 ///
 /// Returns a human-readable diagnostic on malformed input or a violated boundary.
 pub fn check_workspace(root: &Path) -> Result<(), String> {
+    test_budget::check(root)?;
     let (metadata, packages) = graph::check(root)?;
     let members = source::load(&metadata)?;
     graph::packages::check(&metadata, &members, &packages)?;
