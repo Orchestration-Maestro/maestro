@@ -340,7 +340,7 @@ let settings = SettingsList::new(
         label: Rc::new(|text, _| text.into()), value: Rc::new(|text, _| text.into()),
         description: Rc::new(str::to_owned), cursor: "→ ".into(), hint: Rc::new(str::to_owned),
     },
-    (Rc::new(|_id, _value| {}), Rc::new(|| {})),
+    (Rc::new(|_id, _value| true), Rc::new(|| {})),
     SettingsListOptions::default(),
 );
 settings.handle_input(" ");
