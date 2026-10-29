@@ -39,8 +39,8 @@ pub fn build_tool(root: &Path) -> PathBuf {
     let target = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/recipe-tools");
     record("phase: recipe tool cargo build");
     let status = setup_status(
-        super::toolchain_support::command("cargo")
-            .current_dir(root)
+        super::toolchain_support::fixture_command("cargo", root, None)
+            .unwrap()
             .args(["build", "--locked", "--manifest-path"])
             .arg(manifest)
             .arg("--target-dir")
