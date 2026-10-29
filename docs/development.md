@@ -342,8 +342,8 @@ unchanged. Pipeline-only tests use disposable copies with the minimal bootstrap
 source and a reduced lock generated during setup, before preservation snapshots.
 Framework, optimizer, dependency-closure, formatter and identity-consumption checks
 keep the full fixture. Provision both root and fixture sources explicitly before
-testing; cold-cache qualification vendors locked offline sources, then starts with
-empty Cargo home and target. See
+testing; cold-cache qualification copies the run's prepared offline sources, then
+starts with empty Cargo home and target. See
 [browser author locks and writes](browser-build.md#locks-writes-and-direct-cargo-use)
 for the write allowlist, formatter exception and direct-Cargo preparation.
 
@@ -715,6 +715,38 @@ and global fallbacks, then includes dependent crates. Use `test_inputs` in
 read them. A file owned by another workspace member already selects that member
 and its dependents. Only otherwise unowned, undeclared paths use the all-or-none fallback:
 they select every test, or none when the file is Markdown or under `docs/`.
+
+### Cargo state of tooling fixtures
+
+Cargo locks the package cache of its home while it resolves, even with
+`--offline`, so two tests that start `cargo` in one home wait for each other.
+Tooling fixtures therefore run Cargo in a private `CARGO_HOME` that
+`toolchain_support::fixture_command` creates beside the fixture. The recipe
+tool build, every `Workspace` command, the consumer workspaces and their hook
+runs, the standalone asset and wasm probe fixtures, and lock generation and
+metadata queries on the browser fixture use one.
+
+A fixture that resolves registry crates reads one offline source configuration.
+The nextest setup script `.config/prepare-fixture-sources.sh` vendors the locked
+crates of the workspace and of the browser fixture once per run, into
+`target/fixture-sources/<lock hash>/`, and reuses that directory while both lock
+files stay unchanged. It exports the configuration path as
+`MAESTRO_TEST_CARGO_SOURCES`; outside nextest the first test that needs it runs
+the same script. A fixture opts in with `Workspace::use_prepared_sources` or
+`Browser::cargo`, which copy the configuration into its private home. A fixture
+without registry dependencies copies nothing.
+
+Cargo builds that share the test build's target directory keep the shared home.
+A registry crate's fingerprint includes its source path, so a private home with
+vendored sources recompiles every registry dependency in that target, and going
+back to the shared home recompiles them again. The browser recipe and native
+builds (`Browser::command` and `Browser::native_command`) are such builds; the
+`browser-author` group and the browser file lock already run them one at a time.
+Tests in other crates that build the workspace itself, and the in-process
+`maestro_tooling::run` calls on dependency-free fixtures, also keep the shared
+home. A watch recipe starts `cargo run` and, beneath it, `cargo build` in one
+home, so its first build prints a wait on its own `cargo run`, not on another
+test.
 
 ### Child-process tests
 
