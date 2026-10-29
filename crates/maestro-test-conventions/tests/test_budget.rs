@@ -106,3 +106,63 @@ fn nextest_rejects_unbounded_exceptions_and_raised_other_profiles() {
         assert!(error.contains("30-second budget"), "{error}");
     }
 }
+
+/// Read a bounded whole-second timeout from the checked runner configuration.
+fn timeout_seconds(entry: &toml::Value) -> i64 {
+    let timeout = &entry["slow-timeout"];
+    timeout["period"]
+        .as_str()
+        .unwrap()
+        .strip_suffix('s')
+        .unwrap()
+        .parse::<i64>()
+        .unwrap()
+        * timeout["terminate-after"].as_integer().unwrap()
+}
+
+#[test]
+fn component_class_timeout_preserves_every_specific_exception() {
+    let config: toml::Value =
+        toml::from_str(include_str!("../../../.config/nextest.toml")).unwrap();
+    let overrides = config["profile"]["default"]["overrides"]
+        .as_array()
+        .unwrap();
+    let class_filter = "package(=maestro-extensions-wasm) | package(=maestro-extensions-wasmtime) | (package(maestro) & (test(startup_modes::) | test(model_streams::) | test(component_output_stays_between_complete_host_frames) | test(native_io::) | test(/_example::/)))";
+    let class_index = overrides
+        .iter()
+        .position(|entry| entry["filter"].as_str() == Some(class_filter))
+        .unwrap();
+    let class_limit = timeout_seconds(&overrides[class_index]);
+    assert_eq!(class_limit, 90);
+    let mut specific_count = 0;
+    for (index, entry) in overrides.iter().enumerate() {
+        let filter = entry["filter"].as_str().unwrap();
+        if index != class_index
+            && entry.get("slow-timeout").is_some()
+            && filter.contains("test(")
+            && (filter.contains("package(=maestro-extensions-wasm)")
+                || filter.contains("package(=maestro-extensions-wasmtime)")
+                || (filter.contains("package(=maestro)")
+                    && [
+                        "startup_modes::",
+                        "model_streams::",
+                        "component_output_stays_between_complete_host_frames",
+                        "native_io::",
+                        "_example::",
+                    ]
+                    .iter()
+                    .any(|name| filter.contains(name))))
+        {
+            assert!(
+                timeout_seconds(entry) > class_limit,
+                "specific timeout subsumed by class: {filter}"
+            );
+            assert!(index < class_index, "specific timeout shadowed: {filter}");
+            specific_count += 1;
+        }
+    }
+    assert!(
+        specific_count > 0,
+        "specific exceptions must remain covered"
+    );
+}
