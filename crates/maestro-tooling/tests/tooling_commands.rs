@@ -1,6 +1,8 @@
 #![cfg(test)]
 
-use crate::recipe_support::{self, write_input};
+#[cfg(unix)]
+use crate::recipe_support;
+use crate::recipe_support::write_input;
 use crate::toolchain_support;
 
 use std::fs;
