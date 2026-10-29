@@ -82,6 +82,18 @@ async fn initialize(
 
 /// The virtual clock must pass waiting loops and produce changing opaque RGBA frames.
 async fn advance(store: &mut Store<State>, instance: &Instance) -> wasmtime::Result<()> {
+    let index = export(store, instance, "dimensions");
+    let dimensions = instance.get_typed_func::<(), ((u32, u32),)>(&mut *store, &index)?;
+    let ((width, height),) = store
+        .run_concurrent(async |accessor| dimensions.call_concurrent(accessor, ()).await)
+        .await??;
+    assert!(width > 0 && height > 0);
+    let bytes = usize::try_from(
+        width
+            .checked_mul(height)
+            .and_then(|pixels| pixels.checked_mul(4))
+            .unwrap(),
+    )?;
     let index = export(store, instance, "tick");
     let tick = instance.get_typed_func::<(u32,), (Result<(), String>,)>(&mut *store, &index)?;
     let index = export(store, instance, "frame");
@@ -98,7 +110,7 @@ async fn advance(store: &mut Store<State>, instance: &Instance) -> wasmtime::Res
         let (pixels,) = store
             .run_concurrent(async |accessor| frame.call_concurrent(accessor, ()).await)
             .await??;
-        assert_eq!(pixels.len(), 640 * 400 * 4);
+        assert_eq!(pixels.len(), bytes);
         assert!(
             pixels
                 .as_chunks::<4>()
