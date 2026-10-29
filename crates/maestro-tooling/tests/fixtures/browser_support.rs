@@ -103,10 +103,18 @@ impl Browser {
         browser
     }
 
+    /// Resolve the workspace's crates from the run's prepared sources, in a private Cargo home.
+    /// Builds that share the test build's target keep the shared home, so their compiled
+    /// dependencies stay fresh.
+    pub fn cargo(&self) -> Command {
+        self.workspace.use_prepared_sources();
+        self.workspace.toolchain_command(env!("CARGO"))
+    }
+
     pub fn generate_lockfile(&self) {
         record("phase: cargo generate-lockfile");
         let status = super::recipe_support::setup_status(
-            super::toolchain_support::command("cargo")
+            self.cargo()
                 .args(["generate-lockfile", "--offline", "--manifest-path"])
                 .arg(self.fixture("Cargo.toml")),
         );
@@ -353,39 +361,17 @@ fn collect(path: &Path, result: &mut std::collections::BTreeMap<PathBuf, Vec<u8>
     }
 }
 
-/// Stage complete locked sources and create initially empty cold compilation directories.
+/// Create initially empty cold compilation directories beside the run's prepared sources.
 pub fn cold_sources(browser: &Browser) -> (PathBuf, PathBuf) {
-    let sources = browser.path("local-sources");
-    record("phase: cargo vendor cold sources");
-    let mut child = super::toolchain_support::command(env!("CARGO"))
-        .current_dir(browser.workspace.path())
-        .args(["vendor", "--locked", "--offline", "--sync"])
-        .arg(browser.fixture("Cargo.toml"))
-        .arg(&sources)
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped())
-        .spawn()
-        .unwrap();
-    let stderr = child.stderr.take().unwrap();
-    let (send, receive) = std::sync::mpsc::channel();
-    let reader = super::recipe_support::capture_lines(move || stderr, send);
-    let staged = child.wait_with_output().unwrap();
-    reader.join().unwrap();
-    drop(receive);
-    record(format!("phase: cargo vendor complete {}", staged.status));
-    success(&staged);
     let home = browser.path("cold-home");
     let target = browser.path("cold-target");
     fs::create_dir(&home).unwrap();
     fs::create_dir(&target).unwrap();
     assert_eq!(fs::read_dir(&home).unwrap().count(), 0);
     assert_eq!(fs::read_dir(&target).unwrap().count(), 0);
-    fs::write(
+    fs::copy(
+        super::recipe_support::prepared_sources(),
         home.join("config.toml"),
-        format!(
-            "{}\n[net]\noffline = true\n",
-            String::from_utf8(staged.stdout).unwrap()
-        ),
     )
     .unwrap();
     (home, target)

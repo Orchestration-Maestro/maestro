@@ -19,16 +19,12 @@ fn browser_setup_errors_reach_stderr_and_transcript() {
                 "invalid_manifest_marker = [\n",
             )
             .unwrap();
-            if stage == "lockfile" {
-                browser.generate_lockfile();
-            } else {
-                browser_support::cold_sources(&browser);
-            }
+            browser.generate_lockfile();
         }
         panic!("setup must fail");
     }
     let mut failures = Vec::new();
-    for stage in ["recipe", "lockfile", "vendor"] {
+    for stage in ["recipe", "lockfile"] {
         let directory = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(format!(
             "../../target/browser-author-diagnostics/setup-{}-{stage}",
             std::process::id()
@@ -660,7 +656,8 @@ fn browser_wasm_closure_excludes_native_engines() {
     fs::write(&manifest, original).unwrap();
     fs::write(browser.fixture("Cargo.lock"), lock).unwrap();
     success(&browser.run("browser-library-build"));
-    let tree = toolchain_support::command("cargo")
+    let tree = browser
+        .cargo()
         .args([
             "tree",
             "--locked",
@@ -1624,15 +1621,15 @@ fn browser_author_unrelated_workspace_bump_keeps_fixture_lock() {
     )
     .unwrap();
     success(
-        &toolchain_support::command(env!("CARGO"))
-            .current_dir(browser.workspace.path())
+        &browser
+            .cargo()
             .args(["metadata", "--offline", "--format-version", "1"])
             .output()
             .unwrap(),
     );
     success(
-        &toolchain_support::command(env!("CARGO"))
-            .current_dir(browser.workspace.path())
+        &browser
+            .cargo()
             .args(["metadata", "--locked", "--offline", "--format-version", "1"])
             .output()
             .unwrap(),
@@ -1646,7 +1643,8 @@ fn browser_author_unrelated_workspace_bump_keeps_fixture_lock() {
 
 /// Qualify the actual resolved graph, not only the manifest spelling.
 fn assert_fixture_independent(browser: &Browser) {
-    let metadata = toolchain_support::command(env!("CARGO"))
+    let metadata = browser
+        .cargo()
         .args([
             "metadata",
             "--locked",
