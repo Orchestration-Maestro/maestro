@@ -31,3 +31,12 @@ Wasmtime's safe, content-keyed user cache. Cache setup, read or write failures
 fall back to compilation. Each load keeps its own Store. The Git build includes
 the host executable's modification time in cache keys, so separate host binaries
 do not share entries, but isolated test processes of the same binary do.
+
+The opt-in DOOM example uses the locked `sha2 =0.11.0` (MIT OR Apache-2.0),
+with default features disabled, as a portable development dependency of
+`maestro-extensions-wasm`. It verifies the pinned shareware SHA-256 before a
+new cache file is created. The authoring library has no normal SHA dependency.
+
+The runtime and native contract host enable `gc` and `gc-drc` for WebAssembly
+exceptions. This lets separately built C engines return stack-unwinding failures
+through their component interface without poisoning the instance.

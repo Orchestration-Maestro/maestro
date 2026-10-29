@@ -11,7 +11,7 @@ maestro-extensions = { path = "../maestro-extensions" }
 futures-util = { workspace = true, features = ["std", "async-await"] }
 serde.workspace = true
 serde_json.workspace = true
-wasmtime = { git = "https://github.com/bytecodealliance/wasmtime", rev = "ffff2e2db24a291f02429f123aba1631fa8eea67", default-features = false, features = ["std", "runtime", "cranelift", "component-model-async", "cache"] }
+wasmtime = { git = "https://github.com/bytecodealliance/wasmtime", rev = "ffff2e2db24a291f02429f123aba1631fa8eea67", default-features = false, features = ["std", "runtime", "cranelift", "component-model-async", "cache", "gc", "gc-drc"] }
 wasmtime-wasi = { git = "https://github.com/bytecodealliance/wasmtime", rev = "ffff2e2db24a291f02429f123aba1631fa8eea67", default-features = false, features = ["p2", "p3"] }
 tokio = { version = "=1.53.3", default-features = false, features = ["rt", "sync", "net", "time"] }
 

@@ -1,0 +1,25 @@
+package maestro:doom@0.1.0;
+
+/// The externally built game engine used only by this example.
+interface engine {
+    /// Initializes one game from an owned WAD; a fresh component is needed to restart.
+    init: func(wad: list<u8>, root: string) -> result<_, string>;
+    /// Advances the game at the supplied elapsed time in milliseconds.
+    tick: func(milliseconds: u32) -> result<_, string>;
+    /// Returns the framebuffer width and height in pixels.
+    dimensions: func() -> tuple<u32, u32>;
+    /// Returns a framebuffer in RGBA byte order.
+    frame: func() -> list<u8>;
+    /// Enqueues one press or release using the engine's key codes.
+    key: func(pressed: bool, key: u8);
+}
+
+/// The engine component built separately from the extension.
+world game {
+    export engine;
+}
+
+/// The extension imports the engine before offline composition.
+world player {
+    import engine;
+}

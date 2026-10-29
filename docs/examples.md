@@ -14,9 +14,9 @@ example's own documentation. The same command generates the `[[example]]` target
 of `crates/maestro-extensions-wasm/Cargo.toml` from the source paths. `just example-index-check` checks both against the tree. Each usage page
 keeps its own controlled-run commands and host prerequisites.
 
-A test checks both directions: every entry of a folder is listed in that
-folder's index, and every relative link or table row an index carries names a
-path that exists.
+A test checks the generated index against the tree. A directory example has
+one row for its documented `main.rs`; its support files need no separate
+summaries. Other documented files retain their own rows.
 
 The default system prompt names this folder, and `get_examples_path` resolves it
 from the package directory, so a source run and a standalone build expose the
@@ -46,3 +46,21 @@ Regenerate both after merging example additions. Native integration module
 declarations remain explicit entries; keep them in name order and retain both
 sides after a merge. Other docs link selected examples to explain a feature;
 they are not inventories and need no row for every new example.
+
+## Controlled engine fixture
+
+The DOOM filesystem test uses a small MIT C component, not game code or game
+assets. Its committed bytes keep ordinary tests independent of wasi-sdk and
+avoid relaxing Rust's unsafe-code policy for generated exports.
+
+To regenerate it, install wasi-sdk 34, wit-bindgen-cli 0.62.0 and wasm-tools
+1.262.0, then run from the workspace root:
+
+```sh
+WASI_SDK_PATH=/path/to/wasi-sdk python3 crates/maestro-extensions-wasmtime/tests/fixtures/regenerate_doom_files.py
+```
+
+Add `--check` to rebuild and compare the bytes without changing the fixture.
+The integration test runs this check when `WASI_SDK_PATH` names an installed
+SDK; otherwise it prints a `SKIP` message. The save and cleanup tests always
+use the committed component.

@@ -167,6 +167,10 @@ pub struct Bank {
     theme: Option<String>,
     /// Supplied custom-view inputs and expected frames.
     pub custom_script: Option<super::custom_host::Script>,
+    /// Expected overlay placement; absent custom views remain non-overlay.
+    pub custom_overlay: Option<crate::OverlayOptions>,
+    /// Key-release preference expected from the retained custom component.
+    pub custom_key_release: Option<bool>,
     /// Factory widgets in the order they were shown.
     pub widgets: Vec<WidgetSlot>,
     /// The header container.
