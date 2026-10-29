@@ -75,6 +75,24 @@ fn archived_author_setup_rejects_missing_and_stale_outputs() {
     }
 }
 
+/// Archived runs give every extracted executable one modification time, so test processes
+/// share a compile-cache namespace even though no setup example warms it.
+#[test]
+fn archived_author_setup_aligns_executable_times() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture(root);
+    assert_success(&prepare(root));
+    assert_success(&export(root, &root.join("target/test-setup"), true));
+    for name in ["older", "newer"] {
+        let modified = fs::metadata(root.join("target/debug/deps").join(name))
+            .unwrap()
+            .modified()
+            .unwrap();
+        assert_eq!(modified, at(200), "{name}");
+    }
+}
+
 /// Local and warm runs without a prepared bundle keep automatic preparation.
 #[test]
 fn author_setup_without_prepared_outputs_builds_locally() {
@@ -104,6 +122,9 @@ fn author_setup_without_prepared_outputs_builds_locally() {
     }
 }
 
+/// The nextest environment entries every fixture preparation step writes.
+const EXPORT: &str = r#"printf 'MAESTRO_AUTHOR_COMPONENT=%s/component.wasm\nMAESTRO_CONTEXT_COMPONENT=%s/component.wasm\n' "$PWD" "$PWD" > "$NEXTEST_ENV""#;
+
 /// Give the standalone command a controlled Cargo boundary and source checkout.
 fn fixture(root: &Path) {
     use std::os::unix::fs::PermissionsExt;
@@ -111,9 +132,16 @@ fn fixture(root: &Path) {
     fs::write(root.join("crates/example/src/lib.rs"), "original source").unwrap();
     fs::write(root.join("Cargo.lock"), "locked dependencies").unwrap();
     fs::write(root.join("component.wasm"), "component bytes").unwrap();
+    executable(&root.join("target/debug/deps/older"), 100);
+    executable(&root.join("target/debug/deps/newer"), 200);
     fs::write(
         root.join("cargo"),
-        "#!/bin/sh\nset -eu\necho build >> builds\nprintf 'MAESTRO_AUTHOR_COMPONENT=%s/component.wasm\\nMAESTRO_CONTEXT_COMPONENT=%s/component.wasm\\n' \"$PWD\" \"$PWD\" > \"$NEXTEST_ENV\"\n",
+        format!(
+            "#!/bin/sh\nset -eu\necho build >> builds\nif [ \"$1\" = build ]; then\n\
+             mkdir -p target/debug/examples\n\
+             cat > target/debug/examples/prepare_author_component <<'EXAMPLE'\n#!/bin/sh\n{EXPORT}\nEXAMPLE\n\
+             chmod +x target/debug/examples/prepare_author_component\nelse\n{EXPORT}\nfi\n"
+        ),
     )
     .unwrap();
     fs::set_permissions(root.join("cargo"), fs::Permissions::from_mode(0o755)).unwrap();
@@ -126,6 +154,23 @@ fn fixture(root: &Path) {
                 .unwrap(),
         );
     }
+}
+
+/// Write an executable test artifact with a fixed modification time.
+fn executable(path: &Path, seconds: u64) {
+    use std::os::unix::fs::PermissionsExt;
+    fs::create_dir_all(path.parent().unwrap()).unwrap();
+    fs::write(path, "#!/bin/sh\n").unwrap();
+    fs::set_permissions(path, fs::Permissions::from_mode(0o755)).unwrap();
+    fs::File::open(path)
+        .unwrap()
+        .set_modified(at(seconds))
+        .unwrap();
+}
+
+/// Seconds after the epoch, as the timestamps these fixtures assign.
+fn at(seconds: u64) -> std::time::SystemTime {
+    std::time::UNIX_EPOCH + std::time::Duration::from_secs(seconds)
 }
 
 /// Invoke the standalone preparation command, not a native test executable.
@@ -154,6 +199,11 @@ fn export(root: &Path, prepared: &Path, archived: bool) -> Output {
         .env("CARGO", root.join("cargo"))
         .env("TEST_PREPARE_OUTPUT", prepared)
         .env("NEXTEST_ENV", root.join("nextest-env"))
+        .env("NEXTEST_LD_LIBRARY_PATH", root.join("target/debug"))
+        .env(
+            "NEXTEST_DYLD_FALLBACK_LIBRARY_PATH",
+            root.join("target/debug"),
+        )
         .output()
         .unwrap()
 }
