@@ -1,7 +1,11 @@
 #!/bin/sh
 # Nextest supplies its active artifact directory in the platform library search path.
 set -eu
-if [ "${TEST_PREPARE_OUTPUT+x}" = x ]; then
+if [ "${TEST_ARCHIVE-}" = 1 ] || {
+    [ -n "${TEST_PREPARE_OUTPUT-}" ] && [ -f "$TEST_PREPARE_OUTPUT/components.json" ]
+}; then
+    TEST_PREPARE_OUTPUT=${TEST_PREPARE_OUTPUT:-target/test-setup}
+    export TEST_PREPARE_OUTPUT
     exec python3 "$(dirname "$0")/prepare-test-setup.py" export
 fi
 case "$(uname -s)" in

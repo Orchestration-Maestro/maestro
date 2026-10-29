@@ -534,7 +534,31 @@ compile about five times slower, and `syn` and `proc-macro2`
 optimised, because the conventions tests parse every workspace source; release
 builds are unchanged.
 
-Before guest-authoring tests, nextest's shell launcher locates the active
+Archived CI shards receive `TEST_ARCHIVE=1` and `TEST_PREPARE_OUTPUT` pointing to
+`target/test-setup`.
+The standalone `test_prepare` command in `.github/ci.toml` runs the existing
+component-discovery example in a separate build directory, then stages only
+component files and a content manifest. Shared CI transfers these files separately
+from the native test archive. The nextest launcher checks source and artifact
+hashes before exporting absolute paths through `NEXTEST_ENV`. Archived runs require
+the bundle and fail without starting Cargo when it is missing or stale. Other
+runs reuse an existing manifest, rejecting stale or incomplete files; without a
+manifest they keep local auto-build. This includes warm-cache runs, which receive
+`TEST_PREPARE_OUTPUT` but no restored bundle or archive flag. Archive strictness
+requires the shared CI release that supplies `TEST_ARCHIVE=1`.
+Source hashes include workspace crates,
+examples, assets, Cargo configuration, locked dependencies, the toolchain and
+preparation scripts. Checkout paths and file timestamps do not affect reuse.
+
+For a local check of that boundary, run:
+
+```sh
+TEST_PREPARE_OUTPUT="$PWD/target/test-setup" python3 .config/prepare-test-setup.py prepare
+TEST_PREPARE_OUTPUT="$PWD/target/test-setup" cargo nextest run --locked -p maestro-extensions-wasm
+```
+
+With `TEST_ARCHIVE` unset and no prepared bundle, local auto-build is unchanged. Before
+guest-authoring tests, nextest's shell launcher locates the active
 artifact directory through its documented platform library search path. It runs
 the `prepare_author_component` example that the test build put in that directory,
 as long as the example is newer than its source, the shared build module, the
