@@ -475,3 +475,44 @@ fn settings_defaults_rejects_extra_arguments_and_preserves_output_errors() {
     .unwrap_err();
     assert_eq!(error.kind(), std::io::ErrorKind::BrokenPipe);
 }
+
+#[test]
+fn chat_metadata_retains_existing_option_meanings() {
+    let mut bytes = Vec::new();
+    maestro_cli::input::args::print_help(&[], &mut bytes, false).unwrap();
+    let document = String::from_utf8(bytes)
+        .unwrap()
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ");
+    let mut root = command();
+    for arg in root.get_arguments().filter(|arg| arg.get_long().is_some()) {
+        let help = arg.get_help().unwrap().to_string();
+        assert!(
+            document.contains(help.split(" (-").next().unwrap()),
+            "{}: {help}",
+            arg.get_id()
+        );
+    }
+    let help = root.render_long_help().to_string();
+    assert!(help.contains("Append text or file contents to the system prompt"));
+    assert!(help.contains("explicit -e paths still work"));
+}
+
+#[test]
+fn package_metadata_retains_existing_descriptions() {
+    let root = command();
+    for (name, description) in [
+        ("install", "Install a package and add it to settings."),
+        ("remove", "Remove a package and its source from settings."),
+        ("update", "Update maestro and installed packages."),
+        (
+            "list",
+            "List installed packages from user and project settings.",
+        ),
+        ("config", "Open TUI to enable/disable package resources"),
+    ] {
+        let command = root.find_subcommand(name).unwrap();
+        assert_eq!(command.get_about().unwrap().to_string(), description);
+    }
+}
