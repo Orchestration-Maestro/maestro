@@ -78,5 +78,12 @@ fn fixture_cargo_resolution_uses_supplied_sources() {
     );
     let metadata: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
     assert_eq!(metadata["packages"].as_array().unwrap().len(), 2);
-    assert!(!root.path().join("cargo-home/registry").exists());
+    let expected = serde_json::to_value(dependency.join("Cargo.toml")).unwrap();
+    assert!(
+        metadata["packages"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|package| package["manifest_path"] == expected)
+    );
 }
