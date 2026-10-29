@@ -803,6 +803,11 @@ even when the merge queue selected fewer crates. Later pushes do not cancel
 or replace queued landing runs. This is separate from the compile-cache warm
 build and from required merge checks.
 
+The suite caller grants `actions: read`, which the shared declaration job needs
+to read the coverage baseline that narrowed merge-queue runs compare against;
+without it the run fails to start. Both callers pin the released shared CI
+commit that the organization rulesets require. Update their pins together.
+
 `Failed landing reports` listens for the completed main-push run. The shared
 reporter creates one failure issue per landing commit with the merged PR,
 failed-test log lines and run link, then proposes a revert PR against main.
