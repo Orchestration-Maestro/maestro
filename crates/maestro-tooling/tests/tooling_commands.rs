@@ -3438,10 +3438,33 @@ fn author_setup_ignores_an_outdated_copy_of_the_example_under_an_older_hash() {
     assert_eq!(run_author_setup(root, &profile), "example\n");
 }
 
+/// Cargo ignores some library outputs that normalization counts, such as the metadata a lint
+/// run writes. When it leaves the example as it is, setup logs the fact and still runs it.
+#[cfg(unix)]
+#[test]
+fn author_setup_continues_when_cargo_keeps_an_outdated_example() {
+    use std::time::Duration;
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    let (profile, example) = author_setup_checkout(root);
+    example_builds_on_library(root, &profile, Duration::from_mins(15));
+    set_age(&example, Duration::from_mins(10));
+    let check_only = profile.join("deps/libmaestro_request-2.rmeta");
+    fs::write(&check_only, b"").unwrap();
+    set_age(&check_only, Duration::from_mins(1));
+    fs::write(root.join("cargo"), "#!/bin/sh\necho cargo \"$@\"\n").unwrap();
+    let output = author_setup(root, &profile);
+    let (printed, logged) = (stdout(&output), String::from_utf8_lossy(&output.stderr));
+    assert!(output.status.success(), "{logged}");
+    assert!(printed.starts_with("cargo build "), "{printed}");
+    assert!(printed.ends_with("example\n"), "{printed}");
+    assert!(logged.contains("Cargo kept the setup example"), "{logged}");
+}
+
 /// Run the author setup script from `root` with `profile` as nextest's artifact directory.
 #[cfg(unix)]
-fn run_author_setup(root: &Path, profile: &Path) -> String {
-    let output = Command::new("sh")
+fn author_setup(root: &Path, profile: &Path) -> std::process::Output {
+    Command::new("sh")
         .arg(
             Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.config/prepare-author-component.sh"),
         )
@@ -3450,7 +3473,13 @@ fn run_author_setup(root: &Path, profile: &Path) -> String {
         .env("NEXTEST_DYLD_FALLBACK_LIBRARY_PATH", profile)
         .env("CARGO", root.join("cargo"))
         .output()
-        .unwrap();
+        .unwrap()
+}
+
+/// Run the author setup script, which must succeed, and return what it printed.
+#[cfg(unix)]
+fn run_author_setup(root: &Path, profile: &Path) -> String {
+    let output = author_setup(root, profile);
     assert!(
         output.status.success(),
         "{}",
