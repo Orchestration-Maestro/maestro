@@ -8,8 +8,11 @@ use toml::{Spanned, Value};
 /// Seconds between slow-test flags, and the only period a limit may use.
 const SLOW_FLAG_SECONDS: u64 = 30;
 
-/// Slow-flag periods a test runs before nextest terminates it: 120 seconds.
+/// Slow-flag periods a test runs before nextest terminates it.
 const HANG_PERIODS: u64 = 4;
+
+/// Seconds a test may run before nextest terminates it.
+const HANG_LIMIT_SECONDS: u64 = SLOW_FLAG_SECONDS * HANG_PERIODS;
 
 /// Runner profiles, ignoring unrelated nextest settings.
 #[derive(Deserialize)]
@@ -58,7 +61,7 @@ fn validate(text: &str) -> Result<(), String> {
         .and_then(|timeout| limit(timeout.get_ref()).ok());
     if default != Some((SLOW_FLAG_SECONDS, HANG_PERIODS)) {
         return Err(format!(
-            "default profile must set slow-timeout = {{ period = '{SLOW_FLAG_SECONDS}s', terminate-after = {HANG_PERIODS} }}: a 30-second slow flag and a 120-second hang limit"
+            "default profile must set slow-timeout = {{ period = '{SLOW_FLAG_SECONDS}s', terminate-after = {HANG_PERIODS} }}: a {SLOW_FLAG_SECONDS}-second slow flag and a {HANG_LIMIT_SECONDS}-second hang limit"
         ));
     }
     for (name, profile) in config.profile {
@@ -66,7 +69,7 @@ fn validate(text: &str) -> Result<(), String> {
             let (period, count) = limit(timeout.get_ref())?;
             if period != SLOW_FLAG_SECONDS || count > HANG_PERIODS {
                 return Err(format!(
-                    "profile {name} must keep the 30-second slow flag and the 120-second hang limit; use a per-test exception for a longer run"
+                    "profile {name} must keep the {SLOW_FLAG_SECONDS}-second slow flag and the {HANG_LIMIT_SECONDS}-second hang limit; use a per-test exception for a longer run"
                 ));
             }
         }
@@ -87,20 +90,30 @@ fn exception(text: &str, timeout: &Spanned<Value>) -> Result<(), String> {
     let line = text[..timeout.span().start].lines().count();
     if period != SLOW_FLAG_SECONDS {
         return Err(format!(
-            "line {line}: slow-timeout exception must keep the 30-second slow flag (period = '{SLOW_FLAG_SECONDS}s')"
+            "line {line}: slow-timeout exception must keep the {SLOW_FLAG_SECONDS}-second slow flag (period = '{SLOW_FLAG_SECONDS}s')"
         ));
     }
     if count <= HANG_PERIODS {
         return Err(format!(
-            "line {line}: slow-timeout exception is covered by the 120-second hang limit; delete it"
+            "line {line}: slow-timeout exception is covered by the {HANG_LIMIT_SECONDS}-second hang limit; delete it"
         ));
     }
-    if !documented(text, timeout.span().start) {
+    let Some(measured) = documented(text, timeout.span().start) else {
         return Err(format!(
-            "line {line}: slow-timeout exception needs a measured cause and issue (#NNNN) in a comment immediately above slow-timeout, with Measured over 120 seconds"
+            "line {line}: slow-timeout exception needs a measured cause and issue (#NNNN) in a comment immediately above slow-timeout, with Measured over {HANG_LIMIT_SECONDS} seconds"
+        ));
+    };
+    if !covers(count, measured) || covers(count - 1, measured) {
+        return Err(format!(
+            "line {line}: slow-timeout exception must stop after the fewest whole periods that cover Measured"
         ));
     }
     Ok(())
+}
+
+/// Whether `periods` slow-flag periods last at least `seconds`.
+fn covers(periods: u64, seconds: f64) -> bool {
+    u32::try_from(SLOW_FLAG_SECONDS * periods).is_ok_and(|total| f64::from(total) >= seconds)
 }
 
 /// Read a finite terminating limit as whole-second period and termination count.
@@ -125,8 +138,8 @@ fn limit(timeout: &Value) -> Result<(u64, u64), String> {
     Ok((period, count))
 }
 
-/// Require measured seconds over the hang limit, a nonempty cause and a positive issue in adjacent comments.
-fn documented(text: &str, start: usize) -> bool {
+/// Read the measured seconds, over the hang limit, from adjacent comments that also name a nonempty cause and a positive issue.
+fn documented(text: &str, start: usize) -> Option<f64> {
     let before_line = text[..start].rfind('\n').map_or("", |end| &text[..end]);
     let comment = before_line
         .lines()
@@ -141,7 +154,7 @@ fn documented(text: &str, start: usize) -> bool {
         .and_then(|value| value.split(';').next())
         .and_then(|value| value.strip_suffix('s'))
         .and_then(|value| value.parse::<f64>().ok())
-        .is_some_and(|value| value.is_finite() && value > 120.0);
+        .filter(|value| value.is_finite() && !covers(HANG_PERIODS, *value));
     let cause = comment
         .split("cause: ")
         .nth(1)
@@ -152,5 +165,5 @@ fn documented(text: &str, start: usize) -> bool {
             .and_then(|number| number.parse::<u64>().ok())
             .is_some_and(|number| number > 0)
     });
-    measured && cause && issue
+    measured.filter(|_| cause && issue)
 }

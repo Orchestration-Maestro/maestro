@@ -522,15 +522,18 @@ slow-timeout = { period = "30s", terminate-after = 5 }
 ```
 
 Keep `period = "30s"` so the test still prints SLOW every 30 seconds, and set
-`terminate-after` to the whole number of periods that covers the measured
-duration. Keep the `Measured:` seconds (over 120), `cause:` description and
-`#NNNN` issue in comments immediately above `slow-timeout`. Each exception needs
-its own comment; another override's comment does not apply. A test that finishes
-within 120 seconds needs no exception.
+`terminate-after` to the fewest whole periods that cover the measured duration.
+If a hosted run killed the test, record the kill time as the lower bound and say
+so in the `cause:` text. Keep the `Measured:` seconds (over 120), `cause:`
+description and `#NNNN` issue in comments immediately above `slow-timeout`. Each
+exception needs its own comment; another override's comment does not apply. A
+test that finishes within 120 seconds needs no exception.
 
 The conventions check rejects a default other than the flag and hang limit, a
 profile limit above the hang limit, an exception that changes the 30-second
-period or that the hang limit already covers, and an undocumented exception.
+period or that the hang limit already covers, an undocumented exception and an
+exception whose `terminate-after` is not the fewest periods covering its
+`Measured:` seconds.
 It checks references offline; the author and reviewer verify with GitHub that
 the linked issue is still open. The change fixing the slowness must delete its
 override as well as close the issue. Each existing exception has its own issue,
