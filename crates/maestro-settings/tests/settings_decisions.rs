@@ -186,3 +186,38 @@ fn recomputed_prepared_list_preserves_key_and_scope() {
         }
     }
 }
+
+/// Numeric setters offer their normalized values and preserve typed NaN results.
+#[test]
+fn numeric_preference_admission_keeps_normalization_and_nan() {
+    for (input, padding, height, width) in [
+        (-1.5, json!(0.0), json!(3.0), json!(1.0)),
+        (2.75, json!(2.0), json!(3.0), json!(2.0)),
+        (50.5, json!(3.0), json!(20.0), json!(50.0)),
+        (f64::NAN, json!(null), json!(null), json!(null)),
+    ] {
+        let mut manager = SettingsManager::in_memory(maestro_settings::Settings::default());
+        manager.set_editor_padding_x(input);
+        manager.set_autocomplete_max_visible(input);
+        manager.set_image_width_cells(input);
+        let raw = manager.get_global_settings().0;
+        assert_eq!(raw["editorPaddingX"], padding);
+        assert_eq!(raw["autocompleteMaxVisible"], height);
+        assert_eq!(raw["terminal"]["imageWidthCells"], width);
+        assert_eq!(manager.get_editor_padding_x().is_nan(), input.is_nan());
+        assert_eq!(
+            manager.get_autocomplete_max_visible().is_nan(),
+            input.is_nan()
+        );
+        manager.register_decider(Arc::new(Refuse)).unwrap();
+        manager.set_editor_padding_x(1.0);
+        manager.set_autocomplete_max_visible(5.0);
+        manager.set_image_width_cells(60.0);
+        assert_eq!(manager.get_global_settings().0, raw);
+        assert_eq!(manager.get_editor_padding_x().is_nan(), input.is_nan());
+        assert_eq!(
+            manager.get_autocomplete_max_visible().is_nan(),
+            input.is_nan()
+        );
+    }
+}

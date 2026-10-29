@@ -1709,3 +1709,68 @@ fn refused_panel_preferences_keep_display_and_show_message() {
         },
     );
 }
+
+/// Every preference callback reports refusal before touching live components.
+#[test]
+fn all_panel_preference_callbacks_refuse_before_live_effects() {
+    isolated(
+        "all_panel_preference_callbacks_refuse_before_live_effects",
+        async |directory| {
+            for route in 0..19 {
+                let world = started_settings(directory).await;
+                let session = world.host.session();
+                session
+                    .settings_manager()
+                    .borrow_mut()
+                    .register_decider(std::sync::Arc::new(RefuseBehaviour))
+                    .unwrap();
+                let callbacks = world.mode.settings_callbacks(Rc::new(|| {}));
+                let before = session.settings_manager().borrow().get_global_settings().0;
+                let editor = world.mode.editor.render(60);
+                let footer = world.mode.footer.render(100);
+                let theme = published(&world);
+                let accepted = match route {
+                    0 => (callbacks.on_auto_compact_change)(false),
+                    1 => (callbacks.on_show_images_change)(false),
+                    2 => (callbacks.on_image_width_cells_change)(80.0),
+                    3 => (callbacks.on_auto_resize_images_change)(false),
+                    4 => (callbacks.on_block_images_change)(true),
+                    5 => (callbacks.on_enable_skill_commands_change)(false),
+                    6 => (callbacks.on_theme_change)("light"),
+                    7 => (callbacks.on_hide_thinking_block_change)(true),
+                    8 => (callbacks.on_collapse_changelog_change)(false),
+                    9 => (callbacks.on_enable_install_telemetry_change)(false),
+                    10 => (callbacks.on_double_escape_action_change)(
+                        maestro_app::DoubleEscapeAction::Fork,
+                    ),
+                    11 => (callbacks.on_tree_filter_mode_change)(maestro_app::TreeFilterMode::All),
+                    12 => (callbacks.on_show_hardware_cursor_change)(true),
+                    13 => (callbacks.on_editor_padding_x_change)(2.0),
+                    14 => (callbacks.on_autocomplete_max_visible_change)(10.0),
+                    15 => (callbacks.on_quiet_startup_change)(true),
+                    16 => (callbacks.on_clear_on_shrink_change)(true),
+                    17 => (callbacks.on_show_terminal_progress_change)(true),
+                    _ => (callbacks.on_warnings_change)(maestro_app::WarningSettings::default()),
+                };
+                assert!(!accepted, "route {route}");
+                assert_eq!(
+                    session.settings_manager().borrow().get_global_settings().0,
+                    before
+                );
+                assert_eq!(world.mode.editor.render(60), editor);
+                assert_eq!(world.mode.footer.render(100), footer);
+                assert_eq!(published(&world), theme);
+                assert!(!world.mode.hide_thinking_block.get());
+                assert!(
+                    world
+                        .mode
+                        .chat_container
+                        .render(100)
+                        .join("\n")
+                        .contains("release refuses behaviour changes")
+                );
+                drop(world.runtime.settle());
+            }
+        },
+    );
+}

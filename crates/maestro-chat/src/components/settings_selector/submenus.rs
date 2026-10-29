@@ -20,7 +20,7 @@ impl WarningSettingsSubmenu {
     /// Commits warning state before notifying the caller.
     pub(super) fn new(
         initial: WarningSettings,
-        change: Rc<dyn Fn(WarningSettings)>,
+        change: Rc<dyn Fn(WarningSettings) -> bool>,
         cancel: Rc<dyn Fn()>,
         theme: LiveTheme,
     ) -> Self {

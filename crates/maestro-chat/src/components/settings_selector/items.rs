@@ -287,7 +287,7 @@ fn warnings(
             initial,
             Rc::new(move |value| {
                 state.replace(value.clone());
-                callback(value);
+                callback(value)
             }),
             Rc::new(move || done(None)),
             theme.clone(),
@@ -324,8 +324,8 @@ fn thinking(
             submenus::SelectionCallbacks {
                 select: Rc::new(move |value| {
                     if let Ok(level) = value.parse() {
-                        callback(level);
-                        done(Some(value.into()));
+                        let accepted = callback(level);
+                        done(accepted.then(|| value.into()));
                     }
                 }),
                 cancel: Rc::new(move || cancel(None)),
@@ -386,7 +386,7 @@ fn themes(
     item
 }
 /// Converts only the selected cyclic setting into its existing owner type.
-pub(super) fn change(callbacks: &SettingsCallbacks, id: &str, value: &str) {
+pub(super) fn change(callbacks: &SettingsCallbacks, id: &str, value: &str) -> bool {
     let numeric_callback = match id {
         "image-width-cells" => Some(&callbacks.on_image_width_cells_change),
         "editor-padding" => Some(&callbacks.on_editor_padding_x_change),
@@ -394,10 +394,7 @@ pub(super) fn change(callbacks: &SettingsCallbacks, id: &str, value: &str) {
         _ => None,
     };
     if let Some(callback) = numeric_callback {
-        if let Ok(value) = value.parse() {
-            callback(value);
-        }
-        return;
+        return value.parse().is_ok_and(|value| callback(value));
     }
     match id {
         "show-images" => (callbacks.on_show_images_change)(value == "true"),
@@ -432,7 +429,7 @@ pub(super) fn change(callbacks: &SettingsCallbacks, id: &str, value: &str) {
             "all" => TreeFilterMode::All,
             _ => TreeFilterMode::Default,
         }),
-        _ => {}
+        _ => true,
     }
 }
 /// Converts the fixed delivery choices.

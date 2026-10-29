@@ -96,7 +96,12 @@ impl InteractiveMode {
             on_transport_change: self.fallible_setting_callback(Self::settings_transport),
             on_thinking_level_change: self.fallible_setting_callback(Self::settings_thinking),
             on_theme_change: self.settings_theme_callback(false),
-            on_theme_preview: Some(self.settings_theme_callback(true)),
+            on_theme_preview: Some({
+                let preview = self.settings_theme_callback(true);
+                Rc::new(move |name| {
+                    preview(name);
+                })
+            }),
             on_hide_thinking_block_change: self
                 .fallible_setting_callback(Self::settings_hide_thinking),
             on_collapse_changelog_change: self
@@ -129,12 +134,13 @@ impl InteractiveMode {
     fn setting_callback<T: 'static>(
         self: &Rc<Self>,
         apply: impl Fn(&Self, T) + 'static,
-    ) -> Rc<dyn Fn(T)> {
+    ) -> Rc<dyn Fn(T) -> bool> {
         let mode = Rc::downgrade(self);
         Rc::new(move |value| {
             if let Some(mode) = mode.upgrade() {
                 apply(&mode, value);
             }
+            true
         })
     }
 
@@ -142,7 +148,7 @@ impl InteractiveMode {
     fn fallible_setting_callback<T: 'static>(
         self: &Rc<Self>,
         apply: impl Fn(&Self, T) -> Result<(), Box<dyn Error>> + 'static,
-    ) -> Rc<dyn Fn(T)> {
+    ) -> Rc<dyn Fn(T) -> bool> {
         self.setting_callback(move |mode, value| mode.report(apply(mode, value)))
     }
 
@@ -150,7 +156,7 @@ impl InteractiveMode {
     fn save_setting<T: 'static>(
         self: &Rc<Self>,
         setter: fn(&mut SettingsManager, T),
-    ) -> Rc<dyn Fn(T)> {
+    ) -> Rc<dyn Fn(T) -> bool> {
         self.setting_callback(move |mode, value| {
             setter(
                 &mut mode.runtime_host.session().settings_manager().borrow_mut(),
@@ -160,12 +166,13 @@ impl InteractiveMode {
     }
 
     /// Keeps preview and commit on the same theme selection owner.
-    fn settings_theme_callback(self: &Rc<Self>, preview: bool) -> Rc<dyn Fn(&str)> {
+    fn settings_theme_callback(self: &Rc<Self>, preview: bool) -> Rc<dyn Fn(&str) -> bool> {
         let mode = Rc::downgrade(self);
         Rc::new(move |name| {
             if let Some(mode) = mode.upgrade() {
                 mode.report(mode.settings_theme(name, preview));
             }
+            true
         })
     }
 
