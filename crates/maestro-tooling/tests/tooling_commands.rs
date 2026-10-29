@@ -289,9 +289,9 @@ fn child_toolchain_keeps_parent_counters_while_building_wasm() {
 /// Generate a fixture's lock file with its Cargo state kept in a private home.
 fn generate_private_lock(root: &Path) {
     assert!(
-        toolchain_support::command(env!("CARGO"))
+        toolchain_support::fixture_command(env!("CARGO"), root, None)
+            .unwrap()
             .arg("generate-lockfile")
-            .current_dir(root)
             .status()
             .unwrap()
             .success()
@@ -3068,8 +3068,7 @@ fn consumer_workspace(root: &Path) -> PathBuf {
         workspace.join("justfile"),
     )
     .unwrap();
-    let lock = toolchain_support::command("cargo")
-        .current_dir(&workspace)
+    let lock = consumer_toolchain(&workspace)
         .args(["generate-lockfile", "--offline"])
         .output()
         .unwrap();
@@ -3186,6 +3185,7 @@ fn consumer_hook_command(test: &str, workspace: &Path) -> TestProcess {
         .env("MAESTRO_FIXTURE_CARGO", workspace.join("bin/cargo"))
         .env("MAESTRO_RECEIPT", workspace.join("receipt"))
         .env("CARGO_TARGET_DIR", workspace.join("target"))
+        .env("CARGO_HOME", workspace.with_file_name("cargo-home"))
         .env(
             "PATH",
             format!(
@@ -3200,11 +3200,20 @@ fn consumer_hook_command(test: &str, workspace: &Path) -> TestProcess {
     command
 }
 
+/// Start a native toolchain command in the consumer workspace, with Cargo state kept beside the
+/// checkout and outside its repository.
+#[cfg(unix)]
+fn consumer_toolchain(workspace: &Path) -> Command {
+    let mut command =
+        toolchain_support::fixture_command("cargo", workspace.parent().unwrap(), None).unwrap();
+    command.current_dir(workspace);
+    command
+}
+
 /// Run one native Cargo command inside the consumer workspace.
 #[cfg(unix)]
 fn consumer_cargo(workspace: &Path, args: &[&str]) -> Output {
-    toolchain_support::command("cargo")
-        .current_dir(workspace)
+    consumer_toolchain(workspace)
         .env("CARGO_TARGET_DIR", workspace.join("target"))
         .args(args)
         .output()
@@ -3297,8 +3306,7 @@ fn maestro_hook_scoped_docs_still_deny_missing_documentation() {
     )
     .unwrap();
     git(&workspace, &["add", "--", "caller/src/lib.rs"]);
-    let control = toolchain_support::command("cargo")
-        .current_dir(&workspace)
+    let control = consumer_toolchain(&workspace)
         .env("CARGO_TARGET_DIR", workspace.join("target"))
         .env("RUSTDOCFLAGS", "-D warnings -D missing_docs")
         .args(["doc", "-p", "leaf", "--no-deps", "--locked"])
