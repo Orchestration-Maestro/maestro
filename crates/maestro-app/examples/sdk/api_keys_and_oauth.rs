@@ -1,6 +1,9 @@
 //! Supply credential files, runtime keys and a catalog without a custom model file.
 mod support;
+use maestro_app::{AuthStorage, ModelRegistry, create_agent_session};
+use maestro_credentials::{AuthCredential, ProcessConfigValueOperations};
 use serde_json::{Value, json};
+use std::sync::Arc;
 use support::{Error, Sample};
 
 /// Run offline credential configuration; interactive OAuth needs an explicit provider login.
@@ -10,9 +13,6 @@ fn main() -> Result<(), Error> {
 
 /// Create sessions with explicit credential owners and observe a non-persisted key override.
 async fn run(sample: Sample) -> Result<Value, Error> {
-    use maestro_app::{AuthStorage, ModelRegistry, create_agent_session};
-    use maestro_credentials::{AuthCredential, ProcessConfigValueOperations};
-    use std::sync::Arc;
     let auth_path = sample.root.path().join("auth.json");
     let auth = Arc::new(AuthStorage::create(&auth_path.display().to_string()));
     auth.set(
@@ -21,19 +21,20 @@ async fn run(sample: Sample) -> Result<Value, Error> {
             json!({"type": "api_key", "key": "stored-example-key"}),
         )?,
     );
-    let custom = custom_auth(&sample)?;
     let commands = Arc::new(ProcessConfigValueOperations::new(|| {
         maestro_tools::utils::shell::get_shell_config(None).map(|shell| (shell.shell, shell.args))
     }));
+    let custom = custom_registry(&sample, commands.clone())?;
     let mut result = json!({"sessions": 0});
     for index in 0..4 {
         let selected = if index == 1 {
-            Arc::clone(&custom)
+            Arc::clone(custom.auth_storage())
         } else {
             Arc::clone(&auth)
         };
         let mut options = sample.options()?;
         options.auth_storage = Some(Arc::clone(&selected));
+        options.model_registry = (index == 1).then(|| Arc::clone(&custom));
         if index >= 2 {
             auth.set_runtime_api_key("faux", "runtime-example-key");
         }
@@ -46,17 +47,20 @@ async fn run(sample: Sample) -> Result<Value, Error> {
             options.model_registry = Some(registry);
         }
         let created = create_agent_session(options).await?;
+        if index == 1 {
+            observe_custom(&created.session, &custom, &mut result)?;
+        }
         result["sameAuth"] = json!(Arc::ptr_eq(
             created.session.model_registry().auth_storage(),
             &selected
         ));
         result["sessions"] = json!(index + 1);
-        let label = match index {
-            0 => "default auth storage and model registry",
-            1 => "custom auth storage location",
-            2 => "runtime API key override",
-            _ => "only built-in models",
-        };
+        let label = [
+            "default auth storage and model registry",
+            "custom auth storage location",
+            "runtime API key override",
+            "only built-in models",
+        ][index];
         writeln!(sample.output.borrow_mut(), "Session with {label}")?;
         created.session.dispose();
     }
@@ -68,16 +72,44 @@ async fn run(sample: Sample) -> Result<Value, Error> {
     Ok(result)
 }
 
-/// Open a second credential file inside the sample's disposable tree.
-fn custom_auth(sample: &Sample) -> Result<std::sync::Arc<maestro_app::AuthStorage>, Error> {
-    use maestro_app::AuthStorage;
-    use std::sync::Arc;
+/// Record the explicit catalog handle and its directory-specific descriptor.
+fn observe_custom(
+    session: &maestro_app::AgentSession,
+    custom: &std::sync::Arc<maestro_app::ModelRegistry>,
+    result: &mut Value,
+) -> Result<(), Error> {
+    result["sameCustomRegistry"] = json!(Arc::ptr_eq(session.model_registry(), custom));
+    result["customModelName"] = json!(
+        custom
+            .find("faux", "faux-1")
+            .ok_or("missing custom model")?
+            .read()
+            .map_err(|error| error.to_string())?
+            .name
+    );
+    Ok(())
+}
+
+/// Load credentials and model descriptors from a second directory.
+fn custom_registry(
+    sample: &Sample,
+    commands: std::sync::Arc<maestro_credentials::ProcessConfigValueOperations>,
+) -> Result<std::sync::Arc<maestro_app::ModelRegistry>, Error> {
     let custom_dir = sample.root.path().join("custom");
     std::fs::create_dir(&custom_dir)?;
     let custom = Arc::new(AuthStorage::create(
         &custom_dir.join("auth.json").display().to_string(),
     ));
-    Ok(custom)
+    let mut models: Value =
+        serde_json::from_slice(&std::fs::read(sample.root.path().join("models.json"))?)?;
+    models["providers"]["faux"]["models"][0]["name"] = json!("Custom location model");
+    let path = custom_dir.join("models.json");
+    std::fs::write(&path, serde_json::to_vec(&models)?)?;
+    Ok(Arc::new(maestro_app::ModelRegistry::create(
+        custom,
+        path.display().to_string(),
+        commands,
+    )?))
 }
 
 #[cfg(test)]

@@ -41,8 +41,10 @@ async fn run(sample: Sample) -> Result<Value, Error> {
         )?;
     }
     result["errors"] = json!(errors.len());
-    result["saved"] =
-        serde_json::from_slice(&std::fs::read(sample.root.path().join("settings.json"))?)?;
+    if errors.is_empty() {
+        result["saved"] =
+            serde_json::from_slice(&std::fs::read(sample.root.path().join("settings.json"))?)?;
+    }
     created.session.dispose();
     let mut options = sample.options()?;
     options.settings_manager = Some(Rc::new(RefCell::new(SettingsManager::in_memory(
