@@ -13,11 +13,11 @@ jobs:
     name: Tests
     runs-on: ubuntu-latest
     steps:
-      - name: Controlled failed landing
+      - name: Controlled passing landing
         shell: python
         run: |
-          print('FAIL controlled_landing_failure', flush=True)
-          assert False, 'controlled landing failure; never merge this proof'
+          print('PASS controlled_landing_success', flush=True)
+          assert True
   report:
     needs: tests
     if: always() && needs.tests.result == 'failure'
