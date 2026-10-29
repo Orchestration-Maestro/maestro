@@ -7,7 +7,7 @@ struct Host(Box<Harness>);
 impl Host {
     /// Starts one copy of the shipped factory.
     fn new() -> Result<Self, String> {
-        let path = super::build::component("summarize", "MAESTRO_SUMMARIZE_COMPONENT")?;
+        let path = super::build::example_component("summarize")?;
         Ok(Self(Box::new(
             super::block_on(Harness::start(&path)).map_err(|e| e.to_string())?,
         )))

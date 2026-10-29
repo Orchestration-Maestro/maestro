@@ -552,21 +552,39 @@ builds are unchanged.
 Before guest-authoring tests, nextest's shell launcher locates the active
 artifact directory through its documented platform library search path. It runs
 the `prepare_author_component` example that the test build put in that directory,
-as long as the example is newer than its source, the shared build module, the
-package manifest and `Cargo.lock`. Running it through Cargo instead would resolve
-features for that one package and recompile the engine. When the example is missing
-or older, as after a `--lib` or filtered selection, the launcher builds and runs it
-through Cargo in the same target directory and profile.
+as long as the example is newer than its source, the shared build and component
+discovery sources, the package manifest and `Cargo.lock`. Running it through Cargo instead would resolve features for
+that one package and recompile the engine. When the example is missing or older, as
+after a `--lib` or filtered selection, the launcher builds it through Cargo in the
+same target directory and profile before running it directly.
 The launcher fails if the directory cannot be resolved rather than building
 elsewhere. It uses `NEXTEST_LD_LIBRARY_PATH` on Linux,
 `NEXTEST_DYLD_FALLBACK_LIBRARY_PATH` on macOS and `PATH` through Git's shell
 on Windows, where the shell converts the search list to colon-separated paths.
-The example builds the author component, warms the Wasmtime compilation cache
-in the default user cache and exports its path to the tests' processes.
-The Git-pinned engine partitions cached code by host executable modification
-time, so setup does not warm another binary's entries; nextest processes of
-the same test binary reuse its compiled bytes after their first load.
-The component build removes `RUSTC_WRAPPER`, where the coverage tool puts its
+Before running the example, `normalize-component-cache.sh` gives executable
+artifacts in the profile directory, `deps` and `examples` their newest existing
+modification time. This advances older outputs without making them older than
+their compiler inputs. It skips an executable that a workspace library it builds on
+has outdated: Cargo rebuilds an executable only while a dependency's output is newer
+than it, so advancing a binary that a rebuilt library has outdated would hide the
+rebuild. The libraries an executable builds on come from the crate named in its
+dependency information and the workspace crates `Cargo.lock` lists for it; a library's
+own test binary does not build on its output. Without that information, any newer
+library output outdates the executable. A skipped test binary compiles its components
+itself on first use. A skipped example would warm code that no test binary reads, so
+normalization then exits with status 3 and the launcher rebuilds the example through
+Cargo before it runs. Cargo ignores some library outputs that normalization counts, such
+as the check-only metadata a lint run writes, so the example can stay outdated after that
+build. The launcher then logs one line and runs it anyway. Test binaries do not read the
+code it warms, which costs a cache miss and never fails setup. The Git-pinned engine
+includes the shared modification time in its cache namespace, so the preparer and
+consuming test binaries share compiled code.
+The example builds every exported component, warms its Wasmtime compilation cache
+in the default user cache on up to four threads and exports its path to the tests'
+processes. Component contents, compiler settings and CPU features still determine
+cache compatibility.
+The shared component builder resolves these source-marked paths before invoking
+Cargo. The component build removes `RUSTC_WRAPPER`, where the coverage tool puts its
 instrumenting wrapper, and keeps `CARGO_BUILD_RUSTC_WRAPPER`, where shared CI
 sets the compile cache. So the component stays uninstrumented while its
 compiles still reach the cache.
@@ -648,7 +666,9 @@ fixture parse, so don't spawn a child per case yourself. A case that needs a fre
 process for other state, such as a process-wide counter or files created per
 case, keeps its own child. Use `TestProcess::case(id)` to select that case. Set a
 child's temporary directory with `TestProcess::temp_dir(path)`, which writes the
-variables each platform reads, never `TMPDIR` alone.
+variables each platform reads, never `TMPDIR` alone. A child that replaces `HOME`
+and loads a prepared component passes `user_cache_home()` as `XDG_CACHE_HOME`,
+which only Linux reads, so it reuses the setup's compiled code instead of compiling the component again.
 Read child roles through `maestro_test_process::selection()`, not environment
 variables. `selection.is_child()` distinguishes the parent from a child.
 `selection.runs_case(id)` accepts the parent, wildcard children and the child

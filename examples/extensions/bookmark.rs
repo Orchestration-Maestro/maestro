@@ -4,6 +4,7 @@
 //! A label is stored on the entry it names. `/bookmark` labels the newest assistant message,
 //! with the argument text or a generated timestamp label, and `/unbookmark` removes the newest
 //! label from any entry.
+// maestro-component: MAESTRO_BOOKMARK_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

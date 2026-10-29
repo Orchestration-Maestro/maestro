@@ -1,4 +1,5 @@
 //! Compact displays for the original read, bash, edit and write tools.
+// maestro-component: MAESTRO_BUILT_IN_TOOL_RENDERER_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
