@@ -95,7 +95,8 @@ for artifact in "$directory"/* "$directory"/deps/* "$directory"/examples/*; do
     found=true
     if outdated "$artifact"; then
         case "$artifact" in
-            "$directory"/examples/prepare_author_component*) stale=true ;;
+            "$directory"/examples/prepare_author_component \
+                | "$directory"/examples/prepare_author_component.exe) stale=true ;;
         esac
         continue
     fi
