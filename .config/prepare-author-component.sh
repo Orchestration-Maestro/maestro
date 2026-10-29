@@ -1,6 +1,9 @@
 #!/bin/sh
 # Nextest supplies its active artifact directory in the platform library search path.
 set -eu
+if [ "${TEST_PREPARE_OUTPUT+x}" = x ]; then
+    exec python3 "$(dirname "$0")/prepare-test-setup.py" export
+fi
 case "$(uname -s)" in
     Darwin) paths=${NEXTEST_DYLD_FALLBACK_LIBRARY_PATH-}; separator=: ;;
     MINGW*|MSYS*|CYGWIN*) paths=$PATH; separator=: ;;
