@@ -12,6 +12,11 @@ const FIXTURE: &str = "crates/maestro-extensions-wasmtime/tests/fixtures/hello-e
 static NEXT: AtomicU64 = AtomicU64::new(0);
 
 /// Compare or refresh the guide lock after rendering the example manifest.
+///
+/// # Errors
+///
+/// Returns an error if filesystem access or offline Cargo resolution fails,
+/// or if check mode finds a stale guide lock.
 pub(super) fn refresh(cargo: &Path, checkout: &Path, check: bool) -> io::Result<()> {
     let checkout = checkout.canonicalize()?;
     let fixture = checkout.join(FIXTURE);
