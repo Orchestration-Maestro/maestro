@@ -26,6 +26,20 @@ async fn run(sample: Sample) -> Result<Value, Error> {
     }
     let created = maestro_app::create_agent_session(options).await?;
     let files = created.session.resource_loader().get_agents_files();
+    writeln!(sample.output.borrow_mut(), "Discovered context files:")?;
+    for file in files.iter() {
+        writeln!(
+            sample.output.borrow_mut(),
+            "  - {} ({} chars)",
+            file.path,
+            file.content.chars().count()
+        )?;
+    }
+    writeln!(
+        sample.output.borrow_mut(),
+        "Session created with {} context files",
+        files.len()
+    )?;
     let result = json!({"files": *files, "prompt": created.session.system_prompt()});
     created.session.dispose();
     Ok(result)
