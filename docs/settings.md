@@ -207,6 +207,8 @@ retains the first publisher. There is no chain of deciders.
 | `RuntimeOverrides` | Runtime settings before the one-level merge |
 | `Model` | Provider, model ID and requested thinking before capability clamping |
 | `ThinkingLevel` | Requested thinking before capability clamping |
+| `Tools` | Requested active names, or one candidate during automatic refresh |
+| `PackageInstall`, `PackageRemove` | Authored source and selected configuration scope |
 
 A refused edit changes no accepted scope, runtime override, pending edit or
 saved file. Runtime model and thinking refusal also leaves active state,
@@ -221,7 +223,9 @@ locks, and when applying an admitted runtime override. It restores locked values
 again after the callback, so resolution cannot weaken a lock. The callback may
 change the view but never receives the raw scopes or persistence queue. Its messages
 use the existing settings error channel. Reads and resolution never rewrite
-stored conflicting values.
+stored conflicting values. `resolve_stored_values` resolves a restored settings
+fragment over the current view through that same composition pipeline. It reports
+conflicts without changing raw preferences, pending writes or saved sessions.
 
 The [decision tests](../crates/maestro-settings/tests/settings_decisions.rs)
 show a refusing publisher and a stored-value resolver through the public
@@ -233,7 +237,8 @@ An owner whose operation has effects before its settings save calls
 `prepare_operation`. It supplies the request, scope and all derived settings
 paths before the first effect. The settings owner asks the decider and checks
 base locks, then returns a `PreparedSettingsEdit` without publishing or queuing
-anything.
+anything. `has_decider` lets an owner retain its ordinary late-validation order
+when neither a publisher nor a base layer governs its operation.
 
 Keep the token with that operation and consume it with `apply_prepared_edit` at
 the original save position. `split_at` separates admitted edits when an operation

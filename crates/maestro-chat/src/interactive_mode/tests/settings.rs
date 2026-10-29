@@ -139,9 +139,13 @@ fn settings_snapshot_reads_live_session_and_preferences() {
             })
             .await;
             let session = world.host.session();
-            session.set_auto_compaction_enabled(true);
-            session.set_steering_mode(maestro_app::QueueMode::All);
-            session.set_follow_up_mode(maestro_app::QueueMode::OneAtATime);
+            session.set_auto_compaction_enabled(true).unwrap();
+            session
+                .set_steering_mode(maestro_app::QueueMode::All)
+                .unwrap();
+            session
+                .set_follow_up_mode(maestro_app::QueueMode::OneAtATime)
+                .unwrap();
             let levels = session.get_available_thinking_levels();
             open(&world);
             let config = world.mode.settings_config().unwrap();
@@ -357,8 +361,12 @@ fn settings_session_modes_use_distinct_live_policies() {
         async |directory| {
             let world = settings_world(directory, |_| {}).await;
             let session = world.host.session();
-            session.set_steering_mode(maestro_app::QueueMode::All);
-            session.set_follow_up_mode(maestro_app::QueueMode::OneAtATime);
+            session
+                .set_steering_mode(maestro_app::QueueMode::All)
+                .unwrap();
+            session
+                .set_follow_up_mode(maestro_app::QueueMode::OneAtATime)
+                .unwrap();
             let list = open(&world);
             choose(&list, "Steering", 0);
             assert_eq!(session.steering_mode(), maestro_app::QueueMode::OneAtATime);
@@ -1596,6 +1604,66 @@ fn settings_theme_cancel_replays_the_saved_theme_without_persisting() {
                 Some("dark"),
                 "cancel replays the latest committed selection"
             );
+            drop(world.runtime.settle());
+        },
+    );
+}
+
+/// Refuses explicit behaviour edits while allowing tool refresh candidates.
+struct RefuseBehaviour;
+impl maestro_app::SettingsDecider for RefuseBehaviour {
+    fn decide(&self, request: &maestro_app::DecisionRequest<'_>) -> Result<(), String> {
+        if matches!(request, maestro_app::DecisionRequest::SettingsEdit { .. }) {
+            return Err("release refuses behaviour changes".into());
+        }
+        Ok(())
+    }
+}
+
+/// A refused transport selection cannot escape through the live agent field.
+#[test]
+fn refused_transport_selection_preserves_live_agent_and_settings() {
+    isolated(
+        "refused_transport_selection_preserves_live_agent_and_settings",
+        async |directory| {
+            let world = started_settings(directory).await;
+            let session = world.host.session();
+            let before = session.agent().transport.read().unwrap().clone();
+            session
+                .settings_manager()
+                .borrow_mut()
+                .register_decider(std::sync::Arc::new(RefuseBehaviour))
+                .unwrap();
+            let list = open(&world);
+            choose(&list, "Transport", 0);
+            assert_eq!(*session.agent().transport.read().unwrap(), before);
+            assert_eq!(
+                session.settings_manager().borrow().get_transport(),
+                saved(&before)
+            );
+            drop(world.runtime.settle());
+        },
+    );
+}
+
+/// A refused session policy cannot change the footer's compaction marker.
+#[test]
+fn refused_compaction_selection_preserves_session_and_footer() {
+    isolated(
+        "refused_compaction_selection_preserves_session_and_footer",
+        async |directory| {
+            let world = started_settings(directory).await;
+            let session = world.host.session();
+            session
+                .settings_manager()
+                .borrow_mut()
+                .register_decider(std::sync::Arc::new(RefuseBehaviour))
+                .unwrap();
+            let list = open(&world);
+            assert!(footer_shows(&world, "(auto)"));
+            choose(&list, "compact", 0);
+            assert!(session.auto_compaction_enabled());
+            assert!(footer_shows(&world, "(auto)"));
             drop(world.runtime.settle());
         },
     );

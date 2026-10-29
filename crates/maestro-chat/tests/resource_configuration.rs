@@ -176,3 +176,8 @@ fn config_container_propagates_child_failures_and_invalidation() {
 fn resource_relative_paths_observe_live_directory_and_preserve_failures() {
     resource_configuration_support::native::paths();
 }
+
+#[test]
+fn refused_resource_toggles_preserve_rows_files_and_callbacks() {
+    resource_configuration_support::protocol::refused_toggles();
+}
