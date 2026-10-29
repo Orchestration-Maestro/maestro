@@ -26,6 +26,9 @@ fd = "10.5.0"
 # Unifies native dependency features; `just check` verifies the result.
 cargo-hakari = { version = "0.9.39", version_prefix = "cargo-hakari-", matching = "cargo-hakari" }
 
+# Composes controlled engine components for native extension tests.
+"github:bytecodealliance/wasm-tools" = { version = "1.262.0" }
+
 # Native browser author tools; never consumer install hooks.
 "github:trunk-rs/trunk" = { version = "0.21.14" }
 "github:wasm-bindgen/wasm-bindgen" = { version = "0.2.129" }
