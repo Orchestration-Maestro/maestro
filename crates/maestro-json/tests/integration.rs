@@ -3,3 +3,4 @@
 
 mod boundary_rules;
 mod jsonl_framing;
+mod merge;

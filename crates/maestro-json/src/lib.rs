@@ -1,5 +1,6 @@
 //! JSON boundary operations shared by Maestro crates: truth, canonical key
-//! order, compact and pretty text, object-only record admission and synchronous JSONL framing.
+//! order, compact and pretty text, object-only record admission, the one-level object merge
+//! and synchronous JSONL framing.
 //!
 //! ```
 //! use maestro_json::{array_index, compact_json, is_truthy};
@@ -12,6 +13,7 @@
 mod json_text;
 pub mod jsonl;
 mod keys;
+mod merge;
 pub mod object;
 mod truth;
 
@@ -20,6 +22,7 @@ pub use json_text::{
     display_truthy, pretty_json, pretty_object,
 };
 pub use keys::{array_index, canonical_entries};
+pub use merge::merge_one_level;
 pub use truth::{is_raw_truthy, is_truthy};
 
 /// Escape one JSON Pointer reference token, leaving ordinary characters unchanged.

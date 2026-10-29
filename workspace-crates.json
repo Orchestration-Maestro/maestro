@@ -21,6 +21,7 @@
   "maestro-listeners": "core",
   "maestro-listing": "core",
   "maestro-lock": "core",
+  "maestro-manifest": "package",
   "maestro-markdown": "core",
   "maestro-models": "core",
   "maestro-multiplexer": "core",
