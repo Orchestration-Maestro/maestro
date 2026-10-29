@@ -778,3 +778,36 @@ policies.
 
 Select individual toolkit tests through `tui-test` using their module-qualified
 names, for example `just tui-test -- ansi_wrapping::name --exact`.
+
+
+## Full-suite runs after landing
+
+`Full suite after landing` runs the shared Rust CI on the exact commit of every
+push to main. It runs all test shards, doctests and declared Chromium tests,
+even when the merge queue selected fewer crates. Later pushes do not cancel
+or replace queued landing runs. This is separate from the compile-cache warm
+build and from required merge checks.
+
+`Failed landing reports` listens for the completed main-push run. The shared
+reporter creates one failure issue per landing commit with the merged PR,
+failed-test log lines and run link, then proposes a revert PR against main.
+The revert names the original PR and failure issue. It runs normal required
+checks and enters the merge queue like any other PR; automation never pushes
+the revert directly to main. Repeated handling reuses the existing issue and
+open or closed revert PR, including when an earlier attempt only pushed the
+revert branch. Passing suites create neither artifact.
+
+The reporting job needs read access to Actions runs and contents. Writes use
+the existing release App's repository-scoped token, minted from
+`RELEASE_APP_CLIENT_ID` and `RELEASE_APP_PRIVATE_KEY`, with contents, issues and
+pull requests write access. The App must be installed here and the organization
+secret available here. This token lets the revert trigger checks; test jobs do
+not receive it. The reporting workflow alone is declared in
+`privileged_trigger_workflows` for the existing trigger audit.
+
+Unknown PR attribution, missing permissions or a revert conflict fails the
+reporter with the original run link. Inspect that run and the failure issue;
+resolve a conflict in a reviewed PR. Do not bypass required checks or push to
+main to recover. The workflow-run listener becomes active after it lands on
+the default branch. Controlled proofs use push-only `ci/rw227-` branches and
+shared reporter proof mode, never a failing landing on main.
