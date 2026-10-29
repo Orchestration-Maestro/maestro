@@ -91,7 +91,14 @@ fn browser_resolution_never_reaches_the_shared_cargo_home() {
     success(
         &browser
             .cargo()
-            .args(["metadata", "--offline", "--format-version", "1"])
+            .args([
+                "metadata",
+                "--offline",
+                "--format-version",
+                "1",
+                "--manifest-path",
+            ])
+            .arg(browser.fixture("Cargo.toml"))
             .output()
             .unwrap(),
     );

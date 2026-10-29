@@ -4,6 +4,7 @@ use crate::recipe_support::{self, Workspace};
 use crate::toolchain_support;
 use maestro_test_directory::Scratch;
 use std::fs;
+use std::path::Path;
 
 /// Dependency-free fixture resolution creates only its private cache lock.
 #[test]
@@ -224,5 +225,69 @@ fn workspace_fixtures_never_reach_the_shared_cargo_home() {
                 .unwrap()
                 .success()
         );
+    }
+}
+
+/// Cargo loads every vendored package on each run, so the shared set holds only the fixtures'
+/// closure.
+#[test]
+fn prepared_sources_hold_only_the_fixture_closure() {
+    let config: toml::Table = fs::read_to_string(recipe_support::prepared_sources())
+        .unwrap()
+        .parse()
+        .unwrap();
+    let directory = config["source"]["vendored-sources"]["directory"]
+        .as_str()
+        .unwrap();
+    let packages = fs::read_dir(directory).unwrap().count();
+    assert!(packages <= 100, "{packages} vendored packages");
+}
+
+/// Read one manifest below the workspace's crates directory.
+fn read_manifest(path: &str) -> toml::Table {
+    fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join("..").join(path))
+        .unwrap()
+        .parse()
+        .unwrap()
+}
+
+/// Names of the dependencies a manifest declares, including its target-specific tables.
+fn declared_dependencies(manifest: &toml::Table) -> Vec<&String> {
+    let targets = manifest
+        .get("target")
+        .and_then(toml::Value::as_table)
+        .into_iter()
+        .flat_map(toml::Table::values)
+        .filter_map(toml::Value::as_table);
+    std::iter::once(manifest)
+        .chain(targets)
+        .flat_map(|table| {
+            ["dependencies", "dev-dependencies"]
+                .into_iter()
+                .filter_map(|kind| table.get(kind))
+        })
+        .filter_map(toml::Value::as_table)
+        .flat_map(toml::Table::keys)
+        .collect()
+}
+
+/// Every registry crate the fixture workspaces resolve is named in the closure manifest.
+#[test]
+fn registry_sources_name_every_tooling_dependency() {
+    let closure = read_manifest("maestro-tooling/tests/fixtures/registry_sources/Cargo.toml");
+    let named = closure["dependencies"].as_table().unwrap();
+    for owner in [
+        "maestro-tooling",
+        "maestro-path",
+        "maestro-test-process",
+        "maestro-test-directory",
+    ] {
+        let manifest = read_manifest(&format!("{owner}/Cargo.toml"));
+        for name in declared_dependencies(&manifest) {
+            assert!(
+                name.starts_with("maestro-") || named.contains_key(name),
+                "{owner} declares {name}, which the closure manifest does not name"
+            );
+        }
     }
 }
