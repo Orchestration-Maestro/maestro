@@ -1,6 +1,7 @@
 //! Cargo fixture cache isolation through the shared command builder.
 
-use crate::{recipe_support, toolchain_support};
+use crate::recipe_support::{self, Workspace};
+use crate::toolchain_support;
 use maestro_test_directory::Scratch;
 use std::fs;
 
@@ -141,4 +142,63 @@ fn nextest_exports_prepared_sources_to_registry_fixtures() {
     let config = std::env::var_os("MAESTRO_TEST_CARGO_SOURCES")
         .expect("the fixture-sources setup script must export its configuration");
     assert!(std::path::Path::new(&config).is_file());
+}
+
+/// Write a dependency-free package into a workspace checkout.
+fn write_package(workspace: &Workspace, dependencies: &str) {
+    fs::create_dir_all(workspace.path().join("src")).unwrap();
+    fs::write(workspace.path().join("src/lib.rs"), "").unwrap();
+    fs::write(
+        workspace.path().join("Cargo.toml"),
+        format!(
+            "[package]\nname = 'workspace-fixture'\nversion = '0.0.0'\nedition = '2024'\n\
+             [workspace]\n[dependencies]\n{dependencies}"
+        ),
+    )
+    .unwrap();
+}
+
+/// Workspace commands use a Cargo home beside the checkout, not the shared one.
+#[test]
+fn workspace_commands_use_a_private_cargo_home() {
+    let workspace = Workspace::new();
+    let command = workspace.toolchain_command(env!("CARGO"));
+    let home = command
+        .get_envs()
+        .find(|(key, _)| *key == "CARGO_HOME")
+        .and_then(|(_, value)| value);
+    assert_eq!(
+        home,
+        Some(workspace.path().with_file_name("cargo-home").as_os_str())
+    );
+}
+
+/// A workspace that asks for the prepared sources resolves registry crates from them.
+#[test]
+fn workspace_registry_fixtures_resolve_prepared_sources() {
+    let workspace = Workspace::new();
+    write_package(&workspace, "serde = '=1.0.229'\n");
+    workspace.use_prepared_sources();
+    let output = workspace
+        .toolchain_command(env!("CARGO"))
+        .arg("generate-lockfile")
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(
+        fs::read_to_string(workspace.path().join("Cargo.lock"))
+            .unwrap()
+            .contains("name = \"serde\"")
+    );
+    assert!(
+        workspace
+            .path()
+            .with_file_name("cargo-home/config.toml")
+            .is_file(),
+        "registry fixtures must resolve through their private source configuration"
+    );
 }

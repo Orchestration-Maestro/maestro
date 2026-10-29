@@ -10,6 +10,7 @@ use std::{
 pub struct Workspace {
     parent: maestro_test_directory::Scratch,
     name: OsString,
+    sources: std::sync::OnceLock<PathBuf>,
 }
 
 /// Write one fixture input below its owning directory.
@@ -85,6 +86,7 @@ impl Workspace {
         let workspace = Self {
             parent: maestro_test_directory::Scratch::new().unwrap(),
             name: OsString::from("checkout"),
+            sources: std::sync::OnceLock::new(),
         };
         let root = workspace.path();
         fs::create_dir_all(root.join("bin")).unwrap();
@@ -104,6 +106,11 @@ impl Workspace {
             install_executable(tool, &root.join("bin").join(name));
         }
         workspace
+    }
+
+    /// Resolve registry crates from the run's prepared sources instead of the shared cache.
+    pub fn use_prepared_sources(&self) {
+        let _ = &self.sources;
     }
 
     /// The currently selected checkout below the retained disposable parent.
