@@ -64,6 +64,16 @@ void exports_maestro_doom_engine_dimensions(game_tuple2_u32_u32_t *ret) {
     bool small = wad_len == 11 && memcmp(wad, "small-frame", 11) == 0;
     ret->f0 = small ? 320 : 640;
     ret->f1 = small ? 200 : 400;
+    if (wad_len == 10 && memcmp(wad, "zero-width", 10) == 0) ret->f0 = 0;
+    if (wad_len == 11 && memcmp(wad, "zero-height", 11) == 0) ret->f1 = 0;
+    if (wad_len == 14 && memcmp(wad, "pixel-overflow", 14) == 0) {
+        ret->f0 = 65536;
+        ret->f1 = 65536;
+    }
+    if (wad_len == 13 && memcmp(wad, "byte-overflow", 13) == 0) {
+        ret->f0 = 32768;
+        ret->f1 = 32768;
+    }
 }
 
 void exports_maestro_doom_engine_frame(game_list_u8_t *frame) {

@@ -161,6 +161,17 @@ async fn run() {
         failures::run(&root, &case).await;
         return;
     }
+    if [
+        "zero-width",
+        "zero-height",
+        "pixel-overflow",
+        "byte-overflow",
+    ]
+    .contains(&case.as_str())
+    {
+        failures::invalid_dimensions(&root, &case).await;
+        return;
+    }
     if case == "switch" {
         reload::switch(&root).await;
         return;
@@ -430,4 +441,28 @@ fn doom_overlay_renders_nondefault_engine_resolution() {
         "doom_overlay_renders_nondefault_engine_resolution",
         &["small-frame"],
     );
+}
+
+/// Zero external width is rejected before opening a view.
+#[test]
+fn doom_overlay_rejects_zero_width() {
+    checked("doom_overlay_rejects_zero_width", &["zero-width"]);
+}
+
+/// Zero external height is rejected before opening a view.
+#[test]
+fn doom_overlay_rejects_zero_height() {
+    checked("doom_overlay_rejects_zero_height", &["zero-height"]);
+}
+
+/// Overflowing pixel counts are rejected before opening a view.
+#[test]
+fn doom_overlay_rejects_pixel_overflow() {
+    checked("doom_overlay_rejects_pixel_overflow", &["pixel-overflow"]);
+}
+
+/// Overflowing RGBA byte counts are rejected before opening a view.
+#[test]
+fn doom_overlay_rejects_byte_overflow() {
+    checked("doom_overlay_rejects_byte_overflow", &["byte-overflow"]);
 }

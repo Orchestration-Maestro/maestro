@@ -45,3 +45,31 @@ pub(super) async fn run(root: &Path, case: &str) {
     }
     reload::shutdown(&demo).await;
 }
+
+/// Invalid dimensions report their cause and remove initialization's private files.
+pub(super) async fn invalid_dimensions(root: &Path, case: &str) {
+    let wad = root.join("case.wad");
+    std::fs::write(&wad, case).unwrap();
+    let demo = loaded(root, case).await;
+    reload::command(&demo, &wad).await;
+    assert!(
+        demo.ui
+            .notices
+            .borrow()
+            .iter()
+            .any(|notice| notice
+                == "Failed to load DOOM: DOOM returned invalid framebuffer dimensions"),
+        "{:?}",
+        demo.ui.notices.borrow()
+    );
+    assert!(demo.ui.wad.borrow().is_none(), "no view may open");
+    assert!(demo.tails.borrow().is_empty(), "no game loop may start");
+    assert!(
+        std::fs::read_dir(root.join("temporary"))
+            .unwrap()
+            .next()
+            .is_none(),
+        "initialization must remove its private root before shutdown"
+    );
+    reload::shutdown(&demo).await;
+}
