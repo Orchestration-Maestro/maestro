@@ -3385,6 +3385,7 @@ fn example_builds_on_library(
     profile: &Path,
     age: std::time::Duration,
 ) -> std::path::PathBuf {
+    use std::os::unix::fs::PermissionsExt;
     fs::write(
         root.join("Cargo.lock"),
         "[[package]]\nname = \"maestro-extensions-wasm\"\ndependencies = [\n \"maestro-request\",\n]\n\n[[package]]\nname = \"maestro-request\"\n",
@@ -3397,7 +3398,7 @@ fn example_builds_on_library(
     let information = "prepare_author_component: crates/maestro-extensions-wasm/examples/prepare_author_component.rs\n";
     let copy = profile.join("examples/prepare_author_component-1");
     fs::write(&copy, "#!/bin/sh\necho copy\n").unwrap();
-    fs::set_permissions(&copy, std::os::unix::fs::PermissionsExt::from_mode(0o755)).unwrap();
+    fs::set_permissions(&copy, fs::Permissions::from_mode(0o755)).unwrap();
     for name in ["prepare_author_component.d", "prepare_author_component-1.d"] {
         fs::write(profile.join("examples").join(name), information).unwrap();
     }
@@ -3463,7 +3464,7 @@ fn author_setup_continues_when_cargo_keeps_an_outdated_example() {
 
 /// Run the author setup script from `root` with `profile` as nextest's artifact directory.
 #[cfg(unix)]
-fn author_setup(root: &Path, profile: &Path) -> std::process::Output {
+fn author_setup(root: &Path, profile: &Path) -> Output {
     Command::new("sh")
         .arg(
             Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.config/prepare-author-component.sh"),

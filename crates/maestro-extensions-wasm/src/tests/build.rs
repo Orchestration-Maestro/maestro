@@ -83,11 +83,16 @@ where
         let workers: Vec<_> = (0..threads)
             .map(|_| scope.spawn(|| drain(paths, &next, &work)))
             .collect();
-        workers.into_iter().try_for_each(|worker| {
-            worker
-                .join()
-                .unwrap_or_else(|_| Err("a warming thread panicked".to_owned()))
-        })
+        workers
+            .into_iter()
+            .map(|worker| {
+                worker
+                    .join()
+                    .unwrap_or_else(|_| Err("a warming thread panicked".to_owned()))
+            })
+            .collect::<Vec<_>>()
+            .into_iter()
+            .collect()
     })
 }
 

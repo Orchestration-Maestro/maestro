@@ -126,15 +126,17 @@ fn output(deps: &Path, name: &str, executable: bool, seconds: u64) -> std::path:
     path
 }
 
-/// Runs the cache normalization over a fake profile directory.
+/// Runs the cache normalization from `root`, where the lock file and sources are found,
+/// over its `target/debug` profile directory.
 #[cfg(unix)]
-fn normalize(profile: &Path) {
+fn normalize(root: &Path) {
     let output = std::process::Command::new("sh")
         .arg(
             Path::new(env!("CARGO_MANIFEST_DIR"))
                 .join("../../.config/normalize-component-cache.sh"),
         )
-        .arg(profile)
+        .arg(root.join("target/debug"))
+        .current_dir(root)
         .output()
         .unwrap();
     assert!(
@@ -156,7 +158,7 @@ fn cache_normalization_leaves_stale_test_binaries_alone() {
     output(&deps, "libdependency-1.rlib", false, 100);
     let fresh = output(&deps, "fresh-1", true, 150);
     let newest = output(&deps, "fresh-2", true, 200);
-    normalize(&profile);
+    normalize(scratch.path());
     let modified = |path: &Path| fs::metadata(path).unwrap().modified().unwrap();
     assert_eq!(modified(&stale), at(50));
     assert_eq!(modified(&fresh), at(200));
@@ -173,7 +175,7 @@ fn cache_normalization_accepts_a_profile_with_only_stale_binaries() {
     let older = output(&deps, "older-1", true, 50);
     let newer = output(&deps, "newer-1", true, 60);
     output(&deps, "libdependency-1.rlib", false, 100);
-    normalize(&profile);
+    normalize(scratch.path());
     let modified = |path: &Path| fs::metadata(path).unwrap().modified().unwrap();
     assert_eq!(modified(&older), at(50));
     assert_eq!(modified(&newer), at(60));
@@ -220,21 +222,6 @@ fn binary(deps: &Path, name: &str, source: &str, seconds: u64) -> std::path::Pat
     path
 }
 
-/// Runs the cache normalization from `root`, where the lock file and sources are found.
-#[cfg(unix)]
-fn normalize_in(root: &Path) {
-    let status = std::process::Command::new("sh")
-        .arg(
-            Path::new(env!("CARGO_MANIFEST_DIR"))
-                .join("../../.config/normalize-component-cache.sh"),
-        )
-        .arg(root.join("target/debug"))
-        .current_dir(root)
-        .status()
-        .unwrap();
-    assert!(status.success());
-}
-
 /// A library that a binary does not build on cannot make it outdated, so a rebuilt unrelated
 /// crate does not keep the setup example and the test binaries from sharing one time.
 #[cfg(unix)]
@@ -257,7 +244,7 @@ fn cache_normalization_ignores_libraries_a_binary_does_not_build_on() {
     let beta = binary(&deps, "it-beta", "crates/beta/tests/it.rs", 150);
     let gamma = binary(&deps, "it-gamma", "crates/gamma/tests/it.rs", 400);
     let delta = binary(&deps, "it-delta", "crates/delta/tests/it.rs", 50);
-    normalize_in(scratch.path());
+    normalize(scratch.path());
     let modified = |path: &Path| fs::metadata(path).unwrap().modified().unwrap();
     assert_eq!(modified(&beta), at(400));
     assert_eq!(modified(&gamma), at(400));
@@ -276,7 +263,7 @@ fn cache_normalization_treats_a_library_test_as_independent_of_its_own_library()
     let unit = binary(&deps, "beta-1", "crates/beta/src/lib.rs", 150);
     let integration = binary(&deps, "it-beta", "crates/beta/tests/it.rs", 140);
     let anchor = binary(&deps, "it-gamma", "crates/gamma/tests/it.rs", 400);
-    normalize_in(scratch.path());
+    normalize(scratch.path());
     let modified = |path: &Path| fs::metadata(path).unwrap().modified().unwrap();
     assert_eq!(modified(&unit), at(400));
     assert_eq!(modified(&integration), at(140));

@@ -553,8 +553,7 @@ Before guest-authoring tests, nextest's shell launcher locates the active
 artifact directory through its documented platform library search path. It runs
 the `prepare_author_component` example that the test build put in that directory,
 as long as the example is newer than its source, the shared build and component
-discovery sources, the package manifest and `Cargo.lock`, and than the workspace
-libraries it builds on. Running it through Cargo instead would resolve features for
+discovery sources, the package manifest and `Cargo.lock`. Running it through Cargo instead would resolve features for
 that one package and recompile the engine. When the example is missing or older, as
 after a `--lib` or filtered selection, the launcher builds it through Cargo in the
 same target directory and profile before running it directly.
@@ -577,8 +576,9 @@ normalization then exits with status 3 and the launcher rebuilds the example thr
 Cargo before it runs. Cargo ignores some library outputs that normalization counts, such
 as the check-only metadata a lint run writes, so the example can stay outdated after that
 build. The launcher then logs one line and runs it anyway. Test binaries do not read the
-code it warms, which costs a cache miss and never fails setup. The Git-pinned engine includes that timestamp in its cache
-namespace, so the preparer and consuming test binaries share compiled code.
+code it warms, which costs a cache miss and never fails setup. The Git-pinned engine
+includes the shared modification time in its cache namespace, so the preparer and
+consuming test binaries share compiled code.
 The example builds every exported component, warms its Wasmtime compilation cache
 in the default user cache on up to four threads and exports its path to the tests'
 processes. Component contents, compiler settings and CPU features still determine
@@ -668,7 +668,7 @@ case, keeps its own child. Use `TestProcess::case(id)` to select that case. Set 
 child's temporary directory with `TestProcess::temp_dir(path)`, which writes the
 variables each platform reads, never `TMPDIR` alone. A child that replaces `HOME`
 and loads a prepared component passes `user_cache_home()` as `XDG_CACHE_HOME`,
-so it reuses the setup's compiled code instead of compiling the component again.
+which only Linux reads, so it reuses the setup's compiled code instead of compiling the component again.
 Read child roles through `maestro_test_process::selection()`, not environment
 variables. `selection.is_child()` distinguishes the parent from a child.
 `selection.runs_case(id)` accepts the parent, wildcard children and the child

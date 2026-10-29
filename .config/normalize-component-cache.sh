@@ -4,8 +4,8 @@ set -eu
 directory=$1
 extensions="rlib rmeta a so dylib dll"
 # One line per workspace crate: its name, then it and every workspace crate it builds on,
-# with hyphens as underscores. Registry crates cannot outdate a binary, because Cargo
-# checks their hash and not their time.
+# with hyphens as underscores. Registry crates are left out: a change in one reaches
+# its dependents through the fingerprint hash, so their output times do not matter.
 crates=$(awk '
     /^\[\[package\]\]/ { name = ""; listing = 0; next }
     /^name = / { name = $3; gsub(/"/, "", name); members[name] = 1; next }

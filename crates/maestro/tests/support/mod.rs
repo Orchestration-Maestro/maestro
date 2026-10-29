@@ -93,10 +93,7 @@ fn root_command_keeps_the_user_compilation_cache() {
         .get_envs()
         .find(|(name, _)| *name == "XDG_CACHE_HOME")
         .and_then(|(_, value)| value);
-    let expected = std::env::var_os("XDG_CACHE_HOME")
-        .map(std::path::PathBuf::from)
-        .filter(|path| path.is_absolute())
-        .or_else(|| std::env::var_os("HOME").map(|home| Path::new(&home).join(".cache")));
+    let expected = maestro_test_process::user_cache_home();
     assert_eq!(cache.map(Path::new), expected.as_deref());
 }
 
