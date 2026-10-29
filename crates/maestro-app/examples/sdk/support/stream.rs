@@ -8,7 +8,7 @@ use std::{cell::RefCell, io::Write, rc::Rc};
 pub fn subscribe(
     session: &AgentSession,
     output: Rc<RefCell<dyn Write>>,
-) -> impl FnOnce() -> Result<String, super::Error> {
+) -> impl FnOnce() -> Result<String, crate::support::Error> {
     let text = Rc::new(RefCell::new(String::new()));
     let streamed = Rc::clone(&text);
     let error = Rc::new(RefCell::new(None));

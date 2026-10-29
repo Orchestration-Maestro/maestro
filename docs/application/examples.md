@@ -11,6 +11,11 @@ requests stay offline and use nonsecret sample keys. Each run creates disposable
 configuration and project files, then removes them on exit. Persistent-session
 and settings examples write only inside that disposable directory.
 
+Each sample prints readable observations in workflow order. Model text is written
+and flushed as each text update arrives; the remaining lines show discovered
+resources, configuration choices or session paths. Tests check console order
+separately from the SDK values returned by each workflow.
+
 ## Samples
 
 The sources are in [`crates/maestro-app/examples/sdk`](../../crates/maestro-app/examples/sdk).
@@ -25,7 +30,7 @@ cargo nextest run -p maestro-app
 | --- | --- |
 | `minimal` | Prompt a session, receive text deltas and inspect stored messages. |
 | `custom_model` | Find catalog models, select one explicitly and request a thinking level. |
-| `custom_prompt` | Replace a system prompt or append instructions to the discovered prompt. |
+| `custom_prompt` | Replace a system prompt or append instructions, then prompt each session. |
 | `skills` | Filter discovered skills and add an SDK-attributed skill. |
 | `tools` | Select read-only or custom built-in tools for a supplied working directory. |
 | `extensions` | Register an inline extension with a command, events and an executable tool. |
