@@ -209,15 +209,17 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- \
 The tool report page is a second witness in the same job: `analysis_page.cjs`
 serves the committed report fixture and answers the page's two pinned library
 URLs from cached copies whose SHA-256 digests it checks (a missing copy is
-fetched with retries, and a mismatch fails). Any other request that would leave
-the machine fails the run, so the bytes the page executes are the bytes the cache
-was verified with. The script then observes what the page paints: a row click
-must change the selected summary and the canvas bitmap, a recorded `</script>`
-payload must stay inert text, and bar fills, chart label text, heading glyphs,
-summary text and row borders must show the brand roles. Canvas bands and
-screenshots are sampled as pixels, and a chart's own animation completion is the
-render signal, so no test here waits on a clock. The native report test holds the
-fixture byte-for-byte, so a template change has to move both.
+fetched with retries, and a mismatch fails). Any other request outside the
+script's own loopback origin is aborted and fails the run, checked after
+navigation and again after the last observation, so the bytes the page executes
+are the bytes the cache was verified with. The script then observes what the
+page paints: a row click must change the selected summary and the canvas bitmap,
+a recorded `</script>` payload must stay inert text, and bar fills, chart label
+text, heading glyphs, summary text and row borders must show the brand roles.
+Canvas bands and screenshots are sampled as pixels, and a chart's own animation
+completion is the render signal, so no test here waits on a clock. The native
+report test holds the fixture byte-for-byte, so a template change has to move
+both.
 
 Canvas session-header tests and offline tool cards are not executed; the latter
 still depend on the canvas renderer. Transcript execution is tracked separately
@@ -494,6 +496,34 @@ such as name filters and `-- --ignored`, `-- --exact NAME` or `-- --nocapture`.
 An unmatched ordinary-test filter fails rather than passing an empty selection.
 Use direct `cargo test --doc` for doctest-only runs and direct `cargo nextest run`
 for runner-only flags or target selection. `tui-test-ansi` runs only nextest.
+
+### Test time budget
+
+Nextest fails a test at 30 seconds by default. Fix slow tests at their cause;
+do not raise the default or add headroom to an exception. A temporary exception
+in `.config/nextest.toml` must select exactly one test, or one shared fixture
+group, and name the measured work and an open issue that will remove it:
+
+```toml
+[[profile.default.overrides]]
+filter = "package(=maestro-example) & test(=component::loads)"
+# Measured: 43.549s; cause: compiling the component fixture; #3589
+slow-timeout = { period = "44s", terminate-after = 1 }
+```
+
+Use the measured duration, rounded up to whole seconds, as the temporary limit.
+Write `period` as positive whole seconds (`"Ns"`) and set a positive
+`terminate-after`; their product is the test's limit. Keep the `Measured:`
+seconds, `cause:` description and `#NNNN` issue in comments immediately above
+`slow-timeout`. Each exception needs its own comment; another override's comment
+does not apply. A limit of 30 seconds or less needs no exception comment.
+
+The conventions check rejects unbounded limits, defaults over 30 seconds and
+undocumented raised overrides in every profile. It checks references offline;
+the author and reviewer verify with GitHub that the linked issue is still open.
+The change fixing the slowness must delete its override as well as close the
+issue. Existing measured exceptions are tracked in #3589.
+
 Development and test profiles use `debug = "line-tables-only"` for workspace crates:
 backtraces retain file:line for workspace code, without debugger variable views.
 Dependencies build without debug info, so their frames show function names only;

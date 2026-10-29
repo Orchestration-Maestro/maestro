@@ -278,6 +278,13 @@ the host invokes the tail separately. Releasing the listener does not release a 
 already announced. The callback emitter cannot be retained by that tail: capture an
 owned `EventBus` for later asynchronous emissions instead.
 
+A component has no task of its own that outlives a callback. `Background::new(api.events())`
+registers one listener that turns announced work into tails, and
+`background.spawn(work).await` announces `work` and returns its `BackgroundTask`. The host
+polls the work on that tail until the work ends; dropping the task stops it, dropping any
+pending wait, and settles the tail. A refused announcement fails the start, and the work
+never runs. A failure of the work goes to the host's event-bus reporter.
+
 ## Session readers
 
 Ordinary and command contexts expose `session_manager()`, which acquires the currently
@@ -1002,9 +1009,9 @@ Each admitted name becomes an `Echo <name>` tool whose description names its
 prefix, and whose execution answers `<prefix><message>` with the registered name
 and prefix as details. The factory keeps one set of admitted names, inserts a
 name before asking the host to register it, and keeps that name when the request
-fails, so a retry reports `Tool already registered: <name>` rather than replacing
-the tool the first call registered. It never asks whether the host reports UI
-availability before requesting a notification.
+fails. A refused request admits no tool, so a retry reports
+`Tool already registered: <name>` without asking the host again. It never asks
+whether the host reports UI availability before requesting a notification.
 
 It is opt-in like the other shipped extensions: its crate's tests replay the
 recorded sequences through the built component in a controlled host, and

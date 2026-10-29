@@ -284,6 +284,20 @@ impl Controlled {
         }
     }
 
+    /// Drops the custom footer, its handle and the factory that built it, as a host that
+    /// discards them does.
+    pub fn release_footer(&self) {
+        let slot = self.observed.borrow_mut().ui.footer.custom.take();
+        if let Some(slot) = slot {
+            drop(self.widgets.borrow_mut().remove(&slot.component));
+            self.observed.borrow_mut().drop_identity(slot.component);
+        }
+        let factory = self.observed.borrow_mut().ui.footer.factory.take();
+        if let Some(factory) = factory {
+            crate::component_adapter::release(factory);
+        }
+    }
+
     /// The component the custom footer shows.
     pub fn footer(&self) -> Option<crate::Component> {
         let slot = self
@@ -539,6 +553,50 @@ fn theme_set_result(result: &serde_json::Value) -> crate::ThemeSetResult {
 }
 
 impl Controlled {
+    /// Records the compaction binding of `session` and forwards the request to the action host.
+    fn compact_binding(
+        &self,
+        session: &Session,
+        instructions: Option<&CompactionData>,
+        complete: Option<&Callback>,
+        error: Option<&Callback>,
+    ) -> ExtensionResult<()> {
+        self.observed.borrow().actions.check()?;
+        let cwd = session.cwd()?;
+        self.observed
+            .borrow_mut()
+            .log(format!("compact binding {cwd}"));
+        super::action_host::compact(
+            &mut self.observed.borrow_mut(),
+            instructions.and_then(|data| data.custom_instructions.as_deref()),
+            complete.map(|c| c.id),
+            error.map(|c| c.id),
+            instructions.is_some(),
+        )
+    }
+    /// Acquires the user interface owner for the session working in `cwd`.
+    fn acquire_ui(&self, cwd: &str) -> ExtensionResult<Ui> {
+        self.observed.borrow().catalog.check()?;
+        let key = self.observed.borrow_mut().ui.acquire(cwd);
+        Ok(Ui {
+            key,
+            _lease: Lease::new(&self.observed),
+        })
+    }
+    /// Whether the scripted catalog reports an interface.
+    fn catalog_has_ui(&self) -> ExtensionResult<bool> {
+        self.observed.borrow().catalog.check()?;
+        Ok(self.observed.borrow().catalog.data.has_ui)
+    }
+    /// A reader over the scripted catalog's model registry.
+    fn catalog_registry(&self) -> ExtensionResult<Reader> {
+        self.observed.borrow().catalog.check()?;
+        let data = self.observed.borrow().catalog.registry.clone();
+        Ok(Reader {
+            data,
+            _lease: Lease::new(&self.observed),
+        })
+    }
     /// Records one theme request on `resource` and answers it from the controlled host.
     fn ui_themed(
         &self,
@@ -552,6 +610,66 @@ impl Controlled {
             method,
             operand,
         )
+    }
+}
+
+impl Controlled {
+    /// The catalog's selection for the model supplier a context captured.
+    fn catalog_model(&self, model: &super::reader_host::Reader) -> ExtensionResult<Option<String>> {
+        self.observed.borrow().catalog.check()?;
+        self.observed.borrow().catalog.selected_model(model)
+    }
+    /// Whether the scripted session is idle.
+    fn catalog_idle(&self) -> ExtensionResult<bool> {
+        self.observed.borrow().catalog.check()?;
+        Ok(self.observed.borrow().catalog.data.idle)
+    }
+    /// The cancellation signal the scripted session lends, when it has one.
+    fn catalog_signal(&self) -> ExtensionResult<Option<Signal>> {
+        self.observed.borrow().catalog.check()?;
+        let flag = self.observed.borrow().catalog.flag.clone();
+        Ok(flag.map(|flag| Signal {
+            flag: Flag(flag),
+            lease: Lease::new(&self.observed),
+        }))
+    }
+    /// Records one context abort.
+    fn catalog_abort(&self) -> ExtensionResult<()> {
+        self.observed.borrow().catalog.check()?;
+        self.observed.borrow_mut().log("context abort");
+        Ok(())
+    }
+    /// Whether the scripted session has queued messages.
+    fn catalog_pending(&self) -> ExtensionResult<bool> {
+        self.observed.borrow().catalog.check()?;
+        Ok(self.observed.borrow().catalog.data.queued)
+    }
+    /// Records one context shutdown.
+    fn catalog_shutdown(&self) -> ExtensionResult<()> {
+        self.observed.borrow().catalog.check()?;
+        self.observed.borrow_mut().log("context shutdown");
+        Ok(())
+    }
+    /// The scripted context usage.
+    fn catalog_usage(&self) -> ExtensionResult<Option<crate::ContextUsage>> {
+        self.observed.borrow().catalog.check()?;
+        Ok(self
+            .observed
+            .borrow()
+            .catalog
+            .data
+            .usage
+            .as_ref()
+            .map(|u| crate::ContextUsage {
+                tokens: u.tokens,
+                context_window: u.context_window,
+                percent: u.percent,
+            }))
+    }
+    /// The scripted system prompt.
+    fn catalog_prompt(&self) -> ExtensionResult<String> {
+        self.observed.borrow().catalog.check()?;
+        Ok(self.observed.borrow().catalog.data.prompt.clone())
     }
 }
 
@@ -1419,18 +1537,7 @@ impl Imports for Controlled {
         complete: Option<&Callback>,
         error: Option<&Callback>,
     ) -> ExtensionResult<()> {
-        self.observed.borrow().actions.check()?;
-        let cwd = context.session.cwd()?;
-        self.observed
-            .borrow_mut()
-            .log(format!("compact binding {cwd}"));
-        super::action_host::compact(
-            &mut self.observed.borrow_mut(),
-            instructions.and_then(|data| data.custom_instructions.as_deref()),
-            complete.map(|c| c.id),
-            error.map(|c| c.id),
-            instructions.is_some(),
-        )
+        self.compact_binding(&context.session, instructions, complete, error)
     }
     fn command_compact(
         &self,
@@ -1439,18 +1546,7 @@ impl Imports for Controlled {
         complete: Option<&Callback>,
         error: Option<&Callback>,
     ) -> ExtensionResult<()> {
-        self.observed.borrow().actions.check()?;
-        let cwd = context.session.cwd()?;
-        self.observed
-            .borrow_mut()
-            .log(format!("compact binding {cwd}"));
-        super::action_host::compact(
-            &mut self.observed.borrow_mut(),
-            instructions.and_then(|data| data.custom_instructions.as_deref()),
-            complete.map(|c| c.id),
-            error.map(|c| c.id),
-            instructions.is_some(),
-        )
+        self.compact_binding(&context.session, instructions, complete, error)
     }
 
     fn send_message(&self, message: &str, options: Option<&str>) -> ExtensionResult<()> {
@@ -1652,6 +1748,8 @@ impl Imports for Controlled {
     }
     fn event_emit(&self, channel: String, data: String) -> ExtensionFuture<'_, ()> {
         Box::pin(async move {
+            let hold = self.observed.borrow_mut().bus.emission_holds.pop_front();
+            super::observed::pause(hold).await;
             self.callback_emit(&super::bus_host::Emitter { key: 0 }, &channel, &data)
         })
     }
@@ -2122,6 +2220,7 @@ impl Imports for Controlled {
         drop(old);
         if let Some(factory) = factory {
             let component = self.build(factory, true)?;
+            self.observed.borrow_mut().ui.footer.factory = Some(factory.id);
             self.observed.borrow_mut().ui.footer.custom = Some(super::ui_host::WidgetSlot {
                 key: "footer".to_owned(),
                 component,
@@ -2465,171 +2564,77 @@ impl Imports for Controlled {
     }
 
     fn ui(&self, context: &Context) -> ExtensionResult<Ui> {
-        self.observed.borrow().catalog.check()?;
-        let key = self.observed.borrow_mut().ui.acquire(&context.session.cwd);
-        Ok(Ui {
-            key,
-            _lease: Lease::new(&self.observed),
-        })
+        self.acquire_ui(&context.session.cwd)
     }
     fn has_ui(&self, context: &Context) -> ExtensionResult<bool> {
         let _ = context;
-        self.observed.borrow().catalog.check()?;
-        Ok(self.observed.borrow().catalog.data.has_ui)
+        self.catalog_has_ui()
     }
     fn model_registry(&self, context: &Context) -> ExtensionResult<Reader> {
         let _ = context;
-        self.observed.borrow().catalog.check()?;
-        let data = self.observed.borrow().catalog.registry.clone();
-        Ok(Reader {
-            data,
-            _lease: Lease::new(&self.observed),
-        })
+        self.catalog_registry()
     }
     fn model(&self, context: &Context) -> ExtensionResult<Option<String>> {
-        let _ = context;
-        self.observed.borrow().catalog.check()?;
-        self.observed
-            .borrow()
-            .catalog
-            .selected_model(&context.model)
+        self.catalog_model(&context.model)
     }
-    fn is_idle(&self, context: &Context) -> ExtensionResult<bool> {
-        let _ = context;
-        self.observed.borrow().catalog.check()?;
-        Ok(self.observed.borrow().catalog.data.idle)
+    fn is_idle(&self, _: &Context) -> ExtensionResult<bool> {
+        self.catalog_idle()
     }
-    fn signal(&self, context: &Context) -> ExtensionResult<Option<Signal>> {
-        let _ = context;
-        self.observed.borrow().catalog.check()?;
-        let flag = self.observed.borrow().catalog.flag.clone();
-        Ok(flag.map(|flag| Signal {
-            flag: Flag(flag),
-            lease: Lease::new(&self.observed),
-        }))
+    fn signal(&self, _: &Context) -> ExtensionResult<Option<Signal>> {
+        self.catalog_signal()
     }
-    fn abort(&self, context: &Context) -> ExtensionResult<()> {
-        let _ = context;
-        self.observed.borrow().catalog.check()?;
-        self.observed.borrow_mut().log("context abort");
-        Ok(())
+    fn abort(&self, _: &Context) -> ExtensionResult<()> {
+        self.catalog_abort()
     }
-    fn has_pending_messages(&self, context: &Context) -> ExtensionResult<bool> {
-        let _ = context;
-        self.observed.borrow().catalog.check()?;
-        Ok(self.observed.borrow().catalog.data.queued)
+    fn has_pending_messages(&self, _: &Context) -> ExtensionResult<bool> {
+        self.catalog_pending()
     }
-    fn shutdown(&self, context: &Context) -> ExtensionResult<()> {
-        let _ = context;
-        self.observed.borrow().catalog.check()?;
-        self.observed.borrow_mut().log("context shutdown");
-        Ok(())
+    fn shutdown(&self, _: &Context) -> ExtensionResult<()> {
+        self.catalog_shutdown()
     }
-    fn get_context_usage(&self, context: &Context) -> ExtensionResult<Option<crate::ContextUsage>> {
-        let _ = context;
-        self.observed.borrow().catalog.check()?;
-        Ok(self
-            .observed
-            .borrow()
-            .catalog
-            .data
-            .usage
-            .as_ref()
-            .map(|u| crate::ContextUsage {
-                tokens: u.tokens,
-                context_window: u.context_window,
-                percent: u.percent,
-            }))
+    fn get_context_usage(&self, _: &Context) -> ExtensionResult<Option<crate::ContextUsage>> {
+        self.catalog_usage()
     }
-    fn get_system_prompt(&self, context: &Context) -> ExtensionResult<String> {
-        let _ = context;
-        self.observed.borrow().catalog.check()?;
-        Ok(self.observed.borrow().catalog.data.prompt.clone())
+    fn get_system_prompt(&self, _: &Context) -> ExtensionResult<String> {
+        self.catalog_prompt()
     }
     fn command_ui(&self, context: &CommandContext) -> ExtensionResult<Ui> {
-        self.observed.borrow().catalog.check()?;
-        let key = self.observed.borrow_mut().ui.acquire(&context.session.cwd);
-        Ok(Ui {
-            key,
-            _lease: Lease::new(&self.observed),
-        })
+        self.acquire_ui(&context.session.cwd)
     }
     fn command_has_ui(&self, context: &CommandContext) -> ExtensionResult<bool> {
         let _ = context;
-        self.observed.borrow().catalog.check()?;
-        Ok(self.observed.borrow().catalog.data.has_ui)
+        self.catalog_has_ui()
     }
     fn command_model_registry(&self, context: &CommandContext) -> ExtensionResult<Reader> {
         let _ = context;
-        self.observed.borrow().catalog.check()?;
-        let data = self.observed.borrow().catalog.registry.clone();
-        Ok(Reader {
-            data,
-            _lease: Lease::new(&self.observed),
-        })
+        self.catalog_registry()
     }
     fn command_model(&self, context: &CommandContext) -> ExtensionResult<Option<String>> {
-        let _ = context;
-        self.observed.borrow().catalog.check()?;
-        self.observed
-            .borrow()
-            .catalog
-            .selected_model(&context.model)
+        self.catalog_model(&context.model)
     }
-    fn command_is_idle(&self, context: &CommandContext) -> ExtensionResult<bool> {
-        let _ = context;
-        self.observed.borrow().catalog.check()?;
-        Ok(self.observed.borrow().catalog.data.idle)
+    fn command_is_idle(&self, _: &CommandContext) -> ExtensionResult<bool> {
+        self.catalog_idle()
     }
-    fn command_signal(&self, context: &CommandContext) -> ExtensionResult<Option<Signal>> {
-        let _ = context;
-        self.observed.borrow().catalog.check()?;
-        let flag = self.observed.borrow().catalog.flag.clone();
-        Ok(flag.map(|flag| Signal {
-            flag: Flag(flag),
-            lease: Lease::new(&self.observed),
-        }))
+    fn command_signal(&self, _: &CommandContext) -> ExtensionResult<Option<Signal>> {
+        self.catalog_signal()
     }
-    fn command_abort(&self, context: &CommandContext) -> ExtensionResult<()> {
-        let _ = context;
-        self.observed.borrow().catalog.check()?;
-        self.observed.borrow_mut().log("context abort");
-        Ok(())
+    fn command_abort(&self, _: &CommandContext) -> ExtensionResult<()> {
+        self.catalog_abort()
     }
-    fn command_has_pending_messages(&self, context: &CommandContext) -> ExtensionResult<bool> {
-        let _ = context;
-        self.observed.borrow().catalog.check()?;
-        Ok(self.observed.borrow().catalog.data.queued)
+    fn command_has_pending_messages(&self, _: &CommandContext) -> ExtensionResult<bool> {
+        self.catalog_pending()
     }
-    fn command_shutdown(&self, context: &CommandContext) -> ExtensionResult<()> {
-        let _ = context;
-        self.observed.borrow().catalog.check()?;
-        self.observed.borrow_mut().log("context shutdown");
-        Ok(())
+    fn command_shutdown(&self, _: &CommandContext) -> ExtensionResult<()> {
+        self.catalog_shutdown()
     }
     fn command_get_context_usage(
         &self,
-        context: &CommandContext,
+        _: &CommandContext,
     ) -> ExtensionResult<Option<crate::ContextUsage>> {
-        let _ = context;
-        self.observed.borrow().catalog.check()?;
-        Ok(self
-            .observed
-            .borrow()
-            .catalog
-            .data
-            .usage
-            .as_ref()
-            .map(|u| crate::ContextUsage {
-                tokens: u.tokens,
-                context_window: u.context_window,
-                percent: u.percent,
-            }))
+        self.catalog_usage()
     }
-    fn command_get_system_prompt(&self, context: &CommandContext) -> ExtensionResult<String> {
-        let _ = context;
-        self.observed.borrow().catalog.check()?;
-        Ok(self.observed.borrow().catalog.data.prompt.clone())
+    fn command_get_system_prompt(&self, _: &CommandContext) -> ExtensionResult<String> {
+        self.catalog_prompt()
     }
     fn registry_get_all(&self, resource: &Reader) -> ExtensionResult<String> {
         resource

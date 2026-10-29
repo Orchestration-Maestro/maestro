@@ -3,8 +3,9 @@ use maestro_process::{OutputMode, SpawnSyncOptions, spawn_sync};
 use std::path::Path;
 
 pub use maestro_workspace::workspace::git::discovery::{
-    GitSpaceMetadata, GitWorktreeInfo, automatic_workspace_label, derive_label_from_cwd,
-    fallback_label_from_cwd, git_repo_root, git_space_metadata, git_worktree_info,
+    GitSpaceMetadata, GitWorktreeInfo, automatic_workspace_label, canonicalize_best_effort_path,
+    derive_label_from_cwd, fallback_label_from_cwd, git_repo_root, git_space_metadata,
+    git_space_metadata_from_info, git_worktree_info,
 };
 pub use maestro_workspace::workspace::git::native::{
     GitPaths, discover_git_paths, git_ref_storage_is_reftable, read_text, trim,
@@ -31,8 +32,14 @@ pub fn git_rev_parse_verify(repo_root: &Path, revision: &str) -> Option<String> 
     git_trimmed_stdout(repo_root, &["rev-parse", "--verify", revision])
 }
 
+/// Read the full reference `HEAD` names, absent for a detached head.
+#[must_use]
+pub fn git_symbolic_head_full(repo_root: &Path) -> Option<String> {
+    git_trimmed_stdout(repo_root, &["symbolic-ref", "--quiet", "HEAD"])
+}
+
 /// Run a noninteractive Git query through the existing process owner.
-fn git_trimmed_stdout(repo_root: &Path, args: &[&str]) -> Option<String> {
+pub(super) fn git_trimmed_stdout(repo_root: &Path, args: &[&str]) -> Option<String> {
     let mut command = maestro_process::command("git");
     command.arg("-C").arg(repo_root).args(args);
     let output = spawn_sync(

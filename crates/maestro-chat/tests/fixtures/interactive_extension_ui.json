@@ -81,8 +81,8 @@
     },
     "expected": {
       "set": "",
-      "pasted": "paste\n界",
-      "raw": "paste\n界"
+      "pasted": "paste\n界\nrow 2\nrow 3\nrow 4\nrow 5\nrow 6\nrow 7\nrow 8\nrow 9\nrow 10",
+      "raw": "[paste #1 +11 lines]"
     }
   },
   {
@@ -93,8 +93,8 @@
     },
     "expected": {
       "set": "\ufeff text ",
-      "pasted": "\ufeff text paste\n界",
-      "raw": "\ufeff text paste\n界"
+      "pasted": "\ufeff text paste\n界\nrow 2\nrow 3\nrow 4\nrow 5\nrow 6\nrow 7\nrow 8\nrow 9\nrow 10",
+      "raw": "\ufeff text [paste #1 +11 lines]"
     }
   },
   {
@@ -105,8 +105,8 @@
     },
     "expected": {
       "set": "first\nsecond",
-      "pasted": "first\nsecondpaste\n界",
-      "raw": "first\nsecondpaste\n界"
+      "pasted": "first\nsecondpaste\n界\nrow 2\nrow 3\nrow 4\nrow 5\nrow 6\nrow 7\nrow 8\nrow 9\nrow 10",
+      "raw": "first\nsecond[paste #1 +11 lines]"
     }
   },
   {
@@ -1447,7 +1447,6 @@
           " @accent@Edit\u001b[39m                                                                           ",
           "",
           "@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m",
-          "@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m",
           "",
           " @dim@enter\u001b[39m@muted@ submit\u001b[39m  @dim@shift+enter\u001b[39m@muted@ newline\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                        ",
           "",
@@ -1483,7 +1482,6 @@
           "",
           " @accent@Edit\u001b[39m                                                                           ",
           "",
-          "@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m",
           "@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m",
           "",
           " @dim@enter\u001b[39m@muted@ submit\u001b[39m  @dim@shift+enter\u001b[39m@muted@ newline\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                        ",
@@ -1521,7 +1519,6 @@
           "",
           " @accent@Edit\u001b[39m                                                                           ",
           "",
-          "@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m",
           "@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m",
           "",
           " @dim@enter\u001b[39m@muted@ submit\u001b[39m  @dim@shift+enter\u001b[39m@muted@ newline\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                        ",
@@ -1560,7 +1557,6 @@
           " @accent@Edit\u001b[39m                                                                           ",
           "",
           "@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m",
-          "@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m",
           "",
           " @dim@enter\u001b[39m@muted@ submit\u001b[39m  @dim@shift+enter\u001b[39m@muted@ newline\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                        ",
           "",
@@ -1597,7 +1593,6 @@
           "",
           " @accent@Edit\u001b[39m                                                                           ",
           "",
-          "@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m",
           "@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m",
           "",
           " @dim@enter\u001b[39m@muted@ submit\u001b[39m  @dim@shift+enter\u001b[39m@muted@ newline\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                        ",
@@ -1636,7 +1631,6 @@
           " @accent@Edit\u001b[39m                                                                           ",
           "",
           "@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m",
-          "@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m",
           "",
           " @dim@enter\u001b[39m@muted@ submit\u001b[39m  @dim@shift+enter\u001b[39m@muted@ newline\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                        ",
           "",
@@ -1674,7 +1668,6 @@
           " @accent@Edit\u001b[39m                                                                           ",
           "",
           "@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m",
-          "@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m",
           "",
           " @dim@enter\u001b[39m@muted@ submit\u001b[39m  @dim@shift+enter\u001b[39m@muted@ newline\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                        ",
           "",
@@ -1711,7 +1704,6 @@
           "",
           " @accent@Edit\u001b[39m                                                                           ",
           "",
-          "@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m",
           "@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m",
           "",
           " @dim@enter\u001b[39m@muted@ submit\u001b[39m  @dim@shift+enter\u001b[39m@muted@ newline\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                        ",
@@ -2182,6 +2174,145 @@
         " @dim@third\u001b[39m                                                                          "
       ],
       "renderRequested": true
+    }
+  },
+  {
+    "test": "dialog_cancel_restores_editor_and_removes_abort_work",
+    "input": {
+      "op": "dialog",
+      "kind": "selector",
+      "scenario": "cancel",
+      "timeout": 1500
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@\u001b[1mChoose (2s)\u001b[22m\u001b[39m                                                                    ",
+          "",
+          " @accent@→ \u001b[39m@accent@Alpha\u001b[39m                                                                        ",
+          "   @text@Beta\u001b[39m                                                                         ",
+          "   @text@Alpha\u001b[39m                                                                        ",
+          "",
+          " @dim@↑↓\u001b[39m@muted@ navigate\u001b[39m  @dim@enter\u001b[39m@muted@ select\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 1,
+        "renderRequested": true
+      },
+      "value": null,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "dialog_cancel_restores_editor_and_removes_abort_work",
+    "input": {
+      "op": "dialog",
+      "kind": "input",
+      "scenario": "cancel",
+      "timeout": 1500
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@Enter (2s)\u001b[39m                                                                     ",
+          "",
+          "> \u001b_maestro:c\u0007\u001b[7m \u001b[27m                                                                             ",
+          "",
+          " @dim@enter\u001b[39m@muted@ submit\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                             ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 1,
+        "renderRequested": true
+      },
+      "value": null,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "confirmation_maps_only_yes_to_true",
+    "input": {
+      "op": "dialog",
+      "kind": "confirm",
+      "scenario": "cancel",
+      "timeout": 1500
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@\u001b[1mTitle\u001b[22m                                                                          ",
+          " @accent@\u001b[1mMessage (2s)\u001b[22m\u001b[39m                                                                   ",
+          "",
+          " @accent@→ \u001b[39m@accent@Yes\u001b[39m                                                                          ",
+          "   @text@No\u001b[39m                                                                           ",
+          "",
+          " @dim@↑↓\u001b[39m@muted@ navigate\u001b[39m  @dim@enter\u001b[39m@muted@ select\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 1,
+        "renderRequested": true
+      },
+      "value": false,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "dialog_observer_drop_does_not_cancel_host_owned_work",
+    "input": {
+      "op": "dialog-observer-release",
+      "kind": "selector",
+      "abort": true
+    },
+    "expected": {
+      "restored": true,
+      "activeTimers": 0
+    }
+  },
+  {
+    "test": "dialog_observer_drop_does_not_cancel_host_owned_work",
+    "input": {
+      "op": "dialog-observer-release",
+      "kind": "input",
+      "abort": true
+    },
+    "expected": {
+      "restored": true,
+      "activeTimers": 0
     }
   }
 ]

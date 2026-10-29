@@ -138,7 +138,9 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   exclusions in the specification's [crate graph](docs/specs/maestro-port.md#crates-and-delivery-order).
   Shared path helpers take supplied directory observations
   and add no global environment, filesystem service, directory cache, scheduler
-  or workspace dependency.
+  or workspace dependency. Final-link traversal uses a supplied observation callback;
+  the utility owns relative-target joining and the forty-link bound, while callers
+  retain native link I/O and error interpretation.
 - `maestro-text` and `maestro-json` are declared core leaves below layer 0 with
   no workspace dependencies. Text owns common text operations (whitespace,
   lexical comparison, markup escaping, CSS string serialization, locale construction, streaming UTF-8, terminal control cleaning, newline
@@ -159,9 +161,10 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   never supplies a required edge. The crate is exempt from member `serde_json`
   inheritance (lint inheritance and the workspace precision entry still apply).
   Never hand-edit its generated manifest section.
-- `maestro-watch` and `maestro-lock` are declared core leaves below layer 0 with
-  no workspace dependencies, including the path utility. Only theme/application
-  may depend on watch; only settings/credentials/workspace/detection/session may depend on lock. Follow the
+- `maestro-watch` and `maestro-lock` are declared core leaves below layer 0.
+  Watch has no workspace dependencies; lock may use the optional path utility
+  without changing its leaf status. Only theme/application
+  may depend on watch; only settings/credentials/workspace/detection/session/application may depend on lock. Follow the
   [shared filesystem effect contract](docs/specs/maestro-port.md#crates-and-delivery-order):
   watch owns creation/close helpers, injected watch/timer interfaces and native
   notifications; lock owns bounded and waiting acquisition of caller-opened files and byte-oriented
@@ -184,7 +187,9 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   dependencies, including the path utility. It lists one directory's entries sorted
   by file name on every platform. Only resources, theme, the toolkit, tools,
   session and the application may depend on it, on native targets; callers keep
-  kind filtering, name decoding and further ordering.
+  kind filtering, name decoding and further ordering. Guest-authoring examples may
+  also use it through a portable development dependency from `maestro-extensions-wasm`,
+  never a normal or build dependency.
 - `maestro-listeners` is a declared core leaf below layer 0 with no workspace
   dependencies. It retains callbacks in live registration order and admits one per
   identity, or one per registration as an event-emitter listener list keeps them.

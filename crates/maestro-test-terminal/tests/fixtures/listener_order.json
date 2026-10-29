@@ -299,34 +299,6 @@
       "delivered": [
         "original"
       ]
-    },
-    {
-      "name": "nested_dispatch",
-      "inputs": [
-        "original"
-      ],
-      "seen": [
-        [
-          "a",
-          "original"
-        ],
-        [
-          "a",
-          "nested"
-        ],
-        [
-          "b",
-          "nested"
-        ],
-        [
-          "b",
-          "original"
-        ]
-      ],
-      "delivered": [
-        "nested",
-        "original"
-      ]
     }
   ]
 }

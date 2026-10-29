@@ -40,8 +40,10 @@ just test
 ```
 
 Both must pass. `just test` runs cargo-nextest followed by Cargo doctests.
-Nextest terminates each test after six minutes, with a ten-second shutdown grace
-period on Unix.
+Nextest fails each test at 30 seconds, with a ten-second shutdown grace period
+on Unix. Known slow tests need a per-test or shared-fixture exception with its
+measured cause and an open removal issue. Fixing the cause also removes the
+exception; see [test time budget](docs/development.md#test-time-budget).
 Required CI runs tests on Linux and checks compilation for Windows and macOS.
 Native Windows and macOS test runs must be restored before the first release.
 A test that binds the fixed OAuth callback port goes in a module named

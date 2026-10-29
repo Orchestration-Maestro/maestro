@@ -1,12 +1,14 @@
 # Interactive commands
 
 The interactive mode reads a few commands from the editor before ordinary
-input. Submitted text is trimmed with the shared whitespace rule first: BOM and
-no-break space count as whitespace, while U+0085 and zero-width space do not. The
-editor empties itself before calling back; a slash command never answers the
-waiting input and never enters the editor history. Any other text, including
-`/Model`, `/models`, `/model<Tab>term`, `/scoped-models extra`, `/login extra` and
-`/logout extra`, is ordinary input.
+input. Submitted text is trimmed with the shared whitespace rule first, and commands
+are recognized after the trim: BOM and no-break space count as whitespace, while
+U+0085 and zero-width space do not. The editor empties itself before calling back; a
+slash command never answers the waiting input and never enters the editor history.
+Any other text, including `/Model`, `/models`, `/model<Tab>term`,
+`/scoped-models extra`, `/login extra` and `/logout extra`, is ordinary input. A
+submission that is empty after the trim is dropped: it reaches neither the waiting
+input nor the history.
 
 The mode handles shell input and the slash commands `/export`, `/import`, `/changelog`,
 `/model`, `/thinking`, `/scoped-models`, `/settings`, `/login`, `/logout`, `/name`, `/session`,
@@ -280,7 +282,7 @@ viewer URL. It takes no argument: `/share extra` is prompt text.
 /share
 ```
 
-The command runs in four steps, each with its own answer on the transcript:
+The command runs in four steps:
 
 1. It runs `gh auth status`. A program that is missing or cannot be executed shows
    `GitHub CLI (gh) is not installed. Install it from https://cli.github.com/`;
@@ -370,7 +372,9 @@ reading, not shell parsing:
 
 - The text must be exactly `/export` or `/import`, or that token followed by
   one literal space. A prefix such as `/exporter` or `/important`, or either
-  command followed by a tab, is ordinary prompt input.
+  command followed by a tab and more text, such as `/export<Tab>path`, is ordinary
+  prompt input. A command followed by only a tab is trimmed to the bare command
+  before it is recognized, so it runs.
 - After that single space, leading whitespace is removed under the shared
   [whitespace policy](../terminal/text.md): Unicode white space other than
   U+0085, plus U+FEFF.
@@ -530,7 +534,11 @@ Choosing a value applies it at once and saves it through the settings owner:
 session policies go to the session, which saves them, and the rest are written to
 the settings file. Image visibility and width, padding, completion height,
 thinking, the hardware cursor and the shrink policy update the retained rows,
-editor and terminal straight away. Turning skill commands on or off saves the
+editor and terminal straight away. One image choice rebuilds each retained tool
+row once, walking the transcript's children as they stand during the walk: a row
+added meanwhile is reached, and a cleared or replaced transcript leaves the walk
+on the rows it started with. The transport choice applies to the next model
+request of the running session. Turning skill commands on or off saves the
 choice and then installs a rebuilt completion provider on the editor, so the next
 completion there offers `/skill:` commands or leaves them out. Thinking visibility
 also rebuilds the transcript from the session's messages. Themes publish
@@ -650,8 +658,10 @@ A catalog refresh failure shows `Error: Logout failed: <error>` and keeps the
 removal already made; nothing is put back. When the catalog cannot say which
 providers are available, the footer count becomes zero and the removal still
 reports its success. A credential file that cannot be written keeps the removal
-in memory, leaves the file as it was and stays a store diagnostic for its own
-readers instead of becoming a logout failure.
+in memory and stays a store diagnostic for its own readers instead of becoming a
+logout failure. The file is replaced by a truncating write followed by a permission
+change, so its previous bytes survive only when the write is refused before it
+starts; a failure part-way through can leave the file shortened.
 
 ## Subscription billing notice
 
