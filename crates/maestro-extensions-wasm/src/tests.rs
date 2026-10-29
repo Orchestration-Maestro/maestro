@@ -51,6 +51,7 @@ mod documents;
 mod event_transport;
 mod event_values;
 mod example_support;
+mod example_trim;
 mod exec_records;
 pub(crate) mod file_trigger_path;
 mod finite_records;

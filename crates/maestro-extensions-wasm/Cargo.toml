@@ -120,6 +120,11 @@ name = "hook_component"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "inline_bash"
+path = "../../examples/extensions/inline_bash.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "input_transform"
 path = "../../examples/extensions/input_transform.rs"
 crate-type = ["cdylib"]
