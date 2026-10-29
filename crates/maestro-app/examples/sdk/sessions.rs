@@ -66,6 +66,29 @@ async fn run(sample: Sample) -> Result<Value, Error> {
 mod tests {
     use super::*;
 
+    /// Session paths, listing and opened identity follow the persistence workflow.
+    #[test]
+    fn sessions_prints_observations_in_order() -> Result<(), Error> {
+        let output = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+        let value = support::execute(|mut sample| {
+            sample.output = output.clone();
+            run(sample)
+        })?;
+        let text = String::from_utf8(output.borrow().clone())?;
+        let lines: Vec<_> = text.lines().collect();
+        assert_eq!(lines[0], "In-memory session: (none)");
+        let file = value["newFile"].as_str().ok_or("missing file")?;
+        assert_eq!(lines[1], format!("New session file: {file}"));
+        assert_eq!(lines[2], format!("Continued session: {file}"));
+        assert_eq!(lines[3..5], ["", "Found 1 sessions:"]);
+        assert!(lines[5].starts_with("  "));
+        assert!(lines[5].ends_with("... - \"Remember this....\""));
+        assert_eq!(lines[6], "");
+        assert!(lines[7].starts_with("Opened: "));
+        assert_eq!(lines.len(), 8);
+        Ok(())
+    }
+
     /// A default session lives below agentDir; continuation and opening retain its exchange.
     #[test]
     fn sessions_persists_continues_and_reopens_the_same_history() -> Result<(), Error> {
