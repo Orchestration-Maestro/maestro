@@ -3376,6 +3376,37 @@ fn author_setup_runs_the_built_example_only_while_fresh() {
     assert!(run().starts_with("cargo build "));
 }
 
+/// Makes the example's dependency information name `maestro-request` as a library it builds
+/// on, whose output is `age` old. Gives the example and its copy under an older hash that
+/// information, and returns the copy's path.
+#[cfg(unix)]
+fn example_builds_on_library(
+    root: &Path,
+    profile: &Path,
+    age: std::time::Duration,
+) -> std::path::PathBuf {
+    fs::write(
+        root.join("Cargo.lock"),
+        "[[package]]\nname = \"maestro-extensions-wasm\"\ndependencies = [\n \"maestro-request\",\n]\n\n[[package]]\nname = \"maestro-request\"\n",
+    )
+    .unwrap();
+    set_age(
+        &root.join("Cargo.lock"),
+        std::time::Duration::from_secs(3600),
+    );
+    let information = "prepare_author_component: crates/maestro-extensions-wasm/examples/prepare_author_component.rs\n";
+    let copy = profile.join("examples/prepare_author_component-1");
+    fs::write(&copy, "#!/bin/sh\necho copy\n").unwrap();
+    fs::set_permissions(&copy, std::os::unix::fs::PermissionsExt::from_mode(0o755)).unwrap();
+    for name in ["prepare_author_component.d", "prepare_author_component-1.d"] {
+        fs::write(profile.join("examples").join(name), information).unwrap();
+    }
+    let library = profile.join("deps/libmaestro_request-1.rlib");
+    fs::write(&library, b"").unwrap();
+    set_age(&library, age);
+    copy
+}
+
 /// A library the example builds on, rebuilt after the example, outdates it as well, and
 /// only a rebuild of the example brings its code up to date.
 #[cfg(unix)]
@@ -3385,24 +3416,26 @@ fn author_setup_rebuilds_an_example_that_a_library_has_outdated() {
     let scratch = Scratch::new().unwrap();
     let root = scratch.path();
     let (profile, example) = author_setup_checkout(root);
-    fs::write(
-        root.join("Cargo.lock"),
-        "[[package]]\nname = \"maestro-extensions-wasm\"\ndependencies = [\n \"maestro-request\",\n]\n\n[[package]]\nname = \"maestro-request\"\n",
-    )
-    .unwrap();
-    set_age(&root.join("Cargo.lock"), Duration::from_secs(3600));
-    fs::write(
-        profile.join("examples/prepare_author_component.d"),
-        "prepare_author_component: crates/maestro-extensions-wasm/examples/prepare_author_component.rs\n",
-    )
-    .unwrap();
+    example_builds_on_library(root, &profile, Duration::from_mins(15));
     set_age(&example, Duration::from_mins(30));
-    let library = profile.join("deps/libmaestro_request-1.rlib");
-    fs::write(&library, b"").unwrap();
-    set_age(&library, Duration::from_mins(15));
     let output = run_author_setup(root, &profile);
     assert!(output.starts_with("cargo build "), "{output}");
     assert!(output.ends_with("example\n"), "{output}");
+}
+
+/// Cargo leaves a copy of the example under each older hash, which no library rebuild
+/// updates, so only the example the launcher runs decides whether it needs a rebuild.
+#[cfg(unix)]
+#[test]
+fn author_setup_ignores_an_outdated_copy_of_the_example_under_an_older_hash() {
+    use std::time::Duration;
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    let (profile, example) = author_setup_checkout(root);
+    let copy = example_builds_on_library(root, &profile, Duration::from_mins(15));
+    set_age(&copy, Duration::from_mins(30));
+    set_age(&example, Duration::from_mins(5));
+    assert_eq!(run_author_setup(root, &profile), "example\n");
 }
 
 /// Run the author setup script from `root` with `profile` as nextest's artifact directory.
