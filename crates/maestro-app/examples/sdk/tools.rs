@@ -13,11 +13,27 @@ async fn run(sample: Sample) -> Result<Value, Error> {
     let project = sample.root.path().join("project");
     std::fs::create_dir(&project)?;
     let mut selections = Vec::new();
-    for (names, cwd) in [
-        (vec!["read", "grep", "find", "ls"], sample.root.path()),
-        (vec!["read", "bash", "grep"], sample.root.path()),
-        (vec!["read", "bash", "edit", "write"], project.as_path()),
-        (vec!["read", "bash", "grep"], project.as_path()),
+    for (label, names, cwd) in [
+        (
+            "Read-only",
+            vec!["read", "grep", "find", "ls"],
+            sample.root.path(),
+        ),
+        (
+            "Custom tools",
+            vec!["read", "bash", "grep"],
+            sample.root.path(),
+        ),
+        (
+            "Custom cwd",
+            vec!["read", "bash", "edit", "write"],
+            project.as_path(),
+        ),
+        (
+            "Specific tools with custom cwd",
+            vec!["read", "bash", "grep"],
+            project.as_path(),
+        ),
     ] {
         let mut options = sample.options()?;
         options.cwd = Some(cwd.display().to_string());
@@ -30,6 +46,7 @@ async fn run(sample: Sample) -> Result<Value, Error> {
         selections.push(json!({
             "tools": created.session.get_active_tool_names(), "cwd": context.cwd()?,
         }));
+        writeln!(sample.output.borrow_mut(), "{label} session created")?;
         created.session.dispose();
     }
     Ok(json!(selections))
