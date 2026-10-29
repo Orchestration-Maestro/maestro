@@ -20,6 +20,7 @@ maestro-json = { path = "../maestro-json" }
 serde.workspace = true
 serde_json.workspace = true
 futures-util.workspace = true
+ryu-js.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true

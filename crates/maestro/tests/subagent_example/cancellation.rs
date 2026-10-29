@@ -88,10 +88,10 @@ fn subagent_parallel_limit_and_abort_reach_every_owned_child() {
             "nextest must prepare the subagent component outside the test"
         );
     }
-    let component = component_build::example_component("maestro-subagents", "component").unwrap();
+    let component = component();
     if child_fixture(
         "subagent_example::cancellation::subagent_parallel_limit_and_abort_reach_every_owned_child",
-        Some(&component),
+        Some(component),
     )
     .is_some()
     {

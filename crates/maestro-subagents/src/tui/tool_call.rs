@@ -1,6 +1,8 @@
 //! Tool-call summaries share the host's semantic colors and home observation.
 use crate::extension::preview;
-use maestro_extensions_wasm::{ExtensionResult, Theme};
+use maestro_extensions_wasm::{
+    ExtensionAPI, ExtensionResult, Theme, tools::path_utils::shorten_path,
+};
 use serde_json::Value;
 
 /// Chooses a nonempty supplied string or a literal empty-state spelling.
@@ -14,24 +16,12 @@ fn text<'a>(args: &'a Value, key: &str, default: &'a str) -> &'a str {
 fn path<'a>(args: &'a Value, default: &'a str) -> &'a str {
     text(args, "file_path", text(args, "path", default))
 }
-/// Shortens a home-prefixed authored spelling for display only.
-fn shorten(path: &str, home: &str) -> String {
-    if home.is_empty() {
-        return path.into();
-    }
-    if path == home {
-        return "~".into();
-    }
-    path.strip_prefix(home.trim_end_matches(['/', '\\']))
-        .filter(|suffix| suffix.is_empty() || suffix.starts_with('/') || suffix.starts_with('\\'))
-        .map_or_else(|| path.into(), |suffix| format!("~{suffix}"))
-}
 /// Formats the built-in tools and a bounded JSON fallback for other names.
 pub(super) fn format(
     name: &str,
     args: &Value,
     theme: &Theme,
-    home: &str,
+    api: &ExtensionAPI,
 ) -> ExtensionResult<String> {
     let muted = |text: &str| theme.fg("muted", text);
     let accent = |text: &str| theme.fg("accent", text);
@@ -39,23 +29,23 @@ pub(super) fn format(
         "bash" => {
             muted("$ ")? + &theme.fg("toolOutput", &preview(text(args, "command", "..."), 60))?
         }
-        "read" => read(args, theme, home)?,
+        "read" => read(args, theme, api)?,
         "write" => {
             let lines = args["content"].as_str().unwrap_or("").split('\n').count();
-            let mut value = muted("write ")? + &accent(&shorten(path(args, "..."), home))?;
+            let mut value = muted("write ")? + &accent(&shorten_path(api, path(args, "..."))?)?;
             if lines > 1 {
                 value += &theme.fg("dim", &format!(" ({lines} lines)"))?;
             }
             value
         }
-        "edit" => muted("edit ")? + &accent(&shorten(path(args, "..."), home))?,
-        "ls" => muted("ls ")? + &accent(&shorten(text(args, "path", "."), home))?,
+        "edit" => muted("edit ")? + &accent(&shorten_path(api, path(args, "..."))?)?,
+        "ls" => muted("ls ")? + &accent(&shorten_path(api, text(args, "path", "."))?)?,
         "find" => {
             muted("find ")?
                 + &accent(text(args, "pattern", "*"))?
                 + &theme.fg(
                     "dim",
-                    &format!(" in {}", shorten(text(args, "path", "."), home)),
+                    &format!(" in {}", shorten_path(api, text(args, "path", "."))?),
                 )?
         }
         "grep" => {
@@ -63,7 +53,7 @@ pub(super) fn format(
                 + &accent(&format!("/{}/", text(args, "pattern", "")))?
                 + &theme.fg(
                     "dim",
-                    &format!(" in {}", shorten(text(args, "path", "."), home)),
+                    &format!(" in {}", shorten_path(api, text(args, "path", "."))?),
                 )?
         }
         _ => {
@@ -82,9 +72,9 @@ pub(super) fn format(
     })
 }
 /// Shows the authored read range without truncating path text.
-fn read(args: &Value, theme: &Theme, home: &str) -> ExtensionResult<String> {
-    let mut value =
-        theme.fg("muted", "read ")? + &theme.fg("accent", &shorten(path(args, "..."), home))?;
+fn read(args: &Value, theme: &Theme, api: &ExtensionAPI) -> ExtensionResult<String> {
+    let mut value = theme.fg("muted", "read ")?
+        + &theme.fg("accent", &shorten_path(api, path(args, "..."))?)?;
     if args.get("offset").is_some() || args.get("limit").is_some() {
         let start = args["offset"].as_f64().unwrap_or(1.0);
         let end = args["limit"]

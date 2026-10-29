@@ -15,12 +15,20 @@ use std::{path::Path, rc::Rc, sync::OnceLock};
 #[path = "../../maestro-extensions-wasm/src/tests/build/examples.rs"]
 mod component_build;
 
+/// Selects the setup artifact, retaining a direct-Cargo fallback outside nextest.
+fn component() -> &'static Path {
+    static COMPONENT: OnceLock<std::path::PathBuf> = OnceLock::new();
+    COMPONENT.get_or_init(|| {
+        std::env::var_os("MAESTRO_SUBAGENT_COMPONENT").map_or_else(
+            || component_build::example_component("maestro-subagents", "component").unwrap(),
+            std::path::PathBuf::from,
+        )
+    })
+}
+
 /// Loads the package using the existing application session and native-I/O fixture.
 async fn loaded(root: &Root, local: Rc<tokio::task::LocalSet>) -> Rc<AgentSession> {
-    static COMPONENT: OnceLock<std::path::PathBuf> = OnceLock::new();
-    let path = COMPONENT.get_or_init(|| {
-        component_build::example_component("maestro-subagents", "component").unwrap()
-    });
+    let path = component();
     crate::support::session::component_session(
         root,
         local,

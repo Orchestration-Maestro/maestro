@@ -7,7 +7,6 @@ use crate::{
 use maestro_extensions_wasm::{
     Component, Container, ExtensionAPI, ExtensionResult, Markdown, Text, Theme,
     ToolRenderResultLike, ToolRenderResultOptions, UserBlock, get_markdown_theme,
-    tools::path_utils::expand_path,
 };
 use serde_json::Value;
 
@@ -85,13 +84,12 @@ pub(crate) fn result(
         });
         return text(first.unwrap_or("(no output)"));
     };
-    let home = expand_path(api, "~")?;
     let running =
         details.mode == "parallel" && details.results.iter().any(|result| result.exit_code == -1);
     if options.expanded && !running {
-        expanded(&details, theme, &home)
+        expanded(&details, theme, api)
     } else {
-        collapsed(&details, options, theme, &home)
+        collapsed(&details, options, theme, api)
     }
 }
 
@@ -186,13 +184,13 @@ fn items(result: &SingleResult) -> Vec<&Value> {
         .collect()
 }
 /// Formats one tool call without consuming its original arguments.
-fn tool(part: &Value, theme: &Theme, home: &str) -> ExtensionResult<String> {
+fn tool(part: &Value, theme: &Theme, api: &ExtensionAPI) -> ExtensionResult<String> {
     Ok(theme.fg("muted", "→ ")?
         + &tool_call::format(
             part["name"].as_str().unwrap_or(""),
             &part["arguments"],
             theme,
-            home,
+            api,
         )?)
 }
 /// Produces bounded collapsed items while retaining full text during an expanded live view.
@@ -201,7 +199,7 @@ fn display(
     limit: usize,
     expanded: bool,
     theme: &Theme,
-    home: &str,
+    api: &ExtensionAPI,
 ) -> ExtensionResult<String> {
     let items = items(result);
     let skipped = items.len().saturating_sub(limit);
@@ -211,7 +209,7 @@ fn display(
     }
     for part in &items[skipped..] {
         if part["type"] == "toolCall" {
-            lines.push(tool(part, theme, home)?);
+            lines.push(tool(part, theme, api)?);
         } else {
             let value = part["text"].as_str().unwrap_or("");
             let value = if expanded {
@@ -229,7 +227,7 @@ fn collapsed(
     details: &SubagentDetails,
     options: ToolRenderResultOptions,
     theme: &Theme,
-    home: &str,
+    api: &ExtensionAPI,
 ) -> ExtensionResult<Component> {
     let mut lines = vec![group_header(details, theme)?];
     for result in &details.results {
@@ -254,7 +252,7 @@ fn collapsed(
                 if single { 10 } else { 5 },
                 options.expanded,
                 theme,
-                home,
+                api,
             )?);
         }
         if single {
@@ -309,7 +307,11 @@ fn line(container: &Container, value: &str) -> ExtensionResult<()> {
     container.add_child(&text(value)?)
 }
 /// Retains the toolkit's Markdown owner for the final complete output.
-fn expanded(details: &SubagentDetails, theme: &Theme, home: &str) -> ExtensionResult<Component> {
+fn expanded(
+    details: &SubagentDetails,
+    theme: &Theme,
+    api: &ExtensionAPI,
+) -> ExtensionResult<Component> {
     let container = Container::new()?;
     line(&container, &group_header(details, theme)?)?;
     for result in &details.results {
@@ -333,7 +335,7 @@ fn expanded(details: &SubagentDetails, theme: &Theme, home: &str) -> ExtensionRe
                 &(theme.fg("muted", "Task: ")? + &theme.fg("dim", &result.task)?),
             )?;
         }
-        output(&container, result, theme, home)?;
+        output(&container, result, theme, api)?;
         let label = usage::label(&result.usage, result.model.as_deref());
         if !label.is_empty() {
             if single {
@@ -356,13 +358,13 @@ fn output(
     container: &Container,
     result: &SingleResult,
     theme: &Theme,
-    home: &str,
+    api: &ExtensionAPI,
 ) -> ExtensionResult<()> {
     for part in items(result)
         .into_iter()
         .filter(|part| part["type"] == "toolCall")
     {
-        line(container, &tool(part, theme, home)?)?;
+        line(container, &tool(part, theme, api)?)?;
     }
     if !result.output().is_empty() {
         line(container, "")?;

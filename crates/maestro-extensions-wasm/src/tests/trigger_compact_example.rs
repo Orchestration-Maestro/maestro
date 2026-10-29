@@ -504,9 +504,11 @@ impl ComponentHost {
 
 impl Host for ComponentHost {
     fn start(instances: usize) -> Result<Self, String> {
-        let path = super::build::example_component("maestro-extensions-wasm", "trigger_compact")?;
+        static PATH: std::sync::OnceLock<Result<std::path::PathBuf, String>> = std::sync::OnceLock::new();
+        let path = PATH.get_or_init(|| super::build::component("trigger_compact", "MAESTRO_TRIGGER_COMPACT_COMPONENT"))
+            .as_ref().map_err(Clone::clone)?;
         let (engine, component) =
-            super::build::compile(&path).map_err(|error| error.to_string())?;
+            super::host::compiled(path).map_err(|error| error.to_string())?;
         let mut started = Vec::new();
         for _ in 0..instances {
             let harness = super::block_on(Harness::from_compiled(&engine, &component))
