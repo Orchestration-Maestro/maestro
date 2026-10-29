@@ -1,4 +1,6 @@
 //! Register a local extension with lifecycle events, a custom tool and a command.
+#[path = "support/stream.rs"]
+mod stream;
 mod support;
 use maestro_extensions::{EventError, ExtensionAPI};
 use maestro_models::Local;
@@ -14,16 +16,13 @@ fn main() -> Result<(), Error> {
 /// Invoke the extension command and a model-requested tool call.
 async fn run(sample: Sample) -> Result<Value, Error> {
     use maestro_app::{ExtensionBindings, PromptOptions, create_agent_session};
-    use maestro_models::{
-        FauxAssistantMessageOptions, FauxResponseStep, FauxToolCallOptions, StopReason,
-        faux_assistant_message, faux_tool_call,
-    };
     let events = Rc::new(RefCell::new(Vec::new()));
     let log = Rc::clone(&events);
+    let output = Rc::clone(&sample.output);
     let mut options = sample.options()?;
     if let maestro_app::SessionResources::Default(resources) = &mut options.resources {
         resources.extension_factories.push(Rc::new(move |api| {
-            Box::pin(std::future::ready(register(&api, &log)))
+            Box::pin(std::future::ready(register(&api, &log, Rc::clone(&output))))
         }));
     }
     let created = create_agent_session(options).await?;
@@ -35,28 +34,14 @@ async fn run(sample: Sample) -> Result<Value, Error> {
         .session
         .prompt("/mycommand demo", PromptOptions::default())
         .await?;
-    let call = faux_tool_call(
-        "my_tool",
-        json!({"input": "hello"}),
-        FauxToolCallOptions::default(),
-    );
-    sample.provider.set_responses(vec![
-        FauxResponseStep::Message(Box::new(faux_assistant_message(
-            call,
-            FauxAssistantMessageOptions {
-                stop_reason: Some(StopReason::ToolUse),
-                ..FauxAssistantMessageOptions::default()
-            },
-        ))),
-        FauxResponseStep::Message(Box::new(faux_assistant_message(
-            "Done.",
-            FauxAssistantMessageOptions::default(),
-        ))),
-    ]);
+    sample.provider.set_responses(responses());
+    let finish = stream::subscribe(&created.session, Rc::clone(&sample.output));
     created
         .session
         .prompt("Process hello.", PromptOptions::default())
         .await?;
+    finish()?;
+    writeln!(sample.output.borrow_mut())?;
     let messages = serde_json::to_value(
         &*created
             .session
@@ -70,8 +55,38 @@ async fn run(sample: Sample) -> Result<Value, Error> {
     Ok(result)
 }
 
+/// A controlled tool request followed by its completed answer.
+fn responses() -> Vec<maestro_models::FauxResponseStep> {
+    use maestro_models::{
+        FauxAssistantMessageOptions, FauxResponseStep, FauxToolCallOptions, StopReason,
+        faux_assistant_message, faux_tool_call,
+    };
+    let call = faux_tool_call(
+        "my_tool",
+        json!({"input": "hello"}),
+        FauxToolCallOptions::default(),
+    );
+    vec![
+        FauxResponseStep::Message(Box::new(faux_assistant_message(
+            call,
+            FauxAssistantMessageOptions {
+                stop_reason: Some(StopReason::ToolUse),
+                ..FauxAssistantMessageOptions::default()
+            },
+        ))),
+        FauxResponseStep::Message(Box::new(faux_assistant_message(
+            "Done.",
+            FauxAssistantMessageOptions::default(),
+        ))),
+    ]
+}
+
 /// Register lifecycle logging and operations on the same retained extension API.
-fn register(api: &ExtensionAPI<Local>, log: &Rc<RefCell<Vec<String>>>) -> Result<(), EventError> {
+fn register(
+    api: &ExtensionAPI<Local>,
+    log: &Rc<RefCell<Vec<String>>>,
+    output: Rc<RefCell<dyn std::io::Write>>,
+) -> Result<(), EventError> {
     use maestro_extensions::{
         AgentEndEvent, AgentStartEvent, NativeAgentMessage, ToolCallEvent, ToolCallEventResult,
     };
@@ -80,7 +95,11 @@ fn register(api: &ExtensionAPI<Local>, log: &Rc<RefCell<Vec<String>>>) -> Result
         "agent_start".into(),
         Rc::new(move |_, _| {
             starts.borrow_mut().push("agent_start".into());
-            Box::pin(std::future::ready(Ok(None)))
+            Box::pin(std::future::ready(
+                writeln!(output.borrow_mut(), "[Inline Extension] Agent starting")
+                    .map(|()| None)
+                    .map_err(Into::into),
+            ))
         }),
     )?;
     let tools = Rc::clone(log);
