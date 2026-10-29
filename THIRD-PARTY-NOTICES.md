@@ -747,6 +747,12 @@ Terminal construction, state reads, palette updates and effective-colour rules i
 under Apache-2.0. The implementation uses owned Rust screen storage instead of
 foreign-library handles.
 
+The application keybinding backup/reset operation in
+`crates/maestro-app/src/presentation_data/keybindings/reset.rs` derives from the
+configuration reset command under the same license. It validates the JSON
+object, preserves non-multiplexer actions and uses the shared atomic publisher
+instead of rewriting the source file in place.
+
 The daemon protocol records, schema and tests in `crates/maestro-protocol/` and
 `docs/daemon-protocol.schema.json`, the socket transport and path selection in
 `crates/maestro-ipc/`, and the topology in `crates/maestro-workspace/` derive from
@@ -782,6 +788,13 @@ The branch-tracking reader in `crates/maestro-workspace/src/workspace/git/config
 and its submodules derives from the repository configuration module under the same
 license. Changes include one include walk in place of three, wildcard matching with path
 rules in bounded time, and supplied user files and home directory.
+The status snapshots, fingerprints and cache keys in
+`crates/maestro-daemon/src/git/status.rs` and the refresh scheduling in
+`crates/maestro-daemon/src/app/git_refresh.rs` derive from the repository status and
+refresh modules under the same license. Changes include a tracking-configuration read kept
+while its files are unchanged in place of cached repository context, a packed-reference
+search that skips an unreadable line, supplied user files and home directory, and a refresh
+that publishes its result when its task panics.
 
 The resume records and argument plans, retained pane state, presentation metadata,
 terminal title normalization and host theme in `crates/maestro-daemon/` derive from

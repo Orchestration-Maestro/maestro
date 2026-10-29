@@ -125,6 +125,7 @@ impl<C: FnMut() -> u128> App<C> {
             clear_history_after_reload: false,
             copy_feedback_deadline: None,
             tab_bar_status: super::tab_bar_status::TabBarStatus::default(),
+            git_refresh: super::git_refresh::GitRefresh::new(std::time::Instant::now()),
             state: DaemonState::new(config, clock, Arc::clone(&launch.manifests)),
             config: accepted.clone(),
             accepted_config_areas: AcceptedAreas::default(),

@@ -210,10 +210,7 @@
     "input": {
       "messages": []
     },
-    "expected": {
-      "text": null,
-      "frame": null
-    }
+    "expected": null
   },
   {
     "test": "copy_refuses_when_no_assistant_text",
@@ -226,10 +223,7 @@
         }
       ]
     },
-    "expected": {
-      "text": null,
-      "frame": null
-    }
+    "expected": null
   },
   {
     "test": "copy_refuses_when_no_assistant_text",
@@ -293,10 +287,7 @@
         }
       ]
     },
-    "expected": {
-      "text": null,
-      "frame": null
-    }
+    "expected": null
   },
   {
     "test": "copy_refuses_when_no_assistant_text",
@@ -360,10 +351,7 @@
         }
       ]
     },
-    "expected": {
-      "text": null,
-      "frame": null
-    }
+    "expected": null
   },
   {
     "test": "copy_uses_current_last_assistant_and_reports_result",
@@ -433,7 +421,6 @@
       ]
     },
     "expected": {
-      "text": "latest",
       "frame": "\u001b]52;c;bGF0ZXN0\u0007"
     }
   },
@@ -480,7 +467,6 @@
       ]
     },
     "expected": {
-      "text": "ab",
       "frame": "\u001b]52;c;YWI=\u0007"
     }
   },
@@ -542,7 +528,6 @@
       ]
     },
     "expected": {
-      "text": "older",
       "frame": "\u001b]52;c;b2xkZXI=\u0007"
     }
   },
@@ -581,7 +566,6 @@
       ]
     },
     "expected": {
-      "text": "partial",
       "frame": "\u001b]52;c;cGFydGlhbA==\u0007"
     }
   },
@@ -620,7 +604,6 @@
       ]
     },
     "expected": {
-      "text": "answer",
       "frame": "\u001b]52;c;YW5zd2Vy\u0007"
     }
   },
@@ -659,7 +642,6 @@
       ]
     },
     "expected": {
-      "text": "answer",
       "frame": "\u001b]52;c;woVhbnN3ZXLChQ==\u0007"
     }
   },

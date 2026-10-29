@@ -53,6 +53,7 @@ impl<C: FnMut() -> u128> App<C> {
             self.start_background_session_save(paths);
         }
         changed |= self.expire_due_metadata(now).await;
+        self.start_git_status_refresh_if_due(now);
         changed | self.handle_tab_bar_status_tasks(now)
     }
 
