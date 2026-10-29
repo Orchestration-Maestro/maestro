@@ -74,7 +74,7 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
         .ok_or_else(|| io::Error::other("missing development command"))?;
     match name.to_str() {
         Some("asset-output") => asset_output(args, cargo),
-        Some("example-index") => example_index::run(args, checkout),
+        Some("example-index") => example_index::run(args, cargo, checkout),
         Some("browser-author") => browser_author::run(args, cargo, checkout),
         Some("clean-assets") => {
             for owner in ["app", "binary"] {

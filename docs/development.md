@@ -233,6 +233,20 @@ runs skip it. Native package selection and the coverage floor stay unchanged.
 See the [shared caller contract](https://github.com/Orchestration-Maestro/maestro-rust-workflows/blob/v0.15.0/docs/caller-checks.md#chromium-browser-tests).
 A local pass is not hosted-CI proof; activation requires a successful shared job.
 
+## Extension guide lock
+
+Run `just example-index` after changing dependencies to regenerate the extension
+index, example targets and the standalone extension guide's `Cargo.lock`.
+`just check` runs `just example-index-check`, which reports stale generated files
+without changing them and names the regeneration command.
+
+The generator seeds a disposable copy of the guide project with the workspace
+`Cargo.lock`, then lets Cargo resolve offline. This retains the workspace's exact
+versions and uses the actual guide manifest and guest dependencies, rather than
+maintaining a second dependency list. The clean-folder guide test still builds
+with `--locked`. Populate the Cargo cache first if offline resolution reports a
+missing package; generation does not fetch dependencies.
+
 ## Feature unification
 
 See [dependency locks](dependency_locks.md) for generated-lock ownership,

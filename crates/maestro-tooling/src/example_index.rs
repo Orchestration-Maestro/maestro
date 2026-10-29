@@ -1,4 +1,4 @@
-//! Render the extension index and the component crate's example targets from source files.
+//! Render the extension index, component example targets and standalone guide lock.
 
 use std::ffi::OsString;
 use std::fmt::Write;
@@ -8,6 +8,9 @@ use std::path::Path;
 use std::process::ExitCode;
 
 use super::example_files;
+
+/// Offline resolution of the standalone guide's generated lock.
+mod guide_lock;
 
 /// Markers around the README table.
 const README: [&str; 2] = ["<!-- example-index:start -->", "<!-- example-index:end -->"];
@@ -27,7 +30,7 @@ struct Target {
 }
 
 /// Refresh the generated regions, or check them without changing files.
-pub fn run(args: &[OsString], checkout: &Path) -> io::Result<ExitCode> {
+pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     if !args.is_empty() && args != [OsString::from("--check")] {
         return Err(io::Error::other("usage: example-index [--check]"));
     }
@@ -62,6 +65,7 @@ pub fn run(args: &[OsString], checkout: &Path) -> io::Result<ExitCode> {
     for (path, after) in changed {
         fs::write(path, after)?;
     }
+    guide_lock::refresh(cargo, checkout, !args.is_empty())?;
     Ok(ExitCode::SUCCESS)
 }
 

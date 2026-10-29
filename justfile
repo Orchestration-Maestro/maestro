@@ -10,6 +10,7 @@ setup:
 # Formatting, lint, public documentation and the checkout's workspace conventions.
 check:
     cargo fmt --all
+    just example-index-check
     just _check --workspace
     if [ -f crates/maestro-models/examples/browser_import_check.rs ]; then just check-browser-smoke; fi
 
@@ -267,10 +268,10 @@ browser-test:
     node crates/maestro-web/tests/sandbox_loading_support/run.cjs
     node crates/maestro-app/tests/browser/analysis_page.cjs
 
-# Render the extension index from each example's own documentation.
+# Generate the extension index, example targets and workspace-derived guide lock.
 example-index:
     cargo run --quiet --locked -p maestro-tooling --bin development -- example-index
 
-# Check the tracked extension index without rewriting it.
+# Check generated extension files without rewriting them.
 example-index-check:
     cargo run --quiet --locked -p maestro-tooling --bin development -- example-index --check
