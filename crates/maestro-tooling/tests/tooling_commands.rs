@@ -3334,6 +3334,11 @@ fn author_setup_runs_the_built_example_only_while_fresh() {
         fs::write(path, format!("#!/bin/sh\necho {name} \"$@\"\n")).unwrap();
         fs::set_permissions(path, fs::Permissions::from_mode(0o755)).unwrap();
     }
+    fs::write(
+        root.join("cargo"),
+        "#!/bin/sh\necho cargo \"$@\"\nprintf '#!/bin/sh\\necho example\\n' > target/debug/examples/prepare_author_component\nchmod +x target/debug/examples/prepare_author_component\n",
+    )
+    .unwrap();
     let run = || run_author_setup(root, &profile);
     assert_eq!(run(), "example\n");
     for source in sources {
@@ -3343,11 +3348,11 @@ fn author_setup_runs_the_built_example_only_while_fresh() {
             .unwrap();
         file.set_modified(SystemTime::now() + Duration::from_secs(60))
             .unwrap();
-        assert!(run().starts_with("cargo run "), "{source}");
+        assert!(run().starts_with("cargo build "), "{source}");
         file.set_modified(earlier).unwrap();
     }
     fs::remove_file(&example).unwrap();
-    assert!(run().starts_with("cargo run "));
+    assert!(run().starts_with("cargo build "));
 }
 
 /// Run the author setup script from `root` with `profile` as nextest's artifact directory.
