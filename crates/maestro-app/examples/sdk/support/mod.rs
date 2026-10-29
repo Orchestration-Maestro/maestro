@@ -22,6 +22,8 @@ pub struct Sample {
     pub provider: FauxProviderRegistration,
     /// The local executor that owns session background work.
     pub local: Rc<LocalSet>,
+    /// Console destination shared with live session listeners.
+    pub output: Rc<RefCell<dyn std::io::Write>>,
 }
 
 impl Sample {
@@ -43,6 +45,7 @@ impl Sample {
             root,
             provider,
             local,
+            output: Rc::new(RefCell::new(std::io::stdout())),
         })
     }
 
@@ -106,5 +109,8 @@ where
         .build()?;
     let local = Rc::new(LocalSet::new());
     let sample = Sample::new(Rc::clone(&local))?;
-    runtime.block_on(local.run_until(run(sample)))
+    let output = Rc::clone(&sample.output);
+    let result = runtime.block_on(local.run_until(run(sample)))?;
+    output.borrow_mut().flush()?;
+    Ok(result)
 }

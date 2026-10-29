@@ -59,6 +59,21 @@ async fn run(sample: Sample) -> Result<Value, Error> {
 mod tests {
     use super::*;
 
+    /// Console text precedes the readable stored-message observations.
+    #[test]
+    fn minimal_prints_stream_then_messages() -> Result<(), Error> {
+        let output = Rc::new(RefCell::new(Vec::new()));
+        support::execute(|mut sample| {
+            sample.output = output.clone();
+            run(sample)
+        })?;
+        assert_eq!(
+            String::from_utf8(output.borrow().clone())?,
+            "The project contains AGENTS.md.\nUser: What files are in the current directory?\nAssistant: The project contains AGENTS.md.\n"
+        );
+        Ok(())
+    }
+
     /// A streamed answer also becomes part of the session's public history.
     #[test]
     fn minimal_streams_and_retains_the_answer() -> Result<(), Error> {
