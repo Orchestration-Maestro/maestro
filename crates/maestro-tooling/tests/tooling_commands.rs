@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use crate::recipe_support::write_input;
+use crate::recipe_support::{self, write_input};
 use crate::toolchain_support;
 
 use std::fs;
@@ -2546,6 +2546,24 @@ fn consumer_workspace_cargo_state_stays_beside_the_checkout() {
         home.join(".package-cache").is_file(),
         "consumer Cargo runs must use the private Cargo home"
     );
+}
+
+#[cfg(unix)]
+#[test]
+fn consumer_workspace_never_reaches_the_shared_cargo_home() {
+    if !recipe_support::without_shared_cargo_home() {
+        recipe_support::rerun_without_shared_cargo_home(
+            "consumer_workspace_never_reaches_the_shared_cargo_home",
+        );
+        return;
+    }
+    let scratch = Scratch::new().unwrap();
+    let workspace = consumer_workspace(scratch.path());
+    let metadata = consumer_cargo(
+        &workspace,
+        &["metadata", "--offline", "--format-version", "1"],
+    );
+    assert!(metadata.status.success());
 }
 
 #[cfg(unix)]

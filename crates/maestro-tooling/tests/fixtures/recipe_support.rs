@@ -60,6 +60,34 @@ pub fn prepared_sources() -> PathBuf {
         .clone()
 }
 
+/// Whether this process is the child of [`rerun_without_shared_cargo_home`].
+pub fn without_shared_cargo_home() -> bool {
+    std::env::var_os("MAESTRO_SHARED_CARGO_HOME_UNUSABLE").is_some()
+}
+
+/// Rerun the named test in a child whose shared Cargo home cannot be locked.
+///
+/// A fixture that still reaches the shared home fails at once, instead of waiting for whichever
+/// test holds the lock; the child keeps the run's prepared sources.
+pub fn rerun_without_shared_cargo_home(test: &str) {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let home = root.path().join("unusable-cargo-home");
+    fs::create_dir_all(home.join(".package-cache")).unwrap();
+    let output = maestro_test_process::TestProcess::current(test)
+        .unwrap()
+        .env("MAESTRO_SHARED_CARGO_HOME_UNUSABLE", "1")
+        .env("MAESTRO_TEST_CARGO_SOURCES", prepared_sources())
+        .env("CARGO_HOME", home)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
 /// Build the fake-command tool into the target shared by every recipe fixture.
 pub fn build_tool(root: &Path) -> PathBuf {
     let manifest =

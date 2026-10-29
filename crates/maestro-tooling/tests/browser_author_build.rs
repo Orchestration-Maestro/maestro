@@ -77,6 +77,26 @@ fn browser_lockfile_generation_resolves_prepared_sources() {
     );
 }
 
+/// Lockfile generation and metadata queries finish while the shared Cargo home is unusable.
+#[test]
+fn browser_resolution_never_reaches_the_shared_cargo_home() {
+    if !recipe_support::without_shared_cargo_home() {
+        recipe_support::rerun_without_shared_cargo_home(
+            "browser_resolution_never_reaches_the_shared_cargo_home",
+        );
+        return;
+    }
+    let browser = Browser::new();
+    browser.generate_lockfile();
+    success(
+        &browser
+            .cargo()
+            .args(["metadata", "--offline", "--format-version", "1"])
+            .output()
+            .unwrap(),
+    );
+}
+
 /// Cold builds start from the run's prepared configuration instead of vendoring again.
 #[test]
 fn browser_cold_sources_reuse_the_prepared_configuration() {
