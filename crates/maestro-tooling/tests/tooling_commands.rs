@@ -3564,6 +3564,32 @@ fn example_index_refreshes_guide_lock_after_guest_dependency_change() {
     example_index(root.path(), true).unwrap();
 }
 
+/// Resolver failures retain Cargo's diagnostic without replacing the guide lock.
+#[test]
+fn example_index_preserves_guide_lock_on_resolver_failure() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    example_checkout(root.path());
+    example_index(root.path(), false).unwrap();
+    let fixture = root
+        .path()
+        .join("crates/maestro-extensions-wasmtime/tests/fixtures/hello-extension");
+    let lock = fixture.join("Cargo.lock");
+    let before = fs::read(&lock).unwrap();
+    let manifest = fixture.join("Cargo.toml.in");
+    let malformed = format!("{}\n[package]\n", fs::read_to_string(&manifest).unwrap());
+    fs::write(manifest, malformed).unwrap();
+    for check in [false, true] {
+        let error = example_index(root.path(), check).unwrap_err().to_string();
+        assert!(
+            error.contains("cannot derive the guide lock from the workspace lock:"),
+            "{error}"
+        );
+        assert!(error.contains("duplicate key"), "{error}");
+        assert!(error.contains("[package]"), "{error}");
+        assert_eq!(fs::read(&lock).unwrap(), before);
+    }
+}
+
 /// The tracked repository index is exactly the table rendered from its files.
 #[test]
 fn shipped_example_index_matches_documentation() {
