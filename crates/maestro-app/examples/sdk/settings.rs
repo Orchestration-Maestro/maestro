@@ -14,6 +14,10 @@ async fn run(sample: Sample) -> Result<Value, Error> {
     use std::{cell::RefCell, rc::Rc};
     let options = configured_options(&sample).await?;
     let created = maestro_app::create_agent_session(options).await?;
+    writeln!(
+        sample.output.borrow_mut(),
+        "Session created with custom settings"
+    )?;
     let mut result = {
         let settings = created.session.settings_manager().borrow();
         json!({
@@ -27,7 +31,16 @@ async fn run(sample: Sample) -> Result<Value, Error> {
         .set_default_thinking_level(maestro_settings::ThinkingLevel::Low);
     let flushed = manager.borrow().flush();
     flushed.await;
-    result["errors"] = json!(manager.borrow_mut().drain_errors().len());
+    let errors = manager.borrow_mut().drain_errors();
+    for error in &errors {
+        writeln!(
+            sample.output.borrow_mut(),
+            "Warning ({:?} settings): {}",
+            error.scope,
+            error.error
+        )?;
+    }
+    result["errors"] = json!(errors.len());
     result["saved"] =
         serde_json::from_slice(&std::fs::read(sample.root.path().join("settings.json"))?)?;
     created.session.dispose();
@@ -45,6 +58,10 @@ async fn run(sample: Sample) -> Result<Value, Error> {
             .borrow()
             .get_retry_enabled()
     );
+    writeln!(
+        sample.output.borrow_mut(),
+        "Test session created with in-memory settings"
+    )?;
     memory.session.dispose();
     Ok(result)
 }
@@ -73,6 +90,11 @@ async fn configured_options(
         resources: *resources,
     }));
     loader.reload().await?;
+    writeln!(
+        sample.output.borrow_mut(),
+        "Current settings: {}",
+        serde_json::to_string_pretty(&settings.borrow().get_global_settings())?
+    )?;
     settings.borrow_mut().apply_overrides(serde_json::from_value(json!({
         "compaction": {"enabled": false}, "retry": {"enabled": true, "maxRetries": 5, "baseDelayMs": 1000}
     }))?);
