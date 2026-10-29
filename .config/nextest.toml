@@ -96,6 +96,11 @@ filter = "package(=maestro-extensions-wasmtime) & test(=component_events::compon
 slow-timeout = { period = "30s", terminate-after = 5 }
 
 [[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasmtime) & test(=component_events::input::component_input_chains_text_preserves_images_and_forwards_sources)"
+# Measured: 120.335s; cause: per-process Wasmtime compilation and instantiation of the guest component fixture; #3668
+slow-timeout = { period = "30s", terminate-after = 6 }
+
+[[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasmtime) & test(=git_checkpoint_example::git_checkpoint_component_reads_only_repository_configuration)"
 # Measured: 120.154s; cause: per-process Wasmtime compilation and instantiation of the guest component fixture; #3659
 slow-timeout = { period = "30s", terminate-after = 5 }
