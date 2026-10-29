@@ -54,8 +54,8 @@ mod time_limits;
 ///
 /// The default nextest profile must flag a test as slow every 30 seconds and
 /// terminate it after four periods, a 120-second hang limit that no profile may
-/// raise. A per-test override is accepted only for a test that needs more than that
-/// limit: it keeps the 30-second period and requires adjacent comments naming
+/// raise and no profile may flag at another period. A per-test override is
+/// accepted only for a test that needs more than that limit: it keeps the 30-second period and requires adjacent comments naming
 /// measured seconds over 120, the cause and a removal issue, and its
 /// `terminate-after` must be the fewest whole periods that cover those seconds.
 /// Issue references are checked offline; reviewers verify that each issue is open.

@@ -530,10 +530,10 @@ exception needs its own comment; another override's comment does not apply. A
 test that finishes within 120 seconds needs no exception.
 
 The conventions check rejects a default other than the flag and hang limit, a
-profile limit above the hang limit, an exception that changes the 30-second
-period or that the hang limit already covers, an undocumented exception and an
-exception whose `terminate-after` is not the fewest periods covering its
-`Measured:` seconds.
+profile limit above the hang limit, a profile that changes the 30-second
+period, an exception that changes the 30-second period or that the hang limit
+already covers, an undocumented exception and an exception whose
+`terminate-after` is not the fewest periods covering its `Measured:` seconds.
 It checks references offline; the author and reviewer verify with GitHub that
 the linked issue is still open. The change fixing the slowness must delete its
 override as well as close the issue. Each existing exception has its own issue,
