@@ -222,4 +222,10 @@ fn component_load_survives_an_unavailable_user_cache() {
         errors[0].starts_with("Failed to load extension: component fault "),
         "{errors:?}"
     );
+    // Every load failure carries that prefix; only this one is reached after the engine is
+    // configured, the component compiled and instantiated without the cache.
+    assert!(
+        errors[0].ends_with(": missing extension guest interface"),
+        "{errors:?}"
+    );
 }
