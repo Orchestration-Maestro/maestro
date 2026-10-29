@@ -42,6 +42,18 @@ class Resolution(unittest.TestCase):
         self.assertIn("-DDOOMGENERIC_RESX=640", command)
         self.assertIn("-DDOOMGENERIC_RESY=400", command)
 
+    def test_empty_resolution_uses_defaults(self):
+        """Empty overrides default independently without discarding a supplied axis."""
+        for width, height, expected in [
+            ("", "", (640, 400)),
+            ("", "200", (640, 200)),
+            ("320", "", (320, 400)),
+        ]:
+            with self.subTest(width=width, height=height):
+                command = self.build({"WASI_SDK_PATH": "/sdk", "DOOM_RESX": width, "DOOM_RESY": height})
+                self.assertIn(f"-DDOOMGENERIC_RESX={expected[0]}", command)
+                self.assertIn(f"-DDOOMGENERIC_RESY={expected[1]}", command)
+
     def test_nondefault_resolution(self):
         """Both documented environment overrides reach the compiler."""
         command = self.build({"WASI_SDK_PATH": "/sdk", "DOOM_RESX": "320", "DOOM_RESY": "200"})
