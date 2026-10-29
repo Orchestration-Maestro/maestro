@@ -19,6 +19,20 @@ async fn run(sample: Sample) -> Result<Value, Error> {
     }
     let created = maestro_app::create_agent_session(options).await?;
     let templates = created.session.prompt_templates();
+    writeln!(sample.output.borrow_mut(), "Discovered prompt templates:")?;
+    for template in &templates.prompts {
+        writeln!(
+            sample.output.borrow_mut(),
+            "  /{}: {}",
+            template.name,
+            template.description
+        )?;
+    }
+    writeln!(
+        sample.output.borrow_mut(),
+        "Session created with {} prompt templates",
+        templates.prompts.len()
+    )?;
     let expanded =
         maestro_resources::prompt_templates::expand_prompt_template("/deploy", &templates.prompts);
     let records: Vec<Value> = templates
