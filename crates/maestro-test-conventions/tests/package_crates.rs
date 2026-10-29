@@ -330,3 +330,21 @@ pub use registration::register as r#factory;
         assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
 }
+
+#[test]
+fn package_factories_exclude_test_only_declarations_and_reexports() {
+    for source in [
+        "#[cfg(test)] pub fn factory() {}",
+        "#[cfg(test)] pub use registration::register as factory;",
+    ] {
+        let workspace = Workspace::new();
+        package(&workspace, "maestro-subagents", "");
+        workspace.list(&[("maestro-subagents", "package")]);
+        support::source(&workspace, "maestro-subagents", "src/lib.rs", source);
+        assert!(
+            check_workspace(workspace.root.path())
+                .unwrap_err()
+                .contains("public factory")
+        );
+    }
+}

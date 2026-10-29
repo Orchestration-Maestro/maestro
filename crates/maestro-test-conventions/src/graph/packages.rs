@@ -140,6 +140,9 @@ fn nested_exports(tokens: TokenStream, names: &BTreeSet<String>) -> usize {
 
 /// Explicit public factory declarations include reexports under the exposed name.
 fn public_factory(item: &syn::Item) -> bool {
+    if cfg_test(item_attributes(item)) {
+        return false;
+    }
     match item {
         syn::Item::Fn(item) => {
             item.sig.ident.unraw() == "factory" && matches!(item.vis, syn::Visibility::Public(_))
