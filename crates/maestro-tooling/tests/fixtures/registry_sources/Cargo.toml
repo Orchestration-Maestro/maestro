@@ -1,0 +1,15 @@
+[package]
+name = "maestro-fixture-registry-sources"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+# The registry crates that fixture workspaces resolve, unpinned: the workspace lock decides each
+# version when the setup script vendors them.
+[dependencies]
+cargo_metadata = "*"
+serde = { version = "*", features = ["derive"] }
+serde_json = "*"
+toml = "*"

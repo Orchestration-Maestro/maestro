@@ -19,12 +19,16 @@ fn browser_setup_errors_reach_stderr_and_transcript() {
                 "invalid_manifest_marker = [\n",
             )
             .unwrap();
-            browser.generate_lockfile();
+            if stage == "lockfile" {
+                browser.generate_lockfile();
+            } else {
+                browser_support::cold_sources(&browser);
+            }
         }
         panic!("setup must fail");
     }
     let mut failures = Vec::new();
-    for stage in ["recipe", "lockfile"] {
+    for stage in ["recipe", "lockfile", "vendor"] {
         let directory = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(format!(
             "../../target/browser-author-diagnostics/setup-{}-{stage}",
             std::process::id()
@@ -102,18 +106,6 @@ fn browser_resolution_never_reaches_the_shared_cargo_home() {
             .output()
             .unwrap(),
     );
-}
-
-/// Cold builds start from the run's prepared configuration instead of vendoring again.
-#[test]
-fn browser_cold_sources_reuse_the_prepared_configuration() {
-    let browser = Browser::cold();
-    let (home, target) = browser_support::cold_sources(&browser);
-    assert_eq!(
-        fs::read_to_string(home.join("config.toml")).unwrap(),
-        fs::read_to_string(recipe_support::prepared_sources()).unwrap()
-    );
-    assert_eq!(fs::read_dir(target).unwrap().count(), 0);
 }
 
 #[test]
@@ -1648,15 +1640,15 @@ fn browser_author_unrelated_workspace_bump_keeps_fixture_lock() {
     )
     .unwrap();
     success(
-        &browser
-            .cargo()
+        &toolchain_support::command(env!("CARGO"))
+            .current_dir(browser.workspace.path())
             .args(["metadata", "--offline", "--format-version", "1"])
             .output()
             .unwrap(),
     );
     success(
-        &browser
-            .cargo()
+        &toolchain_support::command(env!("CARGO"))
+            .current_dir(browser.workspace.path())
             .args(["metadata", "--locked", "--offline", "--format-version", "1"])
             .output()
             .unwrap(),

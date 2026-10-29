@@ -112,14 +112,12 @@ cargo fetch --locked --manifest-path crates/maestro-tooling/tests/fixtures/brows
 ```
 
 Shared CI declares the fixture through `additional_locked_manifests` without
-activating the optional product browser-build job. The nextest setup script
-`.config/prepare-fixture-sources.sh` stages complete local sources once per run with
-root `cargo vendor --locked --offline --sync <fixture-manifest>
-<owned-source-directory>`; outside nextest the first test that needs them runs the
-same script. Cold-cache tests copy its directory-source/offline configuration. Their
-child starts with empty Cargo home/target and that configuration, not a copied
-registry/index or build cache. Missing local sources fail visibly; setup never
-repairs locks or fetches during the cold phase.
+activating the optional product browser-build job. Cold-cache tests stage complete
+local sources with root `cargo vendor --locked --offline --sync <fixture-manifest>
+<owned-source-directory>`. Their child starts with empty Cargo home/target and a
+test-owned directory-source/offline configuration, not a copied registry/index or
+build cache. Missing local sources fail visibly; setup never repairs locks or
+fetches during the cold phase.
 
 ## Tools and prepared metadata
 
