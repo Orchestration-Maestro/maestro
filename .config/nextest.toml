@@ -24,12 +24,12 @@ max-threads = 1
 filter = "(package(maestro-models) | package(maestro-extensions-wasmtime)) & test(/(^|::)oauth_callback::/)"
 test-group = "oauth-callback"
 
-[test-groups.browser-author]
+[test-groups.cargo-build]
 max-threads = 1
 
 [[profile.default.overrides]]
-filter = "package(maestro-tooling) & test(/^browser_author_build::/) & !test(browser_author_bootstraps_from_empty_build_state)"
-test-group = "browser-author"
+filter = "package(=maestro-tooling) | package(=maestro-test-conventions) | (package(=maestro-extensions-wasm) & test(/_example::/) & !test(file_trigger_)) | (package(=maestro-extensions-wasmtime) & test(/^(extension_guide|built_in_tool_renderer|inline_bash_example|minimal_mode_example|overlay_test_example|custom_compaction_example)::/)) | (package(=maestro-models) & test(/^browser_build::/))"
+test-group = "cargo-build"
 
 # Measured entries below retain whole-test CI maxima. Diagnostic phase
 # timings come from separate non-coverage runs; they do not size the limits.
