@@ -550,12 +550,15 @@ on Windows, where the shell converts the search list to colon-separated paths.
 Before running the example, `normalize-component-cache.sh` gives executable
 artifacts in the profile directory, `deps` and `examples` their newest existing
 modification time. This advances older outputs without making them older than
-their compiler inputs. It skips an executable older than a library output in
-`deps`: Cargo rebuilds an executable only while a dependency's output is newer
+their compiler inputs. It skips an executable that a workspace library it builds on
+has outdated: Cargo rebuilds an executable only while a dependency's output is newer
 than it, so advancing a binary that a rebuilt library has outdated would hide the
-rebuild. A skipped binary compiles its components itself on first use. The
-Git-pinned engine includes that timestamp in its cache namespace, so the preparer
-and consuming test binaries share compiled code.
+rebuild. The libraries an executable builds on come from the crate named in its
+dependency information and the workspace crates `Cargo.lock` lists for it; a library's
+own test binary does not build on its output. Without that information, any newer
+library output outdates the executable. A skipped binary compiles its components
+itself on first use. The Git-pinned engine includes that timestamp in its cache
+namespace, so the preparer and consuming test binaries share compiled code.
 The example builds every exported component, warms its Wasmtime compilation cache
 in the default user cache on up to four threads and exports its path to the tests'
 processes. Component contents, compiler settings and CPU features still determine
