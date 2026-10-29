@@ -1,9 +1,15 @@
-//! Offline validation of nextest's terminating test budgets.
+//! Offline validation of nextest's slow-test flag and hang limit.
 
 use std::{collections::BTreeMap, path::Path};
 
 use serde::Deserialize;
 use toml::{Spanned, Value};
+
+/// Seconds between slow-test flags, and the only period a limit may use.
+const SLOW_FLAG_SECONDS: u64 = 30;
+
+/// Slow-flag periods a test runs before nextest terminates it: 120 seconds.
+const HANG_PERIODS: u64 = 4;
 
 /// Runner profiles, ignoring unrelated nextest settings.
 #[derive(Deserialize)]
@@ -26,7 +32,7 @@ struct Profile {
 /// One test selector's optional time limit.
 #[derive(Deserialize)]
 struct Override {
-    /// Explicit exception or tighter test budget.
+    /// Exception for a test that needs more than the hang limit.
     #[serde(rename = "slow-timeout")]
     slow_timeout: Option<Spanned<Value>>,
 }
@@ -42,23 +48,25 @@ pub(crate) fn check(root: &Path) -> Result<(), String> {
     validate(&text).map_err(|error| format!("{}: {error}", path.display()))
 }
 
-/// Validate profile defaults before any per-test exceptions.
+/// Validate the default flag and hang limit before any per-test exceptions.
 fn validate(text: &str) -> Result<(), String> {
     let config: Config = toml::from_str(text).map_err(|error| error.to_string())?;
-    if config
+    let default = config
         .profile
         .get("default")
         .and_then(|p| p.slow_timeout.as_ref())
-        .is_none()
-    {
-        return Err("default profile must set a terminating 30-second budget".into());
+        .and_then(|timeout| limit(timeout.get_ref()).ok());
+    if default != Some((SLOW_FLAG_SECONDS, HANG_PERIODS)) {
+        return Err(format!(
+            "default profile must set slow-timeout = {{ period = '{SLOW_FLAG_SECONDS}s', terminate-after = {HANG_PERIODS} }}: a 30-second slow flag and a 120-second hang limit"
+        ));
     }
     for (name, profile) in config.profile {
         if let Some(timeout) = profile.slow_timeout {
-            let limit = seconds(timeout.get_ref())?;
-            if limit > 30 {
+            let (period, count) = limit(timeout.get_ref())?;
+            if period != SLOW_FLAG_SECONDS || count > HANG_PERIODS {
                 return Err(format!(
-                    "profile {name} exceeds the 30-second budget; use a per-test exception"
+                    "profile {name} must keep the 30-second slow flag and the 120-second hang limit; use a per-test exception for a longer run"
                 ));
             }
         }
@@ -67,22 +75,38 @@ fn validate(text: &str) -> Result<(), String> {
             .into_iter()
             .filter_map(|entry| entry.slow_timeout)
         {
-            let limit = seconds(timeout.get_ref())?;
-            if limit > 30 && !documented(text, timeout.span().start) {
-                let line = text[..timeout.span().start].lines().count();
-                return Err(format!(
-                    "line {line}: slow-timeout exception needs a measured cause and issue (#NNNN) in a comment immediately above slow-timeout"
-                ));
-            }
+            exception(text, &timeout)?;
         }
     }
     Ok(())
 }
 
-/// Read a finite terminating limit in whole seconds, including its interval count.
-fn seconds(timeout: &Value) -> Result<u64, String> {
+/// Require a per-test limit to keep the flag, exceed the hang limit and name its removal.
+fn exception(text: &str, timeout: &Spanned<Value>) -> Result<(), String> {
+    let (period, count) = limit(timeout.get_ref())?;
+    let line = text[..timeout.span().start].lines().count();
+    if period != SLOW_FLAG_SECONDS {
+        return Err(format!(
+            "line {line}: slow-timeout exception must keep the 30-second slow flag (period = '{SLOW_FLAG_SECONDS}s')"
+        ));
+    }
+    if count <= HANG_PERIODS {
+        return Err(format!(
+            "line {line}: slow-timeout exception is covered by the 120-second hang limit; delete it"
+        ));
+    }
+    if !documented(text, timeout.span().start) {
+        return Err(format!(
+            "line {line}: slow-timeout exception needs a measured cause and issue (#NNNN) in a comment immediately above slow-timeout, with Measured over 120 seconds"
+        ));
+    }
+    Ok(())
+}
+
+/// Read a finite terminating limit as whole-second period and termination count.
+fn limit(timeout: &Value) -> Result<(u64, u64), String> {
     let invalid = || {
-        "30-second budget requires slow-timeout = { period = 'Ns', terminate-after = N } with positive whole seconds and a positive termination count".to_owned()
+        "slow-timeout requires { period = 'Ns', terminate-after = N } with positive whole seconds and a positive termination count".to_owned()
     };
     let period = timeout
         .get("period")
@@ -97,10 +121,11 @@ fn seconds(timeout: &Value) -> Result<u64, String> {
         .and_then(|count| u64::try_from(count).ok())
         .filter(|count| *count > 0)
         .ok_or_else(invalid)?;
-    period.checked_mul(count).ok_or_else(invalid)
+    period.checked_mul(count).ok_or_else(invalid)?;
+    Ok((period, count))
 }
 
-/// Require measured seconds, a nonempty cause and a positive issue in adjacent comments.
+/// Require measured seconds over the hang limit, a nonempty cause and a positive issue in adjacent comments.
 fn documented(text: &str, start: usize) -> bool {
     let before_line = text[..start].rfind('\n').map_or("", |end| &text[..end]);
     let comment = before_line
@@ -116,7 +141,7 @@ fn documented(text: &str, start: usize) -> bool {
         .and_then(|value| value.split(';').next())
         .and_then(|value| value.strip_suffix('s'))
         .and_then(|value| value.parse::<f64>().ok())
-        .is_some_and(|value| value.is_finite() && value > 0.0);
+        .is_some_and(|value| value.is_finite() && value > 120.0);
     let cause = comment
         .split("cause: ")
         .nth(1)
