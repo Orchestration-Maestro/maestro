@@ -32,6 +32,9 @@ impl DefaultPackageManager {
     /// Resolves the configured packages, the project's entry winning for one identity.
     ///
     /// Returns typed descriptors, including packages without resources.
+    ///
+    /// # Errors
+    /// Returns the host's resolution error or an error for malformed descriptors.
     #[must_use]
     pub fn resolve(&self) -> ExtensionFuture<'_, Vec<ResolvedPackage>> {
         decode(
@@ -42,6 +45,9 @@ impl DefaultPackageManager {
     /// Resolves the supplied sources in one scope, as `resolve` describes them.
     ///
     /// The sources are not written to settings.
+    ///
+    /// # Errors
+    /// Returns the host's resolution error or an error for malformed descriptors.
     #[must_use]
     pub fn resolve_extension_sources(
         &self,
@@ -57,6 +63,9 @@ impl DefaultPackageManager {
         )
     }
     /// Acquires a source's contents at its pin, without editing settings.
+    ///
+    /// # Errors
+    /// Returns the host's error if the source cannot be acquired at its pin.
     #[must_use]
     pub fn install(&self, source: &str, scope: OperationScope) -> ExtensionFuture<'_, ()> {
         let call = self
@@ -67,6 +76,9 @@ impl DefaultPackageManager {
     /// Observes a pinned Git checkout without changing it.
     ///
     /// The typed observations expose cleanliness through `GitPinStatus::is_clean`.
+    ///
+    /// # Errors
+    /// Returns the host's verification error or an error for malformed pin status.
     #[must_use]
     pub fn verify_pin(
         &self,
@@ -79,6 +91,9 @@ impl DefaultPackageManager {
         )
     }
     /// Returns a pinned Git checkout to its commit, removing changed and untracked files.
+    ///
+    /// # Errors
+    /// Returns the host's error if the pinned checkout cannot be restored.
     #[must_use]
     pub fn restore_pin(&self, source: &str, scope: OperationScope) -> ExtensionFuture<'_, ()> {
         let call = self
