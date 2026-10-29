@@ -196,6 +196,8 @@ async fn create_runtime(
 
 #[cfg(test)]
 mod tests {
+    mod queue_output;
+    mod writer;
     use super::*;
 
     /// Runtime replacement observations precede queue updates on each rebound session.

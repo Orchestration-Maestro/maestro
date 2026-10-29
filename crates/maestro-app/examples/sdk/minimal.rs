@@ -95,6 +95,8 @@ fn print_user(sample: &Sample, content: &maestro_models::UserContent) -> Result<
 
 #[cfg(test)]
 mod tests {
+    mod stream_output;
+    mod writer;
     use super::*;
     use std::cell::RefCell;
 
