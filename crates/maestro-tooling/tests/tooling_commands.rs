@@ -3392,7 +3392,7 @@ fn example_index_discovers_independent_additions() {
     fs::write(folder.join("nested/helper.rs"), "//! A helper.\n").unwrap();
     fs::write(folder.join("nested.md"), "# Nested usage\n").unwrap();
     fs::write(folder.join("alpha.md"), "# Alpha usage\n\nDetails.\n").unwrap();
-    let cargo = Path::new("unused-cargo");
+    let cargo = Path::new(env!("CARGO"));
     assert_eq!(
         tooling::run(&["example-index".into()], cargo, root.path()).unwrap(),
         std::process::ExitCode::SUCCESS
@@ -3426,6 +3426,15 @@ fn example_index_discovers_independent_additions() {
 fn example_checkout(root: &Path) {
     let folder = root.join("examples/extensions");
     let local = root.join("crates/maestro-extensions-wasm/examples");
+    let fixture = root.join("crates/maestro-extensions-wasmtime/tests/fixtures/hello-extension");
+    fs::create_dir_all(&fixture).unwrap();
+    fs::write(
+        fixture.join("Cargo.toml.in"),
+        "[package]\nname = \"hello-extension\"\nversion = \"0.1.0\"\n[dependencies]\nmaestro-extensions-wasm = { path = \"../maestro/crates/maestro-extensions-wasm\" }\n[workspace]\n",
+    ).unwrap();
+    fs::write(fixture.join("Cargo.lock"), "version = 4\n").unwrap();
+    fs::write(root.join("Cargo.lock"), "version = 4\n").unwrap();
+
     fs::create_dir_all(&folder).unwrap();
     fs::create_dir_all(&local).unwrap();
     fs::write(
@@ -3435,9 +3444,11 @@ fn example_checkout(root: &Path) {
     .unwrap();
     fs::write(
         root.join("crates/maestro-extensions-wasm/Cargo.toml"),
-        "[package]\n# example-index:start\nold\n# example-index:end\n\n[dependencies]\n",
+        "[package]\nname = \"maestro-extensions-wasm\"\nversion = \"0.1.0\"\n# example-index:start\nold\n# example-index:end\n\n[dependencies]\n",
     )
     .unwrap();
+    fs::create_dir_all(root.join("crates/maestro-extensions-wasm/src")).unwrap();
+    fs::write(root.join("crates/maestro-extensions-wasm/src/lib.rs"), "").unwrap();
     fs::write(
         local.join("prepare_author_component.rs"),
         "//! Prepare.\n// example-index:start\nold\n// example-index:end\nfn main() {}\n",
@@ -3451,7 +3462,7 @@ fn example_index(root: &Path, check: bool) -> std::io::Result<std::process::Exit
     if check {
         args.push("--check".into());
     }
-    tooling::run(&args, Path::new("unused-cargo"), root)
+    tooling::run(&args, Path::new(env!("CARGO")), root)
 }
 
 /// Example sources supply manifest targets without rewriting runtime preparation.
@@ -3494,7 +3505,7 @@ fn example_index_renders_targets() {
     );
     assert_eq!(
         rendered.0,
-        "[package]\n# example-index:start\n[[example]]\nname = \"alpha\"\npath = \"../../examples/extensions/alpha.rs\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"bridge\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"plain\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"with_deps\"\npath = \"../../examples/extensions/with-deps/main.rs\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"zebra\"\npath = \"../../examples/extensions/zebra.rs\"\ncrate-type = [\"cdylib\"]\n# example-index:end\n\n[dependencies]\n"
+        "[package]\nname = \"maestro-extensions-wasm\"\nversion = \"0.1.0\"\n# example-index:start\n[[example]]\nname = \"alpha\"\npath = \"../../examples/extensions/alpha.rs\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"bridge\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"plain\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"with_deps\"\npath = \"../../examples/extensions/with-deps/main.rs\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"zebra\"\npath = \"../../examples/extensions/zebra.rs\"\ncrate-type = [\"cdylib\"]\n# example-index:end\n\n[dependencies]\n"
     );
     assert_eq!(
         rendered.1,
@@ -3513,13 +3524,52 @@ fn example_index_renders_targets() {
     );
 }
 
+/// Guest dependency changes are detected without repairing files until generation is requested.
+#[test]
+fn example_index_refreshes_guide_lock_after_guest_dependency_change() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    example_checkout(root.path());
+    example_index(root.path(), false).unwrap();
+    let lock = root
+        .path()
+        .join("crates/maestro-extensions-wasmtime/tests/fixtures/hello-extension/Cargo.lock");
+    let before = fs::read(&lock).unwrap();
+    let guest = root
+        .path()
+        .join("crates/maestro-extensions-wasm/Cargo.toml");
+    let mut manifest = fs::read_to_string(&guest).unwrap();
+    manifest.push_str("leaf = { path = \"../leaf\" }\n");
+    fs::write(&guest, manifest).unwrap();
+    let leaf = root.path().join("crates/leaf");
+    fs::create_dir_all(leaf.join("src")).unwrap();
+    fs::write(leaf.join("src/lib.rs"), "").unwrap();
+    fs::write(
+        leaf.join("Cargo.toml"),
+        "[package]\nname = \"leaf\"\nversion = \"1.2.3\"\n",
+    )
+    .unwrap();
+    fs::write(
+        root.path().join("Cargo.lock"),
+        "version = 4\n\n[[package]]\nname = \"leaf\"\nversion = \"1.2.3\"\n",
+    )
+    .unwrap();
+    let error = example_index(root.path(), true).unwrap_err().to_string();
+    assert!(error.contains("hello-extension/Cargo.lock"), "{error}");
+    assert!(error.contains("run just example-index"), "{error}");
+    assert_eq!(fs::read(&lock).unwrap(), before);
+    example_index(root.path(), false).unwrap();
+    let after = fs::read_to_string(&lock).unwrap();
+    assert!(after.contains("name = \"leaf\"\nversion = \"1.2.3\""));
+    example_index(root.path(), true).unwrap();
+}
+
 /// The tracked repository index is exactly the table rendered from its files.
 #[test]
 fn shipped_example_index_matches_documentation() {
     let checkout = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     tooling::run(
         &["example-index".into(), "--check".into()],
-        Path::new("unused-cargo"),
+        Path::new(env!("CARGO")),
         &checkout,
     )
     .unwrap();
