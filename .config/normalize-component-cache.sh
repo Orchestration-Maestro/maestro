@@ -83,6 +83,7 @@ outdated() {
     return 1
 }
 found=false
+stale=false
 newest=
 set --
 for artifact in "$directory"/* "$directory"/deps/* "$directory"/examples/*; do
@@ -93,6 +94,9 @@ for artifact in "$directory"/* "$directory"/deps/* "$directory"/examples/*; do
     esac
     found=true
     if outdated "$artifact"; then
+        case "$artifact" in
+            "$directory"/examples/prepare_author_component*) stale=true ;;
+        esac
         continue
     fi
     set -- "$@" "$artifact"
@@ -108,3 +112,9 @@ fi
 for artifact do
     touch -r "$newest" "$artifact"
 done
+# The setup example warms code under the shared time, so an outdated one cannot serve; the
+# launcher rebuilds it.
+if [ "$stale" = true ]; then
+    echo "The setup example is older than a library it builds on." >&2
+    exit 3
+fi

@@ -538,11 +538,11 @@ Before guest-authoring tests, nextest's shell launcher locates the active
 artifact directory through its documented platform library search path. It runs
 the `prepare_author_component` example that the test build put in that directory,
 as long as the example is newer than its source, the shared build and component
-discovery sources, the package manifest and `Cargo.lock`. Running it through Cargo
-instead would resolve features for that one package and recompile the engine. When
-the example is missing or older, as after a `--lib` or filtered selection, the
-launcher builds it through Cargo in the same target directory and profile before
-running it directly.
+discovery sources, the package manifest and `Cargo.lock`, and than the workspace
+libraries it builds on. Running it through Cargo instead would resolve features for
+that one package and recompile the engine. When the example is missing or older, as
+after a `--lib` or filtered selection, the launcher builds it through Cargo in the
+same target directory and profile before running it directly.
 The launcher fails if the directory cannot be resolved rather than building
 elsewhere. It uses `NEXTEST_LD_LIBRARY_PATH` on Linux,
 `NEXTEST_DYLD_FALLBACK_LIBRARY_PATH` on macOS and `PATH` through Git's shell
@@ -556,8 +556,10 @@ than it, so advancing a binary that a rebuilt library has outdated would hide th
 rebuild. The libraries an executable builds on come from the crate named in its
 dependency information and the workspace crates `Cargo.lock` lists for it; a library's
 own test binary does not build on its output. Without that information, any newer
-library output outdates the executable. A skipped binary compiles its components
-itself on first use. The Git-pinned engine includes that timestamp in its cache
+library output outdates the executable. A skipped test binary compiles its components
+itself on first use. A skipped example would warm code that no test binary reads, so
+normalization then exits with status 3 and the launcher rebuilds the example through
+Cargo before it runs. The Git-pinned engine includes that timestamp in its cache
 namespace, so the preparer and consuming test binaries share compiled code.
 The example builds every exported component, warms its Wasmtime compilation cache
 in the default user cache on up to four threads and exports its path to the tests'

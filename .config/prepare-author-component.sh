@@ -25,8 +25,13 @@ for directory in $paths; do
             [ "$example" -nt "$source" ] || fresh=false
         done
         if [ "$fresh" = true ]; then
-            sh "$(dirname "$0")/normalize-component-cache.sh" "$directory"
-            exec "$example"
+            status=0
+            sh "$(dirname "$0")/normalize-component-cache.sh" "$directory" || status=$?
+            if [ "$status" -eq 0 ]; then
+                exec "$example"
+            fi
+            # Status 3: a library the example builds on is newer, so only a rebuild updates it.
+            [ "$status" -eq 3 ] || exit "$status"
         fi
     done
     profile=$(basename "$directory")
