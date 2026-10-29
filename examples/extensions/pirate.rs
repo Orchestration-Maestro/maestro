@@ -1,4 +1,5 @@
 //! A command that toggles a pirate response style in the assembled system prompt.
+// maestro-component: MAESTRO_PIRATE_COMPONENT
 #![cfg(any(test, target_arch = "wasm32"))]
 #![forbid(
     clippy::pedantic,

@@ -2,11 +2,20 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-/// Builds a selected component in the host test build's target directory.
+#[path = "../../../../maestro-tooling/src/example_files/components.rs"]
+/// Source marker traversal shared with component preparation.
+pub mod components;
+
+/// Uses a prepared example or builds the selected component in the host test output.
 ///
 /// # Errors
-/// Returns Cargo's diagnostic or a missing-component error.
+/// Returns source-discovery failure, Cargo's diagnostic or a missing-component error.
 pub fn component(directory: &Path, selection: &[&str], name: &str) -> Result<PathBuf, String> {
+    if selection == ["--example", name]
+        && let Some(path) = prepared_component(directory, name)?
+    {
+        return Ok(path);
+    }
     let cargo = std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
     let output = Command::new(cargo)
         .current_dir(directory)
@@ -37,6 +46,25 @@ pub fn component(directory: &Path, selection: &[&str], name: &str) -> Result<Pat
                 .is_some_and(|extension| extension == "wasm")
         })
         .ok_or_else(|| "the build reported no component".to_owned())
+}
+
+/// Looks up a supplied artifact through the same source markers that preparation visits.
+fn prepared_component(directory: &Path, name: &str) -> Result<Option<PathBuf>, String> {
+    let mut path = None;
+    components::visit(
+        &[
+            directory.join("examples"),
+            directory.join("../../examples/extensions"),
+        ],
+        |target, variable| {
+            if target == name && path.is_none() {
+                path = std::env::var_os(variable).map(PathBuf::from);
+            }
+            Ok(())
+        },
+    )
+    .map_err(|error| error.to_string())?;
+    Ok(path)
 }
 
 /// Finds the target directory above the running test or preparation example.

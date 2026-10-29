@@ -59,7 +59,10 @@ fn cache_consumers(root: &Path) -> [std::path::PathBuf; 2] {
     for source in [
         "crates/maestro-extensions-wasm/examples/prepare_author_component.rs",
         "crates/maestro-extensions-wasm/src/tests/build.rs",
+        "crates/maestro-extensions-wasm/src/tests/build/cargo.rs",
         "crates/maestro-tooling/src/example_files.rs",
+        "crates/maestro-tooling/src/example_files/components.rs",
+        "crates/maestro-tooling/src/example_files/preparation.rs",
         "crates/maestro-extensions-wasm/Cargo.toml",
         "Cargo.lock",
     ] {

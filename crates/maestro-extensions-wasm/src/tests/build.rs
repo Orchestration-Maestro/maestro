@@ -6,7 +6,7 @@ use wasmtime::component::Component;
 use wasmtime::{Cache, Config, Engine};
 
 #[path = "build/cargo.rs"]
-mod cargo;
+pub mod cargo;
 
 /// The component built from the shared author extension.
 ///
