@@ -16,12 +16,14 @@ IFS=$separator
 for directory in $paths; do
     [ -d "$directory/deps" ] || continue
     if [ "$prepared" = true ]; then
-        # No example runs here, so only the shared modification time is left to set; status 3
-        # reports an outdated example that this route never uses.
-        sh "$(dirname "$0")/normalize-component-cache.sh" "$directory" || [ $? -eq 3 ]
+        # The staged example is as new as the archive's executables, so status 3 cannot occur.
         TEST_PREPARE_OUTPUT=${TEST_PREPARE_OUTPUT:-target/test-setup}
         export TEST_PREPARE_OUTPUT
-        exec python3 "$(dirname "$0")/prepare-test-setup.py" export
+        python3 "$(dirname "$0")/prepare-test-setup.py" export "$directory"
+        sh "$(dirname "$0")/normalize-component-cache.sh" "$directory"
+        # The example takes the prepared components from its environment, so it only warms.
+        while IFS= read -r entry; do export "$entry"; done <"$NEXTEST_ENV"
+        exec "$directory/examples/prepare_author_component"
     fi
     # The test build's own example keeps its resolved features; a single-package
     # `cargo run` resolves fewer and recompiles the engine. Use it only while it is

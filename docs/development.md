@@ -552,20 +552,23 @@ builds are unchanged.
 Archived CI shards receive `TEST_ARCHIVE=1` and `TEST_PREPARE_OUTPUT` pointing to
 `target/test-setup`.
 The standalone `test_prepare` command in `.github/ci.toml` runs the existing
-component-discovery example in a separate build directory, then stages only
-component files and a content manifest. Shared CI transfers these files separately
-from the native test archive. The nextest launcher gives the extracted executables
-one modification time, as below, so test processes share a compile-cache namespace.
-It then checks source and artifact hashes before exporting absolute paths through
-`NEXTEST_ENV`. No setup example warms the cache on this route. Archived runs require
-the bundle and fail without starting Cargo when it is missing or stale. Other
-runs reuse an existing manifest, rejecting stale or incomplete files; without a
-manifest they keep local auto-build. This includes warm-cache runs, which receive
-`TEST_PREPARE_OUTPUT` but no restored bundle or archive flag. Archive strictness
-requires the shared CI release that supplies `TEST_ARCHIVE=1`.
-Source hashes include workspace crates,
-examples, assets, Cargo configuration, locked dependencies, the toolchain and
-preparation scripts. Checkout paths and file timestamps do not affect reuse.
+component-discovery example in a separate build directory, then stages the
+component files, that built example and a content manifest. Shared CI transfers
+these files separately from the native test archive. The nextest launcher checks
+source and artifact hashes, installs the staged example beside the extracted
+executables and gives them one modification time, as below, so they share a
+compile-cache namespace. It then runs the example on the prepared components,
+which warms the cache and exports absolute paths through `NEXTEST_ENV` without
+starting Cargo. Archived runs require the bundle and fail without starting Cargo
+when it is missing or stale. Other runs reuse an existing manifest, rejecting stale
+or incomplete files; without a manifest they keep local auto-build. This includes
+warm-cache runs, which receive `TEST_PREPARE_OUTPUT` but no restored bundle or
+archive flag. Archive strictness requires the shared CI release that supplies
+`TEST_ARCHIVE=1`. Source hashes include workspace crates, examples, assets, Cargo
+configuration, locked dependencies, the toolchain and preparation scripts. File
+timestamps do not affect reuse, but the staged example finds component sources at
+the checkout path it was built in, so both jobs must use the same checkout path,
+as shared CI does.
 
 For a local check of that boundary, run:
 
