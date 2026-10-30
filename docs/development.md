@@ -504,7 +504,8 @@ distinct priorities in `.config/nextest.toml`: 100 down to 37, longest first.
 Other tests retain priority 0. These are
 [nextest's built-in priorities](https://nexte.st/docs/configuration/test-priorities/),
 not a scheduler or a shard planner. They change order within each shard, not the
-16 count partitions, test membership, retries, time limits or coverage policy.
+count partitions (32 in CI, declared as `test_shard_count` in `.github/ci.toml`), test
+membership, retries, time limits or coverage policy.
 Existing timeout comments retain their older CI maxima; priority ranks use the
 newer measurements below, not timeout ceilings or diagnostic phase timings.
 
@@ -536,7 +537,8 @@ The fast tooling regression
 `nextest_priorities::measured_priorities_order_tests_without_changing_shards`
 runs nextest against controlled bodies with the real tooling overrides. One
 worker proves descending order for the three slowest tooling tests, before an
-unprioritized short test. It compares all 16 partition memberships with and
+unprioritized short test. It uses a fixed 16-way split, independent of CI's
+`test_shard_count`, and compares every partition's membership with and
 without priorities, checks an exactly-once union and keeps an intentional
 selected failure visible. It does not run the expensive browser bodies.
 
@@ -855,14 +857,14 @@ shared home. A watch recipe starts `cargo run` and, beneath it, `cargo build` in
 home, so its first build prints a wait on its own `cargo run`, not on another
 test.
 
-A private home also changes what the compiler cache sees. `sccache` hashes every
-`CARGO_*` variable into the key of each rustc call, so a fixture's home path gives
-its registry crates a key that no other fixture shares. The five tests that build
-the tooling crate in a fixture (`prepare_tooling_owner`) compile its registry
-dependencies in every run, where the shared home let a warm cache answer them. One
-at a time they took 11.5 to 16.9 s instead of 6.4 to 7.1 s, and three at a time
-reached the 30 s flag. Hosted runs do not show it. #3671 tracks hiding
-`CARGO_HOME` from the compiler wrapper.
+On Unix, when `RUSTC_WRAPPER` is set, `fixture_command` points it at a script,
+`rustc-wrapper.sh`, in the fixture root. The script unsets `CARGO_HOME` and runs
+the original wrapper. `sccache` hashes every `CARGO_*` variable into the key of
+each rustc call, so a wrapper that saw the private home would give the registry
+crates of each fixture a key that no other fixture shares. Cargo itself keeps the
+private home and its lock. `fixture_command_hides_cargo_home_from_the_compiler_wrapper`
+runs a fixture build behind a recording wrapper and checks that it never sees
+`CARGO_HOME`.
 
 Three tests (`workspace_fixtures_never_reach_the_shared_cargo_home`,
 `browser_resolution_never_reaches_the_shared_cargo_home` and
@@ -970,9 +972,9 @@ or replace queued landing runs. This is separate from the compile-cache warm
 build and from required merge checks.
 
 Push runs never read a coverage baseline: the lookup runs only for merge
-groups. The suite caller still grants `actions: read`, because the shared
-declaration job declares it and a caller that grants less makes the run fail to
-start. The suite caller, the reporter caller and `warm-cache.yml` pin the
+groups. The suite and warm-up callers still grant `actions: read`, because the
+shared declaration job declares it and a caller that grants less makes the run
+fail to start. The suite caller, the reporter caller and `warm-cache.yml` pin the
 released shared CI commit that the organization rulesets require. Each pin
 moves with every shared-CI release re-pin
 ([Orchestration-Maestro/.github#231](https://github.com/Orchestration-Maestro/.github/issues/231));

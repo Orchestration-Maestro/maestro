@@ -8,6 +8,7 @@ test_prepare = "cargo run --quiet --locked -p maestro-tooling --bin development 
 test_prepare_packages = ["maestro-extensions-wasm", "maestro-extensions-wasmtime", "maestro"]
 test_inputs = { "fuzz/" = [], "justfile" = ["maestro-tooling"], "packages/" = ["maestro-packages"], "workspace-crates.json" = ["maestro-test-conventions"] }
 reserved_ports = [53692, 1455]
+test_shard_count = 32
 # Main's warm-up runs this test so its author-component build enters the compile cache.
 warm_test_filter = "package(maestro-extensions-wasm) & test(=tests::maestro_component_registers_invokes_and_releases)"
 # Unicode fixture scalars are hexadecimal data, not prose.
