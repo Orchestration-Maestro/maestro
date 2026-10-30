@@ -3,4 +3,5 @@
 use cargo_metadata as _;
 use serde as _;
 use serde_json as _;
+use sha2 as _;
 use toml as _;
