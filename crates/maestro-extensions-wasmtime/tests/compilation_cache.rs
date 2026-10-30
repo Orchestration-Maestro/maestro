@@ -5,7 +5,7 @@ use super::components::{TracedBus, loader, local};
 use maestro_extensions::load_extensions;
 use maestro_test_directory::Scratch;
 use maestro_test_process::{TestProcess, selection};
-use std::{cell::RefCell, path::Path};
+use std::{cell::RefCell, collections::HashSet, path::Path};
 use wasmtime::{Cache, Config, Engine, component::Component};
 
 /// Runs this test in a separate process with an isolated user cache and configuration.
@@ -60,7 +60,7 @@ fn remove_written(path: &Path) {
 /// an entry written earlier counts as a hit on any later run.
 fn cached_compile(path: &Path) -> usize {
     let cache = Cache::from_file(None).unwrap();
-    let before = files_below(cache.directory());
+    let before: HashSet<_> = files_below(cache.directory()).into_iter().collect();
     let mut config = Config::new();
     config.wasm_component_model_async(true);
     config.cache(Some(cache.clone()));
@@ -269,6 +269,13 @@ fn missed_compile_leaves_no_entry_for_a_later_run() {
 fn removing_a_file_the_cache_worker_already_moved_is_not_a_failure() {
     let scratch = Scratch::new().unwrap();
     remove_written(&scratch.path().join("moved.wip-atomic-write-stats"));
+}
+
+#[test]
+#[should_panic(expected = "Is a directory")]
+fn removing_a_written_path_fails_on_an_error_other_than_a_missing_file() {
+    let scratch = Scratch::new().unwrap();
+    remove_written(scratch.path());
 }
 
 /// Loads a valid empty component through the extension loader, which compiles it and then
