@@ -60,6 +60,8 @@ fn archived_author_setup_rejects_missing_and_stale_outputs() {
         "multiline directory",
         "missing pair",
         "invalid variable",
+        "corrupt cache",
+        "missing cache",
     ] {
         let scratch = Scratch::new().unwrap();
         let root = scratch.path();
@@ -75,6 +77,7 @@ fn archived_author_setup_rejects_missing_and_stale_outputs() {
         );
         assert!(!root.join("nextest-env").exists());
         assert!(!root.join("target/debug/examples").exists());
+        assert!(!root.join("cache-home").exists());
         assert_eq!(fs::read_to_string(root.join("seen")).unwrap(), "unset\n");
         assert_eq!(fs::read_to_string(root.join("builds")).unwrap(), "build\n");
     }
@@ -108,6 +111,20 @@ fn prepare_rejects_bad_requests_and_unstable_inputs() {
             "prepare",
             "target/test-setup",
             "inputs changed",
+        ),
+        (
+            "cache time",
+            MISPLACED_CACHE_EXAMPLE,
+            "prepare",
+            "target/test-setup",
+            "does not follow",
+        ),
+        (
+            "two caches",
+            SPLIT_CACHE_EXAMPLE,
+            "prepare",
+            "target/test-setup",
+            "more than one",
         ),
     ] {
         let scratch = Scratch::new().unwrap();
@@ -165,6 +182,60 @@ fn archived_author_setup_aligns_executable_times() {
     }
 }
 
+/// The bundle carries the code the setup example compiled, and a shard installs it for the
+/// modification time its executables share, in whichever directory the user cache is found.
+#[test]
+fn archived_author_setup_installs_the_prepared_compiled_code() {
+    for home_only in [false, true] {
+        let scratch = Scratch::new().unwrap();
+        let root = scratch.path();
+        fixture(root);
+        prepare(root);
+        let staged = root.join("target/test-setup/cache");
+        assert_eq!(fs::read_to_string(staged.join("key")).unwrap(), "compiled");
+        assert!(!staged.join("key.stats").exists());
+        let mut command = export_command(root, &root.join("target/test-setup"), true);
+        if home_only {
+            command
+                .env_remove("XDG_CACHE_HOME")
+                .env("HOME", root.join("home"));
+        }
+        assert_success(&command.output().unwrap());
+        let cache = if home_only {
+            root.join("home/.cache")
+        } else {
+            root.join("cache-home")
+        };
+        let milliseconds =
+            fs::metadata(root.join("target/debug/examples/prepare_author_component"))
+                .unwrap()
+                .modified()
+                .unwrap()
+                .duration_since(at(0))
+                .unwrap()
+                .as_millis();
+        let installed = cache.join(format!("wasmtime/modules/wasmtime-fixture-{milliseconds}"));
+        assert_eq!(
+            fs::read_to_string(installed.join("key")).unwrap(),
+            "compiled"
+        );
+        assert!(!installed.join("key.stats").exists());
+    }
+}
+
+/// A host whose compiled code the preparation cannot collect still prepares and exports, and
+/// installs no cache.
+#[test]
+fn archived_author_setup_without_compiled_code_installs_none() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture_with(root, PLAIN_EXAMPLE);
+    prepare(root);
+    assert!(!root.join("target/test-setup/cache").exists());
+    assert_success(&export(root, &root.join("target/test-setup"), true));
+    assert!(!root.join("cache-home").exists());
+}
+
 /// Local and warm runs without a prepared bundle keep automatic preparation.
 #[test]
 fn author_setup_without_prepared_outputs_builds_locally() {
@@ -203,6 +274,40 @@ printf 'MAESTRO_AUTHOR_COMPONENT=%s\nMAESTRO_CONTEXT_COMPONENT=%s\nMAESTRO_COMPO
     "${MAESTRO_AUTHOR_COMPONENT:-$PWD/component.wasm}" \
     "${MAESTRO_CONTEXT_COMPONENT:-$PWD/component.wasm}" \
     "${MAESTRO_COMPONENT:-$PWD/component.wasm}" > "$NEXTEST_ENV"
+if [ -n "${XDG_CACHE_HOME-}" ]; then
+    seconds=$(stat -c %Y "$0" 2>/dev/null || stat -f %m "$0")
+    modules="$XDG_CACHE_HOME/wasmtime/modules/wasmtime-fixture-${seconds}000"
+    mkdir -p "$modules"
+    entry=compiled
+    if [ -n "${MAESTRO_AUTHOR_COMPONENT-}" ]; then entry=recompiled; fi
+    [ -e "$modules/key" ] || { printf %s "$entry" > "$modules/key"; printf stats > "$modules/key.stats"; }
+fi
+"#;
+
+/// A setup example that compiles nothing into a user cache, as on a host whose cache the
+/// preparation cannot move.
+const PLAIN_EXAMPLE: &str = r#"#!/bin/sh
+printf 'MAESTRO_AUTHOR_COMPONENT=%s\nMAESTRO_CONTEXT_COMPONENT=%s\n' \
+    "$PWD/component.wasm" "$PWD/component.wasm" > "$NEXTEST_ENV"
+"#;
+
+/// A setup example whose compiled code sits in a namespace that does not follow its own time.
+const MISPLACED_CACHE_EXAMPLE: &str = r#"#!/bin/sh
+printf 'MAESTRO_AUTHOR_COMPONENT=%s\nMAESTRO_CONTEXT_COMPONENT=%s\n' \
+    "$PWD/component.wasm" "$PWD/component.wasm" > "$NEXTEST_ENV"
+mkdir -p "$XDG_CACHE_HOME/wasmtime/modules/wasmtime-fixture-1"
+echo x > "$XDG_CACHE_HOME/wasmtime/modules/wasmtime-fixture-1/key"
+"#;
+
+/// A setup example whose compiled code sits in two namespaces.
+const SPLIT_CACHE_EXAMPLE: &str = r#"#!/bin/sh
+printf 'MAESTRO_AUTHOR_COMPONENT=%s\nMAESTRO_CONTEXT_COMPONENT=%s\n' \
+    "$PWD/component.wasm" "$PWD/component.wasm" > "$NEXTEST_ENV"
+seconds=$(stat -c %Y "$0" 2>/dev/null || stat -f %m "$0")
+mkdir -p "$XDG_CACHE_HOME/wasmtime/modules/wasmtime-fixture-${seconds}000" \
+    "$XDG_CACHE_HOME/wasmtime/modules/wasmtime-other-${seconds}000"
+echo x > "$XDG_CACHE_HOME/wasmtime/modules/wasmtime-fixture-${seconds}000/key"
+echo y > "$XDG_CACHE_HOME/wasmtime/modules/wasmtime-other-${seconds}000/key"
 "#;
 
 /// The fixture Cargo: it counts its builds and builds the setup example `@example@`, and a
@@ -221,6 +326,7 @@ cat > "$example" <<'EXAMPLE'
 @example@
 EXAMPLE
 chmod +x "$example"
+touch -t 202001010000.00 "$example"
 if [ "$mode" = run ]; then "$example"; fi
 "#;
 
@@ -296,6 +402,11 @@ fn prepare(root: &Path) {
 /// Run the real nextest setup entry point with archived-shard environment. The development
 /// binary takes its checkout from `CARGO_MANIFEST_DIR`, which points into the fixture.
 fn export(root: &Path, prepared: &Path, archived: bool) -> Output {
+    export_command(root, prepared, archived).output().unwrap()
+}
+
+/// The command `export` runs, with the user cache inside the fixture.
+fn export_command(root: &Path, prepared: &Path, archived: bool) -> Command {
     let mut command = Command::new("sh");
     if archived {
         command.env("TEST_ARCHIVE", "1");
@@ -314,8 +425,8 @@ fn export(root: &Path, prepared: &Path, archived: bool) -> Output {
             "NEXTEST_DYLD_FALLBACK_LIBRARY_PATH",
             root.join("target/debug"),
         )
-        .output()
-        .unwrap()
+        .env("XDG_CACHE_HOME", root.join("cache-home"));
+    command
 }
 
 /// Damage the prepared bundle or the checkout as `change` names, and return the bundle's
@@ -341,6 +452,8 @@ fn tamper(root: &Path, change: &str) -> PathBuf {
             fs::rename(&prepared, &moved).unwrap();
             prepared = moved;
         }
+        "corrupt cache" => fs::write(prepared.join("cache/key"), "broken").unwrap(),
+        "missing cache" => fs::remove_file(prepared.join("cache/key")).unwrap(),
         "missing pair" => edit_manifest(&prepared, |components| {
             components.retain(|variable, _| variable != "MAESTRO_CONTEXT_COMPONENT");
         }),
