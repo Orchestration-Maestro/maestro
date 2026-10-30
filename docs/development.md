@@ -705,15 +705,18 @@ than it, so advancing a binary that a rebuilt library has outdated would hide th
 rebuild. The libraries an executable builds on come from the crate named in its
 dependency information and the workspace crates `Cargo.lock` lists for it; a library's
 own test binary does not build on its output. Without that information, any newer
-library output outdates the executable. A skipped test binary compiles its components
-itself on first use. A skipped example would warm code that no test binary reads, so
-normalization then exits with status 3 and the launcher rebuilds the example through
-Cargo before it runs. Cargo ignores some library outputs that normalization counts, such
-as the check-only metadata a lint run writes, so the example can stay outdated after that
-build. The launcher then logs one line and runs it anyway. Test binaries do not read the
-code it warms, which costs a cache miss and never fails setup. The Git-pinned engine
-includes the shared modification time in its cache namespace, so the preparer and
-consuming test binaries share compiled code.
+library output outdates the executable. A run from a nextest archive (`TEST_ARCHIVE`
+set) skips this check, because nextest never runs Cargo on an archive. Without the
+skip, the library the launcher builds for the setup example would outdate every
+restored test binary, and each would compile its components cold. A skipped test binary
+compiles its components itself on first use. A skipped example would warm code that no
+test binary reads, so normalization then exits with status 3 and the launcher rebuilds
+the example through Cargo before it runs. Cargo ignores some library outputs that
+normalization counts, such as the check-only metadata a lint run writes, so the example
+can stay outdated after that build. The launcher then logs one line and runs it anyway.
+Test binaries do not read the code it warms, which costs a cache miss and never fails
+setup. The Git-pinned engine includes the shared modification time in its cache
+namespace, so the preparer and consuming test binaries share compiled code.
 The example builds every exported component, warms its Wasmtime compilation cache
 in the default user cache on up to four threads and exports its path to the tests'
 processes. Component contents, compiler settings and CPU features still determine
