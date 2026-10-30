@@ -1744,6 +1744,34 @@ fn browser_author_shared_launcher_uses_invoking_checkout() {
     );
 }
 
+/// The cold checkout builds the native tools without the feature unifier's crate set.
+#[test]
+fn browser_cold_checkout_builds_the_tools_without_the_feature_unifier() {
+    let browser = Browser::cold();
+    let tree = toolchain_support::command(env!("CARGO"))
+        .current_dir(browser.workspace.path())
+        .args(["tree", "--locked", "--offline", "--prefix", "none"])
+        .args(["--edges", "normal,build", "--package", "maestro-tooling"])
+        .output()
+        .unwrap();
+    success(&tree);
+    let tree = String::from_utf8(tree.stdout).unwrap();
+    assert!(
+        !tree.lines().any(|line| line.starts_with("tokio ")),
+        "the tools need no async runtime:\n{tree}"
+    );
+}
+
+/// The cold checkout compiles its dependencies at the plain development profile.
+#[test]
+fn browser_cold_checkout_builds_dependencies_at_the_plain_dev_profile() {
+    let browser = Browser::cold();
+    let manifest: toml::Table =
+        toml::from_str(&fs::read_to_string(browser.path("Cargo.toml")).unwrap()).unwrap();
+    let packages = manifest["profile"]["dev"]["package"].as_table().unwrap();
+    assert_eq!(packages.keys().collect::<Vec<_>>(), ["*"]);
+}
+
 #[test]
 fn browser_author_bootstraps_from_empty_build_state() {
     let browser = Browser::cold();

@@ -69,6 +69,29 @@ fn measured_priorities_order_tests_without_changing_shards() {
     assert_eq!(union, expected);
 }
 
+/// The cold browser build reserves every core while it compiles and needs no longer hang limit.
+#[test]
+fn cold_browser_build_reserves_every_core_without_a_timeout_exception() {
+    let config: toml::Table =
+        toml::from_str(include_str!("../../../.config/nextest.toml")).unwrap();
+    let cold = config["profile"]["default"]["overrides"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|rule| {
+            rule["filter"].as_str().is_some_and(|filter| {
+                filter.contains(
+                    "test(=browser_author_build::browser_author_bootstraps_from_empty_build_state)",
+                )
+            })
+        })
+        .collect::<Vec<_>>();
+    assert!(cold.iter().any(
+        |rule| rule.get("threads-required").and_then(toml::Value::as_str) == Some("num-cpus")
+    ));
+    assert!(cold.iter().all(|rule| rule.get("slow-timeout").is_none()));
+}
+
 /// Run one-worker nextest and retain completion order, including the intentional failure.
 /// A private Cargo home avoids registry-cache locks held by unrelated builds.
 fn run_nextest(root: &Path, config: &Path, partition: Option<&str>) -> Vec<String> {
