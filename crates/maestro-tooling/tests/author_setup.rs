@@ -291,11 +291,11 @@ fn author_setup_without_prepared_outputs_builds_locally() {
         fixture(root);
         let profile = root.join("target/debug");
         fs::create_dir_all(profile.join("deps")).unwrap();
-        let mut command = Command::new("sh");
+        let mut command = setup_command();
         command
-            .arg(script("prepare-author-component.sh"))
             .current_dir(root)
             .env("CARGO", root.join("cargo"))
+            .env("CARGO_MANIFEST_DIR", root.join("crates/maestro-tooling"))
             .env("NEXTEST_ENV", root.join("nextest-env"))
             .env("NEXTEST_LD_LIBRARY_PATH", &profile)
             .env("NEXTEST_DYLD_FALLBACK_LIBRARY_PATH", &profile)
@@ -494,14 +494,13 @@ fn export(root: &Path, prepared: &Path, archived: bool) -> Output {
 
 /// The command `export` runs, with the user cache inside the fixture.
 fn export_command(root: &Path, prepared: &Path, archived: bool) -> Command {
-    let mut command = Command::new("sh");
+    let mut command = setup_command();
     if archived {
         command.env("TEST_ARCHIVE", "1");
     } else {
         command.env_remove("TEST_ARCHIVE");
     }
     command
-        .arg(script("prepare-author-component.sh"))
         .current_dir(root)
         .env("CARGO", root.join("cargo"))
         .env("CARGO_MANIFEST_DIR", root.join("crates/maestro-tooling"))
@@ -602,11 +601,11 @@ fn edit_manifest_value(prepared: &Path, edit: impl FnOnce(&mut serde_json::Value
     fs::write(path, serde_json::to_vec(&manifest).unwrap()).unwrap();
 }
 
-/// Locate a repository setup script without embedding its contents.
-fn script(name: &str) -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../.config")
-        .join(name)
+/// The author-component setup, as nextest's setup entry runs it.
+fn setup_command() -> Command {
+    let mut command = Command::new(env!("CARGO_BIN_EXE_development"));
+    command.args(["nextest-setup", "author-component"]);
+    command
 }
 
 /// Display both output streams when a fixture command fails.

@@ -7,6 +7,7 @@ mod browser_preparation;
 mod build_recipes;
 mod cargo_fixtures;
 mod component_preparation;
+mod fixture_sources_setup;
 mod nextest_priorities;
 mod prepared_setup_packages;
 mod shared_ci_callers;

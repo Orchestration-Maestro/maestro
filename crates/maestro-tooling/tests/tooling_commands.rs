@@ -3541,11 +3541,10 @@ fn author_setup_continues_when_cargo_keeps_an_outdated_example() {
 /// Run the author setup script from `root` with `profile` as nextest's artifact directory.
 #[cfg(unix)]
 fn author_setup(root: &Path, profile: &Path) -> Output {
-    Command::new("sh")
-        .arg(
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.config/prepare-author-component.sh"),
-        )
+    Command::new(env!("CARGO_BIN_EXE_development"))
+        .args(["nextest-setup", "author-component"])
         .current_dir(root)
+        .env("CARGO_MANIFEST_DIR", root.join("crates/maestro-tooling"))
         .env_remove("TEST_PREPARE_OUTPUT")
         .env_remove("TEST_ARCHIVE")
         .env("NEXTEST_LD_LIBRARY_PATH", profile)

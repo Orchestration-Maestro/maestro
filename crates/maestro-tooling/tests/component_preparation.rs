@@ -187,14 +187,13 @@ fn output(deps: &Path, name: &str, executable: bool, seconds: u64) -> std::path:
 /// shared CI gives nextest; any other run clears it, whatever this test run inherited.
 #[cfg(unix)]
 fn normalize_run(root: &Path, archived: bool) {
-    let mut command = std::process::Command::new("sh");
+    fs::create_dir_all(root.join("crates/maestro-tooling")).unwrap();
+    let mut command = std::process::Command::new(env!("CARGO_BIN_EXE_development"));
     command
-        .arg(
-            Path::new(env!("CARGO_MANIFEST_DIR"))
-                .join("../../.config/normalize-component-cache.sh"),
-        )
+        .args(["nextest-setup", "normalize-component-cache"])
         .arg(root.join("target/debug"))
         .current_dir(root)
+        .env("CARGO_MANIFEST_DIR", root.join("crates/maestro-tooling"))
         .env_remove("TEST_ARCHIVE");
     if archived {
         command.env("TEST_ARCHIVE", "1");

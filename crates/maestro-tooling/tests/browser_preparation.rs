@@ -233,11 +233,13 @@ fn run_setup(root: &Path, wrapper: Option<&str>) -> String {
     let calls = root.join("calls.log");
     let _ = fs::remove_file(&calls);
     let _ = fs::remove_file(root.join("nextest-env"));
-    let mut command = Command::new("sh");
+    fs::create_dir_all(root.join("crates/maestro-tooling")).unwrap();
+    let mut command = Command::new(env!("CARGO_BIN_EXE_development"));
     command
-        .arg(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.config/prepare-browser-author.sh"))
+        .args(["nextest-setup", "browser-author"])
         .current_dir(root)
         .env_clear()
+        .env("CARGO_MANIFEST_DIR", root.join("crates/maestro-tooling"))
         .env(
             "PATH",
             format!("{}:/usr/bin:/bin", root.join("bin").display()),
