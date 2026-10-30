@@ -32,9 +32,9 @@ mod tests;
 mod user_cache;
 
 /// The setup example that discovers, builds and warms the components.
-const EXAMPLE: &str = "prepare_author_component";
+pub(crate) const EXAMPLE: &str = "prepare_author_component";
 /// The bundle file that records what the bundle was prepared from.
-const MANIFEST: &str = "components.json";
+pub(crate) const MANIFEST: &str = "components.json";
 /// The bundle file that holds this command, so a shard needs no Cargo build to validate.
 const EXPORTER: &str = "development";
 /// The bundle directory that holds the code the setup example compiled.
@@ -43,15 +43,14 @@ const COMPILED: &str = "cache";
 /// components belong to the first, the development tool that runs the preparation to the second.
 const BUILT: [&str; 2] = ["maestro-extensions-wasm", "maestro-tooling"];
 /// What the components depend on besides the crates: locked dependencies, the toolchain, the
-/// example sources, the assets and the launcher.
-const FIXED_INPUTS: [&str; 7] = [
+/// example sources and the assets.
+const FIXED_INPUTS: [&str; 6] = [
     "Cargo.toml",
     "Cargo.lock",
     "rust-toolchain.toml",
     ".cargo",
     "examples",
     "assets",
-    ".config/prepare-author-component.sh",
 ];
 
 /// What `prepare` records and `export` checks.
@@ -69,7 +68,7 @@ struct Manifest {
     compiled: Option<CompiledCode>,
 }
 
-/// Run `prepare` or `export` on the supplied checkout.
+/// Run `prepare`, `export` or `install` on the supplied checkout.
 ///
 /// # Errors
 /// Returns an unknown or incomplete subcommand, preparation or validation failure.
@@ -85,13 +84,16 @@ pub(crate) fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Resul
             &output,
             &checkout.join(argument(args, 2, "target")?),
         )?,
-        Some("export") => export(
+        Some("export") => install_bundle(
             checkout,
             &output,
             argument(args, 2, "directory")?,
             argument(args, 3, "environment")?,
-            user_cache_home().as_deref(),
         )?,
+        Some("install") => {
+            std::fs::create_dir_all(&output)?;
+            stage_tool(&output)?;
+        }
         _ => return Err(io::Error::other("unknown test setup command")),
     }
     Ok(ExitCode::SUCCESS)
@@ -139,7 +141,7 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
     let compiled = CompiledCode::collect(&cache_home, &example, &output.join(COMPILED))?;
     let staged = output.join(EXAMPLE);
     copy(&example, &staged)?;
-    copy(&std::env::current_exe()?, &output.join(EXPORTER))?;
+    stage_tool(output)?;
     let manifest = Manifest {
         inputs: fingerprint,
         crates,
@@ -148,6 +150,11 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
         compiled,
     };
     std::fs::write(output.join(MANIFEST), serde_json::to_vec(&manifest)?)
+}
+
+/// Copy this command into `output`, where the nextest setup entries run it.
+fn stage_tool(output: &Path) -> io::Result<()> {
+    copy(&std::env::current_exe()?, &output.join(EXPORTER))
 }
 
 /// Build the setup example in `target` and return its path.
@@ -198,8 +205,27 @@ fn run_example(
 }
 
 /// Validate the bundle in `output`, install its example in `directory` and its compiled code in
-/// `user_cache`, and write the component paths to `environment`. Nothing is installed or
+/// the user cache, and write the component paths to `environment`. Nothing is installed or
 /// written unless every check passes.
+///
+/// # Errors
+/// Returns a missing, stale or incomplete bundle, or a failed copy.
+pub(crate) fn install_bundle(
+    checkout: &Path,
+    output: &Path,
+    directory: &Path,
+    environment: &Path,
+) -> io::Result<()> {
+    export(
+        checkout,
+        output,
+        directory,
+        environment,
+        user_cache_home().as_deref(),
+    )
+}
+
+/// Validate the bundle in `output` and install it, with the user cache named by `user_cache`.
 fn export(
     checkout: &Path,
     output: &Path,
@@ -347,7 +373,7 @@ fn digest(bytes: &[u8]) -> String {
 }
 
 /// Lowercase hexadecimal text for `bytes`.
-fn hex(bytes: &[u8]) -> String {
+pub(crate) fn hex(bytes: &[u8]) -> String {
     bytes.iter().fold(String::new(), |mut text, byte| {
         let _ = write!(text, "{byte:02x}");
         text
