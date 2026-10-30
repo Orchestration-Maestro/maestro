@@ -47,6 +47,11 @@ fn files_below(directory: &Path) -> Vec<std::path::PathBuf> {
         .collect()
 }
 
+/// Removes a file the compile wrote.
+fn remove_written(path: &Path) {
+    std::fs::remove_file(path).unwrap();
+}
+
 /// Compiles the supplied bytes through a second engine, observing the persistent cache. A
 /// compile that misses removes the entries it wrote, so only an entry another process wrote
 /// earlier counts as a hit on any later run.
@@ -61,7 +66,7 @@ fn cached_compile(path: &Path) -> usize {
     if cache.cache_misses() > 0 {
         for written in files_below(cache.directory()) {
             if !before.contains(&written) {
-                std::fs::remove_file(written).unwrap();
+                remove_written(&written);
             }
         }
     }
@@ -255,6 +260,12 @@ fn missed_compile_leaves_no_entry_for_a_later_run() {
         0,
         "the first compile left an entry that a rerun mistakes for a warmed one"
     );
+}
+
+#[test]
+fn removing_a_file_the_cache_worker_already_moved_is_not_a_failure() {
+    let scratch = Scratch::new().unwrap();
+    remove_written(&scratch.path().join("moved.wip-atomic-write-stats"));
 }
 
 /// Loads a valid empty component through the extension loader, which compiles it and then
