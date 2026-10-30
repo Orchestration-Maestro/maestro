@@ -41,11 +41,21 @@ fn cached_compile(path: &Path) -> usize {
     cache.cache_hits()
 }
 
-/// Creates two independently linked executable timestamps around an older setup example.
-fn cache_consumers(root: &Path) -> [std::path::PathBuf; 2] {
+/// Creates two independently linked executable timestamps around an older setup example. An
+/// archived run instead builds the example last, after a library output newer than both
+/// executables, as the setup build leaves it.
+fn cache_consumers(root: &Path, archived: bool) -> [std::path::PathBuf; 2] {
     let profile = root.join("target/debug");
     std::fs::create_dir_all(profile.join("deps")).unwrap();
     std::fs::create_dir_all(profile.join("examples")).unwrap();
+    if archived {
+        let library = profile.join("deps/libworkspace-1.rlib");
+        std::fs::write(&library, b"").unwrap();
+        std::fs::File::open(library)
+            .unwrap()
+            .set_modified(std::time::UNIX_EPOCH + std::time::Duration::from_secs(3))
+            .unwrap();
+    }
     let binaries = [profile.join("deps/prime"), profile.join("deps/consume")];
     for (binary, seconds) in binaries.iter().zip([1, 2]) {
         std::fs::copy(std::env::current_exe().unwrap(), binary).unwrap();
@@ -82,9 +92,10 @@ fn cache_consumers(root: &Path) -> [std::path::PathBuf; 2] {
         std::os::unix::fs::PermissionsExt::from_mode(0o755),
     )
     .unwrap();
+    let built = if archived { 5 } else { 1 };
     std::fs::File::open(example)
         .unwrap()
-        .set_modified(std::time::UNIX_EPOCH + std::time::Duration::from_secs(1))
+        .set_modified(std::time::UNIX_EPOCH + std::time::Duration::from_secs(built))
         .unwrap();
     binaries
 }
@@ -120,22 +131,24 @@ fn observe_compilation() {
     }
 }
 
-#[test]
-fn component_setup_shares_compiled_bytes_across_executables() {
-    if selection().is_child() {
-        observe_compilation();
-        return;
-    }
+/// Runs setup in one executable and a second executable after it, both under one scratch user
+/// cache, with the archive signal shared CI gives nextest when `archived` is set.
+fn share_compiled_bytes(test: &str, archived: bool) {
     let scratch = Scratch::new().unwrap();
-    let binaries = cache_consumers(scratch.path());
+    let binaries = cache_consumers(scratch.path(), archived);
     let component = scratch.path().join("empty.wasm");
     std::fs::write(&component, b"\0asm\x0d\0\x01\0").unwrap();
     let setup =
         Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.config/prepare-author-component.sh");
     for (binary, case) in binaries.iter().zip(["prime", "consume"]) {
-        let process =
-            TestProcess::current("component_setup_shares_compiled_bytes_across_executables")
-                .unwrap();
+        let process = TestProcess::current(test)
+            .unwrap()
+            .env_remove("TEST_ARCHIVE");
+        let process = if archived {
+            process.env("TEST_ARCHIVE", "1")
+        } else {
+            process
+        };
         let name = process.name().to_owned();
         let shell = if case == "prime" {
             "shift; exec sh \"$SETUP\""
@@ -166,6 +179,30 @@ fn component_setup_shares_compiled_bytes_across_executables() {
             String::from_utf8_lossy(&output.stderr)
         );
     }
+}
+
+#[test]
+fn component_setup_shares_compiled_bytes_across_executables() {
+    if selection().is_child() {
+        observe_compilation();
+        return;
+    }
+    share_compiled_bytes(
+        "component_setup_shares_compiled_bytes_across_executables",
+        false,
+    );
+}
+
+#[test]
+fn archived_setup_shares_compiled_bytes_with_outdated_executables() {
+    if selection().is_child() {
+        observe_compilation();
+        return;
+    }
+    share_compiled_bytes(
+        "archived_setup_shares_compiled_bytes_with_outdated_executables",
+        true,
+    );
 }
 
 #[test]

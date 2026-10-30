@@ -48,8 +48,10 @@ for extension in $extensions; do
 done
 # Cargo rebuilds an executable only while a library output it builds on is newer than it,
 # so an outdated executable must keep its time. A library's own test binary is built from
-# the crate and not on its output.
+# the crate and not on its output. Nextest never runs Cargo on an archive, so nothing in an
+# archived run can be rebuilt, and the executables the archive restores are all current.
 outdated() {
+    [ -z "${TEST_ARCHIVE-}" ] || return 1
     source=
     if [ -r "$1.d" ]; then
         IFS= read -r line <"$1.d" || true
