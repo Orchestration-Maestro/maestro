@@ -262,14 +262,15 @@ fn input_names(crates: &BTreeSet<String>) -> impl Iterator<Item = &str> {
 fn closure_directories(metadata: &Metadata, built: &[&str]) -> io::Result<BTreeSet<String>> {
     let members = members(metadata);
     let roots = member_roots(&members);
-    let mut start = HashSet::new();
-    for name in built {
-        let position = members
-            .iter()
-            .position(|package| package.name == *name)
-            .ok_or_else(|| io::Error::other(format!("{name} is not a workspace package")))?;
-        start.insert(position);
-    }
+    let start = built
+        .iter()
+        .map(|name| {
+            members
+                .iter()
+                .position(|package| package.name == *name)
+                .ok_or_else(|| io::Error::other(format!("{name} is not a workspace package")))
+        })
+        .collect::<io::Result<HashSet<_>>>()?;
     Ok(closure(&dependency_edges(&members, &roots), start)
         .into_iter()
         .filter_map(|member| {

@@ -722,8 +722,8 @@ require the bundle and fail without starting Cargo when it is missing or stale.
 Other runs reuse an existing manifest, rejecting stale or incomplete files; without
 a manifest they keep local auto-build. Archive strictness
 requires the shared CI release that supplies `TEST_ARCHIVE=1`. Source hashes
-include the built crates and their path dependencies, examples, assets, Cargo configuration, locked
-dependencies, the toolchain and the nextest launcher. The variable names in the
+include the built crates and their path dependencies, examples, assets, Cargo
+configuration, locked dependencies, the toolchain and the nextest launcher. The variable names in the
 bundle follow component discovery's own rule and fixed author and context pair.
 File timestamps do not affect reuse, but the staged example finds component
 sources at the checkout path it was built in, and the staged tool reads the
