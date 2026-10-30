@@ -162,7 +162,8 @@ fn prepared_setup_stages_the_preparing_command() {
 }
 
 /// Archived runs give every extracted executable, and the installed setup example, one
-/// modification time so test processes share a compile-cache namespace with the warm-up.
+/// modification time so test processes share a compile-cache namespace with the installed
+/// compiled code.
 #[test]
 fn archived_author_setup_aligns_executable_times() {
     let scratch = Scratch::new().unwrap();
