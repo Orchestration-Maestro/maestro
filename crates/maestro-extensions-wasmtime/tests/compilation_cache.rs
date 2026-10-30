@@ -214,6 +214,22 @@ fn component_setup_warms_exported_examples() {
     );
 }
 
+#[test]
+fn missed_compile_leaves_no_entry_for_a_later_run() {
+    if isolated("missed_compile_leaves_no_entry_for_a_later_run") {
+        return;
+    }
+    let scratch = Scratch::new().unwrap();
+    let path = scratch.path().join("empty.wasm");
+    std::fs::write(&path, b"\0asm\x0d\0\x01\0").unwrap();
+    assert_eq!(cached_compile(&path), 0, "nothing warmed this component");
+    assert_eq!(
+        cached_compile(&path),
+        0,
+        "the first compile left an entry that a rerun mistakes for a warmed one"
+    );
+}
+
 /// Loads a valid empty component through the extension loader, which compiles it and then
 /// fails to start it as an extension. Returns its path and the failures reported.
 fn load_empty_component(scratch: &Scratch) -> (std::path::PathBuf, Vec<String>) {
