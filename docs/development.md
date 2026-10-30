@@ -714,8 +714,7 @@ on the prepared components, which finds every component compiled and starts no C
 or compile pass. Archived runs
 require the bundle and fail without starting Cargo when it is missing or stale.
 Other runs reuse an existing manifest, rejecting stale or incomplete files; without
-a manifest they keep local auto-build. This includes warm-cache runs, which receive
-`TEST_PREPARE_OUTPUT` but no restored bundle or archive flag. Archive strictness
+a manifest they keep local auto-build. Archive strictness
 requires the shared CI release that supplies `TEST_ARCHIVE=1`. Source hashes
 include workspace crates, examples, assets, Cargo configuration, locked
 dependencies, the toolchain and the nextest launcher. The variable names in the
@@ -961,39 +960,31 @@ and release it before waiting for completion. Pipe both output streams explicitl
 `spawn` otherwise retains inherited stdin. Live pipe-closure transactions use the
 single-test isolation described above, not a process-wide owner lock.
 
-### Compile cache warm-up
+### Compile cache snapshot
 
 Shared CI restores a compiled-cache snapshot in each Linux job, but only pushes
-to `main` save one. `.github/workflows/warm-cache.yml` runs on every push to
-`main` and calls the shared workflow with `warm-cache: true`. That builds the
-full coverage test graph, then runs only the tests selected by
-`warm_test_filter` in `.github/ci.toml`. Today that is one guest-authoring test,
-so the author component's compiles enter the snapshot that merge-queue test
-shards restore. The snapshot is capped at 1 GiB and evicts its least recently
-used entries, so the selection stays narrow. The warm-up is never a required
-check, and a newer push cancels a running one. Its `uses:` pin follows the rule in
-[Full-suite runs after landing](#full-suite-runs-after-landing). The shared workflow groups
-push runs by commit, so the warm-up passes its own `concurrency-key` (`maestro-warm`);
-without one it waited behind the full suite for the same commit. The full suite passes
-none: the key names the coverage manifest, and merge groups search the manifest of the
-default key as their baseline, which a main push run publishes only under that key.
+to `main` save one. The full suite after landing runs on every push to `main`,
+so its jobs seed the snapshots that merge-queue test shards restore, among them
+the author component's compiles and the prepared test setup. Later pushes never
+cancel it. No workflow exists only to seed the cache, and no caller names a
+`concurrency-key`: the key names the coverage manifest, and merge groups search the
+manifest of the default key as their baseline, which a main push run publishes only
+under that key.
 
 ## Full-suite runs after landing
 
 `Full suite after landing` runs the shared Rust CI on the exact commit of every
 push to main. It runs all test shards, doctests and declared Chromium tests,
 even when the merge queue selected fewer crates. Later pushes do not cancel
-or replace queued landing runs. This is separate from the compile-cache warm
-build and from required merge checks.
+or replace queued landing runs. This is separate from required merge checks.
 
 Push runs never read a coverage baseline: the lookup runs only for merge
-groups. The suite and warm-up callers still grant `actions: read`, because the
+groups. The suite caller still grants `actions: read`, because the
 shared declaration job declares it and a caller that grants less makes the run
-fail to start. The suite caller, the reporter caller and `warm-cache.yml` pin the
+fail to start. The suite caller and the reporter caller pin the
 released shared CI commit that the organization rulesets require. Each pin
 moves with every shared-CI release re-pin
-([Orchestration-Maestro/.github#231](https://github.com/Orchestration-Maestro/.github/issues/231));
-a stale warm-up pin only costs snapshot hits.
+([Orchestration-Maestro/.github#231](https://github.com/Orchestration-Maestro/.github/issues/231)).
 
 `Failed landing reports` listens for the completed main-push run. The shared
 reporter creates one failure issue per landing commit with the merged PR,
