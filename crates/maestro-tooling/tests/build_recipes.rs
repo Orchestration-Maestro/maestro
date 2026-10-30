@@ -142,6 +142,65 @@ fn maestro_package_recipes_select_their_owners() {
 }
 
 #[test]
+fn maestro_test_recipe_installs_the_setup_tool_before_nextest() {
+    let workspace = Workspace::new();
+    fs::create_dir_all(workspace.path().join("crates/maestro-tooling")).unwrap();
+
+    let output = workspace.run("test");
+
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(
+        workspace.log(),
+        "cargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|prepare-test-setup|install|target/test-setup\ncargo nextest|run|--workspace|--locked\ncargo test|--workspace|--locked|--doc\n"
+    );
+}
+
+/// The recipe that docs name before a hand-run nextest stages the setup tool and nothing else.
+#[test]
+fn maestro_prepare_tests_recipe_stages_only_the_setup_tool() {
+    let workspace = Workspace::new();
+    fs::create_dir_all(workspace.path().join("crates/maestro-tooling")).unwrap();
+
+    let output = workspace.run("prepare-tests");
+
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(
+        workspace.log(),
+        "cargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|prepare-test-setup|install|target/test-setup\n"
+    );
+}
+
+/// The check recipe stages the setup tool before any step that could start nextest.
+#[test]
+fn maestro_check_recipe_stages_the_setup_tool_first() {
+    let workspace = Workspace::new();
+    fs::create_dir_all(workspace.path().join("crates/maestro-tooling")).unwrap();
+
+    let output = workspace.run("check");
+
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(
+        workspace.log().starts_with(
+            "cargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|prepare-test-setup|install|target/test-setup\n"
+        ),
+        "{}",
+        workspace.log()
+    );
+}
+
+#[test]
 fn maestro_test_recipes_forward_literal_arguments() {
     for (recipe, selection, doctests) in [
         ("test", "--workspace|--locked", true),

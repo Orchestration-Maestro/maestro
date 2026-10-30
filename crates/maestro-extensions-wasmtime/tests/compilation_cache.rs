@@ -135,14 +135,16 @@ fn cache_consumers(root: &Path, archived: bool) -> [std::path::PathBuf; 2] {
     binaries
 }
 
-/// Stages a development tool that exports nothing, which an archived run requires before it
-/// installs the prepared components.
-fn stage_tool(root: &Path) {
-    let staged = root.join("target/test-setup");
-    std::fs::create_dir_all(&staged).unwrap();
-    let tool = staged.join("development");
-    std::fs::write(&tool, "#!/bin/sh\nexit 0\n").unwrap();
-    std::fs::set_permissions(tool, std::os::unix::fs::PermissionsExt::from_mode(0o755)).unwrap();
+/// The development tool that nextest's author-component entry runs: a shard receives it in the
+/// downloaded bundle, and `just test` installs it before nextest starts.
+fn setup_tool() -> std::path::PathBuf {
+    let tool = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/test-setup/development");
+    assert!(
+        tool.is_file(),
+        "{} is missing; run `just prepare-tests` first",
+        tool.display()
+    );
+    tool
 }
 
 /// Observes the real persistent cache without a process-local compiled-component map.
@@ -185,11 +187,8 @@ fn share_compiled_bytes(test: &str, archived: bool) {
     std::fs::write(&component, b"\0asm\x0d\0\x01\0").unwrap();
     let environment = scratch.path().join("nextest-env");
     std::fs::write(&environment, "").unwrap();
-    if archived {
-        stage_tool(scratch.path());
-    }
-    let setup =
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.config/prepare-author-component.sh");
+    let setup = setup_tool();
+    let profile = scratch.path().join("target/debug");
     for (binary, case) in binaries.iter().zip(["prime", "consume"]) {
         let process = TestProcess::current(test)
             .unwrap()
@@ -200,10 +199,14 @@ fn share_compiled_bytes(test: &str, archived: bool) {
             process
         };
         let name = process.name().to_owned();
-        let shell = if case == "prime" {
-            "shift; exec sh \"$SETUP\""
-        } else {
-            "shift; exec \"$COPY\" \"$@\""
+        // An archived run holds no Cargo build, so the setup only gives the executables one time
+        // before the example runs; any other run lets the setup find and run the example.
+        let shell = match (case, archived) {
+            ("consume", _) => "shift; exec \"$COPY\" \"$@\"",
+            ("prime", true) => {
+                "shift; \"$SETUP\" nextest-setup normalize-component-cache \"$PROFILE\" && exec \"$PROFILE/examples/prepare_author_component\""
+            }
+            _ => "shift; exec \"$SETUP\" nextest-setup author-component",
         };
         let output = process
             .case(case)
@@ -212,6 +215,7 @@ fn share_compiled_bytes(test: &str, archived: bool) {
             .env("COPY", binary)
             .env("TEST_NAME", name)
             .env("SETUP", &setup)
+            .env("PROFILE", &profile)
             .env("NEXTEST_ENV", &environment)
             .env("MAESTRO_CACHE_COMPONENT", &component)
             .env(

@@ -8,6 +8,8 @@ mod boundaries;
 mod child_tests;
 /// Rust comment content checks.
 mod comments;
+/// Shell scripts in the runner configuration directory.
+mod config_scripts;
 /// Exact production function-body ownership.
 mod duplicates;
 /// Shared-helper ownership in the extension example tests.
@@ -101,6 +103,7 @@ mod time_limits;
 /// Returns a human-readable diagnostic on malformed input or a violated boundary.
 pub fn check_workspace(root: &Path) -> Result<(), String> {
     test_budget::check(root)?;
+    config_scripts::check(root)?;
     let metadata = graph::check(root)?;
     let members = source::load(&metadata)?;
     child_tests::check(&members)?;

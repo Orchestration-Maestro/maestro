@@ -5,6 +5,7 @@ mod architecture;
 mod boundaries;
 mod child_tests;
 mod comments;
+mod config_scripts;
 mod dependency_locks;
 mod development_guidance;
 mod duplicates;

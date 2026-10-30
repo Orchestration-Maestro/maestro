@@ -174,6 +174,37 @@ fn prepared_setup_stages_the_preparing_command() {
     );
 }
 
+/// A run without a bundle installs this command alone, where the nextest setup entry looks for
+/// it, and the run then prepares its components locally.
+#[test]
+fn install_stages_only_the_preparing_command() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture(root);
+
+    let code = maestro_tooling::run(
+        &[
+            "prepare-test-setup".into(),
+            "install".into(),
+            "target/test-setup".into(),
+        ],
+        &root.join("cargo"),
+        root,
+    )
+    .unwrap();
+
+    assert_eq!(code, ExitCode::SUCCESS);
+    let staged: Vec<_> = fs::read_dir(root.join("target/test-setup"))
+        .unwrap()
+        .map(|entry| entry.unwrap().file_name())
+        .collect();
+    assert_eq!(staged, ["development"]);
+    assert_eq!(
+        fs::read(root.join("target/test-setup/development")).unwrap(),
+        fs::read(std::env::current_exe().unwrap()).unwrap()
+    );
+}
+
 /// Archived runs give every extracted executable, and the installed setup example, one
 /// modification time so test processes share a compile-cache namespace with the installed
 /// compiled code.
@@ -291,9 +322,8 @@ fn author_setup_without_prepared_outputs_builds_locally() {
         fixture(root);
         let profile = root.join("target/debug");
         fs::create_dir_all(profile.join("deps")).unwrap();
-        let mut command = Command::new("sh");
+        let mut command = setup_command();
         command
-            .arg(script("prepare-author-component.sh"))
             .current_dir(root)
             .env("CARGO", root.join("cargo"))
             .env("NEXTEST_ENV", root.join("nextest-env"))
@@ -356,11 +386,12 @@ echo x > "$XDG_CACHE_HOME/wasmtime/modules/wasmtime-fixture-${seconds}000/key"
 echo y > "$XDG_CACHE_HOME/wasmtime/modules/wasmtime-other-${seconds}000/key"
 "#;
 
-/// The fixture Cargo: it counts its builds and builds the setup example `@example@`, and a
-/// `run` also starts that example.
+/// The fixture Cargo: it counts its builds and builds the setup example `@example@` in the `dev`
+/// profile, which it requires, and a `run` also starts that example.
 const CARGO: &str = r#"#!/bin/sh
 set -eu
 if [ "$1" = metadata ]; then exec "@cargo@" "$@"; fi
+case " $* " in *" --profile dev "*) ;; *) echo "build without the dev profile: $*" >&2; exit 1 ;; esac
 echo build >> builds
 mode=$1
 while [ $# -gt 0 ]; do
@@ -486,25 +517,23 @@ fn prepare(root: &Path) {
     .unwrap();
 }
 
-/// Run the real nextest setup entry point with archived-shard environment. The development
-/// binary takes its checkout from `CARGO_MANIFEST_DIR`, which points into the fixture.
+/// Run the real nextest setup entry point with archived-shard environment, from the fixture
+/// checkout where nextest starts it.
 fn export(root: &Path, prepared: &Path, archived: bool) -> Output {
     export_command(root, prepared, archived).output().unwrap()
 }
 
 /// The command `export` runs, with the user cache inside the fixture.
 fn export_command(root: &Path, prepared: &Path, archived: bool) -> Command {
-    let mut command = Command::new("sh");
+    let mut command = setup_command();
     if archived {
         command.env("TEST_ARCHIVE", "1");
     } else {
         command.env_remove("TEST_ARCHIVE");
     }
     command
-        .arg(script("prepare-author-component.sh"))
         .current_dir(root)
         .env("CARGO", root.join("cargo"))
-        .env("CARGO_MANIFEST_DIR", root.join("crates/maestro-tooling"))
         .env("TEST_PREPARE_OUTPUT", prepared)
         .env("NEXTEST_ENV", root.join("nextest-env"))
         .env("NEXTEST_LD_LIBRARY_PATH", root.join("target/debug"))
@@ -602,11 +631,11 @@ fn edit_manifest_value(prepared: &Path, edit: impl FnOnce(&mut serde_json::Value
     fs::write(path, serde_json::to_vec(&manifest).unwrap()).unwrap();
 }
 
-/// Locate a repository setup script without embedding its contents.
-fn script(name: &str) -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../.config")
-        .join(name)
+/// The author-component setup, as nextest's setup entry runs it.
+fn setup_command() -> Command {
+    let mut command = Command::new(env!("CARGO_BIN_EXE_development"));
+    command.args(["nextest-setup", "author-component"]);
+    command
 }
 
 /// Display both output streams when a fixture command fails.

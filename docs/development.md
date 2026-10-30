@@ -80,6 +80,7 @@ commands from the checkout using the pinned toolchain and checked-in lock:
 ```powershell
 $env:CARGO_BUILD_JOBS = '3'
 cargo nextest run --locked -p maestro-app --test integration -E 'test(/^footer_metadata::/)' --no-fail-fast
+just prepare-tests
 cargo nextest run --locked -p maestro-extensions-wasm --no-fail-fast
 cargo nextest run --locked -p maestro-extensions-wasm --release -E 'test(/^tests::maestro_component_contract_keeps_sync_and_async_calls$/)' --no-fail-fast
 ```
@@ -683,15 +684,17 @@ this keeps target directories about a sixth smaller.
 They also build `cranelift-codegen` and `regalloc2` optimised, because tests
 compile extension components and an unoptimised code generator makes each
 compile about five times slower, and `syn` and `proc-macro2`
-optimised, because the conventions tests parse every workspace source; release
-builds are unchanged.
+optimised, because the conventions tests parse every workspace source, and `sha2`
+optimised, because the test setup hashes the lock files on every nextest run and an
+unoptimised digest makes its reused-directory path about three times slower;
+release builds are unchanged.
 
 Archived CI shards receive `TEST_ARCHIVE=1` and `TEST_PREPARE_OUTPUT` pointing to
 `target/test-setup`.
 The `test_prepare` command in `.github/ci.toml` is the development tool's
 `prepare-test-setup prepare`. Shared CI runs it only when a selected package is
 named by `test_prepare_packages` there, the packages that nextest's
-`author-component` setup script serves. Shared CI caches the bundle under the contents of
+`author-component` setup serves. Shared CI caches the bundle under the contents of
 the files that `test_prepare_inputs` matches and restores it instead of preparing again.
 Those patterns name the crates the preparation builds, `maestro-extensions-wasm` and
 `maestro-tooling`, and every workspace crate they depend on through a path dependency of
@@ -709,12 +712,12 @@ namespace the engine named for the example's modification time; preparation fail
 namespace that does not end in that time or on more than one, and stages none when the host
 keeps its cache elsewhere. Shared CI transfers
 these files separately from the native test archive, so a shard does not need the
-tool in its archive. The nextest launcher runs the staged tool's
-`prepare-test-setup export`, which checks source and artifact hashes, including every
+tool in its archive. Nextest runs the staged tool's
+`nextest-setup author-component`, which checks source and artifact hashes, including every
 compiled-code file, installs the staged example beside the extracted executables and
 installs the compiled code in the user cache (`XDG_CACHE_HOME`, else `~/.cache`) under the
 modification time that copy of the example has, and writes the component paths to
-`NEXTEST_ENV`. The launcher then gives the executables that same modification time, as
+`NEXTEST_ENV`. The setup then gives the executables that same modification time, as
 below, so they share a compile-cache namespace with the installed code. It runs the example
 on the prepared components, which finds every component compiled and starts no Cargo build
 or compile pass. Archived runs
@@ -723,12 +726,11 @@ Other runs reuse an existing manifest, rejecting stale or incomplete files; with
 a manifest they keep local auto-build. Archive strictness
 requires the shared CI release that supplies `TEST_ARCHIVE=1`. Source hashes
 include the built crates and their path dependencies, examples, assets, Cargo
-configuration, locked dependencies, the toolchain and the nextest launcher. The variable names in the
+configuration, locked dependencies and the toolchain. The variable names in the
 bundle follow component discovery's own rule and fixed author and context pair.
 File timestamps do not affect reuse, but the staged example finds component
-sources at the checkout path it was built in, and the staged tool reads the
-checkout from the path it was built at, so both jobs must use the same checkout
-path, as shared CI does.
+sources at the checkout path it was built in, so both jobs must use the same
+checkout path, as shared CI does.
 
 For a local check of that boundary, run:
 
@@ -738,20 +740,33 @@ cargo run --quiet --locked -p maestro-tooling --bin development -- \
 TEST_PREPARE_OUTPUT="$PWD/target/test-setup" cargo nextest run --locked -p maestro-extensions-wasm
 ```
 
+The development tool's `nextest-setup` command runs every nextest setup entry:
+`author-component`, `fixture-sources`, `browser-author` and
+`normalize-component-cache`. `.config/nextest.toml` names only these commands, and the
+conventions check rejects a shell script under `.config/`. The `author-component` entry
+runs the tool from `target/test-setup/development`: a shard receives it in the downloaded
+bundle, and `just prepare-tests` installs it. `just test` and `just check` run that recipe first.
+When you start nextest by hand on a package the entry serves and the tool is missing,
+nextest prints the missing path `target/test-setup/development`; run `just prepare-tests`
+once and start nextest again. Run it again after a change to `maestro-tooling`, as nextest
+runs a staged copy that is outdated without a word. The tooling entries run
+`debug/development` from the target directory, which every `maestro-tooling` test build
+produces.
+
 With `TEST_ARCHIVE` unset and no prepared bundle, local runs build the example
-automatically. Before guest-authoring tests, nextest's shell launcher locates the active
+automatically. Before guest-authoring tests, the `author-component` setup locates the active
 artifact directory through its documented platform library search path. It runs
 the `prepare_author_component` example that the test build put in that directory,
 as long as the example is newer than its source, the shared build and component
 discovery sources, the package manifest and `Cargo.lock`. Running it through Cargo instead would resolve features for
 that one package and recompile the engine. When the example is missing or older, as
-after a `--lib` or filtered selection, the launcher builds it through Cargo in the
+after a `--lib` or filtered selection, the setup builds it through Cargo in the
 same target directory and profile before running it directly.
-The launcher fails if the directory cannot be resolved rather than building
+The setup fails if the directory cannot be resolved rather than building
 elsewhere. It uses `NEXTEST_LD_LIBRARY_PATH` on Linux,
-`NEXTEST_DYLD_FALLBACK_LIBRARY_PATH` on macOS and `PATH` through Git's shell
-on Windows, where the shell converts the search list to colon-separated paths.
-Before running the example, `normalize-component-cache.sh` gives executable
+`NEXTEST_DYLD_FALLBACK_LIBRARY_PATH` on macOS and `PATH` on Windows, split with the
+platform's own separator.
+Before running the example, the setup's cache normalization (`nextest-setup normalize-component-cache`) gives executable
 artifacts in the profile directory, `deps` and `examples` their newest existing
 modification time. This advances older outputs without making them older than
 their compiler inputs. It skips an executable that a workspace library it builds on
@@ -762,13 +777,13 @@ dependency information and the workspace crates `Cargo.lock` lists for it; a lib
 own test binary does not build on its output. Without that information, any newer
 library output outdates the executable. A run from a nextest archive (`TEST_ARCHIVE`
 set) skips this check, because nextest never runs Cargo on an archive. Without the
-skip, the library the launcher builds for the setup example would outdate every
+skip, the library the setup builds for the setup example would outdate every
 restored test binary, and each would compile its components cold. A skipped test binary
 compiles its components itself on first use. A skipped example would warm code that no
-test binary reads, so normalization then exits with status 3 and the launcher rebuilds
+test binary reads, so normalization then exits with status 3 and the setup rebuilds
 the example through Cargo before it runs. Cargo ignores some library outputs that
 normalization counts, such as the check-only metadata a lint run writes, so the example
-can stay outdated after that build. The launcher then logs one line and runs it anyway.
+can stay outdated after that build. The setup then logs one line and runs it anyway.
 Test binaries do not read the code it warms, which costs a cache miss and never fails
 setup. The Git-pinned engine includes the shared modification time in its cache
 namespace, so the preparer and consuming test binaries share compiled code.
@@ -817,7 +832,7 @@ Whichever of them ran first on a shard paid for all of that while about a thousa
 other tests used the same cores. That took 120 to 290 seconds, and the test that paid
 changed with scheduling, so any of them could reach the hang limit.
 
-The nextest setup script `.config/prepare-browser-author.sh` pays the cost once, before
+The nextest setup `nextest-setup browser-author` pays the cost once, before
 the first browser author test of a run, and only on a shard that runs one. It lints
 `maestro-web` for `wasm32-unknown-unknown` as `browser-check` does, without the
 formatting repair that would rewrite sources, then runs `browser-example-check`,
@@ -826,17 +841,17 @@ runner's coverage flags and profile path from those commands and restores the co
 wrapper that preceded coverage, as the tests do for their own children. It builds in
 `target/browser-author` and exports that path as `MAESTRO_BROWSER_TARGET_DIR`, which
 `Browser` gives to every recipe and helper. Cargo records the spelling of the target
-directory in what it compiles, so the script and the tests must name the same one: a
+directory in what it compiles, so the setup and the tests must name the same one: a
 test that built into a differently spelled directory recompiled every dependency. Output
 built for one checkout path serves another, so each test's copy of the checkout reuses it.
 
 `browser_author_bootstraps_from_empty_build_state` builds from an empty state on
-purpose, so the script is not run for it. Its checkout drops the per-package
+purpose, so the setup is not run for it. Its checkout drops the per-package
 optimization levels of the root manifest, which only pay off for tests that run the
 optimized crates repeatedly, and the test reserves every core with `threads-required`,
 so other tests do not stretch its compiler jobs past the hang limit. A recipe that fails during setup prints a
 warning and does not stop the run; the tests run the same recipes and report the
-failure. Plain Cargo tests, and nextest runs without the script, use the test build's own
+failure. Plain Cargo tests, and nextest runs without the setup, use the test build's own
 target directory.
 
 ### Cargo state of tooling fixtures
@@ -850,15 +865,15 @@ runs, the standalone asset and wasm probe fixtures, and lock generation and
 metadata queries on the browser fixture manifest use one.
 
 A fixture that resolves registry crates reads one offline source configuration.
-The nextest setup script `.config/prepare-fixture-sources.sh` vendors the crates
+The nextest setup `nextest-setup fixture-sources` vendors the crates
 named by `fixtures/registry_sources/Cargo.toml`, at the versions the workspace
 lock selects, together with the browser fixture's crates. It runs once per run,
 writes `target/fixture-sources/<hash>/`, and reuses that directory while the
 inputs stay unchanged. The set stays small because Cargo reads every vendored
 package on each run; a test checks that every registry crate the tooling crates
-declare is named in that manifest. The script exports the configuration path as
+declare is named in that manifest. The setup exports the configuration path as
 `MAESTRO_TEST_CARGO_SOURCES`; outside nextest the first test that needs it runs
-the same script. A fixture opts in with `Workspace::use_prepared_sources` or
+the same command. A fixture opts in with `Workspace::use_prepared_sources` or
 `Browser::cargo`, which copy the configuration into its private home. A fixture
 without registry dependencies copies nothing. The cold browser build still
 vendors the whole workspace for itself, because it compiles every dependency.

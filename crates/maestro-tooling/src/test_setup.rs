@@ -2,15 +2,16 @@
 //!
 //! `prepare` runs the component-discovery example in a separate build and stages its component
 //! files, the code it compiled, the built example, this command and a content manifest.
-//! `export` validates that bundle against the checkout, installs the example beside the
-//! extracted test executables and the compiled code in the user cache, and writes the component
-//! paths for nextest.
+//! `install` stages this command alone, for runs without a bundle. The staged command's
+//! `author-component` setup validates the bundle against the checkout, installs the example
+//! beside the extracted test executables and the compiled code in the user cache, and writes
+//! the component paths for nextest.
 
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::ffi::OsString;
 use std::fmt::Write as _;
 use std::io;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::{Command, ExitCode};
 
 use cargo_metadata::Metadata;
@@ -32,9 +33,9 @@ mod tests;
 mod user_cache;
 
 /// The setup example that discovers, builds and warms the components.
-const EXAMPLE: &str = "prepare_author_component";
+pub(crate) const EXAMPLE: &str = "prepare_author_component";
 /// The bundle file that records what the bundle was prepared from.
-const MANIFEST: &str = "components.json";
+pub(crate) const MANIFEST: &str = "components.json";
 /// The bundle file that holds this command, so a shard needs no Cargo build to validate.
 const EXPORTER: &str = "development";
 /// The bundle directory that holds the code the setup example compiled.
@@ -43,15 +44,14 @@ const COMPILED: &str = "cache";
 /// components belong to the first, the development tool that runs the preparation to the second.
 const BUILT: [&str; 2] = ["maestro-extensions-wasm", "maestro-tooling"];
 /// What the components depend on besides the crates: locked dependencies, the toolchain, the
-/// example sources, the assets and the launcher.
-const FIXED_INPUTS: [&str; 7] = [
+/// example sources and the assets.
+const FIXED_INPUTS: [&str; 6] = [
     "Cargo.toml",
     "Cargo.lock",
     "rust-toolchain.toml",
     ".cargo",
     "examples",
     "assets",
-    ".config/prepare-author-component.sh",
 ];
 
 /// What `prepare` records and `export` checks.
@@ -69,7 +69,7 @@ struct Manifest {
     compiled: Option<CompiledCode>,
 }
 
-/// Run `prepare` or `export` on the supplied checkout.
+/// Run `prepare` or `install` on the supplied checkout.
 ///
 /// # Errors
 /// Returns an unknown or incomplete subcommand, preparation or validation failure.
@@ -85,13 +85,10 @@ pub(crate) fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Resul
             &output,
             &checkout.join(argument(args, 2, "target")?),
         )?,
-        Some("export") => export(
-            checkout,
-            &output,
-            argument(args, 2, "directory")?,
-            argument(args, 3, "environment")?,
-            user_cache_home().as_deref(),
-        )?,
+        Some("install") => {
+            std::fs::create_dir_all(&output)?;
+            stage_tool(&output)?;
+        }
         _ => return Err(io::Error::other("unknown test setup command")),
     }
     Ok(ExitCode::SUCCESS)
@@ -119,7 +116,8 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
     remove(&environment)?;
     let cache_home = target.join("cache-home");
     remove_directory(&cache_home)?;
-    let example = build_example(cargo, checkout, target)?;
+    build_example(cargo, checkout, target, "dev")?;
+    let example = target.join("debug/examples").join(EXAMPLE);
     run_example(cargo, checkout, &example, &environment, &cache_home)?;
     let mut components = BTreeMap::new();
     for line in std::fs::read_to_string(&environment)?.lines() {
@@ -139,7 +137,7 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
     let compiled = CompiledCode::collect(&cache_home, &example, &output.join(COMPILED))?;
     let staged = output.join(EXAMPLE);
     copy(&example, &staged)?;
-    copy(&std::env::current_exe()?, &output.join(EXPORTER))?;
+    stage_tool(output)?;
     let manifest = Manifest {
         inputs: fingerprint,
         crates,
@@ -150,8 +148,18 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
     std::fs::write(output.join(MANIFEST), serde_json::to_vec(&manifest)?)
 }
 
-/// Build the setup example in `target` and return its path.
-fn build_example(cargo: &Path, checkout: &Path, target: &Path) -> io::Result<PathBuf> {
+/// Copy this command into `output`, where the nextest setup entries run it.
+fn stage_tool(output: &Path) -> io::Result<()> {
+    copy(&std::env::current_exe()?, &output.join(EXPORTER))
+}
+
+/// Build the setup example in `target` with the Cargo `profile`.
+pub(crate) fn build_example(
+    cargo: &Path,
+    checkout: &Path,
+    target: &Path,
+    profile: &str,
+) -> io::Result<()> {
     let status = Command::new(cargo)
         .current_dir(checkout)
         .args([
@@ -163,13 +171,15 @@ fn build_example(cargo: &Path, checkout: &Path, target: &Path) -> io::Result<Pat
         ])
         .args(["--example", EXAMPLE, "--target-dir"])
         .arg(target)
+        .args(["--profile", profile])
         .status()?;
-    if !status.success() {
-        return Err(io::Error::other(format!(
+    if status.success() {
+        Ok(())
+    } else {
+        Err(io::Error::other(format!(
             "{EXAMPLE} failed to build: {status}"
-        )));
+        )))
     }
-    Ok(target.join("debug/examples").join(EXAMPLE))
 }
 
 /// Run the built example so it writes its component paths to `environment` and its compiled
@@ -198,8 +208,27 @@ fn run_example(
 }
 
 /// Validate the bundle in `output`, install its example in `directory` and its compiled code in
-/// `user_cache`, and write the component paths to `environment`. Nothing is installed or
+/// the user cache, and write the component paths to `environment`. Nothing is installed or
 /// written unless every check passes.
+///
+/// # Errors
+/// Returns a missing, stale or incomplete bundle, or a failed copy.
+pub(crate) fn install_bundle(
+    checkout: &Path,
+    output: &Path,
+    directory: &Path,
+    environment: &Path,
+) -> io::Result<()> {
+    export(
+        checkout,
+        output,
+        directory,
+        environment,
+        user_cache_home().as_deref(),
+    )
+}
+
+/// Validate the bundle in `output` and install it, with the user cache named by `user_cache`.
 fn export(
     checkout: &Path,
     output: &Path,
@@ -347,7 +376,7 @@ fn digest(bytes: &[u8]) -> String {
 }
 
 /// Lowercase hexadecimal text for `bytes`.
-fn hex(bytes: &[u8]) -> String {
+pub(crate) fn hex(bytes: &[u8]) -> String {
     bytes.iter().fold(String::new(), |mut text, byte| {
         let _ = write!(text, "{byte:02x}");
         text

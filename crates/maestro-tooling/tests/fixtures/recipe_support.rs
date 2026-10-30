@@ -45,8 +45,8 @@ pub fn prepared_sources() -> PathBuf {
                 return PathBuf::from(config);
             }
             record("phase: fixture sources preparation");
-            let output = Command::new("sh")
-                .arg(".config/prepare-fixture-sources.sh")
+            let output = Command::new(env!("CARGO_BIN_EXE_development"))
+                .args(["nextest-setup", "fixture-sources"])
                 .current_dir(Path::new(env!("CARGO_MANIFEST_DIR")).join("../.."))
                 .output()
                 .unwrap();
