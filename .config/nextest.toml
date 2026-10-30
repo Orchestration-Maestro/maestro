@@ -1,17 +1,23 @@
 experimental = ["setup-scripts"]
 
+# Every setup entry runs the development tool. The tooling setups serve only `maestro-tooling`
+# tests, whose build always produces the tool in the target directory. The author-component
+# setup also serves other packages, so it runs the tool from `target/test-setup`: a shard finds
+# it in the downloaded bundle, and `just test` installs it there first
+# (`development -- prepare-test-setup install target/test-setup`).
+
 [profile.default]
 slow-timeout = { period = "30s", terminate-after = 4 }
 
 [scripts.setup.author-component]
-command = "sh .config/prepare-author-component.sh"
+command = "target/test-setup/development nextest-setup author-component"
 
 [[profile.default.scripts]]
 filter = "package(maestro-extensions-wasm) | package(maestro-extensions-wasmtime) | (package(maestro) & (test(startup_modes::) | test(model_streams::) | test(component_output_stays_between_complete_host_frames) | test(native_io::) | test(/_example::/)))"
 setup = "author-component"
 
 [scripts.setup.fixture-sources]
-command = "sh .config/prepare-fixture-sources.sh"
+command = { command-line = "debug/development nextest-setup fixture-sources", relative-to = "target" }
 
 [[profile.default.scripts]]
 filter = "package(maestro-tooling)"
@@ -22,7 +28,7 @@ setup = "fixture-sources"
 # The `browser-author` test group below selects the same tests with the same filter; change
 # the two together.
 [scripts.setup.browser-author]
-command = "sh .config/prepare-browser-author.sh"
+command = { command-line = "debug/development nextest-setup browser-author", relative-to = "target" }
 
 [[profile.default.scripts]]
 filter = "package(maestro-tooling) & test(/^browser_author_build::/) & !test(browser_author_bootstraps_from_empty_build_state)"

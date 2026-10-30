@@ -5,7 +5,6 @@
 
 use std::ffi::{OsStr, OsString};
 use std::io::{self, Write as _};
-use std::path::Path;
 use std::process::ExitCode;
 
 use maestro_path::normalize_native;
@@ -21,12 +20,13 @@ mod fixture_sources;
 /// Align the modification times of the executables the example warms code for.
 mod normalize;
 
-/// Run the setup named by the first argument in `checkout`.
+/// Run the setup named by the first argument in the current directory, where nextest starts
+/// its setup scripts: the workspace root.
 ///
 /// # Errors
 /// Returns an unknown or incomplete setup name, or the failure of the setup.
-pub(crate) fn run(args: &[OsString], checkout: &Path) -> io::Result<ExitCode> {
-    let checkout = normalize_native(checkout);
+pub(crate) fn run(args: &[OsString]) -> io::Result<ExitCode> {
+    let checkout = normalize_native(&std::env::current_dir()?);
     match args.first().and_then(|name| name.to_str()) {
         Some("author-component") => author_component::run(&checkout),
         Some("fixture-sources") => fixture_sources::run(&checkout),

@@ -3544,7 +3544,6 @@ fn author_setup(root: &Path, profile: &Path) -> Output {
     Command::new(env!("CARGO_BIN_EXE_development"))
         .args(["nextest-setup", "author-component"])
         .current_dir(root)
-        .env("CARGO_MANIFEST_DIR", root.join("crates/maestro-tooling"))
         .env_remove("TEST_PREPARE_OUTPUT")
         .env_remove("TEST_ARCHIVE")
         .env("NEXTEST_LD_LIBRARY_PATH", profile)

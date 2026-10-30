@@ -142,6 +142,24 @@ fn maestro_package_recipes_select_their_owners() {
 }
 
 #[test]
+fn maestro_test_recipe_installs_the_setup_tool_before_nextest() {
+    let workspace = Workspace::new();
+    fs::create_dir_all(workspace.path().join("crates/maestro-tooling")).unwrap();
+
+    let output = workspace.run("test");
+
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(
+        workspace.log(),
+        "cargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|prepare-test-setup|install|target/test-setup\ncargo nextest|run|--workspace|--locked\ncargo test|--workspace|--locked|--doc\n"
+    );
+}
+
+#[test]
 fn maestro_test_recipes_forward_literal_arguments() {
     for (recipe, selection, doctests) in [
         ("test", "--workspace|--locked", true),

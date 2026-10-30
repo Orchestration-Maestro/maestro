@@ -49,7 +49,6 @@ fn setup(root: &Path, fails: bool) -> Output {
         .current_dir(root)
         .env("CARGO", root.join("cargo"))
         .env("CALLS", root.join("calls"))
-        .env("CARGO_MANIFEST_DIR", root.join("crates/maestro-tooling"))
         .env("NEXTEST_ENV", root.join("nextest-env"))
         .env_remove("VENDOR_FAILS");
     if fails {

@@ -174,6 +174,37 @@ fn prepared_setup_stages_the_preparing_command() {
     );
 }
 
+/// A run without a bundle installs this command alone, where the nextest setup entry looks for
+/// it, and the run then prepares its components locally.
+#[test]
+fn install_stages_only_the_preparing_command() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture(root);
+
+    let code = maestro_tooling::run(
+        &[
+            "prepare-test-setup".into(),
+            "install".into(),
+            "target/test-setup".into(),
+        ],
+        &root.join("cargo"),
+        root,
+    )
+    .unwrap();
+
+    assert_eq!(code, ExitCode::SUCCESS);
+    let staged: Vec<_> = fs::read_dir(root.join("target/test-setup"))
+        .unwrap()
+        .map(|entry| entry.unwrap().file_name())
+        .collect();
+    assert_eq!(staged, ["development"]);
+    assert_eq!(
+        fs::read(root.join("target/test-setup/development")).unwrap(),
+        fs::read(std::env::current_exe().unwrap()).unwrap()
+    );
+}
+
 /// Archived runs give every extracted executable, and the installed setup example, one
 /// modification time so test processes share a compile-cache namespace with the installed
 /// compiled code.
@@ -295,7 +326,6 @@ fn author_setup_without_prepared_outputs_builds_locally() {
         command
             .current_dir(root)
             .env("CARGO", root.join("cargo"))
-            .env("CARGO_MANIFEST_DIR", root.join("crates/maestro-tooling"))
             .env("NEXTEST_ENV", root.join("nextest-env"))
             .env("NEXTEST_LD_LIBRARY_PATH", &profile)
             .env("NEXTEST_DYLD_FALLBACK_LIBRARY_PATH", &profile)
@@ -486,8 +516,8 @@ fn prepare(root: &Path) {
     .unwrap();
 }
 
-/// Run the real nextest setup entry point with archived-shard environment. The development
-/// binary takes its checkout from `CARGO_MANIFEST_DIR`, which points into the fixture.
+/// Run the real nextest setup entry point with archived-shard environment, from the fixture
+/// checkout where nextest starts it.
 fn export(root: &Path, prepared: &Path, archived: bool) -> Output {
     export_command(root, prepared, archived).output().unwrap()
 }
@@ -503,7 +533,6 @@ fn export_command(root: &Path, prepared: &Path, archived: bool) -> Command {
     command
         .current_dir(root)
         .env("CARGO", root.join("cargo"))
-        .env("CARGO_MANIFEST_DIR", root.join("crates/maestro-tooling"))
         .env("TEST_PREPARE_OUTPUT", prepared)
         .env("NEXTEST_ENV", root.join("nextest-env"))
         .env("NEXTEST_LD_LIBRARY_PATH", root.join("target/debug"))

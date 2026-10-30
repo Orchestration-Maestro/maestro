@@ -23,6 +23,7 @@ _check *selection:
 
 # Run all workspace tests.
 test *args:
+    @if [ -d crates/maestro-tooling ]; then cargo run --quiet --locked -p maestro-tooling --bin development -- prepare-test-setup install target/test-setup; fi
     @cargo nextest run --workspace --locked {{quote(args)}}
     @cargo test --workspace --locked --doc {{quote(args)}}
 

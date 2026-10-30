@@ -93,7 +93,7 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
             }
             Ok(ExitCode::SUCCESS)
         }
-        Some("nextest-setup") => nextest_setup::run(args, checkout),
+        Some("nextest-setup") => nextest_setup::run(args),
         Some("prepare-test-setup") => test_setup::run(args, cargo, checkout),
         Some("watch") => watch::run(args, cargo),
         Some("watch-step") => watch::step(args, cargo),

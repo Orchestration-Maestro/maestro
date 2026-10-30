@@ -2,9 +2,10 @@
 //!
 //! `prepare` runs the component-discovery example in a separate build and stages its component
 //! files, the code it compiled, the built example, this command and a content manifest.
-//! `export` validates that bundle against the checkout, installs the example beside the
-//! extracted test executables and the compiled code in the user cache, and writes the component
-//! paths for nextest.
+//! `install` stages this command alone, for runs without a bundle. The staged command's
+//! `author-component` setup validates the bundle against the checkout, installs the example
+//! beside the extracted test executables and the compiled code in the user cache, and writes
+//! the component paths for nextest.
 
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::ffi::OsString;
@@ -68,7 +69,7 @@ struct Manifest {
     compiled: Option<CompiledCode>,
 }
 
-/// Run `prepare`, `export` or `install` on the supplied checkout.
+/// Run `prepare` or `install` on the supplied checkout.
 ///
 /// # Errors
 /// Returns an unknown or incomplete subcommand, preparation or validation failure.
@@ -83,12 +84,6 @@ pub(crate) fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Resul
             checkout,
             &output,
             &checkout.join(argument(args, 2, "target")?),
-        )?,
-        Some("export") => install_bundle(
-            checkout,
-            &output,
-            argument(args, 2, "directory")?,
-            argument(args, 3, "environment")?,
         )?,
         Some("install") => {
             std::fs::create_dir_all(&output)?;

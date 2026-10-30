@@ -286,6 +286,9 @@ Clippy rejects the ambiguous `serde_json::Map::remove` in every target `just che
 compiles. `shift_remove` keeps the remaining key order; `swap_remove` is only for
 maps whose remaining order is never observed. Ordinary maps are unaffected.
 
+Conventions reject a shell script directly under `.config/`: nextest's setup entries call
+the development tool in `maestro-tooling`, which has the type checker, the linter and tests.
+
 Tests wait on completion signals; shared CI bounds the whole job. Conventions
 report recognized test-owned timer calls with file and line: Tokio
 `timeout`/`timeout_at`, standard `recv_timeout`, `recv_deadline`, `wait_timeout`,
