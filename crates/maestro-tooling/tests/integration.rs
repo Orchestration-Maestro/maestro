@@ -9,6 +9,7 @@ mod cargo_fixtures;
 mod component_preparation;
 mod nextest_priorities;
 mod prepared_setup_packages;
+mod shared_ci_callers;
 mod tooling_commands;
 
 #[path = "fixtures/toolchain_support.rs"]
