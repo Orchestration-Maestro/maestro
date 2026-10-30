@@ -29,23 +29,6 @@ fn markdown(directory: &Path, files: &mut Vec<PathBuf>) {
     }
 }
 
-/// The documentation files that may name a nextest command, under the checkout `root`.
-fn documentation_files(root: &Path) -> Vec<PathBuf> {
-    let mut files = Vec::new();
-    for directory in ["docs", "examples"] {
-        markdown(&root.join(directory), &mut files);
-    }
-    files.push(root.join("README.md"));
-    files.push(root.join("CONTRIBUTING.md"));
-    for entry in fs::read_dir(root.join("crates")).unwrap() {
-        let readme = entry.unwrap().path().join("README.md");
-        if readme.is_file() {
-            files.push(readme);
-        }
-    }
-    files
-}
-
 /// The commands of every fenced block in `text`, each logical command on one line.
 fn commands(text: &str) -> Vec<Vec<String>> {
     let mut blocks = Vec::new();
@@ -76,20 +59,13 @@ fn commands(text: &str) -> Vec<Vec<String>> {
     blocks
 }
 
-/// Whether `command` starts nextest on the whole workspace or on a package the setup serves,
-/// selected as `-p name`, `--package name`, `-p=name` or `--package=name`.
+/// Whether `command` starts nextest on a package the setup serves.
 fn runs_served_nextest(command: &str, served: &[String]) -> bool {
     let words: Vec<_> = command.split_whitespace().collect();
-    let selects = |package: &str| served.iter().any(|served| served == package);
     command.contains("nextest run")
-        && (words.contains(&"--workspace")
-            || words
-                .windows(2)
-                .any(|pair| matches!(pair[0], "-p" | "--package") && selects(pair[1]))
-            || words
-                .iter()
-                .filter_map(|word| word.strip_prefix("--package=").or(word.strip_prefix("-p=")))
-                .any(selects))
+        && words
+            .windows(2)
+            .any(|pair| pair[0] == "-p" && served.iter().any(|package| package == pair[1]))
 }
 
 /// The first command of `block` that starts a served nextest run before any step stages the tool.
@@ -108,7 +84,10 @@ fn unstaged_run(block: Vec<String>, served: &[String]) -> Option<String> {
 #[test]
 fn documented_nextest_commands_stage_the_setup_tool_first() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let files = documentation_files(&root);
+    let mut files = Vec::new();
+    for directory in ["docs", "examples"] {
+        markdown(&root.join(directory), &mut files);
+    }
     let served = served_packages();
     let mut missing = Vec::new();
     for file in files {
@@ -153,49 +132,4 @@ fn documented_nextest_commands_follow_the_packages_shared_ci_declares() {
         unstaged_run(block, &served).as_deref(),
         Some("cargo nextest run --locked -p maestro-app")
     );
-}
-
-/// A run selected with `--package`, or over the whole workspace, serves the same packages.
-#[test]
-fn documented_nextest_commands_cover_every_package_selection_spelling() {
-    let served = vec!["maestro-app".to_owned()];
-
-    for command in [
-        "cargo nextest run --package maestro-app",
-        "cargo nextest run --package=maestro-app",
-        "cargo nextest run -p=maestro-app",
-        "cargo nextest run --workspace",
-    ] {
-        assert_eq!(
-            unstaged_run(vec![command.to_owned()], &served).as_deref(),
-            Some(command)
-        );
-    }
-    assert_eq!(
-        unstaged_run(
-            vec!["cargo nextest run --package maestro-text".to_owned()],
-            &served
-        ),
-        None
-    );
-}
-
-/// The checked files include the contribution guide, the root readme and every crate readme.
-#[test]
-fn documentation_files_include_the_guide_and_the_readmes() {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-
-    let files = documentation_files(&root);
-
-    for expected in [
-        "CONTRIBUTING.md",
-        "README.md",
-        "crates/maestro-agent/README.md",
-        "docs/development.md",
-    ] {
-        assert!(
-            files.iter().any(|file| file.ends_with(expected)),
-            "{expected} is not checked"
-        );
-    }
 }

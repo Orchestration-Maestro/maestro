@@ -5,13 +5,11 @@
 
 use std::ffi::{OsStr, OsString};
 use std::io::{self, Write as _};
-use std::path::Path;
 use std::process::ExitCode;
 
 use maestro_path::normalize_native;
 
 use super::argument;
-use crate::test_setup::at;
 
 /// Prepare and launch the component-discovery example.
 mod author_component;
@@ -60,8 +58,7 @@ fn export(entry: &OsStr) -> io::Result<()> {
     let mut file = std::fs::OpenOptions::new()
         .create(true)
         .append(true)
-        .open(&file)
-        .map_err(|error| at(Path::new(&file), error))?;
+        .open(file)?;
     file.write_all(entry.as_encoded_bytes())?;
     file.write_all(b"\n")
 }

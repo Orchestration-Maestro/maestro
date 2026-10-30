@@ -8,7 +8,7 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
 
-use super::normalize::{self, EXAMPLE_OUTDATED, Outcome, archive_signalled};
+use super::normalize::{self, Outcome, archive_signalled};
 use super::{cargo, nonempty};
 use crate::exit_code;
 use crate::test_setup::{self, EXAMPLE, MANIFEST};
@@ -57,9 +57,9 @@ pub(super) fn run(checkout: &Path) -> io::Result<ExitCode> {
 /// never outdated.
 fn run_prepared(checkout: &Path, bundle: &Path, directory: &Path) -> io::Result<ExitCode> {
     let environment = environment_file()?;
-    test_setup::export(checkout, bundle, directory, &environment)?;
+    test_setup::install_bundle(checkout, bundle, directory, &environment)?;
     if normalize::normalize(checkout, directory, archive_signalled())? == Outcome::ExampleOutdated {
-        return Ok(ExitCode::from(EXAMPLE_OUTDATED));
+        return Ok(ExitCode::from(3));
     }
     let example = directory.join("examples").join(EXAMPLE);
     let mut command = Command::new(example);

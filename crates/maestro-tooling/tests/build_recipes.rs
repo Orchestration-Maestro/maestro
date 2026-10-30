@@ -178,7 +178,7 @@ fn maestro_prepare_tests_recipe_stages_only_the_setup_tool() {
     );
 }
 
-/// The check recipe stages the setup tool before its other steps.
+/// The check recipe stages the setup tool before any step that could start nextest.
 #[test]
 fn maestro_check_recipe_stages_the_setup_tool_first() {
     let workspace = Workspace::new();
