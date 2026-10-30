@@ -62,6 +62,7 @@ fn archived_author_setup_rejects_missing_and_stale_outputs() {
         "invalid variable",
         "corrupt cache",
         "missing cache",
+        "escaping cache name",
     ] {
         let scratch = Scratch::new().unwrap();
         let root = scratch.path();
@@ -183,10 +184,11 @@ fn archived_author_setup_aligns_executable_times() {
 }
 
 /// The bundle carries the code the setup example compiled, and a shard installs it for the
-/// modification time its executables share, in whichever directory the user cache is found.
+/// modification time its executables share, in whichever directory the user cache is found,
+/// a relative `HOME` included, as the test-process owner finds it.
 #[test]
 fn archived_author_setup_installs_the_prepared_compiled_code() {
-    for home_only in [false, true] {
+    for home in [None, Some("absolute"), Some("relative")] {
         let scratch = Scratch::new().unwrap();
         let root = scratch.path();
         fixture(root);
@@ -195,13 +197,16 @@ fn archived_author_setup_installs_the_prepared_compiled_code() {
         assert_eq!(fs::read_to_string(staged.join("key")).unwrap(), "compiled");
         assert!(!staged.join("key.stats").exists());
         let mut command = export_command(root, &root.join("target/test-setup"), true);
-        if home_only {
-            command
-                .env_remove("XDG_CACHE_HOME")
-                .env("HOME", root.join("home"));
+        if let Some(kind) = home {
+            let value = if kind == "absolute" {
+                root.join("home")
+            } else {
+                PathBuf::from("home")
+            };
+            command.env_remove("XDG_CACHE_HOME").env("HOME", value);
         }
         assert_success(&command.output().unwrap());
-        let cache = if home_only {
+        let cache = if home.is_some() {
             root.join("home/.cache")
         } else {
             root.join("cache-home")
@@ -454,6 +459,11 @@ fn tamper(root: &Path, change: &str) -> PathBuf {
         }
         "corrupt cache" => fs::write(prepared.join("cache/key"), "broken").unwrap(),
         "missing cache" => fs::remove_file(prepared.join("cache/key")).unwrap(),
+        "escaping cache name" => edit_manifest_value(&prepared, |manifest| {
+            let files = manifest["compiled"]["files"].as_object_mut().unwrap();
+            let digest = files.shift_remove("key").unwrap();
+            files.insert("../key".to_owned(), digest);
+        }),
         "missing pair" => edit_manifest(&prepared, |components| {
             components.retain(|variable, _| variable != "MAESTRO_CONTEXT_COMPONENT");
         }),
@@ -481,10 +491,17 @@ fn edit_manifest(
     prepared: &Path,
     edit: impl FnOnce(&mut serde_json::Map<String, serde_json::Value>),
 ) {
+    edit_manifest_value(prepared, |manifest| {
+        edit(manifest["components"].as_object_mut().unwrap());
+    });
+}
+
+/// Rewrite the bundle's manifest as a whole.
+fn edit_manifest_value(prepared: &Path, edit: impl FnOnce(&mut serde_json::Value)) {
     let path = prepared.join("components.json");
     let mut manifest: serde_json::Value =
         serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
-    edit(manifest["components"].as_object_mut().unwrap());
+    edit(&mut manifest);
     fs::write(path, serde_json::to_vec(&manifest).unwrap()).unwrap();
 }
 
