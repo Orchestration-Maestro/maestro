@@ -137,28 +137,8 @@ slow-timeout = { period = "30s", terminate-after = 5 }
 
 [[profile.default.overrides]]
 filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_bootstraps_from_empty_build_state)"
-# Measured: 207.925s; cause: nested Cargo/Trunk builds and browser fixture preparation; #3661
+# Measured: 207.925s; cause: a build from an empty Cargo home and target by design, 124.4s on an idle runner; #3661
 slow-timeout = { period = "30s", terminate-after = 7 }
-
-[[profile.default.overrides]]
-filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_check_preserves_adjacent_locks)"
-# Measured: 291.917s; cause: nested Cargo/Trunk builds and browser fixture preparation; #3662
-slow-timeout = { period = "30s", terminate-after = 10 }
-
-[[profile.default.overrides]]
-filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_checks_accept_valid_sources)"
-# Measured: 136.638s; cause: nested Cargo/Trunk builds and browser fixture preparation; #3663
-slow-timeout = { period = "30s", terminate-after = 5 }
-
-[[profile.default.overrides]]
-filter = "package(=maestro-tooling) & test(=browser_author_build::browser_check_repairs_formatting)"
-# Measured: 250.575s; cause: nested Cargo/Trunk builds and browser fixture preparation; #3664
-slow-timeout = { period = "30s", terminate-after = 9 }
-
-[[profile.default.overrides]]
-filter = "package(=maestro-tooling) & test(=browser_author_build::browser_native_checks_keep_inputs_and_refuse_bad_sources)"
-# Measured: 125.482s; cause: nested Cargo/Trunk builds and browser fixture preparation; #3665
-slow-timeout = { period = "30s", terminate-after = 5 }
 
 # Priorities rank successful whole-test durations above 30s in merge-group
 # run 40795869386, longest first (100 downwards). Other tests keep priority 0.
