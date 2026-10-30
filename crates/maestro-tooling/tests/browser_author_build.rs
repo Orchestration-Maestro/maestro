@@ -1744,6 +1744,16 @@ fn browser_author_shared_launcher_uses_invoking_checkout() {
     );
 }
 
+/// The cold checkout compiles its dependencies at the plain development profile.
+#[test]
+fn browser_cold_checkout_builds_dependencies_at_the_plain_dev_profile() {
+    let browser = Browser::cold();
+    let manifest: toml::Table =
+        toml::from_str(&fs::read_to_string(browser.path("Cargo.toml")).unwrap()).unwrap();
+    let packages = manifest["profile"]["dev"]["package"].as_table().unwrap();
+    assert_eq!(packages.keys().collect::<Vec<_>>(), ["*"]);
+}
+
 #[test]
 fn browser_author_bootstraps_from_empty_build_state() {
     let browser = Browser::cold();

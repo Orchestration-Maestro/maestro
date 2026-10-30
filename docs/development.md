@@ -841,7 +841,10 @@ test that built into a differently spelled directory recompiled every dependency
 built for one checkout path serves another, so each test's copy of the checkout reuses it.
 
 `browser_author_bootstraps_from_empty_build_state` builds from an empty state on
-purpose, so the setup is not run for it. A recipe that fails during setup prints a
+purpose, so the setup is not run for it. Its checkout drops the per-package
+optimization levels of the root manifest, which only pay off for tests that run the
+optimized crates repeatedly, and the test reserves every core with `threads-required`,
+so other tests do not stretch its compiler jobs past the hang limit. A recipe that fails during setup prints a
 warning and does not stop the run; the tests run the same recipes and report the
 failure. Plain Cargo tests, and nextest runs without the setup, use the test build's own
 target directory.
