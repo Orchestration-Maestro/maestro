@@ -459,11 +459,15 @@ fn tamper(root: &Path, change: &str) -> PathBuf {
         }
         "corrupt cache" => fs::write(prepared.join("cache/key"), "broken").unwrap(),
         "missing cache" => fs::remove_file(prepared.join("cache/key")).unwrap(),
-        "escaping cache name" => edit_manifest_value(&prepared, |manifest| {
-            let files = manifest["compiled"]["files"].as_object_mut().unwrap();
-            let digest = files.shift_remove("key").unwrap();
-            files.insert("../key".to_owned(), digest);
-        }),
+        "escaping cache name" => {
+            // The file the name reaches carries the right digest, so only the guard refuses it.
+            fs::copy(prepared.join("cache/key"), prepared.join("key")).unwrap();
+            edit_manifest_value(&prepared, |manifest| {
+                let files = manifest["compiled"]["files"].as_object_mut().unwrap();
+                let digest = files.shift_remove("key").unwrap();
+                files.insert("../key".to_owned(), digest);
+            });
+        }
         "missing pair" => edit_manifest(&prepared, |components| {
             components.retain(|variable, _| variable != "MAESTRO_CONTEXT_COMPONENT");
         }),
