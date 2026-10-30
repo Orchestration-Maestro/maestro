@@ -11,5 +11,3 @@ permissions:
 jobs:
   suite:
     uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/ci.yml@91570058e21c7b5458cf7e4852d2a6518a08ed95 # v0.18.1
-    with:
-      concurrency-key: maestro-suite

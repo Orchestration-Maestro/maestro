@@ -19,10 +19,15 @@ use sha2::{Digest, Sha256};
 use super::argument;
 use super::example_files::{FIXED_VARIABLES, validate_variable};
 use compiled_code::CompiledCode;
+use user_cache::user_cache_home;
 
 mod compiled_code;
 #[cfg(test)]
 mod tests;
+#[path = "../../maestro-test-process/src/cache.rs"]
+/// The user cache location the test-process owner names, shared so a shard installs the compiled
+/// code where its test children look for it.
+mod user_cache;
 
 /// The setup example that discovers, builds and warms the components.
 const EXAMPLE: &str = "prepare_author_component";
@@ -78,7 +83,7 @@ pub(crate) fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Resul
             &output,
             argument(args, 2, "directory")?,
             argument(args, 3, "environment")?,
-            user_cache().as_deref(),
+            user_cache_home().as_deref(),
         )?,
         _ => return Err(io::Error::other("unknown test setup command")),
     }
@@ -93,16 +98,6 @@ fn inherited_components(names: impl Iterator<Item = OsString>) -> Vec<OsString> 
                 .is_some_and(|name| validate_variable(name).is_ok())
         })
         .collect()
-}
-
-/// The directory the engine keeps its compiled code under: `XDG_CACHE_HOME`, else `~/.cache`.
-fn user_cache() -> Option<PathBuf> {
-    let absolute = |name| {
-        std::env::var_os(name)
-            .map(PathBuf::from)
-            .filter(|path| path.is_absolute())
-    };
-    absolute("XDG_CACHE_HOME").or_else(|| absolute("HOME").map(|home| home.join(".cache")))
 }
 
 /// Build the setup example in a build of its own, run it with a cache of its own and stage what

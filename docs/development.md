@@ -973,9 +973,10 @@ shards restore. The snapshot is capped at 1 GiB and evicts its least recently
 used entries, so the selection stays narrow. The warm-up is never a required
 check, and a newer push cancels a running one. Its `uses:` pin follows the rule in
 [Full-suite runs after landing](#full-suite-runs-after-landing). The shared workflow groups
-push runs by commit, so the warm-up and the suite caller each pass their own
-`concurrency-key` (`maestro-warm` and `maestro-suite`); without one the warm-up waited
-behind the full suite for the same commit.
+push runs by commit, so the warm-up passes its own `concurrency-key` (`maestro-warm`);
+without one it waited behind the full suite for the same commit. The full suite passes
+none: the key names the coverage manifest, and merge groups search the manifest of the
+default key as their baseline, which a main push run publishes only under that key.
 
 ## Full-suite runs after landing
 
