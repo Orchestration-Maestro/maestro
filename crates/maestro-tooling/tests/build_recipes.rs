@@ -850,6 +850,7 @@ fn copy_root_manifest(workspace: &Workspace) {
         workspace.path().join("Cargo.toml"),
     )
     .unwrap();
+    workspace.use_plain_dev_profile();
 }
 
 /// Copy local dependency patches from the source manifest into a build fixture.
