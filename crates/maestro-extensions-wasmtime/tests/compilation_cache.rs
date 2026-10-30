@@ -47,14 +47,17 @@ fn files_below(directory: &Path) -> Vec<std::path::PathBuf> {
         .collect()
 }
 
-/// Removes a file the compile wrote.
+/// Removes a file the compile wrote. The cache worker renames or deletes its own statistics
+/// files in the background, so a file already gone counts as removed.
 fn remove_written(path: &Path) {
-    std::fs::remove_file(path).unwrap();
+    if let Err(error) = std::fs::remove_file(path) {
+        assert_eq!(error.kind(), std::io::ErrorKind::NotFound, "{error}");
+    }
 }
 
 /// Compiles the supplied bytes through a second engine, observing the persistent cache. A
-/// compile that misses removes the entries it wrote, so only an entry another process wrote
-/// earlier counts as a hit on any later run.
+/// compile that misses removes every file that appeared in the cache during the compile, so only
+/// an entry written earlier counts as a hit on any later run.
 fn cached_compile(path: &Path) -> usize {
     let cache = Cache::from_file(None).unwrap();
     let before = files_below(cache.directory());
