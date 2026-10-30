@@ -3,18 +3,18 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-/// The packages whose tests nextest's author-component setup serves.
-const SERVED_PACKAGES: [&str; 3] = [
-    "maestro-extensions-wasm",
-    "maestro-extensions-wasmtime",
-    "maestro",
-];
 /// The recipe that stages the development tool the setup runs.
 const PREPARE: &str = "just prepare-tests";
 
-/// The packages shared CI declares as served by the setup.
+/// The packages whose tests nextest's author-component setup serves, as shared CI declares them.
 fn served_packages() -> Vec<String> {
-    SERVED_PACKAGES.map(str::to_owned).to_vec()
+    let ci: toml::Table = include_str!("../../../.github/ci.toml").parse().unwrap();
+    ci["test_prepare_packages"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|name| name.as_str().unwrap().to_owned())
+        .collect()
 }
 
 /// The Markdown files under `directory`, recursively.
@@ -60,12 +60,12 @@ fn commands(text: &str) -> Vec<Vec<String>> {
 }
 
 /// Whether `command` starts nextest on a package the setup serves.
-fn runs_served_nextest(command: &str, _served: &[String]) -> bool {
+fn runs_served_nextest(command: &str, served: &[String]) -> bool {
     let words: Vec<_> = command.split_whitespace().collect();
     command.contains("nextest run")
         && words
             .windows(2)
-            .any(|pair| pair[0] == "-p" && SERVED_PACKAGES.contains(&pair[1]))
+            .any(|pair| pair[0] == "-p" && served.iter().any(|package| package == pair[1]))
 }
 
 /// The first command of `block` that starts a served nextest run before any step stages the tool.
