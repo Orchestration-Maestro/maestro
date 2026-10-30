@@ -11,7 +11,10 @@ collation = ["dep:icu_collator", "dep:icu_locale_core"]
 
 number-format = ["dep:icu_decimal", "dep:fixed_decimal", "dep:icu_locale_core"]
 
+date-time-format = ["number-format", "dep:icu_locale_fallback"]
+
 [dependencies]
+icu_locale_fallback = { version = "=2.3.0", optional = true }
 regex = "=1.13.1"
 icu_decimal = { version = "=2.3.0", features = ["alloc", "ryu"], optional = true }
 fixed_decimal = { version = "=0.7.2", default-features = false, optional = true }

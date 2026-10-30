@@ -7,7 +7,7 @@ pub use theme::watch_with_error_handler;
 pub use theme::{BrandFont, BrandGlyph, BrandMark, BrandMode, BrandPack, BrandPresentation};
 pub use theme::{BrandType, load_brand_pack};
 #[cfg(not(target_arch = "wasm32"))]
-pub use theme::{Collator, NativeThemeWatchOperations};
+pub use theme::{Collator, LocaleDateTimeFormat, NativeThemeWatchOperations};
 pub use theme::{ColorMode, ColorValue, Theme, ThemeBg, ThemeColor, ThemeError, ThemeOptions};
 pub use theme::{
     HighlightProfile, get_settings_list_theme, highlight_auto, highlight_code, highlight_css,
