@@ -51,7 +51,7 @@ filter = "package(maestro-tooling) & test(/^browser_author_build::/) & !test(bro
 test-group = "browser-author"
 
 # Every test is flagged slow every 30 seconds and killed at the 120-second hang limit.
-# An exception below exists only for a test that needs more than 120 seconds. It keeps
+# An exception exists only for a test that needs more than 120 seconds. It keeps
 # the 30-second slow flag, lengthens the kill to whole 30-second periods, and names the
 # issue that removes it. Measured values are whole-test CI maxima unless the comment
 # says the run was killed and the value is a lower bound; diagnostic phase timings
@@ -65,10 +65,12 @@ test-group = "browser-author"
 # Retain real cold-build/lock/format assertions while #3589 fixes repeated
 # build work. These phase observations are not replacement CI maxima.
 
+# The cold-start test compiles the native tools and the WebAssembly fixture from an empty target
+# with parallel compiler jobs. It takes every core so that sharing them with other tests does not
+# stretch it past the hang limit.
 [[profile.default.overrides]]
 filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_bootstraps_from_empty_build_state)"
-# Measured: 207.925s; cause: a build from an empty Cargo home and target by design, 124.4s on an idle runner; #3661
-slow-timeout = { period = "30s", terminate-after = 7 }
+threads-required = "num-cpus"
 
 # Priorities rank successful whole-test durations above 30s in merge-group
 # run 40795869386, longest first (100 downwards). Other tests keep priority 0.

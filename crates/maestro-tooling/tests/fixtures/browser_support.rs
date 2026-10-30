@@ -35,7 +35,9 @@ impl Browser {
     /// Prepare isolated inputs without locking the shared Trunk build output.
     /// Every build command must supply its own Cargo target directory.
     pub fn cold() -> Self {
-        Self::prepare(None)
+        let browser = Self::prepare(None);
+        browser.workspace.use_plain_dev_profile();
+        browser
     }
 
     /// Copy authored inputs while retaining any shared-output lock.
