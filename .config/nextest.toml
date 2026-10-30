@@ -3,8 +3,7 @@ experimental = ["setup-scripts"]
 # Every setup entry runs the development tool. The tooling setups serve only `maestro-tooling`
 # tests, whose build always produces the tool in the target directory. The author-component
 # setup also serves other packages, so it runs the tool from `target/test-setup`: a shard finds
-# it in the downloaded bundle, and `just test` installs it there first
-# (`development -- prepare-test-setup install target/test-setup`).
+# it in the downloaded bundle, and `just prepare-tests` installs it there first.
 
 [profile.default]
 slow-timeout = { period = "30s", terminate-after = 4 }

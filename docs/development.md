@@ -80,6 +80,7 @@ commands from the checkout using the pinned toolchain and checked-in lock:
 ```powershell
 $env:CARGO_BUILD_JOBS = '3'
 cargo nextest run --locked -p maestro-app --test integration -E 'test(/^footer_metadata::/)' --no-fail-fast
+just prepare-tests
 cargo nextest run --locked -p maestro-extensions-wasm --no-fail-fast
 cargo nextest run --locked -p maestro-extensions-wasm --release -E 'test(/^tests::maestro_component_contract_keeps_sync_and_async_calls$/)' --no-fail-fast
 ```
@@ -723,12 +724,11 @@ Other runs reuse an existing manifest, rejecting stale or incomplete files; with
 a manifest they keep local auto-build. Archive strictness
 requires the shared CI release that supplies `TEST_ARCHIVE=1`. Source hashes
 include the built crates and their path dependencies, examples, assets, Cargo
-configuration, locked dependencies, the toolchain. The variable names in the
+configuration, locked dependencies and the toolchain. The variable names in the
 bundle follow component discovery's own rule and fixed author and context pair.
 File timestamps do not affect reuse, but the staged example finds component
-sources at the checkout path it was built in, and the staged tool reads the
-checkout from the path it was built at, so both jobs must use the same checkout
-path, as shared CI does.
+sources at the checkout path it was built in, so both jobs must use the same
+checkout path, as shared CI does.
 
 For a local check of that boundary, run:
 
@@ -743,10 +743,13 @@ The development tool's `nextest-setup` command runs every nextest setup entry:
 `normalize-component-cache`. `.config/nextest.toml` names only these commands, and the
 conventions check rejects a shell script under `.config/`. The `author-component` entry
 runs the tool from `target/test-setup/development`: a shard receives it in the downloaded
-bundle, and `just test` installs it with `prepare-test-setup install target/test-setup`.
-Run that install first when you start nextest on a package the entry serves, as nextest
-only names the missing path. The tooling entries run `debug/development` from the target
-directory, which every `maestro-tooling` test build produces.
+bundle, and `just prepare-tests` installs it. `just test` runs that recipe first.
+When you start nextest by hand on a package the entry serves and the tool is missing,
+nextest prints the missing path `target/test-setup/development`; run `just prepare-tests`
+once and start nextest again. Run it again after a change to `maestro-tooling`, as nextest
+runs a staged copy that is outdated without a word. The tooling entries run
+`debug/development` from the target directory, which every `maestro-tooling` test build
+produces.
 
 With `TEST_ARCHIVE` unset and no prepared bundle, local runs build the example
 automatically. Before guest-authoring tests, the `author-component` setup locates the active
@@ -759,8 +762,8 @@ after a `--lib` or filtered selection, the setup builds it through Cargo in the
 same target directory and profile before running it directly.
 The setup fails if the directory cannot be resolved rather than building
 elsewhere. It uses `NEXTEST_LD_LIBRARY_PATH` on Linux,
-`NEXTEST_DYLD_FALLBACK_LIBRARY_PATH` on macOS and `PATH` through Git's shell
-on Windows, where the shell converts the search list to colon-separated paths.
+`NEXTEST_DYLD_FALLBACK_LIBRARY_PATH` on macOS and `PATH` on Windows, split with the
+platform's own separator.
 Before running the example, the setup's cache normalization (`nextest-setup normalize-component-cache`) gives executable
 artifacts in the profile directory, `deps` and `examples` their newest existing
 modification time. This advances older outputs without making them older than

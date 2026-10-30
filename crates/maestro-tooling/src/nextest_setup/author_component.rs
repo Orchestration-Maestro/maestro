@@ -109,26 +109,7 @@ fn build(checkout: &Path, directory: &Path) -> io::Result<()> {
         .unwrap_or_default();
     let profile = if profile == "debug" { "dev" } else { profile };
     let target = directory.parent().unwrap_or(directory);
-    let status = Command::new(cargo())
-        .current_dir(checkout)
-        .args([
-            "build",
-            "--quiet",
-            "--locked",
-            "-p",
-            "maestro-extensions-wasm",
-        ])
-        .args(["--example", EXAMPLE, "--target-dir"])
-        .arg(target)
-        .args(["--profile", profile])
-        .status()?;
-    if status.success() {
-        Ok(())
-    } else {
-        Err(io::Error::other(format!(
-            "{EXAMPLE} failed to build: {status}"
-        )))
-    }
+    test_setup::build_example(Path::new(&cargo()), checkout, target, profile)
 }
 
 /// The setup example the test build left in `directory`, if any.

@@ -11,7 +11,7 @@ use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::ffi::OsString;
 use std::fmt::Write as _;
 use std::io;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::{Command, ExitCode};
 
 use cargo_metadata::Metadata;
@@ -116,7 +116,8 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
     remove(&environment)?;
     let cache_home = target.join("cache-home");
     remove_directory(&cache_home)?;
-    let example = build_example(cargo, checkout, target)?;
+    build_example(cargo, checkout, target, "dev")?;
+    let example = target.join("debug/examples").join(EXAMPLE);
     run_example(cargo, checkout, &example, &environment, &cache_home)?;
     let mut components = BTreeMap::new();
     for line in std::fs::read_to_string(&environment)?.lines() {
@@ -152,8 +153,13 @@ fn stage_tool(output: &Path) -> io::Result<()> {
     copy(&std::env::current_exe()?, &output.join(EXPORTER))
 }
 
-/// Build the setup example in `target` and return its path.
-fn build_example(cargo: &Path, checkout: &Path, target: &Path) -> io::Result<PathBuf> {
+/// Build the setup example in `target` with the Cargo `profile`.
+pub(crate) fn build_example(
+    cargo: &Path,
+    checkout: &Path,
+    target: &Path,
+    profile: &str,
+) -> io::Result<()> {
     let status = Command::new(cargo)
         .current_dir(checkout)
         .args([
@@ -165,13 +171,15 @@ fn build_example(cargo: &Path, checkout: &Path, target: &Path) -> io::Result<Pat
         ])
         .args(["--example", EXAMPLE, "--target-dir"])
         .arg(target)
+        .args(["--profile", profile])
         .status()?;
-    if !status.success() {
-        return Err(io::Error::other(format!(
+    if status.success() {
+        Ok(())
+    } else {
+        Err(io::Error::other(format!(
             "{EXAMPLE} failed to build: {status}"
-        )));
+        )))
     }
-    Ok(target.join("debug/examples").join(EXAMPLE))
 }
 
 /// Run the built example so it writes its component paths to `environment` and its compiled
