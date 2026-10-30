@@ -31,6 +31,9 @@ fn collect_into(folder: &Path, files: &mut Vec<PathBuf>) -> io::Result<()> {
     Ok(())
 }
 
+/// The author and context exports that every preparation provides, so no marker may reuse them.
+pub const FIXED_VARIABLES: [&str; 2] = ["MAESTRO_AUTHOR_COMPONENT", "MAESTRO_CONTEXT_COMPONENT"];
+
 /// Visits marked components in source order, validating each export before its callback.
 ///
 /// Variables are unique across all roots, including the fixed author and context exports.
@@ -41,10 +44,7 @@ pub fn visit(
     folders: &[PathBuf],
     mut visit: impl FnMut(&str, &str) -> io::Result<()>,
 ) -> io::Result<()> {
-    let mut variables = HashSet::from([
-        String::from("MAESTRO_AUTHOR_COMPONENT"),
-        String::from("MAESTRO_CONTEXT_COMPONENT"),
-    ]);
+    let mut variables = HashSet::from(FIXED_VARIABLES.map(String::from));
     let mut files = Vec::new();
     for folder in folders {
         files.extend(collect(folder)?.into_iter().map(|file| (folder, file)));
@@ -72,7 +72,10 @@ pub fn visit(
 }
 
 /// Keep variable names within the component environment namespace and one output line.
-fn validate_variable(variable: &str) -> io::Result<()> {
+///
+/// # Errors
+/// Returns an error naming a variable that is outside that namespace.
+pub fn validate_variable(variable: &str) -> io::Result<()> {
     if variable.starts_with("MAESTRO_")
         && variable.ends_with("_COMPONENT")
         && variable

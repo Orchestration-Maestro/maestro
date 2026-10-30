@@ -19,7 +19,8 @@ for directory in $paths; do
         # The staged example is as new as the archive's executables, so status 3 cannot occur.
         TEST_PREPARE_OUTPUT=${TEST_PREPARE_OUTPUT:-target/test-setup}
         export TEST_PREPARE_OUTPUT
-        python3 "$(dirname "$0")/prepare-test-setup.py" export "$directory"
+        "$TEST_PREPARE_OUTPUT/development" prepare-test-setup export \
+            "$TEST_PREPARE_OUTPUT" "$directory" "$NEXTEST_ENV"
         sh "$(dirname "$0")/normalize-component-cache.sh" "$directory"
         # The example takes the prepared components from its environment, so it only warms.
         while IFS= read -r entry; do export "$entry"; done <"$NEXTEST_ENV"

@@ -3,7 +3,7 @@ additional_locked_manifests = ["crates/maestro-tooling/tests/fixtures/browser_au
 wasm_crates = ["maestro-agent", "maestro-app", "maestro-brand", "maestro-cancellation", "maestro-catalog", "maestro-chat", "maestro-credentials", "maestro-entry", "maestro-export", "maestro-extensions", "maestro-json", "maestro-lock", "maestro-markdown", "maestro-models", "maestro-packages", "maestro-path", "maestro-pattern", "maestro-request", "maestro-resources", "maestro-session", "maestro-settings", "maestro-text", "maestro-theme", "maestro-tool", "maestro-tools", "maestro-tui", "maestro-watch", "maestro-web"]
 browser_test_crates = ["maestro-app", "maestro-web"]
 test_tools = true
-test_prepare = "python3 .config/prepare-test-setup.py prepare"
+test_prepare = "cargo run --quiet --locked -p maestro-tooling --bin development -- prepare-test-setup prepare \"$TEST_PREPARE_OUTPUT\" \"${CARGO_TARGET_DIR:-target/test-prepare}\""
 test_inputs = { "fuzz/" = [], "justfile" = ["maestro-tooling"], "packages/" = ["maestro-packages"], "workspace-crates.json" = ["maestro-test-conventions"] }
 reserved_ports = [53692, 1455]
 # Main's warm-up runs this test so its author-component build enters the compile cache.
