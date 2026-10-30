@@ -749,6 +749,34 @@ read them. A file owned by another workspace member already selects that member
 and its dependents. Only otherwise unowned, undeclared paths use the all-or-none fallback:
 they select every test, or none when the file is Markdown or under `docs/`.
 
+### Browser author build
+
+A test shard starts with an empty target directory and no compile cache. The
+browser author tests run the browser recipes, which compile the native bootstrap
+programs and the WebAssembly fixture, and lint the delivered browser library.
+Whichever of them ran first on a shard paid for all of that while about a thousand
+other tests used the same cores. That took 120 to 290 seconds, and the test that paid
+changed with scheduling, so any of them could reach the hang limit.
+
+The nextest setup script `.config/prepare-browser-author.sh` pays the cost once, before
+the first browser author test of a run, and only on a shard that runs one. It lints
+`maestro-web` for `wasm32-unknown-unknown` as `browser-check` does, without the
+formatting repair that would rewrite sources, then runs `browser-example-check`,
+`browser-library-build` and `browser-debug-build` in the checkout. It removes the
+runner's coverage flags and profile path from those commands and restores the compiler
+wrapper that preceded coverage, as the tests do for their own children. It builds in
+`target/browser-author` and exports that path as `MAESTRO_BROWSER_TARGET_DIR`, which
+`Browser` gives to every recipe and helper. Cargo records the spelling of the target
+directory in what it compiles, so the script and the tests must name the same one: a
+test that built into a differently spelled directory recompiled every dependency. Output
+built for one checkout path serves another, so each test's copy of the checkout reuses it.
+
+`browser_author_bootstraps_from_empty_build_state` builds from an empty state on
+purpose, so the script is not run for it. A recipe that fails during setup prints a
+warning and does not stop the run; the tests run the same recipes and report the
+failure. Plain Cargo tests, and nextest runs without the script, use the test build's own
+target directory.
+
 ### Cargo state of tooling fixtures
 
 Cargo locks the package cache of its home while it resolves, even with
@@ -773,7 +801,8 @@ the same script. A fixture opts in with `Workspace::use_prepared_sources` or
 without registry dependencies copies nothing. The cold browser build still
 vendors the whole workspace for itself, because it compiles every dependency.
 
-Cargo builds that share the test build's target directory keep the shared home.
+Cargo builds that share one target directory with other builds, the test build's or the
+one the browser author setup prepares, keep the shared home.
 A registry crate's fingerprint includes its source path, so a private home with
 vendored sources recompiles every registry dependency in that target, and going
 back to the shared home recompiles them again. The browser recipe and native
