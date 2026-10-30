@@ -178,6 +178,28 @@ fn maestro_prepare_tests_recipe_stages_only_the_setup_tool() {
     );
 }
 
+/// The check recipe stages the setup tool before any step that could start nextest.
+#[test]
+fn maestro_check_recipe_stages_the_setup_tool_first() {
+    let workspace = Workspace::new();
+    fs::create_dir_all(workspace.path().join("crates/maestro-tooling")).unwrap();
+
+    let output = workspace.run("check");
+
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(
+        workspace.log().starts_with(
+            "cargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|prepare-test-setup|install|target/test-setup\n"
+        ),
+        "{}",
+        workspace.log()
+    );
+}
+
 #[test]
 fn maestro_test_recipes_forward_literal_arguments() {
     for (recipe, selection, doctests) in [
