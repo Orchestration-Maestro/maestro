@@ -29,7 +29,11 @@ fn archived_author_setup_reuses_relocated_components() {
         format!("unset\n{0}\n{0}\n", author.display())
     );
     let environment = fs::read_to_string(root.join("nextest-env")).unwrap();
-    for variable in ["MAESTRO_AUTHOR_COMPONENT", "MAESTRO_CONTEXT_COMPONENT"] {
+    for variable in [
+        "MAESTRO_AUTHOR_COMPONENT",
+        "MAESTRO_CONTEXT_COMPONENT",
+        "MAESTRO_COMPONENT",
+    ] {
         let path = environment
             .lines()
             .find_map(|line| line.strip_prefix(&format!("{variable}=")))
@@ -142,12 +146,14 @@ fn author_setup_without_prepared_outputs_builds_locally() {
 }
 
 /// The fixture setup example: it records the author component it was given and writes
-/// nextest's environment file from the components it was given, or from the checkout.
+/// nextest's environment file from the components it was given, or from the checkout. It
+/// also exports `MAESTRO_COMPONENT`, a name source discovery accepts.
 const EXAMPLE: &str = r#"#!/bin/sh
 echo "${MAESTRO_AUTHOR_COMPONENT-unset}" >> "$PWD/seen"
-printf 'MAESTRO_AUTHOR_COMPONENT=%s\nMAESTRO_CONTEXT_COMPONENT=%s\n' \
+printf 'MAESTRO_AUTHOR_COMPONENT=%s\nMAESTRO_CONTEXT_COMPONENT=%s\nMAESTRO_COMPONENT=%s\n' \
     "${MAESTRO_AUTHOR_COMPONENT:-$PWD/component.wasm}" \
-    "${MAESTRO_CONTEXT_COMPONENT:-$PWD/component.wasm}" > "$NEXTEST_ENV"
+    "${MAESTRO_CONTEXT_COMPONENT:-$PWD/component.wasm}" \
+    "${MAESTRO_COMPONENT:-$PWD/component.wasm}" > "$NEXTEST_ENV"
 "#;
 
 /// Give the standalone command a controlled Cargo boundary and source checkout.
