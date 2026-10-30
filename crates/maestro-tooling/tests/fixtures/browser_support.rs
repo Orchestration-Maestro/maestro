@@ -147,14 +147,7 @@ impl Browser {
         command
             .current_dir(self.workspace.path())
             .env("CARGO_BUILD_JOBS", "3")
-            .env(
-                "CARGO_TARGET_DIR",
-                Path::new(env!("CARGO_BIN_EXE_development"))
-                    .parent()
-                    .unwrap()
-                    .parent()
-                    .unwrap(),
-            )
+            .env("CARGO_TARGET_DIR", target_directory())
             .env("TRUNK_SKIP_VERSION_CHECK", "true")
             // Trunk's completion emoji depends on LANG, even with piped output.
             .env("LANG", "C.UTF-8");
@@ -171,6 +164,22 @@ impl Browser {
     pub fn fixture(&self, path: &str) -> PathBuf {
         self.path(FIXTURE).join(path)
     }
+}
+
+/// The target directory every browser build shares: the run's prepared one when nextest supplies
+/// it, otherwise the one the test build wrote.
+pub fn target_directory() -> PathBuf {
+    std::env::var_os("MAESTRO_BROWSER_TARGET_DIR").map_or_else(
+        || {
+            Path::new(env!("CARGO_BIN_EXE_development"))
+                .parent()
+                .unwrap()
+                .parent()
+                .unwrap()
+                .to_path_buf()
+        },
+        PathBuf::from,
+    )
 }
 
 pub fn success(output: &Output) {

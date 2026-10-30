@@ -17,6 +17,15 @@ command = "sh .config/prepare-fixture-sources.sh"
 filter = "package(maestro-tooling)"
 setup = "fixture-sources"
 
+# Builds the browser graph the browser author tests share, once before the first of them.
+# The cold-start test builds from an empty state on purpose, so nothing is prepared for it.
+[scripts.setup.browser-author]
+command = "sh .config/prepare-browser-author.sh"
+
+[[profile.default.scripts]]
+filter = "package(maestro-tooling) & test(/^browser_author_build::/) & !test(browser_author_bootstraps_from_empty_build_state)"
+setup = "browser-author"
+
 [test-groups.file-trigger]
 max-threads = 1
 

@@ -139,7 +139,7 @@ fn browser_clean_preserves_authored_inputs() {
 }
 
 #[path = "fixtures/browser_support.rs"]
-mod browser_support;
+pub(crate) mod browser_support;
 use browser_support::{Browser, success};
 use std::fs;
 
