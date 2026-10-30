@@ -2,6 +2,7 @@
 #![cfg(test)]
 
 mod browser_author_build;
+mod browser_preparation;
 mod build_recipes;
 mod cargo_fixtures;
 mod component_preparation;
