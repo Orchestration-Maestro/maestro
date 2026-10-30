@@ -3386,15 +3386,21 @@ const AUTHOR_SETUP_SOURCES: [&str; 8] = [
     "Cargo.lock",
 ];
 
-/// Gives `path` the modification time `age` seconds ago.
+/// Gives `path` the modification time `time`.
 #[cfg(unix)]
-fn set_age(path: &Path, age: std::time::Duration) {
+fn set_modified(path: &Path, time: std::time::SystemTime) {
     fs::File::options()
         .write(true)
         .open(path)
         .unwrap()
-        .set_modified(std::time::SystemTime::now() - age)
+        .set_modified(time)
         .unwrap();
+}
+
+/// Gives `path` the modification time `age` ago.
+#[cfg(unix)]
+fn set_age(path: &Path, age: std::time::Duration) {
+    set_modified(path, std::time::SystemTime::now() - age);
 }
 
 /// Lays out a profile directory with a built example, a fake Cargo that rebuilds it and every
@@ -3435,12 +3441,10 @@ fn author_setup_runs_the_built_example_only_while_fresh() {
     let run = || run_author_setup(root, &profile);
     assert_eq!(run(), "example\n");
     for source in AUTHOR_SETUP_SOURCES {
-        let file = fs::File::options()
-            .write(true)
-            .open(root.join(source))
-            .unwrap();
-        file.set_modified(SystemTime::now() + Duration::from_secs(60))
-            .unwrap();
+        set_modified(
+            &root.join(source),
+            SystemTime::now() + Duration::from_secs(60),
+        );
         assert!(run().starts_with("cargo build "), "{source}");
         set_age(&root.join(source), Duration::from_secs(3600));
     }
