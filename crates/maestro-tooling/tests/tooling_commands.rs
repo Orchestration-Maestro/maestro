@@ -3547,6 +3547,7 @@ fn author_setup(root: &Path, profile: &Path) -> Output {
         .env("NEXTEST_LD_LIBRARY_PATH", profile)
         .env("NEXTEST_DYLD_FALLBACK_LIBRARY_PATH", profile)
         .env("CARGO", root.join("cargo"))
+        .env_remove("TEST_ARCHIVE")
         .output()
         .unwrap()
 }

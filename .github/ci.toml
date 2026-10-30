@@ -1,3 +1,4 @@
+privileged_trigger_workflows = [".github/workflows/post-landing.yml"]
 git_sources = ["https://github.com/bytecodealliance/wasmtime"]
 additional_locked_manifests = ["crates/maestro-tooling/tests/fixtures/browser_author/Cargo.toml", "crates/maestro-web/tests/fixtures/browser_modules/module_a/Cargo.toml", "crates/maestro-web/tests/fixtures/browser_modules/module_b/Cargo.toml"]
 wasm_crates = ["maestro-agent", "maestro-app", "maestro-brand", "maestro-cancellation", "maestro-catalog", "maestro-chat", "maestro-credentials", "maestro-entry", "maestro-export", "maestro-extensions", "maestro-json", "maestro-lock", "maestro-markdown", "maestro-models", "maestro-packages", "maestro-path", "maestro-pattern", "maestro-request", "maestro-resources", "maestro-session", "maestro-settings", "maestro-text", "maestro-theme", "maestro-tool", "maestro-tools", "maestro-tui", "maestro-watch", "maestro-web"]

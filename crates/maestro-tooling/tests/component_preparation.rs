@@ -127,23 +127,34 @@ fn output(deps: &Path, name: &str, executable: bool, seconds: u64) -> std::path:
 }
 
 /// Runs the cache normalization from `root`, where the lock file and sources are found,
-/// over its `target/debug` profile directory.
+/// over its `target/debug` profile directory. An archived run sets the archive signal that
+/// shared CI gives nextest; any other run clears it, whatever this test run inherited.
 #[cfg(unix)]
-fn normalize(root: &Path) {
-    let output = std::process::Command::new("sh")
+fn normalize_run(root: &Path, archived: bool) {
+    let mut command = std::process::Command::new("sh");
+    command
         .arg(
             Path::new(env!("CARGO_MANIFEST_DIR"))
                 .join("../../.config/normalize-component-cache.sh"),
         )
         .arg(root.join("target/debug"))
         .current_dir(root)
-        .output()
-        .unwrap();
+        .env_remove("TEST_ARCHIVE");
+    if archived {
+        command.env("TEST_ARCHIVE", "1");
+    }
+    let output = command.output().unwrap();
     assert!(
         output.status.success(),
         "{}",
         String::from_utf8_lossy(&output.stderr)
     );
+}
+
+/// Runs the normalization as a local run does, where Cargo may rebuild a binary later.
+#[cfg(unix)]
+fn normalize(root: &Path) {
+    normalize_run(root, false);
 }
 
 /// Cargo rebuilds a test binary only while it looks older than a dependency's output, so
@@ -179,6 +190,26 @@ fn cache_normalization_accepts_a_profile_with_only_stale_binaries() {
     let modified = |path: &Path| fs::metadata(path).unwrap().modified().unwrap();
     assert_eq!(modified(&older), at(50));
     assert_eq!(modified(&newer), at(60));
+}
+
+/// Nextest never runs Cargo on an archive, so a library output newer than a restored binary
+/// outdates nothing: every executable shares the newest time, whether or not Cargo left
+/// dependency information beside it.
+#[cfg(unix)]
+#[test]
+fn cache_normalization_advances_every_binary_of_an_archived_run() {
+    let scratch = Scratch::new().unwrap();
+    let deps = scratch.path().join("target/debug/deps");
+    lock(scratch.path(), &[("alpha", &[]), ("beta", &["alpha"])]);
+    output(&deps, "libalpha-1.rlib", false, 300);
+    let bare = output(&deps, "bare-1", true, 50);
+    let beta = binary(&deps, "it-beta", "crates/beta/tests/it.rs", 100);
+    let newest = output(&deps, "fresh-1", true, 400);
+    normalize_run(scratch.path(), true);
+    let modified = |path: &Path| fs::metadata(path).unwrap().modified().unwrap();
+    assert_eq!(modified(&bare), at(400));
+    assert_eq!(modified(&beta), at(400));
+    assert_eq!(modified(&newest), at(400));
 }
 
 /// Writes a lock file naming each workspace crate with the crates it builds on, and one

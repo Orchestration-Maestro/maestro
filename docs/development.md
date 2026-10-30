@@ -740,15 +740,18 @@ than it, so advancing a binary that a rebuilt library has outdated would hide th
 rebuild. The libraries an executable builds on come from the crate named in its
 dependency information and the workspace crates `Cargo.lock` lists for it; a library's
 own test binary does not build on its output. Without that information, any newer
-library output outdates the executable. A skipped test binary compiles its components
-itself on first use. A skipped example would warm code that no test binary reads, so
-normalization then exits with status 3 and the launcher rebuilds the example through
-Cargo before it runs. Cargo ignores some library outputs that normalization counts, such
-as the check-only metadata a lint run writes, so the example can stay outdated after that
-build. The launcher then logs one line and runs it anyway. Test binaries do not read the
-code it warms, which costs a cache miss and never fails setup. The Git-pinned engine
-includes the shared modification time in its cache namespace, so the preparer and
-consuming test binaries share compiled code.
+library output outdates the executable. A run from a nextest archive (`TEST_ARCHIVE`
+set) skips this check, because nextest never runs Cargo on an archive. Without the
+skip, the library the launcher builds for the setup example would outdate every
+restored test binary, and each would compile its components cold. A skipped test binary
+compiles its components itself on first use. A skipped example would warm code that no
+test binary reads, so normalization then exits with status 3 and the launcher rebuilds
+the example through Cargo before it runs. Cargo ignores some library outputs that
+normalization counts, such as the check-only metadata a lint run writes, so the example
+can stay outdated after that build. The launcher then logs one line and runs it anyway.
+Test binaries do not read the code it warms, which costs a cache miss and never fails
+setup. The Git-pinned engine includes the shared modification time in its cache
+namespace, so the preparer and consuming test binaries share compiled code.
 The example builds every exported component, warms its Wasmtime compilation cache
 in the default user cache on up to four threads and exports its path to the tests'
 processes. Component contents, compiler settings and CPU features still determine
@@ -784,6 +787,34 @@ read them. A file owned by another workspace member already selects that member
 and its dependents. Only otherwise unowned, undeclared paths use the all-or-none fallback:
 they select every test, or none when the file is Markdown or under `docs/`.
 
+### Browser author build
+
+A test shard starts with an empty target directory and no compile cache. The
+browser author tests run the browser recipes, which compile the native bootstrap
+programs and the WebAssembly fixture, and lint the delivered browser library.
+Whichever of them ran first on a shard paid for all of that while about a thousand
+other tests used the same cores. That took 120 to 290 seconds, and the test that paid
+changed with scheduling, so any of them could reach the hang limit.
+
+The nextest setup script `.config/prepare-browser-author.sh` pays the cost once, before
+the first browser author test of a run, and only on a shard that runs one. It lints
+`maestro-web` for `wasm32-unknown-unknown` as `browser-check` does, without the
+formatting repair that would rewrite sources, then runs `browser-example-check`,
+`browser-library-build` and `browser-debug-build` in the checkout. It removes the
+runner's coverage flags and profile path from those commands and restores the compiler
+wrapper that preceded coverage, as the tests do for their own children. It builds in
+`target/browser-author` and exports that path as `MAESTRO_BROWSER_TARGET_DIR`, which
+`Browser` gives to every recipe and helper. Cargo records the spelling of the target
+directory in what it compiles, so the script and the tests must name the same one: a
+test that built into a differently spelled directory recompiled every dependency. Output
+built for one checkout path serves another, so each test's copy of the checkout reuses it.
+
+`browser_author_bootstraps_from_empty_build_state` builds from an empty state on
+purpose, so the script is not run for it. A recipe that fails during setup prints a
+warning and does not stop the run; the tests run the same recipes and report the
+failure. Plain Cargo tests, and nextest runs without the script, use the test build's own
+target directory.
+
 ### Cargo state of tooling fixtures
 
 Cargo locks the package cache of its home while it resolves, even with
@@ -808,7 +839,8 @@ the same script. A fixture opts in with `Workspace::use_prepared_sources` or
 without registry dependencies copies nothing. The cold browser build still
 vendors the whole workspace for itself, because it compiles every dependency.
 
-Cargo builds that share the test build's target directory keep the shared home.
+Cargo builds that share one target directory with other builds, the test build's or the
+one the browser author setup prepares, keep the shared home.
 A registry crate's fingerprint includes its source path, so a private home with
 vendored sources recompiles every registry dependency in that target, and going
 back to the shared home recompiles them again. The browser recipe and native
@@ -923,10 +955,55 @@ full coverage test graph, then runs only the tests selected by
 so the author component's compiles enter the snapshot that merge-queue test
 shards restore. The snapshot is capped at 1 GiB and evicts its least recently
 used entries, so the selection stays narrow. The warm-up is never a required
-check, and a newer push cancels a running one. Its `uses:` pin moves with each shared-CI
-release re-pin
-([Orchestration-Maestro/.github#231](https://github.com/Orchestration-Maestro/.github/issues/231)).
-A stale pin fails nothing; it only costs snapshot hits.
+check, and a newer push cancels a running one. Its `uses:` pin follows the rule in
+[Full-suite runs after landing](#full-suite-runs-after-landing).
+
+## Full-suite runs after landing
+
+`Full suite after landing` runs the shared Rust CI on the exact commit of every
+push to main. It runs all test shards, doctests and declared Chromium tests,
+even when the merge queue selected fewer crates. Later pushes do not cancel
+or replace queued landing runs. This is separate from the compile-cache warm
+build and from required merge checks.
+
+Push runs never read a coverage baseline: the lookup runs only for merge
+groups. The suite caller still grants `actions: read`, because the shared
+declaration job declares it and a caller that grants less makes the run fail to
+start. The suite caller, the reporter caller and `warm-cache.yml` pin the
+released shared CI commit that the organization rulesets require. Each pin
+moves with every shared-CI release re-pin
+([Orchestration-Maestro/.github#231](https://github.com/Orchestration-Maestro/.github/issues/231));
+a stale warm-up pin only costs snapshot hits.
+
+`Failed landing reports` listens for the completed main-push run. The shared
+reporter creates one failure issue per landing commit with the merged PR,
+failed-test log lines and run link, then proposes a revert PR against main.
+The revert names the original PR and failure issue. It runs normal required
+checks and enters the merge queue like any other PR; automation never pushes
+the revert directly to main. Repeated handling reuses the existing issue and
+open or closed revert PR, including when an earlier attempt only pushed the
+revert branch. When the merge queue squashes several PRs in one push, only the
+last commit has a suite run: the issue then names every PR in that push, newest
+first, and the reporter fails with the run link without a revert. Revert the
+culprit in a normal reviewed PR. Passing suites create neither artifact.
+
+The reporting job needs read access to Actions runs and contents. Writes use
+the existing release App's repository-scoped token, minted from
+`RELEASE_APP_CLIENT_ID` and `RELEASE_APP_PRIVATE_KEY`, with contents, issues and
+pull requests write access, plus workflows write access so it can revert CI
+changes. The App must be installed here and the organization
+secret available here. This token lets the revert trigger checks; test jobs do
+not receive it. The reporting workflow alone is declared in
+`privileged_trigger_workflows` for the existing trigger audit.
+
+Unknown PR attribution, missing permissions or a revert conflict fails the
+reporter with the original run link. The reporter also stops without an issue
+or a revert when no earlier full-suite run on main bounds the push (the first
+landing), or when the run did not pass but has no failed test, doctest or
+Chromium job, such as a cancelled run. Inspect that run and the failure issue;
+resolve a conflict in a reviewed PR. Do not bypass required checks or push to
+main to recover. The workflow-run listener becomes active after it lands on
+the default branch.
 
 ## Fuzzing
 

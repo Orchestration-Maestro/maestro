@@ -1,0 +1,20 @@
+name: Failed landing reports
+
+on:
+  workflow_run:
+    workflows: [Full suite after landing]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  report:
+    if: github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion != 'success'
+    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/post-landing.yml@af2552cbc360332522e2b6c75f5a291b863a9701 # v0.17.0
+    with:
+      run-id: ${{ format('{0}', github.event.workflow_run.id) }}
+    secrets:
+      RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
