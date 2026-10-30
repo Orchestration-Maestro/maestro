@@ -692,15 +692,22 @@ The `test_prepare` command in `.github/ci.toml` is the development tool's
 `prepare-test-setup prepare`. Shared CI runs it only when a selected package is
 named by `test_prepare_packages` there, the packages that nextest's
 `author-component` setup script serves. It runs the existing component-discovery
-example in a separate build directory, then stages the component files, that built example,
-the development tool itself and a content manifest. Shared CI transfers
+example from a separate build directory with a user cache of its own, then stages the
+component files, the compiled code the example left in that cache, that built example,
+the development tool itself and a content manifest. The compiled code is the one cache
+namespace the engine named for the example's modification time; preparation fails on a
+namespace that does not end in that time or on more than one, and stages none when the host
+keeps its cache elsewhere. Shared CI transfers
 these files separately from the native test archive, so a shard does not need the
 tool in its archive. The nextest launcher runs the staged tool's
-`prepare-test-setup export`, which checks source and artifact hashes, installs the
-staged example beside the extracted executables and writes the component paths to
-`NEXTEST_ENV`. The launcher then gives the executables one modification time, as
-below, so they share a compile-cache namespace. It runs the example on the
-prepared components, which warms the cache without starting Cargo. Archived runs
+`prepare-test-setup export`, which checks source and artifact hashes, including every
+compiled-code file, installs the staged example beside the extracted executables and
+installs the compiled code in the user cache (`XDG_CACHE_HOME`, else `~/.cache`) under the
+modification time that copy of the example has, and writes the component paths to
+`NEXTEST_ENV`. The launcher then gives the executables that same modification time, as
+below, so they share a compile-cache namespace with the installed code. It runs the example
+on the prepared components, which finds every component compiled and starts no Cargo build
+or compile pass. Archived runs
 require the bundle and fail without starting Cargo when it is missing or stale.
 Other runs reuse an existing manifest, rejecting stale or incomplete files; without
 a manifest they keep local auto-build. This includes warm-cache runs, which receive

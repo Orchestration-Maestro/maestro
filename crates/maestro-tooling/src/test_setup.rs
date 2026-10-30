@@ -1,9 +1,10 @@
 //! Stages the reusable test-setup files in one job and installs them in another.
 //!
 //! `prepare` runs the component-discovery example in a separate build and stages its component
-//! files, the built example, this command and a content manifest. `export` validates that
-//! bundle against the checkout, installs the example beside the extracted test executables and
-//! writes the component paths for nextest.
+//! files, the code it compiled, the built example, this command and a content manifest.
+//! `export` validates that bundle against the checkout, installs the example beside the
+//! extracted test executables and the compiled code in the user cache, and writes the component
+//! paths for nextest.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::ffi::OsString;
@@ -17,7 +18,9 @@ use sha2::{Digest, Sha256};
 
 use super::argument;
 use super::example_files::{FIXED_VARIABLES, validate_variable};
+use compiled_code::CompiledCode;
 
+mod compiled_code;
 #[cfg(test)]
 mod tests;
 
@@ -27,6 +30,8 @@ const EXAMPLE: &str = "prepare_author_component";
 const MANIFEST: &str = "components.json";
 /// The bundle file that holds this command, so a shard needs no Cargo build to validate.
 const EXPORTER: &str = "development";
+/// The bundle directory that holds the code the setup example compiled.
+const COMPILED: &str = "cache";
 /// What the components depend on: sources, locked dependencies, the toolchain and the launcher.
 const INPUTS: [&str; 8] = [
     "Cargo.toml",
@@ -48,6 +53,8 @@ struct Manifest {
     components: BTreeMap<String, String>,
     /// Digest of the staged setup example.
     example: String,
+    /// The code the example compiled, when the host keeps it in a user cache.
+    compiled: Option<CompiledCode>,
 }
 
 /// Run `prepare` or `export` on the supplied checkout.
@@ -71,6 +78,7 @@ pub(crate) fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Resul
             &output,
             argument(args, 2, "directory")?,
             argument(args, 3, "environment")?,
+            user_cache().as_deref(),
         )?,
         _ => return Err(io::Error::other("unknown test setup command")),
     }
@@ -87,33 +95,29 @@ fn inherited_components(names: impl Iterator<Item = OsString>) -> Vec<OsString> 
         .collect()
 }
 
-/// Run the setup example in a build of its own and stage what it produces in `output`.
+/// The directory the engine keeps its compiled code under: `XDG_CACHE_HOME`, else `~/.cache`.
+fn user_cache() -> Option<PathBuf> {
+    let absolute = |name| {
+        std::env::var_os(name)
+            .map(PathBuf::from)
+            .filter(|path| path.is_absolute())
+    };
+    absolute("XDG_CACHE_HOME").or_else(|| absolute("HOME").map(|home| home.join(".cache")))
+}
+
+/// Build the setup example in a build of its own, run it with a cache of its own and stage what
+/// it produces in `output`.
 fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::Result<()> {
     std::fs::create_dir_all(output)?;
     remove(&output.join(MANIFEST))?;
+    remove_directory(&output.join(COMPILED))?;
     let fingerprint = inputs(checkout)?;
     let environment = target.join("nextest-env");
     remove(&environment)?;
-    let mut build = Command::new(cargo);
-    build
-        .current_dir(checkout)
-        .args([
-            "run",
-            "--quiet",
-            "--locked",
-            "-p",
-            "maestro-extensions-wasm",
-        ])
-        .args(["--example", EXAMPLE, "--target-dir"])
-        .arg(target)
-        .env("NEXTEST_ENV", &environment);
-    for name in inherited_components(std::env::vars_os().map(|(name, _)| name)) {
-        build.env_remove(name);
-    }
-    let status = build.status()?;
-    if !status.success() {
-        return Err(io::Error::other(format!("{EXAMPLE} failed: {status}")));
-    }
+    let cache_home = target.join("cache-home");
+    remove_directory(&cache_home)?;
+    let example = build_example(cargo, checkout, target)?;
+    run_example(cargo, checkout, &example, &environment, &cache_home)?;
     let mut components = BTreeMap::new();
     for line in std::fs::read_to_string(&environment)?.lines() {
         let (variable, source) = line
@@ -129,20 +133,76 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
             output.display()
         )));
     }
-    let example = output.join(EXAMPLE);
-    copy(&target.join("debug/examples").join(EXAMPLE), &example)?;
+    let compiled = CompiledCode::collect(&cache_home, &example, &output.join(COMPILED))?;
+    let staged = output.join(EXAMPLE);
+    copy(&example, &staged)?;
     copy(&std::env::current_exe()?, &output.join(EXPORTER))?;
     let manifest = Manifest {
         inputs: fingerprint,
         components,
-        example: digest(&std::fs::read(&example)?),
+        example: digest(&std::fs::read(&staged)?),
+        compiled,
     };
     std::fs::write(output.join(MANIFEST), serde_json::to_vec(&manifest)?)
 }
 
-/// Validate the bundle in `output`, install its example in `directory` and write the component
-/// paths to `environment`. Nothing is installed or written unless every check passes.
-fn export(checkout: &Path, output: &Path, directory: &Path, environment: &Path) -> io::Result<()> {
+/// Build the setup example in `target` and return its path.
+fn build_example(cargo: &Path, checkout: &Path, target: &Path) -> io::Result<PathBuf> {
+    let status = Command::new(cargo)
+        .current_dir(checkout)
+        .args([
+            "build",
+            "--quiet",
+            "--locked",
+            "-p",
+            "maestro-extensions-wasm",
+        ])
+        .args(["--example", EXAMPLE, "--target-dir"])
+        .arg(target)
+        .status()?;
+    if !status.success() {
+        return Err(io::Error::other(format!(
+            "{EXAMPLE} failed to build: {status}"
+        )));
+    }
+    Ok(target.join("debug/examples").join(EXAMPLE))
+}
+
+/// Run the built example so it writes its component paths to `environment` and its compiled
+/// code under `cache_home`.
+fn run_example(
+    cargo: &Path,
+    checkout: &Path,
+    example: &Path,
+    environment: &Path,
+    cache_home: &Path,
+) -> io::Result<()> {
+    let mut run = Command::new(example);
+    run.current_dir(checkout)
+        .env("CARGO", cargo)
+        .env("NEXTEST_ENV", environment)
+        .env("XDG_CACHE_HOME", cache_home);
+    for name in inherited_components(std::env::vars_os().map(|(name, _)| name)) {
+        run.env_remove(name);
+    }
+    let status = run.status()?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err(io::Error::other(format!("{EXAMPLE} failed: {status}")))
+    }
+}
+
+/// Validate the bundle in `output`, install its example in `directory` and its compiled code in
+/// `user_cache`, and write the component paths to `environment`. Nothing is installed or
+/// written unless every check passes.
+fn export(
+    checkout: &Path,
+    output: &Path,
+    directory: &Path,
+    environment: &Path,
+    user_cache: Option<&Path>,
+) -> io::Result<()> {
     let output = std::fs::canonicalize(output).map_err(|error| at(output, &error))?;
     if output.to_string_lossy().contains(['\n', '\r']) {
         return Err(at(&output, "the path must stay on one line"));
@@ -169,9 +229,16 @@ fn export(checkout: &Path, output: &Path, directory: &Path, environment: &Path) 
     }
     let staged = output.join(EXAMPLE);
     verify(&staged, &manifest.example)?;
+    let compiled = output.join(COMPILED);
+    if let Some(code) = &manifest.compiled {
+        code.verify(&compiled)?;
+    }
     let installed = directory.join("examples").join(EXAMPLE);
     std::fs::create_dir_all(directory.join("examples"))?;
     copy(&staged, &installed)?;
+    if let (Some(code), Some(user_cache)) = (&manifest.compiled, user_cache) {
+        code.install(&compiled, user_cache, &installed)?;
+    }
     std::fs::write(environment, lines.concat())
 }
 
@@ -247,6 +314,14 @@ fn copy(from: &Path, to: &Path) -> io::Result<()> {
 /// Delete a file that may not exist.
 fn remove(path: &Path) -> io::Result<()> {
     match std::fs::remove_file(path) {
+        Err(error) if error.kind() != io::ErrorKind::NotFound => Err(error),
+        _ => Ok(()),
+    }
+}
+
+/// Delete a directory tree that may not exist.
+fn remove_directory(path: &Path) -> io::Result<()> {
+    match std::fs::remove_dir_all(path) {
         Err(error) if error.kind() != io::ErrorKind::NotFound => Err(error),
         _ => Ok(()),
     }
