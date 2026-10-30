@@ -832,11 +832,7 @@ fn prepare_tooling_owner(workspace: &Workspace) {
         )
         .unwrap();
     }
-    fs::copy(
-        source.join("../../Cargo.toml"),
-        workspace.path().join("Cargo.toml"),
-    )
-    .unwrap();
+    copy_root_manifest(workspace);
     assert!(
         workspace
             .toolchain_command(env!("CARGO"))
@@ -845,6 +841,15 @@ fn prepare_tooling_owner(workspace: &Workspace) {
             .unwrap()
             .success()
     );
+}
+
+/// Give the checkout the workspace manifest its tooling build resolves against.
+fn copy_root_manifest(workspace: &Workspace) {
+    fs::copy(
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../Cargo.toml"),
+        workspace.path().join("Cargo.toml"),
+    )
+    .unwrap();
 }
 
 /// Copy local dependency patches from the source manifest into a build fixture.
@@ -863,6 +868,17 @@ fn copy_patched_sources(source: &Path, destination: &Path) {
             }
         }
     }
+}
+
+/// The tooling owner's cold build compiles its dependencies at the plain development profile.
+#[test]
+fn tooling_owner_checkout_builds_dependencies_at_the_plain_dev_profile() {
+    let workspace = Workspace::new();
+    copy_root_manifest(&workspace);
+    let manifest: toml::Table =
+        toml::from_str(&fs::read_to_string(workspace.path().join("Cargo.toml")).unwrap()).unwrap();
+    let packages = manifest["profile"]["dev"]["package"].as_table().unwrap();
+    assert_eq!(packages.keys().collect::<Vec<_>>(), ["*"]);
 }
 
 #[test]
