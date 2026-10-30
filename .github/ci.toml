@@ -5,6 +5,7 @@ wasm_crates = ["maestro-agent", "maestro-app", "maestro-brand", "maestro-cancell
 browser_test_crates = ["maestro-app", "maestro-web"]
 test_tools = true
 test_prepare = "cargo run --quiet --locked -p maestro-tooling --bin development -- prepare-test-setup prepare \"$TEST_PREPARE_OUTPUT\" \"${CARGO_TARGET_DIR:-target/test-prepare}\""
+test_prepare_packages = ["maestro-extensions-wasm", "maestro-extensions-wasmtime", "maestro"]
 test_inputs = { "fuzz/" = [], "justfile" = ["maestro-tooling"], "packages/" = ["maestro-packages"], "workspace-crates.json" = ["maestro-test-conventions"] }
 reserved_ports = [53692, 1455]
 # Main's warm-up runs this test so its author-component build enters the compile cache.

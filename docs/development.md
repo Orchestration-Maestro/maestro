@@ -686,9 +686,11 @@ builds are unchanged.
 
 Archived CI shards receive `TEST_ARCHIVE=1` and `TEST_PREPARE_OUTPUT` pointing to
 `target/test-setup`.
-The `test_prepare` command in `.github/ci.toml` runs the development tool's
-`prepare-test-setup prepare`. It runs the existing component-discovery example in
-a separate build directory, then stages the component files, that built example,
+The `test_prepare` command in `.github/ci.toml` is the development tool's
+`prepare-test-setup prepare`. Shared CI runs it only when a selected package is
+named by `test_prepare_packages` there, the packages that nextest's
+`author-component` setup script serves. It runs the existing component-discovery
+example in a separate build directory, then stages the component files, that built example,
 the development tool itself and a content manifest. Shared CI transfers
 these files separately from the native test archive, so a shard does not need the
 tool in its archive. The nextest launcher runs the staged tool's
@@ -752,9 +754,12 @@ can stay outdated after that build. The launcher then logs one line and runs it 
 Test binaries do not read the code it warms, which costs a cache miss and never fails
 setup. The Git-pinned engine includes the shared modification time in its cache
 namespace, so the preparer and consuming test binaries share compiled code.
-The example builds every exported component, warms its Wasmtime compilation cache
-in the default user cache on up to four threads and exports its path to the tests'
-processes. Component contents, compiler settings and CPU features still determine
+The example builds every exported component in one Cargo invocation, so Cargo
+compiles them in parallel, warms their Wasmtime compilation cache
+in the default user cache on up to four threads and exports each path to the tests'
+processes. The compile-cache warm-up run sets `MAESTRO_WARM_CACHE_RUN=true`; its
+cache directories are discarded when the run ends, so the example then skips the warm.
+Component contents, compiler settings and CPU features still determine
 cache compatibility.
 The shared component builder resolves these source-marked paths before invoking
 Cargo. The component build removes `RUSTC_WRAPPER`, where the coverage tool puts its
