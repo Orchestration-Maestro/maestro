@@ -504,7 +504,8 @@ distinct priorities in `.config/nextest.toml`: 100 down to 37, longest first.
 Other tests retain priority 0. These are
 [nextest's built-in priorities](https://nexte.st/docs/configuration/test-priorities/),
 not a scheduler or a shard planner. They change order within each shard, not the
-16 count partitions, test membership, retries, time limits or coverage policy.
+count partitions (32 in CI, declared as `test_shard_count` in `.github/ci.toml`), test
+membership, retries, time limits or coverage policy.
 Existing timeout comments retain their older CI maxima; priority ranks use the
 newer measurements below, not timeout ceilings or diagnostic phase timings.
 
@@ -536,7 +537,8 @@ The fast tooling regression
 `nextest_priorities::measured_priorities_order_tests_without_changing_shards`
 runs nextest against controlled bodies with the real tooling overrides. One
 worker proves descending order for the three slowest tooling tests, before an
-unprioritized short test. It compares all 16 partition memberships with and
+unprioritized short test. It uses a fixed 16-way split, independent of CI's
+`test_shard_count`, and compares every partition's membership with and
 without priorities, checks an exactly-once union and keeps an intentional
 selected failure visible. It does not run the expensive browser bodies.
 
@@ -932,9 +934,9 @@ or replace queued landing runs. This is separate from the compile-cache warm
 build and from required merge checks.
 
 Push runs never read a coverage baseline: the lookup runs only for merge
-groups. The suite caller still grants `actions: read`, because the shared
-declaration job declares it and a caller that grants less makes the run fail to
-start. The suite caller, the reporter caller and `warm-cache.yml` pin the
+groups. The suite and warm-up callers still grant `actions: read`, because the
+shared declaration job declares it and a caller that grants less makes the run
+fail to start. The suite caller, the reporter caller and `warm-cache.yml` pin the
 released shared CI commit that the organization rulesets require. Each pin
 moves with every shared-CI release re-pin
 ([Orchestration-Maestro/.github#231](https://github.com/Orchestration-Maestro/.github/issues/231));
