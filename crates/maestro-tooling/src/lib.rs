@@ -23,6 +23,8 @@ pub mod example_files;
 
 /// Derived extension documentation table.
 mod example_index;
+/// Path dependencies between workspace members.
+mod member_graph;
 /// Reusable test-setup staging and validation.
 mod test_setup;
 /// Filesystem watching and Cargo compilation dispatch.

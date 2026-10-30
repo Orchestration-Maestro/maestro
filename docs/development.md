@@ -692,9 +692,15 @@ The `test_prepare` command in `.github/ci.toml` is the development tool's
 `prepare-test-setup prepare`. Shared CI runs it only when a selected package is
 named by `test_prepare_packages` there, the packages that nextest's
 `author-component` setup script serves. Shared CI caches the bundle under the contents of
-the files that `test_prepare_inputs` matches and restores it instead of preparing again;
-`ci_cache_key_covers_every_file_the_preparation_reads` fails when a file the preparation
-fingerprints is not matched or a pattern matches none. Markdown that crates embed only as
+the files that `test_prepare_inputs` matches and restores it instead of preparing again.
+Those patterns name the crates the preparation builds, `maestro-extensions-wasm` and
+`maestro-tooling`, and every workspace crate they depend on through a path dependency of
+any kind, plus the fixed inputs, so a change to any other crate keeps the cached bundle.
+The preparation reads that closure from the workspace metadata, compiling nothing, and
+records it in the bundle manifest, so a shard validates the same files without Cargo.
+`ci_cache_key_names_exactly_the_files_the_preparation_reads` fails when a file the
+preparation fingerprints is not matched or a pattern names anything else, so a new
+dependency of a built crate needs its pattern. Markdown that crates embed only as
 documentation changes no staged file, so no pattern names it. The command runs the existing
 component-discovery example from a separate build directory with a user cache of its own, then stages the
 component files, the compiled code the example left in that cache, that built example,
@@ -716,8 +722,8 @@ require the bundle and fail without starting Cargo when it is missing or stale.
 Other runs reuse an existing manifest, rejecting stale or incomplete files; without
 a manifest they keep local auto-build. Archive strictness
 requires the shared CI release that supplies `TEST_ARCHIVE=1`. Source hashes
-include workspace crates, examples, assets, Cargo configuration, locked
-dependencies, the toolchain and the nextest launcher. The variable names in the
+include the built crates and their path dependencies, examples, assets, Cargo
+configuration, locked dependencies, the toolchain and the nextest launcher. The variable names in the
 bundle follow component discovery's own rule and fixed author and context pair.
 File timestamps do not affect reuse, but the staged example finds component
 sources at the checkout path it was built in, and the staged tool reads the

@@ -6,18 +6,20 @@
 //! extracted test executables and the compiled code in the user cache, and writes the component
 //! paths for nextest.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::ffi::OsString;
 use std::fmt::Write as _;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
 
+use cargo_metadata::Metadata;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 use super::argument;
 use super::example_files::{FIXED_VARIABLES, validate_variable};
+use super::member_graph::{closure, dependency_edges, member_roots, members};
 use compiled_code::CompiledCode;
 use user_cache::user_cache_home;
 
@@ -37,13 +39,16 @@ const MANIFEST: &str = "components.json";
 const EXPORTER: &str = "development";
 /// The bundle directory that holds the code the setup example compiled.
 const COMPILED: &str = "cache";
-/// What the components depend on: sources, locked dependencies, the toolchain and the launcher.
-const INPUTS: [&str; 8] = [
+/// The workspace packages whose code the preparation builds: the setup example and the example
+/// components belong to the first, the development tool that runs the preparation to the second.
+const BUILT: [&str; 2] = ["maestro-extensions-wasm", "maestro-tooling"];
+/// What the components depend on besides the crates: locked dependencies, the toolchain, the
+/// example sources, the assets and the launcher.
+const FIXED_INPUTS: [&str; 7] = [
     "Cargo.toml",
     "Cargo.lock",
     "rust-toolchain.toml",
     ".cargo",
-    "crates",
     "examples",
     "assets",
     ".config/prepare-author-component.sh",
@@ -54,6 +59,8 @@ const INPUTS: [&str; 8] = [
 struct Manifest {
     /// Digest of the files the bundle was prepared from.
     inputs: String,
+    /// Repository-relative directories of the workspace crates those files include.
+    crates: BTreeSet<String>,
     /// Digest of each component file, by the variable that exports it.
     components: BTreeMap<String, String>,
     /// Digest of the staged setup example.
@@ -106,7 +113,8 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
     std::fs::create_dir_all(output)?;
     remove(&output.join(MANIFEST))?;
     remove_directory(&output.join(COMPILED))?;
-    let fingerprint = inputs(checkout)?;
+    let crates = built_crates(cargo, checkout)?;
+    let fingerprint = inputs(checkout, &crates)?;
     let environment = target.join("nextest-env");
     remove(&environment)?;
     let cache_home = target.join("cache-home");
@@ -122,7 +130,7 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
         copy(Path::new(source), &staged)?;
         components.insert(variable.to_owned(), digest(&std::fs::read(&staged)?));
     }
-    if inputs(checkout)? != fingerprint {
+    if inputs(checkout, &crates)? != fingerprint {
         return Err(io::Error::other(format!(
             "inputs changed during preparation: {}",
             output.display()
@@ -134,6 +142,7 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
     copy(&std::env::current_exe()?, &output.join(EXPORTER))?;
     let manifest = Manifest {
         inputs: fingerprint,
+        crates,
         components,
         example: digest(&std::fs::read(&staged)?),
         compiled,
@@ -206,7 +215,7 @@ fn export(
     let manifest: Manifest =
         serde_json::from_slice(&std::fs::read(&manifest).map_err(|error| at(&manifest, &error))?)
             .map_err(|error| at(&manifest, &error))?;
-    if manifest.inputs != inputs(checkout)? {
+    if manifest.inputs != inputs(checkout, &manifest.crates)? {
         return Err(at(&output, "stale prepared component inputs"));
     }
     if FIXED_VARIABLES
@@ -237,10 +246,51 @@ fn export(
     std::fs::write(environment, lines.concat())
 }
 
+/// The directories of the workspace crates the preparation builds and every crate they depend on.
+fn built_crates(cargo: &Path, checkout: &Path) -> io::Result<BTreeSet<String>> {
+    closure_directories(&crate::locked_metadata(cargo, checkout)?, &BUILT)
+}
+
+/// The repository-relative directories and files the components are prepared from.
+fn input_names(crates: &BTreeSet<String>) -> impl Iterator<Item = &str> {
+    FIXED_INPUTS
+        .into_iter()
+        .chain(crates.iter().map(String::as_str))
+}
+
+/// The directories of the named workspace packages and of the packages they depend on.
+fn closure_directories(metadata: &Metadata, built: &[&str]) -> io::Result<BTreeSet<String>> {
+    let members = members(metadata);
+    let roots = member_roots(&members);
+    let start = built
+        .iter()
+        .map(|name| {
+            members
+                .iter()
+                .position(|package| package.name == *name)
+                .ok_or_else(|| io::Error::other(format!("{name} is not a workspace package")))
+        })
+        .collect::<io::Result<HashSet<_>>>()?;
+    Ok(closure(&dependency_edges(&members, &roots), start)
+        .into_iter()
+        .filter_map(|member| {
+            let directory = members[member].manifest_path.parent()?;
+            let relative = directory.strip_prefix(&metadata.workspace_root).ok()?;
+            Some(
+                relative
+                    .components()
+                    .map(|part| part.as_str())
+                    .collect::<Vec<_>>()
+                    .join("/"),
+            )
+        })
+        .collect())
+}
+
 /// Digest every file the components are prepared from, by name and content.
-fn inputs(checkout: &Path) -> io::Result<String> {
+fn inputs(checkout: &Path, crates: &BTreeSet<String>) -> io::Result<String> {
     let mut hash = Sha256::new();
-    for name in listed(checkout)? {
+    for name in listed(checkout, crates)? {
         hash.update(name.as_bytes());
         hash.update([0]);
         let path = checkout.join(&name);
@@ -254,7 +304,7 @@ fn inputs(checkout: &Path) -> io::Result<String> {
 }
 
 /// The repository-relative names of the files the components are prepared from, sorted.
-fn listed(checkout: &Path) -> io::Result<BTreeSet<String>> {
+fn listed(checkout: &Path, crates: &BTreeSet<String>) -> io::Result<BTreeSet<String>> {
     let listing = Command::new("git")
         .current_dir(checkout)
         .args([
@@ -265,7 +315,7 @@ fn listed(checkout: &Path) -> io::Result<BTreeSet<String>> {
             "--exclude-standard",
             "--",
         ])
-        .args(INPUTS)
+        .args(input_names(crates))
         .output()?;
     if !listing.status.success() {
         return Err(io::Error::other(format!(
