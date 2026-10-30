@@ -135,6 +135,16 @@ fn cache_consumers(root: &Path, archived: bool) -> [std::path::PathBuf; 2] {
     binaries
 }
 
+/// Stages a development tool that exports nothing, which an archived run requires before it
+/// installs the prepared components.
+fn stage_tool(root: &Path) {
+    let staged = root.join("target/test-setup");
+    std::fs::create_dir_all(&staged).unwrap();
+    let tool = staged.join("development");
+    std::fs::write(&tool, "#!/bin/sh\nexit 0\n").unwrap();
+    std::fs::set_permissions(tool, std::os::unix::fs::PermissionsExt::from_mode(0o755)).unwrap();
+}
+
 /// Observes the real persistent cache without a process-local compiled-component map.
 fn observe_compilation() {
     let cache = Cache::from_file(None).unwrap();
@@ -173,6 +183,11 @@ fn share_compiled_bytes(test: &str, archived: bool) {
     let binaries = cache_consumers(scratch.path(), archived);
     let component = scratch.path().join("empty.wasm");
     std::fs::write(&component, b"\0asm\x0d\0\x01\0").unwrap();
+    let environment = scratch.path().join("nextest-env");
+    std::fs::write(&environment, "").unwrap();
+    if archived {
+        stage_tool(scratch.path());
+    }
     let setup =
         Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.config/prepare-author-component.sh");
     for (binary, case) in binaries.iter().zip(["prime", "consume"]) {
@@ -197,6 +212,7 @@ fn share_compiled_bytes(test: &str, archived: bool) {
             .env("COPY", binary)
             .env("TEST_NAME", name)
             .env("SETUP", &setup)
+            .env("NEXTEST_ENV", &environment)
             .env("MAESTRO_CACHE_COMPONENT", &component)
             .env(
                 "NEXTEST_LD_LIBRARY_PATH",
@@ -204,6 +220,7 @@ fn share_compiled_bytes(test: &str, archived: bool) {
             )
             .env("XDG_CACHE_HOME", scratch.path().join("cache"))
             .env("XDG_CONFIG_HOME", scratch.path().join("config"))
+            .env_remove("TEST_PREPARE_OUTPUT")
             .shell_setup("/bin/sh", shell)
             .output()
             .unwrap();

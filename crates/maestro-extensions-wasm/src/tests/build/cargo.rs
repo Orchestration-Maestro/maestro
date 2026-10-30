@@ -1,4 +1,5 @@
 //! The Cargo build and artifact discovery shared by author component checks.
+use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -6,25 +7,95 @@ use std::process::Command;
 /// Source marker traversal shared with component preparation.
 pub mod components;
 
+/// The author and context examples, which no source marker names, in the order of the fixed
+/// exports that supply their artifacts.
+pub const FIXED_EXAMPLES: [&str; 2] = ["author_component", "context_bridge"];
+
 /// Uses a prepared example or builds the selected component in the host test output.
 ///
 /// # Errors
 /// Returns source-discovery failure, Cargo's diagnostic or a missing-component error.
+#[cfg(test)]
 pub fn component(directory: &Path, selection: &[&str], name: &str) -> Result<PathBuf, String> {
-    if selection == ["--example", name]
-        && let Some(path) = prepared_component(directory, name)?
-    {
-        return Ok(path);
+    if selection == ["--example", name] {
+        return example_components(directory, &[name])?
+            .pop()
+            .ok_or_else(|| "the build reported no component".to_owned());
     }
-    let cargo = std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
-    let output = Command::new(cargo)
+    let command = selection_command(cargo_program(), directory, selection, &target_directory()?);
+    artifact(&run(command)?, name)
+}
+
+/// Finds the component of each named example, in the order given.
+///
+/// A supplied artifact is used as is; every other example builds in the host test output in one
+/// Cargo invocation, which compiles them in parallel.
+///
+/// # Errors
+/// Returns source-discovery failure, Cargo's diagnostic or a missing-component error.
+pub fn example_components(directory: &Path, names: &[&str]) -> Result<Vec<PathBuf>, String> {
+    let mut paths = names
+        .iter()
+        .map(|name| prepared_component(directory, name))
+        .collect::<Result<Vec<_>, _>>()?;
+    let missing: Vec<&str> = names
+        .iter()
+        .zip(&paths)
+        .filter(|(_, path)| path.is_none())
+        .map(|(name, _)| *name)
+        .collect();
+    if !missing.is_empty() {
+        let command = build_command(cargo_program(), directory, &missing, &target_directory()?);
+        let output = run(command)?;
+        for (name, path) in names.iter().zip(&mut paths) {
+            if path.is_none() {
+                *path = Some(artifact(&output, name)?);
+            }
+        }
+    }
+    Ok(paths.into_iter().flatten().collect())
+}
+
+/// The Cargo command that builds every named example component in one invocation.
+pub fn build_command(
+    cargo: impl AsRef<OsStr>,
+    directory: &Path,
+    names: &[&str],
+    target_directory: &Path,
+) -> Command {
+    let selection: Vec<&str> = names.iter().flat_map(|name| ["--example", *name]).collect();
+    selection_command(cargo, directory, &selection, target_directory)
+}
+
+/// The Cargo command that builds the selected targets in one invocation.
+///
+/// The compiler wrapper is not passed on, because coverage would instrument the component target.
+fn selection_command(
+    cargo: impl AsRef<OsStr>,
+    directory: &Path,
+    selection: &[&str],
+    target_directory: &Path,
+) -> Command {
+    let mut command = Command::new(cargo);
+    command
         .current_dir(directory)
         .env_remove("RUSTC_WRAPPER")
         .args(["build", "--target", "wasm32-wasip2"])
         .args(selection)
         .arg("--target-dir")
-        .arg(target_directory()?)
-        .args(["--release", "--locked", "--message-format=json"])
+        .arg(target_directory)
+        .args(["--release", "--locked", "--message-format=json"]);
+    command
+}
+
+/// The Cargo program the test run was started with.
+fn cargo_program() -> std::ffi::OsString {
+    std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into())
+}
+
+/// Runs the one Cargo build and returns its JSON messages.
+fn run(mut command: Command) -> Result<String, String> {
+    let output = command
         .output()
         .map_err(|error| format!("cannot run cargo: {error}"))?;
     if !output.status.success() {
@@ -34,7 +105,12 @@ pub fn component(directory: &Path, selection: &[&str], name: &str) -> Result<Pat
             String::from_utf8_lossy(&output.stderr)
         ));
     }
-    String::from_utf8_lossy(&output.stdout)
+    Ok(String::from_utf8_lossy(&output.stdout).into_owned())
+}
+
+/// Finds the component artifact that a build reported for the named target.
+fn artifact(messages: &str, name: &str) -> Result<PathBuf, String> {
+    messages
         .lines()
         .filter_map(|line| serde_json::from_str::<serde_json::Value>(line).ok())
         .filter(|message| message["reason"] == "compiler-artifact")
@@ -45,11 +121,18 @@ pub fn component(directory: &Path, selection: &[&str], name: &str) -> Result<Pat
             file.extension()
                 .is_some_and(|extension| extension == "wasm")
         })
-        .ok_or_else(|| "the build reported no component".to_owned())
+        .ok_or_else(|| format!("the build reported no component for {name}"))
 }
 
 /// Looks up a supplied artifact through the same source markers that preparation visits.
 fn prepared_component(directory: &Path, name: &str) -> Result<Option<PathBuf>, String> {
+    if let Some((_, variable)) = FIXED_EXAMPLES
+        .iter()
+        .zip(components::FIXED_VARIABLES)
+        .find(|(example, _)| **example == name)
+    {
+        return Ok(std::env::var_os(variable).map(PathBuf::from));
+    }
     let mut path = None;
     components::visit(
         &[

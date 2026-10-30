@@ -1,6 +1,12 @@
 #!/bin/sh
 # Nextest supplies its active artifact directory in the platform library search path.
 set -eu
+prepared=false
+if [ "${TEST_ARCHIVE-}" = 1 ] || {
+    [ -n "${TEST_PREPARE_OUTPUT-}" ] && [ -f "$TEST_PREPARE_OUTPUT/components.json" ]
+}; then
+    prepared=true
+fi
 case "$(uname -s)" in
     Darwin) paths=${NEXTEST_DYLD_FALLBACK_LIBRARY_PATH-}; separator=: ;;
     MINGW*|MSYS*|CYGWIN*) paths=$PATH; separator=: ;;
@@ -9,6 +15,17 @@ esac
 IFS=$separator
 for directory in $paths; do
     [ -d "$directory/deps" ] || continue
+    if [ "$prepared" = true ]; then
+        # The staged example is as new as the archive's executables, so status 3 cannot occur.
+        TEST_PREPARE_OUTPUT=${TEST_PREPARE_OUTPUT:-target/test-setup}
+        export TEST_PREPARE_OUTPUT
+        "$TEST_PREPARE_OUTPUT/development" prepare-test-setup export \
+            "$TEST_PREPARE_OUTPUT" "$directory" "$NEXTEST_ENV"
+        sh "$(dirname "$0")/normalize-component-cache.sh" "$directory"
+        # The example takes the prepared components from its environment, so it only warms.
+        while IFS= read -r entry; do export "$entry"; done <"$NEXTEST_ENV"
+        exec "$directory/examples/prepare_author_component"
+    fi
     # The test build's own example keeps its resolved features; a single-package
     # `cargo run` resolves fewer and recompiles the engine. Use it only while it is
     # newer than its sources, so a filtered build never runs outdated preparation.

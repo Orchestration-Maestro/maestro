@@ -1,12 +1,15 @@
 //! Shared integration-test executable.
 #![cfg(test)]
 
+mod author_setup;
 mod browser_author_build;
 mod browser_preparation;
 mod build_recipes;
 mod cargo_fixtures;
 mod component_preparation;
 mod nextest_priorities;
+mod prepared_setup_packages;
+mod shared_ci_callers;
 mod tooling_commands;
 
 #[path = "fixtures/toolchain_support.rs"]

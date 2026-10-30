@@ -4,11 +4,12 @@ additional_locked_manifests = ["crates/maestro-tooling/tests/fixtures/browser_au
 wasm_crates = ["maestro-agent", "maestro-app", "maestro-brand", "maestro-cancellation", "maestro-catalog", "maestro-chat", "maestro-credentials", "maestro-entry", "maestro-export", "maestro-extensions", "maestro-json", "maestro-lock", "maestro-markdown", "maestro-models", "maestro-packages", "maestro-path", "maestro-pattern", "maestro-request", "maestro-resources", "maestro-session", "maestro-settings", "maestro-text", "maestro-theme", "maestro-tool", "maestro-tools", "maestro-tui", "maestro-watch", "maestro-web"]
 browser_test_crates = ["maestro-app", "maestro-web"]
 test_tools = true
+test_prepare = "cargo run --quiet --locked -p maestro-tooling --bin development -- prepare-test-setup prepare \"$TEST_PREPARE_OUTPUT\" \"${CARGO_TARGET_DIR:-target/test-prepare}\""
+test_prepare_packages = ["maestro-extensions-wasm", "maestro-extensions-wasmtime", "maestro"]
+test_prepare_inputs = ["Cargo.toml", "Cargo.lock", "rust-toolchain.toml", ".config/prepare-author-component.sh", "crates/**", "examples/**", "assets/**"]
 test_inputs = { "fuzz/" = [], "justfile" = ["maestro-tooling"], "packages/" = ["maestro-packages"], "workspace-crates.json" = ["maestro-test-conventions"] }
 reserved_ports = [53692, 1455]
 test_shard_count = 32
-# Main's warm-up runs this test so its author-component build enters the compile cache.
-warm_test_filter = "package(maestro-extensions-wasm) & test(=tests::maestro_component_registers_invokes_and_releases)"
 # Unicode fixture scalars are hexadecimal data, not prose.
 spelling_words = ["braket", "buil", "addd", "beed", "promt", "NAM", "righ", "PERMUT", "TTEST", "AVERAGEIFS", "mminimal", "writeable", "ratatui", "relace", "Ba", "hel", "worl", "abd", "SECON", "SINGL", "curren", "twoo", "hree", "mone", "meight", "caf", "flate", "mport", "mak", "routeros", "styl", "Nd", "extens", "UE", "Iz", "Packag", "Assistent", "Dokument", "Ein", "Konfiguration", "Konversation", "Modell", "Sie", "alle", "als", "ein", "ist", "lokal", "manuell", "oder", "vor", "BRE", "Fo", "PN", "PTD", "Pn", "SHW", "Skup", "conosle", "cusotm", "exectuion", "havea", "iif", "makrdown", "thet", "alha", "missin", "ment", "Preven", "provid", "Regist", "comman", "suppor", "paddin", "visibl", "conten", "matc", "guages", "Perfor", "witha", "Rto", "Iin", "EQUIRES", "guage", "MIS", "Studi", "buton", "unparseable", "fals", "alse", "EDE", "rturned", "alph", "DAA", "THN", "Iy", "Jod", "Ofr", "andd", "becaus", "equest", "ges", "infintie", "lates", "ofr", "oint", "olt", "pluse", "pointint", "scap", "ome", "anc", "Aktive", "Lage", "Lokale", "Oktober", "Reproduktion", "Stopp", "Streichung", "Tages", "accesing", "curent", "fiel", "messaage", "teh", "whe", "oll", "delet", "throu", "accep", "outpu", "selec", "elete", "contro"]
 check_targets = [

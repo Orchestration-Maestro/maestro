@@ -686,7 +686,54 @@ compile about five times slower, and `syn` and `proc-macro2`
 optimised, because the conventions tests parse every workspace source; release
 builds are unchanged.
 
-Before guest-authoring tests, nextest's shell launcher locates the active
+Archived CI shards receive `TEST_ARCHIVE=1` and `TEST_PREPARE_OUTPUT` pointing to
+`target/test-setup`.
+The `test_prepare` command in `.github/ci.toml` is the development tool's
+`prepare-test-setup prepare`. Shared CI runs it only when a selected package is
+named by `test_prepare_packages` there, the packages that nextest's
+`author-component` setup script serves. Shared CI caches the bundle under the contents of
+the files that `test_prepare_inputs` matches and restores it instead of preparing again;
+`ci_cache_key_covers_every_file_the_preparation_reads` fails when a file the preparation
+fingerprints is not matched or a pattern matches none. Markdown that crates embed only as
+documentation changes no staged file, so no pattern names it. The command runs the existing
+component-discovery example from a separate build directory with a user cache of its own, then stages the
+component files, the compiled code the example left in that cache, that built example,
+the development tool itself and a content manifest. The compiled code is the one cache
+namespace the engine named for the example's modification time; preparation fails on a
+namespace that does not end in that time or on more than one, and stages none when the host
+keeps its cache elsewhere. Shared CI transfers
+these files separately from the native test archive, so a shard does not need the
+tool in its archive. The nextest launcher runs the staged tool's
+`prepare-test-setup export`, which checks source and artifact hashes, including every
+compiled-code file, installs the staged example beside the extracted executables and
+installs the compiled code in the user cache (`XDG_CACHE_HOME`, else `~/.cache`) under the
+modification time that copy of the example has, and writes the component paths to
+`NEXTEST_ENV`. The launcher then gives the executables that same modification time, as
+below, so they share a compile-cache namespace with the installed code. It runs the example
+on the prepared components, which finds every component compiled and starts no Cargo build
+or compile pass. Archived runs
+require the bundle and fail without starting Cargo when it is missing or stale.
+Other runs reuse an existing manifest, rejecting stale or incomplete files; without
+a manifest they keep local auto-build. Archive strictness
+requires the shared CI release that supplies `TEST_ARCHIVE=1`. Source hashes
+include workspace crates, examples, assets, Cargo configuration, locked
+dependencies, the toolchain and the nextest launcher. The variable names in the
+bundle follow component discovery's own rule and fixed author and context pair.
+File timestamps do not affect reuse, but the staged example finds component
+sources at the checkout path it was built in, and the staged tool reads the
+checkout from the path it was built at, so both jobs must use the same checkout
+path, as shared CI does.
+
+For a local check of that boundary, run:
+
+```sh
+cargo run --quiet --locked -p maestro-tooling --bin development -- \
+    prepare-test-setup prepare "$PWD/target/test-setup" "$PWD/target/test-prepare"
+TEST_PREPARE_OUTPUT="$PWD/target/test-setup" cargo nextest run --locked -p maestro-extensions-wasm
+```
+
+With `TEST_ARCHIVE` unset and no prepared bundle, local runs build the example
+automatically. Before guest-authoring tests, nextest's shell launcher locates the active
 artifact directory through its documented platform library search path. It runs
 the `prepare_author_component` example that the test build put in that directory,
 as long as the example is newer than its source, the shared build and component
@@ -719,8 +766,9 @@ can stay outdated after that build. The launcher then logs one line and runs it 
 Test binaries do not read the code it warms, which costs a cache miss and never fails
 setup. The Git-pinned engine includes the shared modification time in its cache
 namespace, so the preparer and consuming test binaries share compiled code.
-The example builds every exported component, warms its Wasmtime compilation cache
-in the default user cache on up to four threads and exports its path to the tests'
+The example builds every exported component in one Cargo invocation, so Cargo
+compiles them in parallel, warms their Wasmtime compilation cache
+in the default user cache on up to four threads and exports each path to the tests'
 processes. Component contents, compiler settings and CPU features still determine
 cache compatibility.
 The shared component builder resolves these source-marked paths before invoking
@@ -912,35 +960,31 @@ and release it before waiting for completion. Pipe both output streams explicitl
 `spawn` otherwise retains inherited stdin. Live pipe-closure transactions use the
 single-test isolation described above, not a process-wide owner lock.
 
-### Compile cache warm-up
+### Compile cache snapshot
 
 Shared CI restores a compiled-cache snapshot in each Linux job, but only pushes
-to `main` save one. `.github/workflows/warm-cache.yml` runs on every push to
-`main` and calls the shared workflow with `warm-cache: true`. That builds the
-full coverage test graph, then runs only the tests selected by
-`warm_test_filter` in `.github/ci.toml`. Today that is one guest-authoring test,
-so the author component's compiles enter the snapshot that merge-queue test
-shards restore. The snapshot is capped at 1 GiB and evicts its least recently
-used entries, so the selection stays narrow. The warm-up is never a required
-check, and a newer push cancels a running one. Its `uses:` pin follows the rule in
-[Full-suite runs after landing](#full-suite-runs-after-landing).
+to `main` save one. The full suite after landing runs on every push to `main`
+and saves the snapshots that a merge group's preparation job restores: the
+author component's compiles, and beside them the prepared test setup bundle. The
+test shards only download the artifact that job builds. No caller names a
+`concurrency-key`: the key names the coverage manifest, and merge groups search the
+manifest of the default key as their baseline, which a main push run publishes only
+under that key.
 
 ## Full-suite runs after landing
 
 `Full suite after landing` runs the shared Rust CI on the exact commit of every
 push to main. It runs all test shards, doctests and declared Chromium tests,
 even when the merge queue selected fewer crates. Later pushes do not cancel
-or replace queued landing runs. This is separate from the compile-cache warm
-build and from required merge checks.
+or replace queued landing runs. This is separate from required merge checks.
 
 Push runs never read a coverage baseline: the lookup runs only for merge
-groups. The suite and warm-up callers still grant `actions: read`, because the
+groups. The suite caller still grants `actions: read`, because the
 shared declaration job declares it and a caller that grants less makes the run
-fail to start. The suite caller, the reporter caller and `warm-cache.yml` pin the
+fail to start. The suite caller and the reporter caller pin the
 released shared CI commit that the organization rulesets require. Each pin
 moves with every shared-CI release re-pin
-([Orchestration-Maestro/.github#231](https://github.com/Orchestration-Maestro/.github/issues/231));
-a stale warm-up pin only costs snapshot hits.
+([Orchestration-Maestro/.github#231](https://github.com/Orchestration-Maestro/.github/issues/231)).
 
 `Failed landing reports` listens for the completed main-push run. The shared
 reporter creates one failure issue per landing commit with the merged PR,
