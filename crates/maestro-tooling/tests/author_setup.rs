@@ -58,33 +58,14 @@ fn archived_author_setup_rejects_missing_and_stale_outputs() {
         "lock",
         "corrupt",
         "multiline directory",
+        "missing pair",
+        "invalid variable",
     ] {
         let scratch = Scratch::new().unwrap();
         let root = scratch.path();
         fixture(root);
         prepare(root);
-        let mut prepared = root.join("target/test-setup");
-        match change {
-            "directory" => fs::rename(&prepared, root.join("unused")).unwrap(),
-            "component" => fs::remove_file(prepared.join("MAESTRO_AUTHOR_COMPONENT.wasm")).unwrap(),
-            "example" => fs::remove_file(prepared.join("prepare_author_component")).unwrap(),
-            "edited example" => {
-                fs::write(prepared.join("prepare_author_component"), "#!/bin/sh\n").unwrap();
-            }
-            "source" => fs::write(root.join("crates/example/src/lib.rs"), "edited source").unwrap(),
-            "added" => fs::write(root.join("crates/example/src/new.rs"), "new source").unwrap(),
-            "removed" => fs::remove_file(root.join("crates/example/src/lib.rs")).unwrap(),
-            "lock" => fs::write(root.join("Cargo.lock"), "new dependencies").unwrap(),
-            "corrupt" => {
-                fs::write(prepared.join("MAESTRO_AUTHOR_COMPONENT.wasm"), "broken").unwrap();
-            }
-            "multiline directory" => {
-                let moved = root.join("new\nline");
-                fs::rename(&prepared, &moved).unwrap();
-                prepared = moved;
-            }
-            _ => unreachable!(),
-        }
+        let prepared = tamper(root, change);
         let output = export(root, &prepared, true);
         assert!(!output.status.success(), "accepted {change}");
         let diagnostic = String::from_utf8_lossy(&output.stderr);
@@ -96,6 +77,55 @@ fn archived_author_setup_rejects_missing_and_stale_outputs() {
         assert!(!root.join("target/debug/examples").exists());
         assert_eq!(fs::read_to_string(root.join("seen")).unwrap(), "unset\n");
         assert_eq!(fs::read_to_string(root.join("builds")).unwrap(), "build\n");
+    }
+}
+
+/// Preparation refuses a bad request, a malformed environment entry and inputs that change
+/// while it runs, and writes no manifest.
+#[test]
+fn prepare_rejects_bad_requests_and_unstable_inputs() {
+    let malformed = "#!/bin/sh\necho invalid > \"$NEXTEST_ENV\"\n";
+    let unstable = format!("{EXAMPLE}echo edited > crates/example/src/lib.rs\n");
+    for (name, example, command, output, reason) in [
+        ("checkout", EXAMPLE, "prepare", ".", "needs a path"),
+        (
+            "command",
+            EXAMPLE,
+            "other",
+            "target/test-setup",
+            "unknown test setup",
+        ),
+        (
+            "entry",
+            malformed,
+            "prepare",
+            "target/test-setup",
+            "invalid component entry",
+        ),
+        (
+            "inputs",
+            &unstable,
+            "prepare",
+            "target/test-setup",
+            "inputs changed",
+        ),
+    ] {
+        let scratch = Scratch::new().unwrap();
+        let root = scratch.path();
+        fixture_with(root, example);
+        let error = maestro_tooling::run(
+            &[
+                "prepare-test-setup".into(),
+                command.into(),
+                output.into(),
+                root.join("target/test-prepare").into(),
+            ],
+            &root.join("cargo"),
+            root,
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains(reason), "{name}: {error}");
+        assert!(!root.join("target/test-setup/components.json").exists());
     }
 }
 
@@ -175,8 +205,32 @@ printf 'MAESTRO_AUTHOR_COMPONENT=%s\nMAESTRO_CONTEXT_COMPONENT=%s\nMAESTRO_COMPO
     "${MAESTRO_COMPONENT:-$PWD/component.wasm}" > "$NEXTEST_ENV"
 "#;
 
+/// The fixture Cargo: it counts its builds and builds the setup example `@example@`, and a
+/// `run` also starts that example.
+const CARGO: &str = r#"#!/bin/sh
+set -eu
+echo build >> builds
+mode=$1
+while [ $# -gt 0 ]; do
+    if [ "$1" = --target-dir ]; then target=$2; fi
+    shift
+done
+example=$target/debug/examples/prepare_author_component
+mkdir -p "${example%/*}"
+cat > "$example" <<'EXAMPLE'
+@example@
+EXAMPLE
+chmod +x "$example"
+if [ "$mode" = run ]; then "$example"; fi
+"#;
+
 /// Give the standalone command a controlled Cargo boundary and source checkout.
 fn fixture(root: &Path) {
+    fixture_with(root, EXAMPLE);
+}
+
+/// Like `fixture`, with the setup example script the fixture Cargo builds.
+fn fixture_with(root: &Path, example: &str) {
     use std::os::unix::fs::PermissionsExt;
     fs::create_dir_all(root.join("crates/example/src")).unwrap();
     fs::write(root.join("crates/example/src/lib.rs"), "original source").unwrap();
@@ -184,17 +238,7 @@ fn fixture(root: &Path) {
     fs::write(root.join("component.wasm"), "component bytes").unwrap();
     executable(&root.join("target/debug/deps/older"), 100);
     executable(&root.join("target/debug/deps/newer"), 200);
-    fs::write(
-        root.join("cargo"),
-        format!(
-            "#!/bin/sh\nset -eu\necho build >> builds\nmode=$1\n\
-             while [ $# -gt 0 ]; do\n    if [ \"$1\" = --target-dir ]; then target=$2; fi\n    shift\ndone\n\
-             example=$target/debug/examples/prepare_author_component\nmkdir -p \"${{example%/*}}\"\n\
-             cat > \"$example\" <<'EXAMPLE'\n{EXAMPLE}EXAMPLE\nchmod +x \"$example\"\n\
-             if [ \"$mode\" = run ]; then \"$example\"; fi\n"
-        ),
-    )
-    .unwrap();
+    fs::write(root.join("cargo"), CARGO.replace("@example@", example)).unwrap();
     fs::set_permissions(root.join("cargo"), fs::Permissions::from_mode(0o755)).unwrap();
     for args in [["init", "-q"].as_slice(), ["add", "."].as_slice()] {
         assert_success(
@@ -272,6 +316,63 @@ fn export(root: &Path, prepared: &Path, archived: bool) -> Output {
         )
         .output()
         .unwrap()
+}
+
+/// Damage the prepared bundle or the checkout as `change` names, and return the bundle's
+/// directory afterwards.
+fn tamper(root: &Path, change: &str) -> PathBuf {
+    let mut prepared = root.join("target/test-setup");
+    match change {
+        "directory" => fs::rename(&prepared, root.join("unused")).unwrap(),
+        "component" => fs::remove_file(prepared.join("MAESTRO_AUTHOR_COMPONENT.wasm")).unwrap(),
+        "example" => fs::remove_file(prepared.join("prepare_author_component")).unwrap(),
+        "edited example" => {
+            fs::write(prepared.join("prepare_author_component"), "#!/bin/sh\n").unwrap();
+        }
+        "source" => fs::write(root.join("crates/example/src/lib.rs"), "edited source").unwrap(),
+        "added" => fs::write(root.join("crates/example/src/new.rs"), "new source").unwrap(),
+        "removed" => fs::remove_file(root.join("crates/example/src/lib.rs")).unwrap(),
+        "lock" => fs::write(root.join("Cargo.lock"), "new dependencies").unwrap(),
+        "corrupt" => {
+            fs::write(prepared.join("MAESTRO_AUTHOR_COMPONENT.wasm"), "broken").unwrap();
+        }
+        "multiline directory" => {
+            let moved = root.join("new\nline");
+            fs::rename(&prepared, &moved).unwrap();
+            prepared = moved;
+        }
+        "missing pair" => edit_manifest(&prepared, |components| {
+            components.retain(|variable, _| variable != "MAESTRO_CONTEXT_COMPONENT");
+        }),
+        "invalid variable" => {
+            // The renamed component keeps its file and digest, so only the name is wrong.
+            let renamed = "MAESTRO_lower_COMPONENT";
+            fs::rename(
+                prepared.join("MAESTRO_COMPONENT.wasm"),
+                prepared.join(format!("{renamed}.wasm")),
+            )
+            .unwrap();
+            edit_manifest(&prepared, |components| {
+                let digest = components["MAESTRO_COMPONENT"].clone();
+                components.retain(|variable, _| variable != "MAESTRO_COMPONENT");
+                components.insert(renamed.to_owned(), digest);
+            });
+        }
+        _ => unreachable!(),
+    }
+    prepared
+}
+
+/// Rewrite the component digests in the bundle's manifest.
+fn edit_manifest(
+    prepared: &Path,
+    edit: impl FnOnce(&mut serde_json::Map<String, serde_json::Value>),
+) {
+    let path = prepared.join("components.json");
+    let mut manifest: serde_json::Value =
+        serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+    edit(manifest["components"].as_object_mut().unwrap());
+    fs::write(path, serde_json::to_vec(&manifest).unwrap()).unwrap();
 }
 
 /// Locate a repository setup script without embedding its contents.
