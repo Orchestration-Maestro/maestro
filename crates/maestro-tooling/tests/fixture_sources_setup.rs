@@ -154,3 +154,51 @@ fn fixture_sources_setup_reports_a_failed_vendor_run() {
     assert!(!keyed.unwrap().unwrap().path().join("config.toml").exists());
     assert!(!root.join("nextest-env").exists());
 }
+
+/// A failed read names the file, which the bare operating-system error omits.
+#[test]
+fn fixture_sources_setup_names_the_input_it_cannot_read() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    checkout(root);
+    fs::remove_file(root.join("Cargo.lock")).unwrap();
+
+    let output = setup(root, false);
+
+    assert!(!output.status.success());
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("Cargo.lock"), "{stderr}");
+}
+
+/// A Cargo that cannot start is named, as is the file nextest cannot be told about.
+#[test]
+fn fixture_sources_setup_names_the_paths_it_cannot_use() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    checkout(root);
+    fs::remove_file(root.join("cargo")).unwrap();
+
+    let output = setup(root, false);
+
+    assert!(!output.status.success());
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains(&root.join("cargo").display().to_string()),
+        "{stderr}"
+    );
+
+    checkout(root);
+    let mut command = Command::new(env!("CARGO_BIN_EXE_development"));
+    let output = command
+        .args(["nextest-setup", "fixture-sources"])
+        .current_dir(root)
+        .env("CARGO", root.join("cargo"))
+        .env("CALLS", root.join("calls"))
+        .env("NEXTEST_ENV", root.join("missing/nextest-env"))
+        .output()
+        .unwrap();
+
+    assert!(!output.status.success());
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("missing/nextest-env"), "{stderr}");
+}
