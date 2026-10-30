@@ -20,6 +20,9 @@ watchexec = "2.8.0"
 # Finds attachment paths in native completion tests.
 fd = "10.5.0"
 
+# Supplies real content search in isolated native tool tests.
+ripgrep = "15.2.0"
+
 # Runs ordinary tests in isolated processes.
 "aqua:nextest-rs/nextest/cargo-nextest" = "0.9.148"
 
