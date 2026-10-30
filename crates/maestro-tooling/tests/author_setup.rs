@@ -43,6 +43,18 @@ fn archived_author_setup_reuses_relocated_components() {
     assert_eq!(fs::read_to_string(root.join("builds")).unwrap(), "build\n");
 }
 
+/// A change to a crate that nothing the preparation builds depends on leaves the bundle valid.
+#[test]
+fn archived_author_setup_ignores_crates_outside_the_built_closure() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture(root);
+    prepare(root);
+    fs::write(root.join("crates/unrelated/src/lib.rs"), "edited source").unwrap();
+    fs::write(root.join("crates/unrelated/src/new.rs"), "new source").unwrap();
+    assert_success(&export(root, &root.join("target/test-setup"), true));
+}
+
 /// Missing, edited or incomplete reusable outputs, including the staged setup example, fail
 /// without starting Cargo.
 #[test]
@@ -53,6 +65,7 @@ fn archived_author_setup_rejects_missing_and_stale_outputs() {
         "example",
         "edited example",
         "source",
+        "dependency",
         "added",
         "removed",
         "lock",
@@ -89,7 +102,7 @@ fn archived_author_setup_rejects_missing_and_stale_outputs() {
 #[test]
 fn prepare_rejects_bad_requests_and_unstable_inputs() {
     let malformed = "#!/bin/sh\necho invalid > \"$NEXTEST_ENV\"\n";
-    let unstable = format!("{EXAMPLE}echo edited > crates/example/src/lib.rs\n");
+    let unstable = format!("{EXAMPLE}echo edited > crates/maestro-extensions-wasm/src/lib.rs\n");
     for (name, example, command, output, reason) in [
         ("checkout", EXAMPLE, "prepare", ".", "needs a path"),
         (
@@ -347,6 +360,7 @@ echo y > "$XDG_CACHE_HOME/wasmtime/modules/wasmtime-other-${seconds}000/key"
 /// `run` also starts that example.
 const CARGO: &str = r#"#!/bin/sh
 set -eu
+if [ "$1" = metadata ]; then exec "@cargo@" "$@"; fi
 echo build >> builds
 mode=$1
 while [ $# -gt 0 ]; do
@@ -371,13 +385,17 @@ fn fixture(root: &Path) {
 /// Like `fixture`, with the setup example script the fixture Cargo builds.
 fn fixture_with(root: &Path, example: &str) {
     use std::os::unix::fs::PermissionsExt;
-    fs::create_dir_all(root.join("crates/example/src")).unwrap();
-    fs::write(root.join("crates/example/src/lib.rs"), "original source").unwrap();
-    fs::write(root.join("Cargo.lock"), "locked dependencies").unwrap();
+    workspace(root);
     fs::write(root.join("component.wasm"), "component bytes").unwrap();
     executable(&root.join("target/debug/deps/older"), 100);
     executable(&root.join("target/debug/deps/newer"), 200);
-    fs::write(root.join("cargo"), CARGO.replace("@example@", example)).unwrap();
+    fs::write(
+        root.join("cargo"),
+        CARGO
+            .replace("@example@", example)
+            .replace("@cargo@", env!("CARGO")),
+    )
+    .unwrap();
     fs::set_permissions(root.join("cargo"), fs::Permissions::from_mode(0o755)).unwrap();
     for args in [["init", "-q"].as_slice(), ["add", "."].as_slice()] {
         assert_success(
@@ -387,6 +405,42 @@ fn fixture_with(root: &Path, example: &str) {
                 .output()
                 .unwrap(),
         );
+    }
+}
+
+/// Write the fixture workspace: the two packages the preparation builds, the crate one of them
+/// depends on and a crate that nothing it builds depends on.
+fn workspace(root: &Path) {
+    fs::write(
+        root.join("Cargo.toml"),
+        "[workspace]\nmembers = [\"crates/*\"]\nresolver = \"3\"\n",
+    )
+    .unwrap();
+    fs::write(
+        root.join("Cargo.lock"),
+        "version = 4\n\n[[package]]\nname = \"maestro-extensions-wasm\"\nversion = \"0.0.0\"\ndependencies = [\n \"shared\",\n]\n\n\
+         [[package]]\nname = \"maestro-tooling\"\nversion = \"0.0.0\"\n\n\
+         [[package]]\nname = \"shared\"\nversion = \"0.0.0\"\n\n\
+         [[package]]\nname = \"unrelated\"\nversion = \"0.0.0\"\n",
+    )
+    .unwrap();
+    for (name, dependency) in [
+        (
+            "maestro-extensions-wasm",
+            "\n[dependencies]\nshared = { path = \"../shared\" }\n",
+        ),
+        ("maestro-tooling", ""),
+        ("shared", ""),
+        ("unrelated", ""),
+    ] {
+        let crate_root = root.join("crates").join(name);
+        fs::create_dir_all(crate_root.join("src")).unwrap();
+        fs::write(crate_root.join("src/lib.rs"), "original source").unwrap();
+        fs::write(
+            crate_root.join("Cargo.toml"),
+            format!("[package]\nname = \"{name}\"\nversion = \"0.0.0\"\nedition = \"2024\"\n{dependency}"),
+        )
+        .unwrap();
     }
 }
 
@@ -450,7 +504,7 @@ fn export_command(root: &Path, prepared: &Path, archived: bool) -> Command {
         .arg(script("prepare-author-component.sh"))
         .current_dir(root)
         .env("CARGO", root.join("cargo"))
-        .env("CARGO_MANIFEST_DIR", root.join("crates/example"))
+        .env("CARGO_MANIFEST_DIR", root.join("crates/maestro-tooling"))
         .env("TEST_PREPARE_OUTPUT", prepared)
         .env("NEXTEST_ENV", root.join("nextest-env"))
         .env("NEXTEST_LD_LIBRARY_PATH", root.join("target/debug"))
@@ -473,9 +527,20 @@ fn tamper(root: &Path, change: &str) -> PathBuf {
         "edited example" => {
             fs::write(prepared.join("prepare_author_component"), "#!/bin/sh\n").unwrap();
         }
-        "source" => fs::write(root.join("crates/example/src/lib.rs"), "edited source").unwrap(),
-        "added" => fs::write(root.join("crates/example/src/new.rs"), "new source").unwrap(),
-        "removed" => fs::remove_file(root.join("crates/example/src/lib.rs")).unwrap(),
+        "source" => fs::write(
+            root.join("crates/maestro-extensions-wasm/src/lib.rs"),
+            "edited source",
+        )
+        .unwrap(),
+        "dependency" => fs::write(root.join("crates/shared/src/lib.rs"), "edited source").unwrap(),
+        "added" => fs::write(
+            root.join("crates/maestro-extensions-wasm/src/new.rs"),
+            "new source",
+        )
+        .unwrap(),
+        "removed" => {
+            fs::remove_file(root.join("crates/maestro-extensions-wasm/src/lib.rs")).unwrap()
+        }
         "lock" => fs::write(root.join("Cargo.lock"), "new dependencies").unwrap(),
         "corrupt" => {
             fs::write(prepared.join("MAESTRO_AUTHOR_COMPONENT.wasm"), "broken").unwrap();
