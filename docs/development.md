@@ -934,9 +934,9 @@ or replace queued landing runs. This is separate from the compile-cache warm
 build and from required merge checks.
 
 Push runs never read a coverage baseline: the lookup runs only for merge
-groups. The suite caller still grants `actions: read`, because the shared
-declaration job declares it and a caller that grants less makes the run fail to
-start. The suite caller, the reporter caller and `warm-cache.yml` pin the
+groups. The suite and warm-up callers still grant `actions: read`, because the
+shared declaration job declares it and a caller that grants less makes the run
+fail to start. The suite caller, the reporter caller and `warm-cache.yml` pin the
 released shared CI commit that the organization rulesets require. Each pin
 moves with every shared-CI release re-pin
 ([Orchestration-Maestro/.github#231](https://github.com/Orchestration-Maestro/.github/issues/231));

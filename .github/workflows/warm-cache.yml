@@ -4,6 +4,7 @@ name: Compile cache warm-up
     branches: [main]
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: warm-cache-${{ github.ref }}
   cancel-in-progress: true
