@@ -5,7 +5,7 @@ use super::components::{TracedBus, loader, local};
 use maestro_extensions::load_extensions;
 use maestro_test_directory::Scratch;
 use maestro_test_process::{TestProcess, selection};
-use std::{cell::RefCell, path::Path};
+use std::{cell::RefCell, collections::HashSet, path::Path};
 use wasmtime::{Cache, Config, Engine, component::Component};
 
 /// Runs this test in a separate process with an isolated user cache and configuration.
@@ -30,14 +30,49 @@ fn isolated(test: &str) -> bool {
     true
 }
 
-/// Compiles the supplied bytes through a second engine, observing the persistent cache.
+/// Every file below `directory`, empty when it does not exist yet.
+fn files_below(directory: &Path) -> Vec<std::path::PathBuf> {
+    let Ok(entries) = std::fs::read_dir(directory) else {
+        return Vec::new();
+    };
+    entries
+        .flat_map(|entry| {
+            let path = entry.unwrap().path();
+            if path.is_dir() {
+                files_below(&path)
+            } else {
+                vec![path]
+            }
+        })
+        .collect()
+}
+
+/// Removes a file the compile wrote. The cache worker renames or deletes its own statistics
+/// files in the background, so a file already gone counts as removed.
+fn remove_written(path: &Path) {
+    if let Err(error) = std::fs::remove_file(path) {
+        assert_eq!(error.kind(), std::io::ErrorKind::NotFound, "{error}");
+    }
+}
+
+/// Compiles the supplied bytes through a second engine, observing the persistent cache. A
+/// compile that misses removes every file that appeared in the cache during the compile, so only
+/// an entry written earlier counts as a hit on any later run.
 fn cached_compile(path: &Path) -> usize {
     let cache = Cache::from_file(None).unwrap();
+    let before: HashSet<_> = files_below(cache.directory()).into_iter().collect();
     let mut config = Config::new();
     config.wasm_component_model_async(true);
     config.cache(Some(cache.clone()));
     let engine = Engine::new(&config).unwrap();
     Component::from_file(&engine, path).unwrap();
+    if cache.cache_misses() > 0 {
+        for written in files_below(cache.directory()) {
+            if !before.contains(&written) {
+                remove_written(&written);
+            }
+        }
+    }
     cache.cache_hits()
 }
 
@@ -212,6 +247,35 @@ fn component_setup_warms_exported_examples() {
         cached_compile(Path::new(&path)) > 0,
         "setup did not warm the exported example for the consuming executable"
     );
+}
+
+#[test]
+fn missed_compile_leaves_no_entry_for_a_later_run() {
+    if isolated("missed_compile_leaves_no_entry_for_a_later_run") {
+        return;
+    }
+    let scratch = Scratch::new().unwrap();
+    let path = scratch.path().join("empty.wasm");
+    std::fs::write(&path, b"\0asm\x0d\0\x01\0").unwrap();
+    assert_eq!(cached_compile(&path), 0, "nothing warmed this component");
+    assert_eq!(
+        cached_compile(&path),
+        0,
+        "the first compile left an entry that a rerun mistakes for a warmed one"
+    );
+}
+
+#[test]
+fn removing_a_file_the_cache_worker_already_moved_is_not_a_failure() {
+    let scratch = Scratch::new().unwrap();
+    remove_written(&scratch.path().join("moved.wip-atomic-write-stats"));
+}
+
+#[test]
+#[should_panic(expected = "Is a directory")]
+fn removing_a_written_path_fails_on_an_error_other_than_a_missing_file() {
+    let scratch = Scratch::new().unwrap();
+    remove_written(scratch.path());
 }
 
 /// Loads a valid empty component through the extension loader, which compiles it and then
