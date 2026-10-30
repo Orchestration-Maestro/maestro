@@ -35,6 +35,14 @@ fn documentation_files(root: &Path) -> Vec<PathBuf> {
     for directory in ["docs", "examples"] {
         markdown(&root.join(directory), &mut files);
     }
+    files.push(root.join("README.md"));
+    files.push(root.join("CONTRIBUTING.md"));
+    for entry in fs::read_dir(root.join("crates")).unwrap() {
+        let readme = entry.unwrap().path().join("README.md");
+        if readme.is_file() {
+            files.push(readme);
+        }
+    }
     files
 }
 
@@ -68,13 +76,20 @@ fn commands(text: &str) -> Vec<Vec<String>> {
     blocks
 }
 
-/// Whether `command` starts nextest on a package the setup serves.
+/// Whether `command` starts nextest on the whole workspace or on a package the setup serves,
+/// selected as `-p name`, `--package name`, `-p=name` or `--package=name`.
 fn runs_served_nextest(command: &str, served: &[String]) -> bool {
     let words: Vec<_> = command.split_whitespace().collect();
+    let selects = |package: &str| served.iter().any(|served| served == package);
     command.contains("nextest run")
-        && words
-            .windows(2)
-            .any(|pair| pair[0] == "-p" && served.iter().any(|package| package == pair[1]))
+        && (words.contains(&"--workspace")
+            || words
+                .windows(2)
+                .any(|pair| matches!(pair[0], "-p" | "--package") && selects(pair[1]))
+            || words
+                .iter()
+                .filter_map(|word| word.strip_prefix("--package=").or(word.strip_prefix("-p=")))
+                .any(selects))
 }
 
 /// The first command of `block` that starts a served nextest run before any step stages the tool.

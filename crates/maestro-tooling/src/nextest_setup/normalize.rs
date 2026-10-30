@@ -19,7 +19,7 @@ use crate::test_setup::EXAMPLE;
 const LIBRARY_EXTENSIONS: [&str; 6] = ["rlib", "rmeta", "a", "so", "dylib", "dll"];
 
 /// The exit status that reports an outdated setup example.
-const EXAMPLE_OUTDATED: u8 = 3;
+pub(super) const EXAMPLE_OUTDATED: u8 = 3;
 
 /// The package tables of `Cargo.lock`.
 #[derive(Deserialize)]
@@ -83,17 +83,14 @@ pub(super) enum Outcome {
 /// # Errors
 /// Returns a directory without executables or a failed read or write.
 pub(super) fn normalize(checkout: &Path, directory: &Path, archived: bool) -> io::Result<Outcome> {
-    let crates = workspace_closures(checkout);
-    let libraries = libraries(&directory.join("deps"))?;
-    let newest_library = libraries.iter().map(|library| library.modified).max();
+    let outputs = Outputs::read(checkout, directory)?;
     let mut found = false;
     let mut stale = false;
     let mut current: Vec<(PathBuf, SystemTime)> = Vec::new();
     for artifact in executables(directory)? {
         found = true;
         let modified = std::fs::metadata(&artifact)?.modified()?;
-        let outdated =
-            !archived && outdated(&artifact, modified, &crates, &libraries, newest_library);
+        let outdated = !archived && outputs.outdated(&artifact, modified);
         if outdated {
             stale |= is_example(&artifact);
         } else {
@@ -248,40 +245,57 @@ fn is_example(artifact: &Path) -> bool {
         )
 }
 
-/// Whether a library output that `artifact` builds on is newer than it.
-///
-/// The libraries come from the crate named in the dependency information Cargo left beside
-/// the executable and the workspace crates the lock file lists for it. A library's own test
-/// binary is built from the crate and not on its output. Without that information, any newer
-/// library output outdates the executable.
-fn outdated(
-    artifact: &Path,
-    modified: SystemTime,
-    crates: &HashMap<String, Vec<String>>,
-    libraries: &[Library],
+/// What an executable's age is judged against: the library outputs of an artifact directory
+/// and the workspace crates each crate builds on.
+struct Outputs {
+    /// For each workspace crate, the underscored names of it and the crates it builds on.
+    crates: HashMap<String, Vec<String>>,
+    /// The library outputs in `deps`.
+    libraries: Vec<Library>,
+    /// The latest modification time among the library outputs.
     newest_library: Option<SystemTime>,
-) -> bool {
-    let source = dependency_source(artifact);
-    let package = source
-        .strip_prefix("crates/")
-        .unwrap_or(&source)
-        .split('/')
-        .next()
-        .unwrap_or_default();
-    let Some(closure) = crates.get(package) else {
-        return newest_library.is_some_and(|newest| newest > modified);
-    };
-    let own = package.replace('-', "_");
-    let own_library = format!("crates/{package}/src/lib.rs");
-    closure
-        .iter()
-        .filter(|member| !(**member == own && source == own_library))
-        .any(|member| {
-            let prefix = format!("lib{member}-");
-            libraries
-                .iter()
-                .any(|library| library.name.starts_with(&prefix) && library.modified > modified)
+}
+
+impl Outputs {
+    /// Read the workspace closures of `checkout` and the library outputs of `directory`.
+    fn read(checkout: &Path, directory: &Path) -> io::Result<Self> {
+        let libraries = libraries(&directory.join("deps"))?;
+        Ok(Self {
+            crates: workspace_closures(checkout),
+            newest_library: libraries.iter().map(|library| library.modified).max(),
+            libraries,
         })
+    }
+
+    /// Whether a library output that `artifact` builds on is newer than it.
+    ///
+    /// The libraries come from the crate named in the dependency information Cargo left
+    /// beside the executable and the workspace crates the lock file lists for it. A library's
+    /// own test binary is built from the crate and not on its output. Without that
+    /// information, any newer library output outdates the executable.
+    fn outdated(&self, artifact: &Path, modified: SystemTime) -> bool {
+        let source = dependency_source(artifact);
+        let package = source
+            .strip_prefix("crates/")
+            .unwrap_or(&source)
+            .split('/')
+            .next()
+            .unwrap_or_default();
+        let Some(closure) = self.crates.get(package) else {
+            return self.newest_library.is_some_and(|newest| newest > modified);
+        };
+        let own = package.replace('-', "_");
+        let own_library = format!("crates/{package}/src/lib.rs");
+        closure
+            .iter()
+            .filter(|member| !(**member == own && source == own_library))
+            .any(|member| {
+                let prefix = format!("lib{member}-");
+                self.libraries
+                    .iter()
+                    .any(|library| library.name.starts_with(&prefix) && library.modified > modified)
+            })
+    }
 }
 
 /// The first source file of the dependency information Cargo wrote beside `artifact`.

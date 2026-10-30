@@ -213,28 +213,11 @@ fn run_example(
 ///
 /// # Errors
 /// Returns a missing, stale or incomplete bundle, or a failed copy.
-pub(crate) fn install_bundle(
+pub(crate) fn export(
     checkout: &Path,
     output: &Path,
     directory: &Path,
     environment: &Path,
-) -> io::Result<()> {
-    export(
-        checkout,
-        output,
-        directory,
-        environment,
-        user_cache_home().as_deref(),
-    )
-}
-
-/// Validate the bundle in `output` and install it, with the user cache named by `user_cache`.
-fn export(
-    checkout: &Path,
-    output: &Path,
-    directory: &Path,
-    environment: &Path,
-    user_cache: Option<&Path>,
 ) -> io::Result<()> {
     let output = std::fs::canonicalize(output).map_err(|error| at(output, &error))?;
     if output.to_string_lossy().contains(['\n', '\r']) {
@@ -269,8 +252,8 @@ fn export(
     let installed = directory.join("examples").join(EXAMPLE);
     std::fs::create_dir_all(directory.join("examples"))?;
     copy(&staged, &installed)?;
-    if let (Some(code), Some(user_cache)) = (&manifest.compiled, user_cache) {
-        code.install(&compiled, user_cache, &installed)?;
+    if let (Some(code), Some(user_cache)) = (&manifest.compiled, user_cache_home()) {
+        code.install(&compiled, &user_cache, &installed)?;
     }
     std::fs::write(environment, lines.concat())
 }
@@ -407,6 +390,6 @@ fn remove_directory(path: &Path) -> io::Result<()> {
 }
 
 /// An error that names `path`, which the bare operating-system error omits.
-fn at(path: &Path, reason: impl std::fmt::Display) -> io::Error {
+pub(crate) fn at(path: &Path, reason: impl std::fmt::Display) -> io::Error {
     io::Error::other(format!("{}: {reason}", path.display()))
 }
