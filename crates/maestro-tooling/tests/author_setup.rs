@@ -40,12 +40,15 @@ fn archived_author_setup_reuses_relocated_components() {
     assert_eq!(fs::read_to_string(root.join("builds")).unwrap(), "build\n");
 }
 
-/// Missing, edited or incomplete reusable outputs fail without starting Cargo.
+/// Missing, edited or incomplete reusable outputs, including the staged setup example, fail
+/// without starting Cargo.
 #[test]
 fn archived_author_setup_rejects_missing_and_stale_outputs() {
     for change in [
         "directory",
         "component",
+        "example",
+        "edited example",
         "source",
         "added",
         "removed",
@@ -60,6 +63,10 @@ fn archived_author_setup_rejects_missing_and_stale_outputs() {
         match change {
             "directory" => fs::rename(&prepared, root.join("unused")).unwrap(),
             "component" => fs::remove_file(prepared.join("MAESTRO_AUTHOR_COMPONENT.wasm")).unwrap(),
+            "example" => fs::remove_file(prepared.join("prepare_author_component")).unwrap(),
+            "edited example" => {
+                fs::write(prepared.join("prepare_author_component"), "#!/bin/sh\n").unwrap();
+            }
             "source" => fs::write(root.join("crates/example/src/lib.rs"), "edited source").unwrap(),
             "added" => fs::write(root.join("crates/example/src/new.rs"), "new source").unwrap(),
             "removed" => fs::remove_file(root.join("crates/example/src/lib.rs")).unwrap(),
