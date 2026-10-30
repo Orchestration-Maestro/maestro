@@ -30,14 +30,41 @@ fn isolated(test: &str) -> bool {
     true
 }
 
-/// Compiles the supplied bytes through a second engine, observing the persistent cache.
+/// Every file below `directory`, empty when it does not exist yet.
+fn files_below(directory: &Path) -> Vec<std::path::PathBuf> {
+    let Ok(entries) = std::fs::read_dir(directory) else {
+        return Vec::new();
+    };
+    entries
+        .flat_map(|entry| {
+            let path = entry.unwrap().path();
+            if path.is_dir() {
+                files_below(&path)
+            } else {
+                vec![path]
+            }
+        })
+        .collect()
+}
+
+/// Compiles the supplied bytes through a second engine, observing the persistent cache. A
+/// compile that misses removes the entries it wrote, so only an entry another process wrote
+/// earlier counts as a hit on any later run.
 fn cached_compile(path: &Path) -> usize {
     let cache = Cache::from_file(None).unwrap();
+    let before = files_below(cache.directory());
     let mut config = Config::new();
     config.wasm_component_model_async(true);
     config.cache(Some(cache.clone()));
     let engine = Engine::new(&config).unwrap();
     Component::from_file(&engine, path).unwrap();
+    if cache.cache_misses() > 0 {
+        for written in files_below(cache.directory()) {
+            if !before.contains(&written) {
+                std::fs::remove_file(written).unwrap();
+            }
+        }
+    }
     cache.cache_hits()
 }
 
