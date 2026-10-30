@@ -963,10 +963,10 @@ single-test isolation described above, not a process-wide owner lock.
 ### Compile cache snapshot
 
 Shared CI restores a compiled-cache snapshot in each Linux job, but only pushes
-to `main` save one. The full suite after landing runs on every push to `main`,
-so its jobs seed the snapshots that merge-queue test shards restore, among them
-the author component's compiles and the prepared test setup. Later pushes never
-cancel it. No workflow exists only to seed the cache, and no caller names a
+to `main` save one. The full suite after landing runs on every push to `main`
+and saves the snapshots that a merge group's preparation job restores: the
+author component's compiles, and beside them the prepared test setup bundle. The
+test shards only download the artifact that job builds. No caller names a
 `concurrency-key`: the key names the coverage manifest, and merge groups search the
 manifest of the default key as their baseline, which a main push run publishes only
 under that key.

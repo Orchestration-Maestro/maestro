@@ -17,7 +17,6 @@ const AUTHOR_EXAMPLE: &str = cargo::FIXED_EXAMPLES[0];
 /// The component built from the shared author extension.
 ///
 /// Nextest supplies the artifact its setup example prepared; plain Cargo builds once per process.
-/// The compiler wrapper is not passed on, because coverage would instrument the component target.
 ///
 /// # Errors
 /// Returns the build's failure, which names the target to install when it is missing.

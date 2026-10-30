@@ -184,12 +184,20 @@ fn archived_author_setup_aligns_executable_times() {
     }
 }
 
+/// How a shard's `HOME` is set: left to the fixture's `XDG_CACHE_HOME`, absolute or relative.
+#[derive(Clone, Copy)]
+enum Home {
+    Unset,
+    Absolute,
+    Relative,
+}
+
 /// The bundle carries the code the setup example compiled, and a shard installs it for the
 /// modification time its executables share, in whichever directory the user cache is found,
 /// a relative `HOME` included, as the test-process owner finds it.
 #[test]
 fn archived_author_setup_installs_the_prepared_compiled_code() {
-    for home in [None, Some("absolute"), Some("relative")] {
+    for home in [Home::Unset, Home::Absolute, Home::Relative] {
         let scratch = Scratch::new().unwrap();
         let root = scratch.path();
         fixture(root);
@@ -198,16 +206,16 @@ fn archived_author_setup_installs_the_prepared_compiled_code() {
         assert_eq!(fs::read_to_string(staged.join("key")).unwrap(), "compiled");
         assert!(!staged.join("key.stats").exists());
         let mut command = export_command(root, &root.join("target/test-setup"), true);
-        if let Some(kind) = home {
-            let value = if kind == "absolute" {
-                root.join("home")
-            } else {
-                PathBuf::from("home")
-            };
+        let value = match home {
+            Home::Unset => None,
+            Home::Absolute => Some(root.join("home")),
+            Home::Relative => Some(PathBuf::from("home")),
+        };
+        if let Some(value) = &value {
             command.env_remove("XDG_CACHE_HOME").env("HOME", value);
         }
         assert_success(&command.output().unwrap());
-        let cache = if home.is_some() {
+        let cache = if value.is_some() {
             root.join("home/.cache")
         } else {
             root.join("cache-home")
@@ -229,6 +237,24 @@ fn archived_author_setup_installs_the_prepared_compiled_code() {
     }
 }
 
+/// An archived shard that is given no output directory reads the bundle at `target/test-setup`.
+#[test]
+fn archived_author_setup_defaults_to_the_target_bundle() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture(root);
+    prepare(root);
+    let mut command = export_command(root, &root.join("target/test-setup"), true);
+    command.env_remove("TEST_PREPARE_OUTPUT");
+    assert_success(&command.output().unwrap());
+    let environment = fs::read_to_string(root.join("nextest-env")).unwrap();
+    assert!(environment.contains(&format!(
+        "MAESTRO_AUTHOR_COMPONENT={}",
+        root.join("target/test-setup/MAESTRO_AUTHOR_COMPONENT.wasm")
+            .display()
+    )));
+}
+
 /// A host whose compiled code the preparation cannot collect still prepares and exports, and
 /// installs no cache.
 #[test]
@@ -242,10 +268,11 @@ fn archived_author_setup_without_compiled_code_installs_none() {
     assert!(!root.join("cache-home").exists());
 }
 
-/// Local and warm runs without a prepared bundle keep automatic preparation.
+/// Runs without an archive and without a prepared bundle build the setup example themselves,
+/// whether or not `TEST_PREPARE_OUTPUT` names an output directory.
 #[test]
 fn author_setup_without_prepared_outputs_builds_locally() {
-    for mode in ["local", "warm"] {
+    for names_output in [false, true] {
         let scratch = Scratch::new().unwrap();
         let root = scratch.path();
         fixture(root);
@@ -261,7 +288,7 @@ fn author_setup_without_prepared_outputs_builds_locally() {
             .env("NEXTEST_DYLD_FALLBACK_LIBRARY_PATH", &profile)
             .env_remove("TEST_ARCHIVE")
             .env_remove("TEST_PREPARE_OUTPUT");
-        if mode == "warm" {
+        if names_output {
             command.env("TEST_PREPARE_OUTPUT", root.join("target/test-setup"));
         }
         assert_success(&command.output().unwrap());
