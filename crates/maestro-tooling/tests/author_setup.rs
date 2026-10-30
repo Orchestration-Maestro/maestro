@@ -3,18 +3,17 @@
 
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Output};
+use std::process::{Command, ExitCode, Output};
 
 use maestro_test_directory::Scratch;
 
-/// Reusable outputs survive a different checkout and never start a shard build.
+/// Reusable outputs survive a move to another directory and never start a shard build.
 #[test]
 fn archived_author_setup_reuses_relocated_components() {
     let scratch = Scratch::new().unwrap();
     let root = scratch.path();
     fixture(root);
-    let prepared = prepare(root);
-    assert_success(&prepared);
+    prepare(root);
     assert_eq!(fs::read_to_string(root.join("builds")).unwrap(), "build\n");
     let moved = root.join("relocated setup");
     fs::rename(root.join("target/test-setup"), &moved).unwrap();
@@ -58,12 +57,13 @@ fn archived_author_setup_rejects_missing_and_stale_outputs() {
         "removed",
         "lock",
         "corrupt",
+        "multiline directory",
     ] {
         let scratch = Scratch::new().unwrap();
         let root = scratch.path();
         fixture(root);
-        assert_success(&prepare(root));
-        let prepared = root.join("target/test-setup");
+        prepare(root);
+        let mut prepared = root.join("target/test-setup");
         match change {
             "directory" => fs::rename(&prepared, root.join("unused")).unwrap(),
             "component" => fs::remove_file(prepared.join("MAESTRO_AUTHOR_COMPONENT.wasm")).unwrap(),
@@ -77,6 +77,11 @@ fn archived_author_setup_rejects_missing_and_stale_outputs() {
             "lock" => fs::write(root.join("Cargo.lock"), "new dependencies").unwrap(),
             "corrupt" => {
                 fs::write(prepared.join("MAESTRO_AUTHOR_COMPONENT.wasm"), "broken").unwrap();
+            }
+            "multiline directory" => {
+                let moved = root.join("new\nline");
+                fs::rename(&prepared, &moved).unwrap();
+                prepared = moved;
             }
             _ => unreachable!(),
         }
@@ -94,6 +99,20 @@ fn archived_author_setup_rejects_missing_and_stale_outputs() {
     }
 }
 
+/// The bundle carries the command that prepared it, so a shard needs neither Cargo nor
+/// maestro-tooling in its test archive to validate the bundle.
+#[test]
+fn prepared_setup_stages_the_preparing_command() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture(root);
+    assert_eq!(run_prepare(root).unwrap(), ExitCode::SUCCESS);
+    assert_eq!(
+        fs::read(root.join("target/test-setup/development")).unwrap(),
+        fs::read(std::env::current_exe().unwrap()).unwrap()
+    );
+}
+
 /// Archived runs give every extracted executable, and the installed setup example, one
 /// modification time so test processes share a compile-cache namespace with the warm-up.
 #[test]
@@ -101,7 +120,7 @@ fn archived_author_setup_aligns_executable_times() {
     let scratch = Scratch::new().unwrap();
     let root = scratch.path();
     fixture(root);
-    assert_success(&prepare(root));
+    prepare(root);
     assert_success(&export(root, &root.join("target/test-setup"), true));
     let modified = |name: &str| {
         fs::metadata(root.join("target/debug").join(name))
@@ -205,20 +224,33 @@ fn at(seconds: u64) -> std::time::SystemTime {
     std::time::UNIX_EPOCH + std::time::Duration::from_secs(seconds)
 }
 
-/// Invoke the standalone preparation command, not a native test executable.
-fn prepare(root: &Path) -> Output {
-    Command::new("python3")
-        .arg(script("prepare-test-setup.py"))
-        .arg("prepare")
-        .current_dir(root)
-        .env("CARGO", root.join("cargo"))
-        .env("CARGO_TARGET_DIR", root.join("target/test-prepare"))
-        .env("TEST_PREPARE_OUTPUT", root.join("target/test-setup"))
-        .output()
-        .unwrap()
+/// Invoke the preparation command with a controlled Cargo, as the preparation job does.
+fn run_prepare(root: &Path) -> std::io::Result<ExitCode> {
+    maestro_tooling::run(
+        &[
+            "prepare-test-setup".into(),
+            "prepare".into(),
+            root.join("target/test-setup").into(),
+            root.join("target/test-prepare").into(),
+        ],
+        &root.join("cargo"),
+        root,
+    )
 }
 
-/// Run the real nextest setup entry point with archived-shard environment.
+/// Prepare the bundle, then give it the development binary as its exporter: this test
+/// executable cannot run the export command that the shard runs from the bundle.
+fn prepare(root: &Path) {
+    assert_eq!(run_prepare(root).unwrap(), ExitCode::SUCCESS);
+    fs::copy(
+        env!("CARGO_BIN_EXE_development"),
+        root.join("target/test-setup/development"),
+    )
+    .unwrap();
+}
+
+/// Run the real nextest setup entry point with archived-shard environment. The development
+/// binary takes its checkout from `CARGO_MANIFEST_DIR`, which points into the fixture.
 fn export(root: &Path, prepared: &Path, archived: bool) -> Output {
     let mut command = Command::new("sh");
     if archived {
@@ -230,6 +262,7 @@ fn export(root: &Path, prepared: &Path, archived: bool) -> Output {
         .arg(script("prepare-author-component.sh"))
         .current_dir(root)
         .env("CARGO", root.join("cargo"))
+        .env("CARGO_MANIFEST_DIR", root.join("crates/example"))
         .env("TEST_PREPARE_OUTPUT", prepared)
         .env("NEXTEST_ENV", root.join("nextest-env"))
         .env("NEXTEST_LD_LIBRARY_PATH", root.join("target/debug"))

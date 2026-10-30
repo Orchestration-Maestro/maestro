@@ -23,6 +23,8 @@ pub mod example_files;
 
 /// Derived extension documentation table.
 mod example_index;
+/// Reusable test-setup staging and validation.
+mod test_setup;
 /// Filesystem watching and Cargo compilation dispatch.
 mod watch;
 
@@ -87,6 +89,7 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
             }
             Ok(ExitCode::SUCCESS)
         }
+        Some("prepare-test-setup") => test_setup::run(args, cargo, checkout),
         Some("watch") => watch::run(args, cargo),
         Some("watch-step") => watch::step(args, cargo),
         Some("test-offline") => {
