@@ -19,6 +19,8 @@ setup = "fixture-sources"
 
 # Builds the browser graph the browser author tests share, once before the first of them.
 # The cold-start test builds from an empty state on purpose, so nothing is prepared for it.
+# The `browser-author` test group below selects the same tests with the same filter; change
+# the two together.
 [scripts.setup.browser-author]
 command = "sh .config/prepare-browser-author.sh"
 
@@ -40,6 +42,7 @@ max-threads = 1
 filter = "(package(maestro-models) | package(maestro-extensions-wasmtime)) & test(/(^|::)oauth_callback::/)"
 test-group = "oauth-callback"
 
+# Same filter as the `browser-author` setup rule above: the tests that share the prepared target.
 [test-groups.browser-author]
 max-threads = 1
 
