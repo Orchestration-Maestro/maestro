@@ -141,7 +141,7 @@ fn setup_tool() -> std::path::PathBuf {
     let tool = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/test-setup/development");
     assert!(
         tool.is_file(),
-        "{} is missing; run `cargo run --quiet --locked -p maestro-tooling --bin development -- prepare-test-setup install target/test-setup` first",
+        "{} is missing; run `just prepare-tests` first",
         tool.display()
     );
     tool

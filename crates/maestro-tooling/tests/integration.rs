@@ -10,6 +10,7 @@ mod component_preparation;
 mod fixture_sources_setup;
 mod nextest_priorities;
 mod prepared_setup_packages;
+mod setup_docs;
 mod shared_ci_callers;
 mod tooling_commands;
 

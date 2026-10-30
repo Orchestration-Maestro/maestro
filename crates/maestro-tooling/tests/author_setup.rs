@@ -386,11 +386,12 @@ echo x > "$XDG_CACHE_HOME/wasmtime/modules/wasmtime-fixture-${seconds}000/key"
 echo y > "$XDG_CACHE_HOME/wasmtime/modules/wasmtime-other-${seconds}000/key"
 "#;
 
-/// The fixture Cargo: it counts its builds and builds the setup example `@example@`, and a
-/// `run` also starts that example.
+/// The fixture Cargo: it counts its builds and builds the setup example `@example@` in the `dev`
+/// profile, which it requires, and a `run` also starts that example.
 const CARGO: &str = r#"#!/bin/sh
 set -eu
 if [ "$1" = metadata ]; then exec "@cargo@" "$@"; fi
+case " $* " in *" --profile dev "*) ;; *) echo "build without the dev profile: $*" >&2; exit 1 ;; esac
 echo build >> builds
 mode=$1
 while [ $# -gt 0 ]; do
