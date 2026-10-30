@@ -44,7 +44,10 @@ fn main() -> Result<(), String> {
         )
         .map_err(|error| error.to_string())?,
     );
-    build::warm(&components)?;
+    build::warm_outside_cache_run(
+        &components,
+        std::env::var_os("MAESTRO_WARM_CACHE_RUN").as_deref(),
+    )?;
     if let Some(environment) = std::env::var_os("NEXTEST_ENV") {
         std::fs::write(environment, entries).map_err(|error| error.to_string())?;
     }

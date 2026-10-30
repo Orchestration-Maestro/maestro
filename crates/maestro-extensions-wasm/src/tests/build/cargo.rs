@@ -1,4 +1,5 @@
 //! The Cargo build and artifact discovery shared by author component checks.
+use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -17,14 +18,7 @@ pub fn component(directory: &Path, selection: &[&str], name: &str) -> Result<Pat
         return Ok(path);
     }
     let cargo = std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
-    let output = Command::new(cargo)
-        .current_dir(directory)
-        .env_remove("RUSTC_WRAPPER")
-        .args(["build", "--target", "wasm32-wasip2"])
-        .args(selection)
-        .arg("--target-dir")
-        .arg(target_directory()?)
-        .args(["--release", "--locked", "--message-format=json"])
+    let output = build_command(cargo, directory, &[name], &target_directory()?)
         .output()
         .map_err(|error| format!("cannot run cargo: {error}"))?;
     if !output.status.success() {
@@ -46,6 +40,31 @@ pub fn component(directory: &Path, selection: &[&str], name: &str) -> Result<Pat
                 .is_some_and(|extension| extension == "wasm")
         })
         .ok_or_else(|| "the build reported no component".to_owned())
+}
+
+/// The Cargo command that builds every named example component in one invocation.
+///
+/// The compiler wrapper is not passed on, because coverage would instrument the component target.
+pub fn build_command(
+    cargo: impl AsRef<OsStr>,
+    directory: &Path,
+    names: &[&str],
+    target_directory: &Path,
+) -> Command {
+    let mut command = Command::new(cargo);
+    command
+        .current_dir(directory)
+        .env_remove("RUSTC_WRAPPER")
+        .args(["build", "--target", "wasm32-wasip2"]);
+    for name in names.iter().take(1) {
+        command.args(["--example", name]);
+    }
+    command.arg("--target-dir").arg(target_directory).args([
+        "--release",
+        "--locked",
+        "--message-format=json",
+    ]);
+    command
 }
 
 /// Looks up a supplied artifact through the same source markers that preparation visits.

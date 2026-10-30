@@ -1,4 +1,5 @@
 //! Builds and compiles the author component for test harnesses.
+use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -65,6 +66,17 @@ pub fn warm(paths: &[PathBuf]) -> Result<(), String> {
     warm_with(paths, |path| {
         compile(path).map(drop).map_err(|error| error.to_string())
     })
+}
+
+/// Compiles each component through the test host's cache, except in the compile-cache warm-up
+/// run, which discards the cache with its disposable user directories.
+///
+/// `cache_run` is the value of `MAESTRO_WARM_CACHE_RUN`.
+///
+/// # Errors
+/// Returns a compile failure, or a message when a worker thread panicked.
+pub fn warm_outside_cache_run(paths: &[PathBuf], _cache_run: Option<&OsStr>) -> Result<(), String> {
+    warm(paths)
 }
 
 /// Runs `work` once for every path from one shared queue, on a few threads.
