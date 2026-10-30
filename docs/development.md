@@ -757,9 +757,7 @@ namespace, so the preparer and consuming test binaries share compiled code.
 The example builds every exported component in one Cargo invocation, so Cargo
 compiles them in parallel, warms their Wasmtime compilation cache
 in the default user cache on up to four threads and exports each path to the tests'
-processes. The compile-cache warm-up run sets `MAESTRO_WARM_CACHE_RUN=true`; its
-cache directories are discarded when the run ends, so the example then skips the warm.
-Component contents, compiler settings and CPU features still determine
+processes. Component contents, compiler settings and CPU features still determine
 cache compatibility.
 The shared component builder resolves these source-marked paths before invoking
 Cargo. The component build removes `RUSTC_WRAPPER`, where the coverage tool puts its

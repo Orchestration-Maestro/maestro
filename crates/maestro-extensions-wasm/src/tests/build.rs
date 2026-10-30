@@ -1,5 +1,4 @@
 //! Builds and compiles the author component for test harnesses.
-use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 #[cfg(test)]
 use std::sync::OnceLock;
@@ -13,7 +12,7 @@ pub mod cargo;
 
 /// The example target of the shared author extension.
 #[cfg(test)]
-const AUTHOR_EXAMPLE: &str = "author_component";
+const AUTHOR_EXAMPLE: &str = cargo::FIXED_EXAMPLES[0];
 
 /// The component built from the shared author extension.
 ///
@@ -63,20 +62,6 @@ pub fn warm(paths: &[PathBuf]) -> Result<(), String> {
     warm_with(paths, |path| {
         compile(path).map(drop).map_err(|error| error.to_string())
     })
-}
-
-/// Compiles each component through the test host's cache, except in the compile-cache warm-up
-/// run, which discards the cache with its disposable user directories.
-///
-/// `cache_run` is the value of `MAESTRO_WARM_CACHE_RUN`.
-///
-/// # Errors
-/// Returns a compile failure, or a message when a worker thread panicked.
-pub fn warm_outside_cache_run(paths: &[PathBuf], cache_run: Option<&OsStr>) -> Result<(), String> {
-    if cache_run == Some(OsStr::new("true")) {
-        return Ok(());
-    }
-    warm(paths)
 }
 
 /// Runs `work` once for every path from one shared queue, on a few threads.

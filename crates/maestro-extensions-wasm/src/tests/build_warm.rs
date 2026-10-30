@@ -1,11 +1,10 @@
 //! Warming compiles every path once and reports a worker's failure instead of hiding it.
 use std::{
-    ffi::OsStr,
     path::PathBuf,
     sync::atomic::{AtomicUsize, Ordering},
 };
 
-use super::build::{compile, warm, warm_outside_cache_run, warm_with};
+use super::build::{compile, warm, warm_with};
 use maestro_test_directory::Scratch;
 
 /// Every queued path reaches the worker exactly once, whichever thread takes it.
@@ -47,18 +46,4 @@ fn warming_a_path_that_is_not_a_component_returns_the_compile_error() {
     std::fs::write(&path, b"\0asm\x01\0\0\0").unwrap();
     let expected = compile(&path).unwrap_err().to_string();
     assert_eq!(warm(&[path]).unwrap_err(), expected);
-}
-
-/// The compile-cache warm-up run compiles nothing, because it throws the warm away; every
-/// other run still warms.
-#[test]
-fn warming_is_skipped_only_in_the_compile_cache_warm_up_run() {
-    let missing = [PathBuf::from("absent.wasm")];
-    assert_eq!(
-        warm_outside_cache_run(&missing, Some(OsStr::new("true"))),
-        Ok(())
-    );
-    for value in [None, Some(OsStr::new("false")), Some(OsStr::new(""))] {
-        assert!(warm_outside_cache_run(&missing, value).is_err());
-    }
 }
