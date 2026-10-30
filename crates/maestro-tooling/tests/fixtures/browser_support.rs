@@ -35,7 +35,25 @@ impl Browser {
     /// Prepare isolated inputs without locking the shared Trunk build output.
     /// Every build command must supply its own Cargo target directory.
     pub fn cold() -> Self {
-        Self::prepare(None)
+        let browser = Self::prepare(None);
+        browser.use_plain_dev_profile();
+        browser
+    }
+
+    /// Drop the checkout's per-package optimization levels.
+    ///
+    /// The workspace optimizes a few parsers and codecs for the tests that run them repeatedly.
+    /// A build from empty state runs none of them, and `syn` alone, at that level, holds back the
+    /// derive macros for the first third of the compile.
+    fn use_plain_dev_profile(&self) {
+        let path = self.path("Cargo.toml");
+        let mut manifest: toml::Table =
+            toml::from_str(&fs::read_to_string(&path).unwrap()).unwrap();
+        manifest["profile"]["dev"]["package"]
+            .as_table_mut()
+            .unwrap()
+            .retain(|name, _| name == "*");
+        fs::write(path, toml::to_string(&manifest).unwrap()).unwrap();
     }
 
     /// Copy authored inputs while retaining any shared-output lock.
