@@ -691,8 +691,12 @@ Archived CI shards receive `TEST_ARCHIVE=1` and `TEST_PREPARE_OUTPUT` pointing t
 The `test_prepare` command in `.github/ci.toml` is the development tool's
 `prepare-test-setup prepare`. Shared CI runs it only when a selected package is
 named by `test_prepare_packages` there, the packages that nextest's
-`author-component` setup script serves. It runs the existing component-discovery
-example from a separate build directory with a user cache of its own, then stages the
+`author-component` setup script serves. Shared CI caches the bundle under the contents of
+the files that `test_prepare_inputs` matches and restores it instead of preparing again;
+`ci_cache_key_covers_every_file_the_preparation_reads` fails when a file the preparation
+fingerprints is not matched or a pattern matches none. Markdown that crates embed only as
+documentation changes no staged file, so no pattern names it. The command runs the existing
+component-discovery example from a separate build directory with a user cache of its own, then stages the
 component files, the compiled code the example left in that cache, that built example,
 the development tool itself and a content manifest. The compiled code is the one cache
 namespace the engine named for the example's modification time; preparation fails on a
