@@ -1702,15 +1702,9 @@ fn browser_author_shared_launcher_uses_invoking_checkout() {
             .unwrap(),
     );
     assert_eq!(
-        target.canonicalize().unwrap(),
-        std::path::Path::new(env!("CARGO_BIN_EXE_development"))
-            .parent()
-            .unwrap()
-            .parent()
-            .unwrap()
-            .canonicalize()
-            .unwrap(),
-        "warm browser recipes must reuse the test build's actual Cargo target"
+        target,
+        browser_support::target_directory(),
+        "warm browser recipes must reuse the run's shared Cargo target"
     );
     fs::create_dir_all(&target).unwrap();
     let target = target.canonicalize().unwrap();
