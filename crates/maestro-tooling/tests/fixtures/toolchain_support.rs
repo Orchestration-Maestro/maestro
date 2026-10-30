@@ -95,7 +95,10 @@ fn cargo_home_hiding_wrapper(root: &std::path::Path) -> std::io::Result<std::pat
     if !script.exists() {
         std::fs::write(
             &script,
-            format!("#!/bin/sh\nunset CARGO_HOME\nexec \"${ORIGINAL_RUSTC_WRAPPER}\" \"$@\"\n"),
+            format!(
+                "#!/bin/sh\nunset CARGO_HOME\nexec \"${name}\" \"$@\"\n",
+                name = ORIGINAL_RUSTC_WRAPPER
+            ),
         )?;
         std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o755))?;
     }
