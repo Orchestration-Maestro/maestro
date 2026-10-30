@@ -539,7 +539,7 @@ fn tamper(root: &Path, change: &str) -> PathBuf {
         )
         .unwrap(),
         "removed" => {
-            fs::remove_file(root.join("crates/maestro-extensions-wasm/src/lib.rs")).unwrap()
+            fs::remove_file(root.join("crates/maestro-extensions-wasm/src/lib.rs")).unwrap();
         }
         "lock" => fs::write(root.join("Cargo.lock"), "new dependencies").unwrap(),
         "corrupt" => {
