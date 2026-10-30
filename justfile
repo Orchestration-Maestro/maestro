@@ -8,7 +8,7 @@ setup:
     mise exec -- prek install
 
 # Formatting, lint, public documentation and the checkout's workspace conventions.
-check:
+check: prepare-tests
     cargo fmt --all
     just _check --workspace
     if [ -f crates/maestro-models/examples/browser_import_check.rs ]; then just check-browser-smoke; fi

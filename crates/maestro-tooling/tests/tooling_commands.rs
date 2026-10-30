@@ -3538,7 +3538,7 @@ fn author_setup_continues_when_cargo_keeps_an_outdated_example() {
     assert!(logged.contains("Cargo kept the setup example"), "{logged}");
 }
 
-/// Run the author setup script from `root` with `profile` as nextest's artifact directory.
+/// Run the author setup from `root` with `profile` as nextest's artifact directory.
 #[cfg(unix)]
 fn author_setup(root: &Path, profile: &Path) -> Output {
     Command::new(env!("CARGO_BIN_EXE_development"))
@@ -3554,7 +3554,7 @@ fn author_setup(root: &Path, profile: &Path) -> Output {
         .unwrap()
 }
 
-/// Run the author setup script, which must succeed, and return what it printed.
+/// Run the author setup, which must succeed, and return what it printed.
 #[cfg(unix)]
 fn run_author_setup(root: &Path, profile: &Path) -> String {
     let output = author_setup(root, profile);
