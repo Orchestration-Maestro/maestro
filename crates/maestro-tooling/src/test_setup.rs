@@ -244,6 +244,22 @@ fn export(
 
 /// Digest every file the components are prepared from, by name and content.
 fn inputs(checkout: &Path) -> io::Result<String> {
+    let mut hash = Sha256::new();
+    for name in listed(checkout)? {
+        hash.update(name.as_bytes());
+        hash.update([0]);
+        let path = checkout.join(&name);
+        if path.is_file() {
+            hash.update(Sha256::digest(std::fs::read(path)?));
+        } else {
+            hash.update(b"missing");
+        }
+    }
+    Ok(hex(&hash.finalize()))
+}
+
+/// The repository-relative names of the files the components are prepared from, sorted.
+fn listed(checkout: &Path) -> io::Result<BTreeSet<String>> {
     let listing = Command::new("git")
         .current_dir(checkout)
         .args([
@@ -262,23 +278,12 @@ fn inputs(checkout: &Path) -> io::Result<String> {
             String::from_utf8_lossy(&listing.stderr)
         )));
     }
-    let names: BTreeSet<&[u8]> = listing
+    listing
         .stdout
         .split(|byte| *byte == 0)
         .filter(|name| !name.is_empty())
-        .collect();
-    let mut hash = Sha256::new();
-    for name in names {
-        hash.update(name);
-        hash.update([0]);
-        let path: PathBuf = checkout.join(std::str::from_utf8(name).map_err(io::Error::other)?);
-        if path.is_file() {
-            hash.update(Sha256::digest(std::fs::read(path)?));
-        } else {
-            hash.update(b"missing");
-        }
-    }
-    Ok(hex(&hash.finalize()))
+        .map(|name| String::from_utf8(name.to_vec()).map_err(io::Error::other))
+        .collect()
 }
 
 /// Check one bundle file against the digest the manifest recorded for it.
