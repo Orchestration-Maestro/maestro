@@ -6,7 +6,7 @@
 //! extracted test executables and the compiled code in the user cache, and writes the component
 //! paths for nextest.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::ffi::OsString;
 use std::fmt::Write as _;
 use std::io;
@@ -19,6 +19,7 @@ use sha2::{Digest, Sha256};
 
 use super::argument;
 use super::example_files::{FIXED_VARIABLES, validate_variable};
+use super::member_graph::{closure, dependency_edges, member_roots, members};
 use compiled_code::CompiledCode;
 use user_cache::user_cache_home;
 
@@ -259,19 +260,20 @@ fn input_names(crates: &BTreeSet<String>) -> impl Iterator<Item = &str> {
 
 /// The directories of the named workspace packages and of the packages they depend on.
 fn closure_directories(metadata: &Metadata, built: &[&str]) -> io::Result<BTreeSet<String>> {
-    let members = metadata.workspace_packages();
-    if let Some(name) = built
-        .iter()
-        .find(|name| members.iter().all(|package| package.name != **name))
-    {
-        return Err(io::Error::other(format!(
-            "{name} is not a workspace package"
-        )));
+    let members = members(metadata);
+    let roots = member_roots(&members);
+    let mut start = HashSet::new();
+    for name in built {
+        let position = members
+            .iter()
+            .position(|package| package.name == *name)
+            .ok_or_else(|| io::Error::other(format!("{name} is not a workspace package")))?;
+        start.insert(position);
     }
-    Ok(members
-        .iter()
-        .filter_map(|package| {
-            let directory = package.manifest_path.parent()?;
+    Ok(closure(&dependency_edges(&members, &roots), start)
+        .into_iter()
+        .filter_map(|member| {
+            let directory = members[member].manifest_path.parent()?;
             let relative = directory.strip_prefix(&metadata.workspace_root).ok()?;
             Some(
                 relative
