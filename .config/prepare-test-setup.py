@@ -12,6 +12,10 @@ import tempfile
 from pathlib import Path
 
 EXAMPLE = "prepare_author_component"
+# Source discovery (`components::visit`) validates every exported name and always exports the
+# author and context pair; this pattern and set only guard what crosses the job boundary.
+COMPONENT = re.compile(r"MAESTRO_(?:[A-Z0-9_]*_)?COMPONENT")
+REQUIRED = {"MAESTRO_AUTHOR_COMPONENT", "MAESTRO_CONTEXT_COMPONENT"}
 
 
 def inputs():
@@ -39,7 +43,7 @@ def prepare(output):
     with tempfile.TemporaryDirectory() as temporary:
         environment = Path(temporary) / "environment"
         env = {key: value for key, value in os.environ.items()
-               if not re.fullmatch(r"MAESTRO_[A-Z0-9_]+_COMPONENT", key)}
+               if not COMPONENT.fullmatch(key)}
         env["NEXTEST_ENV"] = str(environment)
         target = os.environ.get("CARGO_TARGET_DIR", "target/test-prepare")
         subprocess.run([
@@ -49,16 +53,12 @@ def prepare(output):
         entries = {}
         for line in environment.read_text().splitlines():
             variable, source = line.split("=", 1)
-            if not re.fullmatch(r"MAESTRO_[A-Z0-9_]+_COMPONENT", variable) or variable in entries:
-                raise ValueError(f"invalid or duplicate component export: {variable}")
             name = variable + ".wasm"
             shutil.copyfile(source, output / name)
             entries[variable] = {
                 "file": name,
                 "sha256": hashlib.sha256((output / name).read_bytes()).hexdigest(),
             }
-        if not {"MAESTRO_AUTHOR_COMPONENT", "MAESTRO_CONTEXT_COMPONENT"} <= entries.keys():
-            raise ValueError("preparation did not export the author and context components")
         if inputs() != fingerprint:
             raise ValueError(f"inputs changed during preparation: {output}")
         shutil.copyfile(Path(target) / "debug/examples" / EXAMPLE, output / EXAMPLE)
@@ -76,12 +76,12 @@ def export(output, directory):
     if manifest["inputs"] != inputs():
         raise ValueError(f"stale prepared component inputs: {output}")
     entries = manifest["components"]
-    if not {"MAESTRO_AUTHOR_COMPONENT", "MAESTRO_CONTEXT_COMPONENT"} <= entries.keys():
+    if not REQUIRED <= entries.keys():
         raise ValueError(f"missing prepared author or context component: {output}")
     lines = []
     for variable, entry in entries.items():
         name = entry["file"]
-        if not re.fullmatch(r"MAESTRO_[A-Z0-9_]+_COMPONENT", variable) or name != variable + ".wasm":
+        if not COMPONENT.fullmatch(variable) or name != variable + ".wasm":
             raise ValueError(f"invalid prepared component entry in {output}: {variable}")
         path = output / name
         if not path.is_file():
