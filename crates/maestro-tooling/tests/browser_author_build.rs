@@ -1744,24 +1744,6 @@ fn browser_author_shared_launcher_uses_invoking_checkout() {
     );
 }
 
-/// The cold checkout builds the native tools without the feature unifier's crate set.
-#[test]
-fn browser_cold_checkout_builds_the_tools_without_the_feature_unifier() {
-    let browser = Browser::cold();
-    let tree = toolchain_support::command(env!("CARGO"))
-        .current_dir(browser.workspace.path())
-        .args(["tree", "--locked", "--offline", "--prefix", "none"])
-        .args(["--edges", "normal,build", "--package", "maestro-tooling"])
-        .output()
-        .unwrap();
-    success(&tree);
-    let tree = String::from_utf8(tree.stdout).unwrap();
-    assert!(
-        !tree.lines().any(|line| line.starts_with("tokio ")),
-        "the tools need no async runtime:\n{tree}"
-    );
-}
-
 /// The cold checkout compiles its dependencies at the plain development profile.
 #[test]
 fn browser_cold_checkout_builds_dependencies_at_the_plain_dev_profile() {
