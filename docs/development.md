@@ -684,8 +684,10 @@ this keeps target directories about a sixth smaller.
 They also build `cranelift-codegen` and `regalloc2` optimised, because tests
 compile extension components and an unoptimised code generator makes each
 compile about five times slower, and `syn` and `proc-macro2`
-optimised, because the conventions tests parse every workspace source; release
-builds are unchanged.
+optimised, because the conventions tests parse every workspace source, and `sha2`
+optimised, because the test setup hashes the lock files on every nextest run and an
+unoptimised digest makes its reused-directory path about three times slower;
+release builds are unchanged.
 
 Archived CI shards receive `TEST_ARCHIVE=1` and `TEST_PREPARE_OUTPUT` pointing to
 `target/test-setup`.
