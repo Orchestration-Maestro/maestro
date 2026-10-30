@@ -537,7 +537,8 @@ The fast tooling regression
 `nextest_priorities::measured_priorities_order_tests_without_changing_shards`
 runs nextest against controlled bodies with the real tooling overrides. One
 worker proves descending order for the three slowest tooling tests, before an
-unprioritized short test. It compares all 16 partition memberships with and
+unprioritized short test. It uses a fixed 16-way split, independent of CI's
+`test_shard_count`, and compares every partition's membership with and
 without priorities, checks an exactly-once union and keeps an intentional
 selected failure visible. It does not run the expensive browser bodies.
 
