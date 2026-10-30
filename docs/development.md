@@ -504,7 +504,8 @@ distinct priorities in `.config/nextest.toml`: 100 down to 37, longest first.
 Other tests retain priority 0. These are
 [nextest's built-in priorities](https://nexte.st/docs/configuration/test-priorities/),
 not a scheduler or a shard planner. They change order within each shard, not the
-16 count partitions, test membership, retries, time limits or coverage policy.
+count partitions (32 in CI, declared as `test_shard_count` in `.github/ci.toml`), test
+membership, retries, time limits or coverage policy.
 Existing timeout comments retain their older CI maxima; priority ranks use the
 newer measurements below, not timeout ceilings or diagnostic phase timings.
 
