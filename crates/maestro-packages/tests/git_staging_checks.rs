@@ -172,13 +172,12 @@ fn npm_repin_survives_following_resolution() {
 fn git_requested_ref_is_applied_before_dependencies() {
     let fixture = crate::native_git::retry::RetryFixture::new("ordinary");
     fixture.advance();
-    crate::native_git::git(&fixture.repo.target, &["fetch", "origin"]);
     let expected = crate::native_git::git(&fixture.repo.seed, &["rev-parse", "HEAD"]);
     fixture
         .run(
             fixture
                 .manager
-                .install("git:github.com/acme/tool@origin/main", None),
+                .install("git:github.com/acme/tool@main", None),
         )
         .unwrap();
     assert_eq!(
@@ -617,21 +616,11 @@ fn repin_persistence_keeps_current_git_spelling_and_appends_absent_sources() {
 fn git_repin_ref_forms_retry_without_rewinding_requested_branches() {
     for layout in ["ordinary", "linked", "separate", "include"] {
         for kind in [
-            "branch",
-            "tag",
-            "hash",
-            "expression",
-            "absent-branch",
-            "absent-tag",
-            "missing",
-            "current",
-            "no-ref",
-            "detached",
+            "branch", "tag", "hash", "missing", "current", "no-ref", "detached",
         ] {
             check_repin_case(layout, kind);
         }
     }
-    check_checkout_expression_noop();
 }
 
 #[cfg(unix)]
@@ -660,7 +649,7 @@ fn check_repin_case(layout: &str, kind: &str) {
         return;
     }
     assert!(first.is_err(), "{layout}/{kind}");
-    assert_repin_failure(&fixture, kind, &old, &selection, &desired);
+    assert_repin_failure(&fixture, &old, &selection);
     if kind == "missing" {
         assert!(fixture.dependencies.borrow().is_empty());
         return;
@@ -671,14 +660,7 @@ fn check_repin_case(layout: &str, kind: &str) {
         .run(fixture.manager.install_and_persist(&source, None))
         .unwrap();
     assert_eq!(fixture.dependencies.borrow().len(), attempts + 1);
-    assert_eq!(
-        git(&fixture.repo.target, &["rev-parse", "HEAD"]),
-        if kind == "expression" {
-            fixture.repo.original
-        } else {
-            desired
-        }
-    );
+    assert_eq!(git(&fixture.repo.target, &["rev-parse", "HEAD"]), desired);
     assert_eq!(
         fixture.settings.borrow().get_global_settings().0["packages"],
         json!([source])
@@ -686,62 +668,47 @@ fn check_repin_case(layout: &str, kind: &str) {
 }
 
 #[cfg(unix)]
-/// Creates distinguishable local and absent-origin ref forms with native Git.
+/// Publishes distinguishable ref forms on the remote with native Git.
 fn prepare_ref(
     fixture: &crate::native_git::retry::RetryFixture,
     kind: &str,
     desired: &str,
 ) -> Option<String> {
     use crate::native_git::git;
-    let path = &fixture.repo.target;
+    let remote = &fixture.repo.remote;
     match kind {
-        "absent-branch" => {
-            git(&fixture.repo.remote, &["branch", "new/slash", desired]);
-            return Some("new/slash".into());
-        }
-        "absent-tag" => {
-            git(&fixture.repo.remote, &["tag", "new-tag", desired]);
-            return Some("new-tag".into());
-        }
-        "missing" => return Some("not-a-ref".into()),
-        "current" => return Some("HEAD".into()),
-        "no-ref" => return None,
-        _ => {
-            git(path, &["fetch", "origin"]);
-        }
-    }
-    Some(match kind {
         "branch" | "detached" => {
-            git(path, &["branch", "new-pin", "origin/main"]);
+            git(remote, &["branch", "new-pin", desired]);
             if kind == "detached" {
-                git(path, &["checkout", "--detach"]);
+                git(&fixture.repo.target, &["checkout", "--detach"]);
             }
-            "new-pin".into()
+            Some("new-pin".into())
         }
         "tag" => {
-            git(path, &["tag", "local-tag", "origin/main"]);
-            "local-tag".into()
+            git(remote, &["tag", "release-tag", desired]);
+            Some("release-tag".into())
         }
-        "hash" => desired.into(),
-        "expression" => {
-            git(path, &["reset", "--hard", "origin/main"]);
-            "HEAD~1".into()
+        "hash" => Some(desired.into()),
+        "missing" => Some("not-a-ref".into()),
+        "current" => {
+            git(remote, &["tag", "current-tag", &fixture.repo.original]);
+            Some("current-tag".into())
         }
-        _ => unreachable!(),
-    })
+        _ => None,
+    }
 }
 
 #[cfg(unix)]
 #[test]
-fn git_repin_checkout_failure_restores_original_selection() {
+fn git_repin_reset_failure_restores_original_selection() {
     for layout in ["ordinary", "linked", "separate", "include"] {
-        for phase in ["checkout", "after-checkout"] {
+        for phase in ["reset", "after-reset"] {
             for detached in [false, true] {
-                check_checkout_failure(layout, phase, detached);
+                check_reset_failure(layout, phase, detached);
             }
         }
     }
-    check_repin_probe_failure("selection");
+    check_repin_probe_failure();
 }
 
 #[cfg(unix)]
@@ -788,7 +755,7 @@ fn git_fetch_or_probe_failure_does_not_start_rollback() {
                 .any(|(_, args)| matches!(args[0].as_str(), "reset" | "clean" | "symbolic-ref"))
         );
     }
-    check_repin_probe_failure("ref");
+    check_repin_fetch_failure();
 }
 
 #[cfg(unix)]
@@ -932,13 +899,19 @@ fn git_temporary_refresh_recovers_then_suppresses_failure() {
 }
 
 #[cfg(unix)]
-/// Checks failure on either side of the checkout effect in one native layout.
-fn check_checkout_failure(layout: &str, phase: &str, detached: bool) {
+/// Checks failure on either side of the reset effect in one native layout.
+fn check_reset_failure(layout: &str, phase: &str, detached: bool) {
     use crate::native_git::{git, retry::RetryFixture};
     let fixture = RetryFixture::new(layout);
     fixture.advance();
-    git(&fixture.repo.target, &["fetch", "origin"]);
-    git(&fixture.repo.target, &["branch", "new-pin", "origin/main"]);
+    git(
+        &fixture.repo.remote,
+        &[
+            "branch",
+            "new-pin",
+            &git(&fixture.repo.seed, &["rev-parse", "HEAD"]),
+        ],
+    );
     if detached {
         git(&fixture.repo.target, &["checkout", "--detach"]);
     }
@@ -960,10 +933,6 @@ fn check_checkout_failure(layout: &str, phase: &str, detached: bool) {
     assert_eq!(
         git(&fixture.repo.target, &["rev-parse", "--abbrev-ref", "HEAD"]),
         selection
-    );
-    assert_eq!(
-        git(&fixture.repo.target, &["rev-parse", "new-pin"]),
-        git(&fixture.repo.seed, &["rev-parse", "HEAD"])
     );
     assert_eq!(
         fixture.settings.borrow().get_global_settings().0["packages"],
@@ -1150,13 +1119,11 @@ fn settings_replay(case: &SettingsCase) -> SettingsReplay {
 }
 
 #[cfg(unix)]
-/// Checks both retained selection and independently owned requested branch after failure.
+/// Checks the retained revision, selection and settings after a failed re-pin.
 fn assert_repin_failure(
     fixture: &crate::native_git::retry::RetryFixture,
-    kind: &str,
     old: &str,
     selection: &str,
-    desired: &str,
 ) {
     use crate::native_git::git;
     assert_eq!(git(&fixture.repo.target, &["rev-parse", "HEAD"]), old);
@@ -1168,12 +1135,6 @@ fn assert_repin_failure(
         fixture.settings.borrow().get_global_settings().0["packages"],
         json!(["git:github.com/acme/tool"])
     );
-    if matches!(kind, "branch" | "detached") {
-        assert_eq!(
-            git(&fixture.repo.target, &["rev-parse", "new-pin"]),
-            desired
-        );
-    }
 }
 
 #[cfg(unix)]
@@ -1244,12 +1205,11 @@ fn check_native_recovery_failure(mode: &str) {
             .run(fixture.manager.clone().update(None))
             .unwrap_err()
     } else {
-        git(&fixture.repo.target, &["fetch", "origin"]);
         fixture
             .run(
                 fixture
                     .manager
-                    .install_and_persist("git:github.com/acme/tool@origin/main", None),
+                    .install_and_persist("git:github.com/acme/tool@main", None),
             )
             .unwrap_err()
     };
@@ -1274,22 +1234,16 @@ fn check_native_recovery_failure(mode: &str) {
 }
 
 #[cfg(unix)]
-/// A fallible adapter probe must not be mistaken for a missing ref or detached HEAD.
-fn check_repin_probe_failure(probe: &'static str) {
+/// A fallible adapter probe must not be mistaken for a detached HEAD.
+fn check_repin_probe_failure() {
     use crate::native_git::{git, retry::RetryFixture};
     let fixture = RetryFixture::new("ordinary");
     fixture.advance();
-    git(&fixture.repo.target, &["fetch", "origin"]);
     let selection = git(&fixture.repo.target, &["rev-parse", "--abbrev-ref", "HEAD"]);
     let hook = fixture.effects.capture_hook.borrow().clone().unwrap();
     *fixture.effects.capture_hook.borrow_mut() =
         Some(std::rc::Rc::new(move |command, args, cwd| {
-            let fails = if probe == "ref" {
-                args.starts_with(&["for-each-ref".into()])
-            } else {
-                args == ["rev-parse", "--symbolic-full-name", "HEAD"]
-            };
-            if fails {
+            if args == ["rev-parse", "--symbolic-full-name", "HEAD"] {
                 return Box::pin(std::future::ready(Err(io::Error::new(
                     io::ErrorKind::PermissionDenied,
                     "probe access denied",
@@ -1302,7 +1256,7 @@ fn check_repin_probe_failure(probe: &'static str) {
         .run(
             fixture
                 .manager
-                .install_and_persist("git:github.com/acme/tool@origin/main", None),
+                .install_and_persist("git:github.com/acme/tool@main", None),
         )
         .unwrap_err();
     assert_eq!(
@@ -1325,196 +1279,44 @@ fn check_repin_probe_failure(probe: &'static str) {
             .calls
             .borrow()
             .iter()
-            .any(|(_, args)| matches!(
-                args[0].as_str(),
-                "checkout" | "clean" | "reset" | "symbolic-ref"
-            ) || (probe == "selection" && args[0] == "fetch")),
-        "failed probes must not start acquisition or recovery effects"
+            .any(|(_, args)| matches!(args[0].as_str(), "clean" | "reset" | "symbolic-ref")),
+        "a failed probe must not start mutation or recovery effects"
     );
 }
 
 #[cfg(unix)]
-/// A checkout merge-base expression resolving to HEAD must preserve the complete no-op.
-fn check_checkout_expression_noop() {
-    for layout in ["ordinary", "linked", "separate", "include"] {
-        for kind in [
-            "unique-current",
-            "unique-changed",
-            "omitted-left",
-            "omitted-right",
-            "multiple-bases",
-            "no-base",
-        ] {
-            check_checkout_expression_case(layout, kind);
-        }
-    }
-}
-
-#[cfg(unix)]
-/// Observes checkout expression results through acquisition and settings persistence.
-fn check_checkout_expression_case(layout: &str, kind: &str) {
+/// A failed fetch of the requested ref leaves the dirty checkout untouched.
+fn check_repin_fetch_failure() {
     use crate::native_git::{git, retry::RetryFixture};
-    let fixture = RetryFixture::new(layout);
+    let fixture = RetryFixture::new("ordinary");
     fixture.advance();
-    git(&fixture.repo.target, &["fetch", "origin"]);
-    let reference = checkout_expression(&fixture, kind);
-    let selection = git(&fixture.repo.target, &["rev-parse", "--abbrev-ref", "HEAD"]);
-    let previous = git(&fixture.repo.target, &["rev-parse", "HEAD"]);
-    let changes = kind == "unique-changed";
-    let fails = matches!(kind, "multiple-bases" | "no-base");
-    if !changes {
-        std::fs::write(fixture.repo.target.join("content"), "dirty").unwrap();
-        std::fs::write(fixture.repo.target.join("untracked"), "retain").unwrap();
-    }
-    let source = format!("git:github.com/acme/tool@{reference}");
-    let result = fixture.run(fixture.manager.install_and_persist(&source, None));
-    assert_eq!(result.is_err(), fails, "{layout}/{kind}: checkout outcome");
-    assert_eq!(fixture.dependencies.borrow().len(), usize::from(changes));
-    let expected = if changes {
-        fixture.repo.original.as_str()
-    } else {
-        &previous
-    };
-    assert_eq!(git(&fixture.repo.target, &["rev-parse", "HEAD"]), expected);
-    if !changes {
-        assert_eq!(
-            git(&fixture.repo.target, &["rev-parse", "--abbrev-ref", "HEAD"]),
-            selection
-        );
-        if !fails {
-            assert_dirty_contents(&fixture);
-        }
-    }
-    assert_eq!(
-        fixture.settings.borrow().get_global_settings().0["packages"],
-        if changes {
-            json!([source])
-        } else {
-            json!(["git:github.com/acme/tool"])
-        }
-    );
-}
+    std::fs::write(fixture.repo.target.join("content"), "dirty").unwrap();
+    std::fs::write(fixture.repo.target.join("untracked"), "retain").unwrap();
+    *fixture.fail.borrow_mut() = "fetch".into();
 
-#[cfg(unix)]
-/// Builds native merge-base neighbours without interpreting their syntax in the manager.
-fn checkout_expression(fixture: &crate::native_git::retry::RetryFixture, kind: &str) -> String {
-    use crate::native_git::git;
-    match kind {
-        "unique-changed" => {
-            git(&fixture.repo.target, &["reset", "--hard", "origin/main"]);
-            "origin/main~1...origin/main".into()
-        }
-        "omitted-left" => "...origin/main".into(),
-        "omitted-right" => "origin/main~1...".into(),
-        "multiple-bases" | "no-base" => {
-            let seed = &fixture.repo.seed;
-            let tree = git(
-                seed,
-                &["rev-parse", &format!("{}^{{tree}}", fixture.repo.original)],
-            );
-            if kind == "no-base" {
-                let orphan = git(seed, &["commit-tree", &tree, "-m", "unrelated"]);
-                git(seed, &["update-ref", "refs/heads/unrelated", &orphan]);
-            } else {
-                create_multiple_merge_bases(seed, &tree, &fixture.repo.original);
-            }
-            git(seed, &["push", "--all", "origin"]);
-            git(&fixture.repo.target, &["fetch", "origin"]);
-            if kind == "no-base" {
-                "origin/main...origin/unrelated".into()
-            } else {
-                "origin/left...origin/right".into()
-            }
-        }
-        _ => "origin/main~1...origin/main".into(),
-    }
-}
-
-#[cfg(unix)]
-/// Creates criss-cross histories with two equally valid merge bases.
-fn create_multiple_merge_bases(seed: &std::path::Path, tree: &str, original: &str) {
-    use crate::native_git::git;
-    let a = git(seed, &["commit-tree", tree, "-p", original, "-m", "left"]);
-    let b = git(seed, &["commit-tree", tree, "-p", original, "-m", "right"]);
-    let left = git(
-        seed,
-        &["commit-tree", tree, "-p", &a, "-p", &b, "-m", "left-merge"],
-    );
-    let right = git(
-        seed,
-        &["commit-tree", tree, "-p", &b, "-p", &a, "-m", "right-merge"],
-    );
-    git(seed, &["update-ref", "refs/heads/left", &left]);
-    git(seed, &["update-ref", "refs/heads/right", &right]);
-}
-
-#[cfg(unix)]
-#[test]
-fn git_repin_checkout_owns_colliding_branch_and_tag_selection() {
-    for layout in ["ordinary", "linked", "separate", "include"] {
-        for changes in [true, false] {
-            check_colliding_selection(layout, changes);
-        }
-    }
-}
-
-#[cfg(unix)]
-/// Exercises checkout, recovery and persistence for one collision direction.
-fn check_colliding_selection(layout: &str, changes: bool) {
-    use crate::native_git::{git, retry::RetryFixture};
-    let fixture = RetryFixture::new(layout);
-    fixture.advance();
-    git(&fixture.repo.target, &["fetch", "origin"]);
-    let old = git(&fixture.repo.target, &["rev-parse", "HEAD"]);
-    let new = git(&fixture.repo.target, &["rev-parse", "origin/main"]);
-    let selection = git(&fixture.repo.target, &["symbolic-ref", "HEAD"]);
-    let (branch, tag) = if changes { (&new, &old) } else { (&old, &new) };
-    git(&fixture.repo.target, &["branch", "release", branch]);
-    git(&fixture.repo.target, &["tag", "release", tag]);
-    let source = "git:github.com/acme/tool@release";
-    if changes {
-        *fixture.fail.borrow_mut() = "dependencies".into();
-        assert!(
+    let error = fixture
+        .run(
             fixture
-                .run(fixture.manager.install_and_persist(source, None))
-                .is_err(),
-            "checkout must select the changed branch before dependency preparation"
-        );
-        assert_eq!(*fixture.dependencies.borrow(), vec![new.clone()]);
-        assert_eq!(git(&fixture.repo.target, &["rev-parse", "HEAD"]), old);
-        assert_eq!(
-            git(&fixture.repo.target, &["symbolic-ref", "HEAD"]),
-            selection
-        );
-        fixture.fail.borrow_mut().clear();
-    } else {
-        std::fs::write(fixture.repo.target.join("content"), "dirty").unwrap();
-        std::fs::write(fixture.repo.target.join("untracked"), "retain").unwrap();
-    }
-    fixture
-        .run(fixture.manager.install_and_persist(source, None))
-        .unwrap();
-    assert_eq!(git(&fixture.repo.target, &["rev-parse", "HEAD"]), *branch);
+                .manager
+                .install_and_persist("git:github.com/acme/tool@main", None),
+        )
+        .unwrap_err();
+
+    assert_eq!(error.kind(), io::ErrorKind::PermissionDenied);
     assert_eq!(
-        git(&fixture.repo.target, &["rev-parse", "refs/heads/release"]),
-        *branch
+        git(&fixture.repo.target, &["rev-parse", "HEAD"]),
+        fixture.repo.original
     );
-    assert_eq!(
-        fixture.settings.borrow().get_global_settings().0["packages"],
-        if changes {
-            json!([source])
-        } else {
-            json!(["git:github.com/acme/tool"])
-        }
+    assert_dirty_contents(&fixture);
+    assert!(fixture.dependencies.borrow().is_empty());
+    assert!(
+        !fixture
+            .effects
+            .calls
+            .borrow()
+            .iter()
+            .any(|(_, args)| matches!(args[0].as_str(), "reset" | "clean" | "symbolic-ref"))
     );
-    if !changes {
-        assert!(fixture.dependencies.borrow().is_empty());
-        assert_eq!(
-            git(&fixture.repo.target, &["symbolic-ref", "HEAD"]),
-            selection
-        );
-        assert_dirty_contents(&fixture);
-    }
 }
 
 #[cfg(unix)]
@@ -1531,6 +1333,19 @@ fn git_current_commit_preserves_selection_and_observes_completion_settings() {
 }
 
 #[cfg(unix)]
+/// Moves the installed checkout below the project's managed Git root.
+fn move_to_project_scope(fixture: &mut crate::native_git::retry::RetryFixture) {
+    let path = fixture
+        .repo
+        .scratch
+        .path()
+        .join("cwd/.maestro/git/github.com/acme/tool");
+    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+    std::fs::rename(&fixture.repo.target, &path).unwrap();
+    fixture.repo.target = path;
+}
+
+#[cfg(unix)]
 /// Preserves same-commit files while appending or observing a late registration.
 fn check_current_selection(
     scope: maestro_packages::InstalledSourceScope,
@@ -1541,19 +1356,15 @@ fn check_current_selection(
     use maestro_packages::InstalledSourceScope::{Project, User};
     let mut fixture = RetryFixture::new("ordinary");
     if scope == Project {
-        let path = fixture
-            .repo
-            .scratch
-            .path()
-            .join("cwd/.maestro/git/github.com/acme/tool");
-        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
-        std::fs::rename(&fixture.repo.target, &path).unwrap();
-        fixture.repo.target = path;
+        move_to_project_scope(&mut fixture);
     }
     let reference = match form {
         "branch" => "main".to_owned(),
         "tag" => {
-            git(&fixture.repo.target, &["tag", "current"]);
+            git(
+                &fixture.repo.remote,
+                &["tag", "current", &fixture.repo.original],
+            );
             "current".to_owned()
         }
         _ => {
@@ -1639,35 +1450,7 @@ fn edit_settings_on_completion(
 }
 
 #[cfg(unix)]
-#[test]
-fn git_public_install_selects_branch_over_colliding_tag_without_persisting() {
-    use crate::native_git::{git, retry::RetryFixture};
-    let fixture = RetryFixture::new("ordinary");
-    fixture.advance();
-    git(&fixture.repo.target, &["fetch", "origin"]);
-    let desired = git(&fixture.repo.target, &["rev-parse", "origin/main"]);
-    git(&fixture.repo.target, &["branch", "release", &desired]);
-    git(
-        &fixture.repo.target,
-        &["tag", "release", &fixture.repo.original],
-    );
-    fixture
-        .run(
-            fixture
-                .manager
-                .install("git:github.com/acme/tool@release", None),
-        )
-        .unwrap();
-    assert_eq!(git(&fixture.repo.target, &["rev-parse", "HEAD"]), desired);
-    assert_eq!(*fixture.dependencies.borrow(), vec![desired]);
-    assert_eq!(
-        fixture.settings.borrow().get_global_settings().0["packages"],
-        json!(["git:github.com/acme/tool"])
-    );
-}
-
-#[cfg(unix)]
-/// Observes dirty and untracked files after a same-commit checkout.
+/// Observes dirty and untracked files after a same-commit refresh.
 fn assert_dirty_contents(fixture: &crate::native_git::retry::RetryFixture) {
     assert_eq!(
         std::fs::read_to_string(fixture.repo.target.join("content")).unwrap(),
