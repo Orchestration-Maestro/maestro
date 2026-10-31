@@ -257,6 +257,11 @@ fn context_actions(weak: &Weak<AgentSession<Local>>) -> ExtensionContextActions 
     let w = weak.clone();
     let abort = Rc::new(move || {
         with(&w, |session| {
+            let handler = session.state.borrow().bindings.abort_handler.clone();
+            if let Some(handler) = handler {
+                handler();
+                return Ok(());
+            }
             let aborting = Rc::clone(session);
             drop(session.start_operation(async move { aborting.abort().await }));
             Ok(())

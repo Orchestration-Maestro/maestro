@@ -29,6 +29,12 @@ Dedicated routes preserve their own outcomes:
   `streaming_behavior` (`steer` or `followUp`) only when the input arrives while a
   response streams and the caller chose a delivery; idle input carries none.
 
+An extension's `abort` goes to the abort handler the host bound with the session's
+extensions. The interactive mode binds one that does what the interrupt key does: it moves
+every queued message back into the editor exactly as typed, then stops the running turn,
+whether or not a tool confirmation is open. Without a bound handler, the session aborts its
+own run.
+
 Tool-call hooks retain the last nonblocking result and stop on an explicit block.
 Their errors propagate unchanged, without error-listener delivery. Edited arguments
 reach the caller without another validation pass. User-shell hooks return the first
