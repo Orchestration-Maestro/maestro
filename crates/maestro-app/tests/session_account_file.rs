@@ -130,19 +130,22 @@ fn propagates_write_failures() {
 }
 
 #[test]
-fn saving_publishes_a_new_file_and_keeps_the_previous_one_whole() {
+fn saving_reaches_a_hard_linked_account_file_in_place() {
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let path = format!("{}/auth.json", scratch.path().display());
-    let previous = format!("{}/previous.json", scratch.path().display());
+    let linked = format!("{}/linked.json", scratch.path().display());
     std::fs::write(&path, object_seed()).unwrap();
-    std::fs::hard_link(&path, &previous).unwrap();
+    std::fs::hard_link(&path, &linked).unwrap();
     let mut auth = load_auth(&path);
     auth.insert("alpha".into(), json!({"type": "oauth"}));
 
     save_auth(&path, &auth).unwrap();
 
     assert!(std::fs::read_to_string(&path).unwrap().contains("alpha"));
-    assert_eq!(std::fs::read_to_string(&previous).unwrap(), object_seed());
+    assert_eq!(
+        std::fs::read_to_string(&linked).unwrap(),
+        std::fs::read_to_string(&path).unwrap()
+    );
 }
 
 /// Re-runs the calling test in a child with umask 022: true in the parent once the child

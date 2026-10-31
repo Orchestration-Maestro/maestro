@@ -417,13 +417,13 @@ mod tests {
     }
 
     #[test]
-    fn saves_publish_a_new_file_and_keep_the_previous_one_whole() {
+    fn saves_reach_a_hard_linked_file_in_place() {
         let root = Scratch::new().unwrap();
         let file = support::settings_file(root.path(), SettingsScope::Global);
-        let previous = file.with_file_name("previous.json");
+        let linked = file.with_file_name("linked.json");
         fs::create_dir_all(file.parent().unwrap()).unwrap();
         fs::write(&file, "{\"theme\": \"old\"}").unwrap();
-        fs::hard_link(&file, &previous).unwrap();
+        fs::hard_link(&file, &linked).unwrap();
 
         file_storage(root.path())
             .with_write_lock(SettingsScope::Global, &mut |_| {
@@ -432,10 +432,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(fs::read_to_string(&file).unwrap(), "{\"theme\": \"new\"}");
-        assert_eq!(
-            fs::read_to_string(&previous).unwrap(),
-            "{\"theme\": \"old\"}"
-        );
+        assert_eq!(fs::read_to_string(&linked).unwrap(), "{\"theme\": \"new\"}");
     }
 
     #[cfg(unix)]
