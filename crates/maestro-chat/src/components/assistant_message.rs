@@ -115,6 +115,7 @@ impl AssistantMessageComponent {
                 let failure = match message.stop_reason {
                     StopReason::Aborted => Some(Failure::Aborted),
                     StopReason::Error => Some(Failure::Error),
+                    StopReason::Length => Some(Failure::Length),
                     _ => None,
                 };
                 let content = message.content.iter().map(|content| match content {
@@ -128,6 +129,7 @@ impl AssistantMessageComponent {
                 let failure = match record.get("stopReason").and_then(Value::as_str) {
                     Some("aborted") => Some(Failure::Aborted),
                     Some("error") => Some(Failure::Error),
+                    Some("length") => Some(Failure::Length),
                     _ => None,
                 };
                 let content = record.get("content").and_then(Value::as_array);
@@ -210,9 +212,11 @@ enum Failure {
     Aborted,
     /// The request failed.
     Error,
+    /// The model stopped at its output token limit, possibly inside a tool call.
+    Length,
 }
-/// The visible blocks, whether a tool call is present, and the failure notice shown only
-/// without tool calls.
+/// The visible blocks, whether a tool call is present, and the failure notice: shown only
+/// without tool calls, except for an output-length stop, which can cut a tool call short.
 fn select<'a>(
     content: impl Iterator<Item = Shown<'a>>,
     hide: bool,
@@ -230,11 +234,9 @@ fn select<'a>(
             }
         })
         .collect();
-    let notice = if tools {
-        None
-    } else {
-        failure.map(|failure| notice(&failure, error))
-    };
+    let notice = failure
+        .filter(|failure| !tools || matches!(failure, Failure::Length))
+        .map(|failure| notice(&failure, error));
     (blocks, tools, notice)
 }
 /// Visible Markdown text or a body-free hidden thought; excludes tool calls.
@@ -269,6 +271,7 @@ fn notice(failure: &Failure, error: Option<&str>) -> String {
             .unwrap_or("Operation aborted")
             .into(),
         Failure::Error => format!("Error: {}", error.unwrap_or("Unknown error")),
+        Failure::Length => "Error: Model stopped because it reached the maximum output token limit. The response may be incomplete.".into(),
     }
 }
 component_children!(AssistantMessageComponent, Container, container);
