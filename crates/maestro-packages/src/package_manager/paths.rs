@@ -3,10 +3,10 @@ use super::{
     DefaultPackageManager, InstalledSourceScope, PackageOperations,
     sources::{self, Source},
 };
-use maestro_path::{Cwd, dirname, join, relative};
+use maestro_path::{Cwd, Tilde, dirname, expand_tilde_joined, join, parse_tilde, relative};
 use maestro_resources::{
     SourceScope,
-    paths::{CONFIG_DIR_NAME, expand_tilde_text, home_directory, resolve},
+    paths::{CONFIG_DIR_NAME, home_directory, resolve},
 };
 use sha2::{Digest, Sha256};
 use std::{io, path::Path};
@@ -131,10 +131,10 @@ pub(super) fn resolve_local(
     home: impl FnOnce() -> io::Result<String>,
 ) -> io::Result<String> {
     let source = crate::trim(source);
-    if source.starts_with('~') {
-        return expand_tilde_text(source, home);
+    if parse_tilde(source) == Tilde::Other {
+        return resolve(&[base, source]);
     }
-    resolve(&[base, source])
+    expand_tilde_joined(source, home)
 }
 
 #[cfg(test)]
@@ -152,9 +152,10 @@ mod tests {
                     ("~", r"C:\h", r"C:\h"),
                     ("~/", r"C:\h", r"C:\h"),
                     ("~/x", r"C:\h", r"C:\h\x"),
-                    ("~x", r"C:\h", r"C:\h\x"),
+                    ("~x", r"C:\h", r"C:\b\~x"),
                     ("~", r"C:\h\.", r"C:\h\."),
                     ("~", "", ""),
+                    ("~/x", "", "x"),
                 ],
             )
         } else {
@@ -164,9 +165,10 @@ mod tests {
                     ("~", "/h", "/h"),
                     ("~/", "/h", "/h"),
                     ("~/x", "/h", "/h/x"),
-                    ("~x", "/h", "/h/x"),
+                    ("~x", "/h", "/b/~x"),
                     ("~", "/h/.", "/h/."),
                     ("~", "", ""),
+                    ("~/x", "", "x"),
                 ],
             )
         };

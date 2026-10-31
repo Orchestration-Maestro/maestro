@@ -4,6 +4,7 @@ use crate::{
     current_directory, drive_directories, frontmatter::text_whitespace, skills::real_path,
 };
 use std::{
+    convert::Infallible,
     io,
     path::{Path, PathBuf},
 };
@@ -55,28 +56,6 @@ pub fn resolve(paths: &[&str]) -> io::Result<String> {
     resolve_groups(&[paths]).map(|resolved| resolved.into_iter().collect::<String>())
 }
 
-/// Join a leading `~` of `path` below the home directory as text: the rest drops the separator
-/// that introduced it and is normalized lexically, so `.`, `..` and repeated separators resolve.
-///
-/// An exact `~` is the home directory, and any other path is returned as written without reading
-/// the home directory.
-///
-/// # Errors
-/// Returns the error of `home`.
-pub fn expand_tilde_text(
-    path: &str,
-    home: impl FnOnce() -> io::Result<String>,
-) -> io::Result<String> {
-    let Some(rest) = path.strip_prefix('~') else {
-        return Ok(path.to_owned());
-    };
-    if rest.is_empty() {
-        return home();
-    }
-    let rest = rest.strip_prefix('/').unwrap_or(rest);
-    Ok(maestro_path::join(&[&home()?, rest]))
-}
-
 /// Resolve an explicit instruction path: trim it, expand a leading `~` below `home`, keep an
 /// absolute result and resolve any other result against `cwd`.
 ///
@@ -84,7 +63,8 @@ pub fn expand_tilde_text(
 /// Returns the working-directory error of a resolution that needed it.
 pub(crate) fn resolve_explicit_path(path: &str, cwd: &str, home: &str) -> io::Result<String> {
     let path = path.trim_matches(text_whitespace);
-    let normalized = expand_tilde_text(path, || Ok(home.to_owned()))?;
+    let Ok(normalized) =
+        maestro_path::expand_tilde_joined(path, || Ok::<_, Infallible>(home.to_owned()));
     if maestro_path::is_absolute(&normalized) {
         Ok(normalized)
     } else {
