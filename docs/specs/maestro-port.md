@@ -709,6 +709,9 @@ not make the interactive frontend a terminal owner.
 `maestro-extensions-wasm` to `maestro-models`, declared as a native-only,
 non-optional development dependency, lets component tests pass retained schema
 callbacks to the native argument validator. It permits no normal or build edge.
+`maestro-extensions-wasm` to `maestro-extensions-wasmtime`, declared as a native-only,
+non-optional development dependency, lets component tests build their engine from the
+product's one engine configuration. It permits no normal or build edge.
 `maestro-extensions-wasm` to `maestro-listing`, declared as a portable development
 dependency, supplies name-ordered directory reads to the guest examples. It permits
 no normal or build dependency on the listing leaf.

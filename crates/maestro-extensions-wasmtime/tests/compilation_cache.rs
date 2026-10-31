@@ -3,10 +3,11 @@
 #![cfg(target_os = "linux")]
 use super::components::{TracedBus, loader, local};
 use maestro_extensions::load_extensions;
+use maestro_extensions_wasmtime::component_engine;
 use maestro_test_directory::Scratch;
 use maestro_test_process::{TestProcess, selection};
 use std::{cell::RefCell, collections::HashSet, path::Path};
-use wasmtime::{Cache, Config, Engine, component::Component};
+use wasmtime::{Cache, component::Component};
 
 /// Runs this test in a separate process with an isolated user cache and configuration.
 fn isolated(test: &str) -> bool {
@@ -61,10 +62,7 @@ fn remove_written(path: &Path) {
 fn cached_compile(path: &Path) -> usize {
     let cache = Cache::from_file(None).unwrap();
     let before: HashSet<_> = files_below(cache.directory()).into_iter().collect();
-    let mut config = Config::new();
-    config.wasm_component_model_async(true);
-    config.cache(Some(cache.clone()));
-    let engine = Engine::new(&config).unwrap();
+    let engine = component_engine(Some(cache.clone())).unwrap();
     Component::from_file(&engine, path).unwrap();
     if cache.cache_misses() > 0 {
         for written in files_below(cache.directory()) {
@@ -150,10 +148,7 @@ fn setup_tool() -> std::path::PathBuf {
 /// Observes the real persistent cache without a process-local compiled-component map.
 fn observe_compilation() {
     let cache = Cache::from_file(None).unwrap();
-    let mut config = Config::new();
-    config.wasm_component_model_async(true);
-    config.cache(Some(cache.clone()));
-    let engine = Engine::new(&config).unwrap();
+    let engine = component_engine(Some(cache.clone())).unwrap();
     let start = std::time::Instant::now();
     Component::from_file(
         &engine,

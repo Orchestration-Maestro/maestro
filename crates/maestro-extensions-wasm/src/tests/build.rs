@@ -5,7 +5,7 @@ use std::sync::OnceLock;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use wasmtime::component::Component;
-use wasmtime::{Cache, Config, Engine};
+use wasmtime::{Cache, Engine};
 
 #[path = "build/cargo.rs"]
 pub mod cargo;
@@ -108,8 +108,5 @@ where
 /// # Errors
 /// Returns Wasmtime's failure to configure the engine.
 pub fn engine() -> wasmtime::Result<Engine> {
-    let mut config = Config::new();
-    config.wasm_component_model_async(true);
-    config.cache(Cache::from_file(None).ok());
-    Engine::new(&config)
+    maestro_extensions_wasmtime::component_engine(Cache::from_file(None).ok())
 }
