@@ -231,6 +231,12 @@ fn maestro_responses_events_ignore_unknown_events() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
+fn maestro_responses_events_keep_items_by_output_index() -> TestResult {
+    event_rows("maestro_responses_events_keep_items_by_output_index", 1)
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
 fn maestro_responses_events_keep_current_item_order() -> TestResult {
     event_rows("maestro_responses_events_keep_current_item_order", 2)
 }
