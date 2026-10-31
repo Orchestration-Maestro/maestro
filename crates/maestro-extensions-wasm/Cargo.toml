@@ -370,6 +370,7 @@ crate-type = ["cdylib"]
 # example-index:end
 
 [dependencies]
+maestro-package = { path = "../maestro-package" }
 maestro-tool = { path = "../maestro-tool" }
 indexmap = { version = "=2.14.2", features = ["serde"] }
 maestro-json = { path = "../maestro-json" }

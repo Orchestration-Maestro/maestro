@@ -203,6 +203,7 @@ impl State {
             Message::Registration(id, request) => self.api_request(id, request),
             Message::ApiModel(id, model, tx, scope) => self.start_api_model(id, *model, tx, scope),
             Message::Exec(id, request, reply, scope) => self.start_exec(id, request, reply, scope),
+            Message::HostOperation(call) => self.host_operation(call),
             Message::Sleep(request, reply, admission) => self.sleep(request, reply, admission),
             Message::Command(id, request, admission) => self.start_command(id, request, admission),
             Message::Auth(id, model, reply, scope) => self.start_auth(id, *model, reply, scope),

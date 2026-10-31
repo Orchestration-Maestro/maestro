@@ -81,6 +81,8 @@ pub struct Attempt {
 /// still lends out, and the registrations it received.
 #[derive(Default)]
 pub struct Observed {
+    /// An explicitly supplied response from the original host operation owner.
+    pub host_operation_result: Option<Result<serde_json::Value, String>>,
     /// Controlled native waits while a custom view script drives independent tails.
     pub tick_clock: Option<super::custom_ticks::Clock>,
     /// Supplied native byte resources and exact operand observations.

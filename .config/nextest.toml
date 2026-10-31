@@ -12,7 +12,7 @@ slow-timeout = { period = "30s", terminate-after = 4 }
 command = "target/test-setup/development nextest-setup author-component"
 
 [[profile.default.scripts]]
-filter = "package(maestro-extensions-wasm) | package(maestro-extensions-wasmtime) | (package(maestro) & (test(startup_modes::) | test(model_streams::) | test(component_output_stays_between_complete_host_frames) | test(native_io::) | test(/_example::/)))"
+filter = "package(maestro-extensions-wasm) | package(maestro-extensions-wasmtime) | (package(maestro) & (test(startup_modes::) | test(model_streams::) | test(component_output_stays_between_complete_host_frames) | test(native_io::) | test(host_operations::) | test(/_example::/)))"
 setup = "author-component"
 
 [scripts.setup.fixture-sources]

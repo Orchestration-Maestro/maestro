@@ -34,6 +34,7 @@ pub(crate) trait ApiView: WasiView {
 pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
+    crate::local_resources::host_operations::add_to_linker(host)?;
     add_values(host)?;
     add_load_time(host)?;
     add_providers(host)?;

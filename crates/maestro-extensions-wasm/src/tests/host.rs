@@ -2158,6 +2158,14 @@ pub async fn cancel_held(
 }
 
 impl host::HostWithStore<State> for Imports {
+    fn call_host_operation(
+        _accessor: &Accessor<State, Self>,
+        _operation: host::HostOperation,
+    ) -> impl Future<Output = wasmtime::Result<Result<String, String>>> {
+        std::future::ready(Ok(
+            Err("host operations require the production host".into()),
+        ))
+    }
     fn fetch(
         accessor: &Accessor<State, Self>,
         request: host::HttpRequest,
