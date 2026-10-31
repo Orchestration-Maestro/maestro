@@ -4,7 +4,7 @@
 //! covers the files those paths list, by name and content, and the `Cargo.lock` entries of
 //! those packages, so a change elsewhere in the checkout leaves it valid.
 
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::collections::BTreeSet;
 use std::io;
 use std::path::Path;
 use std::process::Command;
@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 use super::{at, hex};
-use crate::member_graph::closure;
+use crate::cargo_lock::Lock;
 
 /// The paths and locked packages an artifact is prepared from, with the digest they had.
 #[derive(Serialize, Deserialize)]
@@ -125,40 +125,20 @@ pub(super) fn listed<'a>(
         .collect()
 }
 
-/// The `[[package]]` tables of `Cargo.lock`.
-fn lock_packages(checkout: &Path) -> io::Result<Vec<toml::Value>> {
-    let text = std::fs::read_to_string(checkout.join("Cargo.lock"))?;
-    let mut lock: toml::Table = text.parse().map_err(io::Error::other)?;
-    match lock.remove("package") {
-        Some(toml::Value::Array(packages)) => Ok(packages),
-        _ => Ok(Vec::new()),
-    }
-}
-
-/// The name of a locked package.
-fn package_name(package: &toml::Value) -> &str {
-    package
-        .get("name")
-        .and_then(toml::Value::as_str)
-        .unwrap_or_default()
-}
-
 /// The text of every lock entry whose package is named in `locked`, in lock order.
 fn lock_entries(checkout: &Path, locked: &BTreeSet<String>) -> io::Result<Vec<String>> {
     if locked.is_empty() {
         return Ok(Vec::new());
     }
-    Ok(lock_packages(checkout)?
+    Lock::read(checkout)?
+        .packages()
         .iter()
-        .filter(|package| locked.contains(package_name(package)))
-        .map(ToString::to_string)
-        .collect())
+        .filter(|package| locked.contains(&package.name))
+        .map(|package| serde_json::to_string(package).map_err(io::Error::other))
+        .collect()
 }
 
 /// The packages named in `roots` and every locked package they build on, by name.
-///
-/// The lock file lists a package's dependencies for every target, so the result can name more
-/// packages than one target builds; that only costs a rebuild after a change to one of them.
 ///
 /// # Errors
 /// Returns a failed read or parse of `Cargo.lock`.
@@ -166,36 +146,10 @@ pub(super) fn locked_closure(
     checkout: &Path,
     roots: &BTreeSet<String>,
 ) -> io::Result<BTreeSet<String>> {
-    let packages = lock_packages(checkout)?;
-    let mut positions: HashMap<&str, Vec<usize>> = HashMap::new();
-    for (position, package) in packages.iter().enumerate() {
-        positions
-            .entry(package_name(package))
-            .or_default()
-            .push(position);
-    }
-    let edges: Vec<Vec<usize>> = packages
-        .iter()
-        .map(|package| {
-            package
-                .get("dependencies")
-                .and_then(toml::Value::as_array)
-                .into_iter()
-                .flatten()
-                .filter_map(|entry| positions.get(entry.as_str()?.split_whitespace().next()?))
-                .flatten()
-                .copied()
-                .collect()
-        })
-        .collect();
-    let start: HashSet<usize> = roots
-        .iter()
-        .filter_map(|name| positions.get(name.as_str()))
-        .flatten()
-        .copied()
-        .collect();
-    Ok(closure(&edges, start)
+    Ok(Lock::read(checkout)?
+        .graph(|_| true)
+        .closure(roots.iter().map(String::as_str))
         .into_iter()
-        .map(|position| package_name(&packages[position]).to_owned())
+        .map(|package| package.name.clone())
         .collect())
 }

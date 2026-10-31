@@ -18,6 +18,8 @@ pub mod run_tests;
 
 /// Locked browser-author preparation and native dispatch.
 mod browser_author;
+/// The locked packages and the dependency graph between them.
+mod cargo_lock;
 /// Source-owned example discovery and component preparation.
 pub mod example_files;
 
