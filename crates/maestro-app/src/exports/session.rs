@@ -39,7 +39,7 @@ pub use crate::skill_block::{ParsedSkillBlock, parse_skill_block};
 pub use crate::agent_session::{
     AgentSession, AgentSessionConfig, AgentSessionEvent, AgentSessionEventListener,
     ExtensionBindings, ModelCycleResult, NavigateTreeResult, PromptOptions, SessionStats,
-    delivery_mode,
+    UsageCostBreakdownEntry, UsageTotals, delivery_mode, usage_cost_breakdown, usage_totals,
 };
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -63,10 +63,11 @@ pub use crate::sdk::{
 
 pub use maestro_session::compaction::{
     BranchPreparation, BranchSummaryResult, CollectEntriesResult, CompactionResult, CutPointResult,
-    DEFAULT_COMPACTION_SETTINGS, FileOperations, GenerateBranchSummaryOptions,
+    DEFAULT_COMPACTION_SETTINGS, FileOperations, GenerateBranchSummaryOptions, GeneratedSummary,
     calculate_context_tokens, collect_entries_for_branch_summary, compact, estimate_tokens,
     find_cut_point, find_turn_start_index, generate_branch_summary, generate_summary,
-    get_last_assistant_usage, prepare_branch_entries, serialize_conversation, should_compact,
+    generate_summary_with_usage, get_last_assistant_usage, prepare_branch_entries,
+    serialize_conversation, should_compact,
 };
 
 pub use maestro_session::convert_to_llm;
@@ -82,6 +83,6 @@ pub use maestro_session::session_manager::{
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_extensions::runner::ExtensionRunnerSession;
 #[cfg(not(target_arch = "wasm32"))]
-pub use maestro_session::session_manager::CompactionOptions;
-#[cfg(not(target_arch = "wasm32"))]
 pub use maestro_session::session_manager::ReadonlySessionManager;
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_session::session_manager::{BranchSummaryOptions, CompactionOptions};

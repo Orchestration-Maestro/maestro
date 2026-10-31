@@ -59,6 +59,7 @@ fn tool_name_predicates_compare_exact_untrimmed_names() {
             content: vec![],
             is_error: false,
             details: Presence::Present(json!({"opaque":2})),
+            usage: Presence::Missing,
         };
         for (expected, predicate) in names.iter().zip(predicates) {
             assert_eq!(predicate(&result), *expected == name, "{expected} / {name}");
@@ -1016,6 +1017,7 @@ macro_rules! builtin {
             input: json!({"unvalidated":false}),
             content: vec![maestro_models::UserBlock::Text(maestro_models::TextContent::new("output".into()))],
             is_error: true, details: Presence::Present($details),
+            usage: Presence::Missing,
         };
         assert_eq!(result.tool_call_id, "result-id");
         assert_eq!(result.tool_name, $name);
@@ -1307,6 +1309,7 @@ fn threaded_definition(
                     content: vec![],
                     details: Some(args),
                     terminate: None,
+                    usage: None,
                 })
             })
         }),

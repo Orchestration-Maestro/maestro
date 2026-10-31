@@ -186,6 +186,7 @@ pub fn read_result(result: &Value) -> AgentToolResult<ReadToolDetails> {
             truncation: Some(truncation),
         }),
         terminate: None,
+        usage: None,
     }
 }
 

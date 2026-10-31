@@ -72,6 +72,7 @@ pub fn message<D>(details: Option<D>) -> maestro_app::ToolResultMessage<D> {
         ],
         details,
         is_error: true,
+        usage: None,
     }
 }
 

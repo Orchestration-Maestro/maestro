@@ -495,6 +495,7 @@ fn install_tools(agent: &Arc<Agent<Notice>>, input: &Arc<Input>, trace: &Arc<Mut
                     content: vec![UserBlock::Text(TextContent::new(format!("result:{id}")))],
                     details: Some(json!({})),
                     terminate: None,
+                    usage: None,
                 }))
             }),
         }));

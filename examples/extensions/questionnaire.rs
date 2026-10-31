@@ -97,6 +97,7 @@ fn result(text: String, details: &QuestionnaireResult) -> AgentToolResult {
         content: vec![UserBlock::Text(TextContent::new(text))],
         details: Presence::Present(json!(details).to_string().into()),
         terminate: Presence::Missing,
+        usage: None,
     }
 }
 /// Returns a cancelled result without opening a view.

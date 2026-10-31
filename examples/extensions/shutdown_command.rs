@@ -28,6 +28,7 @@ fn result(text: String, details: String) -> AgentToolResult {
         content: vec![UserBlock::Text(TextContent::new(text))],
         details: Presence::Present(details.into()),
         terminate: Presence::Missing,
+        usage: None,
     }
 }
 

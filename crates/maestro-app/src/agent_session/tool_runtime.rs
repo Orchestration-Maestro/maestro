@@ -90,7 +90,7 @@ async fn before_tool_call(
     }))
 }
 
-/// Lets the extensions replace a tool result's content, details and error flag; the
+/// Lets the extensions replace a tool result's content, details, error flag and usage; the
 /// continuation hint stays the tool's own.
 async fn after_tool_call(
     session: Option<Rc<AgentSession<Local>>>,
@@ -114,6 +114,11 @@ async fn after_tool_call(
             .details
             .clone()
             .map_or(Presence::Missing, Presence::Present),
+        usage: context
+            .result
+            .usage
+            .clone()
+            .map_or(Presence::Missing, Presence::Present),
     };
     let Some(result) = runner.emit_tool_result(&event).await.map_err(thrown)? else {
         return Ok(None);
@@ -133,6 +138,7 @@ async fn after_tool_call(
                 .unwrap_or(context.is_error),
         ),
         terminate: None,
+        usage: result.usage.present().cloned(),
     }))
 }
 

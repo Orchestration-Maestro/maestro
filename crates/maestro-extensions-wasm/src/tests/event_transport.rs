@@ -81,6 +81,7 @@ fn maestro_missing_properties_do_not_become_null() -> Result<(), String> {
         first_kept_entry_id: String::new(),
         tokens_before: 0.0,
         details: Presence::Missing,
+        usage: Presence::Missing,
     };
     let records = [
         "{}",

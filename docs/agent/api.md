@@ -659,6 +659,7 @@ let tool = AgentTool::typed(
             content: vec![UserBlock::Text(TextContent { text: params.text, text_signature: None })],
             details: Some(()),
             terminate: Some(true),
+            usage: None,
         })))
     }),
 );
@@ -668,8 +669,10 @@ assert_eq!(tool.label, "Echo");
 Calls of one assistant message run in parallel by default; a tool whose `execution_mode`
 is `Sequential` makes the whole batch sequential. `before_tool_call` sees validated
 arguments, may edit them and may block with a reason (`Tool execution was blocked` when
-none is given). `after_tool_call` may replace content, details, the error flag and the
-termination flag. A batch whose results all request termination does not ask the model again by itself. Details are in [conversation turns](../loop.md).
+none is given). `after_tool_call` may replace content, details, the error flag, the usage and the
+termination flag. A tool that makes model calls of its own returns their combined
+`Usage` as `usage`; the result message stores it, session totals count it, and it never
+enters the conversation's context accounting. A batch whose results all request termination does not ask the model again by itself. Details are in [conversation turns](../loop.md).
 
 ## Proxy use
 

@@ -61,6 +61,17 @@ type Compaction = fn(&mut SessionManager, &[String]);
 /// Stores `messages`, applies `compaction`, gives the agent `messages` and compares the
 /// statistics, context usage and last answer text with the recorded case.
 fn stats_case(name: &str, messages: &[Value], window: Option<f64>, compaction: Option<Compaction>) {
+    stats_case_of(name, (messages, messages), window, compaction);
+}
+
+/// Like [`stats_case`], storing `stored` and giving the agent `agent`, which a compaction
+/// may extend with records the history does not hold yet.
+fn stats_case_of(
+    name: &str,
+    (stored, agent): (&[Value], &[Value]),
+    window: Option<f64>,
+    compaction: Option<Compaction>,
+) {
     let expected = case("statistics", name);
     on_task_set(|_| async {
         let h = harness(HarnessOptions {
@@ -70,7 +81,7 @@ fn stats_case(name: &str, messages: &[Value], window: Option<f64>, compaction: O
         .await;
         {
             let mut manager = h.session.session_manager().borrow_mut();
-            let ids: Vec<String> = messages
+            let ids: Vec<String> = stored
                 .iter()
                 .map(|message| manager.append_message(message.clone()).unwrap())
                 .collect();
@@ -78,7 +89,7 @@ fn stats_case(name: &str, messages: &[Value], window: Option<f64>, compaction: O
                 compaction(&mut manager, &ids);
             }
         }
-        let history: Vec<NativeAgentMessage> = serde_json::from_value(json!(messages)).unwrap();
+        let history: Vec<NativeAgentMessage> = serde_json::from_value(json!(agent)).unwrap();
         h.session
             .agent()
             .state()
@@ -176,9 +187,9 @@ fn answer_after_compaction_gives_usage() {
         );
         manager.append_message(fresh).unwrap();
     };
-    stats_case(
+    stats_case_of(
         "an answer after the compaction gives usage",
-        &messages,
+        (&stat_messages()[..2], &messages),
         None,
         Some(compaction),
     );
@@ -203,7 +214,7 @@ fn aborted_and_failed_answers_after_compaction_are_skipped() {
 }
 
 #[test]
-fn zero_usage_newest_answer_after_compaction_leaves_usage_unknown() {
+fn zero_usage_newest_answer_after_compaction_uses_the_answer_before_it() {
     let compaction: Compaction = |manager, ids| {
         compact_after(manager, ids, 1);
         let old = assistant(
@@ -216,7 +227,7 @@ fn zero_usage_newest_answer_after_compaction_leaves_usage_unknown() {
         manager.append_message(zero).unwrap();
     };
     stats_case(
-        "a zero-usage newest answer after a compaction leaves usage unknown",
+        "a zero-usage newest answer after a compaction uses the answer before it",
         &stat_messages()[..2],
         None,
         Some(compaction),

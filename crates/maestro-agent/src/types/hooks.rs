@@ -38,6 +38,8 @@ pub struct AfterToolCallResult {
     pub details: Option<serde_json::Value>,
     /// Replacement error flag, including false.
     pub is_error: Option<bool>,
+    /// Replacement usage of model calls the tool made itself.
+    pub usage: Option<maestro_models::Usage>,
     /// Replacement continuation hint, including false.
     pub terminate: Option<bool>,
 }

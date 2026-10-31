@@ -67,6 +67,7 @@ fn result<D>(output: &str, is_error: bool, details: Option<D>) -> ToolResultMess
         content: vec![UserBlock::Text(TextContent::new(output.into()))],
         details,
         is_error,
+        usage: None,
     }
 }
 /// The untranslated caption the selection chose.

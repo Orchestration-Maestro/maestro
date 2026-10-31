@@ -9,6 +9,7 @@ fn native_tool_aliases_use_shared_records() {
         content: vec![],
         details: Some(Details),
         terminate: Some(false),
+        usage: None,
     };
     let shared: maestro_tool::types::AgentToolResult<Option<Details>, Option<bool>> = module_result;
     assert!(shared.details.is_some());

@@ -115,6 +115,7 @@ impl Guard {
                     first_kept_entry_id: event.preparation.first_kept_entry_id.clone(),
                     tokens_before: 123.0,
                     details: Presence::Missing,
+                    usage: Presence::Missing,
                 }),
             ),
         };

@@ -180,6 +180,7 @@ fn append_boundary(h: &Harness, response: &AssistantMessage, tokens: f64) -> Str
         CompactionOptions {
             details: Presence::Missing,
             from_hook: Presence::Present(false),
+            usage: Presence::Missing,
         },
     ));
     first_kept

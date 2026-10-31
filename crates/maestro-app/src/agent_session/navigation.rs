@@ -16,7 +16,9 @@ use maestro_models::{Cancellation, DiagnosticErrorInfo, Local, Model};
 use maestro_session::{
     BranchSummaryResult, GenerateBranchSummaryOptions, Presence,
     collect_entries_for_branch_summary, generate_branch_summary,
-    session_manager::{BranchSummaryEntry, NavigateTreeOptions, ReadonlySessionManager},
+    session_manager::{
+        BranchSummaryEntry, BranchSummaryOptions, NavigateTreeOptions, ReadonlySessionManager,
+    },
 };
 use serde::Deserialize as _;
 use serde_json::{Value, json};
@@ -29,6 +31,8 @@ struct BranchSummary {
     text: String,
     /// Its stored details.
     details: Presence<Value>,
+    /// The usage of the requests that produced it.
+    usage: Presence<maestro_models::Usage>,
     /// Whether an extension supplied it.
     from_extension: bool,
 }
@@ -244,6 +248,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
             Presence::Present(summary) if summarize => Some(BranchSummary {
                 text: summary.summary,
                 details: summary.details,
+                usage: summary.usage,
                 from_extension: true,
             }),
             _ => None,
@@ -276,7 +281,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
             reserve_tokens: Some(reserve_tokens),
             stream_fn: read(&self.agent.stream_fn).clone(),
         };
-        let (text, read_files, modified_files) =
+        let (text, read_files, modified_files, usage) =
             match generate_branch_summary(entries, &options).await? {
                 BranchSummaryResult::Aborted { .. } => return Ok(None),
                 BranchSummaryResult::Error { error } => {
@@ -286,14 +291,23 @@ impl<E: ExtensionExecution> AgentSession<E> {
                     summary,
                     read_files,
                     modified_files,
-                } => (summary, read_files, modified_files),
-                BranchSummaryResult::NoContent { summary } => (summary, Vec::new(), Vec::new()),
+                    usage,
+                } => (
+                    summary,
+                    read_files,
+                    modified_files,
+                    Presence::Present(usage),
+                ),
+                BranchSummaryResult::NoContent { summary } => {
+                    (summary, Vec::new(), Vec::new(), Presence::Missing)
+                }
             };
         Ok(Some(BranchSummary {
             text,
             details: Presence::Present(
                 json!({"readFiles": read_files, "modifiedFiles": modified_files}),
             ),
+            usage,
             from_extension: false,
         }))
     }
@@ -354,8 +368,11 @@ impl<E: ExtensionExecution> AgentSession<E> {
                 .branch_with_summary(
                     new_leaf_id,
                     &summary.text,
-                    summary.details,
-                    Presence::Present(summary.from_extension),
+                    BranchSummaryOptions {
+                        details: summary.details,
+                        from_hook: Presence::Present(summary.from_extension),
+                        usage: summary.usage,
+                    },
                 )
                 .map_err(thrown)?;
             let entry = manager.get_entry(&id).unwrap_or(&Value::Null);

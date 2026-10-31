@@ -89,6 +89,7 @@ pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
                     content: vec![UserBlock::Text(TextContent::new(format!("Structured answer ready: {}", details.headline)))],
                     details: Presence::Present(serde_json::to_string(&details).map_err(|e| e.to_string())?.into()),
                     terminate: Presence::Present(true),
+                    usage: None,
                 })
             })),
             render_call: None,

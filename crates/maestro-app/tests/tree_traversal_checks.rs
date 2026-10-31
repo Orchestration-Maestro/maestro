@@ -6,7 +6,7 @@ use crate::support::session_harness::{
 };
 use maestro_session::Presence;
 use maestro_session::session_manager::{
-    CompactionOptions, ReadonlySessionManager, parse_session_entries,
+    BranchSummaryOptions, CompactionOptions, ReadonlySessionManager, parse_session_entries,
 };
 use maestro_session::{SessionEntry, SessionManager};
 use serde_json::{Value, json};
@@ -631,8 +631,7 @@ fn branch_summary_is_stored_at_target_and_becomes_leaf() {
             .branch_with_summary(
                 Some(&ids[0]),
                 "Summary of abandoned work",
-                Presence::Missing,
-                Presence::Missing,
+                BranchSummaryOptions::default(),
             )
             .expect("summary");
         let entry = manager.get_entry(&summary).expect("summary entry");
@@ -660,8 +659,7 @@ fn unknown_summary_target_reports_its_identity() {
             .branch_with_summary(
                 Some("nonexistent"),
                 "summary",
-                Presence::Missing,
-                Presence::Missing,
+                BranchSummaryOptions::default(),
             )
             .expect_err("unknown entry");
         let observed = json!({

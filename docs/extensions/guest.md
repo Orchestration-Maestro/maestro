@@ -326,7 +326,7 @@ differs from a result whose properties are all omitted.
 | `message_end` | `MessageEndEvent` | `message` |
 | `message_update` | `MessageUpdateEvent` | `message`, `assistantMessageEvent` |
 | `tool_call` | `ToolCallEvent` | `toolCallId`, `toolName`, retained JSON `input` |
-| `tool_result` | `ToolResultEvent` | `toolCallId`, `toolName`, opaque `input`, shared `content`, `isError`, retained JSON `details?` |
+| `tool_result` | `ToolResultEvent` | `toolCallId`, `toolName`, opaque `input`, shared `content`, `isError`, retained JSON `details?`, shared `usage?` |
 | `user_bash` | `UserBashEvent` | `command`, `cwd`, `excludeFromContext` |
 | `tool_execution_start` | `ToolExecutionStartEvent` | `toolCallId`, `toolName`, `args` |
 | `tool_execution_update` | `ToolExecutionUpdateEvent` | `toolCallId`, `toolName`, `args`, `partialResult` |
@@ -384,7 +384,7 @@ the guest does not discover resources or build the prompt.
 | Event | Result | Properties of the result |
 | --- | --- | --- |
 | `tool_call` | `ToolCallEventResult` | `block?`, `reason?` |
-| `tool_result` | `ToolResultEventResult` | `content?`, opaque `details?`, `isError?` |
+| `tool_result` | `ToolResultEventResult` | `content?`, opaque `details?`, `isError?`, `usage?` |
 | `user_bash` | `UserBashEventResult` | custom `operations?`, supplied `result?` |
 | `context` | `ContextEventResult` | `messages?` |
 | `message_end` | `MessageEndEventResult` | `message?` |
@@ -707,8 +707,8 @@ absence. The tagged `SessionEntry` variants carry these additional fields:
 | `message` | `message` (shared or application message) |
 | `thinking_level_change` | `thinkingLevel` (open text) |
 | `model_change` | `provider`, `modelId` |
-| `compaction` | `summary`, `firstKeptEntryId`, `tokensBefore`, `details?`, `fromHook?` |
-| `branch_summary` | `fromId`, `summary`, `details?`, `fromHook?` |
+| `compaction` | `summary`, `firstKeptEntryId`, `tokensBefore`, `details?`, `usage?`, `fromHook?` |
+| `branch_summary` | `fromId`, `summary`, `details?`, `usage?`, `fromHook?` |
 | `custom` | `customType`, `data?` (opaque text) |
 | `custom_message` | `customType`, `content`, `details?`, `display` |
 | `label` | `targetId`, `label?` |
@@ -1109,6 +1109,7 @@ fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
                         first_kept_entry_id: event.preparation.first_kept_entry_id.clone(),
                         tokens_before: event.preparation.tokens_before,
                         details: Presence::Missing,
+                        usage: Presence::Missing,
                     }),
                 })))
             })

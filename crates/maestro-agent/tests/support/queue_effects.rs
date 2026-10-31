@@ -141,6 +141,7 @@ fn tools(agent: &Arc<Agent>) -> (Permits, Receipts, Receipts) {
                     content: vec![UserBlock::Text(TextContent::new(format!("result:{id}")))],
                     details: Some(serde_json::Value::Null),
                     terminate: None,
+                    usage: None,
                 };
                 complete.send(()).unwrap();
                 Ok(result)
@@ -225,6 +226,7 @@ pub async fn follow_priority() {
                 content: vec![],
                 details: Some(serde_json::Value::Null),
                 terminate: None,
+                usage: None,
             }))
         }))
         .tools

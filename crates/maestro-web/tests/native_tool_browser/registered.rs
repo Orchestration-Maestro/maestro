@@ -99,6 +99,7 @@ fn native_row(view: &DomView, recorded: NativeDetail) -> NativeRow {
         timestamp: result.timestamp,
         is_error: result.is_error,
         details: Some(Rc::new(move || observed.set(observed.get() + 1)) as Details),
+        usage: None,
     };
     let row = ToolMessage {
         tool_call: Some(Rc::new(ToolCall {
@@ -300,6 +301,7 @@ fn result_copy(result: &ToolResultMessage<Details>) -> ToolResultMessage<Details
         details: result.details.clone(),
         is_error: result.is_error,
         timestamp: result.timestamp,
+        usage: None,
     }
 }
 

@@ -32,6 +32,7 @@ fn typed_result(index: usize, content: &str, terminate: bool) -> AgentToolResult
         content: text(content),
         details,
         terminate: Some(terminate),
+        usage: None,
     }
 }
 /// The erased detail every call index must end with.
@@ -82,6 +83,7 @@ fn erased_execute() -> ExecuteTool {
                     content: text(&format!("partial-{state}")),
                     details: expected_state(state),
                     terminate: Some(true),
+                    usage: None,
                 });
             }
         }
@@ -89,6 +91,7 @@ fn erased_execute() -> ExecuteTool {
             content: text("final"),
             details: expected_state(index_of(&id)),
             terminate: Some(false),
+            usage: None,
         }))
     })
 }
@@ -375,6 +378,7 @@ async fn run_case(case: &Case, mode: ToolExecutionMode) {
             content: input.content.clone(),
             details: input.details.clone(),
             terminate: input.terminate,
+            usage: None,
         }))
     });
     let hook_seen = Arc::new(Mutex::new(Seen::default()));

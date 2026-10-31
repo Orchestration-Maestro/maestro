@@ -267,12 +267,14 @@ fn echo_tool() -> maestro_agent::SharedAgentTool {
                     content: vec![text("working".into())],
                     details: Some(json!({"stage": 1})),
                     terminate: None,
+                    usage: None,
                 });
             }
             ready(Ok(AgentToolResult {
                 content: vec![text(params.text)],
                 details: Some(json!({"audited": false})),
                 terminate: Some(true),
+                usage: None,
             }))
         }),
     );
@@ -429,6 +431,7 @@ fn flaky_tool(runs: &Arc<Mutex<u32>>) -> maestro_agent::SharedAgentTool {
                     content: vec![],
                     details: Some(json!({})),
                     terminate: None,
+                    usage: None,
                 })
             };
             ready(outcome)

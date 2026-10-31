@@ -25,13 +25,26 @@ pub type FileEntry = Value;
 /// Current session format version.
 pub const CURRENT_SESSION_VERSION: u32 = 3;
 
-/// Supplied optional operands of a compaction record; both are omitted by default.
+/// Supplied optional operands of a compaction record; all are omitted by default.
 #[derive(Debug, Default)]
 pub struct CompactionOptions {
     /// Extension-specific details.
     pub details: Presence<Value>,
     /// Whether an extension generated the summary.
     pub from_hook: Presence<bool>,
+    /// Usage of the model calls that generated the summary.
+    pub usage: Presence<maestro_request::types::Usage>,
+}
+
+/// Supplied optional operands of a branch-summary record; all are omitted by default.
+#[derive(Debug, Default)]
+pub struct BranchSummaryOptions {
+    /// Extension-specific details.
+    pub details: Presence<Value>,
+    /// Whether an extension generated the summary.
+    pub from_hook: Presence<bool>,
+    /// Usage of the model calls that generated the summary.
+    pub usage: Presence<maestro_request::types::Usage>,
 }
 
 /// One position in the history tree, borrowing retained records and resolved labels.

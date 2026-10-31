@@ -27,6 +27,12 @@ fn question(text: &str, offset: u64) -> Value {
     user(&json!(text), offset)
 }
 
+/// `message` stamped now, as an answer given after the compaction is.
+fn later(mut message: Value) -> Value {
+    message["timestamp"] = json!(maestro_models::timestamp_now());
+    message
+}
+
 /// The recorded form of a context usage.
 fn usage_view(usage: Option<ContextUsage>) -> Value {
     usage.map_or(Value::Null, |usage| {
@@ -122,8 +128,8 @@ fn fresh_usage_after_compaction_replaces_kept_usage() {
         {
             let mut manager = h.session.session_manager().borrow_mut();
             before_compaction(&mut manager);
-            manager.append_message(question("third", 5)).unwrap();
-            manager.append_message(answer(25_000, 6)).unwrap();
+            manager.append_message(later(question("third", 5))).unwrap();
+            manager.append_message(later(answer(25_000, 6))).unwrap();
         }
         load_history(&h);
         let stats = h.session.get_session_stats().unwrap();

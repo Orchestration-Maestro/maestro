@@ -584,6 +584,7 @@ fn maestro_raw_continue_accepts_tool_result_tail() {
             details: None,
             is_error: false,
             timestamp: 1.0,
+            usage: None,
         },
     )))];
     let mut config = config();

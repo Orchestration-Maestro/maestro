@@ -324,6 +324,7 @@ fn tool(
                     content: vec![],
                     details: None,
                     terminate: None,
+                    usage: None,
                 })
             })
         }),

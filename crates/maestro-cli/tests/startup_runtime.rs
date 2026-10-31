@@ -483,6 +483,7 @@ fn register_probe_tool() -> maestro_app::ExtensionFactory<Local> {
                         content: vec![],
                         details: None,
                         terminate: None,
+                        usage: None,
                     })))
                 }),
                 render_call: None,

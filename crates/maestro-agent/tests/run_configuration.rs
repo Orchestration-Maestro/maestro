@@ -188,6 +188,7 @@ async fn drive_constructor(
             details: Some(serde_json::json!("executed")),
             terminate: None,
             content: vec![],
+            usage: None,
         }))
     }))
     .tools

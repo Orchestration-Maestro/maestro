@@ -334,6 +334,7 @@ async fn maestro_tool_result_tail_can_continue_case() {
         details: None,
         is_error: false,
         timestamp: 1.0,
+        usage: None,
     };
     set_history(
         &agent,

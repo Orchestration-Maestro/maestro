@@ -15,9 +15,11 @@ is still open.
 The startup header lists shortcuts and loaded resources. The transcript below it
 holds messages, tool calls and results, shell output and notices. Pending messages
 appear above the editor. The footer reports the directory, session name, usage,
-cost, context and selected model. The editor border indicates thinking level, or
-shell mode when the draft starts with `!`. A selector or extension dialog can
-replace the editor until it closes.
+cost, context and selected model. Usage and cost cover the whole session: answers,
+usage that tools report and the requests that generate summaries. `/session` lists the
+cost of each answering model and of `Tools/summaries`, which together make up the total.
+The editor border indicates thinking level, or shell mode when the draft starts
+with `!`. A selector or extension dialog can replace the editor until it closes.
 
 | Task | Default control or input |
 | --- | --- |

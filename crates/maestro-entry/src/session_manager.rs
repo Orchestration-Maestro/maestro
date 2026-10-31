@@ -1,6 +1,6 @@
 //! Session file and context records shared by the native session and the extension guest.
 use maestro_request::presence::{Omittable, Presence};
-use maestro_request::types::UserContent;
+use maestro_request::types::{Usage, UserContent};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -87,6 +87,9 @@ pub struct CompactionEntry<T = Value> {
     /// Extension-defined details.
     #[serde(default, skip_serializing_if = "Presence::is_missing")]
     pub details: Presence<T>,
+    /// Usage of the model calls that generated the summary.
+    #[serde(default, skip_serializing_if = "Presence::is_missing")]
+    pub usage: Presence<Usage>,
     /// Whether an extension produced the summary.
     #[serde(default, skip_serializing_if = "Presence::is_missing")]
     pub from_hook: Presence<bool>,
@@ -107,6 +110,9 @@ pub struct BranchSummaryEntry<T = Value> {
     /// Extension-defined details.
     #[serde(default, skip_serializing_if = "Presence::is_missing")]
     pub details: Presence<T>,
+    /// Usage of the model calls that generated the summary.
+    #[serde(default, skip_serializing_if = "Presence::is_missing")]
+    pub usage: Presence<Usage>,
     /// Whether an extension produced the summary.
     #[serde(default, skip_serializing_if = "Presence::is_missing")]
     pub from_hook: Presence<bool>,

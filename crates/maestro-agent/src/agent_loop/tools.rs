@@ -307,6 +307,7 @@ impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Driver<'_, C, 
             details: result.details.clone(),
             is_error,
             timestamp: 0.0,
+            usage: result.usage.clone(),
         };
         (self.emit)(AgentEvent::ToolExecutionEnd {
             tool_call: call,
@@ -350,6 +351,9 @@ fn apply_overrides(
     }
     if let Some(details) = overrides.details.filter(|value| !value.is_null()) {
         result.details = Some(details);
+    }
+    if let Some(usage) = overrides.usage {
+        result.usage = Some(usage);
     }
     if let Some(terminate) = overrides.terminate {
         result.terminate = Some(terminate);

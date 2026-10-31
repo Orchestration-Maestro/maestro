@@ -190,6 +190,7 @@ async fn summarize(
         first_kept_entry_id: preparation.first_kept_entry_id.clone(),
         tokens_before: preparation.tokens_before,
         details: Presence::Missing,
+        usage: Presence::Missing,
     }))
 }
 

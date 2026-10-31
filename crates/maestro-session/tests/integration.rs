@@ -4,6 +4,7 @@ mod application_message_encoding;
 
 mod application_message_records;
 mod branch_summary;
+mod compaction_context;
 mod compaction_preparation;
 mod context_projection;
 mod converter_binding;
@@ -20,6 +21,7 @@ mod session_tree;
 mod subprocess;
 mod summary_generation;
 mod summary_text;
+mod summary_usage;
 mod tool_argument_roots;
 /// Recorded corpus support shared by the test modules.
 mod support {
@@ -34,6 +36,9 @@ mod support {
     pub mod generation;
     #[cfg(not(target_arch = "wasm32"))]
     pub mod native;
+    /// Scripted summary answers with usage.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub mod scripted_summary;
     /// Context corpus consumer.
     pub mod session_context;
     pub mod session_files;

@@ -5,6 +5,7 @@ use maestro_json::is_truthy;
 use serde::Deserialize;
 use serde::de::Error as _;
 use serde_json::Value;
+use std::borrow::Borrow;
 /// Whether enabled compaction exceeds the available context window.
 #[must_use]
 pub fn should_compact(
@@ -32,26 +33,29 @@ pub fn calculate_context_tokens(usage: &Value) -> Result<f64, serde_json::Error>
     let write: f64 = scalar(property(Some(usage), "cacheWrite")?)?;
     Ok(input + output + read + write)
 }
-/// Borrow successful assistant usage, ignoring unread content and cost.
+/// Borrow successful assistant usage that reports context tokens, ignoring unread content
+/// and cost; aborted, failed and all-zero usage describe no context.
 fn assistant_usage(message: Option<&Value>) -> Result<Option<&Value>, serde_json::Error> {
     if property(message, "role")?.and_then(Value::as_str) != Some("assistant") {
         return Ok(None);
     }
     let stop = property(message, "stopReason")?.and_then(Value::as_str);
-    Ok(if matches!(stop, Some("aborted" | "error")) {
-        None
-    } else {
-        property(message, "usage")?.filter(|value| is_truthy(value))
-    })
+    if matches!(stop, Some("aborted" | "error")) {
+        return Ok(None);
+    }
+    let Some(usage) = property(message, "usage")?.filter(|value| is_truthy(value)) else {
+        return Ok(None);
+    };
+    Ok((calculate_context_tokens(usage)? > 0.0).then_some(usage))
 }
-/// Borrow the latest successful assistant usage from stored message entries.
+/// Borrow the latest successful assistant usage that reports tokens from stored entries.
 ///
 /// # Errors
 /// Returns a native JSON error for a reached null entry or message.
-pub fn get_last_assistant_usage(
-    entries: &[crate::SessionEntry],
+pub fn get_last_assistant_usage<T: Borrow<crate::SessionEntry>>(
+    entries: &[T],
 ) -> Result<Option<&Value>, serde_json::Error> {
-    for entry in entries.iter().rev() {
+    for entry in entries.iter().map(Borrow::borrow).rev() {
         if property(Some(entry), "type")?.and_then(Value::as_str) == Some("message")
             && let Some(usage) = assistant_usage(entry.get("message"))?
         {
@@ -62,7 +66,7 @@ pub fn get_last_assistant_usage(
 }
 /// Selected role policy, independent of unused message fields.
 enum Role {
-    /// Plain user content.
+    /// User text and image attachments.
     User,
     /// Assistant categories.
     Assistant,
@@ -111,7 +115,7 @@ fn block_units(block: &Value, role: &Role) -> Result<f64, serde_json::Error> {
                 .ok_or_else(|| serde_json::Error::custom("missing arguments"))?;
             Ok(name + utf16_units(&maestro_json::compact_json(arguments)?))
         }
-        Some("image") if matches!(role, Role::WithImages) => Ok(4800.0),
+        Some("image") if matches!(role, Role::User | Role::WithImages) => Ok(4800.0),
         _ => Ok(0.0),
     }
 }
@@ -139,20 +143,43 @@ pub fn estimate_tokens(message: &Value) -> Result<f64, serde_json::Error> {
     };
     Ok((chars / 4.0).ceil())
 }
-/// Estimate context from the latest successful usage and the trailing messages.
+/// Read a message timestamp when it is a number.
+fn timestamp(message: &Value) -> Option<f64> {
+    message.get("timestamp").and_then(Value::as_f64)
+}
+/// Find the newest assistant usage that still describes the messages before it.
+///
+/// A message stamped after an answer, such as a compaction summary inserted ahead of the
+/// retained span, replaces the context that answer measured, so that usage is stale until
+/// a newer answer reports. A message without a numeric timestamp is never stale.
+fn latest_usage(messages: &[Value]) -> Result<Option<(usize, f64)>, serde_json::Error> {
+    let mut newest = f64::NEG_INFINITY;
+    let preceding: Vec<f64> = messages
+        .iter()
+        .map(|message| {
+            let before = newest;
+            newest = timestamp(message).map_or(newest, |stamp| newest.max(stamp));
+            before
+        })
+        .collect();
+    for (index, message) in messages.iter().enumerate().rev() {
+        if timestamp(message).is_some_and(|stamp| stamp < preceding[index]) {
+            continue;
+        }
+        if let Some(usage) = assistant_usage(Some(message))? {
+            return Ok(Some((index, calculate_context_tokens(usage)?)));
+        }
+    }
+    Ok(None)
+}
+/// Estimate context from the latest applicable successful usage and the trailing messages.
 ///
 /// # Errors
 /// Returns a native JSON error for reached usage or message fields.
 pub fn estimate_context_tokens(
     messages: &[Value],
 ) -> Result<super::ContextUsageEstimate, serde_json::Error> {
-    let mut latest = None;
-    for (index, message) in messages.iter().enumerate().rev() {
-        if let Some(usage) = assistant_usage(Some(message))? {
-            latest = Some((index, calculate_context_tokens(usage)?));
-            break;
-        }
-    }
+    let latest = latest_usage(messages)?;
     let usage_tokens = latest.map_or(0.0, |(_, tokens)| tokens);
     let trailing_tokens = messages[latest.map_or(0, |(index, _)| index + 1)..]
         .iter()

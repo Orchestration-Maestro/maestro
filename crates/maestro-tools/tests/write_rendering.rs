@@ -200,6 +200,7 @@ fn result_of(content: Vec<UserBlock>) -> AgentToolResult<()> {
         content,
         details: None,
         terminate: None,
+        usage: None,
     }
 }
 

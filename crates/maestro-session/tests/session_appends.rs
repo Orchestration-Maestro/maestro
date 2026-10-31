@@ -6,7 +6,9 @@ use crate::support;
 use maestro_models::UserContent;
 use maestro_request::presence::Presence;
 use maestro_session::SessionManager;
-use maestro_session::session_manager::{CompactionOptions, ReadonlySessionManager};
+use maestro_session::session_manager::{
+    BranchSummaryOptions, CompactionOptions, ReadonlySessionManager,
+};
 use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::io;
@@ -61,7 +63,7 @@ fn remaining_appends_keep_accepted_memory_after_io_failure() {
             )
         }),
         ("branch_summary", |m, root| {
-            m.branch_with_summary(Some(root), "recap", Presence::Missing, Presence::Missing)
+            m.branch_with_summary(Some(root), "recap", BranchSummaryOptions::default())
         }),
     ];
     for (kind, append) in cases {
@@ -90,6 +92,7 @@ fn append_every_kind(manager: &mut SessionManager, root: &str) {
     let options = CompactionOptions {
         details: details.clone(),
         from_hook: Presence::Present(true),
+        usage: Presence::Missing,
     };
     manager
         .append_compaction("recap", "absent", 17.0, options)
@@ -106,7 +109,15 @@ fn append_every_kind(manager: &mut SessionManager, root: &str) {
         .append_label_change(root, Presence::Present("mark"))
         .unwrap();
     manager
-        .branch_with_summary(None, "abandoned", details, Presence::Null)
+        .branch_with_summary(
+            None,
+            "abandoned",
+            BranchSummaryOptions {
+                details,
+                from_hook: Presence::Null,
+                usage: Presence::Missing,
+            },
+        )
         .unwrap();
 }
 
@@ -214,4 +225,63 @@ fn all_appends_round_trip_through_native_jsonl() {
         .collect();
     assert_wire_layouts(&lines);
     assert_reopened(&manager, &path, &root);
+}
+
+/// The usage of a summary request.
+fn summary_usage() -> maestro_request::types::Usage {
+    serde_json::from_value(
+        json!({"input": 12, "output": 3, "cacheRead": 0, "cacheWrite": 0,
+        "totalTokens": 15, "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0,
+        "total": 0.25}}),
+    )
+    .unwrap()
+}
+
+#[test]
+fn summary_records_keep_the_usage_that_generated_them() {
+    let scratch = Scratch::new().unwrap();
+    let dir = scratch.path().to_str().unwrap();
+    let mut manager = SessionManager::create("/work", Some(dir), "unused").unwrap();
+    let root = manager
+        .append_message(json!({"role": "user", "content": "first", "timestamp": 1}))
+        .unwrap();
+    manager
+        .append_message(json!({"role": "assistant", "content": "second", "timestamp": 2}))
+        .unwrap();
+    let usage = summary_usage();
+    let compaction = manager
+        .append_compaction(
+            "recap",
+            &root,
+            3.0,
+            CompactionOptions {
+                usage: Presence::Present(usage.clone()),
+                ..CompactionOptions::default()
+            },
+        )
+        .unwrap();
+    let branch = manager
+        .branch_with_summary(
+            Some(&root),
+            "abandoned",
+            BranchSummaryOptions {
+                usage: Presence::Present(usage.clone()),
+                ..BranchSummaryOptions::default()
+            },
+        )
+        .unwrap();
+    let plain = manager
+        .append_compaction("bare", &root, 3.0, CompactionOptions::default())
+        .unwrap();
+    let stored_usage = |entry: &serde_json::Value| -> maestro_request::types::Usage {
+        serde_json::from_value(entry["usage"].clone()).unwrap()
+    };
+    let written = std::fs::read_to_string(manager.get_session_file().unwrap()).unwrap();
+    let stored = maestro_session::session_manager::parse_session_entries(&written);
+    for id in [&compaction, &branch] {
+        assert_eq!(stored_usage(manager.get_entry(id).unwrap()), usage);
+        let reloaded = stored.iter().find(|entry| entry["id"] == id.as_str());
+        assert_eq!(stored_usage(reloaded.unwrap()), usage);
+    }
+    assert!(manager.get_entry(&plain).unwrap().get("usage").is_none());
 }

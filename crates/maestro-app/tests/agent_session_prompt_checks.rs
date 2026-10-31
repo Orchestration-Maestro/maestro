@@ -54,6 +54,7 @@ fn echoing_tools(
                         content: vec![UserBlock::Text(TextContent::new(text))],
                         details: Some(json!({})),
                         terminate: None,
+                        usage: None,
                     })))
                 }),
                 execution_mode: None,

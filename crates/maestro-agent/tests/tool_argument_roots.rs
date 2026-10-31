@@ -56,6 +56,7 @@ fn echo_tool(schema: Value, prepare: Option<Prepare>, seen: Arc<Mutex<Vec<Value>
                     content: Vec::new(),
                     details: Some(Value::Null),
                     terminate: Some(true),
+                    usage: None,
                 })
             })
         }),

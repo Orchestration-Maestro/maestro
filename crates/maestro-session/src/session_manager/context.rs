@@ -150,11 +150,7 @@ fn project_messages(path: &[&Value], compaction: Option<usize>) -> Vec<Value> {
     let mut messages = Vec::new();
     if let Some(position) = compaction {
         let entry = path[position];
-        messages.push(generated(
-            entry,
-            "compactionSummary",
-            &["summary", "tokensBefore"],
-        ));
+        messages.extend(generated_message(entry));
         let cut = entry.get("firstKeptEntryId");
         if let Some(start) = path[..position]
             .iter()
@@ -180,6 +176,13 @@ fn project_messages(path: &[&Value], compaction: Option<usize>) -> Vec<Value> {
 fn append_message(entry: &Value) -> Option<Value> {
     match entry.get("type").and_then(Value::as_str) {
         Some("message") => entry.get("message").cloned(),
+        Some("compaction") => None,
+        _ => generated_message(entry),
+    }
+}
+/// Project the message a custom-message, branch-summary or compaction entry puts in context.
+pub(crate) fn generated_message(entry: &Value) -> Option<Value> {
+    match entry.get("type").and_then(Value::as_str) {
         Some("custom_message") => Some(generated(
             entry,
             "custom",
@@ -188,6 +191,11 @@ fn append_message(entry: &Value) -> Option<Value> {
         Some("branch_summary") if entry.get("summary").is_some_and(truthy) => {
             Some(generated(entry, "branchSummary", &["summary", "fromId"]))
         }
+        Some("compaction") => Some(generated(
+            entry,
+            "compactionSummary",
+            &["summary", "tokensBefore"],
+        )),
         _ => None,
     }
 }

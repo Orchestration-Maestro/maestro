@@ -571,3 +571,43 @@ fn single(test: &str) -> Row {
     assert_eq!(rows.len(), 1, "{test} records one row");
     rows.remove(0)
 }
+
+/// A stored usage record reporting `input` and `output` tokens at `cost`.
+fn spent(input: f64, output: f64, cost: f64) -> Value {
+    json!({"input": input, "output": output, "cacheRead": 0.0, "cacheWrite": 0.0,
+        "totalTokens": input + output,
+        "cost": {"input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0, "total": cost}})
+}
+
+#[test]
+fn footer_totals_include_tool_and_summary_usage() {
+    let world = World::new("/work", None);
+    world.set_model("test-model", "test", false, 100_000.0);
+    world.append_message(&json!({"role": "assistant", "usage": spent(100.0, 50.0, 0.5)}));
+    world.append_message(
+        &json!({"role": "toolResult", "toolCallId": "t", "toolName": "nested",
+        "content": [], "isError": false, "usage": spent(10.0, 5.0, 0.1), "timestamp": 1}),
+    );
+    let usage = serde_json::from_value(spent(20.0, 10.0, 0.2)).expect("a typed usage");
+    world
+        .session
+        .session_manager()
+        .borrow_mut()
+        .append_compaction(
+            "summary",
+            "parent",
+            0.0,
+            maestro_app::CompactionOptions {
+                usage: maestro_app::Presence::Present(usage),
+                ..maestro_app::CompactionOptions::default()
+            },
+        )
+        .expect("an in-memory compaction");
+    let lines = world.footer().try_render(120).expect("a footer");
+    let text = lines
+        .iter()
+        .map(|line| corpus::plain(line))
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert!(text.contains("↑130 ↓65 $0.800"), "{text}");
+}

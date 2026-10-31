@@ -52,6 +52,7 @@ fn hello_tool() -> ToolDefinition {
                     )))],
                     details: Presence::Present(json!({"greeted":params.name}).to_string().into()),
                     terminate: Presence::Missing,
+                    usage: None,
                 })
             })
         }),

@@ -1244,6 +1244,9 @@ fn compaction_keeps_instructions_and_optional_details() {
         if let Some(details) = stored.get("details") {
             expected["details"] = details.clone();
         }
+        if let Some(usage) = stored.get("usage") {
+            expected["usage"] = usage.clone();
+        }
         assert_eq!(reply["data"], wire(&expected));
         let asked = prompts.lock().unwrap().join("\n");
         assert!(asked.contains("keep the names"), "{asked}");

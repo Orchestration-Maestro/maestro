@@ -59,6 +59,7 @@ async fn route(with_preparation: bool) -> Vec<serde_json::Value> {
                     content: Vec::new(),
                     details: Some(serde_json::Value::Null),
                     terminate: Some(true),
+                    usage: None,
                 })
             })
         }),

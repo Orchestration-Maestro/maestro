@@ -1,5 +1,6 @@
 //! Compaction records an extension reads and supplies, generic over the message view.
 use maestro_request::presence::Presence;
+use maestro_request::types::Usage;
 use serde::{Deserialize, Serialize};
 mod utils;
 pub use utils::FileOperations;
@@ -53,4 +54,7 @@ pub struct CompactionResult<T = serde_json::Value> {
     /// Optional caller-selected details.
     #[serde(default, skip_serializing_if = "Presence::is_missing")]
     pub details: Presence<T>,
+    /// Usage of the model calls that generated the summary.
+    #[serde(default, skip_serializing_if = "Presence::is_missing")]
+    pub usage: Presence<Usage>,
 }

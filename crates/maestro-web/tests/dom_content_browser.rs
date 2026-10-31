@@ -200,6 +200,7 @@ pub fn binding_root_and_page_aliases_keep_original_operands() {
         content: Vec::new(),
         details: Some(Details(Rc::clone(&calls))),
         is_error: false,
+        usage: None,
     };
     for dispatch in [render_tool, render_page_tool] {
         let params = ToolParams::typed(&native, |_| Ok(None));
