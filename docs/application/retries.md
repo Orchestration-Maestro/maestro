@@ -5,12 +5,12 @@ that replaces it, the tools the recovered response calls and the turn that
 follows their results. A later prompt is then admitted, because nothing streams
 and no retry stays in flight.
 
-The retry policy itself is in [recovery](recovery.md). The session's agent
-listener opens the retry observation as the run ends, before the run's events
-reach the queued handler that tells an extension about a finished assistant
-message. A slow registered handler keeps the prompt waiting, but the observation
-opens first: while the handler waits, the retry is already in flight and the
-prompt is unfinished. The prompt settles when the recovered run ends.
+The retry policy itself is in [recovery](recovery.md). A retry's backoff, and the
+continuation that follows it, are part of the run: the run stays active while the
+session waits, so a prompt, an idle wait and `abort` all return only after the
+retry settles. A slow registered handler for a finished assistant message keeps
+the prompt waiting too, because the run processes the queued events before it
+decides on a retry. See [the run](lifecycle.md#the-run).
 
 ## Event order
 

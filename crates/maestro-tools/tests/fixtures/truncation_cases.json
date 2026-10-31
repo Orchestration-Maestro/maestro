@@ -1042,21 +1042,21 @@
   },
   {
     "test": "tail_byte_quota_keeps_complete_suffix_lines",
-    "rule": "trailing empty entry prevents partial earlier line",
+    "rule": "final newline keeps the tail of the oversized line",
     "op": "tail",
     "text": "abcdef\n",
     "options": {
       "maxBytes": 3
     },
     "expected": {
-      "content": "",
+      "content": "ef\n",
       "truncated": true,
       "truncatedBy": "bytes",
       "totalLines": 2,
       "totalBytes": 7,
-      "outputLines": 1,
-      "outputBytes": 0,
-      "lastLinePartial": false,
+      "outputLines": 2,
+      "outputBytes": 3,
+      "lastLinePartial": true,
       "firstLineExceedsLimit": false,
       "maxLines": 2000,
       "maxBytes": 3

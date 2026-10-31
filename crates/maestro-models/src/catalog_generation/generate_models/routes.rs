@@ -134,26 +134,26 @@ pub(super) const PROVIDERS: &[(&str, &str, &str, &str)] = &[
     (
         "xiaomi",
         "xiaomi",
-        "anthropic-messages",
-        "https://api.xiaomimimo.com/anthropic",
+        "openai-completions",
+        "https://api.xiaomimimo.com/v1",
     ),
     (
         "xiaomi",
         "xiaomi-token-plan-cn",
-        "anthropic-messages",
-        "https://token-plan-cn.xiaomimimo.com/anthropic",
+        "openai-completions",
+        "https://token-plan-cn.xiaomimimo.com/v1",
     ),
     (
         "xiaomi",
         "xiaomi-token-plan-ams",
-        "anthropic-messages",
-        "https://token-plan-ams.xiaomimimo.com/anthropic",
+        "openai-completions",
+        "https://token-plan-ams.xiaomimimo.com/v1",
     ),
     (
         "xiaomi",
         "xiaomi-token-plan-sgp",
-        "anthropic-messages",
-        "https://token-plan-sgp.xiaomimimo.com/anthropic",
+        "openai-completions",
+        "https://token-plan-sgp.xiaomimimo.com/v1",
     ),
 ];
 /// Select a route before inspecting optional model metadata.
@@ -198,6 +198,9 @@ pub(super) fn route(mut model: Model, raw: &RawValue) -> Option<Model> {
             copilot(&mut model);
         }
         "kimi-coding" => model.headers = Some([("User-Agent".into(), "KimiCLI/1.5".into())].into()),
+        "xiaomi" | "xiaomi-token-plan-cn" | "xiaomi-token-plan-ams" | "xiaomi-token-plan-sgp" => {
+            xiaomi(&mut model)?;
+        }
         "moonshotai" | "moonshotai-cn" => completion_compat(
             &mut model,
             OpenAICompletionsCompat {
@@ -206,6 +209,7 @@ pub(super) fn route(mut model: Model, raw: &RawValue) -> Option<Model> {
                 supports_reasoning_effort: Some(false),
                 max_tokens_field: Some(crate::MaxTokensField::MaxTokens),
                 supports_strict_mode: Some(false),
+                thinking_format: Some(crate::ThinkingFormat::Deepseek),
                 ..Default::default()
             },
         ),
@@ -249,6 +253,21 @@ fn cloudflare(model: &mut Model) -> Option<()> {
     model.base_url = url.into();
     Some(())
 }
+/// Replay reasoning through the completion protocol and drop the model the token plans lack.
+fn xiaomi(model: &mut Model) -> Option<()> {
+    if model.provider != "xiaomi" && model.id == "mimo-v2-flash" {
+        return None;
+    }
+    completion_compat(
+        model,
+        OpenAICompletionsCompat {
+            requires_reasoning_content_on_assistant_messages: Some(true),
+            thinking_format: Some(crate::ThinkingFormat::Deepseek),
+            ..Default::default()
+        },
+    );
+    Some(())
+}
 /// Select the SDK route and repair the three named Go model routes.
 fn opencode(model: &mut Model, raw: &RawValue) {
     let npm = input::text(input::field(raw, "provider", "npm")).unwrap_or_default();
@@ -269,13 +288,20 @@ fn opencode(model: &mut Model, raw: &RawValue) {
     if model.provider == "opencode-go" && (qwen || model.id == "minimax-m2.7") {
         model.api = "openai-completions".into();
     }
+    if model.id == "kimi-k2.6" {
+        compat.thinking_format = Some(crate::ThinkingFormat::Deepseek);
+        compat.supports_reasoning_effort = Some(false);
+    }
     if qwen {
         compat.thinking_format = Some(crate::ThinkingFormat::Qwen);
+    }
+    if model.api == "openai-completions" {
+        compat.max_tokens_field = Some(crate::MaxTokensField::MaxTokens);
     }
     if model.api != "anthropic-messages" {
         model.base_url.push_str("/v1");
     }
-    if alibaba || qwen {
+    if compat != OpenAICompletionsCompat::default() {
         completion_compat(model, compat);
     }
 }

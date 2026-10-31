@@ -6,7 +6,7 @@ use super::{
 use maestro_path::{Cwd, dirname, join, relative};
 use maestro_resources::{
     SourceScope,
-    paths::{CONFIG_DIR_NAME, expand_tilde_text, resolve},
+    paths::{CONFIG_DIR_NAME, expand_tilde_text, home_directory, resolve},
 };
 use sha2::{Digest, Sha256};
 use std::{io, path::Path};
@@ -21,7 +21,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     ) -> io::Result<Option<String>> {
         let parsed = sources::parse(source);
         let path = if let Source::Local(path) = parsed {
-            resolve_local(path, &self.base(scope), super::operations::home_dir)?
+            resolve_local(path, &self.base(scope), home_directory)?
         } else {
             self.remote_path(&parsed, scope.resource_scope())?
         };
@@ -43,9 +43,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
                 Ok(join(&[&root, name]))
             }
             Source::Git(git) => Ok(self.git_path(git, scope)),
-            Source::Local(path) => {
-                resolve_local(path, &self.options.cwd, super::operations::home_dir)
-            }
+            Source::Local(path) => resolve_local(path, &self.options.cwd, home_directory),
         }
     }
     /// Selects the npm root path for project or temporary installation.
@@ -84,7 +82,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         scope: InstalledSourceScope,
     ) -> io::Result<String> {
         if let Source::Local(path) = sources::parse(source) {
-            let resolved = resolve_local(path, &self.options.cwd, super::operations::home_dir)?;
+            let resolved = resolve_local(path, &self.options.cwd, home_directory)?;
             let base = resolve(&[&self.base(scope)])?;
             let resolved = resolve(&[&resolved])?;
             let result = relative(

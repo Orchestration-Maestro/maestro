@@ -18,10 +18,7 @@ fn expand_home_path(path: &str) -> PathBuf {
     if !rest.is_empty() && !rest.starts_with(std::path::is_separator) {
         return path.into();
     }
-    let Ok(home) = std::env::var_os("HOME")
-        .map(PathBuf::from)
-        .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "home directory is unknown"))
-    else {
+    let Some(home) = crate::paths::home_directory() else {
         return path.into();
     };
     if rest.is_empty() {
@@ -45,7 +42,7 @@ fn join_tilde_rest(home: PathBuf, rest: &str) -> PathBuf {
 
 /// Resolves the configured cwd policy against one observed focused directory.
 fn resolve_new_terminal_cwd(policy: &NewTerminalCwdConfig, follow_cwd: Option<PathBuf>) -> PathBuf {
-    let home = || std::env::var_os("HOME").map(PathBuf::from);
+    let home = crate::paths::home_directory;
     let current = || std::env::current_dir().ok();
     match policy {
         NewTerminalCwdConfig::Follow => follow_cwd
@@ -119,7 +116,7 @@ impl<C: FnMut() -> u128> App<C> {
         let launch = &self.launch;
         let config = &self.config;
         let cwd = initial_cwd.clone();
-        let home = std::env::var_os("HOME").map(PathBuf::from);
+        let home = crate::paths::home_directory();
         let (pane, (terminal, runtime)) =
             self.state
                 .topology

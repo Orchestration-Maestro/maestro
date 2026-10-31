@@ -972,3 +972,49 @@ impl<E: maestro_models::ProviderExecution, O>
         panic!("raw dispatch selected")
     }
 }
+
+/// A stream that fails before any response gives listeners the failure as an ended assistant
+/// message and a ended turn before the run ends, and stores it once.
+#[test]
+fn synthetic_failure_publishes_message_and_turn_events_before_agent_end() {
+    support::run(async {
+        let (agent, tasks) = agent();
+        *agent.stream_fn.write().unwrap() = Some(Arc::new(|_, _, _, _| {
+            support::ready(Err(failure("provider unreachable")))
+        }));
+        let kinds = Arc::new(Mutex::new(Vec::new()));
+        let recorded = kinds.clone();
+        agent.subscribe(Arc::new(move |event, _| {
+            let kind = match &*event.read().unwrap() {
+                AgentEvent::MessageStart {
+                    message: AgentMessage::Assistant(_),
+                } => "assistant_start",
+                AgentEvent::MessageEnd {
+                    message: AgentMessage::Assistant(_),
+                } => "assistant_end",
+                AgentEvent::TurnEnd { tool_results, .. } if tool_results.is_empty() => "turn_end",
+                AgentEvent::AgentEnd { .. } => "agent_end",
+                _ => return support::ready(Ok(())),
+            };
+            recorded.lock().unwrap().push(kind);
+            support::ready(Ok(()))
+        }));
+        let run = agent.prompt(input("hello"));
+        tasks.take().await;
+        run.await.unwrap();
+        assert_eq!(
+            *kinds.lock().unwrap(),
+            ["assistant_start", "assistant_end", "turn_end", "agent_end"]
+        );
+        let state = agent.state().read().unwrap();
+        let stored = state.messages().read().unwrap();
+        let failures = stored
+            .iter()
+            .filter(|message| {
+                matches!(message, AgentMessage::Assistant(reply)
+                    if reply.read().unwrap().stop_reason == StopReason::Error)
+            })
+            .count();
+        assert_eq!(failures, 1, "the failure is stored once");
+    });
+}

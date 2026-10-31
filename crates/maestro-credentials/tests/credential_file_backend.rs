@@ -340,6 +340,40 @@ mod tests {
         assert_eq!(mode(&path), 0o600);
     }
 
+    #[test]
+    fn writes_reach_a_hard_linked_file_in_place() {
+        let dir = TempDir::without_forks("in-place");
+        let path = dir.path("auth.json");
+        let linked = dir.path("linked.json");
+        std::fs::write(&path, pretty(&[("a", "1")])).unwrap();
+        std::fs::hard_link(&path, &linked).unwrap();
+        let storage = AuthStorage::create(&path);
+        storage.set("b", api_key("2"));
+        let expected = pretty(&[("a", "1"), ("b", "2")]);
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), expected);
+        assert_eq!(std::fs::read_to_string(&linked).unwrap(), expected);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn writes_refuse_a_read_only_file_and_keep_its_mode() {
+        let dir = TempDir::without_forks("read-only");
+        let path = dir.path("auth.json");
+        std::fs::write(&path, pretty(&[("a", "1")])).unwrap();
+        let Some(_restored) = maestro_test_directory::deny(&path, 0o400).unwrap() else {
+            return;
+        };
+
+        let error = maestro_credentials::write_auth_file(&path, "{}").unwrap_err();
+
+        assert_eq!(error.kind(), std::io::ErrorKind::PermissionDenied);
+        assert_eq!(
+            std::fs::read_to_string(&path).unwrap(),
+            pretty(&[("a", "1")])
+        );
+        assert_eq!(mode(&path), 0o400);
+    }
+
     #[cfg(unix)]
     #[test]
     fn removed_or_absent_records_rewrite_the_document() {

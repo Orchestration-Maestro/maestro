@@ -11,15 +11,11 @@ use std::{
 pub(super) trait LifecycleEffects {
     /// Current wall-clock milliseconds, independent of the frame scheduler.
     fn now_ms(&self) -> i64;
-    /// Delivers termination signals until removal.
+    /// Calls `shutdown` for each termination or hangup signal until removal.
     ///
     /// # Errors
     /// Returns the native registration failure.
-    fn register_signals(
-        &self,
-        terminate: Rc<dyn Fn()>,
-        hangup: Rc<dyn Fn()>,
-    ) -> io::Result<Box<dyn Fn()>>;
+    fn register_signals(&self, shutdown: Rc<dyn Fn()>) -> io::Result<Box<dyn Fn()>>;
     /// Kills the existing tracked detached children.
     fn kill_tracked_detached_children(&self);
     /// Ends the process with the selected status.
@@ -32,26 +28,12 @@ impl LifecycleEffects for NativeLifecycle {
         chrono::Utc::now().timestamp_millis()
     }
     #[cfg(not(target_arch = "wasm32"))]
-    fn register_signals(
-        &self,
-        terminate: Rc<dyn Fn()>,
-        hangup: Rc<dyn Fn()>,
-    ) -> io::Result<Box<dyn Fn()>> {
-        maestro_app::register_signals(Rc::new(move |signal| {
-            if signal == maestro_app::TerminationSignal::Hangup {
-                hangup();
-            } else {
-                terminate();
-            }
-        }))
+    fn register_signals(&self, shutdown: Rc<dyn Fn()>) -> io::Result<Box<dyn Fn()>> {
+        maestro_app::register_signals(Rc::new(move |_| shutdown()))
     }
     #[cfg(target_arch = "wasm32")]
-    fn register_signals(
-        &self,
-        terminate: Rc<dyn Fn()>,
-        hangup: Rc<dyn Fn()>,
-    ) -> io::Result<Box<dyn Fn()>> {
-        let _ = (terminate, hangup);
+    fn register_signals(&self, shutdown: Rc<dyn Fn()>) -> io::Result<Box<dyn Fn()>> {
+        let _ = shutdown;
         Ok(Box::new(|| ()))
     }
     fn kill_tracked_detached_children(&self) {
@@ -61,6 +43,14 @@ impl LifecycleEffects for NativeLifecycle {
     fn exit(&self, status: i32) {
         std::process::exit(status);
     }
+}
+/// What asked for a graceful shutdown, which decides the order of its steps.
+#[derive(Clone, Copy)]
+enum ShutdownOrigin {
+    /// The user, an extension or the agent's end.
+    Quit,
+    /// A termination or hangup signal.
+    Signal,
 }
 /// Retained state of the mode's exit handlers.
 pub(super) struct LifecycleState {
@@ -126,25 +116,55 @@ impl InteractiveMode {
             self.tool_environment.runtime.spawn_local(self.shutdown());
         }
     }
+    /// Admits a shutdown that a termination signal asked for, deferring its owned disposal,
+    /// drain and stop.
+    fn spawn_signal_shutdown(self: &Rc<Self>) {
+        if !self.lifecycle.is_shutting_down.get() {
+            let shutdown = self.begin_shutdown(ShutdownOrigin::Signal);
+            self.tool_environment.runtime.spawn_local(shutdown);
+        }
+    }
     /// Removes handlers synchronously, then owns the pending drain and disposal.
     pub(super) fn shutdown(self: &Rc<Self>) -> maestro_tui::tui::LocalFuture {
+        self.begin_shutdown(ShutdownOrigin::Quit)
+    }
+    /// Admits the shutdown, removes the handlers and returns the rest of the sequence. A quit
+    /// drains input and stops the presentation before disposing the runtime, so extension
+    /// cleanup cannot repaint the last frame. A signal disposes the runtime first: the
+    /// extensions' teardown does not write to the terminal, so it must not be skipped when a
+    /// later terminal write fails on a dead or stalled terminal.
+    fn begin_shutdown(self: &Rc<Self>, origin: ShutdownOrigin) -> maestro_tui::tui::LocalFuture {
         if self.lifecycle.is_shutting_down.replace(true) {
             return Box::pin(async { Ok(()) });
         }
         self.unregister_signal_handlers();
-        let drain = self
-            .ui
+        let mode = Rc::clone(self);
+        match origin {
+            ShutdownOrigin::Quit => {
+                let drain = self.drain_terminal_input();
+                Box::pin(async move {
+                    drain.await?;
+                    mode.stop()?;
+                    mode.runtime_host.dispose().await?;
+                    mode.lifecycle.effects.exit(0);
+                    Ok(())
+                })
+            }
+            ShutdownOrigin::Signal => Box::pin(async move {
+                mode.runtime_host.dispose().await?;
+                mode.drain_terminal_input().await?;
+                mode.stop()?;
+                mode.lifecycle.effects.exit(0);
+                Ok(())
+            }),
+        }
+    }
+    /// Starts draining the terminal's pending input within the existing 1,000 ms maximum.
+    fn drain_terminal_input(&self) -> impl std::future::Future<Output = io::Result<()>> + use<> {
+        self.ui
             .terminal()
             .borrow_mut()
-            .drain_input(Some(Duration::from_millis(1000)), None);
-        let mode = Rc::clone(self);
-        Box::pin(async move {
-            drain.await?;
-            mode.stop()?;
-            mode.runtime_host.dispose().await?;
-            mode.lifecycle.effects.exit(0);
-            Ok(())
-        })
+            .drain_input(Some(Duration::from_millis(1000)), None)
     }
     /// Starts the requested graceful operation instead of scheduling a final frame.
     pub(super) fn check_shutdown_requested(&self) -> bool {
@@ -167,19 +187,13 @@ impl InteractiveMode {
     pub(super) fn register_signal_handlers(self: &Rc<Self>) -> io::Result<()> {
         self.unregister_signal_handlers();
         let mode = Rc::downgrade(self);
-        let terminate = Rc::new(move || {
+        let shutdown: Rc<dyn Fn()> = Rc::new(move || {
             if let Some(mode) = mode.upgrade() {
                 mode.lifecycle.effects.kill_tracked_detached_children();
-                mode.spawn_shutdown();
+                mode.spawn_signal_shutdown();
             }
         });
-        let mode = Rc::downgrade(self);
-        let hangup = Rc::new(move || {
-            if let Some(mode) = mode.upgrade() {
-                mode.emergency_terminal_exit();
-            }
-        });
-        let remove = self.lifecycle.effects.register_signals(terminate, hangup)?;
+        let remove = self.lifecycle.effects.register_signals(shutdown)?;
         self.lifecycle
             .signal_cleanup_handlers
             .borrow_mut()

@@ -188,11 +188,12 @@ impl<E: ExtensionExecution> AgentSession<E> {
         tool_names: &[String],
     ) -> Result<(), DiagnosticErrorInfo> {
         let prompt = self.rebuild_system_prompt(tool_names).map_err(thrown)?;
-        self.state
-            .borrow_mut()
-            .base_system_prompt
-            .clone_from(&prompt);
-        write(self.agent.state()).system_prompt = prompt;
+        let effective = {
+            let mut state = self.state.borrow_mut();
+            state.base_system_prompt = prompt;
+            state.effective_system_prompt()
+        };
+        write(self.agent.state()).system_prompt = effective;
         Ok(())
     }
 

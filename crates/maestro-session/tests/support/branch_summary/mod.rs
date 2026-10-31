@@ -217,3 +217,8 @@ struct Lifetime {
 pub fn lifetime() {
     generation::lifetime();
 }
+/// Send a request through a supplied stream function.
+#[cfg(not(target_arch = "wasm32"))]
+pub fn stream_function() {
+    generation::stream_function();
+}

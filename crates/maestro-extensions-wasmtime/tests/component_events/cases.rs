@@ -242,7 +242,7 @@ async fn live_registration(harness: &Harness, recorded: Value) -> (Value, Value)
     while_waiting(harness, &run, "input", added, async move {
         let mut images = Presence::Missing;
         runner
-            .emit_input("text", &mut images, InputSource::Rpc)
+            .emit_input("text", &mut images, InputSource::Rpc, None)
             .await
             .unwrap()
     })
@@ -295,7 +295,7 @@ async fn work_count(harness: &Harness, input: &Value, recorded: Value) -> (Value
     let run = harness.prepare("input", &handlers).await;
     let mut images = Presence::Missing;
     run.runner
-        .emit_input("x", &mut images, InputSource::Rpc)
+        .emit_input("x", &mut images, InputSource::Rpc, None)
         .await
         .unwrap();
     (json!({ "calls": labels(harness).len() }), recorded)

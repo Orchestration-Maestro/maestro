@@ -768,8 +768,7 @@ async fn retired_entry_drops_after_guard_case() {
         messages: Arc::clone(&messages),
         tools: None,
     };
-    let blocked = Arc::new(AtomicBool::new(false));
-    let dropped = Arc::new(AtomicBool::new(false));
+    let (blocked, dropped) = (Arc::new(AtomicBool::new(false)), Arc::default());
     let emit = cleanup_sink(messages, Arc::clone(&blocked), Arc::clone(&dropped));
     let config = maestro_agent::AgentLoopConfig {
         thinking_budgets: None,
@@ -783,6 +782,7 @@ async fn retired_entry_drops_after_guard_case() {
         before_tool_call: None,
         after_tool_call: None,
         should_stop_after_turn: None,
+        prepare_next_turn: None,
         get_steering_messages: None,
         get_follow_up_messages: None,
         tool_execution: Some(maestro_agent::ToolExecutionMode::Sequential),

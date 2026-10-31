@@ -22,7 +22,7 @@ impl InteractiveMode {
             wait_for_idle: Rc::new(move || {
                 let mode = current(&idle);
                 Box::pin(async move {
-                    mode?.runtime_host.session().agent().wait_for_idle().await;
+                    mode?.runtime_host.session().wait_for_idle().await;
                     Ok(())
                 })
             }),

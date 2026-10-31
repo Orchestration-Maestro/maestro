@@ -23,7 +23,7 @@ pub(super) fn extract_account_id(token: &str) -> Result<String, DiagnosticErrorI
 }
 
 use super::{OpenAICodexResponsesOptions, OpenAICodexTextVerbosity};
-use crate::arguments::json_parse::whitespace;
+use crate::arguments::json_parse::is_blank;
 use crate::providers::responses::openai_responses_shared::{
     ConvertResponsesMessagesOptions, ConvertResponsesToolsOptions,
     messages::{convert_responses_messages, convert_responses_tools},
@@ -226,7 +226,7 @@ pub(crate) async fn prepare_request<E: crate::ProviderExecution>(
 
 /// Resolve an authored base path without rewriting its nonempty whitespace or URL suffixes.
 pub(super) fn resolve_codex_url(base: &str) -> String {
-    let base = if base.trim_matches(whitespace).is_empty() {
+    let base = if is_blank(base) {
         "https://chatgpt.com/backend-api"
     } else {
         base

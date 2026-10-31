@@ -43,12 +43,14 @@ pub(super) struct AgentSessionState<E: ExtensionExecution> {
     pub(super) retry_signal: Option<Cancellation>,
     /// The retry attempts made in this turn.
     pub(super) retry_attempt: u32,
-    /// The release every retry observer awaits.
-    pub(super) retry_gate: Option<Gate>,
-    /// Opens the release once.
-    pub(super) retry_open: Option<tokio::sync::oneshot::Sender<()>>,
+    /// The release every idle waiter awaits; present exactly while a run is active.
+    pub(super) run_gate: Option<Gate>,
+    /// Opens the run's release once, when the run settles.
+    pub(super) run_open: Option<tokio::sync::oneshot::Sender<()>>,
     /// The system prompt built for the active tools, before any extension replaces it.
     pub(super) base_system_prompt: String,
+    /// The system prompt the extensions set for the run in progress, including an empty one.
+    pub(super) system_prompt_override: Option<String>,
     /// The options that built the base system prompt.
     pub(super) base_system_prompt_options: BuildSystemPromptOptions,
     /// Pending steering texts, as the agent's steering queue holds them.
@@ -57,6 +59,8 @@ pub(super) struct AgentSessionState<E: ExtensionExecution> {
     pub(super) follow_up_messages: Vec<String>,
     /// Custom messages sent with the next prompt.
     pub(super) pending_next_turn_messages: Vec<NativeAgentMessage>,
+    /// Custom messages that start no turn, kept until the current turn ends.
+    pub(super) pending_custom_messages: Vec<NativeAgentMessage>,
     /// Shell results recorded while a response streamed, appended before the next prompt.
     pub(super) pending_bash_messages: VecDeque<NativeAgentMessage>,
     /// Stops the direct shell command now running.
@@ -71,7 +75,7 @@ pub(super) struct AgentSessionState<E: ExtensionExecution> {
     pub(super) error_unsubscriber: Option<Box<dyn Fn()>>,
     /// The turn the extensions' turn events report, counted from the agent start.
     pub(super) turn_index: u32,
-    /// The newest finished response, checked for retry and compaction at the agent end.
+    /// The newest finished response, checked for retry and compaction when the run ends.
     pub(super) last_assistant_message: Option<SharedAssistantMessage>,
     /// Agent events waiting for the session's ordered processing.
     pub(super) agent_events: VecDeque<SharedAgentEvent>,
@@ -80,6 +84,14 @@ pub(super) struct AgentSessionState<E: ExtensionExecution> {
 }
 
 impl<E: ExtensionExecution> AgentSessionState<E> {
+    /// The system prompt the agent uses now: the run's override, else the base prompt.
+    pub(super) fn effective_system_prompt(&self) -> String {
+        self.system_prompt_override
+            .as_ref()
+            .unwrap_or(&self.base_system_prompt)
+            .clone()
+    }
+
     /// Empty registries over the supplied scoped models and SDK tools, with an empty base
     /// system prompt and the options it starts from.
     pub(super) fn new(
@@ -99,13 +111,15 @@ impl<E: ExtensionExecution> AgentSessionState<E> {
             overflow_recovery_attempted: false,
             retry_signal: None,
             retry_attempt: 0,
-            retry_gate: None,
-            retry_open: None,
+            run_gate: None,
+            run_open: None,
             base_system_prompt: String::new(),
+            system_prompt_override: None,
             base_system_prompt_options,
             steering_messages: Vec::new(),
             follow_up_messages: Vec::new(),
             pending_next_turn_messages: Vec::new(),
+            pending_custom_messages: Vec::new(),
             pending_bash_messages: VecDeque::new(),
             bash_signal: None,
             custom_tools,

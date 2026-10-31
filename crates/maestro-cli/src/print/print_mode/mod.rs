@@ -226,6 +226,7 @@ impl PrintRun {
             .bind_extensions(ExtensionBindings {
                 ui_context: None,
                 command_context_actions: Some(self.runtime.command_actions()),
+                abort_handler: None,
                 shutdown_handler: None,
                 on_error: Some(on_error),
             })

@@ -11,7 +11,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ("maestro-cancellation", &["maestro-listeners"]),
     ("maestro-request", &["maestro-json"]),
     ("maestro-watch", &[]),
-    ("maestro-lock", &[]),
+    ("maestro-lock", &["maestro-path"]),
     ("maestro-process", &[]),
     ("maestro-listing", &[]),
     ("maestro-listeners", &[]),

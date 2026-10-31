@@ -189,7 +189,9 @@
           ]
         }
       ],
-      "inferenceConfig": {},
+      "inferenceConfig": {
+        "maxTokens": 32768
+      },
       "toolConfig": {
         "tools": [
           {
@@ -232,7 +234,9 @@
           ]
         }
       ],
-      "inferenceConfig": {},
+      "inferenceConfig": {
+        "maxTokens": 32768
+      },
       "toolConfig": {
         "tools": [
           {
@@ -884,7 +888,9 @@
           ]
         }
       ],
-      "inferenceConfig": {},
+      "inferenceConfig": {
+        "maxTokens": 32768
+      },
       "toolConfig": {
         "tools": [
           {
@@ -926,7 +932,9 @@
           ]
         }
       ],
-      "inferenceConfig": {},
+      "inferenceConfig": {
+        "maxTokens": 32768
+      },
       "toolConfig": {
         "tools": [
           {
@@ -1556,7 +1564,9 @@
           ]
         }
       ],
-      "inferenceConfig": {},
+      "inferenceConfig": {
+        "maxTokens": 32768
+      },
       "additionalModelRequestFields": {
         "thinking": {
           "type": "enabled",
@@ -1579,7 +1589,9 @@
           ]
         }
       ],
-      "inferenceConfig": {},
+      "inferenceConfig": {
+        "maxTokens": 32768
+      },
       "additionalModelRequestFields": {
         "thinking": {
           "type": "enabled",
@@ -1762,7 +1774,9 @@
           ]
         }
       ],
-      "inferenceConfig": {},
+      "inferenceConfig": {
+        "maxTokens": 32768
+      },
       "toolConfig": {
         "tools": [
           {
@@ -1833,7 +1847,9 @@
           ]
         }
       ],
-      "inferenceConfig": {},
+      "inferenceConfig": {
+        "maxTokens": 32768
+      },
       "toolConfig": {
         "tools": [
           {

@@ -64,8 +64,9 @@ settles as `Operation aborted` without calling any operation. Directory creation
 the write are each cancellable: when the signal fires first, or fires while an
 operation runs, the call settles as `Operation aborted`, drops the operation's
 pending future, never starts the next stage and lets the next queued call for the
-file proceed. Cancellation does not undo an effect that already happened, and a
-native filesystem write that has already been handed to the runtime can still finish.
+file proceed. Cancellation does not undo an effect that already happened. A native
+filesystem write that has already been handed to the runtime can still finish, and the
+file's queue stays held until it does, so the next call never overlaps it.
 A call that waits behind another call for the same file observes its signal only
 after that call has finished.
 
@@ -214,11 +215,15 @@ runs an operation after every earlier call for the same file has finished.
 
 - A call takes its place when `with_file_mutation_queue` is called, not when the
   returned future is first polled, so calls run in the order they were made.
-- A file is identified by its canonical path; when the path cannot be canonicalized,
-  by its lexical absolute path. Symlink aliases that canonicalize share a queue, hard links
+- A file is identified by its canonical path; when the file or one of its parent
+  directories does not exist yet, by its lexical absolute path. Any other
+  canonicalization failure, such as a parent that is a regular file, settles the call
+  with that error before its operation runs. Symlink aliases that canonicalize share a queue, hard links
   with different names do not, and different files never wait for each other. The
   path is used as written: `@`, `~` and Unicode spaces are not expanded.
 - An operation that fails does not block the calls behind it.
 - Dropping a returned future before its operation has started leaves the queue
   without running it; an operation already started is not undone. Dropping does not let a later call run before the call that is active.
+- Blocking filesystem work that an operation started keeps the file's queue held until
+  it returns, even when the call's future is dropped first.
 - When the last call for a file finishes or is dropped, the file has no queue entry.
