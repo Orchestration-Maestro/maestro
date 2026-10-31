@@ -2,12 +2,11 @@
 //! and every waiter returns only after the run settles.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Harness, HarnessOptions, Scripted, harness, on_task_set, start_prompt, summary_provider,
+    Harness, HarnessOptions, Scripted, custom_note, harness, on_task_set, start_prompt,
+    summary_provider,
 };
 use maestro_app::AgentSessionEvent;
-use maestro_models::UserContent;
-use maestro_session::Presence;
-use maestro_session::messages::{CustomMessageInput, SendMessageOptions};
+use maestro_session::messages::SendMessageOptions;
 use serde_json::json;
 use std::{cell::RefCell, rc::Rc};
 use tokio::sync::Notify;
@@ -41,15 +40,6 @@ fn retry_started(h: &Harness) -> Rc<Notify> {
 }
 
 /// A custom message with `text`.
-fn note(text: &str) -> CustomMessageInput {
-    CustomMessageInput {
-        custom_type: "run-test".into(),
-        content: UserContent::Text(text.into()),
-        display: true,
-        details: Presence::Missing,
-    }
-}
-
 #[test]
 fn prompt_resolves_after_retry_and_compaction_while_streaming_throughout() {
     on_task_set(|_| async {
@@ -148,11 +138,13 @@ fn custom_message_during_a_triggered_run_is_steered() {
                 trigger_turn: Some(true),
                 deliver_as: None,
             };
-            session.send_custom_message(note("first"), options).await
+            session
+                .send_custom_message(custom_note("first"), options)
+                .await
         });
         started.notified().await;
         h.session
-            .send_custom_message(note("second"), SendMessageOptions::default())
+            .send_custom_message(custom_note("second"), SendMessageOptions::default())
             .await
             .unwrap();
         assert_eq!(

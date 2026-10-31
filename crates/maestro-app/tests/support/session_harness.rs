@@ -25,12 +25,15 @@ use maestro_models::system_prompt::ContextFile;
 use maestro_models::{
     AssistantMessage, DiagnosticErrorInfo, Execution, FauxAssistantMessageOptions,
     FauxModelDefinition, FauxProviderRegistration, FauxResponseInput, FauxResponseStep, Local,
-    Model, RegisterFauxProviderOptions, StopReason, Threaded, Tool, faux_assistant_message,
-    register_faux_provider,
+    Model, RegisterFauxProviderOptions, StopReason, Threaded, Tool, UserContent,
+    faux_assistant_message, register_faux_provider,
 };
 use maestro_resources::LoadSkillsResult;
 use maestro_resources::{SyntheticSourceOptions, create_synthetic_source_info};
-use maestro_session::{CompactionResult, Presence, SessionManager, messages::CustomAgentMessages};
+use maestro_session::{
+    CompactionResult, Presence, SessionManager,
+    messages::{CustomAgentMessages, CustomMessageInput},
+};
 use maestro_settings::SettingsManager;
 use maestro_tools::ToolDefinitionRecord;
 use serde_json::{Value, json};
@@ -2065,6 +2068,16 @@ fn delivered_agent_event(event: &maestro_agent::AgentEvent<CustomAgentMessages>)
         view["delta"] = update.get("delta").cloned().unwrap_or(Value::Null);
     }
     view
+}
+
+/// A displayed custom `note` message that only records `text`.
+pub fn custom_note(text: &str) -> CustomMessageInput {
+    CustomMessageInput {
+        custom_type: "note".into(),
+        content: UserContent::Text(text.into()),
+        display: true,
+        details: Presence::Missing,
+    }
 }
 
 /// An executable tool that reports its entry and answers `released` once released.

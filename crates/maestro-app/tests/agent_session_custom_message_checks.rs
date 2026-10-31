@@ -2,26 +2,15 @@
 //! once the current turn ends, in the same order in the history and in the message events.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    HarnessOptions, Scripted, harness, hold_first_answer, on_task_set, start_prompt, waiting_tool,
+    HarnessOptions, Scripted, custom_note, harness, hold_first_answer, on_task_set, start_prompt,
+    waiting_tool,
 };
 use indexmap::IndexMap;
 use maestro_app::AgentSessionEvent;
-use maestro_models::UserContent;
-use maestro_session::Presence;
-use maestro_session::messages::{CustomMessageInput, SendMessageOptions};
+use maestro_session::messages::SendMessageOptions;
 use serde_json::json;
 use std::{cell::RefCell, rc::Rc};
 use tokio::sync::Notify;
-
-/// A custom message that only records `text`.
-fn note(text: &str) -> CustomMessageInput {
-    CustomMessageInput {
-        custom_type: "note".into(),
-        content: UserContent::Text(text.into()),
-        display: true,
-        details: Presence::Missing,
-    }
-}
 
 /// Options for a message that starts no turn.
 fn recording_only() -> SendMessageOptions {
@@ -70,7 +59,7 @@ fn message_sent_during_a_response_is_recorded_without_another_turn() {
         let running = start_prompt(&h, "question");
         requested.notified().await;
         h.session
-            .send_custom_message(note("aside"), recording_only())
+            .send_custom_message(custom_note("aside"), recording_only())
             .await
             .unwrap();
         release.notify_one();
@@ -104,7 +93,7 @@ fn message_sent_during_a_tool_follows_the_turns_tool_results() {
         let running = start_prompt(&h, "question");
         started.notified().await;
         h.session
-            .send_custom_message(note("aside"), recording_only())
+            .send_custom_message(custom_note("aside"), recording_only())
             .await
             .unwrap();
         release.notify_one();
