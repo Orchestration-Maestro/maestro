@@ -20,36 +20,15 @@ impl Manifest {
     pub fn field(&self, name: &str) -> Option<&RawValue> {
         self.fields.get(name).map(AsRef::as_ref)
     }
-    /// Reads one string list; false values contribute no entries.
-    ///
-    /// A present truthy value that is not a list of strings is ignored whole and
-    /// reported in [`ManifestEntries::ignored`].
+    /// Reads one string list; a false, absent or malformed value contributes no entries.
     #[must_use]
-    pub fn entries(&self, name: &str) -> ManifestEntries {
+    pub fn entries(&self, name: &str) -> Vec<String> {
         let Some(raw) = self.field(name).filter(|raw| truthy(raw)) else {
-            return ManifestEntries::default();
+            return Vec::new();
         };
-        match serde_json::from_str(raw.get()) {
-            Ok(entries) => ManifestEntries {
-                entries,
-                ignored: None,
-            },
-            Err(_) => ManifestEntries {
-                entries: Vec::new(),
-                ignored: Some(format!(
-                    "package.json \"maestro.{name}\" is not a list of strings and was ignored"
-                )),
-            },
-        }
+        // A list that is not entirely strings is ignored whole, so the other lists still load.
+        serde_json::from_str(raw.get()).unwrap_or_default()
     }
-}
-/// A resource list read from a manifest, with the reason it was ignored when malformed.
-#[derive(Default)]
-pub struct ManifestEntries {
-    /// The listed entries; empty when the field is absent, false or malformed.
-    pub entries: Vec<String>,
-    /// Why a malformed field was ignored.
-    pub ignored: Option<String>,
 }
 /// Reads the selected branding member, treating unreadable manifests as absent.
 #[must_use]
@@ -82,15 +61,13 @@ pub fn resolve_extension_entries(dir: &str) -> io::Result<Option<Vec<String>>> {
     if Path::new(&manifest_path).exists()
         && let Some(manifest) = read_maestro_manifest_file(&manifest_path)
     {
-        let found: Vec<String> = manifest
-            .entries("extensions")
-            .entries
-            .iter()
-            .map(|entry| crate::paths::resolve(&[dir, entry]))
-            .collect::<io::Result<Vec<_>>>()?
-            .into_iter()
-            .filter(|path| Path::new(path).exists())
-            .collect();
+        let mut found = Vec::new();
+        for entry in manifest.entries("extensions") {
+            let path = crate::paths::resolve(&[dir, &entry])?;
+            if Path::new(&path).exists() {
+                found.push(path);
+            }
+        }
         if !found.is_empty() {
             return Ok(Some(found));
         }

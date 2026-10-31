@@ -36,8 +36,6 @@ pub struct ResolvedPaths {
     pub themes: Vec<ResolvedResource>,
     /// Browser contribution files.
     pub contributions: Vec<ResolvedResource>,
-    /// Manifest fields that were ignored while resolving.
-    pub diagnostics: Vec<ResourceDiagnostic>,
 }
 use super::{
     DefaultPackageManager, PackageOperations,
@@ -45,9 +43,7 @@ use super::{
     sources::{self, Source},
 };
 use maestro_path::{dirname, join};
-use maestro_resources::{
-    ResourceDiagnostic, SourceOrigin, SourceScope, canonicalize_path, skills::ResourceFileType,
-};
+use maestro_resources::{SourceOrigin, SourceScope, canonicalize_path, skills::ResourceFileType};
 use std::{
     collections::{HashMap, HashSet},
     io,
@@ -197,7 +193,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         result: &mut Accumulator,
     ) -> io::Result<()> {
         for kind in ResourceType::ALL {
-            let entries = super::manifest::listed_entries(manifest, path, kind, result);
+            let entries = manifest.entries(kind.name());
             let files = super::manifest::collect_manifest_entries(&entries, path, kind)?;
             let enabled = super::resource_patterns::apply_patterns(&files, &entries, path)?;
             for file in files.iter().filter(|file| enabled.contains(file.as_str())) {
@@ -254,12 +250,6 @@ pub(super) struct Accumulator {
     seen: [HashMap<String, usize>; 5],
 }
 impl Accumulator {
-    /// Records a manifest field that was ignored, against the manifest file.
-    pub(super) fn ignore_field(&mut self, manifest_path: &str, reason: String) {
-        self.paths
-            .diagnostics
-            .push(ResourceDiagnostic::warning(manifest_path, reason));
-    }
     /// Records an admitted package without deriving it from resource files.
     fn package(
         &mut self,

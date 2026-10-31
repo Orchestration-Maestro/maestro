@@ -14,7 +14,6 @@ pub(super) fn append_paths(paths: &mut ResolvedPaths, extra: ResolvedPaths) {
     paths.prompts.extend(extra.prompts);
     paths.themes.extend(extra.themes);
     paths.contributions.extend(extra.contributions);
-    paths.diagnostics.extend(extra.diagnostics);
 }
 
 impl<E: DefaultEventBus> DefaultResourceLoader<E> {

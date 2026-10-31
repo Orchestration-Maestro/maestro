@@ -1,7 +1,7 @@
 //! Package defaults and selected object resource filters.
 use super::{
     DefaultPackageManager, PackageOperations,
-    manifest::{collect_manifest_entries, listed_entries, read_maestro_manifest_file},
+    manifest::{collect_manifest_entries, read_maestro_manifest_file},
     resolution::Accumulator,
     resource_discovery::{ResourceType, collect_resource_files},
     resource_patterns::{apply_patterns, select_patterns},
@@ -33,7 +33,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         filter: Option<&Value>,
         result: &mut Accumulator,
     ) -> io::Result<()> {
-        let files = candidate_files(path, kind, filter.is_some(), result)?;
+        let files = candidate_files(path, kind, filter.is_some())?;
         let patterns = filter.map(decode_patterns).transpose()?;
         let enabled = select_patterns(&files, patterns.as_deref().unwrap_or(&[]), path)?;
         let empty = patterns.as_ref().is_some_and(Vec::is_empty);
@@ -49,19 +49,14 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     }
 }
 /// Collects manifest-admitted candidates with the caller's required emission order.
-fn candidate_files(
-    path: &str,
-    kind: ResourceType,
-    filtered: bool,
-    result: &mut Accumulator,
-) -> io::Result<Vec<String>> {
+fn candidate_files(path: &str, kind: ResourceType, filtered: bool) -> io::Result<Vec<String>> {
     let manifest = read_maestro_manifest_file(&join(&[path, "package.json"]));
     let present = manifest
         .as_ref()
         .is_some_and(|m| m.field(kind.name()).is_some_and(super::manifest::truthy));
     let entries = manifest
         .as_ref()
-        .map(|m| listed_entries(m, path, kind, result))
+        .map(|m| m.entries(kind.name()))
         .unwrap_or_default();
     if !present || (filtered && entries.is_empty()) {
         return collect_resource_files(&join(&[path, kind.name()]), kind);
