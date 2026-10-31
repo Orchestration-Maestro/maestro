@@ -208,6 +208,7 @@ impl AgentSession<Local> {
         let flush = self.settings_manager.borrow().flush();
         flush.await;
         self.settings_manager.borrow_mut().reload_from_storage();
+        self.sync_queue_modes_from_settings();
         maestro_models::reset_api_providers();
         self.resource_loader.reload().await.map_err(thrown)?;
         self.model_registry

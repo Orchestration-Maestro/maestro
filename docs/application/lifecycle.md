@@ -39,6 +39,11 @@ reaches the next request of the run; the request already sent keeps its payload.
 prompt the extensions set for the run, even an empty one, stays in force for every turn of the
 run, and the base prompt returns when the run settles.
 
+## Reload
+
+`AgentSession::reload` reads the settings again and gives the live agent the steering and
+follow-up modes they now hold, so the next queued input uses them without a restart.
+
 ## Names
 
 `AgentSession::set_session_name` stores the trimmed name before publishing
