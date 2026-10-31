@@ -274,12 +274,12 @@ fn unknown_modifier_word_is_rejected() {
 }
 
 #[test]
-fn ascii_capital_is_shifted_lowercase_in_both_frontends() {
+fn ascii_capital_is_shifted_in_the_workspace_and_lowercase_in_chat() {
     let spellings: [Spelling; 3] = [
-        ("K", "K", (KeyCode::Char('k'), KeyModifiers::SHIFT)),
+        ("K", "k", (KeyCode::Char('k'), KeyModifiers::SHIFT)),
         (
             "ctrl+K",
-            "\x1b[107;6u",
+            "\x0b",
             (
                 KeyCode::Char('k'),
                 KeyModifiers::CONTROL | KeyModifiers::SHIFT,
@@ -287,7 +287,7 @@ fn ascii_capital_is_shifted_lowercase_in_both_frontends() {
         ),
         (
             " Alt + V ",
-            "\x1b[118;4u",
+            "\x1bv",
             (KeyCode::Char('v'), KeyModifiers::ALT | KeyModifiers::SHIFT),
         ),
     ];
@@ -303,8 +303,8 @@ fn ascii_capital_is_shifted_lowercase_in_both_frontends() {
         );
     }
     assert!(
-        !maestro_tui::matches_key("k", "K"),
-        "chat K against plain k"
+        !maestro_tui::matches_key("K", "K"),
+        "chat K against a raw capital"
     );
 }
 
