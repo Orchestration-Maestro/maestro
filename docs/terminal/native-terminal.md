@@ -167,8 +167,10 @@ exactly as `stop` does: it shows the cursor if this terminal hid it and nothing 
 it since, clears an active progress indicator, turns bracketed paste off, pops the
 requested keyboard flags and turns the modified-key reporting off. `stop` writes the
 cursor only in that same case, so a toolkit that showed the cursor before stopping
-causes no second write. A process that ends through `std::process::exit` skips drops;
-the application stops its terminal before it calls that function.
+causes no second write. A process that ends through `std::process::exit` skips drops.
+The interactive shutdown and the fatal-error path stop the terminal before they exit. The
+emergency exit after a disconnected standard stream (status 129) does not: the terminal can no
+longer be written to, as [interactive mode](../chat/interactive-mode.md) describes.
 
 ## Draining
 
