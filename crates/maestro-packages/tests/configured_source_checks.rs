@@ -839,8 +839,8 @@ fn package_sources_honor_nonempty_home_on_every_platform() {
     };
     let (manager, _, _) = support::manager_below(&root, &json!({}), &json!([]), None);
     for (source, relative) in [
-        ("~", "home"),
-        ("~/name", "home/name"),
+        ("~", "/home"),
+        ("~/name", "/home/name"),
         ("~name", "/work/project/.maestro/~name"),
     ] {
         let expected = support::below(&root, relative);
