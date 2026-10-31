@@ -33,7 +33,7 @@
     "input": {
       "kind": "user",
       "width": 12,
-      "text": " \n\t﻿"
+      "text": " \n\t\ufeff"
     },
     "expected": [
       []
@@ -275,7 +275,7 @@
         "content": [
           {
             "type": "thinking",
-            "thinking": " \n\t﻿"
+            "thinking": " \n\t\ufeff"
           }
         ]
       }
@@ -294,11 +294,11 @@
         "content": [
           {
             "type": "text",
-            "text": "﻿"
+            "text": "\ufeff"
           },
           {
             "type": "thinking",
-            "thinking": " "
+            "thinking": "\u00a0"
           }
         ]
       }
@@ -681,7 +681,7 @@
         "content": [
           {
             "type": "text",
-            "text": " ﻿ value﻿ "
+            "text": " \ufeff\u00a0value\ufeff "
           }
         ]
       }
@@ -703,7 +703,7 @@
         "content": [
           {
             "type": "text",
-            "text": "value"
+            "text": "\u0085value\u0085"
           }
         ]
       }
@@ -711,7 +711,7 @@
     "expected": [
       [
         "\u001b]133;A\u0007",
-        "\u001b]133;B\u0007\u001b]133;C\u0007 value                                  "
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u0085value\u0085                                  "
       ]
     ]
   },
@@ -725,7 +725,7 @@
         "content": [
           {
             "type": "text",
-            "text": ""
+            "text": "\u0085"
           }
         ]
       }
@@ -733,7 +733,7 @@
     "expected": [
       [
         "\u001b]133;A\u0007",
-        "\u001b]133;B\u0007\u001b]133;C\u0007                                        "
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u0085                                       "
       ]
     ]
   },
@@ -766,7 +766,7 @@
         "content": [
           {
             "type": "thinking",
-            "thinking": " ﻿ value﻿ "
+            "thinking": " \ufeff\u00a0value\ufeff "
           }
         ]
       }
@@ -788,7 +788,7 @@
         "content": [
           {
             "type": "thinking",
-            "thinking": "value"
+            "thinking": "\u0085value\u0085"
           }
         ]
       }
@@ -796,7 +796,7 @@
     "expected": [
       [
         "\u001b]133;A\u0007",
-        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[3m\u001b[38;2;52;74;106mvalue\u001b[39m\u001b[23m                                  "
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[3m\u001b[38;2;52;74;106m\u0085value\u0085\u001b[39m\u001b[23m                                  "
       ]
     ]
   },
@@ -810,7 +810,7 @@
         "content": [
           {
             "type": "thinking",
-            "thinking": ""
+            "thinking": "\u0085"
           }
         ]
       }
@@ -818,7 +818,7 @@
     "expected": [
       [
         "\u001b]133;A\u0007",
-        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[3m\u001b[38;2;52;74;106m\u001b[39m\u001b[23m                                       "
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[3m\u001b[38;2;52;74;106m\u0085\u001b[39m\u001b[23m                                       "
       ]
     ]
   },
@@ -2012,7 +2012,11 @@
     "expected": [
       [
         "\u001b]133;A\u0007",
-        "\u001b]133;B\u0007\u001b]133;C\u0007 ok                                     "
+        " ok                                     ",
+        "",
+        " \u001b[38;2;42;69;101mError: Model stopped because it        ",
+        " \u001b[38;2;42;69;101mreached the maximum output token       ",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;69;101mlimit. The response may be incomplete.\u001b[39m "
       ]
     ]
   },

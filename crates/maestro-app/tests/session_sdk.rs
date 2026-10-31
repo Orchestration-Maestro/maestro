@@ -638,6 +638,37 @@ fn carries_provider_retry_settings_into_the_request() {
     });
 }
 
+#[test]
+fn http_idle_timeout_is_the_default_request_timeout_and_zero_disables_it() {
+    on_task_set(|_| async {
+        for (settings, expected) in [
+            (json!({}), 300_000.0),
+            (json!({"httpIdleTimeoutMs": 120_000}), 120_000.0),
+            (json!({"httpIdleTimeoutMs": 0}), 2_147_483_647.0),
+            (
+                json!({"httpIdleTimeoutMs": 120_000, "retry": {"provider": {"timeoutMs": 1234}}}),
+                1234.0,
+            ),
+        ] {
+            let h = fixture(Auth::Key).await;
+            let mut options = options(&h, settings.clone());
+            options.model = Some(h.model("faux-1"));
+            let created = create(options).await;
+            let captured = Arc::new(Mutex::new(None));
+            let capturing = Arc::clone(&captured);
+            observe_next(&h, move |input| {
+                *capturing.lock().unwrap() = common(input).timeout_ms;
+            });
+            created
+                .session
+                .prompt("hi", PromptOptions::default())
+                .await
+                .unwrap();
+            assert_eq!(*captured.lock().unwrap(), Some(expected), "{settings}");
+        }
+    });
+}
+
 /// Exact-spelled request headers captured before protocol normalization.
 type AttributionHeaders = indexmap::IndexMap<String, String>;
 
