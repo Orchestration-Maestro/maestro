@@ -5,13 +5,15 @@ use std::path::PathBuf;
 
 /// The home directory the daemon observes.
 ///
-/// On Unix `HOME` as set, an empty value included, otherwise the account directory;
-/// elsewhere the account directory. Every daemon read of the home directory goes through
-/// this one lookup, which follows `maestro_resources::paths::native_home_directory`.
+/// On Unix this is `HOME` as set, including an empty value, without an account fallback.
+/// On other platforms it is the native account home.
 #[must_use]
 pub fn home_directory() -> Option<PathBuf> {
-    let variable = std::env::var_os("HOME").map(PathBuf::from);
-    maestro_path::homedir(variable.filter(|_| cfg!(unix)), std::env::home_dir)
+    if cfg!(unix) {
+        std::env::var_os("HOME").map(PathBuf::from)
+    } else {
+        maestro_path::native_homedir()
+    }
 }
 
 /// Agent-wide resources and a validated optional daemon identity.
