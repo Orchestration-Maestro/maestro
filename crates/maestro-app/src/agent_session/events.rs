@@ -103,12 +103,21 @@ impl AgentSession<Local> {
         }
         self.emit_extension_event(event).await?;
         self.emit_agent_event(Arc::clone(event));
-        let finished = match &*read(event) {
-            AgentEvent::MessageEnd { message } => Some(message.clone()),
-            _ => None,
+        let (finished, turn) = match &*read(event) {
+            AgentEvent::MessageEnd { message } => (Some(message.clone()), None),
+            AgentEvent::TurnEnd {
+                message,
+                tool_results,
+            } => (None, Some((Arc::clone(message), tool_results.clone()))),
+            _ => (None, None),
         };
         if let Some(message) = finished {
             self.persist_finished_message(&message)?;
+        }
+        if let Some((message, tool_results)) = turn {
+            // A message kept for the turn's end goes right after the turn's tool results, so
+            // it cannot land between a tool call and its result.
+            self.flush_pending_custom_messages(Some((&message, &tool_results)))?;
         }
         Ok(())
     }
@@ -142,19 +151,7 @@ impl AgentSession<Local> {
         message: &NativeAgentMessage,
     ) -> Result<(), DiagnosticErrorInfo> {
         match message {
-            AgentMessage::Custom(custom) => {
-                if let CustomAgentMessages::Custom(custom) = &*read(custom) {
-                    self.session_manager
-                        .borrow_mut()
-                        .append_custom_message_entry(
-                            &custom.custom_type,
-                            custom.content.clone(),
-                            custom.display,
-                            custom.details.clone(),
-                        )
-                        .map_err(thrown)?;
-                }
-            }
+            AgentMessage::Custom(_) => self.store_custom_message(message)?,
             AgentMessage::User(_) | AgentMessage::Assistant(_) | AgentMessage::ToolResult(_) => {
                 let record = serde_json::to_value(message).map_err(thrown)?;
                 self.session_manager

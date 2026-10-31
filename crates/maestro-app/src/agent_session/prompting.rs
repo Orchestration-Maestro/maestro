@@ -116,7 +116,9 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// Ends the run: appends the shell results kept while it ran, marks it inactive and
     /// releases every idle waiter.
     fn settle_run(&self) -> Result<(), DiagnosticErrorInfo> {
-        let flushed = self.flush_pending_bash_messages();
+        let flushed = self
+            .flush_pending_bash_messages()
+            .and(self.flush_pending_custom_messages(None));
         let (gate, open) = {
             let mut state = self.state.borrow_mut();
             state.system_prompt_override = None;

@@ -59,6 +59,8 @@ pub(super) struct AgentSessionState<E: ExtensionExecution> {
     pub(super) follow_up_messages: Vec<String>,
     /// Custom messages sent with the next prompt.
     pub(super) pending_next_turn_messages: Vec<NativeAgentMessage>,
+    /// Custom messages that start no turn, kept until the current turn ends.
+    pub(super) pending_custom_messages: Vec<NativeAgentMessage>,
     /// Shell results recorded while a response streamed, appended before the next prompt.
     pub(super) pending_bash_messages: VecDeque<NativeAgentMessage>,
     /// Stops the direct shell command now running.
@@ -114,6 +116,7 @@ impl<E: ExtensionExecution> AgentSessionState<E> {
             steering_messages: Vec::new(),
             follow_up_messages: Vec::new(),
             pending_next_turn_messages: Vec::new(),
+            pending_custom_messages: Vec::new(),
             pending_bash_messages: VecDeque::new(),
             bash_signal: None,
             custom_tools,
