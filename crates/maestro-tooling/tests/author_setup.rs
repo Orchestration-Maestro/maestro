@@ -535,11 +535,25 @@ fn each_setup_checks_only_the_artifact_it_installs() {
 }
 
 /// The fixture setup example for a base bundle: it exports four components, takes each one
-/// it is given from its environment and records the others as built.
+/// it is given from its environment and builds the others. Building records the variable, writes
+/// the component and writes the dependency file Cargo leaves beside it, naming the example
+/// sources it read: the two marked components share a helper module and one library file.
 const FOUR_COMPONENTS_EXAMPLE: &str = r#"#!/bin/sh
+examples="$PWD/crates/maestro-extensions-wasm/../../examples/extensions"
+library="$PWD/crates/maestro-extensions-wasm/src/lib.rs"
 for variable in MAESTRO_AUTHOR_COMPONENT MAESTRO_CONTEXT_COMPONENT MAESTRO_ALPHA_COMPONENT MAESTRO_BETA_COMPONENT; do
     eval "value=\${$variable-}"
-    if [ -z "$value" ]; then echo "$variable" >> "$PWD/built"; value="$PWD/component.wasm"; fi
+    if [ -z "$value" ]; then
+        echo "$variable" >> "$PWD/built"
+        value="$PWD/$variable.wasm"
+        cp "$PWD/component.wasm" "$value"
+        case "$variable" in
+            MAESTRO_ALPHA_COMPONENT) sources="$library $examples/alpha.rs $examples/support/tail.rs" ;;
+            MAESTRO_BETA_COMPONENT) sources="$library $examples/beta.rs $examples/support/tail.rs" ;;
+            *) sources="$library" ;;
+        esac
+        { echo "$value: $sources"; echo; for source in $sources; do echo "$source:"; done; } > "$PWD/$variable.d"
+    fi
     echo "$variable=$value" >> "$NEXTEST_ENV"
 done
 "#;
@@ -555,6 +569,12 @@ fn marked_fixture(root: &Path) {
         )
         .unwrap();
     }
+    fs::create_dir_all(root.join("examples/extensions/support")).unwrap();
+    fs::write(
+        root.join("examples/extensions/support/tail.rs"),
+        "fn tail() {}\n",
+    )
+    .unwrap();
     fs::create_dir_all(root.join("crates/maestro-extensions-wasm/examples")).unwrap();
 }
 
@@ -688,6 +708,41 @@ fn prepare_drops_compiled_code_of_another_engine() {
     assert_eq!(manifest["compiled"]["namespace"], "wasmtime-newer");
 }
 
+/// An edit to a module that several components read rebuilds each of them, and only them; the
+/// inputs a component records are the example files it read, not the library files that every
+/// component shares.
+#[test]
+fn prepare_rebuilds_the_components_that_read_an_edited_shared_module() {
+    if selection().is_child() {
+        return child_prepare();
+    }
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    marked_fixture(root);
+    prepare(root);
+    let base = root.join("target/test-setup");
+    let manifest: serde_json::Value =
+        serde_json::from_slice(&fs::read(base.join("components.json")).unwrap()).unwrap();
+    assert_eq!(
+        manifest["components"]["MAESTRO_ALPHA_COMPONENT"]["inputs"]["paths"],
+        serde_json::json!([
+            "examples/extensions/alpha.rs",
+            "examples/extensions/support/tail.rs"
+        ])
+    );
+
+    fs::write(
+        root.join("examples/extensions/support/tail.rs"),
+        "fn tail() { edited() }\n",
+    )
+    .unwrap();
+
+    assert_eq!(
+        prepare_with_base(root, &base),
+        ["MAESTRO_ALPHA_COMPONENT", "MAESTRO_BETA_COMPONENT"]
+    );
+}
+
 /// A base that is the directory being prepared still supplies its components: nothing is built
 /// and the staged components keep their bytes.
 #[test]
@@ -795,6 +850,7 @@ fn fixture_with(root: &Path, example: &str) {
     use std::os::unix::fs::PermissionsExt;
     workspace(root);
     fs::write(root.join("component.wasm"), "component bytes").unwrap();
+    fs::write(root.join("component.d"), "component.wasm:\n").unwrap();
     fs::write(root.join("justfile"), BROWSER_RECIPES).unwrap();
     executable(&root.join("target/debug/deps/older"), 100);
     executable(&root.join("target/debug/deps/newer"), 200);
