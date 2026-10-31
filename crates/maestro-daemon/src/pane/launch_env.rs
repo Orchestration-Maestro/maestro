@@ -6,6 +6,28 @@ use std::{
     path::Path,
 };
 
+/// Program name a pane child reads from the terminal program variable.
+const TERMINAL_PROGRAM_NAME: &str = "maestro";
+
+/// Shell variable that tells fish to repaint its prompt after a resize.
+const FISH_REFLOW: &str = "fish_handle_reflow";
+
+/// Markers of the terminal or multiplexer around the daemon, which a pane child must not inherit.
+const OUTER_TERMINAL_MARKERS: [&str; 12] = [
+    "ITERM_SESSION_ID",
+    "LC_TERMINAL",
+    "LC_TERMINAL_VERSION",
+    "WEZTERM_PANE",
+    "KITTY_WINDOW_ID",
+    "WT_SESSION",
+    "TMUX",
+    "TMUX_PANE",
+    "STY",
+    "ZELLIJ",
+    "ZELLIJ_SESSION_NAME",
+    "ZELLIJ_PANE_ID",
+];
+
 /// Extra user environment pairs and the pane identity policy.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct PaneLaunchEnv {
@@ -73,13 +95,25 @@ impl PaneLaunchEnv {
         command: &mut PtyCommand,
         socket: &Path,
         executable: Option<&Path>,
-        _parent: &dyn Fn(&OsStr) -> Option<OsString>,
+        parent: &dyn Fn(&OsStr) -> Option<OsString>,
     ) {
         let mut edits = vec![
             ("TERM".into(), Some("xterm-256color".into())),
             ("COLORTERM".into(), Some("truecolor".into())),
             ("CODEX_THREAD_ID".into(), None),
+            (
+                maestro_tui::TERM_PROGRAM.into(),
+                Some(TERMINAL_PROGRAM_NAME.into()),
+            ),
+            (
+                "TERM_PROGRAM_VERSION".into(),
+                Some(maestro_protocol::build_info::version().into()),
+            ),
         ];
+        edits.extend(OUTER_TERMINAL_MARKERS.map(|name| (name.into(), None)));
+        if !holds(&command.environment, parent, FISH_REFLOW.as_ref()) {
+            edits.push((FISH_REFLOW.into(), Some("0".into())));
+        }
         edits.extend(
             self.extra
                 .iter()
@@ -112,6 +146,18 @@ impl PaneLaunchEnv {
             PaneLaunchIdentity::OmitPane => edits.push(("MAESTRO_PANE_ID".into(), None)),
         }
         apply_edits(&mut command.environment, edits);
+    }
+}
+
+/// Whether the pane's environment already holds `name`, matched with exact casing.
+fn holds(
+    environment: &PtyEnvironment,
+    parent: &dyn Fn(&OsStr) -> Option<OsString>,
+    name: &OsStr,
+) -> bool {
+    match environment {
+        PtyEnvironment::Inherit(_) => parent(name).is_some(),
+        PtyEnvironment::Replace(values) => values.iter().any(|(key, _)| key == name),
     }
 }
 
