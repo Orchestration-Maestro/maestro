@@ -3316,7 +3316,7 @@
             "api": "anthropic-messages",
             "provider": "anthropic",
             "model": "controlled",
-            "timestamp": 0
+            "timestamp": 1767225601000
           }
         }
       ],
@@ -3495,7 +3495,7 @@
             "api": "anthropic-messages",
             "provider": "anthropic",
             "model": "controlled",
-            "timestamp": 0
+            "timestamp": 1767225601000
           }
         }
       ],
@@ -3635,7 +3635,7 @@
             "api": "anthropic-messages",
             "provider": "anthropic",
             "model": "controlled",
-            "timestamp": 0
+            "timestamp": 1767225601000
           }
         }
       ],
@@ -3835,7 +3835,7 @@
             "api": "anthropic-messages",
             "provider": "anthropic",
             "model": "controlled",
-            "timestamp": 0
+            "timestamp": 1767225601000
           }
         }
       ],
@@ -6904,7 +6904,7 @@
             "api": "anthropic-messages",
             "provider": "anthropic",
             "model": "controlled",
-            "timestamp": 0
+            "timestamp": 1767225601000
           }
         }
       ],

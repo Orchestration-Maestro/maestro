@@ -143,20 +143,43 @@ pub fn estimate_tokens(message: &Value) -> Result<f64, serde_json::Error> {
     };
     Ok((chars / 4.0).ceil())
 }
-/// Estimate context from the latest successful usage and the trailing messages.
+/// Read a message timestamp when it is a number.
+fn timestamp(message: &Value) -> Option<f64> {
+    message.get("timestamp").and_then(Value::as_f64)
+}
+/// Find the newest assistant usage that still describes the messages before it.
+///
+/// A message stamped after an answer, such as a compaction summary inserted ahead of the
+/// retained span, replaces the context that answer measured, so that usage is stale until
+/// a newer answer reports. A message without a numeric timestamp is never stale.
+fn latest_usage(messages: &[Value]) -> Result<Option<(usize, f64)>, serde_json::Error> {
+    let mut newest = f64::NEG_INFINITY;
+    let preceding: Vec<f64> = messages
+        .iter()
+        .map(|message| {
+            let before = newest;
+            newest = timestamp(message).map_or(newest, |stamp| newest.max(stamp));
+            before
+        })
+        .collect();
+    for (index, message) in messages.iter().enumerate().rev() {
+        if timestamp(message).is_some_and(|stamp| stamp < preceding[index]) {
+            continue;
+        }
+        if let Some(usage) = assistant_usage(Some(message))? {
+            return Ok(Some((index, calculate_context_tokens(usage)?)));
+        }
+    }
+    Ok(None)
+}
+/// Estimate context from the latest applicable successful usage and the trailing messages.
 ///
 /// # Errors
 /// Returns a native JSON error for reached usage or message fields.
 pub fn estimate_context_tokens(
     messages: &[Value],
 ) -> Result<super::ContextUsageEstimate, serde_json::Error> {
-    let mut latest = None;
-    for (index, message) in messages.iter().enumerate().rev() {
-        if let Some(usage) = assistant_usage(Some(message))? {
-            latest = Some((index, calculate_context_tokens(usage)?));
-            break;
-        }
-    }
+    let latest = latest_usage(messages)?;
     let usage_tokens = latest.map_or(0.0, |(_, tokens)| tokens);
     let trailing_tokens = messages[latest.map_or(0, |(index, _)| index + 1)..]
         .iter()

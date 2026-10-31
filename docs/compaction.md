@@ -51,7 +51,9 @@ uses a nonzero reported total, treating an omitted or null total as absent, or
 adds input, output, cache-read and cache-write counts.
 `estimate_context_tokens` selects the latest successful assistant usage, ignoring
 error/aborted attempts and usage that reports no tokens, and estimates subsequent
-messages; without usage it estimates all supplied messages.
+messages; without usage it estimates all supplied messages. Usage from an answer stamped
+earlier than a later message, such as a compaction summary inserted ahead of the retained
+span, is stale and ignored until a newer answer reports usage.
 
 `estimate_tokens` rounds up UTF-16 code units divided by four. It includes assistant
 text, thinking and canonical JSON tool arguments, shell command/output even when
