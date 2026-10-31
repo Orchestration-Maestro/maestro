@@ -4,12 +4,10 @@ use crate::{
     AssistantMessageComponent, BehaviorSettings, SessionSettings, SettingsCallbacks,
     SettingsConfig, SettingsSelectorComponent, TerminalDisplaySettings, ToolExecutionComponent,
 };
-use maestro_app::{
-    SettingsManager, ThinkingLevel, Transport, TransportSetting, delivery_mode, queue_mode,
-};
+use maestro_app::{SettingsManager, ThinkingLevel, Transport, delivery_mode, queue_mode};
 use maestro_theme::ThemeChangeResult;
 use maestro_tui::{Component, EditorComponent};
-use std::{any::Any, error::Error, rc::Rc, sync::PoisonError};
+use std::{any::Any, error::Error, rc::Rc};
 
 impl InteractiveMode {
     /// Shows the settings panel in place of the editor over the current session.
@@ -76,24 +74,26 @@ impl InteractiveMode {
     pub(super) fn settings_callbacks(self: &Rc<Self>, done: Rc<dyn Fn()>) -> SettingsCallbacks {
         let mode = Rc::downgrade(self);
         SettingsCallbacks {
-            on_auto_compact_change: self.setting_callback(Self::settings_auto_compact),
+            on_auto_compact_change: self.fallible_setting_callback(Self::settings_auto_compact),
             on_show_images_change: self.fallible_setting_callback(Self::settings_show_images),
             on_image_width_cells_change: self.fallible_setting_callback(Self::settings_image_width),
             on_auto_resize_images_change: self.save_setting(SettingsManager::set_image_auto_resize),
             on_block_images_change: self.save_setting(SettingsManager::set_block_images),
             on_enable_skill_commands_change: self
                 .fallible_setting_callback(Self::settings_skill_commands),
-            on_steering_mode_change: self.setting_callback(|mode, value| {
+            on_steering_mode_change: self.fallible_setting_callback(|mode, value| {
                 mode.runtime_host
                     .session()
-                    .set_steering_mode(queue_mode(&value));
+                    .set_steering_mode(queue_mode(&value))?;
+                Ok(())
             }),
-            on_follow_up_mode_change: self.setting_callback(|mode, value| {
+            on_follow_up_mode_change: self.fallible_setting_callback(|mode, value| {
                 mode.runtime_host
                     .session()
-                    .set_follow_up_mode(queue_mode(&value));
+                    .set_follow_up_mode(queue_mode(&value))?;
+                Ok(())
             }),
-            on_transport_change: self.setting_callback(Self::settings_transport),
+            on_transport_change: self.fallible_setting_callback(Self::settings_transport),
             on_thinking_level_change: self.fallible_setting_callback(Self::settings_thinking),
             on_theme_change: self.settings_theme_callback(false),
             on_theme_preview: Some(self.settings_theme_callback(true)),
@@ -195,11 +195,12 @@ impl InteractiveMode {
     }
 
     /// Saves the session compaction policy before refreshing the footer.
-    fn settings_auto_compact(&self, enabled: bool) {
+    fn settings_auto_compact(&self, enabled: bool) -> Result<(), Box<dyn Error>> {
         self.runtime_host
             .session()
-            .set_auto_compaction_enabled(enabled);
+            .set_auto_compaction_enabled(enabled)?;
         self.footer.set_auto_compact_enabled(enabled);
+        Ok(())
     }
 
     /// Saves inline image visibility and applies it to retained tool rows.
@@ -250,20 +251,9 @@ impl InteractiveMode {
     }
 
     /// Saves the transport before changing the next request's live preference.
-    fn settings_transport(&self, transport: Transport) {
-        let saved = match &transport {
-            Transport::Auto => TransportSetting::Auto,
-            Transport::Sse => TransportSetting::Sse,
-            Transport::Websocket => TransportSetting::Websocket,
-            Transport::WebsocketCached => TransportSetting::WebsocketCached,
-        };
-        let session = self.runtime_host.session();
-        session.settings_manager().borrow_mut().set_transport(saved);
-        *session
-            .agent()
-            .transport
-            .write()
-            .unwrap_or_else(PoisonError::into_inner) = transport;
+    fn settings_transport(&self, transport: Transport) -> Result<(), Box<dyn Error>> {
+        self.runtime_host.session().set_transport(transport)?;
+        Ok(())
     }
 
     /// Selects thinking before refreshing the footer and the editor decoration.
