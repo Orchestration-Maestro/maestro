@@ -6,7 +6,9 @@ use std::path::Path;
 
 use cargo_metadata::Metadata;
 
-use super::{built_crates, closure_directories, inherited_components, input_names, listed};
+use super::{
+    built_crates, closure_directories, component_crates, inherited_components, input_names, listed,
+};
 
 /// Every name component discovery accepts is removed, including the bare and doubled
 /// underscore forms, and no other name is.
@@ -120,4 +122,23 @@ fn closure_directories_hold_the_built_packages_and_what_they_depend_on() {
 fn closure_directories_reject_a_missing_built_package() {
     let metadata: Metadata = serde_json::from_str(FIXTURE).unwrap();
     assert!(closure_directories(&metadata, &["missing"]).is_err());
+}
+
+/// The components build for WebAssembly, so the native-only edges of their crates, the models
+/// and the application among them, are left out.
+#[test]
+fn component_crates_hold_only_what_the_wasm_build_uses() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let crates = component_crates(Path::new(env!("CARGO")), &root).unwrap();
+    assert_eq!(
+        crates.into_iter().collect::<Vec<_>>(),
+        [
+            "crates/maestro-entry",
+            "crates/maestro-extensions-wasm",
+            "crates/maestro-json",
+            "crates/maestro-listing",
+            "crates/maestro-request",
+            "crates/maestro-tool"
+        ]
+    );
 }

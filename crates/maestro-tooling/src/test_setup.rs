@@ -315,6 +315,12 @@ fn built_crates(cargo: &Path, checkout: &Path) -> io::Result<BTreeSet<String>> {
     closure_directories(&crate::locked_metadata(cargo, checkout)?, &BUILT)
 }
 
+/// The directories of the crates the components build on.
+#[cfg(test)]
+fn component_crates(cargo: &Path, checkout: &Path) -> io::Result<BTreeSet<String>> {
+    built_crates(cargo, checkout)
+}
+
 /// The repository-relative directories and files the components are prepared from.
 fn input_names(crates: &BTreeSet<String>) -> impl Iterator<Item = &str> {
     FIXED_INPUTS
