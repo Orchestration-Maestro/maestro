@@ -2,6 +2,7 @@
 #![cfg(test)]
 
 mod checked_runs;
+mod command_route;
 mod environment_groups;
 mod user_cache;
 mod windows_console;

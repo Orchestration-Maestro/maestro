@@ -27,6 +27,6 @@ pub use cache::user_cache_home;
 pub use console::on_console;
 pub use environment::{CaseSelection, local_zone_follows_tz, run_per_environment, selection};
 pub use error::TestProcessError;
-pub use proof::{CheckedChild, CheckedStdout};
+pub use proof::{CheckedChild, CheckedStdout, HARNESS_START};
 pub use selection::test_name;
 pub use test_process::TestProcess;
