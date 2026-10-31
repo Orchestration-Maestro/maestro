@@ -59,6 +59,8 @@ pub struct OutputAccumulator {
     lines: usize,
     /// Current decoded line's byte count.
     last_line_bytes: usize,
+    /// Byte count of the most recent newline-terminated line.
+    ended_line_bytes: usize,
     /// Artifact path once opened.
     path: Option<String>,
     /// Owned buffered artifact writer.
@@ -91,6 +93,7 @@ impl OutputAccumulator {
             decoded_bytes: 0,
             lines: 1,
             last_line_bytes: 0,
+            ended_line_bytes: 0,
             path: None,
             writer: None,
         }
@@ -180,6 +183,12 @@ impl OutputAccumulator {
         self.last_line_bytes
     }
 
+    /// Return the byte count of the most recent newline-terminated line.
+    #[must_use]
+    pub fn get_ended_line_bytes(&self) -> usize {
+        self.ended_line_bytes
+    }
+
     /// Decode complete scalars, retaining only an incomplete suffix.
     fn decode(&mut self, data: &[u8]) {
         let text = self.decoder.push(data);
@@ -204,9 +213,16 @@ impl OutputAccumulator {
         }
         let newlines = text.bytes().filter(|&byte| byte == b'\n').count();
         self.lines += newlines;
-        self.last_line_bytes = text
-            .rfind('\n')
-            .map_or(self.last_line_bytes + text.len(), |i| text.len() - i - 1);
+        if let Some(last_newline) = text.rfind('\n') {
+            self.ended_line_bytes = text[..last_newline]
+                .rfind('\n')
+                .map_or(self.last_line_bytes + last_newline, |i| {
+                    last_newline - i - 1
+                });
+            self.last_line_bytes = text.len() - last_newline - 1;
+        } else {
+            self.last_line_bytes += text.len();
+        }
     }
     /// Evict old text only beyond the hysteresis threshold.
     fn trim_tail(&mut self) {
@@ -219,13 +235,15 @@ impl OutputAccumulator {
         }
         self.tail = self.tail[start..].to_owned();
     }
-    /// Exclude a leading fragment only when its terminating newline is retained.
+    /// Exclude a leading fragment only when its terminating newline is retained and more text
+    /// follows; a fragment that is the whole tail stays, as the end of an oversized line.
     fn snapshot_text(&self) -> &str {
         if self.line_boundary {
             &self.tail
         } else {
             self.tail
                 .find('\n')
+                .filter(|&i| i + 1 < self.tail.len())
                 .map_or(&self.tail, |i| &self.tail[i + 1..])
         }
     }

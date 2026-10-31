@@ -1,7 +1,7 @@
 //! Final tail notices and shell status results.
 use super::{BashError, BashExecResult, BashToolDetails};
 use crate::{
-    DEFAULT_MAX_BYTES, TruncationBy, format_size,
+    TruncationBy, format_size,
     output::{
         output_accumulator::OutputSnapshot,
         render_parts::{float, num},
@@ -34,8 +34,10 @@ fn format(
     let end = truncation.total_lines;
     let path = full_output_path.as_deref().unwrap_or_default();
     let notice = if truncation.last_line_partial {
+        // A final newline ends the partial line, leaving an empty entry after it.
+        let line = if text.ends_with('\n') { end - 1 } else { end };
         format!(
-            "[Showing last {} of line {end} (line is {}). Full output: {path}]",
+            "[Showing last {} of line {line} (line is {}). Full output: {path}]",
             format_size(float(truncation.output_bytes)),
             format_size(float(last_line_bytes))
         )
@@ -44,7 +46,7 @@ fn format(
     } else {
         format!(
             "[Showing lines {start}-{end} of {end} ({} limit). Full output: {path}]",
-            format_size(float(DEFAULT_MAX_BYTES))
+            format_size(float(truncation.max_bytes))
         )
     };
     text.push_str("\n\n");

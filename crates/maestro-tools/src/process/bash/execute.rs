@@ -100,7 +100,12 @@ impl Progress {
         let closed = self.output.close_temp_file();
         let snapshot = snapshot?;
         closed?;
-        Ok((snapshot, self.output.get_last_line_bytes()))
+        let line_bytes = if snapshot.content.ends_with('\n') {
+            self.output.get_ended_line_bytes()
+        } else {
+            self.output.get_last_line_bytes()
+        };
+        Ok((snapshot, line_bytes))
     }
 }
 
