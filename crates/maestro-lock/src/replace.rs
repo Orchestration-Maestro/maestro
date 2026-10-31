@@ -26,7 +26,8 @@ pub struct Committed {
 /// Publishes bytes with file sync before rename and directory sync afterwards.
 ///
 /// # Errors
-/// Returns native errors before publication, or an error for an unresolved link
+/// Returns native errors before publication, including the refusal to open an existing target
+/// for writing, or an error for an unresolved link
 /// after forty hops. Postcommit errors are returned in [`Committed::dir_sync`].
 pub fn replace(path: &Path, bytes: &[u8], options: Replace) -> io::Result<Committed> {
     let target = if options.through_symlinks {
@@ -68,9 +69,15 @@ pub fn replace(path: &Path, bytes: &[u8], options: Replace) -> io::Result<Commit
     })
 }
 /// Reads the replaced file's permissions without following a replaced link entry.
+///
+/// A rename needs write access only to the directory, so an existing file is first opened for
+/// writing without truncation: a file its owner made read-only is refused, as a write in place is.
 fn replacement_permissions(target: &Path) -> io::Result<Option<Permissions>> {
     match fs::symlink_metadata(target) {
-        Ok(metadata) if !metadata.file_type().is_symlink() => Ok(Some(metadata.permissions())),
+        Ok(metadata) if !metadata.file_type().is_symlink() => {
+            OpenOptions::new().write(true).open(target)?;
+            Ok(Some(metadata.permissions()))
+        }
         Ok(_) => Ok(None),
         Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
         Err(error) => Err(error),

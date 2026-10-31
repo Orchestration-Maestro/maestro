@@ -120,7 +120,7 @@ impl AuthStorageBackend for InMemoryAuthStorageBackend {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use file::FileAuthStorageBackend;
+pub use file::{FileAuthStorageBackend, write_auth_file};
 
 /// Native credential file adapter.
 #[cfg(not(target_arch = "wasm32"))]
