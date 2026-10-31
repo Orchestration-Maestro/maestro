@@ -324,6 +324,63 @@ mod entry {
         );
     }
 
+    /// A non-session path or a listed session whose entry identity prevents opening.
+    fn session_refusal(e: &Entry, file: &str, local_match: bool) -> (String, String, String) {
+        if local_match {
+            let content = format!(
+                "{}\n{{\"type\":\"custom\",\"id\":false}}\n",
+                json!({"type":"session","version":3,"id":"selected-id","cwd":e.commands.cwd})
+            );
+            (
+                content,
+                "selected".to_owned(),
+                "nonstring entry id".to_owned(),
+            )
+        } else {
+            (
+                "not a session\n".to_owned(),
+                file.to_owned(),
+                format!("Session file is not a valid maestro session: {file}"),
+            )
+        }
+    }
+
+    /// Explicit paths and local identifier matches report open failures in the run's style.
+    #[test]
+    fn session_open_errors_are_reported_with_run_styles() {
+        run(
+            "entry::session_open_errors_are_reported_with_run_styles",
+            |local| async move {
+                for (styles, local_match) in
+                    [(false, false), (true, false), (false, true), (true, true)]
+                {
+                    let e = Entry::new();
+                    e.styles.set(styles);
+                    let directory = format!("{}/selected", e.commands.cwd);
+                    std::fs::create_dir_all(&directory).unwrap();
+                    let file = format!("{directory}/broken.jsonl");
+                    let (content, argument, error) = session_refusal(&e, &file, local_match);
+                    std::fs::write(&file, &content).unwrap();
+                    let status = e
+                        .run(
+                            &local,
+                            &["--session-dir", &directory, "--session", &argument],
+                            MainOptions::default(),
+                        )
+                        .await
+                        .unwrap();
+                    assert_eq!(status, 1);
+                    let message = format!("Error: {error}");
+                    assert_eq!(
+                        e.stderr(),
+                        format!("{}\n", maestro_theme::Theme::red(&message, styles))
+                    );
+                    assert_eq!(std::fs::read_to_string(&file).unwrap(), content);
+                }
+            },
+        );
+    }
+
     #[test]
     fn fork_errors_are_reported_without_partial_open() {
         run(
