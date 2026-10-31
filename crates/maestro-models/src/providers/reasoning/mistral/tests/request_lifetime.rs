@@ -51,6 +51,16 @@ async fn prepared_with_timeout(
     signal: Option<crate::Cancellation>,
     timeout_ms: Option<f64>,
 ) -> request::Prepared {
+    try_prepared(fetch, signal, timeout_ms).await.unwrap()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// Preparation of an operation whose configured timeout is `timeout_ms` milliseconds.
+pub(super) async fn try_prepared(
+    fetch: crate::Fetch,
+    signal: Option<crate::Cancellation>,
+    timeout_ms: Option<f64>,
+) -> Result<request::Prepared, crate::providers::http::RequestFailure> {
     let model = super::request_corpus::model(&serde_json::json!({}));
     let context = serde_json::from_value(serde_json::json!({"messages":[]})).unwrap();
     let options: crate::MistralOptions = crate::MistralOptions {
@@ -63,9 +73,7 @@ async fn prepared_with_timeout(
         },
         ..Default::default()
     };
-    request::prepare(Arc::new(model), &context, &options, None)
-        .await
-        .unwrap()
+    request::prepare(Arc::new(model), &context, &options, None).await
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -206,6 +214,7 @@ pub(super) fn verify() {
         setup_lifetime().await;
         body_lifetime().await;
         configured_timeout().await;
+        unrepresentable_timeout().await;
         error_body_lifetime().await;
         supplied_body_and_teardown().await;
         hook_lifetime().await;
@@ -321,6 +330,25 @@ async fn configured_timeout() {
         drop(next);
         chunks.closed().await;
     }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// A timeout too long to represent as a duration never elapses.
+async fn unrepresentable_timeout() {
+    let (fetch, producer) = delayed_fetch();
+    let mut send = Box::pin(request::send(
+        prepared_with_timeout(fetch, None, Some(f64::MAX)).await,
+    ));
+    pending(send.as_mut()).await;
+    let (chunks, receiver) = tokio::sync::mpsc::unbounded_channel();
+    producer.send(response(receiver)).ok().unwrap();
+    let mut body = send.await.unwrap();
+    tokio::time::advance(Duration::from_hours(8760)).await;
+    let mut next = Box::pin(body.next());
+    pending(next.as_mut()).await;
+    drop(next);
+    drop(body);
+    chunks.closed().await;
 }
 
 #[cfg(not(target_arch = "wasm32"))]

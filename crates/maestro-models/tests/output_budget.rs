@@ -121,3 +121,130 @@ fn thinking_without_an_explicit_limit_fits_inside_the_model_cap() {
         (8_000.0, 6_976.0)
     );
 }
+
+#[cfg(not(target_arch = "wasm32"))]
+/// A 64,000-token model with a 40,000-token window, whose budget is the window less the
+/// estimated context and 4,096 safety tokens.
+fn estimate_window_model() -> TestResult<maestro_models::Model> {
+    messages::model(&json!({"maxTokens": 64_000, "contextWindow": 40_000}))
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// An assistant message that reports `usage` and stops for `stop`, answering with `text`.
+fn response(stop: &str, text: &str, usage: &Value) -> Value {
+    json!({
+        "role": "assistant", "content": [{"type": "text", "text": text}],
+        "api": "anthropic-messages", "provider": "fixture", "model": "model",
+        "usage": usage, "stopReason": stop, "timestamp": 2
+    })
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// The usage record of a response that reports `total` tokens in all.
+fn usage_total(total: &Value) -> Value {
+    json!({"input": 1, "output": 2, "cacheRead": 3, "cacheWrite": 4, "totalTokens": total,
+        "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "total": 0}})
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// The output limit a simple request asks for after `messages` and a 1,000-token system prompt.
+fn budget(messages: &Value) -> TestResult<Option<f64>> {
+    let context: Context =
+        serde_json::from_value(json!({"systemPrompt": "s".repeat(4_000), "messages": messages}))?;
+    Ok(build_base_options(&estimate_window_model()?, &context, None, None).max_tokens)
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// The output limit left when the context is estimated at `tokens`.
+fn left_after(tokens: f64) -> f64 {
+    40_000.0 - 4_096.0 - tokens
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn estimate_anchors_on_the_newest_reported_usage_and_skips_the_prompt() -> TestResult {
+    let messages = json!([
+        {"role": "user", "content": "before", "timestamp": 1},
+        response("stop", "reply", &usage_total(&json!(1_000))),
+        {"role": "user", "content": "x".repeat(40), "timestamp": 3}
+    ]);
+    assert_eq!(budget(&messages)?, Some(left_after(1_010.0)));
+    Ok(())
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn estimate_skips_aborted_and_failed_responses_when_anchoring() -> TestResult {
+    let messages = json!([
+        response("stop", "reply", &usage_total(&json!(1_000))),
+        response("aborted", &"a".repeat(8), &usage_total(&json!(5_000))),
+        response("error", &"e".repeat(4), &usage_total(&json!(7_000)))
+    ]);
+    assert_eq!(budget(&messages)?, Some(left_after(1_003.0)));
+    Ok(())
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn estimate_sums_the_usage_categories_without_a_total() -> TestResult {
+    let absent = json!({"input": 1, "output": 2, "cacheRead": 3, "cacheWrite": 4,
+        "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "total": 0}});
+    for usage in [usage_total(&json!(0)), usage_total(&Value::Null), absent] {
+        let messages = json!([response("stop", "reply", &usage)]);
+        assert_eq!(budget(&messages)?, Some(left_after(10.0)));
+    }
+    Ok(())
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn estimate_counts_images_at_a_fixed_size_and_text_in_utf16_units() -> TestResult {
+    let image = json!({"type": "image", "data": "AAAA", "mimeType": "image/png"});
+    let blocks = json!([{"type": "text", "text": "x".repeat(4)}, image]);
+    let messages = json!([
+        {"role": "user", "content": blocks, "timestamp": 1},
+        {"role": "toolResult", "toolCallId": "c", "toolName": "t", "content": [image],
+            "isError": false, "timestamp": 2},
+        {"role": "user", "content": "😀😀😀😀", "timestamp": 3}
+    ]);
+    // 1,000 prompt tokens, (4 + 4,800) / 4 and 4,800 / 4 for the images, 8 units / 4 for the text.
+    assert_eq!(
+        budget(&messages)?,
+        Some(left_after(1_000.0 + 1_201.0 + 1_200.0 + 2.0))
+    );
+    Ok(())
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn estimate_writes_tool_arguments_as_compact_json_numbers() -> TestResult {
+    let unreported = json!({"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "total": 0}});
+    let mut call = response("toolUse", "", &unreported);
+    call["content"] =
+        json!([{"type": "toolCall", "id": "c", "name": "t", "arguments": {"n": 1.0}}]);
+    // "t" and `{"n":1}` are 8 units, two tokens; `{"n":1.0}` would make it three.
+    assert_eq!(budget(&json!([call]))?, Some(left_after(1_002.0)));
+    Ok(())
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn limit_without_a_context_window_is_raised_to_one_token_and_with_one_is_kept() -> TestResult {
+    let context: Context = serde_json::from_value(json!({"messages": []}))?;
+    let windowless = messages::model(&json!({"maxTokens": 64_000, "contextWindow": 0}))?;
+    let windowed = messages::model(&json!({"maxTokens": 64_000, "contextWindow": 40_000}))?;
+    let options = SimpleStreamOptions {
+        common: StreamOptions {
+            max_tokens: Some(0.0),
+            ..StreamOptions::default()
+        },
+        ..SimpleStreamOptions::default()
+    };
+    let raised = build_base_options(&windowless, &context, Some(&options), None);
+    assert_eq!(raised.max_tokens, Some(1.0));
+    let kept = build_base_options(&windowed, &context, Some(&options), None);
+    assert_eq!(kept.max_tokens, Some(0.0));
+    Ok(())
+}
