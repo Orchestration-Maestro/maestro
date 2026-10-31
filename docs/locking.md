@@ -47,7 +47,7 @@ the recovery copy. Other targets still require a writable open. Symbolic-link po
 Uncoordinated readers can observe an in-progress write; recovery is guaranteed
 on the next coordinated acquisition, not on an arbitrary native read.
 
-Settings and credentials retain their bounded acquisition and existing in-place
-writes. Workspace snapshots, detection catalogs and session rewrites use the
-shared recoverable publication operation. Serialization and scheduling remain
-with callers; no background recovery service is added.
+Settings and credentials retain their bounded acquisition of the sidecar lock, and
+publish their text through the shared recoverable publication operation, as do the
+standalone account file, workspace snapshots, detection catalogs and session rewrites.
+Serialization and scheduling remain with callers; no background recovery service is added.
