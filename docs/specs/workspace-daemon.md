@@ -137,7 +137,7 @@ converts topology rectangles to frame rectangles with free functions.
 - **Spawning in topology.** `FnOnce(PaneId, SpawnRequest) -> io::Result<T>` is passed to every topology
   operation that creates a pane. The operation returns `(PaneId, T)` and removes the new leaf when the spawn
   fails.
-- **Atomic replacement.** `maestro_lock::replace(path, bytes, Replace { through_symlinks })`.
+- **Recoverable publication.** `maestro_lock::replace(path, bytes, Replace { through_symlinks })`.
 - **Paths and names.** `maestro_daemon::paths::DaemonPaths` and `maestro_daemon::environment::NAMES`.
 - **Server.** `maestro_daemon::server::run::run_server` starts the API socket and runs the daemon loop. The
   executable's `daemon` arm and the in-process tests call it.
@@ -417,8 +417,8 @@ Each edge lands in the first commit of its delivery, with the crate-table row in
 | `maestro-multiplexer` → `maestro-protocol` | frame records for the pane render and the frame encoder | 26 |
 | `maestro-daemon` → `maestro-lock` | announcements store | 27 |
 
-- **`maestro-lock`.** Delivery 6 changes its job to "guard file writes (exclusive locks and atomic
-  replacement)".
+- **`maestro-lock`.** Delivery 6 changes its job to "guard file writes (exclusive locks and recoverable
+  publication)".
 - **No other change.** No crate, upward edge or library is added.
 
 ### Command-line grammar

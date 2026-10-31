@@ -42,7 +42,7 @@ pub fn load_auth(path: &str) -> Map<String, Value> {
 
 /// Writes `auth` to the account file at `path` as two-space JSON with no final newline, in
 /// the canonical member order and number spelling, through the credentials writer: the file is
-/// replaced atomically and readable only by its owner.
+/// written in place under the shared recoverable publication and readable only by its owner.
 ///
 /// # Errors
 /// Returns [`AccountFileError::NotAnObject`] without writing when the file holds valid JSON

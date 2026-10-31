@@ -234,3 +234,31 @@ fn saving_preserves_snapshot_target_permissions() {
     assert_eq!(fs::read_link(link).unwrap(), Path::new("session.json"));
     assert!(load(&target).is_some());
 }
+
+#[cfg(unix)]
+#[test]
+fn clearing_interrupted_history_prevents_later_recovery_from_resurrecting_it() {
+    let dir = Directory::new();
+    let parent = dir.path().join("saved");
+    fs::create_dir(&parent).unwrap();
+    let history_path = parent.join("history.json");
+    let Some(restore) = maestro_test_directory::deny(&parent, 0o555).unwrap() else {
+        return;
+    };
+    let error = maestro_lock::replace(
+        &history_path,
+        b"private interrupted history",
+        maestro_lock::Replace::default(),
+    )
+    .unwrap_err();
+    assert_eq!(error.kind(), std::io::ErrorKind::PermissionDenied);
+    drop(restore);
+    assert!(!history_path.exists());
+    clear_path(&history_path).unwrap();
+    save_to_paths(&parent.join("session.json"), &history_path, &empty(), None).unwrap();
+    let _holder = maestro_lock::acquire_write(&history_path, true).unwrap();
+    assert!(
+        !history_path.exists(),
+        "a cleared recovery record resurrected private history"
+    );
+}

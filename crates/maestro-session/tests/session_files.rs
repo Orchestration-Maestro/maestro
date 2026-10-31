@@ -508,6 +508,7 @@ fn continuation_uses_millisecond_ties_and_existing_catches() {
     assert!(find_most_recent_session(directory.text()).is_none());
     assert!(find_most_recent_session(directory.path().join("missing").to_str().unwrap()).is_none());
     directory.file("ignored.JSONL", jsonl(&[header(&json!("cwd"))]));
+    directory.file("ignored.jsonl.lock", jsonl(&[header(&json!("cwd"))]));
     directory.file("invalid.jsonl", "bad");
     assert!(find_most_recent_session(directory.text()).is_none());
     let first = directory.file("first.jsonl", jsonl(&[header(&json!("a"))]));
@@ -722,6 +723,7 @@ fn opening_missing_file_preserves_explicit_path_until_publication() {
         3
     );
     assert_eq!(fs::read_dir(directory.text()).unwrap().count(), 1);
+    assert!(!path.with_extension("jsonl.lock").exists());
 }
 
 #[test]
