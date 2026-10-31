@@ -350,7 +350,9 @@ no stronger exclusion promised. Native decorators forward write intent to retain
 the native guarantee. In-memory callbacks still run without a lock and retain
 last-writer behavior.
 
-Writes are not atomic: there is no rename, rollback or sync step.
+The native adapter publishes each write through [the shared atomic replacement](locking.md),
+following a symbolic link at the settings path and keeping the file's existing permissions,
+so a failed write leaves the previous file whole. In-memory writes are not durable.
 
 ## Saved text
 
