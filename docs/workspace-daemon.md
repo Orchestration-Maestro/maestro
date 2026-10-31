@@ -573,10 +573,18 @@ values to `SelectionEnvironment`; selection never mutates the process environmen
 | `MAESTRO_DAEMON` | Daemon selection |
 | `MAESTRO_CLIENT_SOCKET_PATH` | Daemon selection |
 
-The daemon finds the home directory through `maestro_daemon::paths::home_directory`. On
-Unix it uses `HOME` as set, an empty value included, and otherwise the account directory;
-elsewhere it uses the account directory. New workspace directories, the git configuration
-lookup and the window title's home shortening all read it from there.
+The daemon finds the workspace home through `maestro_daemon::paths::home_directory`.
+On Unix it uses `HOME` as set, including an empty value. When `HOME` is unset,
+Home and Follow policies without a followed directory use the process working directory,
+or `/` when that cannot be read. Path policies keep `~` and `~/x` literal, and workspace
+labels and window titles do not shorten the account directory to `~`.
+
+On Windows the lookup tries `USERPROFILE`, then `HOMEDRIVE` plus `HOMEPATH`, then `HOME`.
+Empty values and `~` are unusable. The drive and path must both be usable, and the path
+must start with `\` or `/`; otherwise only `HOME` remains to try. Home and Follow policies,
+workspace labels and Path expansion share this lookup without an account fallback.
+Path expansion accepts `~`, `~/x` and, on Windows, `~\x`. When no home is usable,
+Path policies keep the path literal; Home and Follow keep their working-directory fallback.
 
 Optional context fields are injected only when present. The manifest identifier
 and the identifier of an action declared by that manifest are distinct values.
@@ -682,7 +690,12 @@ supplies, then the repository file in the shared metadata directory, then the ch
 `config.worktree` when the repository file turns on `extensions.worktreeConfig`. The
 extension is read from the repository file alone, as Git does, and its last value wins.
 `ConfigEnvironment::from_variables` builds the user list from `XDG_CONFIG_HOME` and the
-home directory; the reader itself reads no environment variable.
+home directory; the reader itself reads no environment variable. The daemon supplies
+`HOME` as set on every platform, including an empty value, without consulting the account
+directory or the Windows workspace-home variables. With `HOME` unset, it supplies no home
+and reads only the user file under `XDG_CONFIG_HOME`, when that variable is set. Otherwise,
+the default user files are `$HOME/.config/git/config` and `$HOME/.gitconfig`.
+`XDG_CONFIG_HOME`, including an empty value, replaces the first file's directory.
 
 Includes apply where they appear. A file already being read is not entered again inside
 itself, so a cycle ends at the repeated file. The `includeIf` conditions are `gitdir`,
