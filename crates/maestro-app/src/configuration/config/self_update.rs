@@ -152,7 +152,9 @@ fn step(command: String, args: Vec<String>) -> SelfUpdateCommandStep {
         display,
     }
 }
-/// Select executable and verbs for one known installation method.
+/// Option every supported package manager accepts to skip package lifecycle scripts.
+const IGNORE_SCRIPTS: &str = "--ignore-scripts";
+/// Select executable and verbs for one known installation method, with lifecycle scripts off.
 fn command_for_method(
     context: &SelfUpdateContext<'_>,
     name: &str,
@@ -187,14 +189,14 @@ fn command_for_method(
         if method != InstallMethod::Yarn {
             removal.push("-g".into());
         }
-        removal.push(name.into());
+        removal.extend([IGNORE_SCRIPTS.into(), name.into()]);
         Some(step(command.clone(), removal))
     };
     args.push(verb.into());
     if method != InstallMethod::Yarn {
         args.push("-g".into());
     }
-    args.push(update.into());
+    args.extend([IGNORE_SCRIPTS.into(), update.into()]);
     let install = step(command, args);
     Some(match uninstall {
         None => SelfUpdateCommand {

@@ -56,8 +56,7 @@ fn candidate_files(path: &str, kind: ResourceType, filtered: bool) -> io::Result
         .is_some_and(|m| m.field(kind.name()).is_some_and(super::manifest::truthy));
     let entries = manifest
         .as_ref()
-        .map(|m| m.entries(kind.name()))
-        .transpose()?
+        .and_then(|m| m.entries(kind.name()).ok())
         .unwrap_or_default();
     if !present || (filtered && entries.is_empty()) {
         return collect_resource_files(&join(&[path, kind.name()]), kind);

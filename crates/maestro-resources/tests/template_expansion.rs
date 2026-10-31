@@ -493,7 +493,7 @@ fn slice_placeholders_compose_with_original_tokens() {
 }
 
 /// Distinct authored inputs and independently recorded expected outputs.
-const COMMAND_ARGS_SPLIT_ONLY_SPACES_AND_TABS_CASES: &[(&str, &[&str])] = &[
+const COMMAND_ARGS_SPLIT_ON_ALL_WHITESPACE_CASES: &[(&str, &[&str])] = &[
     ("a b c", &["a", "b", "c"]),
     ("", &[]),
     ("a  b   c", &["a", "b", "c"]),
@@ -503,14 +503,16 @@ const COMMAND_ARGS_SPLIT_ONLY_SPACES_AND_TABS_CASES: &[(&str, &[&str])] = &[
     ("\"line1\nline2\" second", &["line1\nline2", "second"]),
     ("a b c   ", &["a", "b", "c"]),
     ("   a b c", &["a", "b", "c"]),
-    ("a\nb", &["a\nb"]),
-    ("a\rb", &["a\rb"]),
-    ("a\u{b} b", &["a\u{b}", "b"]),
-    ("a\u{c} b", &["a\u{c}", "b"]),
-    ("a b", &["a b"]),
-    ("a﻿b", &["a﻿b"]),
-    ("ab", &["ab"]),
-    ("a b", &["a b"]),
+    ("a\nb", &["a", "b"]),
+    ("a\rb", &["a", "b"]),
+    ("a\tb\nc", &["a", "b", "c"]),
+    ("a\u{b}b", &["a", "b"]),
+    ("a\u{c}b", &["a", "b"]),
+    ("a\u{a0}b", &["a", "b"]),
+    ("a\u{feff}b", &["a", "b"]),
+    ("a\u{85}b", &["a\u{85}b"]),
+    ("a\u{2028}b", &["a", "b"]),
+    ("\"a\nb\"\nc", &["a\nb", "c"]),
     ("a\\ b", &["a\\", "b"]),
     ("  \t  ", &[]),
     ("a\0b", &["a\0b"]),
@@ -518,8 +520,8 @@ const COMMAND_ARGS_SPLIT_ONLY_SPACES_AND_TABS_CASES: &[(&str, &[&str])] = &[
 
 /// Exercise original inputs through the public template seam.
 #[test]
-fn command_args_split_only_spaces_and_tabs() {
-    for (text, expected) in COMMAND_ARGS_SPLIT_ONLY_SPACES_AND_TABS_CASES {
+fn command_args_split_on_all_whitespace() {
+    for (text, expected) in COMMAND_ARGS_SPLIT_ON_ALL_WHITESPACE_CASES {
         assert_eq!(parse_command_args(text), *expected);
     }
 }
@@ -1068,7 +1070,7 @@ const MAESTRO_PROMPT_TEMPLATE_EXPANDS_FIRST_MATCHING_NAME_CASES: &[ExpansionCase
             ("go\ttab", "tab:$1"),
             ("go\nline", "newline:$1"),
         ],
-        "/go\tx",
+        "x||x",
     ),
     (
         "/go\nx",
@@ -1080,7 +1082,7 @@ const MAESTRO_PROMPT_TEMPLATE_EXPANDS_FIRST_MATCHING_NAME_CASES: &[ExpansionCase
             ("go\ttab", "tab:$1"),
             ("go\nline", "newline:$1"),
         ],
-        "/go\nx",
+        "x||x",
     ),
     (
         "/go\ttab z",
@@ -1092,7 +1094,7 @@ const MAESTRO_PROMPT_TEMPLATE_EXPANDS_FIRST_MATCHING_NAME_CASES: &[ExpansionCase
             ("go\ttab", "tab:$1"),
             ("go\nline", "newline:$1"),
         ],
-        "tab:z",
+        "tab|z|tab z",
     ),
     (
         "/go\nline z",
@@ -1104,7 +1106,7 @@ const MAESTRO_PROMPT_TEMPLATE_EXPANDS_FIRST_MATCHING_NAME_CASES: &[ExpansionCase
             ("go\ttab", "tab:$1"),
             ("go\nline", "newline:$1"),
         ],
-        "newline:z",
+        "line|z|line z",
     ),
     (
         "/",
@@ -1164,7 +1166,7 @@ const MAESTRO_PROMPT_TEMPLATE_EXPANDS_FIRST_MATCHING_NAME_CASES: &[ExpansionCase
             ("go\ttab", "tab:$1"),
             ("go\nline", "newline:$1"),
         ],
-        "a\nq||a\nq",
+        "a|q|a q",
     ),
     ("/go x", &[], "/go x"),
 ];
@@ -1178,6 +1180,24 @@ fn maestro_prompt_template_expands_first_matching_name() {
             .map(|(name, content)| template(name, content))
             .collect();
         assert_eq!(expand_prompt_template(text, &templates), *expected);
+    }
+}
+
+/// A template name ends at the first whitespace scalar, whatever its kind.
+#[test]
+fn prompt_template_name_ends_at_first_whitespace() {
+    let templates = [template("tpl", "$1,$2,$3")];
+    for (text, expected) in [
+        ("/tpl a\tb\nc", "a,b,c"),
+        ("/tpl\nx", "x,,"),
+        ("/tpl\tx y", "x,y,"),
+        ("/tpl", ",,"),
+    ] {
+        assert_eq!(
+            expand_prompt_template(text, &templates),
+            expected,
+            "{text:?}"
+        );
     }
 }
 

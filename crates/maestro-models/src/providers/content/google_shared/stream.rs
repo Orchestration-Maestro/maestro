@@ -297,10 +297,11 @@ impl<'a> Reducer<'a> {
         Ok(())
     }
 
-    /// Record the outcome a declared finish reason stands for; a call in the message wins.
+    /// Record the outcome a declared finish reason stands for; a call in the message turns a
+    /// normal stop into tool use but never hides a length or error stop.
     fn finish(&self, reason: &str) -> Result<(), DiagnosticErrorInfo> {
         let mut stop_reason = map_stop_reason(reason)?;
-        if !self.call_ids.is_empty() {
+        if !self.call_ids.is_empty() && stop_reason == StopReason::Stop {
             stop_reason = StopReason::ToolUse;
         }
         self.change(|message| message.stop_reason = stop_reason);

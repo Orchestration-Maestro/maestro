@@ -305,3 +305,18 @@ fn initial_choice_short_circuits_or_returns_availability_error() {
         assert!(actual == case.expected, "recorded initial-choice route");
     }
 }
+
+#[test]
+fn coding_plan_defaults_track_current_glm() {
+    if isolation::isolated("coding_plan_defaults_track_current_glm") {
+        return;
+    }
+    let table = DEFAULT_MODEL_PER_PROVIDER.read().unwrap();
+    for provider in ["zai", "zai-coding-cn"] {
+        assert_eq!(
+            table.get(provider).map(String::as_str),
+            Some("glm-5.3"),
+            "{provider}"
+        );
+    }
+}
