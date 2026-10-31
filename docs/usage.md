@@ -385,7 +385,7 @@ hosted requests independently of these preferences.
 | --- | --- |
 | Anthropic | `ANTHROPIC_OAUTH_TOKEN`, `ANTHROPIC_API_KEY` |
 | OpenAI / Azure OpenAI Responses | `OPENAI_API_KEY` / `AZURE_OPENAI_API_KEY` |
-| GitHub Copilot | `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, `GITHUB_TOKEN` |
+| GitHub Copilot | `COPILOT_GITHUB_TOKEN` |
 | Google / Google Vertex | `GEMINI_API_KEY` / `GOOGLE_CLOUD_API_KEY` |
 | DeepSeek / Groq / Cerebras | `DEEPSEEK_API_KEY` / `GROQ_API_KEY` / `CEREBRAS_API_KEY` |
 | xAI / Fireworks / OpenRouter | `XAI_API_KEY` / `FIREWORKS_API_KEY` / `OPENROUTER_API_KEY` |

@@ -84,7 +84,7 @@ are not trimmed. Use the variable spelling shown here. Provider IDs are case-sen
 | Anthropic | `anthropic` | `ANTHROPIC_OAUTH_TOKEN`, `ANTHROPIC_API_KEY` |
 | OpenAI | `openai` | `OPENAI_API_KEY` |
 | OpenAI Codex | `openai-codex` | None; subscription login |
-| GitHub Copilot | `github-copilot` | `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, `GITHUB_TOKEN` |
+| GitHub Copilot | `github-copilot` | `COPILOT_GITHUB_TOKEN` |
 | Azure OpenAI Responses | `azure-openai-responses` | `AZURE_OPENAI_API_KEY` |
 | Amazon Bedrock | `amazon-bedrock` | AWS credential chain, not an API-key field; see below |
 | Google Gemini | `google` | `GEMINI_API_KEY` |

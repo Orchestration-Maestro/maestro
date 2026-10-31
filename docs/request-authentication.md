@@ -18,7 +18,8 @@ whitespace are retained unchanged. Provider names match exactly and are
 case-sensitive. Ambient configuration never appears in `find_env_keys`.
 
 Anthropic checks `ANTHROPIC_OAUTH_TOKEN` before `ANTHROPIC_API_KEY`. GitHub Copilot
-checks `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, then `GITHUB_TOKEN`. Fireworks checks
+checks only `COPILOT_GITHUB_TOKEN`; the generic `GH_TOKEN` and `GITHUB_TOKEN`
+belong to other tools and never count as Copilot credentials. Fireworks checks
 `FIREWORKS_API_KEY`. OAuth token variables can supply keys.
 
 ## Ambient configuration
