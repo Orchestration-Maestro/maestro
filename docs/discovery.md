@@ -24,8 +24,9 @@ A candidate is any directory entry whose name ends in exactly `.jsonl`,
 symlinks included. Candidates are enumerated first, in name order on every
 platform. For `list_all` the project directories come in name order too, and
 every directory is enumerated and counted before the first candidate is read.
-All candidate reads then run together in the calling task with no limit on how
-many are in flight.
+The candidates are then read in the calling task, at most ten at a time. Each file
+is read line by line, so a large session costs about its longest line in memory,
+and a file whose reached record is malformed stops being read there.
 
 ## Per-session metadata
 
