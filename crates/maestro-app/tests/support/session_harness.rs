@@ -147,6 +147,8 @@ pub struct HarnessOptions {
     pub append_system_prompt: Vec<String>,
     /// The agent's own task facility; the session supplies its default when absent.
     pub spawn: Option<maestro_agent::AgentSpawner<Local>>,
+    /// The next-turn hook already installed on the supplied agent.
+    pub prepare_next_turn: Option<maestro_agent::PrepareNextTurn<CustomAgentMessages, Local>>,
     /// The loaded skills.
     pub skills: Vec<maestro_resources::Skill>,
     /// The loaded prompt templates.
@@ -178,6 +180,7 @@ impl Default for HarnessOptions {
             system_prompt: None,
             append_system_prompt: Vec::new(),
             spawn: None,
+            prepare_next_turn: None,
             skills: Vec::new(),
             prompts: Vec::new(),
             scratch: None,
@@ -689,6 +692,7 @@ pub async fn harness(mut options: HarnessOptions) -> Harness {
         .take()
         .map(|responses| scripted_stream(responses, requests.clone()));
     let (runner_ref, settings_manager, agent) = scripted_agent(&mut options, &faux, stream);
+    *agent.prepare_next_turn.write().unwrap() = options.prepare_next_turn.take();
     let session_manager = options
         .session_manager
         .take()

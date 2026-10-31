@@ -227,3 +227,59 @@ fn dispose_stops_a_waiting_retry_so_the_run_settles() {
         assert!(!h.session.is_streaming());
     });
 }
+
+/// Session refresh preserves the supplied agent hook's messages, but owns prompt and tools.
+#[test]
+fn next_turn_refresh_chains_the_supplied_agent_hook() {
+    on_task_set(|_| async {
+        let called = Rc::new(std::cell::Cell::new(0));
+        let record = Rc::clone(&called);
+        let hook: maestro_agent::PrepareNextTurn<
+            maestro_session::messages::CustomAgentMessages,
+            maestro_models::Local,
+        > = Rc::new(
+            move |turn: maestro_agent::PrepareNextTurnContext<'_, _, maestro_models::Local>,
+                  signal: Option<maestro_models::Cancellation>| {
+                record.set(record.get() + 1);
+                assert!(signal.is_some());
+                let mut context = turn.context.clone();
+                let mut messages = context.messages.read().unwrap().clone();
+                messages.push(maestro_agent::AgentMessage::User(std::sync::Arc::new(
+                    std::sync::RwLock::new(maestro_models::UserMessage {
+                        content: maestro_models::UserContent::Text("hook message".into()),
+                        timestamp: 1.0,
+                    }),
+                )));
+                context.messages = std::sync::Arc::new(std::sync::RwLock::new(messages));
+                context.system_prompt = "discarded prompt".into();
+                context.tools = None;
+                Box::pin(std::future::ready(Ok(Some(
+                    maestro_agent::AgentLoopTurnUpdate {
+                        context: Some(context),
+                        model: None,
+                        thinking_level: None,
+                    },
+                ))))
+            },
+        );
+        let h = harness(HarnessOptions {
+            prepare_next_turn: Some(hook),
+            system_prompt: Some("session prompt"),
+            responses: Some(vec![Scripted::echo_call("hello"), Scripted::text("done")]),
+            custom_tools: vec![crate::support::session_harness::sdk_definition(
+                crate::support::session_harness::tool_definition("echo", None, None),
+            )],
+            initial_active_tool_names: Some(vec!["echo".into()]),
+            ..HarnessOptions::default()
+        })
+        .await;
+        start_prompt(&h, "one").await.unwrap().unwrap();
+        assert_eq!(called.get(), 2);
+        let requests = h.requests.0.borrow();
+        assert_eq!(requests.len(), 2);
+        assert_eq!(requests[1].system_prompt.as_deref(), Some("session prompt"));
+        assert_eq!(requests[1].tools.as_ref().unwrap()[0].name, "echo");
+        assert!(requests[1].messages.iter().any(|message| matches!(message,
+            maestro_models::Message::User(user) if user.content == maestro_models::UserContent::Text("hook message".into()))));
+    });
+}
