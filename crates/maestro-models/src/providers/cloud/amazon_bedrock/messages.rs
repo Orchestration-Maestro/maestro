@@ -245,7 +245,7 @@ fn assistant_block(block: AssistantContent, claude: bool) -> Option<Union<Conten
             }
             let signature = thinking
                 .thinking_signature
-                .filter(|signature| !signature.trim_matches(whitespace).is_empty());
+                .filter(|signature| !blank(signature));
             Some(match (claude, signature) {
                 (true, None) => text_block(thinking.thinking),
                 (true, signature) => reasoning(thinking.thinking, signature),
