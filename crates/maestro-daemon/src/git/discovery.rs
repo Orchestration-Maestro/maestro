@@ -1,6 +1,6 @@
 //! Shared native repository discovery with process-owning command fallbacks.
-use maestro_process::{OutputMode, SpawnSyncOptions, spawn_sync};
-use std::path::Path;
+use maestro_process::{OutputMode, SpawnSyncError, SpawnSyncOptions, spawn_sync};
+use std::{ffi::OsStr, path::Path, process::Output};
 
 pub use maestro_workspace::workspace::git::discovery::{
     GitSpaceMetadata, GitWorktreeInfo, automatic_workspace_label, canonicalize_best_effort_path,
@@ -8,7 +8,8 @@ pub use maestro_workspace::workspace::git::discovery::{
     git_space_metadata_from_info, git_worktree_info,
 };
 pub use maestro_workspace::workspace::git::native::{
-    GitPaths, discover_git_paths, git_ref_storage_is_reftable, read_text, trim,
+    GitPaths, authored_git_dir_for_repo_root, discover_git_paths, git_ref_storage_is_reftable,
+    read_text, trim,
 };
 
 /// Read the branch name, querying Git only for reftable storage.
@@ -38,21 +39,31 @@ pub fn git_symbolic_head_full(repo_root: &Path) -> Option<String> {
     git_trimmed_stdout(repo_root, &["symbolic-ref", "--quiet", "HEAD"])
 }
 
-/// Run a noninteractive Git query through the existing process owner.
-pub(super) fn git_trimmed_stdout(repo_root: &Path, args: &[&str]) -> Option<String> {
+/// Run a noninteractive Git command in `dir` through the process owner and capture its output.
+///
+/// # Errors
+/// Returns the launch or wait failure; a nonzero exit is a completed output.
+pub(crate) fn git_output(
+    dir: &Path,
+    args: impl IntoIterator<Item = impl AsRef<OsStr>>,
+) -> Result<Output, SpawnSyncError> {
     let mut command = maestro_process::command("git");
-    command.arg("-C").arg(repo_root).args(args);
-    let output = spawn_sync(
+    command.arg("-C").arg(dir).args(args);
+    spawn_sync(
         &mut command,
         SpawnSyncOptions::Capture {
             max_buffer_bytes: None,
             stdout: OutputMode::Capture,
             input: None,
             timeout: None,
-            stderr: OutputMode::Discard,
+            stderr: OutputMode::Capture,
         },
     )
-    .ok()?;
+}
+
+/// Run a noninteractive Git query and return its trimmed, nonempty standard output.
+pub(super) fn git_trimmed_stdout(repo_root: &Path, args: &[&str]) -> Option<String> {
+    let output = git_output(repo_root, args).ok()?;
     if !output.status.success() {
         return None;
     }

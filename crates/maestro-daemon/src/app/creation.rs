@@ -3,45 +3,12 @@
 use super::{App, state::Mode};
 use crate::{
     pane::{launch_env::PaneLaunchEnv, runtime::PaneRuntime, shell::PaneShellConfig},
+    paths::expand_home_path,
     settings::model::NewTerminalCwdConfig,
     terminal::state::TerminalState,
 };
 use maestro_workspace::workspace::{public_pane_id_for_number, public_tab_id_for_number};
 use std::{io, path::PathBuf};
-
-/// Expands only an exact `~` or a leading `~/` (`~\` on Windows), joining the rest as a
-/// native path and keeping every other spelling without reading the home directory.
-fn expand_home_path(path: &str) -> PathBuf {
-    let Some(rest) = path.strip_prefix('~') else {
-        return path.into();
-    };
-    if !rest.is_empty() && !rest.starts_with(std::path::is_separator) {
-        return path.into();
-    }
-    let Ok(home) = std::env::var_os("HOME")
-        .map(PathBuf::from)
-        .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "home directory is unknown"))
-    else {
-        return path.into();
-    };
-    if rest.is_empty() {
-        return home;
-    }
-    rest.strip_prefix(std::path::is_separator)
-        .map_or_else(|| path.into(), |rest| join_tilde_rest(home, rest))
-}
-
-/// Joins `rest` below `home` natively: on Windows every separator splits the rest and empty
-/// components are dropped; elsewhere an absolute rest replaces the home.
-fn join_tilde_rest(home: PathBuf, rest: &str) -> PathBuf {
-    if cfg!(windows) {
-        rest.split(['/', '\\'])
-            .filter(|component| !component.is_empty())
-            .fold(home, |path, component| path.join(component))
-    } else {
-        home.join(rest)
-    }
-}
 
 /// Resolves the configured cwd policy against one observed focused directory.
 fn resolve_new_terminal_cwd(policy: &NewTerminalCwdConfig, follow_cwd: Option<PathBuf>) -> PathBuf {
@@ -54,7 +21,7 @@ fn resolve_new_terminal_cwd(policy: &NewTerminalCwdConfig, follow_cwd: Option<Pa
             .unwrap_or_else(|| "/".into()),
         NewTerminalCwdConfig::Home => home().or_else(current).unwrap_or_else(|| "/".into()),
         NewTerminalCwdConfig::Current => current().unwrap_or_else(|| "/".into()),
-        NewTerminalCwdConfig::Path(path) => expand_home_path(path),
+        NewTerminalCwdConfig::Path(path) => expand_home_path(path, home),
     }
 }
 

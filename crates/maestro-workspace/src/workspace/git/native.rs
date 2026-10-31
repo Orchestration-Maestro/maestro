@@ -44,8 +44,10 @@ fn trim_link(bytes: &[u8]) -> &[u8] {
                 .len())]
 }
 
-/// Resolve metadata links without decoding native Unix path components.
-fn resolve_link(base: &Path, bytes: &[u8]) -> io::Result<PathBuf> {
+/// Join a metadata link to its base without decoding native Unix path components.
+///
+/// `..` segments stay as authored, so the result can still be followed link by link.
+fn authored_link(base: &Path, bytes: &[u8]) -> io::Result<PathBuf> {
     #[cfg(unix)]
     let target = {
         use std::os::unix::ffi::OsStrExt;
@@ -56,7 +58,12 @@ fn resolve_link(base: &Path, bytes: &[u8]) -> io::Result<PathBuf> {
         std::str::from_utf8(trim_link(bytes))
             .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?,
     );
-    std::path::absolute(base.join(target)).map(|path| maestro_path::normalize_native(&path))
+    std::path::absolute(base.join(target))
+}
+
+/// Resolve metadata links lexically: `.` and `..` segments fold away.
+fn resolve_link(base: &Path, bytes: &[u8]) -> io::Result<PathBuf> {
+    authored_link(base, bytes).map(|path| maestro_path::normalize_native(&path))
 }
 
 /// Caller-specific metadata acceptance within the shared repository walk.
@@ -90,7 +97,7 @@ fn discover(start: &Path, policy: DiscoveryPolicy) -> io::Result<Option<GitPaths
     }
     .to_path_buf();
     loop {
-        if let Some(git_dir) = git_dir_for_root(&current, policy)? {
+        if let Some(git_dir) = git_dir_for_root(&current, policy, resolve_link)? {
             let head = git_dir.join("HEAD");
             let valid = match policy {
                 DiscoveryPolicy::Workspace => head.is_file(),
@@ -129,11 +136,27 @@ fn paths_for_root(
 
 /// Locate a directory's metadata marker, including standalone bare layouts.
 pub(super) fn git_dir_for_repo_root(root: &Path) -> io::Result<Option<PathBuf>> {
-    git_dir_for_root(root, DiscoveryPolicy::Workspace)
+    git_dir_for_root(root, DiscoveryPolicy::Workspace, resolve_link)
 }
 
-/// Locate metadata with the caller's worktree marker syntax.
-fn git_dir_for_root(root: &Path, policy: DiscoveryPolicy) -> io::Result<Option<PathBuf>> {
+/// Locate a directory's metadata marker, preserving `..` in a `.git` link target.
+///
+/// A link file resolves to its target without checking that the target exists, and `..`
+/// segments stay in it. A caller that acts on the folder the link names follows the target link
+/// by link, because a symbolic link before a `..` changes which folder the segment leaves.
+///
+/// # Errors
+/// Returns the native failure of resolving a link.
+pub fn authored_git_dir_for_repo_root(root: &Path) -> io::Result<Option<PathBuf>> {
+    git_dir_for_root(root, DiscoveryPolicy::Workspace, authored_link)
+}
+
+/// Locate metadata with the caller's worktree marker syntax and link resolution.
+fn git_dir_for_root(
+    root: &Path,
+    policy: DiscoveryPolicy,
+    link: fn(&Path, &[u8]) -> io::Result<PathBuf>,
+) -> io::Result<Option<PathBuf>> {
     let marker = root.join(".git");
     match std::fs::metadata(&marker) {
         Ok(metadata) if metadata.is_dir() => return Ok(Some(marker)),
@@ -149,7 +172,7 @@ fn git_dir_for_root(root: &Path, policy: DiscoveryPolicy) -> io::Result<Option<P
             };
             return trim_link(&contents)
                 .strip_prefix(prefix)
-                .map(|target| resolve_link(root, target))
+                .map(|target| link(root, target))
                 .transpose();
         }
         Ok(_) => return Ok(None),

@@ -781,6 +781,11 @@ The branch-tracking reader in `crates/maestro-workspace/src/workspace/git/config
 and its submodules derives from the repository configuration module under the same
 license. Changes include one include walk in place of three, wildcard matching with path
 rules in bounded time, and supplied user files and home directory.
+The worktree names, checkout paths and Git commands in
+`crates/maestro-daemon/src/git/worktree.rs` derive from the worktree module under the
+same license. Changes include operands that cannot be read as options, native path bytes
+in the listing, a supplied home directory, and a leftover-checkout check that follows
+links to the repository.
 The status snapshots, fingerprints and cache keys in
 `crates/maestro-daemon/src/git/status.rs` and the refresh scheduling in
 `crates/maestro-daemon/src/app/git_refresh.rs` derive from the repository status and

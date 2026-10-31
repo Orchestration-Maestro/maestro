@@ -1,6 +1,7 @@
 //! Authored daemon paths rooted in a supplied agent directory.
 
 use maestro_detection::agents::{Agent, agent_label};
+use std::path::PathBuf;
 
 /// Agent-wide resources and a validated optional daemon identity.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -160,6 +161,38 @@ fn child(root: &str, relative: &str) -> String {
         format!("{root}{relative}")
     } else {
         format!("{root}/{relative}")
+    }
+}
+
+/// Expands only an exact `~` or a leading `~/` (`~\` on Windows) against the home directory
+/// that `home` supplies, joining the rest as a native path. Every other spelling is kept,
+/// and `home` is asked for only when the spelling starts with `~`.
+pub(crate) fn expand_home_path(path: &str, home: impl FnOnce() -> Option<PathBuf>) -> PathBuf {
+    let Some(rest) = path.strip_prefix('~') else {
+        return path.into();
+    };
+    if !rest.is_empty() && !rest.starts_with(std::path::is_separator) {
+        return path.into();
+    }
+    let Some(home) = home() else {
+        return path.into();
+    };
+    if rest.is_empty() {
+        return home;
+    }
+    rest.strip_prefix(std::path::is_separator)
+        .map_or_else(|| path.into(), |rest| join_tilde_rest(home, rest))
+}
+
+/// Joins `rest` below `home` natively: on Windows every separator splits the rest and empty
+/// components are dropped; elsewhere an absolute rest replaces the home.
+fn join_tilde_rest(home: PathBuf, rest: &str) -> PathBuf {
+    if cfg!(windows) {
+        rest.split(['/', '\\'])
+            .filter(|component| !component.is_empty())
+            .fold(home, |path, component| path.join(component))
+    } else {
+        home.join(rest)
     }
 }
 

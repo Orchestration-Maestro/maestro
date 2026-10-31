@@ -23,6 +23,7 @@ mod daemon_state;
 mod desktop_notification;
 mod event_replay;
 mod git_status;
+mod git_worktree;
 mod key_combo;
 mod repository_discovery;
 mod repository_identity;
