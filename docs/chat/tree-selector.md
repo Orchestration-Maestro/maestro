@@ -101,7 +101,7 @@ malformed text or a missing matched tool-argument receiver returns `InvalidData`
 theme failures are propagated. Tool results resolve the last matching call from
 all ordered assistant rows, including hidden rows. Path summaries read the supplied
 runtime's nonempty HOME, then USERPROFILE, at each render and show the home and the
-paths below it as `~`.
+paths below it as `~`, with the part below the home as written.
 `command`, `path`, `file_path` and `pattern` use their tool defaults for falsy
 values. Before tool-specific formatting, truthy strings supply text and other
 truthy values become compact JSON. Shell summaries still normalize newlines and

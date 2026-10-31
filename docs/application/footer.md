@@ -112,8 +112,11 @@ providers' registrations intact.
 ## Working-directory display
 
 The footer shows the working directory with the home directory spelled `~` only
-for the home itself and the paths below it, through `maestro_path::shorten_home`.
-A sibling whose name starts with the home's name, such as `/srv/u2/x` under the
-home `/srv/u`, keeps its full path, as does any path when the home is empty,
-relative or the root directory. The session selector, the tree selector, the
-context-file list and the tool call rows use the same function.
+for the home itself and the paths below it, through
+`maestro_path::shorten_home_normalized`, which folds `.` and `..` segments and
+doubled separators in the part below the home and writes it with the platform's
+separator. A sibling whose name starts with the home's name, such as `/srv/u2/x`
+under the home `/srv/u`, keeps its full path, as does any path when the home is
+empty, relative or the root directory. The session selector, the tree selector,
+the context-file list and the tool call rows use `maestro_path::shorten_home`,
+which keeps the part below the home exactly as written.

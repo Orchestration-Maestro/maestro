@@ -48,19 +48,24 @@ enum Rest {
     Resolved,
 }
 
-/// Shows `path` below the directory `home` as `~` and what follows it, in the compile target's
-/// flavor.
+/// Shows `path` below the directory `home` as `~` and the text after the home as written.
 ///
-/// `path` and `home` are authored, absolute and compared lexically after their `.` and `..`
-/// segments fold. The home itself is `~`; a path below it is `~`, the flavor's separator and
-/// the part below. A sibling that shares the home's leading text, a path on another root, a
-/// relative path, and an empty, relative or root home leave `path` as written.
+/// `path` and `home` are authored and absolute. The home itself is `~`; a path that starts
+/// with the home's text, ignoring separators at its end, and continues with a separator is `~`
+/// and the rest exactly as written, so `.`, `..` and doubled or trailing separators stay. A
+/// sibling that shares the home's leading text, a path on another root, a relative path, and an
+/// empty, relative or root home leave `path` as written. The compile target's flavor decides
+/// what a separator and an absolute path are.
 #[must_use]
 pub fn shorten_home(path: &str, home: &str) -> String {
     shorten_home_in(path, home, cfg!(windows), Rest::AsWritten)
 }
 
-/// Shows `path` below `home` as `~` and what follows it, in the compile target's flavor.
+/// Shows `path` below the directory `home` as `~` and the part below it, normalized.
+///
+/// `path` and `home` are authored, absolute and compared lexically after their `.` and `..`
+/// segments fold. The home itself is `~`; a path below it is `~`, the compile target's separator
+/// and the part below. The cases [`shorten_home`] leaves as written stay as written.
 #[must_use]
 pub fn shorten_home_normalized(path: &str, home: &str) -> String {
     shorten_home_in(path, home, cfg!(windows), Rest::Resolved)
@@ -68,7 +73,7 @@ pub fn shorten_home_normalized(path: &str, home: &str) -> String {
 
 /// The rules of [`shorten_home`] and [`shorten_home_normalized`] in a supplied flavor,
 /// independently of the compile target.
-fn shorten_home_in(path: &str, home: &str, windows: bool, _rest: Rest) -> String {
+fn shorten_home_in(path: &str, home: &str, windows: bool, rest: Rest) -> String {
     let (absolute, relative, separator): (fn(&str) -> bool, RelativeFn, char) = if windows {
         (win32::is_absolute, win32::relative, '\\')
     } else {
@@ -86,6 +91,9 @@ fn shorten_home_in(path: &str, home: &str, windows: bool, _rest: Rest) -> String
     if relative(home, &format!("{home}{separator}.."), &cwd).is_empty() {
         return path.to_owned();
     }
+    if rest == Rest::AsWritten {
+        return below_as_written(path, home, windows);
+    }
     let below = relative(home, path, &cwd);
     if below.is_empty() {
         return "~".to_owned();
@@ -95,6 +103,18 @@ fn shorten_home_in(path: &str, home: &str, windows: bool, _rest: Rest) -> String
         path.to_owned()
     } else {
         format!("~{separator}{below}")
+    }
+}
+
+/// `~` and the text of `path` after the text of `home` when `path` continues it at a component
+/// boundary, and `path` otherwise.
+fn below_as_written(path: &str, home: &str, windows: bool) -> String {
+    let home = home.trim_end_matches(|c| is_separator(c, windows));
+    match path.strip_prefix(home) {
+        Some(rest) if rest.is_empty() || rest.starts_with(|c| is_separator(c, windows)) => {
+            format!("~{rest}")
+        }
+        _ => path.to_owned(),
     }
 }
 

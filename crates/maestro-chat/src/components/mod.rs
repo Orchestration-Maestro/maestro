@@ -264,15 +264,16 @@ fn list_window(selected: usize, total: usize, capacity: usize) -> std::ops::Rang
     start..start.saturating_add(capacity).min(total)
 }
 
-/// Shows `path` below the first usable home variable as `~` for display.
-fn shorten_path_with_home(path: &str, environment: &dyn Fn(&str) -> Option<String>) -> String {
+/// Shows `path` below the first usable home variable as `~` for display, through `shorten`.
+fn shorten_path_with_home(
+    path: &str,
+    environment: &dyn Fn(&str) -> Option<String>,
+    shorten: fn(&str, &str) -> String,
+) -> String {
     let home = environment("HOME")
         .filter(|home| !home.is_empty())
         .or_else(|| environment("USERPROFILE").filter(|home| !home.is_empty()));
-    home.map_or_else(
-        || path.to_owned(),
-        |home| maestro_path::shorten_home(path, &home),
-    )
+    home.map_or_else(|| path.to_owned(), |home| shorten(path, &home))
 }
 
 pub mod bash_execution;

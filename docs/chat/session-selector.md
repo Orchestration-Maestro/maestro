@@ -77,7 +77,7 @@ Rows show names (including present empty names) or first messages, tree connecto
 counts and fixed elapsed-time units. Working directories are optional. Displayed
 paths show the home as `~` only for the home itself and the paths below it, so a
 sibling that shares the home's leading text stays as written, as it does when that
-home is empty or `/`. C0 controls and DEL become spaces in
+home is empty or `/`. The part below the home keeps its spelling. C0 controls and DEL become spaces in
 displayed messages and metadata; message text is additionally trimmed. Authored
 selection/callback identities are unchanged.
 Empty views offer only actions enabled in the current key registry.
