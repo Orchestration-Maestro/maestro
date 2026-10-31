@@ -118,6 +118,12 @@ and the [built-in display names](../crates/maestro-catalog/src/provider_display_
 Configured authentication is not proof that a token works. Ambient discovery
 checks are described in [request authentication](request-authentication.md).
 
+## Routing preferences
+
+A model's `openRouterRouting` compatibility value is sent as the request's `provider`
+object whenever it is set, through a proxy or custom base URL as well as the routing
+gateway itself.
+
 ## Credential file and key selection
 
 Session credentials live at `~/.maestro/agent/auth.json` by default. A nonempty

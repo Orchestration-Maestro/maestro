@@ -326,9 +326,7 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
                 .and_then(|compat| compat.0.get(name))
                 .filter(|value| super::compat::supplied(value))
         };
-        if self.model.base_url.contains("openrouter.ai") {
-            payload.provider = option("openRouterRouting");
-        }
+        payload.provider = option("openRouterRouting");
         if self.model.base_url.contains("ai-gateway.vercel.sh")
             && let Some(routing) = option("vercelGatewayRouting")
         {
