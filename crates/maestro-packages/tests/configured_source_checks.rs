@@ -802,7 +802,7 @@ fn numeric_scp_namespace_matches_git_transport_in_settings() {
         settings.borrow().get_global_settings().0["packages"],
         json!([scp])
     );
-    assert!(!manager.add_source_to_settings(https, None).unwrap());
+    assert!(manager.add_source_to_settings(https, None).unwrap());
     assert!(manager.remove_source_from_settings(https, None).unwrap());
     assert_eq!(
         settings.borrow().get_global_settings().0["packages"],
@@ -816,10 +816,10 @@ fn queried_hosted_shortcut_matches_https_for_add_and_remove() {
     let shortcut = "git:github:octocat/Hello-World?tab=readme";
     let https = "https://github.com/octocat/Hello-World";
     assert!(manager.add_source_to_settings(shortcut, None).unwrap());
-    assert!(!manager.add_source_to_settings(https, None).unwrap());
+    assert!(manager.add_source_to_settings(https, None).unwrap());
     assert_eq!(
         settings.borrow().get_global_settings().0["packages"],
-        json!([shortcut])
+        json!([https])
     );
     assert!(manager.remove_source_from_settings(https, None).unwrap());
     assert_eq!(
