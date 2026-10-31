@@ -8,6 +8,7 @@ mod native_io;
 mod provider_payload_example;
 mod qna_example;
 mod rpc_demo_example;
+mod ssh_example;
 mod startup_modes;
 mod structured_output_example;
 mod support;

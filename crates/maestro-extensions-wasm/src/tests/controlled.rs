@@ -1014,7 +1014,24 @@ impl Imports for Controlled {
         &self,
         _: Option<String>,
     ) -> ExtensionResult<crate::BashOperations> {
-        Err("local shell operations require the production host".into())
+        let observed = Rc::clone(&self.observed);
+        Ok(crate::BashOperations {
+            exec: Rc::new(move |command, cwd, _| {
+                observed.borrow_mut().native_io.launches.push((
+                    command,
+                    Vec::new(),
+                    crate::child_process::SpawnOptions {
+                        cwd: Some(cwd),
+                        ..Default::default()
+                    },
+                ));
+                Box::pin(async {
+                    Ok(crate::BashExecResult {
+                        exit_code: Some(0.0),
+                    })
+                })
+            }),
+        })
     }
     fn create_bash_tool(
         &self,
