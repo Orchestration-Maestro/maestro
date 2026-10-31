@@ -126,7 +126,7 @@ mod tests {
     }
 
     #[test]
-    fn unrelated_external_records_survive_without_import() {
+    fn unrelated_external_records_survive_and_are_read() {
         let dir = TempDir::new("external");
         let path = dir.path("auth.json");
         write_file(
@@ -148,12 +148,12 @@ mod tests {
             read_file(&path),
             pretty_keys(&[("openai", "o"), ("google", "g")])
         );
-        assert_eq!(storage.list(), ["openai"]);
-        assert!(!storage.has("google"));
+        assert_eq!(storage.list(), ["openai", "google"]);
+        assert!(storage.has("google"));
     }
 
     #[test]
-    fn rewritten_file_keeps_reread_order_while_listing_keeps_accepted_order() {
+    fn rewritten_file_keeps_reread_order_and_listing_follows_it() {
         let dir = TempDir::new("reordered");
         let path = dir.path("auth.json");
         write_file(&path, &pretty_keys(&[("a", "1"), ("b", "2")]));
@@ -161,7 +161,7 @@ mod tests {
         write_file(&path, &pretty_keys(&[("b", "2"), ("a", "1")]));
         storage.set("a", api_key("3"));
         assert_eq!(read_file(&path), pretty_keys(&[("b", "2"), ("a", "3")]));
-        assert_eq!(storage.list(), ["a", "b"]);
+        assert_eq!(storage.list(), ["b", "a"]);
     }
 
     #[test]

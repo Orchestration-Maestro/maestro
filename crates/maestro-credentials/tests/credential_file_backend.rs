@@ -398,7 +398,7 @@ mod tests {
             pretty(&[("b", "2")])
         );
         assert_eq!(mode(&path), 0o600);
-        assert_eq!(storage.list(), ["a", "b"]);
+        assert_eq!(storage.list(), ["b"]);
     }
 
     #[test]
