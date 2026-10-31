@@ -795,7 +795,7 @@ at once, and their result settles without any reader consuming the events:
 # }
 # fn config(model: &maestro_models::Model) -> AgentLoopConfig {
 #     AgentLoopConfig {
-#         before_tool_call: None, after_tool_call: None, should_stop_after_turn: None,
+#         before_tool_call: None, after_tool_call: None, should_stop_after_turn: None, prepare_next_turn: None,
 #         get_steering_messages: None, get_follow_up_messages: None, tool_execution: None,
 #         model: Arc::new(RwLock::new(model.clone())), thinking_budgets: None,
 #         options: SimpleStreamOptions::default(), extra: JsonObject::new(), objects: ProviderObjects::default(),
@@ -889,6 +889,16 @@ assert_eq!(observed, continue_run);
 # });
 ```
 
+## Preparing the next turn
+
+`AgentLoopConfig::prepare_next_turn` runs after each normally completed turn, before the stop
+decision. It receives the same turn record as the stop callback and may return an
+`AgentLoopTurnUpdate` holding a replacement context (instructions, history handle and tools), a
+model and a thinking level. The next request uses them; the request already sent keeps its
+payload, and an absent part keeps the current one. `Agent::prepare_next_turn` holds the callback
+for runs admitted later. The application session installs one that reads its active tools, the
+run's system prompt (an empty one included) and the selected model.
+
 ## Stopping after a turn
 
 `AgentLoopConfig::should_stop_after_turn` runs after each normally completed turn, once its
@@ -911,7 +921,7 @@ still happens. The example records the order:
 # }
 # fn config(model: &maestro_models::Model) -> AgentLoopConfig {
 #     AgentLoopConfig {
-#         before_tool_call: None, after_tool_call: None, should_stop_after_turn: None,
+#         before_tool_call: None, after_tool_call: None, should_stop_after_turn: None, prepare_next_turn: None,
 #         get_steering_messages: None, get_follow_up_messages: None, tool_execution: None,
 #         model: Arc::new(RwLock::new(model.clone())), thinking_budgets: None,
 #         options: SimpleStreamOptions::default(), extra: JsonObject::new(), objects: ProviderObjects::default(),

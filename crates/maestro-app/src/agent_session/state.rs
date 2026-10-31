@@ -49,6 +49,8 @@ pub(super) struct AgentSessionState<E: ExtensionExecution> {
     pub(super) run_open: Option<tokio::sync::oneshot::Sender<()>>,
     /// The system prompt built for the active tools, before any extension replaces it.
     pub(super) base_system_prompt: String,
+    /// The system prompt the extensions set for the run in progress, including an empty one.
+    pub(super) system_prompt_override: Option<String>,
     /// The options that built the base system prompt.
     pub(super) base_system_prompt_options: BuildSystemPromptOptions,
     /// Pending steering texts, as the agent's steering queue holds them.
@@ -80,6 +82,11 @@ pub(super) struct AgentSessionState<E: ExtensionExecution> {
 }
 
 impl<E: ExtensionExecution> AgentSessionState<E> {
+    /// The system prompt the agent uses now: the run's override, else the base prompt.
+    pub(super) fn effective_system_prompt(&self) -> String {
+        (self.system_prompt_override.clone()).unwrap_or_else(|| self.base_system_prompt.clone())
+    }
+
     /// Empty registries over the supplied scoped models and SDK tools, with an empty base
     /// system prompt and the options it starts from.
     pub(super) fn new(
@@ -102,6 +109,7 @@ impl<E: ExtensionExecution> AgentSessionState<E> {
             run_gate: None,
             run_open: None,
             base_system_prompt: String::new(),
+            system_prompt_override: None,
             base_system_prompt_options,
             steering_messages: Vec::new(),
             follow_up_messages: Vec::new(),

@@ -34,6 +34,11 @@ sent with `send_custom_message` while a run is active is queued: steering unless
 follow-up is asked for. A response that was aborted leaves queued messages
 queued.
 
+A change to the active tools, the selected model or the thinking level during a run
+reaches the next request of the run; the request already sent keeps its payload. A system
+prompt the extensions set for the run, even an empty one, stays in force for every turn of the
+run, and the base prompt returns when the run settles.
+
 ## Names
 
 `AgentSession::set_session_name` stores the trimmed name before publishing
