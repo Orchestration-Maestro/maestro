@@ -309,10 +309,11 @@ impl<E: ExtensionExecution> AgentSession<E> {
         read(self.agent.state()).thinking_level.clone()
     }
 
-    /// Whether a response is streaming.
+    /// Whether a run is active: from its prompt through its retries, compactions and queued
+    /// continuations, until its settle step.
     #[must_use]
     pub fn is_streaming(&self) -> bool {
-        read(self.agent.state()).is_streaming()
+        self.state.borrow().run_gate.is_some()
     }
 
     /// The current system prompt.
@@ -383,11 +384,19 @@ impl<E: ExtensionExecution> AgentSession<E> {
         self.resource_loader.get_prompts()
     }
 
-    /// Stops a retry, stops the running turn and waits for the agent to settle.
+    /// Stops a retry, stops the running turn and waits for the run to settle.
     pub async fn abort(&self) {
         self.abort_retry();
         self.agent.abort();
-        self.agent.wait_for_idle().await;
+        self.wait_for_idle().await;
+    }
+
+    /// Waits until no run is active; returns at once when none is.
+    pub async fn wait_for_idle(&self) {
+        let gate = self.state.borrow().run_gate.clone();
+        if let Some(gate) = gate {
+            drop(gate.await);
+        }
     }
 
     /// Runs `operation` as the session's own work: polled once now, then finished on the
@@ -403,18 +412,6 @@ impl<E: ExtensionExecution> AgentSession<E> {
         });
         crate::utils::task::start_now(task, |task| (self.spawn)(task));
         receiver
-    }
-
-    /// Runs one continuation after `delay` on the session's task facility.
-    pub(super) fn schedule_continuation(&self, delay: std::time::Duration) {
-        let due = tokio::time::Instant::now() + delay;
-        let agent = Rc::clone(&self.agent);
-        (self.spawn)(Box::pin(async move {
-            // The wait is anchored now, so a late first poll does not delay the continuation.
-            let remaining = due.saturating_duration_since(tokio::time::Instant::now());
-            let _ = maestro_tools::process::sleep::sleep(remaining, None).await;
-            drop(agent.r#continue().await);
-        }));
     }
 
     /// Removes the newest agent message when it is a response `removable` accepts, keeping

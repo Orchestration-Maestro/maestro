@@ -133,7 +133,14 @@ fn abort_returns_after_the_run_settles_its_shell_results() {
 #[test]
 fn custom_message_during_a_triggered_run_is_steered() {
     on_task_set(|_| async {
-        let h = compacting(vec![Scripted::failure("overloaded_error")], 60_000).await;
+        let h = compacting(
+            vec![
+                Scripted::failure("overloaded_error"),
+                Scripted::text("done"),
+            ],
+            60_000,
+        )
+        .await;
         let started = retry_started(&h);
         let session = Rc::clone(&h.session);
         let first = tokio::task::spawn_local(async move {
