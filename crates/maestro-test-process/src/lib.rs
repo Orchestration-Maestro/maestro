@@ -13,6 +13,7 @@
 
 mod alone;
 mod cache;
+pub mod child;
 #[cfg(windows)]
 mod console;
 mod environment;

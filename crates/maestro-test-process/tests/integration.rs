@@ -2,6 +2,7 @@
 #![cfg(test)]
 
 mod checked_runs;
+mod child_helpers;
 mod command_route;
 mod environment_groups;
 mod user_cache;
