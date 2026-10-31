@@ -116,7 +116,7 @@ fn stream_fn(services: &Services, spawn: &AgentSpawner<Local>) -> maestro_agent:
 
 /// The request timeout the HTTP idle timeout setting supplies, in milliseconds. The setting's
 /// zero disables the limit, which a provider timeout of zero would instead make immediate, so
-/// it asks for the longest timeout a timer accepts.
+/// it asks for the largest timeout the request carries, `i32::MAX` milliseconds.
 fn request_timeout(settings: &SettingsManager) -> f64 {
     let idle = settings.get_http_idle_timeout_ms();
     if idle > 0.0 {

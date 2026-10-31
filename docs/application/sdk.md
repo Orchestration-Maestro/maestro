@@ -420,8 +420,8 @@ credential failure fails the request with its message. The provider retry
 settings supply the timeout, the retry limit and the longest retry delay where
 the request sets none, and the `httpIdleTimeoutMs` setting supplies the timeout
 when neither the request nor the provider retry settings set one; its `0` or
-`disabled` asks for the longest timeout a timer accepts, so every provider that
-reads the timeout stops limiting the wait. Headers merge in order: attribution headers, then the
+`disabled` asks for the largest timeout a request carries, `i32::MAX` milliseconds, so
+every provider that reads the timeout stops limiting the wait. Headers merge in order: attribution headers, then the
 credential headers, then the request's own, later names replacing earlier
 values.
 
