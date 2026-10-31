@@ -2,7 +2,7 @@
 use std::borrow::Cow;
 
 use crate::{
-    CacheRetention, Model, ModelThinkingLevel, ProviderExecution, SimpleStreamOptions,
+    CacheRetention, Context, Model, ModelThinkingLevel, ProviderExecution, SimpleStreamOptions,
     StreamOptions, ThinkingBudgets, ThinkingLevel, get_env_api_key,
 };
 
@@ -23,16 +23,18 @@ pub(crate) fn resolve_api_key<'a>(
 #[must_use]
 pub fn build_base_options(
     model: &Model,
+    context: &Context,
     options: Option<&SimpleStreamOptions>,
     api_key: Option<&str>,
 ) -> StreamOptions {
-    build_base_options_for(model, options, api_key)
+    build_base_options_for(model, context, options, api_key)
 }
 
 /// Copy family-correct common options without invoking or transferring hooks.
 #[must_use]
 pub fn build_base_options_for<E: ProviderExecution>(
     model: &Model,
+    _context: &Context,
     options: Option<&SimpleStreamOptions<E>>,
     api_key: Option<&str>,
 ) -> StreamOptions<E> {
@@ -91,13 +93,13 @@ pub struct AdjustedMaxTokens {
 /// produces a NaN combined limit.
 #[must_use]
 pub fn adjust_max_tokens_for_thinking(
-    base_max_tokens: f64,
+    base_max_tokens: Option<f64>,
     model_max_tokens: f64,
     reasoning_level: ThinkingLevel,
     custom_budgets: Option<&ThinkingBudgets>,
 ) -> AdjustedMaxTokens {
     let budget = thinking_budget(reasoning_level, custom_budgets);
-    let combined = base_max_tokens + budget;
+    let combined = base_max_tokens.unwrap_or(0.0) + budget;
     let max_tokens = if combined.is_nan() || model_max_tokens.is_nan() {
         f64::NAN
     } else {

@@ -139,10 +139,11 @@ pub fn stream_simple_bedrock_for<E: ProviderExecution>(
 /// Select raw cloud controls while retaining the hook family.
 fn simple_options<E: ProviderExecution>(
     model: &Model,
+    context: &Context,
     options: Option<SimpleStreamOptions<E>>,
 ) -> BedrockOptions<E> {
     let mut raw = BedrockOptions {
-        common: build_base_options_for(model, options.as_ref(), None),
+        common: build_base_options_for(model, context, options.as_ref(), None),
         ..BedrockOptions::default()
     };
     if let Some(SimpleStreamOptions {
@@ -168,7 +169,7 @@ fn fit_budget<E: ProviderExecution>(
     level: ThinkingLevel,
 ) {
     let adjusted = adjust_max_tokens_for_thinking(
-        token_base(raw.common.max_tokens),
+        Some(token_base(raw.common.max_tokens)),
         model.max_tokens,
         level,
         raw.thinking_budgets.as_ref(),
@@ -415,6 +416,6 @@ fn simple_call<E: ProviderExecution>(
     options: Option<SimpleStreamOptions<E>>,
     submit: E::Submission,
 ) -> AssistantMessageEventStream {
-    let raw = simple_options(&model, options);
+    let raw = simple_options(&model, &context, options);
     dispatch(model, context, E::submission(Some(raw), submit))
 }

@@ -107,7 +107,7 @@ fn simple<E: Producer>(
             format!("No API key for provider: {}", model.provider),
         ));
     }
-    let (raw, effort) = request::simple_options(&model, &options);
+    let (raw, effort) = request::simple_options(&model, &context, &options);
     Ok(start::<E>(model, context, raw, effort, submit))
 }
 

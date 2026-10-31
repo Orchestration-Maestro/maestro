@@ -70,14 +70,16 @@ pub fn build_params(
 /// the environment provides one.
 pub fn build_simple_options(
     model: &Model,
+    context: &Context,
     options: Option<&SimpleStreamOptions>,
 ) -> Result<GoogleOptions, DiagnosticErrorInfo> {
-    simple_options(model, options)
+    simple_options(model, context, options)
 }
 
 /// Select simple settings without changing the hook capture family.
 fn simple_options<E: ProviderExecution>(
     model: &Model,
+    context: &Context,
     options: Option<&SimpleStreamOptions<E>>,
 ) -> Result<GoogleOptions<E>, DiagnosticErrorInfo> {
     let key = resolve_api_key(
@@ -97,7 +99,7 @@ fn simple_options<E: ProviderExecution>(
         }
     };
     Ok(GoogleOptions {
-        common: build_base_options_for(model, options, Some(&key)),
+        common: build_base_options_for(model, context, options, Some(&key)),
         tool_choice: None,
         thinking: Some(thinking),
     })
@@ -224,7 +226,7 @@ fn simple<E: ProviderExecution>(
     options: Option<SimpleStreamOptions<E>>,
     submit: E::Submission,
 ) -> Result<crate::AssistantMessageEventStream, DiagnosticErrorInfo> {
-    let selected = simple_options(&model, options.as_ref())?;
+    let selected = simple_options(&model, &context, options.as_ref())?;
     drop(options);
     Ok(dispatch(
         model,

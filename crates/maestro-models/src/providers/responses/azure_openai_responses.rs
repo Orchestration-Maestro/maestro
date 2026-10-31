@@ -290,7 +290,7 @@ fn simple<E: Producer>(
             .map(Cow::Borrowed),
     )
     .ok_or_else(|| diagnostic(format!("No API key for provider: {}", model.provider)))?;
-    let common = build_base_options_for(&model, options.as_ref(), Some(&key));
+    let common = build_base_options_for(&model, &context, options.as_ref(), Some(&key));
     let reasoning_effort = options
         .as_ref()
         .and_then(|o| o.reasoning)

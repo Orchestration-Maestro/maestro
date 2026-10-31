@@ -127,10 +127,11 @@ pub(super) fn build_chat_payload<E: ProviderExecution>(
 /// Select the effective simple controls without closing model mapping strings.
 pub(super) fn simple_options<E: ProviderExecution>(
     model: &Model,
+    context: &Context,
     options: &crate::SimpleStreamOptions<E>,
 ) -> (MistralOptions<E>, Option<String>) {
     let mut raw = MistralOptions {
-        common: crate::build_base_options_for(model, Some(options), None),
+        common: crate::build_base_options_for(model, context, Some(options), None),
         ..Default::default()
     };
     let Some(level) = options.reasoning.map(crate::ModelThinkingLevel::from) else {
