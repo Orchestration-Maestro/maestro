@@ -57,6 +57,7 @@ fn daemon_home_uses_only_the_environment() {
         for path in ["~", "~/x"] {
             let directory = match (&home, path) {
                 (Some(home), "~") => home.clone(),
+                (Some(home), _) if home.as_os_str().is_empty() => "/x".into(),
                 (Some(home), _) => home.join("x"),
                 (None, _) => path.into(),
             };

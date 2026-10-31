@@ -534,28 +534,37 @@ fn daemon_unchanged_git_status_drain_has_no_render_impact() {
     assert!(!app.git_refresh.in_flight);
 }
 
+/// Git reads HOME as set on every platform and never substitutes the account home.
 #[test]
-fn git_config_home_falls_back_to_the_account_directory() {
-    let cases = [None, Some(""), Some("/fixture/home")];
+fn git_config_home_uses_only_home_variable() {
+    let cases = [None, Some(""), Some("/fixture/home")]
+        .into_iter()
+        .flat_map(|home| [None, Some(""), Some("/fixture/xdg")].map(|xdg| (home, xdg)));
     let Some(cases) = maestro_test_process::run_per_environment(
-        "app::git_refresh::tests::git_config_home_falls_back_to_the_account_directory",
+        "app::git_refresh::tests::git_config_home_uses_only_home_variable",
         cases,
-        |home| home.map(|home| ("HOME", home)).into_iter().collect(),
+        |(home, xdg)| {
+            [("HOME", *home), ("XDG_CONFIG_HOME", *xdg)]
+                .into_iter()
+                .filter_map(|(key, value)| value.map(|value| (key, value)))
+                .collect()
+        },
     )
     .unwrap() else {
         return;
     };
-    for case in cases {
-        let Some(home) = case.map(PathBuf::from).or_else(std::env::home_dir) else {
-            eprintln!("skipped: the host has no account directory");
-            continue;
-        };
+    for (case, xdg) in cases {
+        let home = case.map(PathBuf::from);
         let environment = git_config_environment();
-        assert_eq!(
-            environment.home.as_deref(),
-            Some(home.as_path()),
-            "{case:?}"
-        );
-        assert!(environment.user_files.contains(&home.join(".gitconfig")));
+        assert_eq!(environment.home, home, "{case:?}");
+        let xdg = xdg
+            .map(PathBuf::from)
+            .or_else(|| home.as_ref().map(|home| home.join(".config")));
+        let expected: Vec<_> = xdg
+            .map(|path| path.join("git/config"))
+            .into_iter()
+            .chain(home.map(|home| home.join(".gitconfig")))
+            .collect();
+        assert_eq!(environment.user_files, expected);
     }
 }
