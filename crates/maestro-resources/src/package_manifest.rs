@@ -32,17 +32,15 @@ impl Manifest {
             .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))
     }
 }
-/// Reads the selected branding member, treating unreadable manifests as absent.
+/// Reads the selected object branding member, treating unreadable or non-object members as absent.
 #[must_use]
 pub fn read_maestro_manifest_file(path: &str) -> Option<Manifest> {
     let content = crate::read_text(Path::new(path)).ok()?;
     let mut package: BTreeMap<String, Box<RawValue>> = serde_json::from_str(&content).ok()?;
-    let raw = package.remove("maestro").filter(|raw| truthy(raw))?;
-    let fields = if raw.get().starts_with('{') {
-        serde_json::from_str(raw.get()).ok()?
-    } else {
-        BTreeMap::new()
-    };
+    let raw = package
+        .remove("maestro")
+        .filter(|raw| raw.get().starts_with('{'))?;
+    let fields = serde_json::from_str(raw.get()).ok()?;
     Some(Manifest { fields })
 }
 /// Whether a file name has an admitted extension module suffix; matching is case-sensitive.

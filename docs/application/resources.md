@@ -137,10 +137,10 @@ prompt replaces the default one. The default prompt lists the selected tools
 snippet, or `(none)`, followed by the guidelines and the documentation paths.
 Guidelines keep their first occurrence: the exploration guideline the tools call
 for, the trimmed caller guidelines, then the two standing ones. The exploration
-guideline names only the `grep`, `find` and `ls` tools that are selected; with
-`bash` alone it speaks of listing and searching files without naming a tool. The
-documentation section tells the model to resolve the `docs/` and `examples/`
-topic paths against the installed package directory. Both prompts end
+guideline is `Use bash for file operations like ls, rg, find` when `bash` is
+selected without `grep`, `find` or `ls`; otherwise it is absent. The documentation
+section tells the model to resolve `docs/...` under Additional docs and
+`examples/...` under Examples, not the current working directory. Both prompts end
 with the appended text, the context files, the skills when the `read` tool is
 available, the local date and the working directory with `/` separators. Only
 the default prompt resolves documentation paths.

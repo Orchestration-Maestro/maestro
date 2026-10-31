@@ -252,10 +252,10 @@ file-pattern policy to [file patterns](package-patterns.md).
 
 ## Package-root manifests
 
-A present `maestro` member in `package.json` selects resources instead of
-conventional discovery; missing, null, false, zero or empty-string members use
-conventions. Object members select `extensions`, `skills`, `prompts`, `themes`
-and `contributions`; other present shapes have no named lists. Omitted lists add
+An object `maestro` member in `package.json` selects resources instead of
+conventional discovery. An absent or non-object member uses conventions, including
+numbers, booleans, strings and arrays. Object members select `extensions`,
+`skills`, `prompts`, `themes` and `contributions`. Omitted lists add
 no resources. A list that is present and truthy but is not a list of strings is
 ignored whole and adds no resources; the other lists still load, and nothing
 fails. One reader, `maestro_resources::package_manifest::Manifest::entries`, reports
