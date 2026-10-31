@@ -232,7 +232,7 @@ fn names_the_tool_resource_and_theme_operations_at_the_root() {
         std::any::type_name_of_val(&maestro_app::generate_branch_summary),
         std::any::type_name_of_val(&maestro_app::generate_summary),
         std::any::type_name_of_val(&maestro_app::get_language_from_path),
-        std::any::type_name_of_val(&maestro_app::get_last_assistant_usage),
+        std::any::type_name_of_val(&maestro_app::get_last_assistant_usage::<serde_json::Value>),
         std::any::type_name_of_val(&maestro_app::get_latest_compaction_entry::<serde_json::Value>),
         std::any::type_name_of_val(&maestro_app::get_markdown_theme),
         std::any::type_name_of_val(&maestro_app::get_select_list_theme),

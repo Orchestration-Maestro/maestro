@@ -5,6 +5,7 @@ use maestro_json::is_truthy;
 use serde::Deserialize;
 use serde::de::Error as _;
 use serde_json::Value;
+use std::borrow::Borrow;
 /// Whether enabled compaction exceeds the available context window.
 #[must_use]
 pub fn should_compact(
@@ -32,26 +33,29 @@ pub fn calculate_context_tokens(usage: &Value) -> Result<f64, serde_json::Error>
     let write: f64 = scalar(property(Some(usage), "cacheWrite")?)?;
     Ok(input + output + read + write)
 }
-/// Borrow successful assistant usage, ignoring unread content and cost.
+/// Borrow successful assistant usage that reports context tokens, ignoring unread content
+/// and cost; aborted, failed and all-zero usage describe no context.
 fn assistant_usage(message: Option<&Value>) -> Result<Option<&Value>, serde_json::Error> {
     if property(message, "role")?.and_then(Value::as_str) != Some("assistant") {
         return Ok(None);
     }
     let stop = property(message, "stopReason")?.and_then(Value::as_str);
-    Ok(if matches!(stop, Some("aborted" | "error")) {
-        None
-    } else {
-        property(message, "usage")?.filter(|value| is_truthy(value))
-    })
+    if matches!(stop, Some("aborted" | "error")) {
+        return Ok(None);
+    }
+    let Some(usage) = property(message, "usage")?.filter(|value| is_truthy(value)) else {
+        return Ok(None);
+    };
+    Ok((calculate_context_tokens(usage)? > 0.0).then_some(usage))
 }
-/// Borrow the latest successful assistant usage from stored message entries.
+/// Borrow the latest successful assistant usage that reports tokens from stored entries.
 ///
 /// # Errors
 /// Returns a native JSON error for a reached null entry or message.
-pub fn get_last_assistant_usage(
-    entries: &[crate::SessionEntry],
+pub fn get_last_assistant_usage<T: Borrow<crate::SessionEntry>>(
+    entries: &[T],
 ) -> Result<Option<&Value>, serde_json::Error> {
-    for entry in entries.iter().rev() {
+    for entry in entries.iter().map(Borrow::borrow).rev() {
         if property(Some(entry), "type")?.and_then(Value::as_str) == Some("message")
             && let Some(usage) = assistant_usage(entry.get("message"))?
         {

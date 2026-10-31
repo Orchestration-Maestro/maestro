@@ -50,8 +50,8 @@ window minus reserve; disabled settings never trigger it. `calculate_context_tok
 uses a nonzero reported total, treating an omitted or null total as absent, or
 adds input, output, cache-read and cache-write counts.
 `estimate_context_tokens` selects the latest successful assistant usage, ignoring
-error/aborted attempts, and estimates subsequent messages; without usage it estimates
-all supplied messages.
+error/aborted attempts and usage that reports no tokens, and estimates subsequent
+messages; without usage it estimates all supplied messages.
 
 `estimate_tokens` rounds up UTF-16 code units divided by four. It includes assistant
 text, thinking and canonical JSON tool arguments, shell command/output even when
