@@ -19,8 +19,9 @@ fn row(text: (&str, &str, &str), current: String, values: &[&str]) -> SettingIte
 }
 /// The follow-up mode description, naming the key bound to queue a follow-up.
 fn follow_up_description(key: &str) -> String {
-    let _ = key;
-    "Alt+Enter queues follow-up messages until agent stops. 'one-at-a-time': deliver one, wait for response. 'all': deliver all at once.".to_owned()
+    format!(
+        "{key} queues follow-up messages until agent stops. 'one-at-a-time': deliver one, wait for response. 'all': deliver all at once."
+    )
 }
 
 /// Creates the supplied rows in their display order.
