@@ -1423,6 +1423,73 @@ mod oauth_callback {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
+    /// Hands the announced authorization address to the test and never prompts.
+    struct Announced {
+        /// Receives the address once.
+        sender: std::sync::Mutex<Option<tokio::sync::oneshot::Sender<String>>>,
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    impl crate::OAuthLoginCallbacks for Announced {
+        fn on_auth(&self, info: crate::OAuthAuthInfo) -> Result<(), OAuthError> {
+            if let Some(sender) = self.sender.lock().unwrap().take() {
+                let _ = sender.send(info.url);
+            }
+            Ok(())
+        }
+        fn on_prompt(&self, _: crate::OAuthPrompt) -> crate::BoxFuture<Result<String, OAuthError>> {
+            panic!("the callback listener answers, not a prompt")
+        }
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn sign_in_falls_back_when_the_preferred_port_is_taken() {
+        run(sign_in_falls_back_when_the_preferred_port_is_taken_flow());
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    async fn sign_in_falls_back_when_the_preferred_port_is_taken_flow() {
+        let _permit = NATIVE_PORT.acquire().await.unwrap();
+        let _occupant = native_probe("127.0.0.1");
+        let (sender, announced) = tokio::sync::oneshot::channel();
+        let callbacks: crate::OAuthCallbacks = Arc::new(Announced {
+            sender: std::sync::Mutex::new(Some(sender)),
+        });
+        let browser = async {
+            let address = url::Url::parse(&announced.await.unwrap()).unwrap();
+            let pair = |name: &str| {
+                address
+                    .query_pairs()
+                    .find(|(key, _)| key == name)
+                    .unwrap()
+                    .1
+                    .into_owned()
+            };
+            let redirect = url::Url::parse(&pair("redirect_uri")).unwrap();
+            let port = redirect.port().unwrap();
+            assert_ne!(port, 53692);
+            let mut peer = tokio::net::TcpStream::connect(("127.0.0.1", port))
+                .await
+                .unwrap();
+            let request = format!(
+                "GET /callback?code=granted&state={} HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n",
+                pair("state")
+            );
+            write_native(&mut peer, request.as_bytes()).await;
+            assert!(native_response(&mut peer).await.starts_with("HTTP/1.1 200"));
+            redirect
+        };
+        let (credentials, redirect) = tokio::join!(
+            super::super::login_anthropic(callbacks, Some(success_fetch())),
+            browser
+        );
+        assert_eq!(credentials.unwrap().access, "access");
+        assert_eq!(redirect.path(), "/callback");
+        assert_eq!(redirect.host_str(), Some("localhost"));
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn callback_host_changes_bind_only() {
         run(callback_host_changes_bind_only_flow());
