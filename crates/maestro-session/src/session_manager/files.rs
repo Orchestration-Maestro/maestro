@@ -1,9 +1,11 @@
 //! Native JSONL loading and continuation selection.
 use super::{FileEntry, parse_session_entries};
 use serde_json::Value;
+use sha2::{Digest, Sha256};
 use std::{
     fs,
-    io::{self, Read},
+    io::{self, BufRead, BufReader, Read},
+    ops::ControlFlow,
     time::UNIX_EPOCH,
 };
 
@@ -60,16 +62,90 @@ pub fn load_entries_from_file(file_path: &str) -> io::Result<Vec<FileEntry>> {
     if !std::path::Path::new(file_path).exists() {
         return Ok(Vec::new());
     }
-    Ok(entries_from_bytes(&fs::read(file_path)?))
+    Ok(Snapshot::read(fs::File::open(file_path)?)?.entries)
 }
 
-/// Parses raw bytes with the same first-header admission as native loading.
-pub(super) fn entries_from_bytes(bytes: &[u8]) -> Vec<FileEntry> {
-    let entries = parse_session_entries(&String::from_utf8_lossy(bytes));
-    if entries.first().is_some_and(valid_header) {
-        entries
-    } else {
-        Vec::new()
+/// Hand each record of `reader` to `on_entry` until it breaks or the input ends.
+///
+/// Blank and malformed lines are skipped. The outer ECMAScript whitespace of the
+/// first and last nonblank lines is dropped, as whole-text parsing drops it.
+pub(super) fn for_each_entry(
+    mut reader: impl BufRead,
+    mut on_entry: impl FnMut(FileEntry) -> ControlFlow<()>,
+) -> io::Result<()> {
+    let mut bytes = Vec::new();
+    reader.read_to_end(&mut bytes)?;
+    for entry in parse_session_entries(&String::from_utf8_lossy(&bytes)) {
+        if on_entry(entry).is_break() {
+            break;
+        }
+    }
+    Ok(())
+}
+
+/// The records of one session file with the digest of the bytes they came from.
+pub(super) struct Snapshot {
+    /// Admitted records; empty unless the first one is a valid session header.
+    pub(super) entries: Vec<FileEntry>,
+    /// SHA-256 of every byte read.
+    pub(super) digest: [u8; 32],
+}
+
+impl Snapshot {
+    /// Read `reader` to its end, keeping records only behind a valid first header.
+    pub(super) fn read(reader: impl Read) -> io::Result<Self> {
+        let mut hashing = Hashing::new(reader);
+        let mut entries = Vec::new();
+        for_each_entry(BufReader::new(&mut hashing), |entry| {
+            entries.push(entry);
+            ControlFlow::Continue(())
+        })?;
+        if !entries.first().is_some_and(valid_header) {
+            entries.clear();
+        }
+        Ok(Self {
+            entries,
+            digest: hashing.finish(),
+        })
+    }
+
+    /// What an absent file holds.
+    pub(super) fn absent() -> Self {
+        Self {
+            entries: Vec::new(),
+            digest: Sha256::digest([]).into(),
+        }
+    }
+}
+
+/// A reader that hashes every byte it passes on.
+pub(super) struct Hashing<R> {
+    /// The wrapped reader.
+    inner: R,
+    /// Digest state over the bytes read so far.
+    hasher: Sha256,
+}
+
+impl<R: Read> Hashing<R> {
+    /// Wrap `inner` before any byte is read.
+    pub(super) fn new(inner: R) -> Self {
+        Self {
+            inner,
+            hasher: Sha256::new(),
+        }
+    }
+
+    /// The digest of what was read.
+    pub(super) fn finish(self) -> [u8; 32] {
+        self.hasher.finalize().into()
+    }
+}
+
+impl<R: Read> Read for Hashing<R> {
+    fn read(&mut self, buffer: &mut [u8]) -> io::Result<usize> {
+        let count = self.inner.read(buffer)?;
+        self.hasher.update(&buffer[..count]);
+        Ok(count)
     }
 }
 

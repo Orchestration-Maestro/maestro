@@ -1,7 +1,7 @@
 //! Native history selection and compact publication.
 use super::{
     FileEntry, NewSessionOptions, SessionManager, build_index, conversions::invalid, files,
-    session_header,
+    files::Snapshot, session_header,
 };
 use maestro_request::presence::Presence;
 use serde::Serialize;
@@ -50,7 +50,7 @@ impl SessionManager {
         agent_dir: &str,
         mut write: impl FnMut(&str, &[u8]) -> io::Result<()>,
     ) -> io::Result<Self> {
-        let mut entries = files::entries_from_bytes(&super::storage::read(source_path)?);
+        let mut entries = super::storage::read(source_path)?.entries;
         if entries.is_empty() {
             return Err(invalid(&format!(
                 "Cannot fork: source session file is empty or invalid: {source_path}"
@@ -102,11 +102,14 @@ impl SessionManager {
         cwd_override: Option<&str>,
     ) -> io::Result<Self> {
         let path = absolute(path)?;
-        let bytes = super::storage::read(&path)?;
-        let entries = files::entries_from_bytes(&bytes);
+        let snapshot = super::storage::read(&path)?;
         let cwd = match cwd_override {
             Some(cwd) => cwd.to_owned(),
-            None => match entries.first().and_then(|header| header.get("cwd")) {
+            None => match snapshot
+                .entries
+                .first()
+                .and_then(|header| header.get("cwd"))
+            {
                 None | Some(Value::Null) => std::env::current_dir()?.to_string_lossy().into_owned(),
                 Some(value) => value
                     .as_str()
@@ -117,7 +120,7 @@ impl SessionManager {
         let directory =
             session_dir.map_or_else(|| maestro_path::join(&[&path, ".."]), str::to_owned);
         let mut manager = Self::base(cwd, directory, true)?;
-        manager.install(path, bytes)?;
+        manager.install(path, snapshot)?;
         Ok(manager)
     }
 
@@ -145,18 +148,18 @@ impl SessionManager {
     /// Propagates native reads, conversion, rewrite and selected identity errors.
     pub fn set_session_file(&mut self, session_file: &str) -> io::Result<()> {
         let path = absolute(session_file)?;
-        let bytes = if self.persist {
+        let snapshot = if self.persist {
             super::storage::read(&path)?
         } else {
-            super::storage::read_native(std::path::Path::new(&path))?
+            super::storage::snapshot_native(std::path::Path::new(&path))?
         };
-        self.install(path, bytes)
+        self.install(path, snapshot)
     }
 
     /// Prepare a selected history without publishing inconsistent retained state.
-    fn install(&mut self, path: String, bytes: Vec<u8>) -> io::Result<()> {
+    fn install(&mut self, path: String, snapshot: Snapshot) -> io::Result<()> {
         let exists = std::path::Path::new(&path).exists();
-        let entries = self.prepare_entries(&path, bytes)?;
+        let entries = self.prepare_entries(&path, snapshot)?;
         let mut by_id = std::collections::HashMap::new();
         let mut leaf_id = None;
         let (mut labels, mut label_timestamps) = (Map::new(), Map::new());
@@ -180,9 +183,9 @@ impl SessionManager {
     }
 
     /// Repeats conversion when a locked re-read observes a concurrent writer.
-    fn prepare_entries(&self, path: &str, mut bytes: Vec<u8>) -> io::Result<Vec<FileEntry>> {
+    fn prepare_entries(&self, path: &str, mut snapshot: Snapshot) -> io::Result<Vec<FileEntry>> {
         loop {
-            let mut entries = files::entries_from_bytes(&bytes);
+            let mut entries = std::mem::take(&mut snapshot.entries);
             let changed = if entries.is_empty() {
                 entries = Self::in_memory(Some(&self.cwd))?.file_entries;
                 std::path::Path::new(path).exists()
@@ -192,12 +195,12 @@ impl SessionManager {
             if !changed || !self.persist {
                 return Ok(entries);
             }
-            match super::storage::rewrite_session_file(
+            match super::storage::rewrite_snapshot(
                 path,
-                &Sha256::digest(&bytes).into(),
+                &snapshot.digest,
                 &encode_entries(&entries)?,
             )? {
-                Some(current) => bytes = current,
+                Some(current) => snapshot = current,
                 None => return Ok(entries),
             }
         }

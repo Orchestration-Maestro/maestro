@@ -1,5 +1,5 @@
 //! Conditional native session publication.
-use sha2::{Digest, Sha256};
+use super::files::{Hashing, Snapshot};
 use std::{fs, io, path::Path};
 
 /// Rewrites a session only when its locked SHA-256 matches `expected`.
@@ -17,10 +17,28 @@ pub fn rewrite_session_file(
     expected: &[u8; 32],
     bytes: &[u8],
 ) -> io::Result<Option<Vec<u8>>> {
+    rewrite_unless_changed(path, expected, bytes, read_native)
+}
+
+/// Rewrites a session like `rewrite_session_file`, returning the records now stored on mismatch.
+pub(super) fn rewrite_snapshot(
+    path: &str,
+    expected: &[u8; 32],
+    bytes: &[u8],
+) -> io::Result<Option<Snapshot>> {
+    rewrite_unless_changed(path, expected, bytes, snapshot_native)
+}
+
+/// Replaces the locked target when its digest is `expected`, otherwise observes it with `observe`.
+fn rewrite_unless_changed<T>(
+    path: &str,
+    expected: &[u8; 32],
+    bytes: &[u8],
+    observe: impl FnOnce(&Path) -> io::Result<T>,
+) -> io::Result<Option<T>> {
     let holder = maestro_lock::acquire_write(Path::new(path), true)?;
-    let current = read_native(holder.path())?;
-    if Sha256::digest(&current).as_slice() != expected {
-        return Ok(Some(current));
+    if digest_native(holder.path())? != *expected {
+        return observe(holder.path()).map(Some);
     }
     #[cfg(test)]
     tests::compared();
@@ -38,8 +56,28 @@ pub(super) fn with_write_lock<T>(
 }
 
 /// Replays and reads native history under exclusion before a writable owner loads it.
-pub(super) fn read(path: &str) -> io::Result<Vec<u8>> {
-    with_write_lock(path, read_native)
+pub(super) fn read(path: &str) -> io::Result<Snapshot> {
+    with_write_lock(path, snapshot_native)
+}
+
+/// Reads the records of the selected target line by line; an absent target is empty.
+pub(super) fn snapshot_native(path: &Path) -> io::Result<Snapshot> {
+    match fs::File::open(path) {
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(Snapshot::absent()),
+        result => Snapshot::read(result?),
+    }
+}
+
+/// Hashes the selected target without keeping its bytes; an absent target hashes as empty.
+fn digest_native(path: &Path) -> io::Result<[u8; 32]> {
+    let mut hashing = match fs::File::open(path) {
+        Err(error) if error.kind() == io::ErrorKind::NotFound => {
+            return Ok(Snapshot::absent().digest);
+        }
+        result => Hashing::new(result?),
+    };
+    io::copy(&mut hashing, &mut io::sink())?;
+    Ok(hashing.finish())
 }
 
 /// Reads selected target bytes without changing their authored path representation.

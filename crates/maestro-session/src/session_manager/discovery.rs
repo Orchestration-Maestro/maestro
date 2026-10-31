@@ -3,13 +3,18 @@
 use super::{
     SessionInfo, SessionManager,
     context::{ecma_whitespace, observation, property},
-    files::{get_default_session_dir, jsonl_path, modified_millis},
-    parse_session_entries,
+    files::{for_each_entry, get_default_session_dir, jsonl_path, modified_millis},
 };
 use crate::messages::{millis_number, timestamp_millis};
 use futures_util::{StreamExt, stream::FuturesUnordered};
 use serde_json::Value;
-use std::{borrow::Cow, fs::DirEntry, io};
+use std::{
+    borrow::Cow,
+    fs::{self, DirEntry},
+    future::Future,
+    io::{self, BufRead, BufReader},
+    ops::ControlFlow,
+};
 
 /// Progress callback receiving completed and total candidate counts; an error stops the listing.
 pub type SessionListProgress<'a> = dyn FnMut(usize, usize) -> io::Result<()> + 'a;
@@ -34,7 +39,7 @@ impl SessionManager {
             None => Cow::Owned(get_default_session_dir(cwd, agent_dir)?),
         };
         let files = read_paths(&dir, jsonl_path).await.unwrap_or_default();
-        Ok(collect(files, on_progress).await)
+        Ok(collect(files, build_session_info, on_progress).await)
     }
 
     /// List the sessions of every project directory under `<agent_dir>/sessions`,
@@ -60,7 +65,7 @@ impl SessionManager {
                 files.extend(children);
             }
         }
-        collect(files, on_progress).await
+        collect(files, build_session_info, on_progress).await
     }
 }
 
@@ -84,15 +89,19 @@ async fn read_paths(
 
 /// Read every candidate concurrently in this task, reporting progress as each completes,
 /// then order the healthy results by input position and descending activity.
-async fn collect(
+pub(super) async fn collect<F: Future<Output = Option<SessionInfo>>>(
     files: Vec<String>,
+    load: impl Fn(String) -> F,
     mut on_progress: Option<&mut SessionListProgress<'_>>,
 ) -> Vec<SessionInfo> {
     let total = files.len();
     let mut pending: FuturesUnordered<_> = files
         .iter()
         .enumerate()
-        .map(|(index, file)| async move { (index, build_session_info(file).await) })
+        .map(|(index, file)| {
+            let loading = load(file.clone());
+            async move { (index, loading.await) }
+        })
         .collect();
     let mut results: Vec<Option<SessionInfo>> = (0..total).map(|_| None).collect();
     let mut loaded = 0;
@@ -110,23 +119,51 @@ async fn collect(
     sessions
 }
 
-/// Summarize one session file, or `None` when it is unreadable or not a session.
-async fn build_session_info(path: &str) -> Option<SessionInfo> {
-    let bytes = tokio::fs::read(path).await.ok()?;
-    let entries = parse_session_entries(&String::from_utf8_lossy(&bytes));
-    let header = entries.first()?;
-    if property(Some(header), "type").ok()??.as_str() != Some("session") {
-        return None;
-    }
-    let metadata = tokio::fs::metadata(path).await.ok()?;
-    let scan = scan_entries(&entries).ok()?;
+/// Summarize one session file on the blocking pool, or `None` when it is unreadable or not a session.
+async fn build_session_info(path: String) -> Option<SessionInfo> {
+    tokio::task::spawn_blocking(move || read_session_info(&path))
+        .await
+        .ok()?
+}
+
+/// Summarize one session file, reading it line by line.
+fn read_session_info(path: &str) -> Option<SessionInfo> {
+    let (header, scan) = scan_reader(BufReader::new(fs::File::open(path).ok()?))?;
+    let metadata = fs::metadata(path).ok()?;
     let mtime = millis_number(i64::try_from(modified_millis(&metadata)?).ok()?);
-    Some(summarize(path, header, scan, mtime))
+    Some(summarize(path, &header, scan, mtime))
+}
+
+/// The session header and the facts of every later record, or `None` when the first record is
+/// not a session header or a reached record is malformed; reading stops at that record.
+pub(super) fn scan_reader(reader: impl BufRead) -> Option<(Value, Scan)> {
+    let mut header: Option<Value> = None;
+    let mut scan = Scan::default();
+    let mut admitted = true;
+    for_each_entry(reader, |entry| {
+        admitted = match &header {
+            None => is_session_header(&entry),
+            Some(_) => scan_entry(&entry, &mut scan).is_ok(),
+        };
+        if !admitted {
+            return ControlFlow::Break(());
+        }
+        header.get_or_insert(entry);
+        ControlFlow::Continue(())
+    })
+    .ok()?;
+    admitted.then_some(())?;
+    Some((header?, scan))
+}
+
+/// Whether the record is a session header.
+fn is_session_header(entry: &Value) -> bool {
+    matches!(property(Some(entry), "type"), Ok(Some(kind)) if kind.as_str() == Some("session"))
 }
 
 /// Selected facts gathered from the entries after the header check.
 #[derive(Default)]
-struct Scan {
+pub(super) struct Scan {
     /// Message records seen.
     message_count: usize,
     /// Latest trimmed name.
@@ -139,20 +176,17 @@ struct Scan {
     activity: f64,
 }
 
-/// Walk every entry once; a reached null record or malformed selected field fails the file.
-fn scan_entries(entries: &[Value]) -> Result<Scan, serde_json::Error> {
-    let mut scan = Scan::default();
-    for entry in entries {
-        match property(Some(entry), "type")?.and_then(Value::as_str) {
-            Some("session_info") => scan.name = session_name(entry)?,
-            Some("message") => {
-                scan.message_count += 1;
-                scan_message(entry, &mut scan)?;
-            }
-            _ => {}
+/// Fold one entry into the scan; a reached null record or malformed selected field fails the file.
+fn scan_entry(entry: &Value, scan: &mut Scan) -> Result<(), serde_json::Error> {
+    match property(Some(entry), "type")?.and_then(Value::as_str) {
+        Some("session_info") => scan.name = session_name(entry)?,
+        Some("message") => {
+            scan.message_count += 1;
+            scan_message(entry, scan)?;
         }
+        _ => {}
     }
-    Ok(scan)
+    Ok(())
 }
 
 /// Trim a string name; absent, null or empty clears it and other types fail.
