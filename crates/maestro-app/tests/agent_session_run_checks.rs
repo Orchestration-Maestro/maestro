@@ -168,3 +168,17 @@ fn custom_message_during_a_triggered_run_is_steered() {
         drop(first.await);
     });
 }
+
+#[test]
+fn dispose_stops_a_waiting_retry_so_the_run_settles() {
+    on_task_set(|_| async {
+        let h = compacting(vec![Scripted::failure("overloaded_error")], 60_000).await;
+        let started = retry_started(&h);
+        let running = start_prompt(&h, "one");
+        started.notified().await;
+        h.session.dispose();
+        assert!(!h.session.is_retrying(), "disposal stopped the retry wait");
+        running.await.unwrap().unwrap();
+        assert!(!h.session.is_streaming());
+    });
+}
