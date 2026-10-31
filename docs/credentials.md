@@ -15,7 +15,7 @@ source names; it is not the stored-file writer, which stays with `AuthStorage`.
 ## Stored credentials
 
 `AuthStorage` accepts the stored records when it is created, on `reload`, before each
-`get`, `get_all`, `list` and `has`, and when a locked refresh rereads the document,
+`get`, `get_all` and `list`, and when a locked refresh rereads the document,
 adopting a newer one, so a long-lived storage sees what another process wrote. A read
 whose document is unchanged keeps the accepted records, and one that cannot read or parse
 the document keeps them too, recording nothing; other reads and changes use that accepted

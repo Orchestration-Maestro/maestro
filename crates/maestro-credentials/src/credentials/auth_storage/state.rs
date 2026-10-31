@@ -216,10 +216,10 @@ impl AuthStorage {
         self.latest().data.keys().cloned().collect()
     }
 
-    /// Whether any record is stored for `provider`, after rereading the stored document.
+    /// Whether any record is stored for `provider` in the accepted records.
     #[must_use]
     pub fn has(&self, provider: &str) -> bool {
-        self.latest().data.contains_key(provider)
+        self.state().data.contains_key(provider)
     }
 
     /// Typed copies of every complete known stored credential, in accepted order, after

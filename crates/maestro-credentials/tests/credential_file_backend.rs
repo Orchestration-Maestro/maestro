@@ -560,12 +560,6 @@ mod tests {
     }
 
     #[test]
-    fn has_sees_credentials_another_storage_wrote() {
-        let (_dir, reader) = after_another_storage_writes("reread-has");
-        assert!(reader.has("written"));
-    }
-
-    #[test]
     fn async_file_roundtrip_preserves_no_write_and_empty_write() {
         block_on(async {
             let dir = TempDir::without_forks("async-roundtrip");
