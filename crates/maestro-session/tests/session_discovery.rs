@@ -18,6 +18,27 @@ fn replay_fixed(names: &[&str]) {
     replay(names, |_, _| {});
 }
 
+/// Empty values neither replace the header candidate nor stop later metadata reads.
+#[test]
+fn discovery_skips_empty_records_before_header_and_between_messages() {
+    let scratch = Scratch::new().unwrap();
+    let ordinary = session_text(
+        "empty",
+        &[("user", "before", 2000), ("assistant", "after", 3000)],
+    );
+    std::fs::write(scratch.path().join("case.jsonl"), &ordinary).unwrap();
+    let expected = list(&scratch);
+    for empty in ["null", "false", "0", "-0", "0.0", "\"\""] {
+        let content = format!(
+            "{empty}\n{}",
+            ordinary.replace('\n', &format!("\n{empty}\n"))
+        );
+        std::fs::write(scratch.path().join("case.jsonl"), content).unwrap();
+        let actual = list(&scratch);
+        assert_eq!(format!("{actual:?}"), format!("{expected:?}"), "{empty}");
+    }
+}
+
 #[test]
 fn discovery_framing_requires_only_the_first_header_type() {
     replay_fixed(&[

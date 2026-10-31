@@ -15,6 +15,50 @@ use std::path::PathBuf;
 use support::native::{below, below_keeping_dots, uncanonicalized_scratch};
 use support::session_files::cases;
 
+/// Streamed loading drops empty values before header admission and indexing.
+#[test]
+fn loading_skips_empty_records_before_header_and_between_entries() {
+    let directory = Directory::new();
+    let entries = [
+        header(&json!("cwd")),
+        json!({"type":"message","id":"a","parentId":null,"message":{"role":"user","content":"first"}}),
+        json!({"type":"message","id":"b","parentId":"a","message":{"role":"assistant","content":"second"}}),
+    ];
+    for empty in ["null", "false", "0", "-0", "0.0", "\"\""] {
+        for prefix in ["", empty] {
+            let content = format!(
+                "{prefix}\n{}{}\n{}",
+                jsonl(&entries[..2]),
+                empty,
+                jsonl(&entries[2..])
+            );
+            let path = directory.file("empty-records.jsonl", &content);
+            assert_eq!(load_entries_from_file(&path).unwrap(), entries);
+            let opened = SessionManager::open(&path, None, None).unwrap();
+            assert_eq!(
+                opened.get_entries(),
+                entries[1..].iter().collect::<Vec<_>>()
+            );
+            let mut switched = SessionManager::in_memory(Some("cwd")).unwrap();
+            switched.set_session_file(&path).unwrap();
+            assert_eq!(
+                switched.get_entries(),
+                entries[1..].iter().collect::<Vec<_>>()
+            );
+            let forked =
+                SessionManager::fork_from(&path, "cwd", Some(directory.text()), "unused").unwrap();
+            assert_eq!(
+                forked.get_entries(),
+                entries[1..].iter().collect::<Vec<_>>()
+            );
+            assert_eq!(
+                maestro_session::parse_session_entries(&content).len(),
+                if prefix.is_empty() { 4 } else { 5 }
+            );
+        }
+    }
+}
+
 #[test]
 fn file_loading_keeps_raw_lines_after_header_admission() {
     let directory = Directory::new();
