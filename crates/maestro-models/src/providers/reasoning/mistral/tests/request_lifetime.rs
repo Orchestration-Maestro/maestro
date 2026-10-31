@@ -39,8 +39,18 @@ async fn pending<T>(mut operation: Pin<&mut impl Future<Output = T>>) {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-/// Prepared operation with a synthetic credential and supplied transport.
+/// Prepared operation with a synthetic credential, supplied transport and default timeout.
 async fn prepared(fetch: crate::Fetch, signal: Option<crate::Cancellation>) -> request::Prepared {
+    prepared_with_timeout(fetch, signal, None).await
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// Prepared operation whose configured timeout is `timeout_ms` milliseconds.
+async fn prepared_with_timeout(
+    fetch: crate::Fetch,
+    signal: Option<crate::Cancellation>,
+    timeout_ms: Option<f64>,
+) -> request::Prepared {
     let model = super::request_corpus::model(&serde_json::json!({}));
     let context = serde_json::from_value(serde_json::json!({"messages":[]})).unwrap();
     let options: crate::MistralOptions = crate::MistralOptions {
@@ -48,6 +58,7 @@ async fn prepared(fetch: crate::Fetch, signal: Option<crate::Cancellation>) -> r
             api_key: Some("synthetic".into()),
             signal,
             fetch: Some(fetch),
+            timeout_ms,
             ..Default::default()
         },
         ..Default::default()
@@ -194,6 +205,7 @@ pub(super) fn verify() {
     crate::tests::runtime::run_paused(async {
         setup_lifetime().await;
         body_lifetime().await;
+        configured_timeout().await;
         error_body_lifetime().await;
         supplied_body_and_teardown().await;
         hook_lifetime().await;
@@ -242,7 +254,7 @@ async fn teardown() {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-/// Headers and a late chunk preserve the original lifetime.
+/// The headers and each chunk start a new window of the default timeout.
 async fn body_deadline(late_chunk: bool) {
     let (fetch, producer) = delayed_fetch();
     let mut send = Box::pin(request::send(prepared(fetch, None).await));
@@ -251,19 +263,64 @@ async fn body_deadline(late_chunk: bool) {
     producer.send(response(receiver)).ok().unwrap();
     let mut body = send.await.unwrap();
     tokio::time::advance(Duration::from_secs(20)).await;
-    if late_chunk {
+    let remaining = if late_chunk {
         chunks.send(Ok(b"late".to_vec())).unwrap();
         assert_eq!(body.next().await.unwrap().unwrap(), b"late");
-    }
+        30
+    } else {
+        10
+    };
     let mut next = Box::pin(body.next());
+    times_out_after(next.as_mut(), remaining).await;
+    assert!(body.next().await.is_none(), "same body ends after timeout");
+    chunks.closed().await;
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// The pending read stays pending until the last second, then ends with a timeout.
+async fn times_out_after(
+    mut next: Pin<&mut impl Future<Output = Option<Result<Vec<u8>, crate::FetchError>>>>,
+    seconds: u64,
+) {
     pending(next.as_mut()).await;
-    tokio::time::advance(Duration::from_secs(10)).await;
+    tokio::time::advance(Duration::from_secs(seconds - 1)).await;
+    pending(next.as_mut()).await;
+    tokio::time::advance(Duration::from_secs(1)).await;
     assert_eq!(
         ready(next.as_mut()).await,
         Some(Err(crate::FetchError::Timeout))
     );
-    assert!(body.next().await.is_none(), "same body ends after timeout");
-    chunks.closed().await;
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// A configured timeout bounds the wait for each chunk, with or without a caller signal.
+async fn configured_timeout() {
+    for supplied in [false, true] {
+        let signal = supplied.then(crate::Cancellation::new);
+        let (fetch, producer) = delayed_fetch();
+        let mut send = Box::pin(request::send(
+            prepared_with_timeout(fetch, signal, Some(5.0)).await,
+        ));
+        pending(send.as_mut()).await;
+        let (chunks, receiver) = tokio::sync::mpsc::unbounded_channel();
+        producer.send(response(receiver)).ok().unwrap();
+        let mut body = send.await.unwrap();
+        tokio::time::advance(Duration::from_millis(4)).await;
+        chunks.send(Ok(b"one".to_vec())).unwrap();
+        assert_eq!(body.next().await.unwrap().unwrap(), b"one");
+        let mut next = Box::pin(body.next());
+        pending(next.as_mut()).await;
+        tokio::time::advance(Duration::from_millis(4)).await;
+        pending(next.as_mut()).await;
+        tokio::time::advance(Duration::from_millis(1)).await;
+        assert_eq!(
+            ready(next.as_mut()).await,
+            Some(Err(crate::FetchError::Timeout)),
+            "supplied signal: {supplied}"
+        );
+        drop(next);
+        chunks.closed().await;
+    }
 }
 
 #[cfg(not(target_arch = "wasm32"))]

@@ -98,6 +98,7 @@ fn conversation_streams_preserve_partial_results_on_failure() -> TestResult {
     crate::runtime::run_paused(async {
         corpus::rows("conversation_streams_preserve_partial_results_on_failure").await?;
         lifecycle::lifetime_failures().await?;
+        lifecycle::configured_timeout().await?;
         lifecycle::failure_causes().await?;
         lifecycle::exhausted_signal().await
     })
