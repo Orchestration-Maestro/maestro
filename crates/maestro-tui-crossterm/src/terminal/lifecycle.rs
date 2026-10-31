@@ -74,8 +74,8 @@ impl ProcessTerminal {
     }
 
     /// Acquires standard input, opens the reader, announces the modes and spawns the input
-    /// task of a new generation. The keyboard flags are requested once: a restarted terminal
-    /// that still holds them only asks again.
+    /// task of a new generation. Every start requests the keyboard flags, and the terminal counts
+    /// the requests so that one stop pops them all.
     fn spawn_input(
         &self,
         acquired: &mut Acquired,
@@ -86,14 +86,9 @@ impl ProcessTerminal {
         self.shared
             .output
             .open(&self.local, Rc::downgrade(&self.shared))?;
-        let push = if self.shared.pushed.get() {
-            ""
-        } else {
-            KEYBOARD_PUSH
-        };
         self.shared
-            .emit(&[PASTE_ON, push, KEYBOARD_QUERY].concat())?;
-        self.shared.pushed.set(true);
+            .emit(&[PASTE_ON, KEYBOARD_PUSH, KEYBOARD_QUERY].concat())?;
+        self.shared.pushes.set(self.shared.pushes.get() + 1);
         let generation = self.shared.install(on_input, on_resize);
         Ok(stream.spawn(&self.local, Input::new(Rc::clone(&self.shared), generation)))
     }
@@ -220,14 +215,17 @@ impl Shared {
         self.emit_if(self.hidden.replace(false), CURSOR_SHOW)
     }
 
-    /// Pops the requested keyboard flags and disables the modified-key reporting, whichever
-    /// are on, and attempts both even when the first write fails.
+    /// Pops every keyboard flag request still held and disables the modified-key reporting,
+    /// whichever are on, and attempts both even when the first write fails.
     pub(super) fn disable_keyboard(&self) -> io::Result<()> {
-        let (pushed, enhanced) = (self.pushed.replace(false), self.enhanced.replace(false));
+        let (pushes, enhanced) = (self.pushes.replace(0), self.enhanced.replace(false));
         if enhanced {
             set_kitty_protocol_active(false);
         }
-        first_failure([self.emit_if(pushed, KEYBOARD_POP), self.stop_fallback()])
+        first_failure([
+            self.emit_if(pushes > 0, &KEYBOARD_POP.repeat(pushes)),
+            self.stop_fallback(),
+        ])
     }
 }
 

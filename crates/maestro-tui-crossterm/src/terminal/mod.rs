@@ -105,8 +105,8 @@ struct Shared {
     on_resize: RefCell<Option<ResizeCallback>>,
     /// Whether the cursor was hidden through this terminal and not shown again.
     hidden: Cell<bool>,
-    /// Whether the enhanced keyboard flags were requested and not yet popped.
-    pushed: Cell<bool>,
+    /// How many keyboard flag requests are not yet popped: one for each start.
+    pushes: Cell<usize>,
     /// Whether the terminal reported the enhanced keyboard protocol on.
     enhanced: Cell<bool>,
     /// Whether the modified-key reporting is enabled, because the terminal reported no
@@ -232,7 +232,7 @@ impl ProcessTerminal {
                 on_input: RefCell::new(None),
                 on_resize: RefCell::new(None),
                 hidden: Cell::new(false),
-                pushed: Cell::new(false),
+                pushes: Cell::new(0),
                 enhanced: Cell::new(false),
                 fallback: Cell::new(false),
                 negotiating: Cell::new(false),

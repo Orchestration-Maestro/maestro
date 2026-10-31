@@ -157,8 +157,8 @@ The framing may release the start of a reply (`ESC [` or `ESC [ ?` and digits) b
 arrives. The terminal holds such a fragment for up to 150 ms and joins it with what follows. A
 fragment that never completes is then delivered as ordinary input, and a following sequence
 that cannot continue it delivers the fragment first. At `stop` the flags requested at `start`
-are popped, and the modified-key reporting is disabled if it was on. A terminal that is
-started again while it holds the flags asks again without requesting them a second time.
+are popped, and the modified-key reporting is disabled if it was on. Every start requests the
+flags, so a terminal that is started again while it holds them pops each request at `stop`.
 
 ## Ending without `stop`
 
