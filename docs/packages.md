@@ -290,8 +290,12 @@ Without exclusions or removals, candidates remain admitted without matching,
 including when only restoration modifiers are supplied.
 
 Lists are consumed in extension, skill, prompt, theme and contribution order.
-A malformed list contributes nothing and the remaining kinds and sources still
-contribute, for local and installed remote packages alike.
+A malformed list contributes nothing in an unfiltered package, and the remaining
+kinds and sources still contribute. In an object-filtered package, a kind without
+a filter uses its manifest list only when it is a list of strings. A malformed
+list counts as absent, so that kind uses its conventional directory. An empty
+list is present and contributes nothing. These rules apply to local and installed
+remote packages alike.
 
 ## Configured resource resolution
 
