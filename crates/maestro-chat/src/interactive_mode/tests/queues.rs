@@ -2741,3 +2741,43 @@ fn shell_dispatch_precedes_streaming_and_compaction_admission() {
         },
     );
 }
+
+#[test]
+fn extension_abort_restores_queued_input_exactly_as_typed() {
+    const TEST: &str = "extension_abort_restores_queued_input_exactly_as_typed";
+    isolated(TEST, async |directory| {
+        streaming(&started(directory).await, async |world, held| {
+            let session = world.mode.runtime_host.session();
+            session.steer("  queued  steer ", &[]).unwrap();
+            world.mode.editor.set_text("");
+            session.extension_runner().create_context().abort().unwrap();
+            assert_eq!(world.mode.editor.get_text(), "  queued  steer ");
+            assert_eq!(session.pending_message_count(), 0);
+            assert_eq!(held.aborts(), 1);
+        })
+        .await;
+    });
+}
+
+#[test]
+fn extension_abort_during_a_confirmation_restores_queued_input() {
+    const TEST: &str = "extension_abort_during_a_confirmation_restores_queued_input";
+    isolated(TEST, async |directory| {
+        streaming(&started(directory).await, async |world, held| {
+            let session = world.mode.runtime_host.session();
+            session.steer("queued steer", &[]).unwrap();
+            world.mode.editor.set_text("");
+            let ui = maestro_app::ExtensionUIContext::new(world.mode.clone());
+            let mut confirmation =
+                std::pin::pin!(ui.confirm("Run the tool?".into(), "bash".into(), None));
+            assert!(
+                poll(&mut confirmation).is_none(),
+                "the confirmation stays open"
+            );
+            session.extension_runner().create_context().abort().unwrap();
+            assert_eq!(world.mode.editor.get_text(), "queued steer");
+            assert_eq!(held.aborts(), 1);
+        })
+        .await;
+    });
+}
