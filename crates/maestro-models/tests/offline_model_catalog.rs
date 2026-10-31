@@ -289,3 +289,50 @@ fn maestro_model_equality_uses_provider_and_id() {
     custom.id = "different".into();
     assert!(!models_are_equal(Some(&original), Some(&custom)));
 }
+
+/// Committed Xiaomi descriptors select the completion route and supported model set.
+#[test]
+fn xiaomi_catalog_uses_completion_routes_and_supported_models() {
+    let ids = [
+        "mimo-v2-flash",
+        "mimo-v2-omni",
+        "mimo-v2-pro",
+        "mimo-v2.5",
+        "mimo-v2.5-pro",
+    ];
+    for (provider, host) in [
+        ("xiaomi", "api"),
+        ("xiaomi-token-plan-cn", "token-plan-cn"),
+        ("xiaomi-token-plan-ams", "token-plan-ams"),
+        ("xiaomi-token-plan-sgp", "token-plan-sgp"),
+    ] {
+        let expected = if provider == "xiaomi" {
+            &ids[..]
+        } else {
+            &ids[1..]
+        };
+        let models = get_models(provider);
+
+        assert_eq!(
+            models
+                .iter()
+                .map(|model| model.id.as_str())
+                .collect::<Vec<_>>(),
+            expected
+        );
+        for model in models {
+            assert_eq!(model.api, "openai-completions", "{provider}/{}", model.id);
+            assert_eq!(model.base_url, format!("https://{host}.xiaomimimo.com/v1"));
+            let compat = model.compat.as_ref().expect("completion compatibility");
+            assert_eq!(
+                compat.0["requiresReasoningContentOnAssistantMessages"],
+                true
+            );
+            assert_eq!(compat.0["thinkingFormat"], "deepseek");
+            assert_eq!(get_model(provider, &model.id), Some(model));
+        }
+        if provider != "xiaomi" {
+            assert!(get_model(provider, "mimo-v2-flash").is_none());
+        }
+    }
+}
