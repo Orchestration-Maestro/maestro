@@ -332,3 +332,44 @@ fn mutation_context(schema: &str, expected: serde_json::Value) -> maestro_agent:
     }
     context
 }
+
+/// Cancellation during start observation prevents execution even without a hook.
+#[test]
+fn abort_during_tool_start_without_hook_skips_execution() {
+    run(async {
+        let signal = maestro_models::Cancellation::new();
+        let aborter = signal.clone();
+        let executed = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let called = Arc::clone(&executed);
+        let context = with_execute(Arc::new(move |_, _, _, _| {
+            called.store(true, std::sync::atomic::Ordering::Relaxed);
+            ready(Ok(result()))
+        }));
+        let mut options = responses(vec![tool_call()]);
+        options.signal = Some(signal);
+        let returned = run_agent_loop(
+            vec![],
+            context,
+            &config(),
+            Arc::new(move |event| {
+                if matches!(event, maestro_agent::AgentEvent::ToolExecutionStart { .. }) {
+                    aborter.abort();
+                }
+                ready(Ok(()))
+            }),
+            options,
+        )
+        .await
+        .unwrap();
+        assert!(!executed.load(std::sync::atomic::Ordering::Relaxed));
+        let maestro_agent::AgentMessage::ToolResult(message) = &returned[1] else {
+            panic!("tool result");
+        };
+        let message = message.read().unwrap();
+        assert!(message.is_error);
+        assert!(
+            matches!(&message.content[0], maestro_models::UserBlock::Text(text)
+            if text.text == "Operation aborted")
+        );
+    });
+}
