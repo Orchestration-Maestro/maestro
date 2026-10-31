@@ -20,6 +20,8 @@ pub mod run_tests;
 mod browser_author;
 /// The locked packages and the dependency graph between them.
 mod cargo_lock;
+/// The source files a dependency file names.
+mod dep_info;
 /// Source-owned example discovery and component preparation.
 pub mod example_files;
 

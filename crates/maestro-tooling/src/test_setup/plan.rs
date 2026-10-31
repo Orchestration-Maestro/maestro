@@ -17,6 +17,7 @@ use super::{
     BROWSER_PACKAGES, COMPONENT_EXAMPLES, COMPONENT_PACKAGE, EXAMPLE_INPUTS, LOCKED_INPUTS,
     SHARED_INPUTS, TOOL_PACKAGES, at,
 };
+use crate::dep_info;
 use crate::member_graph::{closure, dependency_edges_where, member_roots, members};
 use maestro_path::normalize_native;
 
@@ -191,15 +192,10 @@ pub(super) fn component_inputs(
 ) -> io::Result<Inputs> {
     let file = wasm.with_extension("d");
     let text = std::fs::read_to_string(&file).map_err(|error| at(&file, &error))?;
-    let (_, sources) = text
-        .lines()
-        .next()
-        .and_then(|rule| rule.split_once(": "))
-        .ok_or_else(|| at(&file, "no dependency rule"))?;
+    let sources = dep_info::sources(&text).ok_or_else(|| at(&file, "no dependency rule"))?;
     let root = normalize_native(checkout);
     let mut paths = BTreeSet::new();
-    for source in sources.split_whitespace() {
-        // A path with a space is written with a backslash before it, which splits it here.
+    for source in sources {
         if source.ends_with('\\') {
             return Err(at(&file, format!("unsupported path {source}")));
         }

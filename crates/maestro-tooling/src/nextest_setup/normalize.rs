@@ -12,6 +12,7 @@ use std::time::SystemTime;
 
 use super::nonempty;
 use crate::cargo_lock::Lock;
+use crate::dep_info;
 use crate::test_setup::EXAMPLE;
 
 /// The extensions of the library outputs that can outdate an executable.
@@ -268,7 +269,8 @@ fn dependency_source(artifact: &Path) -> String {
     let mut information = artifact.as_os_str().to_owned();
     information.push(".d");
     let text = std::fs::read_to_string(information).unwrap_or_default();
-    let line = text.lines().next().unwrap_or_default();
-    let sources = line.split_once(": ").map_or("", |(_, sources)| sources);
-    sources.split(' ').next().unwrap_or_default().to_owned()
+    dep_info::sources(&text)
+        .and_then(|mut sources| sources.next())
+        .unwrap_or_default()
+        .to_owned()
 }
