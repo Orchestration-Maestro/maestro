@@ -14,7 +14,7 @@ use super::wire::{
     ToolConfiguration, ToolInputSchema, ToolResultBlock, ToolResultContentBlock, ToolSpecification,
     ToolUseBlock, Union, Unit,
 };
-use crate::arguments::json_parse::whitespace;
+use crate::arguments::json_parse::is_blank;
 use crate::projection::normalize_tool_call_id;
 use crate::providers::base64_text::FORGIVING;
 use crate::providers::http::RequestFailure;
@@ -150,11 +150,6 @@ pub(super) fn tool_config(
 /// Text sent in place of a required block that has no text.
 const EMPTY_TEXT_PLACEHOLDER: &str = "<empty>";
 
-/// Whether `text` holds only whitespace.
-fn blank(text: &str) -> bool {
-    text.trim_matches(whitespace).is_empty()
-}
-
 /// A text block holding `text` as written.
 fn text_block(text: String) -> Union<ContentBlock> {
     ContentBlock {
@@ -168,12 +163,12 @@ fn text_block(text: String) -> Union<ContentBlock> {
 /// text is blank, holds the placeholder.
 fn user_message(content: UserContent) -> Result<Message, RequestFailure> {
     let mut blocks = match content {
-        UserContent::Text(text) if blank(&text) => Vec::new(),
+        UserContent::Text(text) if is_blank(&text) => Vec::new(),
         UserContent::Text(text) => vec![text_block(text)],
         UserContent::Blocks(blocks) => blocks
             .into_iter()
             .filter_map(|block| match media(block) {
-                Ok((Some(text), _)) if blank(&text) => None,
+                Ok((Some(text), _)) if is_blank(&text) => None,
                 Ok((text, image)) => Some(Ok(ContentBlock {
                     text,
                     image,
@@ -226,7 +221,7 @@ fn assistant_block(block: AssistantContent, claude: bool) -> Option<Union<Conten
         .into()
     };
     match block {
-        AssistantContent::Text(text) => (!blank(&text.text)).then(|| text_block(text.text)),
+        AssistantContent::Text(text) => (!is_blank(&text.text)).then(|| text_block(text.text)),
         AssistantContent::ToolCall(call) => Some(
             ContentBlock {
                 tool_use: Some(ToolUseBlock {
@@ -240,12 +235,12 @@ fn assistant_block(block: AssistantContent, claude: bool) -> Option<Union<Conten
             .into(),
         ),
         AssistantContent::Thinking(thinking) => {
-            if blank(&thinking.thinking) {
+            if is_blank(&thinking.thinking) {
                 return None;
             }
             let signature = thinking
                 .thinking_signature
-                .filter(|signature| !blank(signature));
+                .filter(|signature| !is_blank(signature));
             Some(match (claude, signature) {
                 (true, None) => text_block(thinking.thinking),
                 (true, signature) => reasoning(thinking.thinking, signature),
@@ -278,7 +273,7 @@ fn tool_result(result: ToolResultMessage) -> Result<Union<ContentBlock>, Request
     let mut content = Vec::new();
     for block in result.content {
         let (text, image) = media(block)?;
-        if text.as_deref().is_some_and(blank) {
+        if text.as_deref().is_some_and(is_blank) {
             continue;
         }
         content.push(

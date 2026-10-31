@@ -103,7 +103,7 @@ pub(super) fn deepseek_compat(models: &mut [Model]) {
 }
 /// Retain only supported direct `MiniMax` models, keeping their upstream limits.
 pub(super) fn minimax_models(models: &mut Vec<Model>) {
-    models.retain_mut(|model| {
+    models.retain(|model| {
         if !matches!(model.provider.as_str(), "minimax" | "minimax-cn") {
             return true;
         }
