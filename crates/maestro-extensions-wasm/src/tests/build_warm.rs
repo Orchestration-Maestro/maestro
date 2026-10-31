@@ -4,8 +4,10 @@ use std::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 
-use super::build::{compile, warm, warm_with};
+use super::build::{compile, engine, warm, warm_with};
 use maestro_test_directory::Scratch;
+use std::hash::{DefaultHasher, Hash, Hasher};
+use wasmtime::{Config, Engine};
 
 /// Every queued path reaches the worker exactly once, whichever thread takes it.
 #[test]
@@ -46,4 +48,21 @@ fn warming_a_path_that_is_not_a_component_returns_the_compile_error() {
     std::fs::write(&path, b"\0asm\x01\0\0\0").unwrap();
     let expected = compile(&path).unwrap_err().to_string();
     assert_eq!(warm(&[path]).unwrap_err(), expected);
+}
+
+/// The compiled-code identity of the test engine is the explicit baseline target's, so the
+/// components a setup compiles load on any host of the architecture.
+#[test]
+fn test_engine_matches_an_explicit_baseline_target() {
+    let identity = |engine: &Engine| {
+        let mut hasher = DefaultHasher::new();
+        engine.precompile_compatibility_hash().hash(&mut hasher);
+        hasher.finish()
+    };
+    let mut config = Config::new();
+    config.wasm_component_model_async(true);
+    let host = Engine::new(&config).unwrap().get_target().unwrap();
+    config.target(&host).unwrap();
+    let explicit = Engine::new(&config).unwrap();
+    assert_eq!(identity(&engine().unwrap()), identity(&explicit));
 }
