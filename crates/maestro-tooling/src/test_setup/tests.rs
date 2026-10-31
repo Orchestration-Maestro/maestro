@@ -3,13 +3,14 @@
 use std::collections::BTreeSet;
 use std::ffi::OsString;
 use std::path::Path;
+use std::process::Command;
 
 use cargo_metadata::Metadata;
 
 use super::inherited_components;
 use super::inputs::listed;
 use super::inputs::{Inputs, locked_closure};
-use super::plan::{closure_directories, plan};
+use super::plan::{closure_directories, component_inputs, plan};
 
 /// Every name component discovery accepts is removed, including the bare and doubled
 /// underscore forms, and no other name is.
@@ -190,4 +191,54 @@ fn lock_digest_follows_only_the_closure_of_the_named_packages() {
     assert_eq!(digest(&bumped("d")), before);
     assert_eq!(digest(&bumped("a")), before);
     assert_ne!(digest(&bumped("c")), before);
+}
+
+/// The files a dependency rule names, in a checkout of `examples/a.rs`, `examples/b.rs`,
+/// `examples/c.rs` and the shared `lib.rs`, with the rule `sources` of a component built at
+/// `out/a.wasm`.
+fn rule_files(sources: &str) -> std::io::Result<BTreeSet<String>> {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path();
+    for name in ["examples/a.rs", "examples/b.rs", "examples/c.rs", "lib.rs"] {
+        std::fs::create_dir_all(root.join(name).parent().unwrap()).unwrap();
+        std::fs::write(root.join(name), name).unwrap();
+    }
+    std::fs::create_dir_all(root.join("out")).unwrap();
+    let root_text = root.display().to_string();
+    std::fs::write(
+        root.join("out/a.d"),
+        format!("@/out/a.wasm: {sources}\n\n").replace('@', &root_text),
+    )
+    .unwrap();
+    assert!(
+        Command::new("git")
+            .args(["init", "-q"])
+            .current_dir(root)
+            .status()
+            .unwrap()
+            .success()
+    );
+    let shared = BTreeSet::from(["lib.rs".to_owned()]);
+    let inputs = component_inputs(root, &root.join("out/a.wasm"), &shared)?;
+    inputs.files(root)
+}
+
+/// A component records the files of its dependency rule that sit in the checkout and that the
+/// shared inputs do not cover, whether the rule spells them absolutely, relatively or through
+/// `..`; and it refuses a rule it cannot read exactly.
+#[test]
+fn component_inputs_hold_the_example_files_of_the_dependency_rule() {
+    let held = rule_files(
+        "@/crates/x/../../examples/a.rs examples/b.rs @/lib.rs /elsewhere/c.rs @/missing.rs @/examples",
+    )
+    .unwrap();
+    assert_eq!(
+        held,
+        BTreeSet::from(["examples/a.rs".to_owned(), "examples/b.rs".to_owned()])
+    );
+    let escaped = rule_files("@/examples/a\\ b.rs").unwrap_err();
+    assert!(
+        escaped.to_string().contains("unsupported path"),
+        "{escaped}"
+    );
 }
