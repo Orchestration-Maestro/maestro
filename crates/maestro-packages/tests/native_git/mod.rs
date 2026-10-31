@@ -1,6 +1,7 @@
 //! Isolated native Git histories observed through configured update execution.
 use maestro_packages::{
-    DefaultPackageManager, NativePackageOperations, PackageManager, PackageManagerOptions,
+    DefaultPackageManager, NativePackageOperations, PackageFuture, PackageManager,
+    PackageManagerOptions,
 };
 use maestro_settings::{PackageSource, Settings, SettingsManager};
 use std::{cell::RefCell, rc::Rc};
@@ -60,10 +61,14 @@ impl Repository {
     }
     /// Publishes a distinguishable commit to the local bare remote.
     pub fn commit(&self, text: &str) {
+        self.commit_here(text, "main");
+    }
+    /// Publishes a commit on the checked-out seed branch `branch` to the local bare remote.
+    pub fn commit_here(&self, text: &str, branch: &str) {
         std::fs::write(self.seed.join("content"), text).unwrap();
         git(&self.seed, &["add", "content"]);
         git(&self.seed, &["commit", "-m", text]);
-        git(&self.seed, &["push", "--force", "origin", "main"]);
+        git(&self.seed, &["push", "--force", "origin", branch]);
     }
     /// Updates by naming the configured user registration.
     pub fn update(&self, pinned: bool) {
@@ -75,16 +80,33 @@ impl Repository {
     }
     /// Updates the configured user registration on a caller-driven runtime.
     fn run_update(&self, pinned: bool, source: Option<&str>) {
+        let configured = if pinned {
+            "git:github.com/acme/tool@main"
+        } else {
+            "git:github.com/acme/tool"
+        };
+        let source = source.map(str::to_owned);
+        self.drive(configured, move |manager| manager.update(source.as_deref()));
+    }
+    /// Installs `source` again over the existing checkout.
+    pub fn install(&self, source: &str) {
+        let source = source.to_owned();
+        self.drive(&source.clone(), move |manager| {
+            Box::pin(async move { manager.install(&source, None).await })
+        });
+    }
+    /// Builds a manager configured with `configured` and drives `operate` to completion.
+    fn drive(
+        &self,
+        configured: &str,
+        operate: impl FnOnce(Rc<dyn PackageManager>) -> PackageFuture<'static, ()>,
+    ) {
         let settings = Rc::new(RefCell::new(
             SettingsManager::in_memory(Settings::default()),
         ));
         settings
             .borrow_mut()
-            .set_packages(vec![PackageSource::Source(if pinned {
-                "git:github.com/acme/tool@main".into()
-            } else {
-                "git:github.com/acme/tool".into()
-            })]);
+            .set_packages(vec![PackageSource::Source(configured.into())]);
         // Unexpected dependency installation fails instead of reaching a registry.
         settings.borrow_mut().set_npm_command(Some(
             ["/bin/sh", "-c", "exit 97"]
@@ -111,9 +133,7 @@ impl Repository {
             NativePackageOperations::new(Rc::new(|| false), &local),
         ));
         let runtime = crate::runtime::runtime();
-        runtime
-            .block_on(local.run_until(manager.update(source)))
-            .unwrap();
+        runtime.block_on(local.run_until(operate(manager))).unwrap();
         runtime.block_on(Rc::try_unwrap(local).ok().unwrap());
     }
     /// Asserts actual head and content replacement, not merely child operands.
