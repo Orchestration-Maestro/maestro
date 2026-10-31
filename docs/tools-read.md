@@ -16,7 +16,9 @@ A final newline adds an empty entry. CR, BOM, NUL, tabs and ANSI bytes remain te
 `truncate_head` keeps complete leading entries. An oversized first entry returns
 empty content with `first_line_exceeds_limit`, even with a zero line quota.
 `truncate_tail` keeps trailing entries, or a UTF-8-aligned suffix when the final
-entry alone exceeds the byte budget. That partial entry reports byte truncation.
+line alone exceeds the byte budget. That partial line reports byte truncation. When
+a newline ends the oversized line, the newline keeps one byte of the budget and the
+suffix follows it, so `output_lines` counts the line and the empty entry after it.
 A zero line quota selects no entries; a zero byte quota can retain an empty
 partial tail entry. Consequently `output_lines` is not necessarily the split
 count of the returned text.
@@ -60,6 +62,10 @@ finish flushes pending UTF-8 once without closing the artifact. Raw decoding use
 the shared [streaming text primitive](text.md). Snapshots observe
 selected decoded text without finishing decoding; selection is owned by
 [`output::truncate`](../crates/maestro-tools/src/output/truncate.rs).
+
+A snapshot drops a leading fragment of a trimmed line only when more text follows its
+newline; a fragment that is the whole retained tail is the end of an oversized line and
+stays. A bash tail notice names the oversized line itself when output ends with a newline.
 
 Overflow artifacts preserve original bytes, including invalid UTF-8 and an initial
 BOM that the display decoder removes. A snapshot path identifies an artifact;
@@ -285,7 +291,9 @@ A detected image becomes `Read image file [<mime>]`, then the delegated dimensio
 note, then a note when the active model (read from `ReadContext::model` after
 detection) lacks image input, and an image block. Fitting uses the image helpers
 above; `auto_resize_images: false` sends the original bytes, and an image that
-cannot be fitted yields only the text with the omission line. Native detection
+cannot be fitted yields only the text with the omission line. Base64 encoding, decoding,
+resizing and re-encoding run on the runtime's blocking pool, so a large image never
+stalls the terminal loop or other tasks. Native detection
 uses the [MIME sniff](#inline-image-preparation) and ignores extensions.
 
 ## Read rendering

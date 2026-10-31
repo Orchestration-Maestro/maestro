@@ -84,6 +84,9 @@ pub fn truncate_head(content: &str, options: TruncationOptions) -> TruncationRes
 }
 
 /// Retain trailing newline-separated entries.
+///
+/// When the last line, with its terminating newline, exceeds the byte budget, its tail is kept on
+/// whole scalars and `last_line_partial` is set.
 #[must_use]
 pub fn truncate_tail(content: &str, options: TruncationOptions) -> TruncationResult {
     let mut result = initial_result(content, options);
@@ -97,8 +100,11 @@ pub fn truncate_tail(content: &str, options: TruncationOptions) -> TruncationRes
         let cost = entry.len() + usize::from(!selected.is_empty());
         if cost > result.max_bytes - bytes {
             reason = TruncationBy::Bytes;
-            if selected.is_empty() {
-                selected.push(suffix_within_bytes(entry, result.max_bytes));
+            // A final newline ends the oversized line and takes one byte of the budget.
+            if matches!(selected.as_slice(), [] | [""])
+                && let Some(room) = result.max_bytes.checked_sub(selected.len())
+            {
+                selected.push(suffix_within_bytes(entry, room));
                 result.last_line_partial = true;
             }
             break;
