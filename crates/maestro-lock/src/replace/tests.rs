@@ -898,3 +898,28 @@ pub(crate) fn with_ancestry_sync(
 ) -> io::Result<()> {
     ANCESTRY_SYNCED.with_borrow_mut(action)
 }
+
+#[test]
+fn atomic_publication_failures_remove_temporary_and_keep_previous_bytes() {
+    for phase in ["write_all", "file_sync", "rename"] {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let target = scratch.path().join("session.json");
+        fs::write(&target, b"previous").unwrap();
+        EFFECTS.set(Effects {
+            fault: Some((phase, io::ErrorKind::Interrupted)),
+            ..Effects::default()
+        });
+
+        let result = crate::atomic_replace(
+            &target,
+            b"next",
+            crate::Symlinks::Follow,
+            crate::Temporary::Fixed("json.tmp"),
+        );
+
+        assert_eq!(result.unwrap_err().kind(), io::ErrorKind::Interrupted);
+        EFFECTS.take();
+        assert_eq!(fs::read(&target).unwrap(), b"previous");
+        assert_eq!(fs::read_dir(scratch.path()).unwrap().count(), 1);
+    }
+}
