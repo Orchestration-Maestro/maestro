@@ -264,6 +264,54 @@ fn bash_notice_names_the_oversized_line_that_ends_with_a_newline() {
     assert_eq!(details.truncation.unwrap().total_bytes, 60001);
 }
 
+#[test]
+fn bash_notice_names_the_oversized_line_after_an_earlier_newline_in_one_chunk() {
+    let chunk = [b"head\n".to_vec(), vec![b'A'; 61491], b"\n".to_vec()].concat();
+    let ops = Immediate(Arc::new(move |_, _, options| {
+        (options.on_data)(&chunk);
+        Ok(BashExecResult {
+            exit_code: Some(0.0),
+        })
+    }));
+    let definition = create_bash_tool_definition::<()>(
+        "/work".into(),
+        "/bin".into(),
+        BashToolOptions {
+            operations: Some(Arc::new(ops)),
+            ..BashToolOptions::default()
+        },
+    );
+    let mut future = (definition.execute)(
+        "call".into(),
+        BashToolInput {
+            command: "literal".into(),
+            timeout: None,
+        },
+        None,
+        None,
+        None,
+    );
+    let poll = future
+        .as_mut()
+        .poll(&mut std::task::Context::from_waker(std::task::Waker::noop()));
+    let std::task::Poll::Ready(Ok(result)) = poll else {
+        panic!("immediate supplied operation must finish without a runtime");
+    };
+    let details = result.details.unwrap();
+    let path = details.full_output_path.unwrap();
+    let text = json!(result.content)[0]["text"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    std::fs::remove_file(&path).unwrap();
+    assert!(
+        text.ends_with(&format!(
+            "[Showing last 50.0KB of line 2 (line is 60.0KB). Full output: {path}]"
+        )),
+        "{text}"
+    );
+}
+
 /// Holds the original operation pending after two chunks, then settles as selected.
 struct Held {
     release: Arc<tokio::sync::Notify>,
