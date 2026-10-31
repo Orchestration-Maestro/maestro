@@ -828,7 +828,7 @@ async fn aborted_batch(
     }
     let started = Arc::new(Mutex::new(Vec::new()));
     let seen = Arc::clone(&started);
-    let mut options = responses(vec![two_calls()]);
+    let mut options = responses(vec![two_calls(), assistant("done")]);
     options.signal = Some(signal);
     let sink = Arc::new(move |event| {
         if let AgentEvent::ToolExecutionStart { tool_call } = event {
