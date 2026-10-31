@@ -2,6 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
+use maestro_tools::TruncationBy;
 use maestro_tools::output::output_accumulator::{OutputAccumulator, OutputAccumulatorOptions};
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -431,4 +432,28 @@ fn append_after_artifact_close_preserves_state_and_bytes() {
     }
     assert_eq!(std::fs::read(path).unwrap(), b"abc");
     std::fs::remove_file(path).unwrap();
+}
+
+#[test]
+fn rolling_trim_keeps_the_tail_of_an_oversized_line_ending_in_a_newline() {
+    let mut output = OutputAccumulator::new(OutputAccumulatorOptions {
+        max_bytes: Some(16),
+        ..Default::default()
+    });
+    for _ in 0..100 {
+        output.append(&[b'x'; 1000]).unwrap();
+    }
+    output.append(b"\n").unwrap();
+    let snapshot = output.snapshot(false).unwrap();
+    assert_eq!(snapshot.content, format!("{}\n", "x".repeat(15)));
+    let truncation = &snapshot.truncation;
+    assert_eq!(
+        (truncation.total_bytes, truncation.total_lines),
+        (100_001, 2)
+    );
+    assert_eq!((truncation.output_bytes, truncation.output_lines), (16, 2));
+    assert!(truncation.truncated && truncation.last_line_partial);
+    assert!(matches!(truncation.truncated_by, Some(TruncationBy::Bytes)));
+    output.close_temp_file().unwrap();
+    std::fs::remove_file(snapshot.full_output_path.unwrap()).unwrap();
 }

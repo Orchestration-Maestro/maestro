@@ -4212,6 +4212,7 @@ dependencies = [
  "maestro-path",
  "maestro-test-directory",
  "maestro-test-process",
+ "sha2 0.11.0",
 ]
 
 [[package]]
@@ -4438,6 +4439,7 @@ dependencies = [
  "maestro-entry",
  "maestro-json",
  "maestro-listing",
+ "maestro-lock",
  "maestro-models",
  "maestro-path",
  "maestro-request",
@@ -4448,6 +4450,7 @@ dependencies = [
  "ryu-js",
  "serde",
  "serde_json",
+ "sha2 0.11.0",
  "tokio",
  "uuid",
 ]

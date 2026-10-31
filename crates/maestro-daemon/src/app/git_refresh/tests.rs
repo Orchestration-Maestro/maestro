@@ -533,3 +533,29 @@ fn daemon_unchanged_git_status_drain_has_no_render_impact() {
     assert!(!app.drain_internal_events());
     assert!(!app.git_refresh.in_flight);
 }
+
+#[test]
+fn git_config_home_falls_back_to_the_account_directory() {
+    let cases = [None, Some(""), Some("/fixture/home")];
+    let Some(cases) = maestro_test_process::run_per_environment(
+        "app::git_refresh::tests::git_config_home_falls_back_to_the_account_directory",
+        cases,
+        |home| home.map(|home| ("HOME", home)).into_iter().collect(),
+    )
+    .unwrap() else {
+        return;
+    };
+    for case in cases {
+        let Some(home) = case.map(PathBuf::from).or_else(std::env::home_dir) else {
+            eprintln!("skipped: the host has no account directory");
+            continue;
+        };
+        let environment = git_config_environment();
+        assert_eq!(
+            environment.home.as_deref(),
+            Some(home.as_path()),
+            "{case:?}"
+        );
+        assert!(environment.user_files.contains(&home.join(".gitconfig")));
+    }
+}

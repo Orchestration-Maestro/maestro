@@ -2,7 +2,7 @@
 
 use super::{ReadContext, ReadOperations, ReadToolDetails, ReadToolInput, text::read_text};
 use crate::utils::{
-    diagnostics::{aborted, guarded},
+    diagnostics::{aborted, blocking, guarded},
     image_resize::{ImageResizeOptions, format_dimension_note, resize_image},
 };
 use base64::{Engine as _, engine::general_purpose::STANDARD};
@@ -19,6 +19,9 @@ const NON_VISION: &str =
     "[Current model does not support images. The image will be omitted from this request.]";
 
 /// Build the result for an image: header, optional notes and the attachment.
+///
+/// Decoding, resizing and encoding are CPU-bound; callers run this on the blocking pool.
+/// A `model` without image input adds a note.
 fn image_result(
     bytes: &[u8],
     mime_type: String,
@@ -84,12 +87,11 @@ impl Reader {
         let model = context.and_then(|context| context.model());
         let bytes = guarded(signal, || operations.read_file(absolute_path)).await?;
         let result = match mime.filter(|mime| !mime.is_empty()) {
-            Some(mime) => Ok(image_result(
-                &bytes,
-                mime,
-                self.auto_resize,
-                model.as_deref(),
-            )),
+            Some(mime) => {
+                let auto_resize = self.auto_resize;
+                blocking(move || Ok(image_result(&bytes, mime, auto_resize, model.as_deref())))
+                    .await
+            }
             None => read_text(&bytes, &input.path, input.offset, input.limit)
                 .map(|(text, details)| AgentToolResult::text_result(text, details)),
         };

@@ -66,6 +66,22 @@ fn source_classification_preserves_npm_and_local_precedence() {
 }
 #[test]
 #[cfg(unix)]
+fn package_home_matches_the_resources_rule() {
+    let empty_home = |_: &str| vec![("HOME", Some(String::new()))];
+    let Some(root) = case_in_child("empty home", empty_home) else {
+        return;
+    };
+    assert_eq!(maestro_resources::paths::home_directory().unwrap(), "");
+    let (manager, _, _) = support::manager_below(&root, &json!({}), &json!([]), None);
+    assert_eq!(
+        manager
+            .get_installed_path("~", maestro_packages::InstalledSourceScope::Project)
+            .unwrap(),
+        None
+    );
+}
+#[test]
+#[cfg(unix)]
 fn scoped_local_storage_and_matching_use_different_bases() {
     use maestro_packages::InstalledSourceScope::{Project, User};
     let Some(root) = case_in_child("home", fake_home) else {

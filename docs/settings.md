@@ -350,9 +350,11 @@ no stronger exclusion promised. Native decorators forward write intent to retain
 the native guarantee. In-memory callbacks still run without a lock and retain
 last-writer behavior.
 
-The native adapter publishes each write through [the shared atomic replacement](locking.md),
-following a symbolic link at the settings path and keeping the file's existing permissions,
-so a failed write leaves the previous file whole. A read-only settings file is refused and left
+The native adapter publishes each write through
+[the shared recoverable byte publication](locking.md#recoverable-byte-publication),
+following a symbolic link at the settings path. The text is written in place, keeping the
+file's permissions, ownership and hard links, and a write cut short is completed, not rolled
+back, by the next coordinated writer. A read-only settings file is refused and left
 unchanged. In-memory writes are not durable.
 
 ## Saved text

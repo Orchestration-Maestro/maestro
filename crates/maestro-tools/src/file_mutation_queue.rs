@@ -5,9 +5,10 @@ use maestro_models::{BoxFuture, DiagnosticErrorInfo};
 use std::{
     collections::{HashMap, VecDeque},
     future::Future,
+    io,
     path::PathBuf,
     sync::{
-        LazyLock, Mutex, MutexGuard, PoisonError,
+        Arc, LazyLock, Mutex, MutexGuard, PoisonError,
         atomic::{AtomicU64, Ordering},
     },
 };
@@ -32,14 +33,29 @@ fn queues() -> MutexGuard<'static, HashMap<PathBuf, VecDeque<Waiter>>> {
     QUEUES.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
-/// The file's identity: its canonical path, or its lexical absolute path when it has none.
-fn queue_key(file_path: &str) -> std::io::Result<PathBuf> {
+tokio::task_local! {
+    /// The admission of the queued operation running on this task.
+    static RUNNING: Arc<Admission>;
+}
+
+/// The running queued operation's admission, so work that outlives the operation can keep the
+/// file's queue held; `None` outside a queued operation.
+pub(crate) fn running_admission() -> Option<Arc<Admission>> {
+    RUNNING.try_with(Arc::clone).ok()
+}
+
+/// The file's identity: its canonical path, or its lexical absolute path when the file or a
+/// parent directory does not exist yet. Any other canonicalization failure is returned.
+fn queue_key(file_path: &str) -> io::Result<PathBuf> {
     let resolved = PathBuf::from(resolve_path(&[file_path])?);
-    Ok(std::fs::canonicalize(&resolved).unwrap_or(resolved))
+    match std::fs::canonicalize(&resolved) {
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(resolved),
+        canonical => canonical,
+    }
 }
 
 /// A caller's place in its file's queue, given up when dropped.
-struct Admission {
+pub(crate) struct Admission {
     /// File identity.
     key: PathBuf,
     /// Identity of this caller.
@@ -97,7 +113,13 @@ impl Drop for Admission {
 /// polled. Files are identified by canonical path when it can be resolved, otherwise by lexical
 /// absolute path; symlink aliases that canonicalize share a queue and different files proceed
 /// independently. A failed operation never blocks later calls. Dropping the returned future
-/// before `operation` has started leaves the queue without running it.
+/// before `operation` has started leaves the queue without running it. Blocking file work that
+/// the operation started keeps the queue held until it settles, even when the future is dropped
+/// first.
+///
+/// # Errors
+/// A canonicalization failure other than a missing path settles the call before `operation`
+/// runs.
 pub fn with_file_mutation_queue<T, F>(
     file_path: &str,
     operation: impl FnOnce() -> F + Send + 'static,
@@ -111,12 +133,13 @@ where
         Err(error) => return Box::pin(std::future::ready(Err(diagnostic(&error)))),
     };
     let (admission, turn) = Admission::join(key);
+    let admission = Arc::new(admission);
     Box::pin(async move {
         if let Some(turn) = turn {
             // The predecessor's admission drop sends or removes this sender.
             let _ = turn.await;
         }
-        let result = operation().await;
+        let result = RUNNING.scope(Arc::clone(&admission), operation()).await;
         drop(admission);
         result
     })
