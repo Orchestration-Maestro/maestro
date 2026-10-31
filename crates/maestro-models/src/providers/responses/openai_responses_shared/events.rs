@@ -1,6 +1,7 @@
 //! Reduction of response events into the shared assistant message.
 
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::sync::{Arc, PoisonError};
 
 use serde_json::Value;
@@ -50,8 +51,11 @@ pub(super) struct Reducer<'a> {
     model: &'a Model,
     /// Service tier settings of the caller.
     options: Option<&'a OpenAIResponsesStreamOptions<'a>>,
-    /// The open item.
+    /// The open item of the event being reduced.
     current: Current,
+    /// The items still open, by the output position the service gave them, which the event
+    /// being reduced takes out and puts back.
+    open_items: HashMap<Option<String>, Current>,
     /// Whether a completed or incomplete response was seen.
     terminal: bool,
 }
@@ -70,6 +74,7 @@ impl<'a> Reducer<'a> {
             model,
             options,
             current: Current::Idle,
+            open_items: HashMap::new(),
             terminal: false,
         }
     }
@@ -209,9 +214,22 @@ impl<'a> Reducer<'a> {
         });
     }
 
-    /// Select one event before reading the members its branch consumes.
+    /// Reduce one event against the item at its output position, so items finishing out of
+    /// order keep their own state.
     pub(super) fn event(&mut self, input: &str) -> Result<(), DiagnosticErrorInfo> {
         let raw = required(Some(raw_json(input).map_err(|error| native(&error))?))?;
+        let position = member(raw, "output_index").map(|index| index.get().to_owned());
+        self.current = self.open_items.remove(&position).unwrap_or(Current::Idle);
+        let outcome = self.reduce(raw);
+        if !matches!(self.current, Current::Idle) {
+            let current = std::mem::replace(&mut self.current, Current::Idle);
+            self.open_items.insert(position, current);
+        }
+        outcome
+    }
+
+    /// Select one event before reading the members its branch consumes.
+    fn reduce(&mut self, raw: &RawValue) -> Result<(), DiagnosticErrorInfo> {
         match kind(raw, "type")?.as_str() {
             "response.created" => {
                 let id = field(required(member(raw, "response"))?, "id")?;
