@@ -618,6 +618,10 @@ fn directory_paths_expand_only_forward_slash_home_forms() {
             expected
         );
     }
+    assert_eq!(
+        paths::expand_tilde_path("~/x", || Ok("/h/".to_owned())).unwrap(),
+        "/h//x"
+    );
     for written in [r"~\x", r"~\"] {
         let unread = || Err(io::Error::other("home was read"));
         assert_eq!(paths::expand_tilde_path(written, unread).unwrap(), written);

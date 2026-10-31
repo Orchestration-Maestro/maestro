@@ -292,4 +292,18 @@ mod tests {
         let unknown = || Err(std::io::Error::other("unknown home"));
         assert_eq!(expand_session_dir_with("~/x", unknown), "~/x");
     }
+
+    /// A backslash after the tilde stays literal and never consults the home lookup.
+    #[test]
+    fn session_directories_keep_backslash_home_forms_literal() {
+        for written in [r"~\x", r"~\"] {
+            let called = std::cell::Cell::new(false);
+            let expanded = expand_session_dir_with(written, || {
+                called.set(true);
+                Ok(r"C:\h".to_owned())
+            });
+            assert_eq!(expanded, written);
+            assert!(!called.get());
+        }
+    }
 }

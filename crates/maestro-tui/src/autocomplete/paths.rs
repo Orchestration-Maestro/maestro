@@ -342,4 +342,12 @@ mod tests {
     fn other_forms_read_no_home_directory() {
         assert_eq!(expand_home(&Home(None), "a~/x").unwrap(), "a~/x");
     }
+
+    /// Backslash home forms do not need a home directory for completion.
+    #[test]
+    fn completion_keeps_backslash_home_forms_literal() {
+        for written in [r"~\x", r"~\"] {
+            assert_eq!(expand_home(&Home(None), written).unwrap(), written);
+        }
+    }
 }
