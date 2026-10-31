@@ -262,3 +262,48 @@ fn clearing_interrupted_history_prevents_later_recovery_from_resurrecting_it() {
         "a cleared recovery record resurrected private history"
     );
 }
+
+#[test]
+fn snapshot_and_history_publication_leave_old_hard_links_unchanged() {
+    let dir = Directory::new();
+    let session = dir.path().join("session.json");
+    let history_path = dir.path().join("history.json");
+    save_to_paths(&session, &history_path, &empty(), Some(&history())).unwrap();
+    let previous = fs::read(&session).unwrap();
+    let previous_history = fs::read(&history_path).unwrap();
+    fs::hard_link(&session, dir.path().join("old-session")).unwrap();
+    fs::hard_link(&history_path, dir.path().join("old-history")).unwrap();
+    let mut next = empty();
+    next.selected = 7;
+    let mut next_history = history();
+    next_history.version = 99;
+
+    save_to_paths(&session, &history_path, &next, Some(&next_history)).unwrap();
+
+    assert_eq!(fs::read(dir.path().join("old-session")).unwrap(), previous);
+    assert_eq!(
+        fs::read(dir.path().join("old-history")).unwrap(),
+        previous_history
+    );
+    assert_eq!(load(&session).unwrap().selected, 7);
+    assert!(!session.with_extension("json.tmp").exists());
+    assert!(!history_path.with_extension("json.tmp").exists());
+}
+
+#[test]
+fn failed_temporary_creation_keeps_the_previous_snapshot_readable() {
+    let dir = Directory::new();
+    let session = dir.path().join("session.json");
+    let history_path = dir.path().join("history.json");
+    save_to_paths(&session, &history_path, &empty(), None).unwrap();
+    let previous = fs::read(&session).unwrap();
+    fs::create_dir(session.with_extension("json.tmp")).unwrap();
+    let mut next = empty();
+    next.selected = 7;
+
+    assert!(save_to_paths(&session, &history_path, &next, None).is_err());
+    assert_eq!(fs::read(&session).unwrap(), previous);
+    let (loaded, events) = capture(|| load(&session));
+    assert_eq!(loaded.unwrap().selected, 0);
+    assert!(events.is_empty());
+}
