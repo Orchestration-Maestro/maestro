@@ -1,7 +1,9 @@
 //! Workspace key-combination parsing and matching.
 
 use maestro_protocol::frames::{ClientKeyCode, KeyModifiers};
-use maestro_tui::keys::{Identifier, Named, Target};
+use maestro_tui::keys::{Code, Identifier, Target};
+
+use crate::input::parse::{project_code, toolkit_modifiers_to_wire};
 
 /// Semantic key code with protocol modifier bits.
 pub type KeyCombo = (ClientKeyCode, u8);
@@ -11,62 +13,19 @@ pub type KeyCombo = (ClientKeyCode, u8);
 #[must_use]
 pub fn parse_key_combo(text: &str) -> Option<KeyCombo> {
     let identifier = Identifier::parse(text)?;
-    let mut modifiers = project_modifiers(identifier.modifier);
-    let code = match identifier.target {
-        Target::Char(character) => {
-            if names_capital(text) {
-                modifiers |= KeyModifiers::SHIFT;
-            }
-            ClientKeyCode::Char(character)
-        }
-        Target::Named(named) => project_named(named)?,
+    let code = project_code(match identifier.target {
+        Target::Char(character) => Code::Char(character),
+        Target::Named(named) => Code::Key(named),
+    })?;
+    let shift = if identifier.capital {
+        KeyModifiers::SHIFT
+    } else {
+        KeyModifiers::NONE
     };
-    Some(normalize_key_combo((code, modifiers)))
-}
-
-/// Whether the key of `text` is one ASCII capital, which the workspace reads as shifted.
-fn names_capital(text: &str) -> bool {
-    let key = text.rsplit('+').next().map_or("", str::trim);
-    let mut characters = key.chars();
-    matches!((characters.next(), characters.next()), (Some(c), None) if c.is_ascii_uppercase())
-}
-
-/// Maps the toolkit's modifier bits onto the protocol's.
-fn project_modifiers(modifier: u32) -> u8 {
-    [
-        (Identifier::SHIFT, KeyModifiers::SHIFT),
-        (Identifier::CTRL, KeyModifiers::CONTROL),
-        (Identifier::ALT, KeyModifiers::ALT),
-        (Identifier::SUPER, KeyModifiers::SUPER),
-        (Identifier::HYPER, KeyModifiers::HYPER),
-    ]
-    .into_iter()
-    .filter(|(bit, _)| modifier & bit != 0)
-    .fold(KeyModifiers::NONE, |bits, (_, protocol)| bits | protocol)
-}
-
-/// Maps a named toolkit key onto the protocol's key code, absent for keys it has no code for.
-fn project_named(named: Named) -> Option<ClientKeyCode> {
-    Some(match named {
-        Named::Escape => ClientKeyCode::Esc,
-        Named::Tab => ClientKeyCode::Tab,
-        Named::BackTab => ClientKeyCode::BackTab,
-        Named::Enter => ClientKeyCode::Enter,
-        Named::Space => ClientKeyCode::Char(' '),
-        Named::Backspace => ClientKeyCode::Backspace,
-        Named::Insert => ClientKeyCode::Insert,
-        Named::Delete => ClientKeyCode::Delete,
-        Named::Home => ClientKeyCode::Home,
-        Named::End => ClientKeyCode::End,
-        Named::PageUp => ClientKeyCode::PageUp,
-        Named::PageDown => ClientKeyCode::PageDown,
-        Named::Up => ClientKeyCode::Up,
-        Named::Down => ClientKeyCode::Down,
-        Named::Left => ClientKeyCode::Left,
-        Named::Right => ClientKeyCode::Right,
-        Named::Function(number) => ClientKeyCode::F(number),
-        _ => return None,
-    })
+    Some(normalize_key_combo((
+        code,
+        toolkit_modifiers_to_wire(identifier.modifier) | shift,
+    )))
 }
 
 /// Canonicalizes shifted Tab as `BackTab` without a redundant Shift modifier.

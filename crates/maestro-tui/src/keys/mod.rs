@@ -202,7 +202,16 @@ pub fn matches_key(data: &str, key_id: &str) -> bool {
     let input = Input::new(data);
     match identifier.target {
         Target::Named(key) => input.matches_named(key, identifier.modifier),
-        Target::Char(key) => input.matches_char(key, identifier.modifier),
+        Target::Char(key) => input.matches_char(lowered(key), identifier.modifier),
+    }
+}
+
+/// The letter a capital lowercases to as Unicode defines, so the Kelvin sign names `k`.
+fn lowered(c: char) -> char {
+    let mut lower = c.to_lowercase();
+    match (lower.next(), lower.next()) {
+        (Some(letter), None) => letter,
+        _ => c,
     }
 }
 

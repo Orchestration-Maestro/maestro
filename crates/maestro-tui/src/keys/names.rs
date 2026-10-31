@@ -279,10 +279,11 @@ impl Named {
         })
     }
 
-    /// Finds the function key an identifier from `f1` to `f35` names.
+    /// Finds the function key an identifier from `f0` to `f255` names.
     fn parse_function(name: &str) -> Option<Self> {
-        (1..=35)
-            .find(|number| name == format!("f{number}"))
+        name.strip_prefix('f')
+            .filter(|digits| digits.bytes().all(|byte| byte.is_ascii_digit()))
+            .and_then(|digits| digits.parse().ok())
             .map(Self::Function)
     }
 
@@ -401,7 +402,7 @@ impl Code {
 pub enum Target {
     /// A named key.
     Named(Named),
-    /// A lowercase letter, a digit, a symbol or another single character.
+    /// A single character as typed, except that an ASCII capital is its lowercase letter.
     Char(char),
 }
 
@@ -445,35 +446,28 @@ fn modifier_bit(word: &str) -> Option<u32> {
 pub struct Identifier {
     /// The requested key.
     pub target: Target,
-    /// The modifier bits it requires, built from the `SHIFT`, `ALT`, `CTRL`, `SUPER` and
-    /// `HYPER` constants.
+    /// The modifier bits it requires: shift 1, alt 2, ctrl 4, super 8 and hyper 16.
     pub modifier: u32,
+    /// Whether the key was written as an ASCII capital. The identifier names the lowercase
+    /// letter; a frontend that reads a capital as shifted adds shift itself.
+    pub capital: bool,
 }
 
 impl Identifier {
-    /// Modifier bit for shift.
-    pub const SHIFT: u32 = SHIFT;
-    /// Modifier bit for alt.
-    pub const ALT: u32 = ALT;
-    /// Modifier bit for ctrl.
-    pub const CTRL: u32 = CTRL;
-    /// Modifier bit for super.
-    pub const SUPER: u32 = SUPER;
-    /// Modifier bit for hyper.
-    pub const HYPER: u32 = HYPER;
-
-    /// Parses an identifier, lowercasing it as Unicode defines, so a capital such as the
-    /// Kelvin sign names the ASCII letter it lowercases to.
+    /// Parses an identifier.
     ///
     /// The key is the text after the last `+`, except that `+` alone and an identifier
     /// ending in `++` name the plus key. Surrounding whitespace is ignored around each word.
-    /// The words before the key are modifier names: `shift`, `ctrl` (`control`), `alt`
-    /// (`option`, `meta`), `super` (`cmd`, `command`) and `hyper`. An identifier with a word
-    /// that is not a modifier name, with an empty word (as in `ctrl+` or `ctrl++v`) or with
-    /// no key names nothing, so a misspelled modifier never binds the plain key.
+    /// The words before the key are modifier names in any letter case: `shift`, `ctrl`
+    /// (`control`), `alt` (`option`, `meta`), `super` (`cmd`, `command`) and `hyper`. An
+    /// identifier with a word that is not a modifier name, with an empty word (as in `ctrl+`
+    /// or `ctrl++v`) or with no key names nothing, so a misspelled modifier never binds the
+    /// plain key. A key of one character is that character as typed, except that an ASCII
+    /// capital names its lowercase letter and sets `capital`; any other key is a named key
+    /// or symbol word in any letter case.
     #[must_use]
     pub fn parse(id: &str) -> Option<Self> {
-        let id = id.trim().to_lowercase();
+        let id = id.trim();
         let (words, key) = if id == "+" {
             (None, "+")
         } else if let Some(words) = id.strip_suffix("++") {
@@ -481,23 +475,30 @@ impl Identifier {
         } else {
             match id.rsplit_once('+') {
                 Some((words, key)) => (Some(words), key),
-                None => (None, id.as_str()),
+                None => (None, id),
             }
         };
         let modifier = words.map_or(Some(0), |words| {
-            words
-                .split('+')
-                .try_fold(0, |bits, word| Some(bits | modifier_bit(word.trim())?))
+            words.split('+').try_fold(0, |bits, word| {
+                Some(bits | modifier_bit(&word.trim().to_lowercase())?)
+            })
         })?;
         let key = key.trim();
         let mut chars = key.chars();
-        let target = match (chars.next(), chars.next()) {
-            (Some(c), None) => Target::Char(c),
-            _ => Named::parse(key)
+        let (target, capital) = if let (Some(c), None) = (chars.next(), chars.next()) {
+            (Target::Char(c.to_ascii_lowercase()), c.is_ascii_uppercase())
+        } else {
+            let word = key.to_lowercase();
+            let target = Named::parse(&word)
                 .map(Target::Named)
-                .or_else(|| symbol_word(key).map(Target::Char))?,
+                .or_else(|| symbol_word(&word).map(Target::Char))?;
+            (target, false)
         };
-        Some(Self { target, modifier })
+        Some(Self {
+            target,
+            modifier,
+            capital,
+        })
     }
 }
 
