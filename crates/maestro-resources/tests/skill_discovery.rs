@@ -654,7 +654,8 @@ fn maestro_skills_report_explicit_path_failures() {
     );
 }
 
-/// All home forms and relative components resolve to populated resources.
+/// The home forms and relative components resolve to populated resources, and `~name` stays a
+/// path below the working directory.
 #[test]
 fn maestro_skills_expand_all_home_path_forms() {
     let dir = Directory::new();
@@ -664,7 +665,6 @@ fn maestro_skills_expand_all_home_path_forms() {
         ("~".into(), file.clone()),
         ("~/calendar".into(), file.clone()),
         ("~//calendar".into(), file.clone()),
-        ("~calendar".into(), file.clone()),
         ("home/../home/calendar".into(), file.clone()),
         ("\u{feff}~/calendar\u{feff}".into(), file.clone()),
         (home.join("calendar/../calendar"), file),
@@ -683,6 +683,21 @@ fn maestro_skills_expand_all_home_path_forms() {
         assert_eq!(result.skills[0].file_path.as_str(), support::text(&target));
         assert!(result.diagnostics.is_empty());
     }
+    let paths = [std::path::PathBuf::from("~calendar")];
+    let result = maestro_resources::load_skills(maestro_resources::LoadSkillsOptions {
+        cwd: support::text(dir.0.path()),
+        home: support::text(&home),
+        agent_dir: support::text(dir.0.path()),
+        config_dir_name: ".maestro",
+        skill_paths: &strings(&paths),
+        include_defaults: false,
+    })
+    .unwrap();
+    assert!(result.skills.is_empty());
+    assert_eq!(
+        result.diagnostics[0].path.as_deref(),
+        Some(support::text(&support::under(dir.0.path(), "~calendar")))
+    );
     let paths = [std::path::PathBuf::from("\u{85}~/calendar")];
     let result = maestro_resources::load_skills(maestro_resources::LoadSkillsOptions {
         cwd: support::text(dir.0.path()),

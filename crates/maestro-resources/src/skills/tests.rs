@@ -645,15 +645,15 @@ fn explicit_skill_paths_follow_the_reference_table() {
             ("~", r"C:\h", r"C:\h"),
             ("~/", r"C:\h", r"C:\h"),
             ("~/x", r"C:\h", r"C:\h\x"),
-            ("~x", r"C:\h", r"C:\h\x"),
+            ("~x", r"C:\h", r"C:\w\~x"),
             ("~", r"C:\h\.", r"C:\h\."),
         ]
     } else {
         &[
             ("~", "/h", "/h"),
-            ("~/", "/h", "/h"),
+            ("~/", "/h", "/h/"),
             ("~/x", "/h", "/h/x"),
-            ("~x", "/h", "/h/x"),
+            ("~x", "/h", "/w/~x"),
             ("~", "/h/.", "/h/."),
             ("~", "", "/w"),
             ("~", "home", "/w/home"),
@@ -773,7 +773,7 @@ fn explicit_outcomes() -> [ExplicitOutcome; 24] {
         root,
         root,
         calendar,
-        calendar,
+        Missing("work/~calendar"),
         absolute_calendar,
         calendar,
         calendar,
@@ -784,16 +784,16 @@ fn explicit_outcomes() -> [ExplicitOutcome; 24] {
         root,
         relative_home,
         relative_home_calendar,
-        relative_home_calendar,
+        Missing("work/~calendar"),
         relative_home,
         relative_home_calendar,
-        relative_home_calendar,
+        Missing("work/~calendar"),
         absolute_root,
         absolute_calendar,
-        absolute_calendar,
+        Missing("work/~calendar"),
         absolute_root,
         absolute_calendar,
-        absolute_calendar,
+        Missing("work/~calendar"),
     ]
 }
 

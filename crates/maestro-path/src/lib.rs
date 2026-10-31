@@ -17,12 +17,14 @@
 mod links;
 mod os;
 mod path;
+mod tilde;
 
 pub use links::resolve_final_links;
 pub use os::homedir;
 pub use path::{
     Cwd, CwdUnavailable, normalize_native, posix, resolve_with, resolve_with_flavor, win32,
 };
+pub use tilde::{expand_tilde, expand_tilde_native, expand_tilde_with_flavor};
 
 #[cfg(not(windows))]
 pub use path::posix::{

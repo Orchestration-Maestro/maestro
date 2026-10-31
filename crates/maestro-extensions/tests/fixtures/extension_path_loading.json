@@ -668,7 +668,7 @@
       ],
       [
         "file",
-        "home/h2.ts",
+        "work/~h2.ts",
         "command:h2"
       ],
       [
@@ -688,8 +688,12 @@
       ],
       [
         "file",
-        "home/ h5.ts",
+        "work/~ h5.ts",
         "command:h5"
+      ],
+      [
+        "dir",
+        "home/sub"
       ]
     ],
     "calls": [
@@ -734,13 +738,13 @@
             },
             {
               "path": "~h2.ts",
-              "resolvedPath": "$ROOT/home/h2.ts",
+              "resolvedPath": "$ROOT/work/~h2.ts",
               "sourceInfo": {
                 "path": "~h2.ts",
                 "source": "local",
                 "scope": "temporary",
                 "origin": "top-level",
-                "baseDir": "$ROOT/home"
+                "baseDir": "$ROOT/work"
               },
               "commands": [
                 "h2"
@@ -753,13 +757,13 @@
             },
             {
               "path": "~//h3.ts",
-              "resolvedPath": "$ROOT/home/h3.ts",
+              "resolvedPath": "$ROOT/home//h3.ts",
               "sourceInfo": {
                 "path": "~//h3.ts",
                 "source": "local",
                 "scope": "temporary",
                 "origin": "top-level",
-                "baseDir": "$ROOT/home"
+                "baseDir": "$ROOT/home/"
               },
               "commands": [
                 "h3"
@@ -772,13 +776,13 @@
             },
             {
               "path": "~/sub/../h4.ts",
-              "resolvedPath": "$ROOT/home/h4.ts",
+              "resolvedPath": "$ROOT/home/sub/../h4.ts",
               "sourceInfo": {
                 "path": "~/sub/../h4.ts",
                 "source": "local",
                 "scope": "temporary",
                 "origin": "top-level",
-                "baseDir": "$ROOT/home"
+                "baseDir": "$ROOT/home/sub/.."
               },
               "commands": [
                 "h4"
@@ -810,13 +814,13 @@
             },
             {
               "path": "~\u3000h5.ts",
-              "resolvedPath": "$ROOT/home/ h5.ts",
+              "resolvedPath": "$ROOT/work/~ h5.ts",
               "sourceInfo": {
                 "path": "~\u3000h5.ts",
                 "source": "local",
                 "scope": "temporary",
                 "origin": "top-level",
-                "baseDir": "$ROOT/home"
+                "baseDir": "$ROOT/work"
               },
               "commands": [
                 "h5"

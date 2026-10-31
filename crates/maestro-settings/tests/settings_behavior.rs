@@ -1601,7 +1601,14 @@ mod tests {
             literal(""),
             (Some("~"), Some(home.to_owned())),
             (Some("~/sessions"), Some(below(home, &["sessions"]))),
-            (Some("~/"), Some(home.to_owned())),
+            (
+                Some("~/"),
+                Some(if cfg!(windows) {
+                    home.to_owned()
+                } else {
+                    below(home, &[""])
+                }),
+            ),
             literal("relative/../literal"),
             literal("~other"),
             literal("\\literal"),

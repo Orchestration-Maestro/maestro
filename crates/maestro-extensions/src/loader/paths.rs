@@ -134,8 +134,8 @@ mod tests {
                     ("~", r"C:\h", r"C:\h"),
                     ("~/", r"C:\h", r"C:\h"),
                     ("~/x", r"C:\h", r"C:\h\x"),
-                    ("~x", r"C:\h", r"C:\h\x"),
-                    ("~", r"C:\h\.", r"C:\h"),
+                    ("~x", r"C:\h", r"C:\w\~x"),
+                    ("~", r"C:\h\.", r"C:\h\."),
                     ("~", "", r"C:\w"),
                 ],
             )
@@ -144,10 +144,10 @@ mod tests {
                 "/w",
                 [
                     ("~", "/h", "/h"),
-                    ("~/", "/h", "/h"),
+                    ("~/", "/h", "/h/"),
                     ("~/x", "/h", "/h/x"),
-                    ("~x", "/h", "/h/x"),
-                    ("~", "/h/.", "/h"),
+                    ("~x", "/h", "/w/~x"),
+                    ("~", "/h/.", "/h/."),
                     ("~", "", "/w"),
                 ],
             )
@@ -161,15 +161,17 @@ mod tests {
         }
     }
 
-    /// A path that does not start with `~` never reads the home directory.
+    /// A path that is neither `~` nor `~` plus a separator never reads the home directory.
     #[test]
     fn other_forms_read_no_home_directory() {
         let failing = || Err(io::Error::new(io::ErrorKind::NotFound, "unknown home"));
-        let (cwd, expected) = if cfg!(windows) {
-            (r"C:\w", r"C:\w\x\~\y")
+        let (cwd, rows) = if cfg!(windows) {
+            (r"C:\w", [("x/~/y", r"C:\w\x\~\y"), ("~x", r"C:\w\~x")])
         } else {
-            ("/w", "/w/x/~/y")
+            ("/w", [("x/~/y", "/w/x/~/y"), ("~x", "/w/~x")])
         };
-        assert_eq!(anchor_path("x/~/y", cwd, failing).unwrap(), expected);
+        for (written, expected) in rows {
+            assert_eq!(anchor_path(written, cwd, failing).unwrap(), expected);
+        }
     }
 }
