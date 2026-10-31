@@ -1,12 +1,51 @@
 //! Retained-message cuts and turn boundaries in supplied entry ranges.
 use crate::SessionEntry;
-use crate::session_manager::context::property;
+use crate::session_manager::context::{generated_message, property};
 use serde_json::Value;
-/// Read a message role only after reaching a message entry.
-fn message_role(entry: &Value) -> Result<Option<&str>, serde_json::Error> {
-    Ok(property(entry.get("message"), "role")?.and_then(Value::as_str))
+use std::borrow::Cow;
+/// Roles whose messages can begin the retained span.
+const CUT_ROLES: [&str; 6] = [
+    "user",
+    "assistant",
+    "bashExecution",
+    "custom",
+    "branchSummary",
+    "compactionSummary",
+];
+/// Roles that begin a turn: every cut role except an assistant answer.
+const TURN_START_ROLES: [&str; 5] = [
+    "user",
+    "bashExecution",
+    "custom",
+    "branchSummary",
+    "compactionSummary",
+];
+/// The message an entry puts in model context, a compaction entry's summary included.
+///
+/// A stored message is borrowed as written, so a missing message stays a reached null.
+fn context_message(entry: &Value) -> Result<Option<Cow<'_, Value>>, serde_json::Error> {
+    if property(Some(entry), "type")?.and_then(Value::as_str) == Some("message") {
+        return Ok(Some(Cow::Borrowed(
+            entry.get("message").unwrap_or(&Value::Null),
+        )));
+    }
+    Ok(generated_message(entry).map(Cow::Owned))
 }
-/// Find the closest user, shell or generated-entry turn start within the lower bound.
+/// Whether the entry puts a message with one of `roles` in model context.
+///
+/// A compaction entry only stands for the span it replaced, so it never qualifies.
+fn has_role(entry: &Value, roles: &[&str]) -> Result<bool, serde_json::Error> {
+    if entry.get("type").and_then(Value::as_str) == Some("compaction") {
+        return Ok(false);
+    }
+    let Some(message) = context_message(entry)? else {
+        return Ok(false);
+    };
+    Ok(property(Some(&message), "role")?
+        .and_then(Value::as_str)
+        .is_some_and(|role| roles.contains(&role)))
+}
+/// Find the closest context-visible turn start within the lower bound.
 ///
 /// # Errors
 /// Returns a native JSON error for a reached null entry or message.
@@ -19,17 +58,13 @@ pub fn find_turn_start_index(
         let Some(entry) = entries.get(index) else {
             continue;
         };
-        match property(Some(entry), "type")?.and_then(Value::as_str) {
-            Some("branch_summary" | "custom_message") => return Ok(Some(index)),
-            Some("message") if matches!(message_role(entry)?, Some("user" | "bashExecution")) => {
-                return Ok(Some(index));
-            }
-            _ => {}
+        if has_role(entry, &TURN_START_ROLES)? {
+            return Ok(Some(index));
         }
     }
     Ok(None)
 }
-/// Select message and generated-entry candidates before estimating any tokens.
+/// Select context-visible cut candidates before estimating any tokens.
 fn candidates(
     entries: &[Value],
     start: usize,
@@ -37,28 +72,13 @@ fn candidates(
 ) -> Result<Vec<usize>, serde_json::Error> {
     let mut cuts = Vec::new();
     for (index, entry) in entries.iter().enumerate().take(end).skip(start) {
-        let valid = match property(Some(entry), "type")?.and_then(Value::as_str) {
-            Some("branch_summary" | "custom_message") => true,
-            Some("message") => matches!(
-                message_role(entry)?,
-                Some(
-                    "user"
-                        | "assistant"
-                        | "bashExecution"
-                        | "custom"
-                        | "branchSummary"
-                        | "compactionSummary"
-                )
-            ),
-            _ => false,
-        };
-        if valid {
+        if has_role(entry, &CUT_ROLES)? {
             cuts.push(index);
         }
     }
     Ok(cuts)
 }
-/// Find the budget crossing while counting only stored message entries.
+/// Find the budget crossing while counting every message the entries put in context.
 fn crossing(
     entries: &[Value],
     start: usize,
@@ -70,10 +90,14 @@ fn crossing(
         let Some(entry) = entries.get(index) else {
             continue;
         };
-        if property(Some(entry), "type")?.and_then(Value::as_str) != Some("message") {
+        let Some(message) = context_message(entry)? else {
+            continue;
+        };
+        let weight = super::estimate_tokens(&message)?;
+        if weight == 0.0 {
             continue;
         }
-        tokens += super::estimate_tokens(entry.get("message").unwrap_or(&Value::Null))?;
+        tokens += weight;
         if tokens >= keep {
             return Ok(Some(index));
         }
@@ -108,15 +132,16 @@ pub fn find_cut_point(
         })
         .unwrap_or(first);
     while cut > start_index {
-        match property(entries.get(cut - 1), "type")?.and_then(Value::as_str) {
-            Some("message" | "compaction") => break,
-            _ => cut -= 1,
+        let previous = &entries[cut - 1];
+        let compaction =
+            property(Some(previous), "type")?.and_then(Value::as_str) == Some("compaction");
+        if compaction || context_message(previous)?.is_some() {
+            break;
         }
+        cut -= 1;
     }
-    let entry = &entries[cut];
-    let user = entry.get("type").and_then(Value::as_str) == Some("message")
-        && message_role(entry)? == Some("user");
-    let turn_start_index = if user {
+    let starts_turn = has_role(&entries[cut], &TURN_START_ROLES)?;
+    let turn_start_index = if starts_turn {
         None
     } else {
         find_turn_start_index(entries, cut, start_index)?
@@ -124,6 +149,6 @@ pub fn find_cut_point(
     Ok(super::CutPointResult {
         first_kept_entry_index: cut,
         turn_start_index,
-        is_split_turn: !user && turn_start_index.is_some(),
+        is_split_turn: !starts_turn && turn_start_index.is_some(),
     })
 }

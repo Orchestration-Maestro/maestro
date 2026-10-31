@@ -60,12 +60,15 @@ text, thinking and canonical JSON tool arguments, shell command/output even when
 excluded from model context, and unwrapped summary text. Each image in a user, custom
 or tool-result message adds 4800 units. Unknown roles contribute zero.
 
-`find_cut_point` accepts an existing half-open index range. It counts only message
-entries backwards, crosses at the retained budget and selects the next valid cut,
-falling back to the first candidate. Tool results cannot start cuts. Preceding metadata
-is absorbed without crossing a message or compaction boundary. `find_turn_start_index`
-distinguishes user/shell message starts from custom-message/branch-summary entry starts.
-A non-user cut with a turn start produces a split prefix, which may be empty.
+`find_cut_point` accepts an existing half-open index range. It counts every message
+an entry puts in context backwards, including custom messages, nonempty branch
+summaries and compaction summaries, crosses at the retained budget and selects the next
+valid cut, falling back to the first candidate. Tool results cannot start cuts.
+Preceding metadata is absorbed without crossing an entry that is in context or a
+compaction boundary. `find_turn_start_index` treats user, shell, custom, branch-summary
+and compaction-summary messages, and the entries that become them, as turn starts. A cut
+that is not itself a turn start but has one before it produces a split prefix, which may
+be empty.
 
 ## Shared summary input
 

@@ -48,8 +48,9 @@ pre-compaction context, not copied from an old estimate.
 
 ### Split turns and cuts
 
-A conversational turn begins at a user message and continues through assistant/tool
-work until the next user message. A large turn can require a mid-turn cut:
+A conversational turn begins at a user message, a shell execution or a generated message
+(custom, branch summary or compaction summary) and continues through assistant/tool
+work until the next such message. A large turn can require a mid-turn cut:
 
 ```text
   header | u1 a2 t3 a4 t5 t6 | a7 t8
@@ -67,9 +68,10 @@ History and prefix summaries start independently, then merge with a **Turn Conte
 history focus or previous-summary text. See the API for their distinct output budgets.
 
 Cuts may start at user, assistant, shell execution, custom-message or branch-summary
-content, never at a tool result. Preceding metadata is absorbed without crossing a
-message or compaction boundary. Shell/custom boundaries follow the library's turn
-selection rules rather than requiring every entry to be a model user message.
+content, never at a tool result. Custom messages and summaries count toward the retained
+budget like any other message, and an empty branch summary is neither a cut nor a turn
+start because it puts nothing in context. Preceding metadata is absorbed without
+crossing a message, another context entry or a compaction boundary.
 
 ### Stored compaction record
 
