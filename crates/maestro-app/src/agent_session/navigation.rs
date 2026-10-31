@@ -6,16 +6,20 @@ use super::{
 use crate::configuration::config::get_docs_path;
 use crate::utils::lock::{read, write};
 use indexmap::IndexMap;
+use maestro_agent::StreamFn;
 use maestro_catalog::ResolvedRequestAuth;
 use maestro_credentials::format_no_api_key_found_message;
 use maestro_extensions::{
     ExtensionExecution, SessionBeforeTreeEvent, SessionBeforeTreeResult, SessionTreeEvent,
     TreePreparation,
 };
-use maestro_models::{Cancellation, DiagnosticErrorInfo, Model};
+use maestro_models::{
+    Cancellation, DiagnosticErrorInfo, JsonObject, Local, Model, ProviderObjects,
+    ProviderStreamOptions, SharedAssistantMessage,
+};
 use maestro_session::{
-    BranchSummaryResult, GenerateBranchSummaryOptions, Presence,
-    collect_entries_for_branch_summary, generate_branch_summary,
+    BranchSummaryRequest, BranchSummaryResult, GenerateBranchSummaryOptions, Presence,
+    collect_entries_for_branch_summary, generate_branch_summary_with,
     session_manager::{BranchSummaryEntry, NavigateTreeOptions, ReadonlySessionManager},
 };
 use serde::Deserialize as _;
@@ -266,6 +270,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
             .borrow()
             .get_branch_summary_settings()
             .reserve_tokens;
+        let stream_fn = read(&self.agent.stream_fn).clone();
         let options = GenerateBranchSummaryOptions {
             model: read(&model).clone(),
             api_key,
@@ -276,7 +281,11 @@ impl<E: ExtensionExecution> AgentSession<E> {
             reserve_tokens: Some(reserve_tokens),
         };
         let (text, read_files, modified_files) =
-            match generate_branch_summary(entries, &options).await? {
+            match generate_branch_summary_with(entries, &options, |request| {
+                complete_branch_summary(stream_fn, request)
+            })
+            .await?
+            {
                 BranchSummaryResult::Aborted { .. } => return Ok(None),
                 BranchSummaryResult::Error { error } => {
                     return Err(DiagnosticErrorInfo::error(error));
@@ -422,6 +431,28 @@ impl<E: ExtensionExecution> AgentSession<E> {
             ResolvedRequestAuth::Ok { .. } => Err(no_key()),
         }
     }
+}
+
+/// Sends a branch summary request through the session's stream function, so its request
+/// settings and attribution match the session's other requests; the registered completion
+/// answers when the session has none.
+async fn complete_branch_summary(
+    stream_fn: Option<StreamFn<Local>>,
+    request: BranchSummaryRequest,
+) -> Result<SharedAssistantMessage, DiagnosticErrorInfo> {
+    let Some(stream_fn) = stream_fn else {
+        return request.complete().await;
+    };
+    let simple = request.simple_options::<Local>();
+    let open = ProviderStreamOptions {
+        common: simple.common.clone(),
+        extra: JsonObject::new(),
+        objects: ProviderObjects::default(),
+    };
+    Ok(stream_fn(request.model, request.context, simple, open)
+        .await?
+        .result()
+        .await)
 }
 
 /// The new leaf and editor text for a target: a user or custom message moves to its parent

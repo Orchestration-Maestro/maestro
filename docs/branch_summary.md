@@ -38,6 +38,13 @@ dropped immediately. `GenerateBranchSummaryOptions` supplies the model, explicit
 key (including empty), optional ordered headers, shared cancellation, optional custom
 instructions, replacement flag and optional reserve. No reasoning or retry is added.
 
+`generate_branch_summary_with(&entries, &options, complete)` does the same with a caller's
+completion: `complete` receives the `BranchSummaryRequest` (model, context, key, headers and
+signal; `simple_options` gives the invocation options) before the function returns. A session
+passes its own stream function this way, so tree navigation with a summary applies the request
+timeouts, retries and attribution of the session's other requests. `generate_branch_summary`
+is the same call with the registered completion, `BranchSummaryRequest::complete`.
+
 Reserve defaults to 16384; a zero context window uses 128000. The preparation budget
 is context window minus reserve, without rounding or clamping. Output `maxTokens` is
 always 2048. Nonempty replacement instructions replace the default branch prompt;
