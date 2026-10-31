@@ -261,7 +261,7 @@ fn hyper_binding_requires_hyper() {
 
 #[test]
 fn unknown_modifier_word_is_rejected() {
-    for word in ["ctlr", "contrl", "windows", "shfit", "a"] {
+    for word in ["ctlr", "controls", "windows", "shifted", "a"] {
         let spelling = format!("{word}+k");
         assert_eq!(parse_key_combo(&spelling), None, "workspace {spelling}");
         for report in ["k", "\x0b", "\x1b[107;5u"] {
