@@ -3501,6 +3501,19 @@ fn guest_schema_validation_edge_is_native_development_only() {
     );
 }
 
+/// Repository tooling reuses the resource owner's frontmatter parser.
+#[test]
+fn repository_tooling_may_read_resource_metadata() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-tooling", "maestro-resources"]);
+    workspace.member(
+        "maestro-tooling",
+        "maestro-tooling",
+        "[dependencies]\nmaestro-resources = { path = \"../maestro-resources\" }",
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+}
+
 /// Native link traversal can be shared without adding an effect owner or a dependency cycle.
 #[test]
 fn final_link_consumers_may_use_the_path_utility() {

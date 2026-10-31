@@ -4597,6 +4597,7 @@ dependencies = [
  "cargo_metadata",
  "maestro-dependencies",
  "maestro-path",
+ "maestro-resources",
  "maestro-test-directory",
  "maestro-test-process",
  "serde",
