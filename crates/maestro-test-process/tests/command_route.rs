@@ -13,10 +13,8 @@ fn command_probe() {
 
 /// A checked builder for the probe with `behavior` selected.
 fn probe(behavior: &str) -> TestProcess {
-    TestProcess::named(test_name(command_probe).unwrap())
+    TestProcess::child(command_probe)
         .unwrap()
-        .ignored()
-        .nocapture()
         .env("MTP_BEHAVIOR", behavior)
 }
 
@@ -47,5 +45,17 @@ fn command_rejects_a_stale_identity() {
             .to_string()
             .contains("lists no test with this exact identity"),
         "{error}"
+    );
+}
+
+#[test]
+fn child_selects_an_ignored_test_by_item_and_prints_its_output() {
+    let child = TestProcess::child(command_probe).unwrap();
+
+    assert_eq!(child.name(), test_name(command_probe).unwrap());
+    let output = child.env("MTP_BEHAVIOR", "print").output().unwrap();
+    assert!(
+        String::from_utf8_lossy(&output.stdout).contains("printed command\n"),
+        "{output:?}"
     );
 }

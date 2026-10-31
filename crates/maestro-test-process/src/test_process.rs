@@ -116,6 +116,18 @@ impl TestProcess {
         Self::named(selection::current_name(test)?)
     }
 
+    /// Select an ignored child test by its function item, printing its own output.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the item has no module-qualified path.
+    pub fn child<F: Fn()>(_test: F) -> Result<Self, TestProcessError> {
+        Err(TestProcessError::new(
+            "child",
+            "the child route is not implemented",
+        ))
+    }
+
     /// Select a test by its complete libtest identity, such as a sibling's.
     ///
     /// # Errors
