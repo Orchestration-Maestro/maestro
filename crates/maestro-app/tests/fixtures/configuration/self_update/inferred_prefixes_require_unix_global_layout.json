@@ -18,9 +18,10 @@
           "/custom",
           "install",
           "-g",
+          "--ignore-scripts",
           "agent"
         ],
-        "display": "npm --prefix /custom install -g agent"
+        "display": "npm --prefix /custom install -g --ignore-scripts agent"
       }
     },
     "trace": [
@@ -69,9 +70,10 @@
           "/opt/tool",
           "install",
           "-g",
+          "--ignore-scripts",
           "@old/agent"
         ],
-        "display": "npm --prefix /opt/tool install -g @old/agent"
+        "display": "npm --prefix /opt/tool install -g --ignore-scripts @old/agent"
       }
     },
     "trace": [
@@ -246,7 +248,7 @@
       }
     },
     "expected": {
-      "value": "Run: npm install -g @old/agent"
+      "value": "Run: npm install -g --ignore-scripts @old/agent"
     },
     "trace": []
   },
