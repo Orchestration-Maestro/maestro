@@ -15,7 +15,7 @@
 use std::collections::BTreeMap;
 use std::ffi::OsString;
 use std::fmt::Write as _;
-use std::io;
+use std::io::{self, Write as _};
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
 
@@ -185,7 +185,10 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
         example: digest(&std::fs::read(&staged)?),
         compiled,
     };
-    std::fs::write(output.join(MANIFEST), serde_json::to_vec(&manifest)?)
+    std::fs::write(output.join(MANIFEST), serde_json::to_vec(&manifest)?)?;
+    let reused = supplied.len();
+    let built = manifest.components.len() - reused;
+    writeln!(io::stdout(), "components: {reused} reused, {built} built")
 }
 
 /// The file the setup example writes its component paths to.
