@@ -29,11 +29,11 @@ fn settings_rows_keep_text_order_and_initial_values() {
                 events: expected.events
             }
         );
-        assert_eq!(expected.items.len(), 21);
+        assert_eq!(expected.items.len(), 22);
         for (index, item) in expected.items.iter().enumerate() {
             assert_inventory_row(&selector, item);
             let list = selector.get_settings_list();
-            if index < 20 {
+            if index < 21 {
                 input(&**list, &["\x1b[B"]);
             }
         }
