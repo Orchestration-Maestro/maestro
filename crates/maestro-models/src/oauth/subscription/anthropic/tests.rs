@@ -308,7 +308,12 @@ async fn operation(
 ) -> Result<OAuthCredentials, OAuthError> {
     match mode {
         Mode::Exchange => {
-            exchange::exchange(input.clone(), input.clone(), input, fetch, clock).await
+            let grant = exchange::Grant {
+                code: input.clone(),
+                state: input.clone(),
+                redirect_uri: "http://localhost:53692/callback".into(),
+            };
+            exchange::exchange(grant, input, fetch, clock).await
         }
         Mode::Refresh => exchange::refresh(input, fetch, clock).await,
     }
@@ -711,7 +716,10 @@ impl crate::OAuthLoginCallbacks for Interaction {
             prompt.message,
             "Paste the authorization code or full redirect URL:"
         );
-        assert_eq!(prompt.placeholder.as_deref(), Some(super::REDIRECT_URI));
+        assert_eq!(
+            prompt.placeholder.as_deref(),
+            Some("http://localhost:53692/callback")
+        );
         assert_eq!(prompt.allow_empty, None);
         let answer = self.prompt.clone();
         let result = self.phase("prompt");
@@ -774,7 +782,8 @@ fn pkce() -> crate::Pkce {
 #[cfg(not(target_arch = "wasm32"))]
 /// Owned listener seam whose stopped witness follows shutdown observation.
 fn listener() -> super::native::CallbackServer {
-    let server = super::native::CallbackServer::new();
+    let mut server = super::native::CallbackServer::new();
+    server.port = 53692;
     let stop = server.stop.clone();
     let stopped = server.stopped.clone();
     tokio::spawn(async move {
@@ -852,7 +861,14 @@ fn prompt_fallback_validates_code_and_state() {
             let handle: crate::OAuthCallbacks = callbacks;
             let result = super::select_code(&handle, &pkce(), &server).await;
             match expected {
-                Ok(code) => assert_eq!(result.unwrap(), (code.into(), "verifier".into())),
+                Ok(code) => assert_eq!(
+                    result.unwrap(),
+                    exchange::Grant {
+                        code: code.into(),
+                        state: "verifier".into(),
+                        redirect_uri: "http://localhost:53692/callback".into(),
+                    }
+                ),
                 Err(error) => assert_eq!(result.unwrap_err().to_string(), error),
             }
         }
@@ -1508,7 +1524,7 @@ mod oauth_callback {
                 super::super::native::callback_host(input.map(str::to_owned)),
                 expected
             );
-            let info = super::super::auth_info(&pkce());
+            let info = super::super::auth_info(&pkce(), "http://localhost:53692/callback");
             let url = url::Url::parse(&info.url).unwrap();
             assert_eq!(
                 url.query_pairs()

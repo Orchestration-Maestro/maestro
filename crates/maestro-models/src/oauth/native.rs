@@ -25,6 +25,8 @@ pub(super) struct CallbackServer {
     pub(super) stop: Cancellation,
     /// Completes once no accepting listener is owned.
     pub(super) stopped: EventStream<(), ()>,
+    /// Port the listener is bound to; zero when none is.
+    pub(super) port: u16,
 }
 
 impl CallbackServer {
@@ -35,6 +37,7 @@ impl CallbackServer {
             wait: EventStream::new(|_| true, |_| ()),
             stop: Cancellation::new(),
             stopped: EventStream::new(|()| true, |()| ()),
+            port: 0,
         }
     }
     /// Request admission shutdown and await its completion witness, not peer drain.
@@ -114,7 +117,8 @@ fn listen(
     route: fn(&str, &str) -> CallbackResponse,
     accept: impl for<'a> Fn(&'a tokio::net::TcpListener) -> Accept<'a> + Send + 'static,
 ) -> CallbackServer {
-    let server = CallbackServer::new();
+    let mut server = CallbackServer::new();
+    server.port = listener.local_addr().map_or(0, |address| address.port());
     let wait = server.wait.clone();
     let stop = server.stop.clone();
     let stopped = server.stopped.clone();
