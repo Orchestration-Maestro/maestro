@@ -221,7 +221,6 @@ impl AgentSession<Local> {
             let bound = &state.bindings;
             bound.ui_context.is_some()
                 || bound.command_context_actions.is_some()
-                || bound.abort_handler.is_some()
                 || bound.shutdown_handler.is_some()
                 || bound.on_error.is_some()
         };
