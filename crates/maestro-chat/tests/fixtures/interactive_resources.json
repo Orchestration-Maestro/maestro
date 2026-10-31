@@ -2014,5 +2014,27 @@
     "expected": {
       "value": "~/file"
     }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "/home/user/a/../file",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "~/a/../file"
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "/home/user/",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "~/"
+    }
   }
 ]

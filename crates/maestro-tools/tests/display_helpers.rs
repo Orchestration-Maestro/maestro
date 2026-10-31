@@ -116,7 +116,7 @@ const NATIVE_HOMES: [(&str, &str); 5] = [
 
 /// The literal home and path operands of the native path display, and what each shows.
 #[cfg(not(target_arch = "wasm32"))]
-const SHORTENED_PATHS: [(&str, &str, &str); 15] = [
+const SHORTENED_PATHS: [(&str, &str, &str); 18] = [
     ("/", "/tmp/supplied-home/file", "/tmp/supplied-home/file"),
     ("/", "/", "/"),
     ("/", "//server/share", "//server/share"),
@@ -132,6 +132,9 @@ const SHORTENED_PATHS: [(&str, &str, &str); 15] = [
     ("/home/user", "", ""),
     ("/home/élève", "/home/élève/文書", "~/文書"),
     ("/home/user/", "/home/user/file", "~/file"),
+    ("/home/user", "/home/user/a/../file", "~/a/../file"),
+    ("/home/user", "/home/user/", "~/"),
+    ("/home/user", "/home/user//file", "~//file"),
 ];
 
 #[cfg(not(target_arch = "wasm32"))]

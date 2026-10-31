@@ -363,6 +363,21 @@
     "test": "session_paths_shorten_home_prefix_without_component_boundary",
     "input": {
       "home": "/oracle-home",
+      "path": "/oracle-home/a/../project"
+    },
+    "expected": {
+      "lines": [
+        "> \u001b[7m \u001b[27m                                                                                                                     ",
+        "",
+        "\u001b[48;5;237m\u001b[38;5;32m\u203a \u001b[39m\u001b[38;5;34m\u001b[39m\u001b[1mhello\u001b[22m                                                                                             \u001b[38;5;34m~/a/../project 1 now\u001b[39m\u001b[49m"
+      ],
+      "selected": "/missing/a.jsonl"
+    }
+  },
+  {
+    "test": "session_paths_shorten_home_prefix_without_component_boundary",
+    "input": {
+      "home": "/oracle-home",
       "path": "/oracle-home-other/project"
     },
     "expected": {

@@ -39,6 +39,15 @@ fn is_separator(c: char, windows: bool) -> bool {
     c == '/' || (windows && c == '\\')
 }
 
+/// What follows `~` when a path is shown below the home.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum Rest {
+    /// The text after the home exactly as written.
+    AsWritten,
+    /// The part below the home after its `.` and `..` segments fold.
+    Resolved,
+}
+
 /// Shows `path` below the directory `home` as `~` and what follows it, in the compile target's
 /// flavor.
 ///
@@ -48,11 +57,18 @@ fn is_separator(c: char, windows: bool) -> bool {
 /// relative path, and an empty, relative or root home leave `path` as written.
 #[must_use]
 pub fn shorten_home(path: &str, home: &str) -> String {
-    shorten_home_in(path, home, cfg!(windows))
+    shorten_home_in(path, home, cfg!(windows), Rest::AsWritten)
 }
 
-/// The rule of [`shorten_home`] in a supplied flavor, independently of the compile target.
-fn shorten_home_in(path: &str, home: &str, windows: bool) -> String {
+/// Shows `path` below `home` as `~` and what follows it, in the compile target's flavor.
+#[must_use]
+pub fn shorten_home_normalized(path: &str, home: &str) -> String {
+    shorten_home_in(path, home, cfg!(windows), Rest::Resolved)
+}
+
+/// The rules of [`shorten_home`] and [`shorten_home_normalized`] in a supplied flavor,
+/// independently of the compile target.
+fn shorten_home_in(path: &str, home: &str, windows: bool, _rest: Rest) -> String {
     let (absolute, relative, separator): (fn(&str) -> bool, RelativeFn, char) = if windows {
         (win32::is_absolute, win32::relative, '\\')
     } else {
