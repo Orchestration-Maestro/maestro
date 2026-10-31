@@ -71,6 +71,46 @@ fn discovery_keeps_open_metadata_and_cwd_fallback() {
     ]);
 }
 
+/// Record dates accept scalar timestamps, bounded to the valid date range.
+#[test]
+fn discovery_activity_reads_record_timestamp_types() {
+    let scratch = Scratch::new().unwrap();
+    let fallback = 1_735_787_045_000.0;
+    for (timestamp, expected) in [
+        (Some(json!(5000)), 5000.0),
+        (Some(json!(true)), 1.0),
+        (Some(json!(false)), fallback),
+        (Some(Value::Null), fallback),
+        (Some(json!(0)), fallback),
+        (Some(json!(-5000)), fallback),
+        (Some(json!(5000.9)), 5000.0),
+        (Some(json!(8.64e15)), 8.64e15),
+        (Some(json!(8.64e15 + 1.0)), fallback),
+        (Some(json!(-8.64e15 - 1.0)), fallback),
+        (Some(json!("1970-01-01T00:00:05Z")), 5000.0),
+        (Some(json!("invalid")), fallback),
+        (Some(json!([5])), fallback),
+        (Some(json!({})), fallback),
+        (None, fallback),
+    ] {
+        for role in ["user", "assistant"] {
+            let mut record = json!({"type":"message","message":{"role":role,"content":"text"}});
+            if let Some(timestamp) = &timestamp {
+                record["timestamp"] = timestamp.clone();
+            }
+            std::fs::write(
+                scratch.path().join("case.jsonl"),
+                format!("{}\n{record}\n", session_header("activity")),
+            )
+            .unwrap();
+            let listed = list(&scratch);
+            assert_eq!(listed.len(), 1);
+            let expected: f64 = expected;
+            assert_eq!(listed[0].modified.to_bits(), expected.to_bits(), "{record}");
+        }
+    }
+}
+
 #[test]
 fn discovery_created_dates_preserve_invalid_observations() {
     replay_fixed(&[
