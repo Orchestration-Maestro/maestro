@@ -249,7 +249,7 @@ fn registered_slow_end_keeps_prompt_waiting() {
         entered.notified().await;
         ended.notified().await;
         assert_eq!(h.requests.0.borrow().len(), 1);
-        assert!(h.session.is_retrying(), "the retry was already open");
+        assert!(h.session.is_streaming(), "the run is still active");
         assert!(!running.is_finished(), "the prompt still waits");
         release.notify_one();
         entered.notified().await;

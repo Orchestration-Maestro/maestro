@@ -17,6 +17,23 @@ Reads from the old command frame fail recoverably after replacement.
 A factory failure after teardown does not roll the old session back into service.
 Its handle remains selected but its extension contexts are stale.
 
+## The run
+
+Every start of the agent is one run: `AgentSession::prompt`, and
+`send_custom_message` with `trigger_turn`, call the same function. The run marks
+the session active, prompts the agent and then, until nothing is left to do,
+retries a failed response after its backoff, compacts when the context is full
+and continues the agent for the queued messages. It settles last: shell results
+recorded while it ran are appended, the session is marked idle and every waiter
+is released.
+
+`is_streaming` is true from the start of the run through its last continuation.
+`prompt`, `wait_for_idle` and `abort` return only after the settle step, and so
+do the idle waits of the extension and interactive command contexts. A message
+sent with `send_custom_message` while a run is active is queued: steering unless
+follow-up is asked for. A response that was aborted leaves queued messages
+queued.
+
 ## Names
 
 `AgentSession::set_session_name` stores the trimmed name before publishing

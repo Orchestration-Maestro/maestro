@@ -43,10 +43,10 @@ pub(super) struct AgentSessionState<E: ExtensionExecution> {
     pub(super) retry_signal: Option<Cancellation>,
     /// The retry attempts made in this turn.
     pub(super) retry_attempt: u32,
-    /// The release every retry observer awaits.
-    pub(super) retry_gate: Option<Gate>,
-    /// Opens the release once.
-    pub(super) retry_open: Option<tokio::sync::oneshot::Sender<()>>,
+    /// The release every idle waiter awaits; present exactly while a run is active.
+    pub(super) run_gate: Option<Gate>,
+    /// Opens the run's release once, when the run settles.
+    pub(super) run_open: Option<tokio::sync::oneshot::Sender<()>>,
     /// The system prompt built for the active tools, before any extension replaces it.
     pub(super) base_system_prompt: String,
     /// The options that built the base system prompt.
@@ -71,7 +71,7 @@ pub(super) struct AgentSessionState<E: ExtensionExecution> {
     pub(super) error_unsubscriber: Option<Box<dyn Fn()>>,
     /// The turn the extensions' turn events report, counted from the agent start.
     pub(super) turn_index: u32,
-    /// The newest finished response, checked for retry and compaction at the agent end.
+    /// The newest finished response, checked for retry and compaction when the run ends.
     pub(super) last_assistant_message: Option<SharedAssistantMessage>,
     /// Agent events waiting for the session's ordered processing.
     pub(super) agent_events: VecDeque<SharedAgentEvent>,
@@ -99,8 +99,8 @@ impl<E: ExtensionExecution> AgentSessionState<E> {
             overflow_recovery_attempted: false,
             retry_signal: None,
             retry_attempt: 0,
-            retry_gate: None,
-            retry_open: None,
+            run_gate: None,
+            run_open: None,
             base_system_prompt: String::new(),
             base_system_prompt_options,
             steering_messages: Vec::new(),

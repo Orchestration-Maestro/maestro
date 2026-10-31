@@ -431,8 +431,8 @@ fn reports_extension_handler_failures_without_stopping_the_queue() {
     });
 }
 
-/// Notifies `ended` once a run ends, recording whether a retry was already in flight.
-fn observe_retry_at_run_end(h: &Harness, observed: Rc<RefCell<Option<bool>>>, ended: Rc<Notify>) {
+/// Notifies `ended` once the agent ends, recording whether the session's run was active.
+fn observe_run_at_agent_end(h: &Harness, observed: Rc<RefCell<Option<bool>>>, ended: Rc<Notify>) {
     let session = Rc::downgrade(&h.session);
     drop(h.session.agent().subscribe(Rc::new(move |event, _| {
         let ending = matches!(*event.read().unwrap(), AgentEvent::AgentEnd { .. });
@@ -440,7 +440,7 @@ fn observe_retry_at_run_end(h: &Harness, observed: Rc<RefCell<Option<bool>>>, en
             let session = session
                 .upgrade()
                 .expect("the session outlives its listener");
-            *observed.borrow_mut() = Some(session.is_retrying());
+            *observed.borrow_mut() = Some(session.is_streaming());
             ended.notify_one();
         }
         Box::pin(std::future::ready(Ok(())))
@@ -448,7 +448,7 @@ fn observe_retry_at_run_end(h: &Harness, observed: Rc<RefCell<Option<bool>>>, en
 }
 
 #[test]
-fn creates_the_retry_observation_synchronously() {
+fn the_run_is_active_when_the_agent_ends() {
     on_paused_task_set(|_| async {
         for (error, retries) in [("503 service unavailable", 1), ("overloaded_error", 3)] {
             let (reached, release) = (Rc::new(Notify::new()), Rc::new(Notify::new()));
@@ -468,14 +468,14 @@ fn creates_the_retry_observation_synchronously() {
             .await;
             let observed = Rc::new(RefCell::new(None));
             let ended = Rc::new(Notify::new());
-            observe_retry_at_run_end(&h, Rc::clone(&observed), Rc::clone(&ended));
+            observe_run_at_agent_end(&h, Rc::clone(&observed), Rc::clone(&ended));
             let running = start_prompt(&h, "question");
             reached.notified().await;
             ended.notified().await;
             assert_eq!(
                 *observed.borrow(),
                 Some(true),
-                "the agent end found the retry open"
+                "the agent end found the run active"
             );
             assert!(
                 log.borrow().is_empty(),

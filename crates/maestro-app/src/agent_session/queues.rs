@@ -48,9 +48,9 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// history and the session with its own start and end announced.
     ///
     /// # Errors
-    /// Returns the agent's failure of a triggered turn or the session history's failure.
+    /// Returns the failure of a triggered run or the session history's failure.
     pub async fn send_custom_message(
-        &self,
+        self: &Rc<Self>,
         message: CustomMessageInput,
         options: SendMessageOptions,
     ) -> Result<(), DiagnosticErrorInfo> {
@@ -69,7 +69,12 @@ impl<E: ExtensionExecution> AgentSession<E> {
             }
         } else if options.trigger_turn == Some(true) {
             let message = custom_message(message);
-            self.agent.prompt(PromptInput::Message(message)).await?;
+            let session = Rc::clone(self);
+            self.start_operation(
+                async move { session.run_agent(PromptInput::Message(message)).await },
+            )
+            .await
+            .map_err(thrown)??;
         } else {
             self.append_custom_message(message)?;
         }

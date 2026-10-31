@@ -49,6 +49,7 @@ From `docs/specs/maestro-port.md`.
 
 ## Application foundation
 
+- **Settled:** The point after a run when its retries, compaction, summaries, persistence and queued continuations have all finished. A session is idle only then. See [the run](docs/application/lifecycle.md#the-run).
 - **Hosted-service origin:** The single supplied origin for release checks, install reports and session-viewer links; an empty value disables those operations. It is separate from model-request attribution. See [hosted services](docs/application/services.md).
 
 From `docs/specs/maestro-port.md`. Manifest mode is specified in

@@ -1,5 +1,5 @@
 //! The agent-event dispatch: one ordered queue that tells the extensions, then the session
-//! listeners, persists finished messages and decides on retry and compaction.
+//! listeners and persists finished messages.
 use super::held::heard_while_held;
 use super::state::{Gate, SharedAgentEvent, thrown};
 use super::{AgentSession, AgentSessionEvent};
@@ -12,22 +12,19 @@ use maestro_extensions::{
     ToolExecutionStartEvent, ToolExecutionUpdateEvent, TurnEndEvent, TurnStartEvent,
 };
 use maestro_models::{
-    AssistantMessage, DiagnosticErrorInfo, Local, StopReason, UserContent, UserMessage,
-    timestamp_now,
+    DiagnosticErrorInfo, Local, StopReason, UserContent, UserMessage, timestamp_now,
 };
 use maestro_session::messages::CustomAgentMessages;
 use std::rc::{Rc, Weak};
 use std::sync::Arc;
 
-/// The session's one agent listener: it opens the retry observation of a failed run at once,
-/// then queues the event for ordered processing.
+/// The session's one agent listener: it queues each event for ordered processing.
 pub(super) fn agent_listener(
     session: &Weak<AgentSession<Local>>,
 ) -> AgentListener<CustomAgentMessages, Local> {
     let session = Weak::clone(session);
     Rc::new(move |event, _signal| {
         if let Some(session) = session.upgrade() {
-            session.create_retry_gate_for_agent_end(&read(&event));
             session.enqueue_agent_event(event);
         }
         Box::pin(std::future::ready(Ok(())))
@@ -35,6 +32,11 @@ pub(super) fn agent_listener(
 }
 
 impl<E: ExtensionExecution> AgentSession<E> {
+    /// Released once every queued agent event is processed; absent when none is queued.
+    pub(super) fn agent_event_queue(&self) -> Option<Gate> {
+        self.state.borrow().agent_event_drain.clone()
+    }
+
     /// Tells the session listeners about `event`, the one place they are told of any. With
     /// `holdUncheckedText` set, an event that carries assistant text, thinking or partial tool
     /// output reaches them without it, or not at all, until the message or tool result is
@@ -82,31 +84,8 @@ impl AgentSession<Local> {
         next
     }
 
-    /// Released once every queued agent event is processed; absent when none is queued.
-    pub(super) fn agent_event_queue(&self) -> Option<Gate> {
-        self.state.borrow().agent_event_drain.clone()
-    }
-
-    /// Opens the retry observation when a run ends on a response a retry recovers, before
-    /// the queued processing of that end.
-    fn create_retry_gate_for_agent_end(&self, event: &AgentEvent<CustomAgentMessages>) {
-        let AgentEvent::AgentEnd { messages } = event else {
-            return;
-        };
-        if self.state.borrow().retry_gate.is_some()
-            || !self.settings_manager.borrow().get_retry_settings().enabled
-        {
-            return;
-        }
-        let last = super::state::last_assistant_message(messages);
-        if last.is_some_and(|last| self.is_retryable_error(&read(&last))) {
-            self.create_retry_gate();
-        }
-    }
-
     /// Processes one agent event: removes a delivered queued text, tells the extensions,
-    /// then the listeners, persists a finished message and, at the run's end, retries or
-    /// compacts.
+    /// then the listeners and persists a finished message.
     async fn process_agent_event(
         self: &Rc<Self>,
         event: &SharedAgentEvent,
@@ -124,35 +103,14 @@ impl AgentSession<Local> {
         }
         self.emit_extension_event(event).await?;
         self.emit_agent_event(Arc::clone(event));
-        let (finished, run_ended) = match &*read(event) {
-            AgentEvent::MessageEnd { message } => (Some(message.clone()), false),
-            AgentEvent::AgentEnd { .. } => (None, true),
-            _ => (None, false),
+        let finished = match &*read(event) {
+            AgentEvent::MessageEnd { message } => Some(message.clone()),
+            _ => None,
         };
         if let Some(message) = finished {
             self.persist_finished_message(&message)?;
         }
-        let last = run_ended
-            .then(|| self.state.borrow_mut().last_assistant_message.take())
-            .flatten();
-        if let Some(last) = last {
-            let last = read(&last).clone();
-            self.retry_or_compact(&last).await?;
-        }
         Ok(())
-    }
-
-    /// Retries a recoverable failure; otherwise releases the retry observers and checks
-    /// compaction.
-    async fn retry_or_compact(
-        self: &Rc<Self>,
-        message: &AssistantMessage,
-    ) -> Result<(), DiagnosticErrorInfo> {
-        if self.is_retryable_error(message) && self.handle_retryable_error(message).await? {
-            return Ok(());
-        }
-        self.resolve_retry();
-        self.check_compaction(message, true).await
     }
 
     /// Removes `text` from the steering mirror, else from the follow-up mirror, and
