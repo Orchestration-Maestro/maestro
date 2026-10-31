@@ -10,8 +10,8 @@ use maestro_extensions::{
     ExtensionError, ExtensionExecution, InputEventResult, InputSource, NativeAgentMessage,
 };
 use maestro_models::{
-    DiagnosticErrorInfo, ImageContent, StopReason, TextContent, UserBlock, UserContent,
-    UserMessage, timestamp_now,
+    DiagnosticErrorInfo, ImageContent, TextContent, UserBlock, UserContent, UserMessage,
+    timestamp_now,
 };
 use maestro_resources::{expand_prompt_template, skills::read_text, strip_frontmatter};
 use maestro_session::Presence;
@@ -130,8 +130,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
     }
 
     /// Once the agent's events are processed, retries a recoverable failure or checks
-    /// compaction for the newest response; reports whether the agent continues. Queued
-    /// messages continue the run unless the response was aborted, which keeps them queued.
+    /// compaction for the newest response; reports whether the agent continues. Messages
+    /// still queued continue the run, whatever the response's stop reason.
     async fn finish_response_run(self: &Rc<Self>) -> Result<bool, DiagnosticErrorInfo> {
         if let Some(queue) = self.agent_event_queue() {
             drop(queue.await);
@@ -147,7 +147,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
         if self.check_compaction(&message, true).await? {
             return Ok(true);
         }
-        Ok(message.stop_reason != StopReason::Aborted && self.agent.has_queued_messages())
+        Ok(self.agent.has_queued_messages())
     }
 
     /// Runs every step before the agent is prompted; absent when the prompt ends without
