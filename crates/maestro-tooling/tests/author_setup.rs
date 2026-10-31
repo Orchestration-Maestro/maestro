@@ -616,6 +616,40 @@ fn prepare_with_base(test: &str, root: &Path, base: &Path) -> Vec<String> {
         .unwrap_or_default()
 }
 
+/// Preparation reports how many components its base supplied and how many it built.
+#[test]
+fn prepare_reports_reused_and_built_component_counts() {
+    if selection().is_child() {
+        return child_prepare();
+    }
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    marked_fixture(root);
+    prepare(root);
+    let base = root.join("target/test-setup");
+
+    for (base, summary) in [
+        (base.as_path(), "components: 4 reused, 0 built"),
+        (Path::new(""), "components: 0 reused, 4 built"),
+    ] {
+        let output = prepare_as_child(
+            "prepare_reports_reused_and_built_component_counts",
+            root,
+            base,
+        );
+        assert_success(&output);
+        let stdout = String::from_utf8(output.stdout).unwrap();
+        assert_eq!(
+            stdout
+                .lines()
+                .filter(|line| line.starts_with("components:"))
+                .collect::<Vec<_>>(),
+            [summary],
+            "{stdout}"
+        );
+    }
+}
+
 /// A base prepared from the same inputs supplies every component; one edited example builds
 /// only itself; a base from another toolchain supplies nothing; no base builds everything.
 #[test]
