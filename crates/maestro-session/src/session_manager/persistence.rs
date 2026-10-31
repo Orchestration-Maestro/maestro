@@ -95,7 +95,9 @@ impl SessionManager {
     /// Open or recover an explicit lexical filename, retrying conversion if its bytes change.
     ///
     /// # Errors
-    /// Propagates required cwd, file, conversion and selected-field errors.
+    /// Propagates required cwd, file, conversion and selected-field errors. A nonempty file
+    /// without a valid session header fails with `Session file is not a valid session: {path}`
+    /// and is left unchanged; an empty file is initialised.
     pub fn open(
         path: &str,
         session_dir: Option<&str>,
@@ -145,7 +147,8 @@ impl SessionManager {
     /// Switch histories, committing candidate state only after fallible preparation.
     ///
     /// # Errors
-    /// Propagates native reads, conversion, rewrite and selected identity errors.
+    /// Propagates native reads, conversion, rewrite and selected identity errors. A nonempty
+    /// file without a valid session header fails as [`SessionManager::open`] does.
     pub fn set_session_file(&mut self, session_file: &str) -> io::Result<()> {
         let path = absolute(session_file)?;
         let snapshot = if self.persist {
@@ -185,6 +188,7 @@ impl SessionManager {
     /// Repeats conversion when a locked re-read observes a concurrent writer.
     fn prepare_entries(&self, path: &str, mut snapshot: Snapshot) -> io::Result<Vec<FileEntry>> {
         loop {
+            snapshot.require_session(path)?;
             let mut entries = std::mem::take(&mut snapshot.entries);
             let changed = if entries.is_empty() {
                 entries = Self::in_memory(Some(&self.cwd))?.file_entries;

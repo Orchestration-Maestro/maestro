@@ -66,7 +66,6 @@ fn new_histories_publish_only_at_first_assistant() {
 fn published_histories_never_republish_the_header() {
     for (content, users) in [
         ("", 0),
-        ("garbage", 0),
         (
             "{\"type\":\"session\",\"version\":3,\"id\":\"existing\",\"cwd\":\"stored\"}\n",
             0,

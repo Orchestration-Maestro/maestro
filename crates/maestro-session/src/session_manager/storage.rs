@@ -77,7 +77,7 @@ fn digest_native(path: &Path) -> io::Result<[u8; 32]> {
         result => Hashing::new(result?),
     };
     io::copy(&mut hashing, &mut io::sink())?;
-    Ok(hashing.finish())
+    Ok(hashing.finish().0)
 }
 
 /// Reads selected target bytes without changing their authored path representation.

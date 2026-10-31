@@ -1,5 +1,5 @@
 //! Native JSONL loading and continuation selection.
-use super::{FileEntry, context::ecma_whitespace};
+use super::{FileEntry, context::ecma_whitespace, conversions::invalid};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::{
@@ -113,12 +113,14 @@ fn parse_line(
     serde_json::from_str(line).map_or(ControlFlow::Continue(()), on_entry)
 }
 
-/// The records of one session file with the digest of the bytes they came from.
+/// The records of one session file with the digest and length of the bytes they came from.
 pub(super) struct Snapshot {
     /// Admitted records; empty unless the first one is a valid session header.
     pub(super) entries: Vec<FileEntry>,
     /// SHA-256 of every byte read.
     pub(super) digest: [u8; 32],
+    /// Number of bytes read.
+    pub(super) len: u64,
 }
 
 impl Snapshot {
@@ -133,10 +135,26 @@ impl Snapshot {
         if !entries.first().is_some_and(valid_header) {
             entries.clear();
         }
+        let (digest, len) = hashing.finish();
         Ok(Self {
             entries,
-            digest: hashing.finish(),
+            digest,
+            len,
         })
+    }
+
+    /// Refuse a nonempty file that holds no valid session, so a rewrite cannot erase it.
+    ///
+    /// # Errors
+    /// Fails with `Session file is not a valid session: {path}` when bytes were read
+    /// but no admitted record came out of them.
+    pub(super) fn require_session(&self, path: &str) -> io::Result<()> {
+        if self.entries.is_empty() && self.len > 0 {
+            return Err(invalid(&format!(
+                "Session file is not a valid session: {path}"
+            )));
+        }
+        Ok(())
     }
 
     /// What an absent file holds.
@@ -144,16 +162,19 @@ impl Snapshot {
         Self {
             entries: Vec::new(),
             digest: Sha256::digest([]).into(),
+            len: 0,
         }
     }
 }
 
-/// A reader that hashes every byte it passes on.
+/// A reader that hashes and counts every byte it passes on.
 pub(super) struct Hashing<R> {
     /// The wrapped reader.
     inner: R,
     /// Digest state over the bytes read so far.
     hasher: Sha256,
+    /// Bytes read so far.
+    len: u64,
 }
 
 impl<R: Read> Hashing<R> {
@@ -162,12 +183,13 @@ impl<R: Read> Hashing<R> {
         Self {
             inner,
             hasher: Sha256::new(),
+            len: 0,
         }
     }
 
-    /// The digest of what was read.
-    pub(super) fn finish(self) -> [u8; 32] {
-        self.hasher.finalize().into()
+    /// The digest and length of what was read.
+    pub(super) fn finish(self) -> ([u8; 32], u64) {
+        (self.hasher.finalize().into(), self.len)
     }
 }
 
@@ -175,6 +197,7 @@ impl<R: Read> Read for Hashing<R> {
     fn read(&mut self, buffer: &mut [u8]) -> io::Result<usize> {
         let count = self.inner.read(buffer)?;
         self.hasher.update(&buffer[..count]);
+        self.len += count as u64;
         Ok(count)
     }
 }
