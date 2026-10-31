@@ -27,6 +27,8 @@ mod models;
 mod native;
 mod navigation;
 mod notices;
+#[path = "../../tests/support/platform_keys.rs"]
+pub(crate) mod platform_keys;
 mod progress;
 mod prompts;
 mod queues;

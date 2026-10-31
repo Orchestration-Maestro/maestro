@@ -58,7 +58,7 @@ fn hotkeys_capitalize_the_start_of_each_extension_key_part() {
         );
         assert_eq!(
             super::capitalize_shortcut(&case.input.key),
-            case.expected.result
+            crate::interactive_mode::tests::platform_keys::on_this_platform(&case.expected.result)
         );
     }
 }

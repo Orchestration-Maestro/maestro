@@ -157,8 +157,8 @@ fn scope_hint_names_the_configured_cycle_key_and_is_absent_when_unbound() {
             for (binding, line) in [
                 ("\"ctrl+o\"", "Model scope: captured (Ctrl+O to cycle)\n"),
                 (
-                    "[\"alt+x\", \"ctrl+y\"]",
-                    "Model scope: captured (Alt+X/Ctrl+Y to cycle)\n",
+                    "[\"shift+x\", \"ctrl+y\"]",
+                    "Model scope: captured (Shift+X/Ctrl+Y to cycle)\n",
                 ),
                 ("[]", "Model scope: captured\n"),
             ] {
