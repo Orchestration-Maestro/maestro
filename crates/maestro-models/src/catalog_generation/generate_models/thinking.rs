@@ -103,7 +103,14 @@ fn provider_levels(model: &mut Model) {
         );
     }
     if model.provider == "opencode-go" && model.id == "kimi-k2.6" {
-        merge_thinking_level_map(model, &[(Level::Off, Some("none"))]);
+        merge_thinking_level_map(
+            model,
+            &[
+                (Level::Minimal, None),
+                (Level::Low, None),
+                (Level::Medium, None),
+            ],
+        );
     }
     if model.provider == "openai-codex" && supports_open_ai_xhigh(&model.id) {
         merge_thinking_level_map(model, &[(Level::Minimal, Some("low"))]);
