@@ -1,5 +1,6 @@
 //! Home-directory expansion of authored paths.
 use crate::join;
+use crate::path::{Cwd, posix, win32};
 use std::{
     ffi::{OsStr, OsString},
     path::PathBuf,
@@ -52,9 +53,37 @@ pub fn shorten_home(path: &str, home: &str) -> String {
 
 /// The rule of [`shorten_home`] in a supplied flavor, independently of the compile target.
 fn shorten_home_in(path: &str, home: &str, windows: bool) -> String {
-    let _ = (home, windows);
-    path.to_owned()
+    let (absolute, relative, separator): (fn(&str) -> bool, RelativeFn, char) = if windows {
+        (win32::is_absolute, win32::relative, '\\')
+    } else {
+        (posix::is_absolute, posix::relative, '/')
+    };
+    if !absolute(home) || !absolute(path) {
+        return path.to_owned();
+    }
+    // Both operands are absolute, so the directory below is never consulted.
+    let cwd = Cwd {
+        current: home,
+        drive_directories: &[],
+    };
+    // A root is its own parent, and a root home would abbreviate every absolute path.
+    if relative(home, &format!("{home}{separator}.."), &cwd).is_empty() {
+        return path.to_owned();
+    }
+    let below = relative(home, path, &cwd);
+    if below.is_empty() {
+        return "~".to_owned();
+    }
+    let outside = below == ".." || below.starts_with(&format!("..{separator}")) || absolute(&below);
+    if outside {
+        path.to_owned()
+    } else {
+        format!("~{separator}{below}")
+    }
 }
+
+/// The signature of a flavor's `relative`.
+type RelativeFn = for<'a> fn(&str, &str, &Cwd<'a>) -> String;
 
 /// Expands a leading `~` below the home directory with a normalizing join.
 ///

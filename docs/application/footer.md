@@ -108,3 +108,12 @@ the branch, statuses and count readable. Changing the working directory after
 disposal retains synchronous metadata and notification behavior without opening
 new watch resources. Closing one provider's polling registration leaves other
 providers' registrations intact.
+
+## Working-directory display
+
+The footer shows the working directory with the home directory spelled `~` only
+for the home itself and the paths below it, through `maestro_path::shorten_home`.
+A sibling whose name starts with the home's name, such as `/srv/u2/x` under the
+home `/srv/u`, keeps its full path, as does any path when the home is empty,
+relative or the root directory. The session selector, the tree selector, the
+context-file list and the tool call rows use the same function.
