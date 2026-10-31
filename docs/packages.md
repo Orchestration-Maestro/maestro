@@ -24,8 +24,10 @@ same local-source resolution and conventional discovery.
   nonempty `npmCommand` array, whose leading arguments come first (an empty array
   selects `npm`). An empty first entry fails with
   `Invalid npmCommand: first array entry must be a non-empty command`.
-- **Git**: an existing target with no ref or an already-current ref is unchanged.
-  A different explicit ref is selected in place. Missing targets are prepared in
+- **Git**: an existing target is fetched again: only the requested ref, or the
+  upstream branch when none is requested. When the fetched commit differs from
+  HEAD, the checkout is reset to it in place; a commit already current is left
+  alone. Missing targets are prepared in
   an owned sibling directory and published only on success, below the scope's
   `git` root (with a `.gitignore` there). Dependencies are installed when there is a
   `package.json` (`install --omit=dev`, or plain `install` when a nonempty
@@ -254,7 +256,12 @@ A present `maestro` member in `package.json` selects resources instead of
 conventional discovery; missing, null, false, zero or empty-string members use
 conventions. Object members select `extensions`, `skills`, `prompts`, `themes`
 and `contributions`; other present shapes have no named lists. Omitted lists add
-no resources.
+no resources. A list that is present and truthy but is not a list of strings is
+ignored whole and adds no resources; the other lists still load, and nothing
+fails. One reader, `maestro_resources::package_manifest::Manifest::entries`, reports
+such a list as `InvalidData`: package resolution, filtered packages and conventional
+package discovery ignore that report, while extension loading fails on a non-string
+item.
 
 Positive manifest entries containing `*` or `?` expand against the package root
 without trimming. Other entries, including brace-only or bracket-only forms,
@@ -283,9 +290,8 @@ Without exclusions or removals, candidates remain admitted without matching,
 including when only restoration modifiers are supplied.
 
 Lists are consumed in extension, skill, prompt, theme and contribution order.
-A malformed list keeps earlier local kinds and stops that source's remaining
-kinds; the next local source can still contribute. Installed remote collection
-propagates the malformed-list failure.
+A malformed list contributes nothing and the remaining kinds and sources still
+contribute, for local and installed remote packages alike.
 
 ## Configured resource resolution
 

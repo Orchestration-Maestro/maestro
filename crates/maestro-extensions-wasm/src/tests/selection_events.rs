@@ -74,13 +74,20 @@ async fn compatibility(driver: &mut impl Driver) -> Result<(), String> {
         ),
         (
             "openai-responses",
-            &["sendSessionIdHeader", "supportsLongCacheRetention"][..],
+            &[
+                "supportsDeveloperRole",
+                "sendSessionIdHeader",
+                "supportsLongCacheRetention",
+            ][..],
         ),
         (
             "anthropic-messages",
             &[
                 "supportsEagerToolInputStreaming",
                 "supportsLongCacheRetention",
+                "sendSessionAffinityHeaders",
+                "supportsCacheControlOnTools",
+                "allowEmptySignature",
             ][..],
         ),
     ] {

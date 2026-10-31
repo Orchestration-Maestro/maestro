@@ -12,7 +12,7 @@ use maestro_extensions::{
     ExtensionExecution, SessionBeforeTreeEvent, SessionBeforeTreeResult, SessionTreeEvent,
     TreePreparation,
 };
-use maestro_models::{Cancellation, DiagnosticErrorInfo, Model};
+use maestro_models::{Cancellation, DiagnosticErrorInfo, Local, Model};
 use maestro_session::{
     BranchSummaryResult, GenerateBranchSummaryOptions, Presence,
     collect_entries_for_branch_summary, generate_branch_summary,
@@ -266,7 +266,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
             .borrow()
             .get_branch_summary_settings()
             .reserve_tokens;
-        let options = GenerateBranchSummaryOptions {
+        let options = GenerateBranchSummaryOptions::<Local> {
             model: read(&model).clone(),
             api_key,
             headers,
@@ -274,6 +274,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
             custom_instructions: choices.custom_instructions.clone(),
             replace_instructions: choices.replace_instructions,
             reserve_tokens: Some(reserve_tokens),
+            stream_fn: read(&self.agent.stream_fn).clone(),
         };
         let (text, read_files, modified_files) =
             match generate_branch_summary(entries, &options).await? {

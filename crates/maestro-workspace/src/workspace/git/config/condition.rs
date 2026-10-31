@@ -61,8 +61,8 @@ impl Subject<'_> {
 
     /// Anchor a `gitdir` pattern: `~/` below the home, `./` beside the file, else anywhere.
     fn gitdir_pattern(&self, pattern: &str, config_path: &Path) -> Option<String> {
-        let anchored = if let Some(rest) = pattern.strip_prefix("~/") {
-            self.home?.join(rest).display().to_string()
+        let anchored = if pattern.starts_with("~/") {
+            self.expand_home(pattern)?.display().to_string()
         } else if let Some(rest) = pattern.strip_prefix("./") {
             config_path
                 .parent()
@@ -78,12 +78,15 @@ impl Subject<'_> {
         Some(directory_prefix(&anchored))
     }
 
+    /// `value` with a leading `~` expanded below the home, or `None` when that needs a home the
+    /// checkout does not have.
+    fn expand_home(&self, value: &str) -> Option<PathBuf> {
+        maestro_path::expand_tilde_native(value, || self.home.map(Path::to_path_buf).ok_or(())).ok()
+    }
+
     /// Where the include entry `value`, written in `config_path`, points.
     pub(super) fn include_path(&self, value: &str, config_path: &Path) -> Option<PathBuf> {
-        let path = match value.strip_prefix("~/") {
-            Some(rest) => self.home?.join(rest),
-            None => PathBuf::from(value),
-        };
+        let path = self.expand_home(value)?;
         Some(if path.is_absolute() {
             path
         } else {

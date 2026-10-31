@@ -3,9 +3,9 @@
 //! `prepare` runs the component-discovery example in a separate build and stages its component
 //! files, the code it compiled, the built example, the browser graph the browser author tests
 //! share, this command and a content manifest. The manifest records the inputs of each artifact
-//! on its own, so a change reaches only the artifacts that read it. An earlier bundle named by
-//! `TEST_PREPARE_BASE` supplies every component whose inputs are unchanged, and its compiled
-//! code, so only the rest are built.
+//! on its own, so a change reaches only the artifacts that read it. The first earlier bundle in the
+//! path list `TEST_PREPARE_BASE` that fits supplies every component whose inputs are unchanged, and
+//! its compiled code, so only the rest are built.
 //! `install` stages this command alone, for runs without a bundle. The staged command's
 //! `author-component` setup validates the components and the example against the checkout,
 //! installs the example beside the extracted test executables and the compiled code in the
@@ -132,14 +132,16 @@ fn inherited_components(names: impl Iterator<Item = OsString>) -> Vec<OsString> 
 }
 
 /// Build the setup example in a build of its own, run it with a cache of its own and stage what
-/// it produces in `output`. Components and compiled code come from the bundle `TEST_PREPARE_BASE`
-/// names, when it was prepared from the same shared inputs.
+/// it produces in `output`. Components and compiled code come from the first bundle in the path
+/// list `TEST_PREPARE_BASE` names that was prepared from the same shared inputs.
 fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::Result<()> {
     std::fs::create_dir_all(output)?;
     let artifacts = Artifacts::read(cargo, checkout)?;
-    let base = std::env::var_os(BASE)
-        .filter(|name| !name.is_empty())
-        .and_then(|name| Base::read(&checkout.join(name), &artifacts.shared));
+    let base = std::env::var_os(BASE).and_then(|list| {
+        std::env::split_paths(&list)
+            .filter(|name| !name.as_os_str().is_empty())
+            .find_map(|name| Base::read(&checkout.join(name), &artifacts.shared))
+    });
     remove(&output.join(MANIFEST))?;
     remove(&environment_file(target))?;
     remove_directory(&cache_home(target))?;

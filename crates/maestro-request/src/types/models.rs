@@ -96,6 +96,9 @@ pub struct OpenAICompletionsCompat {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct OpenAIResponsesCompat {
+    /// Supports the developer role.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub supports_developer_role: Option<bool>,
     /// Send session id header.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub send_session_id_header: Option<bool>,
@@ -113,6 +116,15 @@ pub struct AnthropicMessagesCompat {
     /// Supports long cache retention.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub supports_long_cache_retention: Option<bool>,
+    /// Send session affinity headers.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub send_session_affinity_headers: Option<bool>,
+    /// Supports cache control markers on tools.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub supports_cache_control_on_tools: Option<bool>,
+    /// Allow an empty thinking signature on replay.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub allow_empty_signature: Option<bool>,
 }
 /// Carry the routing data-collection allow/deny choice.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -350,6 +362,11 @@ impl From<OpenAIResponsesCompat> for ModelCompat {
         let mut object = JsonObject::new();
         insert(
             &mut object,
+            "supportsDeveloperRole",
+            value.supports_developer_role,
+        );
+        insert(
+            &mut object,
             "sendSessionIdHeader",
             value.send_session_id_header,
         );
@@ -374,6 +391,21 @@ impl From<AnthropicMessagesCompat> for ModelCompat {
             &mut object,
             "supportsLongCacheRetention",
             value.supports_long_cache_retention,
+        );
+        insert(
+            &mut object,
+            "sendSessionAffinityHeaders",
+            value.send_session_affinity_headers,
+        );
+        insert(
+            &mut object,
+            "supportsCacheControlOnTools",
+            value.supports_cache_control_on_tools,
+        );
+        insert(
+            &mut object,
+            "allowEmptySignature",
+            value.allow_empty_signature,
         );
         Self(object)
     }

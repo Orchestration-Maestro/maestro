@@ -14,10 +14,10 @@ use maestro_session::compaction::{
 };
 use maestro_session::session_manager::{ReadonlySessionManager, get_latest_compaction_entry};
 use std::rc::Rc;
-use std::time::Duration;
 
 impl<E: ExtensionExecution> AgentSession<E> {
-    /// Compacts when the finished response overflowed or passed the reserve. A started
+    /// Compacts when the finished response overflowed or passed the reserve, reporting whether
+    /// the run continues: after an overflow recovery, or when queued messages wait. A started
     /// compaction belongs to the session: dropping the returned future leaves it running.
     ///
     /// `skip_aborted_check` keeps an aborted response out of the check unless the caller
@@ -31,12 +31,12 @@ impl<E: ExtensionExecution> AgentSession<E> {
         self: &Rc<Self>,
         message: &AssistantMessage,
         skip_aborted_check: bool,
-    ) -> Result<(), DiagnosticErrorInfo> {
+    ) -> Result<bool, DiagnosticErrorInfo> {
         if !self.settings_manager.borrow().get_compaction_enabled() {
-            return Ok(());
+            return Ok(false);
         }
         if skip_aborted_check && message.stop_reason == StopReason::Aborted {
-            return Ok(());
+            return Ok(false);
         }
         let model = self.model();
         let window = read(&model).context_window;
@@ -46,7 +46,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
         };
         let boundary = self.compaction_boundary()?;
         if Self::started_before_boundary(message.timestamp, boundary.as_deref()) {
-            return Ok(());
+            return Ok(false);
         }
         if same_model && is_context_overflow(message, Some(window)) {
             if self.state.borrow().overflow_recovery_attempted {
@@ -61,7 +61,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
                             .to_owned(),
                     ),
                 });
-                return Ok(());
+                return Ok(false);
             }
             self.state.borrow_mut().overflow_recovery_attempted = true;
             self.drop_trailing_assistant(|_| true);
@@ -71,17 +71,18 @@ impl<E: ExtensionExecution> AgentSession<E> {
         }
         let tokens = self.context_tokens(message, boundary.as_deref())?;
         let Some(tokens) = tokens else {
-            return Ok(());
+            return Ok(false);
         };
         if should_compact(tokens, window, &self.compaction_policy()) {
             return self
                 .run_auto_compaction(CompactionReason::Threshold, false)
                 .await;
         }
-        Ok(())
+        Ok(false)
     }
 
-    /// Starts one automatic compaction on the session and waits for it to end.
+    /// Starts one automatic compaction on the session and waits for it to end, reporting
+    /// whether the run continues.
     ///
     /// # Errors
     /// Returns the failure when the compaction's task ended before it did.
@@ -89,14 +90,15 @@ impl<E: ExtensionExecution> AgentSession<E> {
         self: &Rc<Self>,
         reason: CompactionReason,
         will_retry: bool,
-    ) -> Result<(), DiagnosticErrorInfo> {
+    ) -> Result<bool, DiagnosticErrorInfo> {
         let session = Rc::clone(self);
         let run = async move { session.auto_compaction(reason, will_retry).await };
         self.start_operation(run).await.map_err(thrown)
     }
 
-    /// Runs one automatic compaction, reporting every outcome through `compaction_end`.
-    async fn auto_compaction(&self, reason: CompactionReason, will_retry: bool) {
+    /// Runs one automatic compaction, reporting every outcome through `compaction_end` and
+    /// whether the run continues: after a recovery, or when queued messages wait.
+    async fn auto_compaction(&self, reason: CompactionReason, will_retry: bool) -> bool {
         let settings = self.compaction_policy();
         self.emit(&AgentSessionEvent::CompactionStart { reason });
         let signal = Cancellation::new();
@@ -137,14 +139,13 @@ impl<E: ExtensionExecution> AgentSession<E> {
         };
         self.close_compaction(&end);
         if !compacted {
-            return;
+            return false;
         }
         if will_retry {
             self.drop_trailing_assistant(|message| message.stop_reason == StopReason::Error);
-            self.schedule_continuation(Duration::from_millis(100));
-        } else if self.agent.has_queued_messages() {
-            self.schedule_continuation(Duration::from_millis(100));
+            return true;
         }
+        self.agent.has_queued_messages()
     }
 
     /// Clears the one-recovery-per-turn mark after a response succeeds.

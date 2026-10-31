@@ -25,12 +25,15 @@ use maestro_models::system_prompt::ContextFile;
 use maestro_models::{
     AssistantMessage, DiagnosticErrorInfo, Execution, FauxAssistantMessageOptions,
     FauxModelDefinition, FauxProviderRegistration, FauxResponseInput, FauxResponseStep, Local,
-    Model, RegisterFauxProviderOptions, StopReason, Threaded, Tool, faux_assistant_message,
-    register_faux_provider,
+    Model, RegisterFauxProviderOptions, StopReason, Threaded, Tool, UserContent,
+    faux_assistant_message, register_faux_provider,
 };
 use maestro_resources::LoadSkillsResult;
 use maestro_resources::{SyntheticSourceOptions, create_synthetic_source_info};
-use maestro_session::{CompactionResult, Presence, SessionManager, messages::CustomAgentMessages};
+use maestro_session::{
+    CompactionResult, Presence, SessionManager,
+    messages::{CustomAgentMessages, CustomMessageInput},
+};
 use maestro_settings::SettingsManager;
 use maestro_tools::ToolDefinitionRecord;
 use serde_json::{Value, json};
@@ -1782,6 +1785,8 @@ pub struct Scripted {
     pub usage: Option<(f64, f64)>,
     /// Whether the stream sends only the terminal event, so the response arrives whole.
     pub terminal_only: bool,
+    /// Whether the answer names the model the request asked for, as a provider's answer does.
+    pub names_requested_model: bool,
 }
 
 impl Scripted {
@@ -1798,6 +1803,14 @@ impl Scripted {
         Self {
             error: Some(error.into()),
             ..Self::default()
+        }
+    }
+
+    /// A failed answer from the requested model reporting a context overflow.
+    pub fn context_overflow() -> Self {
+        Self {
+            names_requested_model: true,
+            ..Self::failure("prompt is too long: 213462 tokens > 200000 maximum")
         }
     }
 
@@ -1820,12 +1833,17 @@ fn scripted_stream(
     responses: Vec<Scripted>,
     requests: ScriptedRequests,
 ) -> maestro_agent::StreamFn<Local> {
-    Rc::new(move |_, context, _, _| {
+    Rc::new(move |model, context, _, _| {
         let index = requests.0.borrow().len() % responses.len();
         requests.0.borrow_mut().push(context);
         let stream = maestro_models::AssistantMessageEventStream::new();
         let response = &responses[index];
-        stream_with_deltas(&stream, scripted_message(response), response.terminal_only);
+        let mut message = scripted_message(response);
+        if response.names_requested_model {
+            message.provider = model.provider;
+            message.model = model.id;
+        }
+        stream_with_deltas(&stream, message, response.terminal_only);
         Box::pin(std::future::ready(Ok(stream)))
     })
 }
@@ -2067,28 +2085,64 @@ fn delivered_agent_event(event: &maestro_agent::AgentEvent<CustomAgentMessages>)
     view
 }
 
+/// A displayed custom `note` message that only records `text`.
+pub fn custom_note(text: &str) -> CustomMessageInput {
+    CustomMessageInput {
+        custom_type: "note".into(),
+        content: UserContent::Text(text.into()),
+        display: true,
+        details: Presence::Missing,
+    }
+}
+
 /// An executable tool that reports its entry and answers `released` once released.
 pub fn waiting_tool(
     started: Rc<tokio::sync::Notify>,
     release: Rc<tokio::sync::Notify>,
 ) -> maestro_agent::SharedAgentTool<Local> {
+    text_tool("wait", "Wait for release", "Wait", "released", move || {
+        started.notify_one();
+        let release = Rc::clone(&release);
+        Box::pin(async move { release.notified().await })
+    })
+}
+
+/// An executable tool named `name` that calls `on_execute` and answers `ok`.
+pub fn callback_tool(
+    name: &str,
+    on_execute: impl Fn() + 'static,
+) -> maestro_agent::SharedAgentTool<Local> {
+    text_tool(name, "Run a callback", name, "ok", move || {
+        on_execute();
+        Box::pin(std::future::ready(()))
+    })
+}
+
+/// An executable tool with no parameters that awaits the work `run` starts, then answers
+/// `text`.
+fn text_tool(
+    name: &str,
+    description: &str,
+    label: &str,
+    text: &'static str,
+    run: impl Fn() -> std::pin::Pin<Box<dyn std::future::Future<Output = ()>>> + 'static,
+) -> maestro_agent::SharedAgentTool<Local> {
     let tool = maestro_agent::AgentToolRecord::<Local> {
         definition: Tool {
-            name: "wait".into(),
-            description: "Wait for release".into(),
+            name: name.into(),
+            description: description.into(),
             parameters: json!({"type": "object", "properties": {}}).into(),
         },
         description: None,
-        label: "Wait".into(),
+        label: label.into(),
         prepare_arguments: None,
         execute: Rc::new(move |_, _, _, _| {
-            started.notify_one();
-            let release = Rc::clone(&release);
+            let work = run();
             Box::pin(async move {
-                release.notified().await;
+                work.await;
                 Ok(maestro_agent::AgentToolResult {
                     content: vec![maestro_models::UserBlock::Text(
-                        maestro_models::TextContent::new("released".into()),
+                        maestro_models::TextContent::new(text.into()),
                     )],
                     details: Some(json!({})),
                     terminate: None,
@@ -2098,6 +2152,35 @@ pub fn waiting_tool(
         execution_mode: None,
     };
     Rc::new(RwLock::new(tool))
+}
+
+/// Notified once `session` announces the start of a retry.
+pub fn retry_started(session: &AgentSession<Local>) -> Rc<tokio::sync::Notify> {
+    let started = Rc::new(tokio::sync::Notify::new());
+    let notify = Rc::clone(&started);
+    drop(session.subscribe(Rc::new(move |event| {
+        if matches!(event, AgentSessionEvent::AutoRetryStart { .. }) {
+            notify.notify_one();
+        }
+    })));
+    started
+}
+
+/// The extension whose before-agent-start handler answers every prompt with the system
+/// prompt `prompt`.
+pub fn system_prompt_extension(prompt: &'static str) -> ExtensionFactory<Local> {
+    Rc::new(move |api| {
+        let registered = api.on::<BeforeAgentStartEvent, BeforeAgentStartEventResult>(
+            "before_agent_start".into(),
+            Rc::new(move |_, _| {
+                Box::pin(std::future::ready(Ok(Some(BeforeAgentStartEventResult {
+                    message: Presence::Missing,
+                    system_prompt: Presence::Present(prompt.to_owned()),
+                }))))
+            }),
+        );
+        Box::pin(std::future::ready(registered.map(drop)))
+    })
 }
 
 /// Prompts `text` and waits until the session has delivered the run's end.

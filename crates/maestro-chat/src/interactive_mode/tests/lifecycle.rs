@@ -337,8 +337,8 @@ pub(super) fn replace_effects(
     mode
 }
 
-/// Signal callbacks whose ownership the controlled native registration keeps.
-type Signals = (Rc<dyn Fn()>, Rc<dyn Fn()>);
+/// The signal callback whose ownership the controlled native registration keeps.
+type Signals = Rc<dyn Fn()>;
 
 /// Observable process effects without touching the real process.
 pub(super) struct Effects {
@@ -367,17 +367,13 @@ impl super::super::lifecycle::LifecycleEffects for Effects {
     fn now_ms(&self) -> i64 {
         self.now.get()
     }
-    fn register_signals(
-        &self,
-        terminate: Rc<dyn Fn()>,
-        hangup: Rc<dyn Fn()>,
-    ) -> std::io::Result<Box<dyn Fn()>> {
+    fn register_signals(&self, shutdown: Rc<dyn Fn()>) -> std::io::Result<Box<dyn Fn()>> {
         if self.fail_registration.get() {
             return Err(std::io::Error::from(std::io::ErrorKind::PermissionDenied));
         }
         self.events.borrow_mut().push("register".into());
         assert!(self.signals.borrow().is_none());
-        *self.signals.borrow_mut() = Some((terminate, hangup));
+        *self.signals.borrow_mut() = Some(shutdown);
         let signals = Rc::clone(&self.signals);
         let events = Rc::clone(&self.events);
         Ok(Box::new(move || {
@@ -464,8 +460,7 @@ fn lifecycle_callbacks_release_the_mode() {
         assert!(weak.upgrade().is_none());
         assert!(!stdout.registered());
         assert!(!stderr.registered());
-        signals.0();
-        signals.1();
+        signals();
         stdout.emit(&std::io::Error::from(std::io::ErrorKind::BrokenPipe));
         terminal.send_input("\x04");
         assert_eq!(*rig.effects.events.borrow(), ["register", "remove"]);
@@ -713,9 +708,9 @@ async fn requested_case(directory: &Path, requested: bool, transient: (bool, boo
 }
 
 #[test]
-fn termination_signal_unregisters_and_drains_before_cleanup() {
+fn termination_signal_unregisters_and_disposes_before_terminal_writes() {
     native::run(
-        "termination_signal_unregisters_and_drains_before_cleanup",
+        "termination_signal_unregisters_and_disposes_before_terminal_writes",
         "term",
         "TERM",
         None,
@@ -723,9 +718,9 @@ fn termination_signal_unregisters_and_drains_before_cleanup() {
 }
 
 #[test]
-fn hangup_skips_terminal_and_runtime_cleanup() {
+fn hangup_runs_the_graceful_shutdown_and_exits_normally() {
     native::run(
-        "hangup_skips_terminal_and_runtime_cleanup",
+        "hangup_runs_the_graceful_shutdown_and_exits_normally",
         "hup",
         "HUP",
         None,

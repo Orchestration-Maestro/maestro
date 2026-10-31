@@ -1,9 +1,11 @@
 //! Native JSONL loading and continuation selection.
-use super::{FileEntry, parse_session_entries};
+use super::{FileEntry, conversions::invalid, records::for_each_entry};
 use serde_json::Value;
+use sha2::{Digest, Sha256};
 use std::{
     fs,
-    io::{self, Read},
+    io::{self, BufReader, Read},
+    ops::ControlFlow,
     time::UNIX_EPOCH,
 };
 
@@ -60,16 +62,97 @@ pub fn load_entries_from_file(file_path: &str) -> io::Result<Vec<FileEntry>> {
     if !std::path::Path::new(file_path).exists() {
         return Ok(Vec::new());
     }
-    Ok(entries_from_bytes(&fs::read(file_path)?))
+    Ok(Snapshot::read(fs::File::open(file_path)?)?.entries)
 }
 
-/// Parses raw bytes with the same first-header admission as native loading.
-pub(super) fn entries_from_bytes(bytes: &[u8]) -> Vec<FileEntry> {
-    let entries = parse_session_entries(&String::from_utf8_lossy(bytes));
-    if entries.first().is_some_and(valid_header) {
-        entries
-    } else {
-        Vec::new()
+/// The records of one session file with the digest and length of the bytes they came from.
+pub(super) struct Snapshot {
+    /// Admitted records; empty unless the first one is a valid session header.
+    pub(super) entries: Vec<FileEntry>,
+    /// SHA-256 of every byte read.
+    pub(super) digest: [u8; 32],
+    /// Number of bytes read.
+    pub(super) len: u64,
+}
+
+impl Snapshot {
+    /// Read `reader` to its end, keeping records only behind a valid first header.
+    pub(super) fn read(reader: impl Read) -> io::Result<Self> {
+        let mut hashing = Hashing::new(reader);
+        let mut entries = Vec::new();
+        for_each_entry(BufReader::new(&mut hashing), |entry| {
+            entries.push(entry);
+            ControlFlow::Continue(())
+        })?;
+        if !entries.first().is_some_and(valid_header) {
+            entries.clear();
+        }
+        let (digest, len) = hashing.finish();
+        Ok(Self {
+            entries,
+            digest,
+            len,
+        })
+    }
+
+    /// Refuse a nonempty file that holds no valid session, so a rewrite cannot erase it.
+    ///
+    /// # Errors
+    /// Fails with `Session file is not a valid session: {path}` when bytes were read
+    /// but no admitted record came out of them.
+    pub(super) fn require_session(&self, path: &str) -> io::Result<()> {
+        if self.entries.is_empty() && self.len > 0 {
+            return Err(invalid(&format!(
+                "Session file is not a valid session: {path}"
+            )));
+        }
+        Ok(())
+    }
+
+    /// What an absent file holds.
+    pub(super) fn absent() -> Self {
+        Self {
+            entries: Vec::new(),
+            digest: Sha256::digest([]).into(),
+            len: 0,
+        }
+    }
+}
+
+/// A reader that hashes and counts every byte it passes on.
+pub(super) struct Hashing<R> {
+    /// The wrapped reader.
+    inner: R,
+    /// Digest state over the bytes read so far.
+    hasher: Sha256,
+    /// Bytes read so far.
+    len: u64,
+}
+
+impl<R: Read> Hashing<R> {
+    /// Wrap `inner` before any byte is read.
+    pub(super) fn new(inner: R) -> Self {
+        Self {
+            inner,
+            hasher: Sha256::new(),
+            len: 0,
+        }
+    }
+
+    /// The digest and length of what was read.
+    pub(super) fn finish(self) -> ([u8; 32], u64) {
+        (self.hasher.finalize().into(), self.len)
+    }
+}
+
+impl<R: Read> Read for Hashing<R> {
+    fn read(&mut self, buffer: &mut [u8]) -> io::Result<usize> {
+        let count = self.inner.read(buffer)?;
+        self.hasher.update(&buffer[..count]);
+        self.len = self
+            .len
+            .saturating_add(u64::try_from(count).unwrap_or(u64::MAX));
+        Ok(count)
     }
 }
 

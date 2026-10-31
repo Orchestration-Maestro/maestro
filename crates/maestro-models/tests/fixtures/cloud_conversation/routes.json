@@ -303,7 +303,9 @@
           ]
         }
       ],
-      "inferenceConfig": {}
+      "inferenceConfig": {
+        "maxTokens": 32768
+      }
     },
     "wire": {
       "messages": [
@@ -316,7 +318,9 @@
           ]
         }
       ],
-      "inferenceConfig": {}
+      "inferenceConfig": {
+        "maxTokens": 32768
+      }
     },
     "destination": "bedrock-runtime.us-east-1.amazonaws.com"
   }

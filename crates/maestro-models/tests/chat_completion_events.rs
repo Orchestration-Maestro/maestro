@@ -146,6 +146,12 @@ fn maestro_chat_resolves_late_tool_fields() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
+fn maestro_chat_normalizes_gateway_reasoning_field() -> TestResult {
+    rows_of("maestro_chat_normalizes_gateway_reasoning_field")
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
 fn maestro_chat_retains_thought_signatures() -> TestResult {
     rows_of("maestro_chat_retains_thought_signatures")
 }

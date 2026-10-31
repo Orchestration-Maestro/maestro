@@ -248,8 +248,10 @@ maestro
 The `index.wasm` name is a conventional entry point. An extension directory can
 instead declare its entries in `package.json`. Discovery starts with
 `<cwd>/.maestro/extensions`, then `<agent_dir>/extensions`, followed by configured
-paths. The default agent directory is `~/.maestro/agent`; configuration can change
-it. Package installation records its own source in settings. See
+paths; a leading `~` reads as
+[Home directory in paths](settings.md#home-directory-in-paths), so `~name` is a relative
+path. The default agent directory is `~/.maestro/agent`; configuration can change it.
+Package installation records its own source in settings. See
 [path loading and discovery](extensions/loading.md) and
 [application resources](application/resources.md).
 

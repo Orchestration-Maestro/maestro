@@ -2,11 +2,11 @@
 //! recovery cases: the announced events, the rebuilt history and the stored entries.
 #![cfg(not(target_arch = "wasm32"))]
 use super::session_harness::{
-    Auth, Harness, HarnessOptions, agent_ended, answer, as_recorded, assistant, case, harness,
-    load_history, message_text, on_paused_task_set, recorded_number, script_responses,
-    start_and_abandon, summary_provider, summary_result, usage, user,
+    Auth, Harness, HarnessOptions, answer, as_recorded, assistant, case, harness, load_history,
+    message_text, on_paused_task_set, recorded_number, script_responses, start_and_abandon,
+    summary_provider, summary_result, usage, user,
 };
-use maestro_agent::{AgentEvent, AgentMessage, PromptInput};
+use maestro_agent::AgentMessage;
 use maestro_app::agent_session::CompactionReason;
 use maestro_app::{AgentSession, AgentSessionEvent};
 use maestro_extensions::{
@@ -549,19 +549,6 @@ fn compaction_ended(h: &Harness) -> Rc<Notify> {
     })
 }
 
-/// The paused-clock instant each agent run starts, newest last.
-fn agent_starts(h: &Harness) -> Rc<RefCell<Vec<tokio::time::Instant>>> {
-    let starts = Rc::new(RefCell::new(Vec::new()));
-    let record = Rc::clone(&starts);
-    drop(h.session.agent().subscribe(Rc::new(move |event, _| {
-        if matches!(*event.read().unwrap(), AgentEvent::AgentStart) {
-            record.borrow_mut().push(tokio::time::Instant::now());
-        }
-        Box::pin(std::future::ready(Ok(())))
-    })));
-    starts
-}
-
 // -------------------------------------------------------------- classification
 
 #[test]
@@ -705,7 +692,7 @@ fn overflow_recovery_is_attempted_once_then_reported() {
 }
 
 #[test]
-fn overflow_recovery_continues_after_one_hundred_milliseconds() {
+fn overflow_recovery_asks_the_run_to_continue() {
     let expected = case(
         "compaction_checks",
         "overflow_recovery_continues_after_100ms",
@@ -721,21 +708,9 @@ fn overflow_recovery_continues_after_one_hundred_milliseconds() {
                 serde_json::to_value(&overflow).unwrap(),
             ],
         );
-        let (ended, starts) = (agent_ended(&h), agent_starts(&h));
-        h.session.check_compaction(&overflow, true).await.unwrap();
-        let compacted = tokio::time::Instant::now();
+        let continues = h.session.check_compaction(&overflow, true).await.unwrap();
+        assert!(continues, "the run retries the turn after the recovery");
         assert_observation(&h, &expected["before"]);
-        tokio::time::advance(std::time::Duration::from_millis(99)).await;
-        assert_eq!(messages_view(&h), expected["before"]["messages"]);
-        drop(script_responses(
-            &h,
-            vec![answer("after recovery", None, None)],
-        ));
-        tokio::time::advance(std::time::Duration::from_millis(1)).await;
-        ended.notified().await;
-        assert_eq!(messages_view(&h), expected["after"]["messages"]);
-        let continued = compacted + std::time::Duration::from_millis(100);
-        assert_eq!(*starts.borrow(), [continued]);
     });
 }
 
@@ -910,7 +885,7 @@ fn another_models_overflow_is_not_recovered() {
 }
 
 #[test]
-fn queued_messages_resume_after_the_compaction() {
+fn queued_messages_ask_the_run_to_continue_after_the_compaction() {
     let expected = case(
         "compaction_checks",
         "queue_only_compaction_resumes_at_100ms",
@@ -928,22 +903,10 @@ fn queued_messages_resume_after_the_compaction() {
         h.session
             .agent()
             .follow_up(AgentMessage::Custom(Arc::new(RwLock::new(queued))));
-        let (ended, starts) = (agent_ended(&h), agent_starts(&h));
         let message = response(400, &answer_extra(&StopReason::Stop, None, 199_999));
-        h.session.check_compaction(&message, true).await.unwrap();
-        let compacted = tokio::time::Instant::now();
+        let continues = h.session.check_compaction(&message, true).await.unwrap();
+        assert!(continues, "the run delivers the queued message");
         assert_observation(&h, &expected["before"]);
-        tokio::time::advance(std::time::Duration::from_millis(99)).await;
-        assert_eq!(messages_view(&h), expected["before"]["messages"]);
-        drop(script_responses(
-            &h,
-            vec![answer("queued answer", None, None)],
-        ));
-        tokio::time::advance(std::time::Duration::from_millis(1)).await;
-        ended.notified().await;
-        assert_eq!(messages_view(&h), expected["after"]["messages"]);
-        let continued = compacted + std::time::Duration::from_millis(100);
-        assert_eq!(*starts.borrow(), [continued]);
     });
 }
 
@@ -1350,16 +1313,16 @@ fn retries_exhaust_their_attempts_with_doubling_delays() {
             &answer_extra(&StopReason::Error, Some("overloaded_error"), 0),
         );
         assert_eq!(
-            h.session.handle_retryable_error(&failing).await.unwrap(),
+            h.session.handle_retryable_error(&failing).await,
             expected["afterFirst"]["returned"].as_bool().unwrap()
         );
         assert_observation(&h, &expected["afterFirst"]);
         assert_eq!(
-            h.session.handle_retryable_error(&failing).await.unwrap(),
+            h.session.handle_retryable_error(&failing).await,
             expected["second"].as_bool().unwrap()
         );
         assert_eq!(
-            h.session.handle_retryable_error(&failing).await.unwrap(),
+            h.session.handle_retryable_error(&failing).await,
             expected["third"].as_bool().unwrap()
         );
         assert_observation(&h, &expected);
@@ -1385,7 +1348,7 @@ fn disabled_retries_do_nothing() {
             &answer_extra(&StopReason::Error, Some("overloaded_error"), 0),
         );
         assert_eq!(
-            h.session.handle_retryable_error(&failing).await.unwrap(),
+            h.session.handle_retryable_error(&failing).await,
             expected["returned"].as_bool().unwrap()
         );
         assert_observation(&h, &expected);
@@ -1414,10 +1377,7 @@ fn aborting_during_backoff_ends_the_retry() {
             tokio::task::spawn_local(async move { session.handle_retryable_error(&failing).await });
         started.notified().await;
         h.session.abort_retry();
-        assert_eq!(
-            task.await.unwrap().unwrap(),
-            expected["returned"].as_bool().unwrap()
-        );
+        assert_eq!(task.await.unwrap(), expected["returned"].as_bool().unwrap());
         assert_observation(&h, &expected);
         assert_eq!(
             h.session.retry_attempt(),
@@ -1428,7 +1388,7 @@ fn aborting_during_backoff_ends_the_retry() {
 }
 
 #[test]
-fn a_retry_continues_immediately_after_the_backoff() {
+fn a_retry_returns_once_the_backoff_ends() {
     let expected = case("retry_behaviour", "retry_schedules_continuation");
     on_paused_task_set(|_| async {
         let h = harness(HarnessOptions {
@@ -1440,32 +1400,14 @@ fn a_retry_continues_immediately_after_the_backoff() {
             400,
             &answer_extra(&StopReason::Error, Some("connection lost"), 0),
         );
-        set_agent_messages(
-            &h,
-            &[
-                user(&json!([{"type": "text", "text": "hello"}]), 100),
-                serde_json::to_value(&failing).unwrap(),
-            ],
-        );
-        let (ended, starts) = (agent_ended(&h), agent_starts(&h));
-        let failed = tokio::time::Instant::now();
         let mut work = Box::pin(h.session.handle_retryable_error(&failing));
         let mut context = std::task::Context::from_waker(std::task::Waker::noop());
         assert!(std::future::Future::poll(work.as_mut(), &mut context).is_pending());
         tokio::time::advance(std::time::Duration::from_millis(1_999)).await;
         assert!(std::future::Future::poll(work.as_mut(), &mut context).is_pending());
-        drop(script_responses(
-            &h,
-            vec![answer("retried answer", None, None)],
-        ));
         tokio::time::advance(std::time::Duration::from_millis(1)).await;
-        let returned = work.await;
-        assert_eq!(returned.unwrap(), expected["returned"].as_bool().unwrap());
+        assert_eq!(work.await, expected["returned"].as_bool().unwrap());
         assert_eq!(events_view(&h), expected["events"]);
-        ended.notified().await;
-        assert_eq!(messages_view(&h), expected["messages"]);
-        let continued = failed + std::time::Duration::from_millis(2_000);
-        assert_eq!(*starts.borrow(), [continued]);
     });
 }
 
@@ -1481,7 +1423,7 @@ fn fractional_attempt_limits_compare_as_numbers() {
         let failing = response(400, &answer_extra(&StopReason::Error, Some("503"), 0));
         let mut outcomes = Vec::new();
         for _ in 0..5 {
-            outcomes.push(h.session.handle_retryable_error(&failing).await.unwrap());
+            outcomes.push(h.session.handle_retryable_error(&failing).await);
         }
         assert_eq!(json!(outcomes), expected["outcomes"]);
         assert_observation(&h, &expected);
@@ -1499,7 +1441,7 @@ fn zero_base_delay_retries_without_waiting() {
         .await;
         let failing = response(400, &answer_extra(&StopReason::Error, Some("502"), 0));
         assert_eq!(
-            h.session.handle_retryable_error(&failing).await.unwrap(),
+            h.session.handle_retryable_error(&failing).await,
             expected["returned"].as_bool().unwrap()
         );
         assert_observation(&h, &expected);
@@ -1517,39 +1459,10 @@ fn negative_base_delays_fire_immediately() {
         .await;
         let failing = response(400, &answer_extra(&StopReason::Error, Some("503"), 0));
         assert_eq!(
-            h.session.handle_retryable_error(&failing).await.unwrap(),
+            h.session.handle_retryable_error(&failing).await,
             expected["returned"].as_bool().unwrap()
         );
         assert_observation(&h, &expected);
-    });
-}
-
-#[test]
-fn waiting_for_a_retry_releases_on_abort() {
-    let expected = case("retry_behaviour", "wait_for_retry_releases_on_abort");
-    on_paused_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            settings: json!({"retry": {"enabled": true, "maxRetries": 2, "baseDelayMs": 2000}}),
-            ..HarnessOptions::default()
-        })
-        .await;
-        let failing = response(
-            400,
-            &answer_extra(&StopReason::Error, Some("overloaded_error"), 0),
-        );
-        let started = retry_started(&h);
-        let session = Rc::clone(&h.session);
-        let retry =
-            tokio::task::spawn_local(async move { session.handle_retryable_error(&failing).await });
-        started.notified().await;
-        let mut waiting = Box::pin(h.session.wait_for_retry());
-        let mut context = std::task::Context::from_waker(std::task::Waker::noop());
-        let before = std::future::Future::poll(waiting.as_mut(), &mut context).is_ready();
-        assert_eq!(before, expected["beforeRelease"].as_bool().unwrap());
-        h.session.abort_retry();
-        let after = std::future::Future::poll(waiting.as_mut(), &mut context).is_ready();
-        assert_eq!(after, expected["after"].as_bool().unwrap());
-        drop(retry.await);
     });
 }
 
@@ -1604,10 +1517,7 @@ fn aborting_cancels_a_retry_in_flight() {
             tokio::task::spawn_local(async move { session.handle_retryable_error(&failing).await });
         started.notified().await;
         h.session.abort().await;
-        assert_eq!(
-            task.await.unwrap().unwrap(),
-            expected["returned"].as_bool().unwrap()
-        );
+        assert_eq!(task.await.unwrap(), expected["returned"].as_bool().unwrap());
         assert_observation(&h, &expected);
         assert_eq!(h.session.is_retrying(), expected["isRetryingAfter"] == true);
     });
@@ -1779,22 +1689,6 @@ fn automatic_compaction_uses_the_preferences_from_before_its_start() {
 }
 
 #[test]
-fn waiting_without_a_retry_returns_while_the_agent_runs() {
-    on_paused_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
-        drop(script_responses(&h, vec![answer("busy", None, None)]));
-        let run = h.session.agent().prompt(PromptInput::Text {
-            text: "hello".to_owned(),
-            images: Vec::new(),
-        });
-        let mut waiting = Box::pin(h.session.wait_for_retry());
-        let mut context = std::task::Context::from_waker(std::task::Waker::noop());
-        assert!(std::future::Future::poll(waiting.as_mut(), &mut context).is_ready());
-        run.await.unwrap();
-    });
-}
-
-#[test]
 fn repeated_summaries_announce_the_newest_entry() {
     on_paused_task_set(|_| async {
         let ids = Rc::new(RefCell::new(Vec::new()));
@@ -1827,44 +1721,6 @@ fn repeated_summaries_announce_the_newest_entry() {
             .collect();
         assert_eq!(stored.len(), 2);
         assert_eq!(*ids.borrow(), stored);
-    });
-}
-
-#[test]
-fn a_retry_left_unobserved_still_continues() {
-    let expected = case("retry_behaviour", "retry_schedules_continuation");
-    on_paused_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            settings: json!({"retry": {"enabled": true, "maxRetries": 3, "baseDelayMs": 2000}}),
-            ..HarnessOptions::default()
-        })
-        .await;
-        let failing = response(
-            400,
-            &answer_extra(&StopReason::Error, Some("connection lost"), 0),
-        );
-        set_agent_messages(
-            &h,
-            &[
-                user(&json!([{"type": "text", "text": "hello"}]), 100),
-                serde_json::to_value(&failing).unwrap(),
-            ],
-        );
-        let ended = agent_ended(&h);
-        drop(script_responses(
-            &h,
-            vec![answer("retried answer", None, None)],
-        ));
-        start_and_abandon(h.session.handle_retryable_error(&failing));
-        assert!(h.session.is_retrying(), "the retry still waits");
-        tokio::time::advance(std::time::Duration::from_millis(2_000)).await;
-        ended.notified().await;
-        // The recording ends when the wait returns; the continuation's successful answer
-        // then ends the retry.
-        let mut events = expected["events"].as_array().unwrap().clone();
-        events.push(json!({"type": "auto_retry_end", "attempt": 1, "success": true}));
-        assert_eq!(events_view(&h), json!(events));
-        assert_eq!(messages_view(&h), expected["messages"]);
     });
 }
 

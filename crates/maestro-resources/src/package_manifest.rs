@@ -54,20 +54,30 @@ pub fn is_extension_file(name: &str) -> bool {
 }
 /// Selects the existing manifest entries in list order, else the first existing index.
 ///
+/// A list that holds a non-string item contributes no entries when `ignore_malformed` is set.
+///
 /// # Errors
-/// Returns `InvalidData` when the manifest's extension list holds a non-string item.
-pub fn resolve_extension_entries(dir: &str) -> io::Result<Option<Vec<String>>> {
+/// Returns `InvalidData` when the manifest's extension list holds a non-string item and
+/// `ignore_malformed` is not set.
+pub fn resolve_extension_entries(
+    dir: &str,
+    ignore_malformed: bool,
+) -> io::Result<Option<Vec<String>>> {
     let manifest_path = join(&[dir, "package.json"]);
     if Path::new(&manifest_path).exists()
         && let Some(manifest) = read_maestro_manifest_file(&manifest_path)
-        && let Some(entries) = manifest
+        && manifest
             .field("extensions")
-            .filter(|raw| raw.get().starts_with('['))
+            .is_some_and(|raw| raw.get().starts_with('['))
     {
         let mut found = Vec::new();
-        let entries: Vec<String> = serde_json::from_str(entries.get())
-            .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
-        for entry in entries {
+        let listed = manifest.entries("extensions");
+        let listed = if ignore_malformed {
+            listed.unwrap_or_default()
+        } else {
+            listed?
+        };
+        for entry in listed {
             let path = crate::paths::resolve(&[dir, &entry])?;
             if Path::new(&path).exists() {
                 found.push(path);
