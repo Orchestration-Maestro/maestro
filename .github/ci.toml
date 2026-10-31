@@ -35,3 +35,5 @@ license_exceptions = [
   # OD-185: test-only egui default fonts
   { package = "epaint_default_fonts", version = "0.36.2", licenses = ["MIT", "OFL-1.1", "Ubuntu-font-1.0"] },
 ]
+
+miri_crates = ["maestro-json"]

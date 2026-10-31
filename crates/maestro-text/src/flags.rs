@@ -12,6 +12,6 @@ pub fn is_truthy_env_flag(value: Option<&str>) -> bool {
 /// disables remote work.
 #[must_use]
 pub fn is_offline_selected(selection: Option<bool>) -> bool {
-    selection
-        .unwrap_or_else(|| is_truthy_env_flag(std::env::var("MAESTRO_OFFLINE").ok().as_deref()))
+    let ambient = || is_truthy_env_flag(std::env::var("MAESTRO_OFFLINE").ok().as_deref());
+    selection.unwrap_or_else(ambient)
 }
