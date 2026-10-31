@@ -186,6 +186,8 @@ pub(super) struct Prepared {
     request: crate::HttpRequest,
     /// One-attempt client.
     fetch: crate::Fetch,
+    /// The configured longest wait for the response or a chunk.
+    timeout: Option<std::time::Duration>,
 }
 
 /// Resolve credentials and URL before the hook, then encode its replacement.
@@ -238,6 +240,7 @@ pub(super) async fn prepare<E: ProviderExecution>(
             .fetch
             .clone()
             .unwrap_or_else(crate::default_fetch),
+        timeout: transport::timeout(options.common.timeout_ms),
     })
 }
 

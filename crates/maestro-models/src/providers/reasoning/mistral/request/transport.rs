@@ -92,29 +92,85 @@ pub(in crate::providers::reasoning::mistral) fn media_type(
     })
 }
 
-/// One cancellation observer or one retained lifetime deadline.
+/// How long a request without a configured timeout and without a caller signal waits for a
+/// response or a chunk.
+const DEFAULT_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
+
+/// The configured timeout in milliseconds as a duration; a negative or non-numeric one is
+/// ignored and one too long to represent never elapses.
+pub(in crate::providers::reasoning::mistral) fn timeout(
+    milliseconds: Option<f64>,
+) -> Option<std::time::Duration> {
+    milliseconds
+        .filter(|milliseconds| *milliseconds >= 0.0)
+        .map(|milliseconds| {
+            std::time::Duration::try_from_secs_f64(milliseconds / 1000.0)
+                .unwrap_or(std::time::Duration::MAX)
+        })
+}
+
+/// A timer that ends the wait with a timeout after `limit`.
+fn timer(limit: std::time::Duration) -> crate::BoxFuture<crate::FetchError> {
+    Box::pin(async move {
+        crate::providers::http::sleep(limit).await;
+        crate::FetchError::Timeout
+    })
+}
+
+/// The caller's cancellation observer and the idle timer of one request.
 struct Lifetime {
-    /// Pending completion ends setup or the body.
-    end: crate::BoxFuture<crate::FetchError>,
+    /// Pending completion when the caller's signal aborts.
+    cancelled: Option<crate::BoxFuture<crate::FetchError>>,
+    /// The longest wait and the timer measuring the current one.
+    idle: Option<(std::time::Duration, crate::BoxFuture<crate::FetchError>)>,
+    /// A wait that ran out while it was being started.
+    expired: Option<crate::FetchError>,
 }
 
 impl Lifetime {
-    /// Create the operation's only timer, unless a caller supplied a signal.
-    fn new(signal: Option<&crate::Cancellation>) -> Self {
-        let end: crate::BoxFuture<crate::FetchError> = match signal {
-            Some(signal) => {
+    /// Observe the caller's signal and, when `limit` is set, time the first wait.
+    fn new(signal: Option<&crate::Cancellation>, limit: Option<std::time::Duration>) -> Self {
+        Self {
+            cancelled: signal.map(|signal| {
                 let cancelled = signal.cancelled();
                 Box::pin(async move {
                     cancelled.await;
                     crate::FetchError::Aborted
-                })
-            }
-            None => Box::pin(async {
-                crate::providers::http::sleep(std::time::Duration::from_secs(30)).await;
-                crate::FetchError::Timeout
+                }) as crate::BoxFuture<crate::FetchError>
             }),
-        };
-        Self { end }
+            idle: limit.map(|limit| (limit, timer(limit))),
+            expired: None,
+        }
+    }
+
+    /// Start a new wait: the response or the next chunk may take the whole limit again. A
+    /// timer's deadline starts at its first poll, so it is polled here.
+    fn restart(&mut self, context: &mut std::task::Context<'_>) {
+        if let Some((limit, running)) = self.idle.as_mut() {
+            *running = timer(*limit);
+            if let std::task::Poll::Ready(error) = running.as_mut().poll(context) {
+                self.expired = Some(error);
+            }
+        }
+    }
+
+    /// The failure that ends the request now, if the signal aborted or the wait ran out.
+    fn poll_end(
+        &mut self,
+        context: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<crate::FetchError> {
+        if let Some(error) = self.expired.take() {
+            return std::task::Poll::Ready(error);
+        }
+        if let Some(cancelled) = self.cancelled.as_mut()
+            && let ready @ std::task::Poll::Ready(_) = cancelled.as_mut().poll(context)
+        {
+            return ready;
+        }
+        match self.idle.as_mut() {
+            Some((_, running)) => running.as_mut().poll(context),
+            None => std::task::Poll::Pending,
+        }
     }
 }
 
@@ -135,11 +191,14 @@ impl futures_core::Stream for Body {
         let Some((body, lifetime)) = self.active.as_mut() else {
             return Poll::Ready(None);
         };
-        let result = if let Poll::Ready(error) = lifetime.end.as_mut().poll(context) {
+        let result = if let Poll::Ready(error) = lifetime.poll_end(context) {
             Poll::Ready(Some(Err(error)))
         } else {
             body.as_mut().poll_next(context)
         };
+        if matches!(result, Poll::Ready(Some(Ok(_)))) {
+            lifetime.restart(context);
+        }
         if matches!(result, Poll::Ready(None | Some(Err(_)))) {
             self.active = None;
         }
@@ -152,19 +211,27 @@ pub(in crate::providers::reasoning::mistral) async fn send(
     prepared: super::Prepared,
 ) -> Result<crate::HttpBody, RequestFailure> {
     use futures_util::StreamExt;
-    let mut lifetime = Lifetime::new(prepared.request.signal.as_ref());
+    let limit = prepared
+        .timeout
+        .or_else(|| prepared.request.signal.is_none().then_some(DEFAULT_TIMEOUT));
+    let mut lifetime = Lifetime::new(prepared.request.signal.as_ref(), limit);
     let early =
-        std::future::poll_fn(|context| std::task::Poll::Ready(lifetime.end.as_mut().poll(context)))
-            .await;
+        std::future::poll_fn(|context| std::task::Poll::Ready(lifetime.poll_end(context))).await;
     let mut work = (prepared.fetch)(prepared.request);
     if let std::task::Poll::Ready(error) = early {
         return Err(super::errors::setup_failure(error));
     }
     let response = std::future::poll_fn(|context| {
-        if let std::task::Poll::Ready(error) = lifetime.end.as_mut().poll(context) {
+        if let std::task::Poll::Ready(error) = lifetime.poll_end(context) {
             return std::task::Poll::Ready(Err(error));
         }
-        work.as_mut().poll(context)
+        match work.as_mut().poll(context) {
+            std::task::Poll::Ready(Ok(response)) => {
+                lifetime.restart(context);
+                std::task::Poll::Ready(Ok(response))
+            }
+            other => other,
+        }
     })
     .await
     .map_err(super::errors::setup_failure)?;
