@@ -205,6 +205,9 @@ pub struct InputEvent {
     /// Where the input came from.
     #[serde(deserialize_with = "literal")]
     pub source: InputSource,
+    /// How the input is queued when it arrives while a response streams; absent otherwise.
+    #[serde(default, skip_serializing_if = "Presence::is_missing")]
+    pub streaming_behavior: Presence<crate::messages::UserMessageDelivery>,
 }
 
 /// Replacement text and images of an input.

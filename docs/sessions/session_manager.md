@@ -158,7 +158,7 @@ not a snapshot. Labels and trees are described in [the tree guide](https://githu
 
 Native `create` and `continue_recent` use the supplied directory or encode the
 stored cwd beneath the caller's resolved agent root. `open` resolves its explicit
-filename lexically and reads it once; cwd override wins over stored cwd, with a
+filename lexically and reads it once, line by line; cwd override wins over stored cwd, with a
 runtime fallback for missing/null cwd. Explicit directory spellings are retained.
 A session directory is a `SessionDir`, which only the session crate builds, so a
 caller receives the name instead of spelling one. A report that reads one keeps
@@ -168,8 +168,16 @@ paths and displayed output.
 A fresh history publishes at its first assistant message. Loaded and recovered
 histories stay published: subsequent appends write one record. Append errors leave
 accepted memory and any partial bytes in place; failed switches retain the prior
-manager state. Empty or invalid-header files are rewritten immediately at the
-selected path. A missing explicit file waits for first publication at that path.
+manager state. An empty file is initialised immediately at the selected path. A
+nonempty file without a valid session header is refused with `Session file is not a
+valid session: <path>` and keeps its bytes, so `open` and `set_session_file` never
+erase a file that is not a session. A missing explicit file waits for first
+publication at that path.
+
+Loading, switching, forking and listing read a session file one line at a time, so
+memory use follows the longest line rather than the file size; the records that
+loading keeps are the only part held in full. Listing loads the metadata of at most
+ten session files at once.
 
 Continuation enumerates names, probes the `.jsonl` candidates, then reads the
 valid candidates' metadata in a separate pass. It selects by descending

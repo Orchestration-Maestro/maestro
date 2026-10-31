@@ -820,7 +820,6 @@ fn identifier_aliases_case_and_modifier_order_match() {
         ("\x1b[99;6u", "ctrl+shift+c"),
         ("\x1b[99;13u", "super+ctrl+c"),
         ("\x03", "ctrl+ctrl+c"),
-        ("\x03", "hyper+ctrl+c"),
     ];
     for data in inputs {
         for id in identifiers {

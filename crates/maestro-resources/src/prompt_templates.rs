@@ -78,7 +78,7 @@ fn decimal(text: &str, cap: usize) -> Option<(usize, usize)> {
     (width > 0).then_some((width, value))
 }
 
-/// Split on unquoted ASCII spaces and tabs, removing quote delimiters.
+/// Split on unquoted whitespace scalars, removing quote delimiters.
 #[must_use]
 pub fn parse_command_args(args_string: &str) -> Vec<String> {
     let mut args = Vec::new();
@@ -88,7 +88,7 @@ pub fn parse_command_args(args_string: &str) -> Vec<String> {
         match (quote, character) {
             (Some(delimiter), c) if delimiter == c => quote = None,
             (None, c @ ('\'' | '"')) => quote = Some(c),
-            (None, ' ' | '\t') => {
+            (None, c) if text_whitespace(c) => {
                 if !current.is_empty() {
                     args.push(std::mem::take(&mut current));
                 }
@@ -120,12 +120,14 @@ pub struct PromptTemplate {
 }
 
 /// Expand the first exact template name following a leading slash.
+///
+/// The name ends at the first whitespace scalar; the rest is the argument text.
 #[must_use]
 pub fn expand_prompt_template(text: &str, templates: &[PromptTemplate]) -> String {
     let Some(command) = text.strip_prefix('/') else {
         return text.into();
     };
-    let (name, arguments) = command.split_once(' ').unwrap_or((command, ""));
+    let (name, arguments) = command.split_once(text_whitespace).unwrap_or((command, ""));
     templates
         .iter()
         .find(|template| template.name == name)
@@ -340,9 +342,10 @@ mod tests {
                     ("~", r"C:\h", r"C:\h"),
                     ("~/", r"C:\h", r"C:\h"),
                     ("~/x", r"C:\h", r"C:\h\x"),
-                    ("~x", r"C:\h", r"C:\h\x"),
+                    ("~x", r"C:\h", r"C:\w\~x"),
                     ("~", r"C:\h\.", r"C:\h\."),
                     ("~", "", r"C:\w"),
+                    ("~/x", "", r"C:\w\x"),
                 ],
             )
         } else {
@@ -352,9 +355,10 @@ mod tests {
                     ("~", "/h", "/h"),
                     ("~/", "/h", "/h"),
                     ("~/x", "/h", "/h/x"),
-                    ("~x", "/h", "/h/x"),
+                    ("~x", "/h", "/w/~x"),
                     ("~", "/h/.", "/h/."),
                     ("~", "", "/w"),
+                    ("~/x", "", "/w/x"),
                 ],
             )
         };

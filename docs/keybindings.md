@@ -30,8 +30,9 @@ two keys, and removes model cycling from Ctrl+P:
 
 An override replaces the whole default list. Remove its property to restore the
 default; `null` is not a disable value. Unknown action IDs do nothing. Duplicate
-keys within an action collapse to one key. Whitespace and casing in key strings
-are not normalized. Prefer the spellings in the tables below.
+keys within an action collapse to one key. Key strings are not normalized before
+that, so `Ctrl+C` and `ctrl+c` count as two keys that name the same key. Prefer the
+spellings in the tables below.
 
 Unreadable files, invalid JSON and non-object roots load defaults without a file
 error. Wrong-typed properties (including lists with non-string members) are
@@ -125,9 +126,14 @@ intend to consume those letters instead of typing them.
 
 ## Key notation and terminal limits
 
-Combine `ctrl`, `shift` and `alt` with `+`, for example `ctrl+shift+x`.
+Combine the modifiers `ctrl`, `shift`, `alt`, `super` and `hyper` with `+`, for
+example `ctrl+shift+x`. The aliases `control`, `option` and `meta` (alt), and `cmd`
+and `command` (super), name the same modifiers. A word before the key that is not a
+modifier name, such as the typo in `ctlr+k`, makes the whole key string name nothing,
+so it never binds the plain key. `hyper+k` binds only a key reported with hyper held.
+The workspace key combinations use the same notation.
 Use lowercase letters, digits, literal punctuation, `f1` through `f12`, or named
-keys: `escape` (`esc`), `enter` (`return`), `tab`, `space`, `backspace`, `delete`,
+keys: `escape` (`esc`), `enter` (`return`), `tab`, `space`, `backspace` (`bs`), `delete`,
 `insert`, `clear`, `home`, `end`, `pageUp`, `pageDown`, `up`, `down`, `left`, `right`.
 The [key decoder reference](terminal/keys.md) gives the supported combinations.
 

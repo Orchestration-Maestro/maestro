@@ -26,8 +26,9 @@ loaded extensions share that runtime.
 
 Each path is resolved before its module loads:
 
-1. Every leading `~`, `~name` included, is replaced by the home directory,
-   and the rest is joined to it lexically. A `~` anywhere else is literal.
+1. A leading `~` reads as
+   [settings](../settings.md#home-directory-in-paths) describes, so `~name` stays a
+   relative path. A `~` anywhere else is literal.
 2. An absolute result is kept as written and reads no working directory. A
    relative result is resolved lexically against `cwd`.
 3. The path is resolved through

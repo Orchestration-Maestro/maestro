@@ -27,16 +27,17 @@ impl<C: CustomAgentMessages + 'static, E: AgentExecution> Agent<C, E> {
             }
         })
     }
-    /// Publish original failure history before awaiting synthetic end listeners.
+    /// Publish the failure as an ended assistant message and an ended turn, then the run's
+    /// end, each awaiting its listeners in order.
     pub(super) async fn handle_failure(
         agent: E::Shared<Self>,
         error: DiagnosticErrorInfo,
         signal: Cancellation,
     ) -> Result<(), DiagnosticErrorInfo> {
-        let message = {
+        let failure = {
             let state = read(&agent.state);
             let model = read(&state.model);
-            AgentMessage::Assistant(Arc::new(RwLock::new(AssistantMessage {
+            Arc::new(RwLock::new(AssistantMessage {
                 content: vec![AssistantContent::Text(TextContent::new(String::new()))],
                 api: model.api.clone(),
                 provider: model.provider.clone(),
@@ -52,22 +53,30 @@ impl<C: CustomAgentMessages + 'static, E: AgentExecution> Agent<C, E> {
                 },
                 error_message: Some(error.message.clone()),
                 timestamp: timestamp_now(),
-            })))
+            }))
         };
-        let retired = {
-            let mut state = write(&agent.state);
-            write(state.messages()).push(message.clone());
-            state.error_message.replace(error.message)
-        };
+        let retired = write(&agent.state).error_message.replace(error.message);
         drop(retired);
-        Self::emit(
-            agent.clone(),
+        let message = AgentMessage::Assistant(Arc::clone(&failure));
+        let events = [
+            AgentEvent::MessageStart {
+                message: message.clone(),
+            },
+            AgentEvent::MessageEnd {
+                message: message.clone(),
+            },
+            AgentEvent::TurnEnd {
+                message: failure,
+                tool_results: Vec::new(),
+            },
             AgentEvent::AgentEnd {
                 messages: vec![message],
             },
-            signal,
-        )
-        .await
+        ];
+        for event in events {
+            Self::emit(agent.clone(), event, signal.clone()).await?;
+        }
+        Ok(())
     }
     /// Clear runtime observations and retire the admission after awaited effects.
     pub(super) fn finish(&self) {

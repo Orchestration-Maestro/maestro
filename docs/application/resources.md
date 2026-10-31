@@ -52,10 +52,11 @@ extensions, skills, prompts, themes, context files, system prompt and appended
 texts. The appended-text override replaces the ordinary append choice; base
 append text still goes first.
 
-Additional paths are trimmed, a leading `~` becomes the home directory, and the
-result is resolved against the loader's working directory. Merging keeps the
-first path per real path. A missing additional skill, prompt template or theme
-path is reported as an error unless a diagnostic already names it.
+Additional paths are trimmed, a leading `~` reads as
+[settings](../settings.md#home-directory-in-paths) describes, and the result is resolved
+against the loader's working directory. Merging keeps the first path per real path. A
+missing additional skill, prompt template or theme path is reported as an error unless a
+diagnostic already names it.
 
 ### Base package inputs
 
@@ -135,7 +136,11 @@ prompt replaces the default one. The default prompt lists the selected tools
 (read, bash, edit and write when none are selected) that have a non-empty
 snippet, or `(none)`, followed by the guidelines and the documentation paths.
 Guidelines keep their first occurrence: the exploration guideline the tools call
-for, the trimmed caller guidelines, then the two standing ones. Both prompts end
+for, the trimmed caller guidelines, then the two standing ones. The exploration
+guideline names only the `grep`, `find` and `ls` tools that are selected; with
+`bash` alone it speaks of listing and searching files without naming a tool. The
+documentation section tells the model to resolve the `docs/` and `examples/`
+topic paths against the installed package directory. Both prompts end
 with the appended text, the context files, the skills when the `read` tool is
 available, the local date and the working directory with `/` separators. Only
 the default prompt resolves documentation paths.

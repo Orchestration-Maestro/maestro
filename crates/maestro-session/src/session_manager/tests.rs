@@ -483,3 +483,140 @@ fn invalid_later_id_fails_after_all_writes(rig: &ForkRig) {
     let written = ForkRig::only_file(&invalid);
     assert_eq!(super::parse_session_entries(&written).len(), 3);
 }
+
+/// A reader over `head` then `body` repeated `count` times that counts the bytes it hands out.
+#[cfg(not(target_arch = "wasm32"))]
+struct Generated {
+    /// Bytes produced first.
+    head: Vec<u8>,
+    /// Bytes produced after the head, `count` times.
+    body: Vec<u8>,
+    /// Repetitions of `body`.
+    count: usize,
+    /// Bytes produced so far.
+    position: usize,
+    /// The same total, observable while a consumer still holds the reader.
+    handed: std::rc::Rc<std::cell::Cell<usize>>,
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl Generated {
+    /// A header line, `middle` after it, and 4000 message lines of about two kilobytes.
+    fn session(middle: &str) -> (Self, usize) {
+        let head = format!("{{\"type\":\"session\",\"id\":\"s\"}}\n{middle}").into_bytes();
+        let content = "x".repeat(2000);
+        let body = format!(
+            "{{\"type\":\"message\",\"message\":{{\"role\":\"user\",\"content\":\"{content}\",\"timestamp\":1}}}}\n"
+        )
+        .into_bytes();
+        let line = body.len();
+        let reader = Self {
+            head,
+            body,
+            count: 4000,
+            position: 0,
+            handed: std::rc::Rc::default(),
+        };
+        (reader, line)
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl std::io::Read for Generated {
+    fn read(&mut self, buffer: &mut [u8]) -> std::io::Result<usize> {
+        let total = self.head.len() + self.body.len() * self.count;
+        let count = buffer.len().min(total - self.position);
+        for slot in &mut buffer[..count] {
+            let at = self.position;
+            *slot = if at < self.head.len() {
+                self.head[at]
+            } else {
+                self.body[(at - self.head.len()) % self.body.len()]
+            };
+            self.position += 1;
+        }
+        self.handed.set(self.handed.get() + count);
+        Ok(count)
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn records_are_handed_over_while_the_file_is_still_being_read() {
+    let (reader, line) = Generated::session("");
+    let head = reader.head.len();
+    let handed = std::rc::Rc::clone(&reader.handed);
+    let (mut index, mut worst_lag) = (0, 0);
+    super::records::for_each_entry(std::io::BufReader::new(reader), |_| {
+        worst_lag = worst_lag.max(handed.get() - (head + index * line));
+        index += 1;
+        std::ops::ControlFlow::Continue(())
+    })
+    .unwrap();
+    assert_eq!(index, 4001);
+    assert!(worst_lag <= 16 * 1024, "read {worst_lag} bytes ahead");
+}
+
+#[test]
+fn parse_session_entries_drops_outer_ecmascript_whitespace_of_the_first_and_last_record() {
+    let text = "\u{a0}\u{feff}{\"id\":\"a\"}\n\n{\"id\":\"b\"}\r\n{\"id\":\"c\"}\u{2028}";
+    let ids: Vec<_> = super::parse_session_entries(text)
+        .iter()
+        .map(|entry| entry["id"].as_str().unwrap().to_owned())
+        .collect();
+    assert_eq!(ids, ["a", "b", "c"]);
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn records_split_across_reader_chunks_keep_their_multibyte_text() {
+    let text = "{\"id\":\"é€\"}\n{\"id\":\"b\"}";
+    let reader = std::io::BufReader::with_capacity(1, text.as_bytes());
+    let mut ids = Vec::new();
+    super::records::for_each_entry(reader, |entry| {
+        ids.push(entry["id"].as_str().unwrap().to_owned());
+        std::ops::ControlFlow::Continue(())
+    })
+    .unwrap();
+    assert_eq!(ids, ["é€", "b"]);
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn listing_stops_reading_at_a_malformed_record() {
+    let (reader, _) = Generated::session("null\n");
+    let handed = std::rc::Rc::clone(&reader.handed);
+    assert!(super::discovery::scan_reader(std::io::BufReader::new(reader)).is_none());
+    assert!(handed.get() <= 64 * 1024, "read {} bytes", handed.get());
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn listing_keeps_at_most_ten_metadata_loads_in_flight() {
+    let files: Vec<String> = (0..50).map(|n| format!("{n}.jsonl")).collect();
+    let (running, peak) = (
+        std::rc::Rc::new(std::cell::Cell::new(0_usize)),
+        std::rc::Rc::new(std::cell::Cell::new(0_usize)),
+    );
+    let load = |_: String| {
+        let (running, peak) = (std::rc::Rc::clone(&running), std::rc::Rc::clone(&peak));
+        async move {
+            running.set(running.get() + 1);
+            peak.set(peak.get().max(running.get()));
+            tokio::task::yield_now().await;
+            running.set(running.get() - 1);
+            None
+        }
+    };
+    let mut loaded = 0;
+    let mut progress = |done, _| {
+        loaded = done;
+        Ok(())
+    };
+    tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(super::discovery::collect(files, load, Some(&mut progress)));
+    assert_eq!(loaded, 50);
+    assert_eq!(peak.get(), 10);
+}

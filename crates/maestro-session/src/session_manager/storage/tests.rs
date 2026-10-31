@@ -2,6 +2,8 @@
 #![cfg(test)]
 #[cfg(target_os = "linux")]
 use super::*;
+#[cfg(target_os = "linux")]
+use sha2::{Digest, Sha256};
 use std::cell::RefCell;
 #[cfg(target_os = "linux")]
 use std::{

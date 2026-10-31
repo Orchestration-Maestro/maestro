@@ -58,6 +58,7 @@ fn assert_recorded_prompts(package_dir: &str) {
     let readme = paths::get_readme_path(package_dir).unwrap();
     let docs = paths::get_docs_path(package_dir).unwrap();
     let examples = paths::get_examples_path(package_dir).unwrap();
+    let package = maestro_path::dirname(&readme);
     for case in cases() {
         let before = today();
         let built = prompt(case.options);
@@ -66,6 +67,7 @@ fn assert_recorded_prompts(package_dir: &str) {
             (case.expected.replace("$README", &readme))
                 .replace("$DOCS", &docs)
                 .replace("$EXAMPLES", &examples)
+                .replace("$PACKAGE", &package)
                 .replace("$DATE", date)
         };
         assert!(

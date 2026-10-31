@@ -214,12 +214,13 @@ pub(crate) fn generated(entry: &Value, role: &str, fields: &[&str]) -> Value {
 /// JSON acceptance and limits. Malformed lines are skipped.
 #[must_use]
 pub fn parse_session_entries(content: &str) -> Vec<super::types::FileEntry> {
-    content
-        .trim_matches(ecma_whitespace)
-        .split('\n')
-        .filter(|line| !line.trim_matches(ecma_whitespace).is_empty())
-        .filter_map(|line| serde_json::from_str(line).ok())
-        .collect()
+    let mut entries = Vec::new();
+    // Reading a byte slice cannot fail, so the result holds no error to report.
+    let _ = super::records::for_each_entry(content.as_bytes(), |entry| {
+        entries.push(entry);
+        std::ops::ControlFlow::Continue(())
+    });
+    entries
 }
 pub(super) use maestro_text::is_whitespace_scalar as ecma_whitespace;
 

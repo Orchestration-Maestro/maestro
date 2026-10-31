@@ -17,9 +17,10 @@
           "/opt/tool",
           "install",
           "-g",
+          "--ignore-scripts",
           "@new/maestro"
         ],
-        "display": "npm --prefix /opt/tool uninstall -g @old/agent && npm --prefix /opt/tool install -g @new/maestro",
+        "display": "npm --prefix /opt/tool uninstall -g --ignore-scripts @old/agent && npm --prefix /opt/tool install -g --ignore-scripts @new/maestro",
         "steps": [
           {
             "command": "npm",
@@ -28,9 +29,10 @@
               "/opt/tool",
               "uninstall",
               "-g",
+              "--ignore-scripts",
               "@old/agent"
             ],
-            "display": "npm --prefix /opt/tool uninstall -g @old/agent"
+            "display": "npm --prefix /opt/tool uninstall -g --ignore-scripts @old/agent"
           },
           {
             "command": "npm",
@@ -39,9 +41,10 @@
               "/opt/tool",
               "install",
               "-g",
+              "--ignore-scripts",
               "@new/maestro"
             ],
-            "display": "npm --prefix /opt/tool install -g @new/maestro"
+            "display": "npm --prefix /opt/tool install -g --ignore-scripts @new/maestro"
           }
         ]
       }
@@ -90,27 +93,30 @@
         "args": [
           "install",
           "-g",
+          "--ignore-scripts",
           "@new/maestro"
         ],
-        "display": "pnpm remove -g @old/agent && pnpm install -g @new/maestro",
+        "display": "pnpm remove -g --ignore-scripts @old/agent && pnpm install -g --ignore-scripts @new/maestro",
         "steps": [
           {
             "command": "pnpm",
             "args": [
               "remove",
               "-g",
+              "--ignore-scripts",
               "@old/agent"
             ],
-            "display": "pnpm remove -g @old/agent"
+            "display": "pnpm remove -g --ignore-scripts @old/agent"
           },
           {
             "command": "pnpm",
             "args": [
               "install",
               "-g",
+              "--ignore-scripts",
               "@new/maestro"
             ],
-            "display": "pnpm install -g @new/maestro"
+            "display": "pnpm install -g --ignore-scripts @new/maestro"
           }
         ]
       }
@@ -159,27 +165,30 @@
         "args": [
           "global",
           "add",
+          "--ignore-scripts",
           "@new/maestro"
         ],
-        "display": "yarn global remove @old/agent && yarn global add @new/maestro",
+        "display": "yarn global remove --ignore-scripts @old/agent && yarn global add --ignore-scripts @new/maestro",
         "steps": [
           {
             "command": "yarn",
             "args": [
               "global",
               "remove",
+              "--ignore-scripts",
               "@old/agent"
             ],
-            "display": "yarn global remove @old/agent"
+            "display": "yarn global remove --ignore-scripts @old/agent"
           },
           {
             "command": "yarn",
             "args": [
               "global",
               "add",
+              "--ignore-scripts",
               "@new/maestro"
             ],
-            "display": "yarn global add @new/maestro"
+            "display": "yarn global add --ignore-scripts @new/maestro"
           }
         ]
       }
@@ -233,27 +242,30 @@
         "args": [
           "install",
           "-g",
+          "--ignore-scripts",
           "@new/maestro"
         ],
-        "display": "bun uninstall -g @old/agent && bun install -g @new/maestro",
+        "display": "bun uninstall -g --ignore-scripts @old/agent && bun install -g --ignore-scripts @new/maestro",
         "steps": [
           {
             "command": "bun",
             "args": [
               "uninstall",
               "-g",
+              "--ignore-scripts",
               "@old/agent"
             ],
-            "display": "bun uninstall -g @old/agent"
+            "display": "bun uninstall -g --ignore-scripts @old/agent"
           },
           {
             "command": "bun",
             "args": [
               "install",
               "-g",
+              "--ignore-scripts",
               "@new/maestro"
             ],
-            "display": "bun install -g @new/maestro"
+            "display": "bun install -g --ignore-scripts @new/maestro"
           }
         ]
       }

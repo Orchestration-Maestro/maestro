@@ -80,7 +80,7 @@ async fn input(runner: &ExtensionRunner<Local>, text: &str) -> InputEventResult 
             .unwrap();
     let original = images.clone();
     let result = runner
-        .emit_input(text, &mut images, InputSource::Interactive)
+        .emit_input(text, &mut images, InputSource::Interactive, None)
         .await
         .unwrap();
     assert_eq!(images, original);
@@ -151,7 +151,7 @@ fn inline_bash_preserves_whole_line_commands_and_expands_without_ui() {
             InputSource::Extension,
         ] {
             let result = runner
-                .emit_input("!{printf headless}", &mut Presence::Missing, source)
+                .emit_input("!{printf headless}", &mut Presence::Missing, source, None)
                 .await
                 .unwrap();
             let InputEventResult::Transform(transform) = result else {

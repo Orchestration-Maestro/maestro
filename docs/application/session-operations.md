@@ -148,6 +148,13 @@ credential failure is returned verbatim.
 `get_user_messages_for_forking` lists the user messages that have text, in entry
 order.
 
+## New sessions
+
+`AgentSessionRuntime::new_session` starts a session in the working directory. It
+follows the session it replaces: a stored session gives a new history in the same
+session directory, and a session that was never stored (in-memory history) gives
+another in-memory history, so `/new` after an unsaved session writes no session file.
+
 ## Compaction and retries
 
 `compact` shrinks the context on demand, and the session compacts on its own when
