@@ -8,7 +8,7 @@ use maestro_settings::{PackageSource, Settings};
 use serde_json::Value;
 use std::io;
 impl<O: PackageOperations> DefaultPackageManager<O> {
-    /// Appends a source or replaces the first matching identity when its pin changes.
+    /// Appends a source or replaces the first matching identity when its normalized spelling differs.
     /// # Errors
     /// Returns consumed settings, borrow or local resolution failures.
     pub(super) fn add_source(
@@ -16,18 +16,13 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         source: &str,
         scope: Option<InstalledSourceScope>,
     ) -> io::Result<bool> {
-        self.record_source(
-            source,
-            scope,
-            super::acquisition::SourceAcquisition::Prepared,
-        )
+        self.record_source(source, scope)
     }
     /// Edits only the first matching entry, preserving unread raw fields and list order.
     pub(super) fn record_source(
         &self,
         source: &str,
         scope: Option<InstalledSourceScope>,
-        acquisition: super::acquisition::SourceAcquisition,
     ) -> io::Result<bool> {
         let scope = scope.unwrap_or(InstalledSourceScope::User);
         let snapshot = self.snapshot(scope)?;
@@ -39,9 +34,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             if !self.matches(stored, source, scope)? {
                 continue;
             }
-            if acquisition == super::acquisition::SourceAcquisition::CurrentGit
-                || same_pin(stored, source)
-            {
+            if stored == normalized {
                 return Ok(false);
             }
             found = Some(index);
@@ -211,15 +204,6 @@ fn package_rows(snapshot: &Settings) -> io::Result<&[Value]> {
             io::ErrorKind::InvalidData,
             "packages is not an array",
         )),
-    }
-}
-
-/// Compares parsed pins without normalizing authored source spellings.
-fn same_pin(stored: &str, input: &str) -> bool {
-    match (sources::parse(stored), sources::parse(input)) {
-        (Source::Npm { spec: a, .. }, Source::Npm { spec: b, .. }) => a == b,
-        (Source::Git(a), Source::Git(b)) => a.r#ref == b.r#ref,
-        _ => true,
     }
 }
 

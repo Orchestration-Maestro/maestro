@@ -74,8 +74,8 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         source: &str,
         scope: Option<InstalledSourceScope>,
     ) -> io::Result<()> {
-        let acquisition = self.acquire(source, scope).await?;
-        self.record_source(source, scope, acquisition).map(drop)
+        self.acquire(source, scope).await?;
+        self.record_source(source, scope).map(drop)
     }
     /// Removes the contents, then removes the source from settings.
     pub(super) async fn release_and_persist(

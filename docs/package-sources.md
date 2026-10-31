@@ -36,11 +36,12 @@ persistence belongs to `maestro-settings`.
 Listing returns user rows before project rows, preserving order, duplicates and
 object-entry flags. Existing-content lookup returns a path only when it exists on
 the file system. Consumed malformed source fields fail; ignored
-filter fields remain untouched. Adding a changed npm pin or Git ref replaces only
-the first identity match, in place, preserving other object members and their
-order. Same parsed pins and local aliases, or an absent removal, do not call a
-settings setter. Install-and-persist also keeps an existing Git spelling when
-acquisition found no commit change; an absent registration is still appended.
+filter fields remain untouched. Adding a source replaces the first identity match
+when its stored string differs from the normalized source, preserving other object
+members and their order. An equal string, or an absent removal, does not call a
+settings setter. Install-and-persist applies the same rule even when the checkout
+already has the fetched commit. An absent registration is appended. Remote sources
+keep their input spelling; local paths are normalized relative to their scope.
 
 User npm lookup runs the configured command with its leading arguments and
 reuses only a nonempty root from the same complete command vector. Only exact
