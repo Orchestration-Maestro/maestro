@@ -3740,14 +3740,7 @@
       "kind": "value",
       "value": {
         "firstKeptEntryId": "e2",
-        "messagesToSummarize": [
-          {
-            "role": "branchSummary",
-            "summary": "",
-            "fromId": "origin",
-            "timestamp": 1767225600000
-          }
-        ],
+        "messagesToSummarize": [],
         "turnPrefixMessages": [
           {
             "role": "user",

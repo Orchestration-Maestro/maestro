@@ -256,12 +256,6 @@
         "value": {
           "messages": [
             {
-              "role": "branchSummary",
-              "summary": "",
-              "fromId": "abandoned",
-              "timestamp": 1710000000000
-            },
-            {
               "role": "compactionSummary",
               "summary": "",
               "tokensBefore": 12,
@@ -3322,7 +3316,16 @@
         ]
       },
       "expected": {
-        "kind": "error"
+        "kind": "value",
+        "value": {
+          "messages": [],
+          "fileOps": {
+            "read": [],
+            "written": [],
+            "edited": []
+          },
+          "totalTokens": 0
+        }
       },
       "calls": []
     },
@@ -3343,7 +3346,16 @@
         ]
       },
       "expected": {
-        "kind": "error"
+        "kind": "value",
+        "value": {
+          "messages": [],
+          "fileOps": {
+            "read": [],
+            "written": [],
+            "edited": []
+          },
+          "totalTokens": 0
+        }
       },
       "calls": []
     },

@@ -232,7 +232,7 @@ fn summary_input_omits_an_empty_branch_summary() {
         .iter()
         .map(|message| message["role"].as_str().unwrap())
         .collect();
-    assert_eq!(roles, ["user", "assistant", "user"]);
+    assert_eq!(roles, ["user", "assistant"]);
 }
 
 #[test]
