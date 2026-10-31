@@ -231,7 +231,6 @@ fn prepared_bundle_carries_the_browser_graph() {
     let scratch = Scratch::new().unwrap();
     let root = scratch.path();
     fixture(root);
-    fs::write(root.join("justfile"), BROWSER_RECIPES).unwrap();
     prepare(root);
     let staged = root.join("target/test-setup/browser-author");
     assert_eq!(
@@ -239,20 +238,25 @@ fn prepared_bundle_carries_the_browser_graph() {
         "graph\n"
     );
     assert!(!staged.join("debug/incremental").exists());
-    assert_eq!(bundle_manifest(root)["browser"], true);
 }
 
-/// A graph whose build failed is not staged, so a shard builds it itself instead of installing
-/// a partial one.
+/// A graph whose build fails fails the preparation and names the recipe, so no shard pays for
+/// the build again and no partial graph is staged.
 #[test]
-fn prepared_bundle_leaves_out_a_failed_browser_graph() {
+fn prepare_fails_naming_the_browser_recipe_that_failed() {
     let scratch = Scratch::new().unwrap();
     let root = scratch.path();
     fixture(root);
     fs::write(root.join("justfile"), FAILING_BROWSER_RECIPES).unwrap();
-    prepare(root);
+
+    let error = run_prepare(root).unwrap_err();
+
+    assert!(
+        error.to_string().contains("just browser-example-check"),
+        "{error}"
+    );
     assert!(!root.join("target/test-setup/browser-author").exists());
-    assert_eq!(bundle_manifest(root)["browser"], false);
+    assert!(!root.join("target/test-setup/components.json").exists());
 }
 
 /// A shard installs the bundle's graph before the recipes run, so the recipes find it.
@@ -261,11 +265,10 @@ fn browser_setup_installs_the_prepared_graph_before_the_recipes() {
     let scratch = Scratch::new().unwrap();
     let root = scratch.path();
     fixture(root);
-    fs::write(root.join("justfile"), BROWSER_RECIPES).unwrap();
     prepare(root);
     fs::remove_dir_all(root.join("target/browser-author")).unwrap();
 
-    assert_success(&browser_command(root).output().unwrap());
+    assert_success(&browser_command(root, true).output().unwrap());
 
     assert_eq!(
         fs::read_to_string(root.join("recipes.log")).unwrap(),
@@ -286,12 +289,11 @@ fn browser_setup_refuses_a_graph_prepared_from_other_sources() {
     let scratch = Scratch::new().unwrap();
     let root = scratch.path();
     fixture(root);
-    fs::write(root.join("justfile"), BROWSER_RECIPES).unwrap();
     prepare(root);
     fs::remove_dir_all(root.join("target/browser-author")).unwrap();
     fs::write(root.join("crates/maestro-web/src/lib.rs"), "edited source").unwrap();
 
-    let output = browser_command(root).output().unwrap();
+    let output = browser_command(root, true).output().unwrap();
 
     assert!(!output.status.success());
     assert!(String::from_utf8_lossy(&output.stderr).contains("stale prepared"));
@@ -302,16 +304,14 @@ fn browser_setup_refuses_a_graph_prepared_from_other_sources() {
     );
 }
 
-/// A bundle without a graph leaves the shard to build it, as a run without a bundle does.
+/// A run with no bundle at all builds the graph itself.
 #[test]
-fn browser_setup_builds_when_the_bundle_holds_no_graph() {
+fn browser_setup_builds_when_there_is_no_bundle() {
     let scratch = Scratch::new().unwrap();
     let root = scratch.path();
     fixture(root);
-    prepare(root);
-    fs::write(root.join("justfile"), BROWSER_RECIPES).unwrap();
 
-    assert_success(&browser_command(root).output().unwrap());
+    assert_success(&browser_command(root, false).output().unwrap());
 
     assert_eq!(
         fs::read_to_string(root.join("recipes.log")).unwrap(),
@@ -533,6 +533,7 @@ fn fixture_with(root: &Path, example: &str) {
     use std::os::unix::fs::PermissionsExt;
     workspace(root);
     fs::write(root.join("component.wasm"), "component bytes").unwrap();
+    fs::write(root.join("justfile"), BROWSER_RECIPES).unwrap();
     executable(&root.join("target/debug/deps/older"), 100);
     executable(&root.join("target/debug/deps/newer"), 200);
     fs::write(
@@ -752,17 +753,11 @@ fn edit_manifest_value(prepared: &Path, edit: impl FnOnce(&mut serde_json::Value
     fs::write(path, serde_json::to_vec(&manifest).unwrap()).unwrap();
 }
 
-/// The bundle's manifest of the fixture checkout.
-fn bundle_manifest(root: &Path) -> serde_json::Value {
-    serde_json::from_slice(&fs::read(root.join("target/test-setup/components.json")).unwrap())
-        .unwrap()
-}
-
-/// The browser setup of an archived shard, run from the fixture checkout.
-fn browser_command(root: &Path) -> Command {
+/// The browser setup of a shard, run from the fixture checkout.
+fn browser_command(root: &Path, archived: bool) -> Command {
     let mut command = Command::new(env!("CARGO_BIN_EXE_development"));
     command.args(["nextest-setup", "browser-author"]);
-    shard_command(command, root, &root.join("target/test-setup"), true)
+    shard_command(command, root, &root.join("target/test-setup"), archived)
 }
 
 /// The author-component setup, as nextest's setup entry runs it.
