@@ -160,6 +160,16 @@ that cannot continue it delivers the fragment first. At `stop` the flags request
 are popped, and the modified-key reporting is disabled if it was on. A terminal that is
 started again while it holds the flags asks again without requesting them a second time.
 
+## Ending without `stop`
+
+Dropping a terminal that was started, or that hid the cursor, restores what it owns
+exactly as `stop` does: it shows the cursor if this terminal hid it and nothing showed
+it since, clears an active progress indicator, turns bracketed paste off, pops the
+requested keyboard flags and turns the modified-key reporting off. `stop` writes the
+cursor only in that same case, so a toolkit that showed the cursor before stopping
+causes no second write. A process that ends through `std::process::exit` skips drops;
+the application stops its terminal before it calls that function.
+
 ## Draining
 
 `drain_input(max, idle)` is for the end of a session, so key releases do not reach the

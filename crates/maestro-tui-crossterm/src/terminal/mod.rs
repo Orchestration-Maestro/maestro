@@ -103,6 +103,8 @@ struct Shared {
     /// Receives window-size changes; absent while the terminal is stopped, and while one call
     /// to it runs.
     on_resize: RefCell<Option<ResizeCallback>>,
+    /// Whether the cursor was hidden through this terminal and not shown again.
+    hidden: Cell<bool>,
     /// Whether the enhanced keyboard flags were requested and not yet popped.
     pushed: Cell<bool>,
     /// Whether the terminal reported the enhanced keyboard protocol on.
@@ -229,6 +231,7 @@ impl ProcessTerminal {
                 generation: Cell::new(0),
                 on_input: RefCell::new(None),
                 on_resize: RefCell::new(None),
+                hidden: Cell::new(false),
                 pushed: Cell::new(false),
                 enhanced: Cell::new(false),
                 fallback: Cell::new(false),
@@ -291,11 +294,15 @@ impl Terminal for ProcessTerminal {
     }
 
     fn hide_cursor(&mut self) -> io::Result<()> {
-        self.shared.emit(CURSOR_HIDE)
+        self.shared.emit(CURSOR_HIDE)?;
+        self.shared.hidden.set(true);
+        Ok(())
     }
 
     fn show_cursor(&mut self) -> io::Result<()> {
-        self.shared.emit(CURSOR_SHOW)
+        self.shared.emit(CURSOR_SHOW)?;
+        self.shared.hidden.set(false);
+        Ok(())
     }
 
     fn clear_line(&mut self) -> io::Result<()> {
@@ -327,8 +334,11 @@ impl Drop for ProcessTerminal {
     fn drop(&mut self) {
         if self.running.is_some() {
             let _ = self.end();
-        } else if self.cancel_keepalive() {
-            let _ = self.shared.emit(PROGRESS_CLEAR);
+        } else {
+            let _ = self.shared.show_hidden_cursor();
+            if self.cancel_keepalive() {
+                let _ = self.shared.emit(PROGRESS_CLEAR);
+            }
         }
     }
 }

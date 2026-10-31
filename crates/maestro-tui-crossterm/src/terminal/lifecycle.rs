@@ -13,8 +13,8 @@ use tokio::time::{Instant, sleep};
 
 use super::input::Input;
 use super::output::{
-    FALLBACK_OFF, FALLBACK_ON, KEYBOARD_POP, KEYBOARD_PUSH, KEYBOARD_QUERY, PASTE_OFF, PASTE_ON,
-    PROGRESS_CLEAR, first_failure,
+    CURSOR_SHOW, FALLBACK_OFF, FALLBACK_ON, KEYBOARD_POP, KEYBOARD_PUSH, KEYBOARD_QUERY, PASTE_OFF,
+    PASTE_ON, PROGRESS_CLEAR, first_failure,
 };
 use super::platform::{self, Acquired, Task};
 use super::{InputCallback, OutputPort, ProcessTerminal, ResizeCallback, Shared};
@@ -113,11 +113,13 @@ impl ProcessTerminal {
     pub(super) fn end(&mut self) -> io::Result<()> {
         let mut acquired = self.retire();
         let output = self.shared.finish_output();
+        let cursor = self.shared.show_hidden_cursor();
         let active = self.cancel_keepalive();
         let progress = self.shared.emit_if(active, PROGRESS_CLEAR);
         first_failure([
             self.shared.failure.take().map_or(Ok(()), Err),
             output,
+            cursor,
             progress,
             self.give_back(&mut acquired),
         ])
@@ -211,6 +213,11 @@ impl Shared {
     /// Disables the modified-key reporting when it is on.
     fn stop_fallback(&self) -> io::Result<()> {
         self.emit_if(self.fallback.replace(false), FALLBACK_OFF)
+    }
+
+    /// Shows the cursor when this terminal hid it and nothing showed it since.
+    pub(super) fn show_hidden_cursor(&self) -> io::Result<()> {
+        self.emit_if(self.hidden.replace(false), CURSOR_SHOW)
     }
 
     /// Pops the requested keyboard flags and disables the modified-key reporting, whichever
