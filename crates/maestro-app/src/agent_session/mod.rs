@@ -325,7 +325,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// Whether no run, retry, compaction or queued continuation is active.
     #[must_use]
     pub fn is_idle(&self) -> bool {
-        true
+        !self.is_streaming()
     }
 
     /// The current system prompt.
