@@ -702,3 +702,41 @@ fn read_image_resize_yields_to_other_runtime_tasks() {
     });
     assert!(ran_before_read_returned);
 }
+
+#[test]
+fn read_image_abort_settles_before_blocking_resize_finishes() {
+    let png = blank_image(4096, 64, ImageOutputFormat::Png);
+    let ops = Arc::new(ScriptedOps::new(&png).with_mime("image/png"));
+    let tool = tool_over(&ops);
+    let signal = Cancellation::new();
+    let (started, waiting) = std::sync::mpsc::channel();
+    let (release, finish) = std::sync::mpsc::channel::<()>();
+    let finish = std::sync::Mutex::new(finish);
+    let runtime = crate::runtime::builder()
+        .on_thread_start(move || {
+            started.send(()).unwrap();
+            // Hold the admitted resize off the async thread until the assertion is observed.
+            let _ = finish.lock().unwrap().recv();
+        })
+        .build()
+        .unwrap();
+    runtime.block_on(async move {
+        let mut call = (tool.execute)(
+            "call".into(),
+            input("/work/image.png", None, None),
+            Some(signal.clone()),
+            None,
+            None,
+        );
+        assert!(crate::write_support::poll_once(&mut call).is_pending());
+        waiting.recv().unwrap();
+        signal.abort();
+        let settled = crate::write_support::poll_once(&mut call);
+        drop(release);
+        let std::task::Poll::Ready(Err(error)) = settled else {
+            panic!("read must settle before the blocking resize can finish");
+        };
+        assert_eq!(error.message, "Operation aborted");
+        tokio::task::yield_now().await;
+    });
+}
