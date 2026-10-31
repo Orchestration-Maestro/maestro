@@ -216,9 +216,10 @@ runs an operation after every earlier call for the same file has finished.
 - A call takes its place when `with_file_mutation_queue` is called, not when the
   returned future is first polled, so calls run in the order they were made.
 - A file is identified by its canonical path; when the file or one of its parent
-  directories does not exist yet, by its lexical absolute path. Any other
-  canonicalization failure, such as a parent that is a regular file, settles the call
-  with that error before its operation runs. Symlink aliases that canonicalize share a queue, hard links
+  directories does not exist yet or a parent is a regular file, by its lexical absolute
+  path. The operation then reports its own access or write failure. Any other
+  canonicalization failure, such as a symlink loop or denied permission, settles the
+  call before its operation runs. Symlink aliases that canonicalize share a queue, hard links
   with different names do not, and different files never wait for each other. The
   path is used as written: `@`, `~` and Unicode spaces are not expanded.
 - An operation that fails does not block the calls behind it.
