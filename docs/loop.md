@@ -112,3 +112,8 @@ agent records it as an assistant message with an error (or aborted) stop reason 
 an empty text block. Listeners see that message's start and end, a turn end with no
 tool results, and then the run's end, each awaited in order; the history stores the
 message once, when its end is reduced.
+
+An abort stops a tool batch where it happened. After each call, a sequential batch and a
+parallel preflight check the run's signal and prepare no later sibling. The check also runs
+right after the before hook, so a call whose hook aborted, or whose signal was aborted while
+the hook ran, is not executed: it ends as an error result that reads `Operation aborted`.
