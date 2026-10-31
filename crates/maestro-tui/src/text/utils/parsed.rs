@@ -4,7 +4,7 @@ use std::ops::Range;
 
 use unicode_segmentation::UnicodeSegmentation;
 
-use super::measure::grapheme_cells;
+use super::measure::{TAB_CELLS, grapheme_cells};
 use super::style::{Hyperlink, StyleState};
 
 /// What an escape sequence does to the terminal.
@@ -262,12 +262,8 @@ impl<'a> Parsed<'a> {
         first..end
     }
 
-    /// Graphemes of `span`; a tab occupies `tab_cells` cells.
-    pub(super) fn graphemes(
-        &self,
-        span: Range<usize>,
-        tab_cells: usize,
-    ) -> impl Iterator<Item = Grapheme> + '_ {
+    /// Graphemes of `span`; a tab occupies [`TAB_CELLS`] cells.
+    pub(super) fn graphemes(&self, span: Range<usize>) -> impl Iterator<Item = Grapheme> + '_ {
         let mut cursor = self.events_in(&span).start;
         let base = span.start;
         self.visible[span]
@@ -284,7 +280,7 @@ impl<'a> Parsed<'a> {
                 }
                 Grapheme {
                     cells: if text == "\t" {
-                        tab_cells
+                        TAB_CELLS
                     } else {
                         grapheme_cells(text)
                     },
