@@ -34,10 +34,7 @@ pub use compaction::{CollectEntriesResult, collect_entries_for_branch_summary};
 
 pub use compaction::{BranchPreparation, prepare_branch_entries};
 
-pub use compaction::{
-    BranchSummaryRequest, BranchSummaryResult, GenerateBranchSummaryOptions,
-    generate_branch_summary, generate_branch_summary_with,
-};
+pub use compaction::{BranchSummaryResult, GenerateBranchSummaryOptions, generate_branch_summary};
 
 /// Shared session export data preparation.
 pub mod export_html;
