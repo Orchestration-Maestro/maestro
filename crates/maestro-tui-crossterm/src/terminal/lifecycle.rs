@@ -13,14 +13,11 @@ use tokio::time::{Instant, sleep};
 
 use super::input::Input;
 use super::output::{
-    FALLBACK_OFF, FALLBACK_ON, KEYBOARD_ON, KEYBOARD_POP, KEYBOARD_QUERY, PASTE_OFF, PASTE_ON,
-    PROGRESS_CLEAR, first_failure,
+    CURSOR_SHOW, FALLBACK_OFF, FALLBACK_ON, KEYBOARD_POP, KEYBOARD_PUSH, KEYBOARD_QUERY, PASTE_OFF,
+    PASTE_ON, PROGRESS_CLEAR, first_failure,
 };
 use super::platform::{self, Acquired, Task};
 use super::{InputCallback, OutputPort, ProcessTerminal, ResizeCallback, Shared};
-
-/// How long after `start` a missing keyboard reply selects the fallback reporting mode.
-const NEGOTIATION: Duration = Duration::from_millis(150);
 
 /// How long a drain lasts at most when the caller names no limit.
 const DRAIN_LIMIT: Duration = Duration::from_millis(1000);
@@ -77,7 +74,8 @@ impl ProcessTerminal {
     }
 
     /// Acquires standard input, opens the reader, announces the modes and spawns the input
-    /// task of a new generation.
+    /// task of a new generation. The keyboard flags are requested once: a restarted terminal
+    /// that still holds them only asks again.
     fn spawn_input(
         &self,
         acquired: &mut Acquired,
@@ -88,14 +86,16 @@ impl ProcessTerminal {
         self.shared
             .output
             .open(&self.local, Rc::downgrade(&self.shared))?;
-        self.shared.emit(&[PASTE_ON, KEYBOARD_QUERY].concat())?;
+        let push = if self.shared.pushed.get() {
+            ""
+        } else {
+            KEYBOARD_PUSH
+        };
+        self.shared
+            .emit(&[PASTE_ON, push, KEYBOARD_QUERY].concat())?;
+        self.shared.pushed.set(true);
         let generation = self.shared.install(on_input, on_resize);
-        let input = Input::new(
-            Rc::clone(&self.shared),
-            generation,
-            Instant::now() + NEGOTIATION,
-        );
-        Ok(stream.spawn(&self.local, input))
+        Ok(stream.spawn(&self.local, Input::new(Rc::clone(&self.shared), generation)))
     }
 
     /// Writes the paste and keyboard disables and gives standard input back; every step is
@@ -113,29 +113,96 @@ impl ProcessTerminal {
     pub(super) fn end(&mut self) -> io::Result<()> {
         let mut acquired = self.retire();
         let output = self.shared.finish_output();
+        let cursor = self.shared.show_hidden_cursor();
         let active = self.cancel_keepalive();
         let progress = self.shared.emit_if(active, PROGRESS_CLEAR);
         first_failure([
             self.shared.failure.take().map_or(Ok(()), Err),
             output,
+            cursor,
             progress,
             self.give_back(&mut acquired),
         ])
     }
 }
 
-impl Shared {
-    /// Enables the enhanced keyboard protocol after the terminal reported support.
-    pub(super) fn enable_enhanced(&self) -> io::Result<()> {
-        self.emit(KEYBOARD_ON)?;
-        self.enhanced.set(true);
-        set_kitty_protocol_active(true);
-        Ok(())
+/// What a keyboard reply says about the terminal.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum Reply {
+    /// The terminal runs enhanced keyboard flags.
+    Enhanced,
+    /// The terminal runs none: it reported zero flags, or only its device attributes.
+    Plain,
+}
+
+impl Reply {
+    /// The reply `sequence` is, or `None` when it is something else. A reply is exactly
+    /// `ESC [ ?`, one or more ASCII digits and `u` for the flags, or `ESC [ ?`, any ASCII
+    /// digits and semicolons and `c` for the device attributes.
+    pub(super) fn parse(sequence: &str) -> Option<Self> {
+        let rest = sequence.strip_prefix("\x1b[?")?;
+        rest.strip_suffix('u')
+            .and_then(Self::from_flags)
+            .or_else(|| rest.strip_suffix('c').and_then(Self::from_attributes))
     }
 
-    /// Enables the modified-key reporting when negotiation is open and no keyboard mode is on.
-    pub(super) fn fall_back(&self) -> io::Result<()> {
-        if !self.negotiating.get() || self.enhanced.get() || self.fallback.get() {
+    /// The reply for the `digits` of a flags report, or `None` unless they are one or more
+    /// ASCII digits.
+    fn from_flags(digits: &str) -> Option<Self> {
+        if digits.is_empty() || !digits.bytes().all(|byte| byte.is_ascii_digit()) {
+            return None;
+        }
+        Some(if digits.bytes().all(|byte| byte == b'0') {
+            Self::Plain
+        } else {
+            Self::Enhanced
+        })
+    }
+
+    /// The reply for the parameters of a device-attributes report, or `None` unless they are
+    /// ASCII digits and semicolons.
+    fn from_attributes(parameters: &str) -> Option<Self> {
+        parameters
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || byte == b';')
+            .then_some(Self::Plain)
+    }
+
+    /// Whether `sequence` could be the start of a reply: `ESC [`, or `ESC [ ?` followed by any
+    /// ASCII digits and semicolons.
+    pub(super) fn is_prefix(sequence: &str) -> bool {
+        sequence == "\x1b["
+            || sequence.strip_prefix("\x1b[?").is_some_and(|rest| {
+                rest.bytes()
+                    .all(|byte| byte.is_ascii_digit() || byte == b';')
+            })
+    }
+}
+
+impl Shared {
+    /// Acts on a reply read by the live generation: the enhanced protocol turns the modified-key
+    /// reporting off and the toolkit's shared flag on, and a plain terminal gets the modified-key
+    /// reporting unless the enhanced protocol is on. A drain closes negotiation, so a later
+    /// reply changes nothing.
+    pub(super) fn answer(&self, reply: Reply) -> io::Result<()> {
+        if !self.negotiating.get() {
+            return Ok(());
+        }
+        match reply {
+            Reply::Enhanced => {
+                self.stop_fallback()?;
+                if !self.enhanced.replace(true) {
+                    set_kitty_protocol_active(true);
+                }
+                Ok(())
+            }
+            Reply::Plain => self.fall_back(),
+        }
+    }
+
+    /// Enables the modified-key reporting unless a keyboard mode is on.
+    fn fall_back(&self) -> io::Result<()> {
+        if self.enhanced.get() || self.fallback.get() {
             return Ok(());
         }
         self.emit(FALLBACK_ON)?;
@@ -143,39 +210,25 @@ impl Shared {
         Ok(())
     }
 
-    /// Disables the keyboard modes this terminal enabled, the enhanced protocol first, and
-    /// attempts both even when the first write fails.
+    /// Disables the modified-key reporting when it is on.
+    fn stop_fallback(&self) -> io::Result<()> {
+        self.emit_if(self.fallback.replace(false), FALLBACK_OFF)
+    }
+
+    /// Shows the cursor when this terminal hid it and nothing showed it since.
+    pub(super) fn show_hidden_cursor(&self) -> io::Result<()> {
+        self.emit_if(self.hidden.replace(false), CURSOR_SHOW)
+    }
+
+    /// Pops the requested keyboard flags and disables the modified-key reporting, whichever
+    /// are on, and attempts both even when the first write fails.
     pub(super) fn disable_keyboard(&self) -> io::Result<()> {
-        let (enhanced, fallback) = (self.enhanced.replace(false), self.fallback.replace(false));
+        let (pushed, enhanced) = (self.pushed.replace(false), self.enhanced.replace(false));
         if enhanced {
             set_kitty_protocol_active(false);
         }
-        first_failure([
-            self.emit_if(enhanced, KEYBOARD_POP),
-            self.emit_if(fallback, FALLBACK_OFF),
-        ])
+        first_failure([self.emit_if(pushed, KEYBOARD_POP), self.stop_fallback()])
     }
-
-    /// Interprets `sequence` as a support reply. Returns whether it was one and so is not
-    /// input: a reply is consumed while the enhanced protocol is off, and enables it only
-    /// while negotiation is open.
-    pub(super) fn consume_reply(&self, sequence: &str) -> io::Result<bool> {
-        if self.enhanced.get() || !is_support_reply(sequence) {
-            return Ok(false);
-        }
-        if self.negotiating.get() {
-            self.enable_enhanced()?;
-        }
-        Ok(true)
-    }
-}
-
-/// Whether `sequence` is exactly `ESC [ ?`, one or more ASCII digits and `u`.
-fn is_support_reply(sequence: &str) -> bool {
-    sequence
-        .strip_prefix("\x1b[?")
-        .and_then(|rest| rest.strip_suffix('u'))
-        .is_some_and(|flags| !flags.is_empty() && flags.bytes().all(|byte| byte.is_ascii_digit()))
 }
 
 /// The input callback taken out of service for a drain, put back when the drain ends or its

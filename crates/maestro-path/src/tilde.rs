@@ -1,5 +1,6 @@
 //! Home-directory expansion of authored paths.
 use crate::join;
+use crate::path::{Cwd, posix, win32};
 use std::{
     ffi::{OsStr, OsString},
     path::PathBuf,
@@ -37,6 +38,52 @@ fn parse(path: &str, windows: bool) -> Tilde<'_> {
 fn is_separator(c: char, windows: bool) -> bool {
     c == '/' || (windows && c == '\\')
 }
+
+/// Shows `path` below the directory `home` as `~` and what follows it, in the compile target's
+/// flavor.
+///
+/// `path` and `home` are authored, absolute and compared lexically after their `.` and `..`
+/// segments fold. The home itself is `~`; a path below it is `~`, the flavor's separator and
+/// the part below. A sibling that shares the home's leading text, a path on another root, a
+/// relative path, and an empty, relative or root home leave `path` as written.
+#[must_use]
+pub fn shorten_home(path: &str, home: &str) -> String {
+    shorten_home_in(path, home, cfg!(windows))
+}
+
+/// The rule of [`shorten_home`] in a supplied flavor, independently of the compile target.
+fn shorten_home_in(path: &str, home: &str, windows: bool) -> String {
+    let (absolute, relative, separator): (fn(&str) -> bool, RelativeFn, char) = if windows {
+        (win32::is_absolute, win32::relative, '\\')
+    } else {
+        (posix::is_absolute, posix::relative, '/')
+    };
+    if !absolute(home) || !absolute(path) {
+        return path.to_owned();
+    }
+    // Both operands are absolute, so the directory below is never consulted.
+    let cwd = Cwd {
+        current: home,
+        drive_directories: &[],
+    };
+    // A root is its own parent, and a root home would abbreviate every absolute path.
+    if relative(home, &format!("{home}{separator}.."), &cwd).is_empty() {
+        return path.to_owned();
+    }
+    let below = relative(home, path, &cwd);
+    if below.is_empty() {
+        return "~".to_owned();
+    }
+    let outside = below == ".." || below.starts_with(&format!("..{separator}")) || absolute(&below);
+    if outside {
+        path.to_owned()
+    } else {
+        format!("~{separator}{below}")
+    }
+}
+
+/// The signature of a flavor's `relative`.
+type RelativeFn = for<'a> fn(&str, &str, &Cwd<'a>) -> String;
 
 /// Expands a leading `~` below the home directory with a normalizing join.
 ///

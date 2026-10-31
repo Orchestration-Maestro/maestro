@@ -131,7 +131,7 @@ const SHORTENED_PATHS: [(&str, &str, &str); 15] = [
     ("/home/user", "relative/file", "relative/file"),
     ("/home/user", "", ""),
     ("/home/élève", "/home/élève/文書", "~/文書"),
-    ("/home/user/", "/home/user/file", "~file"),
+    ("/home/user/", "/home/user/file", "~/file"),
 ];
 
 #[cfg(not(target_arch = "wasm32"))]

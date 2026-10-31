@@ -47,12 +47,15 @@ struct LabelExpected {
 }
 
 #[test]
-fn hotkeys_capitalize_extension_word_starts() {
+fn hotkeys_capitalize_the_start_of_each_extension_key_part() {
     let cases: Vec<LabelCase> =
         serde_json::from_str(include_str!("../../../tests/fixtures/hotkey_labels.json")).unwrap();
     assert_eq!(cases.len(), 8);
     for case in cases {
-        assert_eq!(case.test, "hotkeys_capitalize_extension_word_starts");
+        assert_eq!(
+            case.test,
+            "hotkeys_capitalize_the_start_of_each_extension_key_part"
+        );
         assert_eq!(
             super::capitalize_shortcut(&case.input.key),
             case.expected.result

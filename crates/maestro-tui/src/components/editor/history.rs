@@ -1,5 +1,5 @@
 //! Retained prompt admission and browsing.
-use super::{Buffer, Owner};
+use super::{Buffer, Editing, Owner};
 use crate::autocomplete::CursorPosition;
 impl Owner {
     /// Adds a trimmed nonempty prompt, suppressing the newest duplicate and retaining 100 entries.
@@ -30,19 +30,39 @@ impl Owner {
             };
             if state.history_index.is_none() && index.is_some() {
                 state.snapshot();
+                state.draft = Some(state.current.clone());
             }
             state.history_index = index;
-            let text = index.map_or("", |index| state.history[index].as_str());
-            let lines: Vec<String> = text.split('\n').map(str::to_owned).collect();
-            let line = lines.len() - 1;
-            let col = lines[line].len();
-            state.current = Buffer {
-                lines,
-                cursor: CursorPosition { line, col },
-            };
-            state.set_col(col);
+            match index {
+                Some(index) => state.show_entry(index, forward),
+                None => state.restore_draft(),
+            }
         }
         self.scroll.set(0);
         self.notify();
+    }
+}
+impl Editing {
+    /// Shows history entry `index` with the cursor at its end when browsing forward and at its
+    /// start when browsing backward.
+    fn show_entry(&mut self, index: usize, forward: bool) {
+        let lines: Vec<String> = self.history[index].split('\n').map(str::to_owned).collect();
+        let line = if forward { lines.len() - 1 } else { 0 };
+        let col = if forward { lines[line].len() } else { 0 };
+        self.current = Buffer {
+            lines,
+            cursor: CursorPosition { line, col },
+        };
+        self.set_col(col);
+    }
+    /// Puts back the prompt and cursor that browsing began with, or an empty prompt.
+    fn restore_draft(&mut self) {
+        self.current = self.draft.take().unwrap_or_default();
+        self.set_col(self.current.cursor.col);
+    }
+    /// Leaves history browsing and forgets the saved draft.
+    pub(super) fn exit_history(&mut self) {
+        self.history_index = None;
+        self.draft = None;
     }
 }

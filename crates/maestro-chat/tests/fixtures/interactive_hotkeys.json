@@ -1148,7 +1148,7 @@
       "indent": null
     },
     "expected": {
-      "markdown": "**Navigation**\n| Key | Action |\n|-----|--------|\n| `Up` / `Down` / `Left/Ctrl+B` / `Right/Ctrl+F` | Move cursor / browse history (Up when empty) |\n| `Alt+Left/Ctrl+Left/Alt+B` / `Alt+Right/Ctrl+Right/Alt+F` | Move by word |\n| `Home/Ctrl+A` | Start of line |\n| `End/Ctrl+E` | End of line |\n| `Ctrl+]` | Jump forward to character |\n| `Ctrl+Alt+]` | Jump backward to character |\n| `PageUp` / `PageDown` | Scroll by page |\n\n**Editing**\n| Key | Action |\n|-----|--------|\n| `Enter` | Send message |\n| `Shift+Enter` | New line |\n| `Ctrl+W/Alt+Backspace` | Delete word backwards |\n| `Alt+D/Alt+Delete` | Delete word forwards |\n| `Ctrl+U` | Delete to start of line |\n| `Ctrl+K` | Delete to end of line |\n| `Ctrl+Y` | Paste the most-recently-deleted text |\n| `Alt+Y` | Cycle through the deleted text after pasting |\n| `Ctrl+-` | Undo |\n\n**Other**\n| Key | Action |\n|-----|--------|\n| `Tab` | Path completion / accept autocomplete |\n| `Escape` | Cancel autocomplete / abort streaming |\n| `Ctrl+C` | Clear editor (first) / exit (second) |\n| `Ctrl+D` | Exit (when editor is empty) |\n| `Ctrl+Z` | Suspend to background |\n| `Shift+Tab` | Cycle thinking level |\n| `Ctrl+P` / `Shift+Ctrl+P` | Cycle models |\n| `Ctrl+L` | Open model selector |\n| `Ctrl+O` | Toggle tool output expansion |\n| `Ctrl+T` | Toggle thinking block visibility |\n| `Ctrl+G` | Edit message in external editor |\n| `Alt+Enter` | Queue follow-up message |\n| `Alt+Up` | Restore queued messages |\n| `Ctrl+V` | Paste image from clipboard |\n| `/` | Slash commands |\n| `!` | Run bash command |\n| `!!` | Run bash command (excluded from context) |\n\n**Extensions**\n| Key | Action |\n|-----|--------|\n| `Ctrl+Alt+X` | Inspect |\n| `Alt+9` |  |\n| `Alt+_word` | /extensions/fallback.ts |\n| `Alt+é` | /extensions/null.ts |",
+      "markdown": "**Navigation**\n| Key | Action |\n|-----|--------|\n| `Up` / `Down` / `Left/Ctrl+B` / `Right/Ctrl+F` | Move cursor / browse history (Up when empty) |\n| `Alt+Left/Ctrl+Left/Alt+B` / `Alt+Right/Ctrl+Right/Alt+F` | Move by word |\n| `Home/Ctrl+A` | Start of line |\n| `End/Ctrl+E` | End of line |\n| `Ctrl+]` | Jump forward to character |\n| `Ctrl+Alt+]` | Jump backward to character |\n| `PageUp` / `PageDown` | Scroll by page |\n\n**Editing**\n| Key | Action |\n|-----|--------|\n| `Enter` | Send message |\n| `Shift+Enter` | New line |\n| `Ctrl+W/Alt+Backspace` | Delete word backwards |\n| `Alt+D/Alt+Delete` | Delete word forwards |\n| `Ctrl+U` | Delete to start of line |\n| `Ctrl+K` | Delete to end of line |\n| `Ctrl+Y` | Paste the most-recently-deleted text |\n| `Alt+Y` | Cycle through the deleted text after pasting |\n| `Ctrl+-` | Undo |\n\n**Other**\n| Key | Action |\n|-----|--------|\n| `Tab` | Path completion / accept autocomplete |\n| `Escape` | Cancel autocomplete / abort streaming |\n| `Ctrl+C` | Clear editor (first) / exit (second) |\n| `Ctrl+D` | Exit (when editor is empty) |\n| `Ctrl+Z` | Suspend to background |\n| `Shift+Tab` | Cycle thinking level |\n| `Ctrl+P` / `Shift+Ctrl+P` | Cycle models |\n| `Ctrl+L` | Open model selector |\n| `Ctrl+O` | Toggle tool output expansion |\n| `Ctrl+T` | Toggle thinking block visibility |\n| `Ctrl+G` | Edit message in external editor |\n| `Alt+Enter` | Queue follow-up message |\n| `Alt+Up` | Restore queued messages |\n| `Ctrl+V` | Paste image from clipboard |\n| `/` | Slash commands |\n| `!` | Run bash command |\n| `!!` | Run bash command (excluded from context) |\n\n**Extensions**\n| Key | Action |\n|-----|--------|\n| `Ctrl+Alt+X` | Inspect |\n| `Alt+9` |  |\n| `Alt+_word` | /extensions/fallback.ts |\n| `Alt+É` | /extensions/null.ts |",
       "title": "\u001b[1m\u001b[38;5;1mKeyboard Shortcuts\u001b[39m\u001b[22m",
       "frames": {
         "20": [
@@ -1428,7 +1428,7 @@
           " │      │ ts      │ ",
           " ├──────┼─────────┤ ",
           " │ \u001b[38;5;20mAlt+ │ /extens │ ",
-          " │ \u001b[38;5;20mé\u001b[39m    │ ions/nu │ ",
+          " │ \u001b[38;5;20mÉ\u001b[39m    │ ions/nu │ ",
           " │      │ ll.ts   │ ",
           " └──────┴─────────┘ ",
           "                    ",
@@ -1537,7 +1537,7 @@
           " ├────────────┼─────────────────────────┤                                       ",
           " │ \u001b[38;5;20mAlt+_word\u001b[39m  │ /extensions/fallback.ts │                                       ",
           " ├────────────┼─────────────────────────┤                                       ",
-          " │ \u001b[38;5;20mAlt+é\u001b[39m      │ /extensions/null.ts     │                                       ",
+          " │ \u001b[38;5;20mAlt+É\u001b[39m      │ /extensions/null.ts     │                                       ",
           " └────────────┴─────────────────────────┘                                       ",
           "                                                                                ",
           "\u001b[38;5;2m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -1583,7 +1583,7 @@
       "indent": ""
     },
     "expected": {
-      "markdown": "**Navigation**\n| Key | Action |\n|-----|--------|\n| `Up` / `Down` / `Left/Ctrl+B` / `Right/Ctrl+F` | Move cursor / browse history (Up when empty) |\n| `Alt+Left/Ctrl+Left/Alt+B` / `Alt+Right/Ctrl+Right/Alt+F` | Move by word |\n| `Home/Ctrl+A` | Start of line |\n| `End/Ctrl+E` | End of line |\n| `Ctrl+]` | Jump forward to character |\n| `Ctrl+Alt+]` | Jump backward to character |\n| `PageUp` / `PageDown` | Scroll by page |\n\n**Editing**\n| Key | Action |\n|-----|--------|\n| `Enter` | Send message |\n| `Shift+Enter` | New line |\n| `Ctrl+W/Alt+Backspace` | Delete word backwards |\n| `Alt+D/Alt+Delete` | Delete word forwards |\n| `Ctrl+U` | Delete to start of line |\n| `Ctrl+K` | Delete to end of line |\n| `Ctrl+Y` | Paste the most-recently-deleted text |\n| `Alt+Y` | Cycle through the deleted text after pasting |\n| `Ctrl+-` | Undo |\n\n**Other**\n| Key | Action |\n|-----|--------|\n| `Tab` | Path completion / accept autocomplete |\n| `Escape` | Cancel autocomplete / abort streaming |\n| `Ctrl+C` | Clear editor (first) / exit (second) |\n| `Ctrl+D` | Exit (when editor is empty) |\n| `Ctrl+Z` | Suspend to background |\n| `Shift+Tab` | Cycle thinking level |\n| `Ctrl+P` / `Shift+Ctrl+P` | Cycle models |\n| `Ctrl+L` | Open model selector |\n| `Ctrl+O` | Toggle tool output expansion |\n| `Ctrl+T` | Toggle thinking block visibility |\n| `Ctrl+G` | Edit message in external editor |\n| `Alt+Enter` | Queue follow-up message |\n| `Alt+Up` | Restore queued messages |\n| `Ctrl+V` | Paste image from clipboard |\n| `/` | Slash commands |\n| `!` | Run bash command |\n| `!!` | Run bash command (excluded from context) |\n\n**Extensions**\n| Key | Action |\n|-----|--------|\n| `Ctrl+Alt+X` | Inspect |\n| `Alt+9` |  |\n| `Alt+_word` | /extensions/fallback.ts |\n| `Alt+é` | /extensions/null.ts |",
+      "markdown": "**Navigation**\n| Key | Action |\n|-----|--------|\n| `Up` / `Down` / `Left/Ctrl+B` / `Right/Ctrl+F` | Move cursor / browse history (Up when empty) |\n| `Alt+Left/Ctrl+Left/Alt+B` / `Alt+Right/Ctrl+Right/Alt+F` | Move by word |\n| `Home/Ctrl+A` | Start of line |\n| `End/Ctrl+E` | End of line |\n| `Ctrl+]` | Jump forward to character |\n| `Ctrl+Alt+]` | Jump backward to character |\n| `PageUp` / `PageDown` | Scroll by page |\n\n**Editing**\n| Key | Action |\n|-----|--------|\n| `Enter` | Send message |\n| `Shift+Enter` | New line |\n| `Ctrl+W/Alt+Backspace` | Delete word backwards |\n| `Alt+D/Alt+Delete` | Delete word forwards |\n| `Ctrl+U` | Delete to start of line |\n| `Ctrl+K` | Delete to end of line |\n| `Ctrl+Y` | Paste the most-recently-deleted text |\n| `Alt+Y` | Cycle through the deleted text after pasting |\n| `Ctrl+-` | Undo |\n\n**Other**\n| Key | Action |\n|-----|--------|\n| `Tab` | Path completion / accept autocomplete |\n| `Escape` | Cancel autocomplete / abort streaming |\n| `Ctrl+C` | Clear editor (first) / exit (second) |\n| `Ctrl+D` | Exit (when editor is empty) |\n| `Ctrl+Z` | Suspend to background |\n| `Shift+Tab` | Cycle thinking level |\n| `Ctrl+P` / `Shift+Ctrl+P` | Cycle models |\n| `Ctrl+L` | Open model selector |\n| `Ctrl+O` | Toggle tool output expansion |\n| `Ctrl+T` | Toggle thinking block visibility |\n| `Ctrl+G` | Edit message in external editor |\n| `Alt+Enter` | Queue follow-up message |\n| `Alt+Up` | Restore queued messages |\n| `Ctrl+V` | Paste image from clipboard |\n| `/` | Slash commands |\n| `!` | Run bash command |\n| `!!` | Run bash command (excluded from context) |\n\n**Extensions**\n| Key | Action |\n|-----|--------|\n| `Ctrl+Alt+X` | Inspect |\n| `Alt+9` |  |\n| `Alt+_word` | /extensions/fallback.ts |\n| `Alt+É` | /extensions/null.ts |",
       "title": "\u001b[1m\u001b[38;5;1mKeyboard Shortcuts\u001b[39m\u001b[22m",
       "frames": {
         "20": [
@@ -1863,7 +1863,7 @@
           " │      │ ts      │ ",
           " ├──────┼─────────┤ ",
           " │ \u001b[38;5;20mAlt+ │ /extens │ ",
-          " │ \u001b[38;5;20mé\u001b[39m    │ ions/nu │ ",
+          " │ \u001b[38;5;20mÉ\u001b[39m    │ ions/nu │ ",
           " │      │ ll.ts   │ ",
           " └──────┴─────────┘ ",
           "                    ",
@@ -1972,7 +1972,7 @@
           " ├────────────┼─────────────────────────┤                                       ",
           " │ \u001b[38;5;20mAlt+_word\u001b[39m  │ /extensions/fallback.ts │                                       ",
           " ├────────────┼─────────────────────────┤                                       ",
-          " │ \u001b[38;5;20mAlt+é\u001b[39m      │ /extensions/null.ts     │                                       ",
+          " │ \u001b[38;5;20mAlt+É\u001b[39m      │ /extensions/null.ts     │                                       ",
           " └────────────┴─────────────────────────┘                                       ",
           "                                                                                ",
           "\u001b[38;5;2m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -2018,7 +2018,7 @@
       "indent": "> "
     },
     "expected": {
-      "markdown": "**Navigation**\n| Key | Action |\n|-----|--------|\n| `Up` / `Down` / `Left/Ctrl+B` / `Right/Ctrl+F` | Move cursor / browse history (Up when empty) |\n| `Alt+Left/Ctrl+Left/Alt+B` / `Alt+Right/Ctrl+Right/Alt+F` | Move by word |\n| `Home/Ctrl+A` | Start of line |\n| `End/Ctrl+E` | End of line |\n| `Ctrl+]` | Jump forward to character |\n| `Ctrl+Alt+]` | Jump backward to character |\n| `PageUp` / `PageDown` | Scroll by page |\n\n**Editing**\n| Key | Action |\n|-----|--------|\n| `Enter` | Send message |\n| `Shift+Enter` | New line |\n| `Ctrl+W/Alt+Backspace` | Delete word backwards |\n| `Alt+D/Alt+Delete` | Delete word forwards |\n| `Ctrl+U` | Delete to start of line |\n| `Ctrl+K` | Delete to end of line |\n| `Ctrl+Y` | Paste the most-recently-deleted text |\n| `Alt+Y` | Cycle through the deleted text after pasting |\n| `Ctrl+-` | Undo |\n\n**Other**\n| Key | Action |\n|-----|--------|\n| `Tab` | Path completion / accept autocomplete |\n| `Escape` | Cancel autocomplete / abort streaming |\n| `Ctrl+C` | Clear editor (first) / exit (second) |\n| `Ctrl+D` | Exit (when editor is empty) |\n| `Ctrl+Z` | Suspend to background |\n| `Shift+Tab` | Cycle thinking level |\n| `Ctrl+P` / `Shift+Ctrl+P` | Cycle models |\n| `Ctrl+L` | Open model selector |\n| `Ctrl+O` | Toggle tool output expansion |\n| `Ctrl+T` | Toggle thinking block visibility |\n| `Ctrl+G` | Edit message in external editor |\n| `Alt+Enter` | Queue follow-up message |\n| `Alt+Up` | Restore queued messages |\n| `Ctrl+V` | Paste image from clipboard |\n| `/` | Slash commands |\n| `!` | Run bash command |\n| `!!` | Run bash command (excluded from context) |\n\n**Extensions**\n| Key | Action |\n|-----|--------|\n| `Ctrl+Alt+X` | Inspect |\n| `Alt+9` |  |\n| `Alt+_word` | /extensions/fallback.ts |\n| `Alt+é` | /extensions/null.ts |",
+      "markdown": "**Navigation**\n| Key | Action |\n|-----|--------|\n| `Up` / `Down` / `Left/Ctrl+B` / `Right/Ctrl+F` | Move cursor / browse history (Up when empty) |\n| `Alt+Left/Ctrl+Left/Alt+B` / `Alt+Right/Ctrl+Right/Alt+F` | Move by word |\n| `Home/Ctrl+A` | Start of line |\n| `End/Ctrl+E` | End of line |\n| `Ctrl+]` | Jump forward to character |\n| `Ctrl+Alt+]` | Jump backward to character |\n| `PageUp` / `PageDown` | Scroll by page |\n\n**Editing**\n| Key | Action |\n|-----|--------|\n| `Enter` | Send message |\n| `Shift+Enter` | New line |\n| `Ctrl+W/Alt+Backspace` | Delete word backwards |\n| `Alt+D/Alt+Delete` | Delete word forwards |\n| `Ctrl+U` | Delete to start of line |\n| `Ctrl+K` | Delete to end of line |\n| `Ctrl+Y` | Paste the most-recently-deleted text |\n| `Alt+Y` | Cycle through the deleted text after pasting |\n| `Ctrl+-` | Undo |\n\n**Other**\n| Key | Action |\n|-----|--------|\n| `Tab` | Path completion / accept autocomplete |\n| `Escape` | Cancel autocomplete / abort streaming |\n| `Ctrl+C` | Clear editor (first) / exit (second) |\n| `Ctrl+D` | Exit (when editor is empty) |\n| `Ctrl+Z` | Suspend to background |\n| `Shift+Tab` | Cycle thinking level |\n| `Ctrl+P` / `Shift+Ctrl+P` | Cycle models |\n| `Ctrl+L` | Open model selector |\n| `Ctrl+O` | Toggle tool output expansion |\n| `Ctrl+T` | Toggle thinking block visibility |\n| `Ctrl+G` | Edit message in external editor |\n| `Alt+Enter` | Queue follow-up message |\n| `Alt+Up` | Restore queued messages |\n| `Ctrl+V` | Paste image from clipboard |\n| `/` | Slash commands |\n| `!` | Run bash command |\n| `!!` | Run bash command (excluded from context) |\n\n**Extensions**\n| Key | Action |\n|-----|--------|\n| `Ctrl+Alt+X` | Inspect |\n| `Alt+9` |  |\n| `Alt+_word` | /extensions/fallback.ts |\n| `Alt+É` | /extensions/null.ts |",
       "title": "\u001b[1m\u001b[38;5;1mKeyboard Shortcuts\u001b[39m\u001b[22m",
       "frames": {
         "20": [
@@ -2298,7 +2298,7 @@
           " │      │ ts      │ ",
           " ├──────┼─────────┤ ",
           " │ \u001b[38;5;20mAlt+ │ /extens │ ",
-          " │ \u001b[38;5;20mé\u001b[39m    │ ions/nu │ ",
+          " │ \u001b[38;5;20mÉ\u001b[39m    │ ions/nu │ ",
           " │      │ ll.ts   │ ",
           " └──────┴─────────┘ ",
           "                    ",
@@ -2407,7 +2407,7 @@
           " ├────────────┼─────────────────────────┤                                       ",
           " │ \u001b[38;5;20mAlt+_word\u001b[39m  │ /extensions/fallback.ts │                                       ",
           " ├────────────┼─────────────────────────┤                                       ",
-          " │ \u001b[38;5;20mAlt+é\u001b[39m      │ /extensions/null.ts     │                                       ",
+          " │ \u001b[38;5;20mAlt+É\u001b[39m      │ /extensions/null.ts     │                                       ",
           " └────────────┴─────────────────────────┘                                       ",
           "                                                                                ",
           "\u001b[38;5;2m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -3617,7 +3617,7 @@
       "indent": null
     },
     "expected": {
-      "markdown": "**Navigation**\n| Key | Action |\n|-----|--------|\n| `` / `Alt+U` / `Left/Ctrl+B` / `Right/Ctrl+F` | Move cursor / browse history (Up when empty) |\n| `Alt+Left/Ctrl+Left/Alt+B` / `Alt+Right/Ctrl+Right/Alt+F` | Move by word |\n| `Home/Ctrl+A` | Start of line |\n| `End/Ctrl+E` | End of line |\n| `Ctrl+]` | Jump forward to character |\n| `Ctrl+Alt+]` | Jump backward to character |\n| `PageUp` / `PageDown` | Scroll by page |\n\n**Editing**\n| Key | Action |\n|-----|--------|\n| `Enter` | Send message |\n| `Ctrl+J/Alt+Enter` | New line |\n| `Ctrl+W/Alt+Backspace` | Delete word backwards |\n| `Alt+D/Alt+Delete` | Delete word forwards |\n| `Ctrl+U` | Delete to start of line |\n| `Ctrl+K` | Delete to end of line |\n| `Ctrl+Y` | Paste the most-recently-deleted text |\n| `Alt+Y` | Cycle through the deleted text after pasting |\n| `Ctrl+-` | Undo |\n\n**Other**\n| Key | Action |\n|-----|--------|\n| `Tab` | Path completion / accept autocomplete |\n| `Alt+X/Escape` | Cancel autocomplete / abort streaming |\n| `Ctrl+C` | Clear editor (first) / exit (second) |\n| `Ctrl+D` | Exit (when editor is empty) |\n| `Ctrl+Z` | Suspend to background |\n| `Shift+Tab` | Cycle thinking level |\n| `Ctrl+P` / `Shift+Ctrl+P` | Cycle models |\n| `Ctrl+L` | Open model selector |\n| `Ctrl+Y` | Toggle tool output expansion |\n| `Ctrl+T` | Toggle thinking block visibility |\n| `Ctrl+G` | Edit message in external editor |\n| `Alt+Enter` | Queue follow-up message |\n| `Alt+Up` | Restore queued messages |\n| `Ctrl+V` | Paste image from clipboard |\n| `/` | Slash commands |\n| `!` | Run bash command |\n| `!!` | Run bash command (excluded from context) |\n\n**Extensions**\n| Key | Action |\n|-----|--------|\n| `Ctrl+Alt+X` | Inspect |\n| `Alt+9` |  |\n| `Alt+_word` | /extensions/fallback.ts |\n| `Alt+é` | /extensions/null.ts |",
+      "markdown": "**Navigation**\n| Key | Action |\n|-----|--------|\n| `` / `Alt+U` / `Left/Ctrl+B` / `Right/Ctrl+F` | Move cursor / browse history (Up when empty) |\n| `Alt+Left/Ctrl+Left/Alt+B` / `Alt+Right/Ctrl+Right/Alt+F` | Move by word |\n| `Home/Ctrl+A` | Start of line |\n| `End/Ctrl+E` | End of line |\n| `Ctrl+]` | Jump forward to character |\n| `Ctrl+Alt+]` | Jump backward to character |\n| `PageUp` / `PageDown` | Scroll by page |\n\n**Editing**\n| Key | Action |\n|-----|--------|\n| `Enter` | Send message |\n| `Ctrl+J/Alt+Enter` | New line |\n| `Ctrl+W/Alt+Backspace` | Delete word backwards |\n| `Alt+D/Alt+Delete` | Delete word forwards |\n| `Ctrl+U` | Delete to start of line |\n| `Ctrl+K` | Delete to end of line |\n| `Ctrl+Y` | Paste the most-recently-deleted text |\n| `Alt+Y` | Cycle through the deleted text after pasting |\n| `Ctrl+-` | Undo |\n\n**Other**\n| Key | Action |\n|-----|--------|\n| `Tab` | Path completion / accept autocomplete |\n| `Alt+X/Escape` | Cancel autocomplete / abort streaming |\n| `Ctrl+C` | Clear editor (first) / exit (second) |\n| `Ctrl+D` | Exit (when editor is empty) |\n| `Ctrl+Z` | Suspend to background |\n| `Shift+Tab` | Cycle thinking level |\n| `Ctrl+P` / `Shift+Ctrl+P` | Cycle models |\n| `Ctrl+L` | Open model selector |\n| `Ctrl+Y` | Toggle tool output expansion |\n| `Ctrl+T` | Toggle thinking block visibility |\n| `Ctrl+G` | Edit message in external editor |\n| `Alt+Enter` | Queue follow-up message |\n| `Alt+Up` | Restore queued messages |\n| `Ctrl+V` | Paste image from clipboard |\n| `/` | Slash commands |\n| `!` | Run bash command |\n| `!!` | Run bash command (excluded from context) |\n\n**Extensions**\n| Key | Action |\n|-----|--------|\n| `Ctrl+Alt+X` | Inspect |\n| `Alt+9` |  |\n| `Alt+_word` | /extensions/fallback.ts |\n| `Alt+É` | /extensions/null.ts |",
       "title": "\u001b[1m\u001b[38;5;1mKeyboard Shortcuts\u001b[39m\u001b[22m",
       "frames": {
         "20": [
@@ -3898,7 +3898,7 @@
           " │      │ ts      │ ",
           " ├──────┼─────────┤ ",
           " │ \u001b[38;5;20mAlt+ │ /extens │ ",
-          " │ \u001b[38;5;20mé\u001b[39m    │ ions/nu │ ",
+          " │ \u001b[38;5;20mÉ\u001b[39m    │ ions/nu │ ",
           " │      │ ll.ts   │ ",
           " └──────┴─────────┘ ",
           "                    ",
@@ -4007,7 +4007,7 @@
           " ├────────────┼─────────────────────────┤                                       ",
           " │ \u001b[38;5;20mAlt+_word\u001b[39m  │ /extensions/fallback.ts │                                       ",
           " ├────────────┼─────────────────────────┤                                       ",
-          " │ \u001b[38;5;20mAlt+é\u001b[39m      │ /extensions/null.ts     │                                       ",
+          " │ \u001b[38;5;20mAlt+É\u001b[39m      │ /extensions/null.ts     │                                       ",
           " └────────────┴─────────────────────────┘                                       ",
           "                                                                                ",
           "\u001b[38;5;2m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -4065,7 +4065,7 @@
       "indent": ""
     },
     "expected": {
-      "markdown": "**Navigation**\n| Key | Action |\n|-----|--------|\n| `` / `Alt+U` / `Left/Ctrl+B` / `Right/Ctrl+F` | Move cursor / browse history (Up when empty) |\n| `Alt+Left/Ctrl+Left/Alt+B` / `Alt+Right/Ctrl+Right/Alt+F` | Move by word |\n| `Home/Ctrl+A` | Start of line |\n| `End/Ctrl+E` | End of line |\n| `Ctrl+]` | Jump forward to character |\n| `Ctrl+Alt+]` | Jump backward to character |\n| `PageUp` / `PageDown` | Scroll by page |\n\n**Editing**\n| Key | Action |\n|-----|--------|\n| `Enter` | Send message |\n| `Ctrl+J/Alt+Enter` | New line |\n| `Ctrl+W/Alt+Backspace` | Delete word backwards |\n| `Alt+D/Alt+Delete` | Delete word forwards |\n| `Ctrl+U` | Delete to start of line |\n| `Ctrl+K` | Delete to end of line |\n| `Ctrl+Y` | Paste the most-recently-deleted text |\n| `Alt+Y` | Cycle through the deleted text after pasting |\n| `Ctrl+-` | Undo |\n\n**Other**\n| Key | Action |\n|-----|--------|\n| `Tab` | Path completion / accept autocomplete |\n| `Alt+X/Escape` | Cancel autocomplete / abort streaming |\n| `Ctrl+C` | Clear editor (first) / exit (second) |\n| `Ctrl+D` | Exit (when editor is empty) |\n| `Ctrl+Z` | Suspend to background |\n| `Shift+Tab` | Cycle thinking level |\n| `Ctrl+P` / `Shift+Ctrl+P` | Cycle models |\n| `Ctrl+L` | Open model selector |\n| `Ctrl+Y` | Toggle tool output expansion |\n| `Ctrl+T` | Toggle thinking block visibility |\n| `Ctrl+G` | Edit message in external editor |\n| `Alt+Enter` | Queue follow-up message |\n| `Alt+Up` | Restore queued messages |\n| `Ctrl+V` | Paste image from clipboard |\n| `/` | Slash commands |\n| `!` | Run bash command |\n| `!!` | Run bash command (excluded from context) |\n\n**Extensions**\n| Key | Action |\n|-----|--------|\n| `Ctrl+Alt+X` | Inspect |\n| `Alt+9` |  |\n| `Alt+_word` | /extensions/fallback.ts |\n| `Alt+é` | /extensions/null.ts |",
+      "markdown": "**Navigation**\n| Key | Action |\n|-----|--------|\n| `` / `Alt+U` / `Left/Ctrl+B` / `Right/Ctrl+F` | Move cursor / browse history (Up when empty) |\n| `Alt+Left/Ctrl+Left/Alt+B` / `Alt+Right/Ctrl+Right/Alt+F` | Move by word |\n| `Home/Ctrl+A` | Start of line |\n| `End/Ctrl+E` | End of line |\n| `Ctrl+]` | Jump forward to character |\n| `Ctrl+Alt+]` | Jump backward to character |\n| `PageUp` / `PageDown` | Scroll by page |\n\n**Editing**\n| Key | Action |\n|-----|--------|\n| `Enter` | Send message |\n| `Ctrl+J/Alt+Enter` | New line |\n| `Ctrl+W/Alt+Backspace` | Delete word backwards |\n| `Alt+D/Alt+Delete` | Delete word forwards |\n| `Ctrl+U` | Delete to start of line |\n| `Ctrl+K` | Delete to end of line |\n| `Ctrl+Y` | Paste the most-recently-deleted text |\n| `Alt+Y` | Cycle through the deleted text after pasting |\n| `Ctrl+-` | Undo |\n\n**Other**\n| Key | Action |\n|-----|--------|\n| `Tab` | Path completion / accept autocomplete |\n| `Alt+X/Escape` | Cancel autocomplete / abort streaming |\n| `Ctrl+C` | Clear editor (first) / exit (second) |\n| `Ctrl+D` | Exit (when editor is empty) |\n| `Ctrl+Z` | Suspend to background |\n| `Shift+Tab` | Cycle thinking level |\n| `Ctrl+P` / `Shift+Ctrl+P` | Cycle models |\n| `Ctrl+L` | Open model selector |\n| `Ctrl+Y` | Toggle tool output expansion |\n| `Ctrl+T` | Toggle thinking block visibility |\n| `Ctrl+G` | Edit message in external editor |\n| `Alt+Enter` | Queue follow-up message |\n| `Alt+Up` | Restore queued messages |\n| `Ctrl+V` | Paste image from clipboard |\n| `/` | Slash commands |\n| `!` | Run bash command |\n| `!!` | Run bash command (excluded from context) |\n\n**Extensions**\n| Key | Action |\n|-----|--------|\n| `Ctrl+Alt+X` | Inspect |\n| `Alt+9` |  |\n| `Alt+_word` | /extensions/fallback.ts |\n| `Alt+É` | /extensions/null.ts |",
       "title": "\u001b[1m\u001b[38;5;1mKeyboard Shortcuts\u001b[39m\u001b[22m",
       "frames": {
         "20": [
@@ -4346,7 +4346,7 @@
           " │      │ ts      │ ",
           " ├──────┼─────────┤ ",
           " │ \u001b[38;5;20mAlt+ │ /extens │ ",
-          " │ \u001b[38;5;20mé\u001b[39m    │ ions/nu │ ",
+          " │ \u001b[38;5;20mÉ\u001b[39m    │ ions/nu │ ",
           " │      │ ll.ts   │ ",
           " └──────┴─────────┘ ",
           "                    ",
@@ -4455,7 +4455,7 @@
           " ├────────────┼─────────────────────────┤                                       ",
           " │ \u001b[38;5;20mAlt+_word\u001b[39m  │ /extensions/fallback.ts │                                       ",
           " ├────────────┼─────────────────────────┤                                       ",
-          " │ \u001b[38;5;20mAlt+é\u001b[39m      │ /extensions/null.ts     │                                       ",
+          " │ \u001b[38;5;20mAlt+É\u001b[39m      │ /extensions/null.ts     │                                       ",
           " └────────────┴─────────────────────────┘                                       ",
           "                                                                                ",
           "\u001b[38;5;2m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -4513,7 +4513,7 @@
       "indent": "> "
     },
     "expected": {
-      "markdown": "**Navigation**\n| Key | Action |\n|-----|--------|\n| `` / `Alt+U` / `Left/Ctrl+B` / `Right/Ctrl+F` | Move cursor / browse history (Up when empty) |\n| `Alt+Left/Ctrl+Left/Alt+B` / `Alt+Right/Ctrl+Right/Alt+F` | Move by word |\n| `Home/Ctrl+A` | Start of line |\n| `End/Ctrl+E` | End of line |\n| `Ctrl+]` | Jump forward to character |\n| `Ctrl+Alt+]` | Jump backward to character |\n| `PageUp` / `PageDown` | Scroll by page |\n\n**Editing**\n| Key | Action |\n|-----|--------|\n| `Enter` | Send message |\n| `Ctrl+J/Alt+Enter` | New line |\n| `Ctrl+W/Alt+Backspace` | Delete word backwards |\n| `Alt+D/Alt+Delete` | Delete word forwards |\n| `Ctrl+U` | Delete to start of line |\n| `Ctrl+K` | Delete to end of line |\n| `Ctrl+Y` | Paste the most-recently-deleted text |\n| `Alt+Y` | Cycle through the deleted text after pasting |\n| `Ctrl+-` | Undo |\n\n**Other**\n| Key | Action |\n|-----|--------|\n| `Tab` | Path completion / accept autocomplete |\n| `Alt+X/Escape` | Cancel autocomplete / abort streaming |\n| `Ctrl+C` | Clear editor (first) / exit (second) |\n| `Ctrl+D` | Exit (when editor is empty) |\n| `Ctrl+Z` | Suspend to background |\n| `Shift+Tab` | Cycle thinking level |\n| `Ctrl+P` / `Shift+Ctrl+P` | Cycle models |\n| `Ctrl+L` | Open model selector |\n| `Ctrl+Y` | Toggle tool output expansion |\n| `Ctrl+T` | Toggle thinking block visibility |\n| `Ctrl+G` | Edit message in external editor |\n| `Alt+Enter` | Queue follow-up message |\n| `Alt+Up` | Restore queued messages |\n| `Ctrl+V` | Paste image from clipboard |\n| `/` | Slash commands |\n| `!` | Run bash command |\n| `!!` | Run bash command (excluded from context) |\n\n**Extensions**\n| Key | Action |\n|-----|--------|\n| `Ctrl+Alt+X` | Inspect |\n| `Alt+9` |  |\n| `Alt+_word` | /extensions/fallback.ts |\n| `Alt+é` | /extensions/null.ts |",
+      "markdown": "**Navigation**\n| Key | Action |\n|-----|--------|\n| `` / `Alt+U` / `Left/Ctrl+B` / `Right/Ctrl+F` | Move cursor / browse history (Up when empty) |\n| `Alt+Left/Ctrl+Left/Alt+B` / `Alt+Right/Ctrl+Right/Alt+F` | Move by word |\n| `Home/Ctrl+A` | Start of line |\n| `End/Ctrl+E` | End of line |\n| `Ctrl+]` | Jump forward to character |\n| `Ctrl+Alt+]` | Jump backward to character |\n| `PageUp` / `PageDown` | Scroll by page |\n\n**Editing**\n| Key | Action |\n|-----|--------|\n| `Enter` | Send message |\n| `Ctrl+J/Alt+Enter` | New line |\n| `Ctrl+W/Alt+Backspace` | Delete word backwards |\n| `Alt+D/Alt+Delete` | Delete word forwards |\n| `Ctrl+U` | Delete to start of line |\n| `Ctrl+K` | Delete to end of line |\n| `Ctrl+Y` | Paste the most-recently-deleted text |\n| `Alt+Y` | Cycle through the deleted text after pasting |\n| `Ctrl+-` | Undo |\n\n**Other**\n| Key | Action |\n|-----|--------|\n| `Tab` | Path completion / accept autocomplete |\n| `Alt+X/Escape` | Cancel autocomplete / abort streaming |\n| `Ctrl+C` | Clear editor (first) / exit (second) |\n| `Ctrl+D` | Exit (when editor is empty) |\n| `Ctrl+Z` | Suspend to background |\n| `Shift+Tab` | Cycle thinking level |\n| `Ctrl+P` / `Shift+Ctrl+P` | Cycle models |\n| `Ctrl+L` | Open model selector |\n| `Ctrl+Y` | Toggle tool output expansion |\n| `Ctrl+T` | Toggle thinking block visibility |\n| `Ctrl+G` | Edit message in external editor |\n| `Alt+Enter` | Queue follow-up message |\n| `Alt+Up` | Restore queued messages |\n| `Ctrl+V` | Paste image from clipboard |\n| `/` | Slash commands |\n| `!` | Run bash command |\n| `!!` | Run bash command (excluded from context) |\n\n**Extensions**\n| Key | Action |\n|-----|--------|\n| `Ctrl+Alt+X` | Inspect |\n| `Alt+9` |  |\n| `Alt+_word` | /extensions/fallback.ts |\n| `Alt+É` | /extensions/null.ts |",
       "title": "\u001b[1m\u001b[38;5;1mKeyboard Shortcuts\u001b[39m\u001b[22m",
       "frames": {
         "20": [
@@ -4794,7 +4794,7 @@
           " │      │ ts      │ ",
           " ├──────┼─────────┤ ",
           " │ \u001b[38;5;20mAlt+ │ /extens │ ",
-          " │ \u001b[38;5;20mé\u001b[39m    │ ions/nu │ ",
+          " │ \u001b[38;5;20mÉ\u001b[39m    │ ions/nu │ ",
           " │      │ ll.ts   │ ",
           " └──────┴─────────┘ ",
           "                    ",
@@ -4903,7 +4903,7 @@
           " ├────────────┼─────────────────────────┤                                       ",
           " │ \u001b[38;5;20mAlt+_word\u001b[39m  │ /extensions/fallback.ts │                                       ",
           " ├────────────┼─────────────────────────┤                                       ",
-          " │ \u001b[38;5;20mAlt+é\u001b[39m      │ /extensions/null.ts     │                                       ",
+          " │ \u001b[38;5;20mAlt+É\u001b[39m      │ /extensions/null.ts     │                                       ",
           " └────────────┴─────────────────────────┘                                       ",
           "                                                                                ",
           "\u001b[38;5;2m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -6078,7 +6078,7 @@
       "indent": null
     },
     "expected": {
-      "markdown": "**Navigation**\n| Key | Action |\n|-----|--------|\n| `Up` / `Down` / `Left/Ctrl+B` / `Right/Ctrl+F` | Move cursor / browse history (Up when empty) |\n| `Alt+Left/Ctrl+Left/Alt+B` / `Alt+Right/Ctrl+Right/Alt+F` | Move by word |\n| `Home/Ctrl+A` | Start of line |\n| `End/Ctrl+E` | End of line |\n| `Ctrl+]` | Jump forward to character |\n| `Ctrl+Alt+]` | Jump backward to character |\n| `Alt+PageUp` / `PageDown` | Scroll by page |\n\n**Editing**\n| Key | Action |\n|-----|--------|\n| `Enter` | Send message |\n| `Shift+Enter` | New line |\n| `Ctrl+W/Alt+Backspace` | Delete word backwards |\n| `Alt+D/Alt+Delete` | Delete word forwards |\n| `Ctrl+U` | Delete to start of line |\n| `Ctrl+K` | Delete to end of line |\n| `Ctrl+Y` | Paste the most-recently-deleted text |\n| `Alt+Y` | Cycle through the deleted text after pasting |\n| `Ctrl+-` | Undo |\n\n**Other**\n| Key | Action |\n|-----|--------|\n| `Tab` | Path completion / accept autocomplete |\n| `Escape` | Cancel autocomplete / abort streaming |\n| `` | Clear editor (first) / exit (second) |\n| `Alt+D` | Exit (when editor is empty) |\n| `Ctrl+Z` | Suspend to background |\n| `Shift+Tab` | Cycle thinking level |\n| `Ctrl+P` / `Shift+Ctrl+P` | Cycle models |\n| `Ctrl+L` | Open model selector |\n| `Ctrl+O` | Toggle tool output expansion |\n| `Ctrl+T` | Toggle thinking block visibility |\n| `Ctrl+G` | Edit message in external editor |\n| `Alt+Enter` | Queue follow-up message |\n| `Alt+Up` | Restore queued messages |\n| `Ctrl+V` | Paste image from clipboard |\n| `/` | Slash commands |\n| `!` | Run bash command |\n| `!!` | Run bash command (excluded from context) |\n\n**Extensions**\n| Key | Action |\n|-----|--------|\n| `Ctrl+Alt+X` | Inspect |\n| `Alt+9` |  |\n| `Alt+_word` | /extensions/fallback.ts |\n| `Alt+é` | /extensions/null.ts |",
+      "markdown": "**Navigation**\n| Key | Action |\n|-----|--------|\n| `Up` / `Down` / `Left/Ctrl+B` / `Right/Ctrl+F` | Move cursor / browse history (Up when empty) |\n| `Alt+Left/Ctrl+Left/Alt+B` / `Alt+Right/Ctrl+Right/Alt+F` | Move by word |\n| `Home/Ctrl+A` | Start of line |\n| `End/Ctrl+E` | End of line |\n| `Ctrl+]` | Jump forward to character |\n| `Ctrl+Alt+]` | Jump backward to character |\n| `Alt+PageUp` / `PageDown` | Scroll by page |\n\n**Editing**\n| Key | Action |\n|-----|--------|\n| `Enter` | Send message |\n| `Shift+Enter` | New line |\n| `Ctrl+W/Alt+Backspace` | Delete word backwards |\n| `Alt+D/Alt+Delete` | Delete word forwards |\n| `Ctrl+U` | Delete to start of line |\n| `Ctrl+K` | Delete to end of line |\n| `Ctrl+Y` | Paste the most-recently-deleted text |\n| `Alt+Y` | Cycle through the deleted text after pasting |\n| `Ctrl+-` | Undo |\n\n**Other**\n| Key | Action |\n|-----|--------|\n| `Tab` | Path completion / accept autocomplete |\n| `Escape` | Cancel autocomplete / abort streaming |\n| `` | Clear editor (first) / exit (second) |\n| `Alt+D` | Exit (when editor is empty) |\n| `Ctrl+Z` | Suspend to background |\n| `Shift+Tab` | Cycle thinking level |\n| `Ctrl+P` / `Shift+Ctrl+P` | Cycle models |\n| `Ctrl+L` | Open model selector |\n| `Ctrl+O` | Toggle tool output expansion |\n| `Ctrl+T` | Toggle thinking block visibility |\n| `Ctrl+G` | Edit message in external editor |\n| `Alt+Enter` | Queue follow-up message |\n| `Alt+Up` | Restore queued messages |\n| `Ctrl+V` | Paste image from clipboard |\n| `/` | Slash commands |\n| `!` | Run bash command |\n| `!!` | Run bash command (excluded from context) |\n\n**Extensions**\n| Key | Action |\n|-----|--------|\n| `Ctrl+Alt+X` | Inspect |\n| `Alt+9` |  |\n| `Alt+_word` | /extensions/fallback.ts |\n| `Alt+É` | /extensions/null.ts |",
       "title": "\u001b[1m\u001b[38;5;1mKeyboard Shortcuts\u001b[39m\u001b[22m",
       "frames": {
         "20": [
@@ -6358,7 +6358,7 @@
           " │      │ ts      │ ",
           " ├──────┼─────────┤ ",
           " │ \u001b[38;5;20mAlt+ │ /extens │ ",
-          " │ \u001b[38;5;20mé\u001b[39m    │ ions/nu │ ",
+          " │ \u001b[38;5;20mÉ\u001b[39m    │ ions/nu │ ",
           " │      │ ll.ts   │ ",
           " └──────┴─────────┘ ",
           "                    ",
@@ -6467,7 +6467,7 @@
           " ├────────────┼─────────────────────────┤                                       ",
           " │ \u001b[38;5;20mAlt+_word\u001b[39m  │ /extensions/fallback.ts │                                       ",
           " ├────────────┼─────────────────────────┤                                       ",
-          " │ \u001b[38;5;20mAlt+é\u001b[39m      │ /extensions/null.ts     │                                       ",
+          " │ \u001b[38;5;20mAlt+É\u001b[39m      │ /extensions/null.ts     │                                       ",
           " └────────────┴─────────────────────────┘                                       ",
           "                                                                                ",
           "\u001b[38;5;2m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -6517,7 +6517,7 @@
       "indent": ""
     },
     "expected": {
-      "markdown": "**Navigation**\n| Key | Action |\n|-----|--------|\n| `Up` / `Down` / `Left/Ctrl+B` / `Right/Ctrl+F` | Move cursor / browse history (Up when empty) |\n| `Alt+Left/Ctrl+Left/Alt+B` / `Alt+Right/Ctrl+Right/Alt+F` | Move by word |\n| `Home/Ctrl+A` | Start of line |\n| `End/Ctrl+E` | End of line |\n| `Ctrl+]` | Jump forward to character |\n| `Ctrl+Alt+]` | Jump backward to character |\n| `Alt+PageUp` / `PageDown` | Scroll by page |\n\n**Editing**\n| Key | Action |\n|-----|--------|\n| `Enter` | Send message |\n| `Shift+Enter` | New line |\n| `Ctrl+W/Alt+Backspace` | Delete word backwards |\n| `Alt+D/Alt+Delete` | Delete word forwards |\n| `Ctrl+U` | Delete to start of line |\n| `Ctrl+K` | Delete to end of line |\n| `Ctrl+Y` | Paste the most-recently-deleted text |\n| `Alt+Y` | Cycle through the deleted text after pasting |\n| `Ctrl+-` | Undo |\n\n**Other**\n| Key | Action |\n|-----|--------|\n| `Tab` | Path completion / accept autocomplete |\n| `Escape` | Cancel autocomplete / abort streaming |\n| `` | Clear editor (first) / exit (second) |\n| `Alt+D` | Exit (when editor is empty) |\n| `Ctrl+Z` | Suspend to background |\n| `Shift+Tab` | Cycle thinking level |\n| `Ctrl+P` / `Shift+Ctrl+P` | Cycle models |\n| `Ctrl+L` | Open model selector |\n| `Ctrl+O` | Toggle tool output expansion |\n| `Ctrl+T` | Toggle thinking block visibility |\n| `Ctrl+G` | Edit message in external editor |\n| `Alt+Enter` | Queue follow-up message |\n| `Alt+Up` | Restore queued messages |\n| `Ctrl+V` | Paste image from clipboard |\n| `/` | Slash commands |\n| `!` | Run bash command |\n| `!!` | Run bash command (excluded from context) |\n\n**Extensions**\n| Key | Action |\n|-----|--------|\n| `Ctrl+Alt+X` | Inspect |\n| `Alt+9` |  |\n| `Alt+_word` | /extensions/fallback.ts |\n| `Alt+é` | /extensions/null.ts |",
+      "markdown": "**Navigation**\n| Key | Action |\n|-----|--------|\n| `Up` / `Down` / `Left/Ctrl+B` / `Right/Ctrl+F` | Move cursor / browse history (Up when empty) |\n| `Alt+Left/Ctrl+Left/Alt+B` / `Alt+Right/Ctrl+Right/Alt+F` | Move by word |\n| `Home/Ctrl+A` | Start of line |\n| `End/Ctrl+E` | End of line |\n| `Ctrl+]` | Jump forward to character |\n| `Ctrl+Alt+]` | Jump backward to character |\n| `Alt+PageUp` / `PageDown` | Scroll by page |\n\n**Editing**\n| Key | Action |\n|-----|--------|\n| `Enter` | Send message |\n| `Shift+Enter` | New line |\n| `Ctrl+W/Alt+Backspace` | Delete word backwards |\n| `Alt+D/Alt+Delete` | Delete word forwards |\n| `Ctrl+U` | Delete to start of line |\n| `Ctrl+K` | Delete to end of line |\n| `Ctrl+Y` | Paste the most-recently-deleted text |\n| `Alt+Y` | Cycle through the deleted text after pasting |\n| `Ctrl+-` | Undo |\n\n**Other**\n| Key | Action |\n|-----|--------|\n| `Tab` | Path completion / accept autocomplete |\n| `Escape` | Cancel autocomplete / abort streaming |\n| `` | Clear editor (first) / exit (second) |\n| `Alt+D` | Exit (when editor is empty) |\n| `Ctrl+Z` | Suspend to background |\n| `Shift+Tab` | Cycle thinking level |\n| `Ctrl+P` / `Shift+Ctrl+P` | Cycle models |\n| `Ctrl+L` | Open model selector |\n| `Ctrl+O` | Toggle tool output expansion |\n| `Ctrl+T` | Toggle thinking block visibility |\n| `Ctrl+G` | Edit message in external editor |\n| `Alt+Enter` | Queue follow-up message |\n| `Alt+Up` | Restore queued messages |\n| `Ctrl+V` | Paste image from clipboard |\n| `/` | Slash commands |\n| `!` | Run bash command |\n| `!!` | Run bash command (excluded from context) |\n\n**Extensions**\n| Key | Action |\n|-----|--------|\n| `Ctrl+Alt+X` | Inspect |\n| `Alt+9` |  |\n| `Alt+_word` | /extensions/fallback.ts |\n| `Alt+É` | /extensions/null.ts |",
       "title": "\u001b[1m\u001b[38;5;1mKeyboard Shortcuts\u001b[39m\u001b[22m",
       "frames": {
         "20": [
@@ -6797,7 +6797,7 @@
           " │      │ ts      │ ",
           " ├──────┼─────────┤ ",
           " │ \u001b[38;5;20mAlt+ │ /extens │ ",
-          " │ \u001b[38;5;20mé\u001b[39m    │ ions/nu │ ",
+          " │ \u001b[38;5;20mÉ\u001b[39m    │ ions/nu │ ",
           " │      │ ll.ts   │ ",
           " └──────┴─────────┘ ",
           "                    ",
@@ -6906,7 +6906,7 @@
           " ├────────────┼─────────────────────────┤                                       ",
           " │ \u001b[38;5;20mAlt+_word\u001b[39m  │ /extensions/fallback.ts │                                       ",
           " ├────────────┼─────────────────────────┤                                       ",
-          " │ \u001b[38;5;20mAlt+é\u001b[39m      │ /extensions/null.ts     │                                       ",
+          " │ \u001b[38;5;20mAlt+É\u001b[39m      │ /extensions/null.ts     │                                       ",
           " └────────────┴─────────────────────────┘                                       ",
           "                                                                                ",
           "\u001b[38;5;2m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -6956,7 +6956,7 @@
       "indent": "> "
     },
     "expected": {
-      "markdown": "**Navigation**\n| Key | Action |\n|-----|--------|\n| `Up` / `Down` / `Left/Ctrl+B` / `Right/Ctrl+F` | Move cursor / browse history (Up when empty) |\n| `Alt+Left/Ctrl+Left/Alt+B` / `Alt+Right/Ctrl+Right/Alt+F` | Move by word |\n| `Home/Ctrl+A` | Start of line |\n| `End/Ctrl+E` | End of line |\n| `Ctrl+]` | Jump forward to character |\n| `Ctrl+Alt+]` | Jump backward to character |\n| `Alt+PageUp` / `PageDown` | Scroll by page |\n\n**Editing**\n| Key | Action |\n|-----|--------|\n| `Enter` | Send message |\n| `Shift+Enter` | New line |\n| `Ctrl+W/Alt+Backspace` | Delete word backwards |\n| `Alt+D/Alt+Delete` | Delete word forwards |\n| `Ctrl+U` | Delete to start of line |\n| `Ctrl+K` | Delete to end of line |\n| `Ctrl+Y` | Paste the most-recently-deleted text |\n| `Alt+Y` | Cycle through the deleted text after pasting |\n| `Ctrl+-` | Undo |\n\n**Other**\n| Key | Action |\n|-----|--------|\n| `Tab` | Path completion / accept autocomplete |\n| `Escape` | Cancel autocomplete / abort streaming |\n| `` | Clear editor (first) / exit (second) |\n| `Alt+D` | Exit (when editor is empty) |\n| `Ctrl+Z` | Suspend to background |\n| `Shift+Tab` | Cycle thinking level |\n| `Ctrl+P` / `Shift+Ctrl+P` | Cycle models |\n| `Ctrl+L` | Open model selector |\n| `Ctrl+O` | Toggle tool output expansion |\n| `Ctrl+T` | Toggle thinking block visibility |\n| `Ctrl+G` | Edit message in external editor |\n| `Alt+Enter` | Queue follow-up message |\n| `Alt+Up` | Restore queued messages |\n| `Ctrl+V` | Paste image from clipboard |\n| `/` | Slash commands |\n| `!` | Run bash command |\n| `!!` | Run bash command (excluded from context) |\n\n**Extensions**\n| Key | Action |\n|-----|--------|\n| `Ctrl+Alt+X` | Inspect |\n| `Alt+9` |  |\n| `Alt+_word` | /extensions/fallback.ts |\n| `Alt+é` | /extensions/null.ts |",
+      "markdown": "**Navigation**\n| Key | Action |\n|-----|--------|\n| `Up` / `Down` / `Left/Ctrl+B` / `Right/Ctrl+F` | Move cursor / browse history (Up when empty) |\n| `Alt+Left/Ctrl+Left/Alt+B` / `Alt+Right/Ctrl+Right/Alt+F` | Move by word |\n| `Home/Ctrl+A` | Start of line |\n| `End/Ctrl+E` | End of line |\n| `Ctrl+]` | Jump forward to character |\n| `Ctrl+Alt+]` | Jump backward to character |\n| `Alt+PageUp` / `PageDown` | Scroll by page |\n\n**Editing**\n| Key | Action |\n|-----|--------|\n| `Enter` | Send message |\n| `Shift+Enter` | New line |\n| `Ctrl+W/Alt+Backspace` | Delete word backwards |\n| `Alt+D/Alt+Delete` | Delete word forwards |\n| `Ctrl+U` | Delete to start of line |\n| `Ctrl+K` | Delete to end of line |\n| `Ctrl+Y` | Paste the most-recently-deleted text |\n| `Alt+Y` | Cycle through the deleted text after pasting |\n| `Ctrl+-` | Undo |\n\n**Other**\n| Key | Action |\n|-----|--------|\n| `Tab` | Path completion / accept autocomplete |\n| `Escape` | Cancel autocomplete / abort streaming |\n| `` | Clear editor (first) / exit (second) |\n| `Alt+D` | Exit (when editor is empty) |\n| `Ctrl+Z` | Suspend to background |\n| `Shift+Tab` | Cycle thinking level |\n| `Ctrl+P` / `Shift+Ctrl+P` | Cycle models |\n| `Ctrl+L` | Open model selector |\n| `Ctrl+O` | Toggle tool output expansion |\n| `Ctrl+T` | Toggle thinking block visibility |\n| `Ctrl+G` | Edit message in external editor |\n| `Alt+Enter` | Queue follow-up message |\n| `Alt+Up` | Restore queued messages |\n| `Ctrl+V` | Paste image from clipboard |\n| `/` | Slash commands |\n| `!` | Run bash command |\n| `!!` | Run bash command (excluded from context) |\n\n**Extensions**\n| Key | Action |\n|-----|--------|\n| `Ctrl+Alt+X` | Inspect |\n| `Alt+9` |  |\n| `Alt+_word` | /extensions/fallback.ts |\n| `Alt+É` | /extensions/null.ts |",
       "title": "\u001b[1m\u001b[38;5;1mKeyboard Shortcuts\u001b[39m\u001b[22m",
       "frames": {
         "20": [
@@ -7236,7 +7236,7 @@
           " │      │ ts      │ ",
           " ├──────┼─────────┤ ",
           " │ \u001b[38;5;20mAlt+ │ /extens │ ",
-          " │ \u001b[38;5;20mé\u001b[39m    │ ions/nu │ ",
+          " │ \u001b[38;5;20mÉ\u001b[39m    │ ions/nu │ ",
           " │      │ ll.ts   │ ",
           " └──────┴─────────┘ ",
           "                    ",
@@ -7345,7 +7345,7 @@
           " ├────────────┼─────────────────────────┤                                       ",
           " │ \u001b[38;5;20mAlt+_word\u001b[39m  │ /extensions/fallback.ts │                                       ",
           " ├────────────┼─────────────────────────┤                                       ",
-          " │ \u001b[38;5;20mAlt+é\u001b[39m      │ /extensions/null.ts     │                                       ",
+          " │ \u001b[38;5;20mAlt+É\u001b[39m      │ /extensions/null.ts     │                                       ",
           " └────────────┴─────────────────────────┘                                       ",
           "                                                                                ",
           "\u001b[38;5;2m────────────────────────────────────────────────────────────────────────────────\u001b[39m"

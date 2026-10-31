@@ -1,5 +1,5 @@
 //! Flavor-independent witnesses of the `~` parse and of the concatenating expansion.
-use super::{Tilde, expand_tilde_with_flavor, parse};
+use super::{Tilde, expand_tilde_with_flavor, parse, shorten_home_in};
 use std::io;
 
 /// Expands `path` in one flavor over a fixed home.
@@ -106,5 +106,85 @@ fn home_is_read_only_for_the_expanded_forms() {
             let error = expand_tilde_with_flavor(written, windows, unread).unwrap_err();
             assert_eq!(error.to_string(), "the home directory was read");
         }
+    }
+}
+
+/// Shortens `path` below `home` in one flavor.
+fn shorten(path: &str, home: &str, windows: bool) -> String {
+    shorten_home_in(path, home, windows)
+}
+
+/// A sibling that shares the home's leading text is not below the home.
+#[test]
+fn shorten_home_keeps_siblings_that_share_the_home_prefix() {
+    for (path, home) in [
+        ("/srv/u2/x", "/srv/u"),
+        ("/srv/u-other/x", "/srv/u"),
+        ("/srv/u2", "/srv/u"),
+    ] {
+        assert_eq!(shorten(path, home, false), path, "{path:?} below {home:?}");
+    }
+}
+
+/// The home is `~` and a path below it is `~` and the part below.
+#[test]
+fn shorten_home_shows_the_home_and_its_descendants() {
+    let rows = [
+        ("/srv/u/x", "/srv/u", "~/x"),
+        ("/srv/u", "/srv/u", "~"),
+        ("/srv/u/", "/srv/u", "~"),
+        ("/srv/u/a/b", "/srv/u", "~/a/b"),
+        ("/srv/u/x", "/srv/u/", "~/x"),
+        ("/srv/u/./a/../x", "/srv/u", "~/x"),
+        (
+            "/srv/\u{e9}l\u{e8}ve/\u{6587}",
+            "/srv/\u{e9}l\u{e8}ve",
+            "~/\u{6587}",
+        ),
+    ];
+    for (path, home, expected) in rows {
+        assert_eq!(
+            shorten(path, home, false),
+            expected,
+            "{path:?} below {home:?}"
+        );
+    }
+}
+
+/// An empty, relative or root home, and a relative path, abbreviate nothing.
+#[test]
+fn shorten_home_abbreviates_nothing_without_an_absolute_home_and_path() {
+    let rows = [
+        ("/etc", "/"),
+        ("/", "/"),
+        ("/etc", ""),
+        ("/srv/u/x", "u"),
+        ("u/x", "/srv/u"),
+        ("", "/srv/u"),
+        ("/tmp/file", "/srv/u"),
+    ];
+    for (path, home) in rows {
+        assert_eq!(shorten(path, home, false), path, "{path:?} below {home:?}");
+    }
+}
+
+/// The Windows flavor follows its separator, drive roots and letter case.
+#[test]
+fn shorten_home_follows_the_windows_flavor() {
+    let rows = [
+        (r"C:\Users\ada\x", r"C:\Users\ada", r"~\x"),
+        (r"C:\Users\ada", r"C:\Users\ada", "~"),
+        (r"c:\users\ADA\x", r"C:\Users\ada", r"~\x"),
+        (r"C:/Users/ada/x", r"C:\Users\ada", r"~\x"),
+        (r"C:\Users\ada2\x", r"C:\Users\ada", r"C:\Users\ada2\x"),
+        (r"D:\Users\ada\x", r"C:\Users\ada", r"D:\Users\ada\x"),
+        (r"C:\Users\ada\x", r"C:\", r"C:\Users\ada\x"),
+    ];
+    for (path, home, expected) in rows {
+        assert_eq!(
+            shorten(path, home, true),
+            expected,
+            "{path:?} below {home:?}"
+        );
     }
 }

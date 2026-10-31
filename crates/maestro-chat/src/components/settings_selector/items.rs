@@ -17,6 +17,13 @@ fn row(text: (&str, &str, &str), current: String, values: &[&str]) -> SettingIte
         submenu: None,
     }
 }
+/// The follow-up mode description, naming the key bound to queue a follow-up.
+fn follow_up_description(key: &str) -> String {
+    format!(
+        "{key} queues follow-up messages until agent stops. 'one-at-a-time': deliver one, wait for response. 'all': deliver all at once."
+    )
+}
+
 /// Creates the supplied rows in their display order.
 pub(super) fn rows(
     config: SettingsConfig,
@@ -188,7 +195,7 @@ fn session_rows(config: &SettingsConfig) -> Vec<SettingItem> {
             (
                 "follow-up-mode",
                 "Follow-up mode",
-                "Alt+Enter queues follow-up messages until agent stops. 'one-at-a-time': deliver one, wait for response. 'all': deliver all at once.",
+                &follow_up_description(&maestro_app::key_display_text("app.message.followUp")),
             ),
             config.follow_up_mode.as_str().into(),
             &["one-at-a-time", "all"],
@@ -443,3 +450,6 @@ fn delivery(value: &str) -> MessageDeliveryMode {
         MessageDeliveryMode::OneAtATime
     }
 }
+
+#[cfg(test)]
+mod tests;

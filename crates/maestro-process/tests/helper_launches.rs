@@ -181,6 +181,33 @@ fn detached_launch_returns_before_input_consumption_and_reaps() {
     reaped(pid);
 }
 
+/// A ready child reports its own process group and its parent's, once released.
+const GROUPS: &str = r"
+import os, socket, sys
+s = socket.create_connection(('127.0.0.1', int(sys.argv[1])))
+s.sendall(str(os.getpid()).encode() + b'\n')
+assert s.recv(1) == b'!'
+s.sendall(f'{os.getpgid(0)} {os.getpgid(os.getppid())}'.encode())
+s.close()
+";
+
+#[test]
+fn detached_launch_runs_in_its_own_session_outside_the_callers_process_group() {
+    use std::io::{Read, Write};
+    let (command, listener) = controlled(GROUPS);
+    let worker = maestro_process::spawn(command, None).unwrap();
+    let (mut socket, pid) = ready(&listener);
+    socket.write_all(b"!").unwrap();
+    let mut groups = String::new();
+    socket.read_to_string(&mut groups).unwrap();
+    worker.join().unwrap();
+    let (own, parent) = groups.split_once(' ').unwrap();
+    let (own, parent): (i32, i32) = (own.parse().unwrap(), parent.parse().unwrap());
+    assert_eq!(own, pid.as_raw_nonzero().get());
+    assert_ne!(own, parent);
+    reaped(pid);
+}
+
 #[test]
 fn detached_input_closure_does_not_prevent_reaping() {
     let script = r"
