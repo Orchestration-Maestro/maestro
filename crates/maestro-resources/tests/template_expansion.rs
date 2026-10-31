@@ -1118,7 +1118,7 @@ const MAESTRO_PROMPT_TEMPLATE_EXPANDS_FIRST_MATCHING_NAME_CASES: &[ExpansionCase
             ("go\ttab", "tab:$1"),
             ("go\nline", "newline:$1"),
         ],
-        "empty:",
+        "/",
     ),
     (
         "/ x",
@@ -1130,7 +1130,7 @@ const MAESTRO_PROMPT_TEMPLATE_EXPANDS_FIRST_MATCHING_NAME_CASES: &[ExpansionCase
             ("go\ttab", "tab:$1"),
             ("go\nline", "newline:$1"),
         ],
-        "empty:x",
+        "/ x",
     ),
     (
         "//go x",
