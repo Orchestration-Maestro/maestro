@@ -2100,6 +2100,52 @@ pub fn waiting_tool(
     Rc::new(RwLock::new(tool))
 }
 
+/// An executable tool named `name` that calls `on_execute` and answers `ok`.
+pub fn callback_tool(
+    name: &str,
+    on_execute: impl Fn() + 'static,
+) -> maestro_agent::SharedAgentTool<Local> {
+    let tool = maestro_agent::AgentToolRecord::<Local> {
+        definition: Tool {
+            name: name.into(),
+            description: "Run a callback".into(),
+            parameters: json!({"type": "object", "properties": {}}).into(),
+        },
+        description: None,
+        label: name.into(),
+        prepare_arguments: None,
+        execute: Rc::new(move |_, _, _, _| {
+            on_execute();
+            Box::pin(std::future::ready(Ok(maestro_agent::AgentToolResult {
+                content: vec![maestro_models::UserBlock::Text(
+                    maestro_models::TextContent::new("ok".into()),
+                )],
+                details: Some(json!({})),
+                terminate: None,
+            })))
+        }),
+        execution_mode: None,
+    };
+    Rc::new(RwLock::new(tool))
+}
+
+/// The extension whose before-agent-start handler answers every prompt with the system
+/// prompt `prompt`.
+pub fn system_prompt_extension(prompt: &'static str) -> ExtensionFactory<Local> {
+    Rc::new(move |api| {
+        let registered = api.on::<BeforeAgentStartEvent, BeforeAgentStartEventResult>(
+            "before_agent_start".into(),
+            Rc::new(move |_, _| {
+                Box::pin(std::future::ready(Ok(Some(BeforeAgentStartEventResult {
+                    message: Presence::Missing,
+                    system_prompt: Presence::Present(prompt.to_owned()),
+                }))))
+            }),
+        );
+        Box::pin(std::future::ready(registered.map(drop)))
+    })
+}
+
 /// Prompts `text` and waits until the session has delivered the run's end.
 pub async fn prompt_to_end(
     h: &Harness,
