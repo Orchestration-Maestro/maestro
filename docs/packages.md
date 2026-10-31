@@ -167,6 +167,21 @@ See [Git preparation and recovery](package-sources.md#git-preparation-and-recove
 and returns whether any entry changed. Neither flushes settings nor undoes
 installed contents when the settings edit fails.
 
+Before progress, child processes or file changes, explicit install and remove
+operations ask the registered decider and check the persisted base layer for
+their scope. Global operations use the global layer only; project operations use
+the project layer when present, otherwise the global layer. A packages lock
+refuses installation. Removal refuses an identity listed in that layer's package
+entries, even when the requested pin differs. Refusals name the release and its
+recorded time.
+
+When a decider or base layer is present, persisting operations also prepare their
+exact preference edit before acquisition. The admitted edit is applied after
+successful contents and progress effects, without a second decision. Without
+either, preference validation and reads remain after acquisition as before.
+An unchanged checkout keeps an existing configured pin but still adds an absent
+source.
+
 ## Children
 
 Every package child starts through the native launcher with an argument vector,

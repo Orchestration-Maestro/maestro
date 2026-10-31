@@ -286,8 +286,12 @@ fn warnings(
         Rc::new(submenus::WarningSettingsSubmenu::new(
             initial,
             Rc::new(move |value| {
-                state.replace(value.clone());
-                callback(value);
+                let previous = state.replace(value.clone());
+                if callback(value) {
+                    return true;
+                }
+                state.replace(previous);
+                false
             }),
             Rc::new(move || done(None)),
             theme.clone(),
@@ -324,8 +328,8 @@ fn thinking(
             submenus::SelectionCallbacks {
                 select: Rc::new(move |value| {
                     if let Ok(level) = value.parse() {
-                        callback(level);
-                        done(Some(value.into()));
+                        let accepted = callback(level);
+                        done(accepted.then(|| value.into()));
                     }
                 }),
                 cancel: Rc::new(move || cancel(None)),
@@ -353,6 +357,12 @@ fn themes(
         let callback = callbacks.on_theme_change.clone();
         let preview = callbacks.on_theme_preview.clone();
         let restore = current.clone();
+        let restore: Rc<dyn Fn()> = Rc::new(move || {
+            if let Some(preview) = &preview {
+                preview(&restore);
+            }
+        });
+        let refused = restore.clone();
         Rc::new(submenus::SelectSubmenu::new(
             submenus::Selection {
                 title: "Theme",
@@ -369,13 +379,14 @@ fn themes(
             },
             submenus::SelectionCallbacks {
                 select: Rc::new(move |value| {
-                    callback(value);
-                    done(Some(value.into()));
+                    let accepted = callback(value);
+                    if !accepted {
+                        refused();
+                    }
+                    done(accepted.then(|| value.into()));
                 }),
                 cancel: Rc::new(move || {
-                    if let Some(preview) = &preview {
-                        preview(&restore);
-                    }
+                    restore();
                     cancel(None);
                 }),
                 preview: callbacks.on_theme_preview.clone(),
@@ -386,7 +397,7 @@ fn themes(
     item
 }
 /// Converts only the selected cyclic setting into its existing owner type.
-pub(super) fn change(callbacks: &SettingsCallbacks, id: &str, value: &str) {
+pub(super) fn change(callbacks: &SettingsCallbacks, id: &str, value: &str) -> bool {
     let numeric_callback = match id {
         "image-width-cells" => Some(&callbacks.on_image_width_cells_change),
         "editor-padding" => Some(&callbacks.on_editor_padding_x_change),
@@ -394,10 +405,7 @@ pub(super) fn change(callbacks: &SettingsCallbacks, id: &str, value: &str) {
         _ => None,
     };
     if let Some(callback) = numeric_callback {
-        if let Ok(value) = value.parse() {
-            callback(value);
-        }
-        return;
+        return value.parse().is_ok_and(|value| callback(value));
     }
     match id {
         "show-images" => (callbacks.on_show_images_change)(value == "true"),
@@ -432,7 +440,7 @@ pub(super) fn change(callbacks: &SettingsCallbacks, id: &str, value: &str) {
             "all" => TreeFilterMode::All,
             _ => TreeFilterMode::Default,
         }),
-        _ => {}
+        _ => true,
     }
 }
 /// Converts the fixed delivery choices.

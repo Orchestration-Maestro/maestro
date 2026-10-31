@@ -83,55 +83,56 @@ pub struct SettingsConfig {
     pub warnings: WarningSettings,
 }
 /// Immediate notifications for the selected setting.
+/// Preference callbacks return false on refusal, retaining the previous displayed value.
 pub struct SettingsCallbacks {
     /// On auto compact change.
-    pub on_auto_compact_change: Rc<dyn Fn(bool)>,
+    pub on_auto_compact_change: Rc<dyn Fn(bool) -> bool>,
     /// Reports a chosen show images value.
-    pub on_show_images_change: Rc<dyn Fn(bool)>,
+    pub on_show_images_change: Rc<dyn Fn(bool) -> bool>,
     /// Reports a chosen image width cells value.
-    pub on_image_width_cells_change: Rc<dyn Fn(f64)>,
+    pub on_image_width_cells_change: Rc<dyn Fn(f64) -> bool>,
     /// Reports a chosen auto resize images value.
-    pub on_auto_resize_images_change: Rc<dyn Fn(bool)>,
+    pub on_auto_resize_images_change: Rc<dyn Fn(bool) -> bool>,
     /// Reports a chosen block images value.
-    pub on_block_images_change: Rc<dyn Fn(bool)>,
+    pub on_block_images_change: Rc<dyn Fn(bool) -> bool>,
     /// Reports a chosen enable skill commands value.
-    pub on_enable_skill_commands_change: Rc<dyn Fn(bool)>,
+    pub on_enable_skill_commands_change: Rc<dyn Fn(bool) -> bool>,
     /// Reports a chosen show hardware cursor value.
-    pub on_show_hardware_cursor_change: Rc<dyn Fn(bool)>,
+    pub on_show_hardware_cursor_change: Rc<dyn Fn(bool) -> bool>,
     /// Reports a chosen editor padding x value.
-    pub on_editor_padding_x_change: Rc<dyn Fn(f64)>,
+    pub on_editor_padding_x_change: Rc<dyn Fn(f64) -> bool>,
     /// Reports a chosen autocomplete max visible value.
-    pub on_autocomplete_max_visible_change: Rc<dyn Fn(f64)>,
+    pub on_autocomplete_max_visible_change: Rc<dyn Fn(f64) -> bool>,
     /// Reports a chosen clear on shrink value.
-    pub on_clear_on_shrink_change: Rc<dyn Fn(bool)>,
+    pub on_clear_on_shrink_change: Rc<dyn Fn(bool) -> bool>,
     /// Reports a chosen show terminal progress value.
-    pub on_show_terminal_progress_change: Rc<dyn Fn(bool)>,
+    pub on_show_terminal_progress_change: Rc<dyn Fn(bool) -> bool>,
     /// On steering mode change.
-    pub on_steering_mode_change: Rc<dyn Fn(MessageDeliveryMode)>,
+    pub on_steering_mode_change: Rc<dyn Fn(MessageDeliveryMode) -> bool>,
     /// On follow up mode change.
-    pub on_follow_up_mode_change: Rc<dyn Fn(MessageDeliveryMode)>,
+    pub on_follow_up_mode_change: Rc<dyn Fn(MessageDeliveryMode) -> bool>,
     /// On transport change.
-    pub on_transport_change: Rc<dyn Fn(Transport)>,
+    pub on_transport_change: Rc<dyn Fn(Transport) -> bool>,
     /// On thinking level change.
-    pub on_thinking_level_change: Rc<dyn Fn(ThinkingLevel)>,
+    pub on_thinking_level_change: Rc<dyn Fn(ThinkingLevel) -> bool>,
     /// On theme change.
-    pub on_theme_change: Rc<dyn Fn(&str)>,
+    pub on_theme_change: Rc<dyn Fn(&str) -> bool>,
     /// On theme preview.
     pub on_theme_preview: Option<ThemeCallback>,
     /// On hide thinking block change.
-    pub on_hide_thinking_block_change: Rc<dyn Fn(bool)>,
+    pub on_hide_thinking_block_change: Rc<dyn Fn(bool) -> bool>,
     /// On collapse changelog change.
-    pub on_collapse_changelog_change: Rc<dyn Fn(bool)>,
+    pub on_collapse_changelog_change: Rc<dyn Fn(bool) -> bool>,
     /// On enable install telemetry change.
-    pub on_enable_install_telemetry_change: Rc<dyn Fn(bool)>,
+    pub on_enable_install_telemetry_change: Rc<dyn Fn(bool) -> bool>,
     /// On double escape action change.
-    pub on_double_escape_action_change: Rc<dyn Fn(DoubleEscapeAction)>,
+    pub on_double_escape_action_change: Rc<dyn Fn(DoubleEscapeAction) -> bool>,
     /// On tree filter mode change.
-    pub on_tree_filter_mode_change: Rc<dyn Fn(TreeFilterMode)>,
+    pub on_tree_filter_mode_change: Rc<dyn Fn(TreeFilterMode) -> bool>,
     /// On quiet startup change.
-    pub on_quiet_startup_change: Rc<dyn Fn(bool)>,
+    pub on_quiet_startup_change: Rc<dyn Fn(bool) -> bool>,
     /// On warnings change.
-    pub on_warnings_change: Rc<dyn Fn(WarningSettings)>,
+    pub on_warnings_change: Rc<dyn Fn(WarningSettings) -> bool>,
     /// On cancel.
     pub on_cancel: Rc<dyn Fn()>,
 }

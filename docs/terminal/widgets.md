@@ -312,7 +312,9 @@ submenu before considering value cycling. `update_value` updates the first match
 without invoking change notification. A submenu's repeatable completion callable can be
 retained: a supplied value is stored and notified before the child closes; no supplied
 value only closes it. Completion restores the saved opener index when one remains.
-Constructor records are owned; theme callables can read their own live captured state.
+Change callbacks return `true` to accept the value, or `false` to restore the
+previous displayed value. Constructor records are owned; theme callables can read
+their own live captured state.
 
 An empty original list shows `  No settings available`; an empty search result shows
 `  No matching settings`. The main-list hint is
@@ -340,7 +342,7 @@ let settings = SettingsList::new(
         label: Rc::new(|text, _| text.into()), value: Rc::new(|text, _| text.into()),
         description: Rc::new(str::to_owned), cursor: "→ ".into(), hint: Rc::new(str::to_owned),
     },
-    (Rc::new(|_id, _value| {}), Rc::new(|| {})),
+    (Rc::new(|_id, _value| true), Rc::new(|| {})),
     SettingsListOptions::default(),
 );
 settings.handle_input(" ");

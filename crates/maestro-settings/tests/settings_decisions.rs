@@ -150,3 +150,74 @@ fn stored_decisions_preserve_locked_values_and_raw_files() {
         Some(project)
     );
 }
+
+/// Recomputed lists retain the admitted key and scope instead of granting new edits.
+#[test]
+fn recomputed_prepared_list_preserves_key_and_scope() {
+    use maestro_settings::SettingsChange;
+    for (scope, path, accepted) in [
+        (SettingsScope::Global, "packages", true),
+        (SettingsScope::Project, "packages", false),
+        (SettingsScope::Global, "skills", false),
+    ] {
+        let mut manager = SettingsManager::from_storage(ControlledStorage::new());
+        let changes = vec![SettingsChange {
+            path: vec!["packages".into()],
+            value: Some(json!(["npm:new"])),
+        }];
+        let request = DecisionRequest::SettingsEdit {
+            scope: SettingsScope::Global,
+            changes: &changes,
+        };
+        let edit = manager
+            .prepare_operation(&request, SettingsScope::Global, changes.clone())
+            .unwrap();
+        let result =
+            edit.with_recomputed_list(scope, &[path], vec![json!("npm:late"), json!("npm:new")]);
+        assert_eq!(result.is_ok(), accepted);
+        if let Ok(edit) = result {
+            manager.apply_prepared_edit(edit);
+            assert_eq!(
+                manager.get_global_settings().0.get("packages"),
+                Some(&json!(["npm:late", "npm:new"]))
+            );
+        } else {
+            assert!(manager.get_global_settings().0.is_empty());
+        }
+    }
+}
+
+/// Numeric setters offer their normalized values and preserve typed NaN results.
+#[test]
+fn numeric_preference_admission_keeps_normalization_and_nan() {
+    for (input, padding, height, width) in [
+        (-1.5, json!(0), json!(3), json!(1)),
+        (2.75, json!(2), json!(3), json!(2)),
+        (50.5, json!(3), json!(20), json!(50)),
+        (f64::NAN, json!(null), json!(null), json!(null)),
+    ] {
+        let mut manager = SettingsManager::in_memory(maestro_settings::Settings::default());
+        manager.set_editor_padding_x(input);
+        manager.set_autocomplete_max_visible(input);
+        manager.set_image_width_cells(input);
+        let raw = manager.get_global_settings().0;
+        assert_eq!(raw["editorPaddingX"], padding);
+        assert_eq!(raw["autocompleteMaxVisible"], height);
+        assert_eq!(raw["terminal"]["imageWidthCells"], width);
+        assert_eq!(manager.get_editor_padding_x().is_nan(), input.is_nan());
+        assert_eq!(
+            manager.get_autocomplete_max_visible().is_nan(),
+            input.is_nan()
+        );
+        manager.register_decider(Arc::new(Refuse)).unwrap();
+        manager.set_editor_padding_x(1.0);
+        manager.set_autocomplete_max_visible(5.0);
+        manager.set_image_width_cells(60.0);
+        assert_eq!(manager.get_global_settings().0, raw);
+        assert_eq!(manager.get_editor_padding_x().is_nan(), input.is_nan());
+        assert_eq!(
+            manager.get_autocomplete_max_visible().is_nan(),
+            input.is_nan()
+        );
+    }
+}

@@ -88,7 +88,17 @@ slow handler never delays the change. An unrecognized saved level reads as
 
 `cycle_thinking_level` returns `None` for a model that cannot reason and otherwise
 moves to the next supported level, wrapping. `set_steering_mode` and
-`set_follow_up_mode` set the agent's queue mode and save it.
+`set_follow_up_mode` return `Result<(), DiagnosticErrorInfo>`. They admit the
+preference edit before changing the agent's queue mode, then save it. A refusal
+changes neither value and reaches RPC as an unsuccessful response.
+`set_transport` admits and saves the transport before updating the next request's
+live preference.
+
+SDK model, thinking and explicit tool options are admitted before initial history
+entries are appended. Recorded model and thinking values instead use stored-value
+resolution. A model that resolves to a different identity takes the ordinary
+fallback path and message; thinking resolves before the model's capability clamp.
+Resolution reports settings diagnostics without rewriting the saved session.
 
 ## Tools and the system prompt
 
@@ -111,6 +121,11 @@ loader's replacement prompt, the appended texts joined by a blank line, the
 selected names, their snippets and all their guidelines in order. That prompt and
 the options that built it become the base prompt that prompts restore.
 `get_all_tools` lists the registry with each tool's source.
+
+Explicit active-tool selection asks the registered decider before changing tools
+or the prompt. Automatic startup and reload ask it for each candidate, retain
+refused definitions in the registry and leave them inactive with a diagnostic.
+Without a decider, the active set and its ordering are unchanged.
 
 ## Prompts, queues and shell commands
 
@@ -154,6 +169,10 @@ order.
 a run ends past the reserve; a failed response is repeated after a doubling delay.
 Both announce their start and end events, can be aborted, and are described with
 the preferences they read in [compaction and retries](recovery.md).
+`set_auto_compaction_enabled` and `set_auto_retry_enabled` return
+`Result<(), DiagnosticErrorInfo>` and admit their edits before publishing them.
+RPC reports a refusal as unsuccessful; a refused compaction edit leaves the
+terminal footer unchanged.
 
 ## Statistics
 

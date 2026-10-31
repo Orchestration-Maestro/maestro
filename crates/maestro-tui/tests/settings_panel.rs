@@ -155,6 +155,7 @@ fn settings_submenu_delegates_and_done_restores() {
             Rc::new(move |id, value| {
                 let frame = target.get().unwrap().upgrade().unwrap().render(80);
                 log.borrow_mut().push(json!(["change", id, value, frame]));
+                true
             }),
             Rc::new(move || cancel.borrow_mut().push(json!(["cancel"]))),
         ),
@@ -200,7 +201,7 @@ fn settings_synchronous_done_does_not_reopen_submenu() {
         1,
         theme(),
         (
-            Rc::new(move |id, value| log.borrow_mut().push(json!([id, value]))),
+            Rc::new(move |id, value| record_change(&log, id, value)),
             Rc::new(|| {}),
         ),
         SettingsListOptions::default(),
@@ -231,7 +232,7 @@ fn settings_submenu_optional_input_is_a_noop() {
         1,
         theme(),
         (
-            Rc::new(|_, _| {}),
+            Rc::new(|_, _| true),
             Rc::new(move || count.set(count.get() + 1)),
         ),
         SettingsListOptions::default(),
@@ -263,6 +264,7 @@ fn settings_change_callback_can_reenter() {
                 log.borrow_mut().push(json!([id, value, frame]));
                 list.update_value(id, "callback".into());
                 list.handle_input("\x1b[B");
+                true
             }),
             Rc::new(|| {}),
         ),
@@ -296,7 +298,7 @@ fn settings_render_reads_updates_through_original_items() {
         list_support::settings(),
         3,
         style,
-        (Rc::new(|_, _| {}), Rc::new(|| {})),
+        (Rc::new(|_, _| true), Rc::new(|| {})),
         SettingsListOptions {
             enable_search: true,
         },
@@ -329,7 +331,7 @@ fn settings_done_updates_captured_item_after_filter_changes() {
                     3,
                     theme(),
                     (
-                        Rc::new(move |id, value| log.borrow_mut().push(json!([id, value]))),
+                        Rc::new(move |id, value| record_change(&log, id, value)),
                         Rc::new(|| {}),
                     ),
                     SettingsListOptions {
@@ -353,7 +355,7 @@ fn settings_done_updates_captured_item_after_filter_changes() {
                     1,
                     theme(),
                     (
-                        Rc::new(move |id, value| log.borrow_mut().push(json!([id, value]))),
+                        Rc::new(move |id, value| record_change(&log, id, value)),
                         Rc::new(|| {}),
                     ),
                     SettingsListOptions::default(),
@@ -395,6 +397,7 @@ fn settings_done_closes_after_reentrant_change() {
                 let frame = list.render(20);
                 log.borrow_mut().push(json!(frame));
                 list.update_value("a", "override".into());
+                true
             }),
             Rc::new(|| {}),
         ),
@@ -457,4 +460,35 @@ fn settings_submenu_returns_child_input_failure() {
         };
         assert!(actual == case.expected, "recorded submenu delegation");
     }
+}
+
+#[test]
+fn refused_settings_changes_restore_cycle_and_submenu_values() {
+    let _keys = list_support::KEYS.lock().unwrap();
+    for nested in [false, true] {
+        let mut setting = item();
+        if nested {
+            setting.submenu = Some(Rc::new(|_, done| {
+                done(Some("new".into()));
+                child()
+            }));
+        } else {
+            setting.values = Some(vec!["old".into(), "new".into()]);
+        }
+        let list = SettingsList::new(
+            vec![setting],
+            1,
+            theme(),
+            (Rc::new(|_, _| false), Rc::new(|| {})),
+            SettingsListOptions::default(),
+        );
+        let before = list.render(80);
+        list.handle_input("\r");
+        assert_eq!(list.render(80), before, "nested: {nested}");
+    }
+}
+
+fn record_change(log: &list_support::Observations, id: &str, value: &str) -> bool {
+    log.borrow_mut().push(json!([id, value]));
+    true
 }

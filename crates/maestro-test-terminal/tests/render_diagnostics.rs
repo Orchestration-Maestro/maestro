@@ -272,7 +272,7 @@ fn settings_description_rows_fit_the_frame_viewport() {
                 cursor: "→ ".into(),
                 hint: Rc::new(str::to_owned),
             },
-            (Rc::new(|_, _| {}), Rc::new(|| {})),
+            (Rc::new(|_, _| true), Rc::new(|| {})),
             SettingsListOptions::default(),
         ));
         let lines = list.render(width);

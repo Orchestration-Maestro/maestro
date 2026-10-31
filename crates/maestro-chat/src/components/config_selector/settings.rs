@@ -1,6 +1,9 @@
 //! Signed-pattern updates using raw scoped snapshots and canonical adapters.
 use super::{ResourceItem, resource_list::ResourceList};
-use maestro_app::{PackageSource, PathMetadata, SettingsListEntry, SourceOrigin, SourceScope};
+use maestro_app::{
+    DecisionRequest, PathMetadata, SettingsChange, SettingsListEntry, SettingsScope, SourceOrigin,
+    SourceScope,
+};
 use maestro_path::{Cwd, dirname, join, relative, resolve_with};
 use serde_json::{Map, Value};
 use std::{cell::RefCell, io, rc::Rc};
@@ -56,7 +59,7 @@ impl ResourceList {
             };
             let pattern = Self::relative_pattern(&base, &path)?;
             let entries = patterns(snapshot.0.get(&kind), &pattern, enabled);
-            self.set_paths(metadata.scope, &kind, entries);
+            self.set_paths(metadata.scope, &kind, entries)?;
         } else {
             self.toggle_package(&snapshot.0, (&path, &kind, &metadata), enabled)?;
         }
@@ -103,13 +106,7 @@ impl ResourceList {
                 ),
             );
         }
-        let packages = packages.iter().map(PackageSource::from_value).collect();
-        if metadata.scope == SourceScope::Project {
-            self.settings.borrow_mut().set_project_packages(packages);
-        } else {
-            self.settings.borrow_mut().set_packages(packages);
-        }
-        Ok(())
+        self.write_paths(metadata.scope, "packages", packages)
     }
     /// Binds open authored operands to one live ambient observation per toggle.
     fn relative_pattern(from: &str, to: &str) -> io::Result<String> {
@@ -130,19 +127,51 @@ impl ResourceList {
             },
         ))
     }
-    /// Routes default kinds to the existing scope-specific settings setters.
-    fn set_paths(&self, scope: SourceScope, kind: &str, entries: Vec<SettingsListEntry>) {
-        let mut settings = self.settings.borrow_mut();
-        match (kind, scope == SourceScope::Project) {
-            ("extensions", true) => settings.set_project_extension_paths(entries),
-            ("extensions", false) => settings.set_extension_paths(entries),
-            ("skills", true) => settings.set_project_skill_paths(entries),
-            ("skills", false) => settings.set_skill_paths(entries),
-            ("prompts", true) => settings.set_project_prompt_template_paths(entries),
-            ("prompts", false) => settings.set_prompt_template_paths(entries),
-            ("themes", true) => settings.set_project_theme_paths(entries),
-            ("themes", false) => settings.set_theme_paths(entries),
-            _ => {}
+    /// Routes default kinds to one admitted scoped edit.
+    fn set_paths(
+        &self,
+        scope: SourceScope,
+        kind: &str,
+        entries: Vec<SettingsListEntry>,
+    ) -> io::Result<()> {
+        if !matches!(kind, "extensions" | "skills" | "prompts" | "themes") {
+            return Ok(());
         }
+        self.write_paths(
+            scope,
+            kind,
+            entries
+                .into_iter()
+                .map(SettingsListEntry::into_value)
+                .collect(),
+        )
+    }
+    /// Admits the exact preference edit before the retained row or callback can change.
+    fn write_paths(&self, scope: SourceScope, kind: &str, entries: Vec<Value>) -> io::Result<()> {
+        let scope = if scope == SourceScope::Project {
+            SettingsScope::Project
+        } else {
+            SettingsScope::Global
+        };
+        let changes = vec![SettingsChange {
+            path: vec![kind.into()],
+            value: Some(Value::Array(entries)),
+        }];
+        let mut settings = self.settings.borrow_mut();
+        let edit = settings
+            .prepare_operation(
+                &DecisionRequest::SettingsEdit {
+                    scope,
+                    changes: &changes,
+                },
+                scope,
+                changes.clone(),
+            )
+            .map_err(|message| {
+                settings.report_refusal(scope, message.clone());
+                io::Error::new(io::ErrorKind::PermissionDenied, message)
+            })?;
+        settings.apply_prepared_edit(edit);
+        Ok(())
     }
 }

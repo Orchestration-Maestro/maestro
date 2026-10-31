@@ -183,6 +183,10 @@ autocomplete height through `3`, `5`, `7`, `10`, `15`, `20`. An unmatched value
 advances to the first choice. These fixed decimal choices report `f64` values;
 boolean choices report `bool` values.
 
+Preference callbacks return `true` when accepted and `false` when refused. A refusal
+restores the previous main-list value or warning snapshot; a refused theme commit
+restores the same theme as cancellation. Preview and cancel callbacks return no value.
+
 Cyclic rows report only their typed change callback. Unknown stored delivery,
 transport and double-escape spellings remain visible until activation chooses
 the first available value. Thinking choices retain supplied order and duplicates;

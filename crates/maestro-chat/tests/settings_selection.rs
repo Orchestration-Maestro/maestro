@@ -507,6 +507,7 @@ fn settings_callbacks_release_after_last_list_handle() {
     let mut callbacks = events.callbacks(true);
     callbacks.on_auto_compact_change = std::rc::Rc::new(move |_| {
         assert_eq!(std::rc::Rc::strong_count(&captured), 1);
+        true
     });
     let parent = std::rc::Rc::new(maestro_chat::SettingsSelectorComponent::new(
         config(),
@@ -525,4 +526,37 @@ fn settings_callbacks_release_after_last_list_handle() {
     assert!(!list.render(80).is_empty());
     drop(list);
     assert!(released.upgrade().is_none());
+}
+
+#[test]
+fn refused_warning_and_theme_choices_restore_their_previous_view() {
+    let _guard = bindings_guard();
+    for id in ["warnings", "theme"] {
+        let events = Events::default();
+        let (_, theme) = published::published(&colors(0));
+        let mut callbacks = events.callbacks(true);
+        callbacks.on_warnings_change = std::rc::Rc::new(|_| false);
+        callbacks.on_theme_change = std::rc::Rc::new(|_| false);
+        let selector =
+            maestro_chat::SettingsSelectorComponent::new(config(), callbacks, theme, &no_images());
+        select(&selector, id);
+        let main = selector.render(80);
+        let list = selector.get_settings_list();
+        input(&**list, &["\r"]);
+        let before = selector.render(80);
+        if id == "warnings" {
+            input(&**list, &["\r"]);
+            assert_eq!(selector.render(80), before);
+            input(&**list, &["\x1b", "\r"]);
+            assert_eq!(selector.render(80), before, "reopened warning snapshot");
+            input(&**list, &["\x1b"]);
+        } else {
+            input(&**list, &["\x1b[B", "\r"]);
+            assert_eq!(
+                events.get().last().unwrap(),
+                &vec![serde_json::json!("preview"), serde_json::json!("dark")]
+            );
+        }
+        assert_eq!(selector.render(80), main);
+    }
 }

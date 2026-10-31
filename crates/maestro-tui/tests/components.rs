@@ -780,7 +780,7 @@ fn render_route_owner(
                 items,
                 3,
                 crate::list_support::settings_theme(false, &Rc::default()),
-                (Rc::new(|_, _| {}), Rc::new(|| {})),
+                (Rc::new(|_, _| true), Rc::new(|| {})),
                 maestro_tui::components::settings_list::SettingsListOptions::default(),
             ));
             list.handle_input("\r");

@@ -198,7 +198,7 @@ fn write_settings(world: &World, input: &Input) {
         settings.set_clear_on_shrink(clear);
         settings.set_hide_thinking_block(hidden);
     }
-    session.set_auto_compaction_enabled(compact);
+    session.set_auto_compaction_enabled(compact).unwrap();
 }
 
 /// Whether the footer shows the automatic-compaction marker.
