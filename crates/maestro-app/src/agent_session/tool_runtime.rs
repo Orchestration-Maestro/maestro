@@ -28,7 +28,7 @@ pub(super) fn install_agent_tool_hooks(
         Box::pin(before_tool_call(before.upgrade(), context))
     }));
     let next = Weak::clone(session);
-    *write(&agent.prepare_next_turn) = Some(Rc::new(move |turn| {
+    *write(&agent.prepare_next_turn) = Some(Rc::new(move |turn, _signal| {
         Box::pin(std::future::ready(Ok(prepare_next_turn(
             next.upgrade(),
             &turn,

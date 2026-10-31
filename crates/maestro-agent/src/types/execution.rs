@@ -70,6 +70,7 @@ pub trait AgentExecution: maestro_models::ProviderExecution {
     /// The borrowed next-turn preparation callable.
     type PrepareNextTurn<C: CustomAgentMessages>: for<'a> Fn(
             PrepareNextTurnContext<'a, C, Self>,
+            Option<Cancellation>,
         ) -> CallbackFuture<'a, Self, Option<AgentLoopTurnUpdate<C, Self>>>
         + ?Sized;
     /// The queued-input polling callable.
@@ -154,6 +155,7 @@ impl AgentExecution for $mode {
         $($bound)*;
     type PrepareNextTurn<C: CustomAgentMessages> = dyn for<'a> Fn(
             PrepareNextTurnContext<'a, C, Self>,
+            Option<Cancellation>,
         ) -> CallbackFuture<'a, Self, Option<AgentLoopTurnUpdate<C, Self>>>
         $($bound)*;
     type Poll<C: CustomAgentMessages> =

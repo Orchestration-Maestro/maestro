@@ -1031,3 +1031,32 @@ fn synthetic_failure_publishes_message_and_turn_events_before_agent_end() {
         assert_eq!(failures, 1, "the failure is stored once");
     });
 }
+
+/// Next-turn preparation receives the live cancellation of its owning run.
+#[test]
+fn next_turn_hook_receives_live_run_signal() {
+    support::run(async {
+        let (agent, tasks) = agent();
+        let observed = Arc::new(Mutex::new(None));
+        let recorded = Arc::clone(&observed);
+        *agent.prepare_next_turn.write().unwrap() = Some(Arc::new(move |_, signal| {
+            *recorded.lock().unwrap() = signal;
+            support::ready(Ok(None))
+        }));
+        agent.subscribe(Arc::new(move |event, signal| {
+            if matches!(*event.read().unwrap(), AgentEvent::TurnEnd { .. }) {
+                signal.abort();
+            }
+            support::ready(Ok(()))
+        }));
+        let run = agent.prompt(input("hello"));
+        tasks.take().await;
+        run.await.unwrap();
+        let signal = observed.lock().unwrap();
+        assert!(
+            signal
+                .as_ref()
+                .is_some_and(maestro_models::Cancellation::is_aborted)
+        );
+    });
+}

@@ -79,15 +79,18 @@ impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Driver<'_, C, 
         let Some(prepare) = &self.config.prepare_next_turn else {
             return Ok(());
         };
-        let update = prepare(ShouldStopAfterTurnContext {
-            message: response,
-            tool_results: &results
-                .iter()
-                .map(|result| read(result).clone())
-                .collect::<Vec<_>>(),
-            context: &self.context,
-            new_messages: messages,
-        })
+        let update = prepare(
+            ShouldStopAfterTurnContext {
+                message: response,
+                tool_results: &results
+                    .iter()
+                    .map(|result| read(result).clone())
+                    .collect::<Vec<_>>(),
+                context: &self.context,
+                new_messages: messages,
+            },
+            None,
+        )
         .await?;
         let Some(update) = update else {
             return Ok(());
