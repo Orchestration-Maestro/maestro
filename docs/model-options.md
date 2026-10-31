@@ -37,6 +37,14 @@ Provider request builders share the options owner's retention resolution: an exp
 cased or whitespace-padded value selects short. Each provider keeps its own markers,
 affinity and compatibility policy.
 
+## Request timeouts
+
+A session request without its own `timeout_ms` takes the provider retry setting, then
+the `httpIdleTimeoutMs` setting, so every provider that reads the timeout honours it;
+see the [SDK guide](application/sdk.md). The Mistral transport applies the same timeout
+to the wait for each stream chunk, see
+[reasoning conversations](models/reasoning-conversations.md).
+
 ## Three context-overflow signals
 
 1. An error stop with a recognized nonempty diagnostic, such as
