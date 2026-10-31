@@ -83,6 +83,23 @@ fn replacement_handles_relative_and_extensionless_paths() {
 
 #[cfg(unix)]
 #[test]
+fn replacement_refuses_a_read_only_target_and_leaves_it_whole() {
+    let dir = Directory::new();
+    let target = dir.path().join("target");
+    fs::write(&target, b"old").unwrap();
+    let Some(_restored) = maestro_test_directory::deny(&target, 0o400).unwrap() else {
+        return;
+    };
+
+    let error = replace(&target, b"new", Replace::default()).unwrap_err();
+
+    assert_eq!(error.kind(), std::io::ErrorKind::PermissionDenied);
+    assert_eq!(fs::read(&target).unwrap(), b"old");
+    assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1);
+}
+
+#[cfg(unix)]
+#[test]
 fn replacement_preserves_long_and_dangling_chains() {
     for (count, existing) in [
         (1, true),

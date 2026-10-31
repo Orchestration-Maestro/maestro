@@ -228,3 +228,19 @@ fn mutation_queue_dropped_middle_waiter_preserves_active_head() {
     );
     assert_eq!(&events[4..], ["d:start", "d:end", "g:start", "g:end"]);
 }
+
+#[cfg(unix)]
+#[test]
+fn mutation_queue_returns_canonicalization_errors_other_than_not_found() {
+    let dir = Scratch::new().unwrap();
+    let file = dir.file("file.txt", b"x");
+    let through_a_file = format!("{file}/child");
+    let journal = Journal::default();
+    let mut queued = queue(&through_a_file, tracked(&journal, "a", None));
+    let error = ready(&mut queued).unwrap_err();
+    assert_eq!(
+        error.code,
+        Some(maestro_models::DiagnosticCode::Number(20.0))
+    );
+    assert!(journal.entries().is_empty());
+}

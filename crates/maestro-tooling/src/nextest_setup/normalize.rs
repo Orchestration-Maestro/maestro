@@ -1,18 +1,18 @@
 //! Gives the executables of an artifact directory one modification time.
 //!
 //! The pinned engine's cache namespace includes the modification time of the executable that
-//! consumes it, so the setup example and the test binaries must share a time.
+//! consumes it, so the setup example and the test binaries must share a time. The installed
+//! browser graph shares one time as well, so Cargo finds no output newer than what builds on it.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::time::SystemTime;
 
-use serde::Deserialize;
-
 use super::nonempty;
-use crate::member_graph::closure;
+use crate::cargo_lock::Lock;
+use crate::dep_info;
 use crate::test_setup::EXAMPLE;
 
 /// The extensions of the library outputs that can outdate an executable.
@@ -21,32 +21,33 @@ const LIBRARY_EXTENSIONS: [&str; 6] = ["rlib", "rmeta", "a", "so", "dylib", "dll
 /// The exit status that reports an outdated setup example.
 const EXAMPLE_OUTDATED: u8 = 3;
 
-/// The package tables of `Cargo.lock`.
-#[derive(Deserialize)]
-struct Lock {
-    /// Every locked package.
-    #[serde(default)]
-    package: Vec<LockedPackage>,
-}
-
-/// One locked package.
-#[derive(Deserialize)]
-struct LockedPackage {
-    /// The package name.
-    name: String,
-    /// The registry or Git source; absent for a workspace crate.
-    source: Option<String>,
-    /// The packages it builds on, each as a name optionally followed by a version.
-    #[serde(default)]
-    dependencies: Vec<String>,
-}
-
 /// A library output in the artifact directory.
 struct Library {
     /// The file name.
     name: String,
     /// The time the file was last modified.
     modified: SystemTime,
+}
+
+/// Give every file under `directory` the modification time `time`, so that none outdates another
+/// and, for a time past the checkout's, none outdates a checkout file.
+///
+/// # Errors
+/// Returns a failed read or write.
+pub(super) fn set_tree_time(directory: &Path, time: SystemTime) -> io::Result<()> {
+    for entry in std::fs::read_dir(directory)? {
+        let entry = entry?;
+        let kind = entry.file_type()?;
+        if kind.is_dir() {
+            set_tree_time(&entry.path(), time)?;
+        } else if kind.is_file() {
+            std::fs::File::options()
+                .write(true)
+                .open(entry.path())?
+                .set_modified(time)?;
+        }
+    }
+    Ok(())
 }
 
 /// Whether nextest runs an archive, where nothing is rebuilt and every executable is current.
@@ -128,39 +129,18 @@ pub(super) fn normalize(checkout: &Path, directory: &Path, archived: bool) -> io
 /// fingerprint hash, so their output times do not matter. A lock file that cannot be read
 /// leaves every executable to the newest-library rule.
 fn workspace_closures(checkout: &Path) -> HashMap<String, Vec<String>> {
-    let Some(lock) = std::fs::read_to_string(checkout.join("Cargo.lock"))
-        .ok()
-        .and_then(|text| toml::from_str::<Lock>(&text).ok())
-    else {
+    let Ok(lock) = Lock::read(checkout) else {
         return HashMap::new();
     };
-    let members: Vec<&LockedPackage> = lock
-        .package
+    let graph = lock.graph(|package| package.source.is_none());
+    lock.packages()
         .iter()
         .filter(|package| package.source.is_none())
-        .collect();
-    let index: HashMap<&str, usize> = members
-        .iter()
-        .enumerate()
-        .map(|(position, package)| (package.name.as_str(), position))
-        .collect();
-    let edges: Vec<Vec<usize>> = members
-        .iter()
         .map(|package| {
-            package
-                .dependencies
-                .iter()
-                .filter_map(|entry| index.get(entry.split_whitespace().next()?).copied())
-                .collect()
-        })
-        .collect();
-    members
-        .iter()
-        .enumerate()
-        .map(|(position, package)| {
-            let mut built = closure(&edges, HashSet::from([position]))
+            let mut built = graph
+                .closure([package.name.as_str()])
                 .into_iter()
-                .map(|member| members[member].name.replace('-', "_"))
+                .map(|member| member.name.replace('-', "_"))
                 .collect::<Vec<_>>();
             built.sort();
             (package.name.clone(), built)
@@ -289,7 +269,8 @@ fn dependency_source(artifact: &Path) -> String {
     let mut information = artifact.as_os_str().to_owned();
     information.push(".d");
     let text = std::fs::read_to_string(information).unwrap_or_default();
-    let line = text.lines().next().unwrap_or_default();
-    let sources = line.split_once(": ").map_or("", |(_, sources)| sources);
-    sources.split(' ').next().unwrap_or_default().to_owned()
+    dep_info::sources(&text)
+        .and_then(|mut sources| sources.next())
+        .unwrap_or_default()
+        .to_owned()
 }

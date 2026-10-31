@@ -13,7 +13,7 @@ use std::time::UNIX_EPOCH;
 
 use serde::{Deserialize, Serialize};
 
-use super::{at, copy, digest, verify};
+use super::{at, copy, digest, remove_directory, verify};
 
 /// The compiled-code files of one cache namespace.
 #[derive(Serialize, Deserialize)]
@@ -28,7 +28,8 @@ impl CompiledCode {
     /// Stage the namespace that the example left under `cache_home` in `staged`.
     ///
     /// Returns nothing when the host kept no compiled code there, as a host with its own cache
-    /// location does.
+    /// location does. A namespace seeded from an earlier bundle is dropped when the example
+    /// wrote another one, which means the earlier bundle came from another engine.
     ///
     /// # Errors
     /// Returns an error for more than one namespace, for a namespace that does not end in the
@@ -37,9 +38,14 @@ impl CompiledCode {
         cache_home: &Path,
         example: &Path,
         staged: &Path,
+        seeded: Option<&Path>,
     ) -> io::Result<Option<Self>> {
         let modules = cache_home.join("wasmtime/modules");
-        let namespaces = directories(&modules)?;
+        let mut namespaces = directories(&modules)?;
+        if let Some(seeded) = seeded.filter(|_| namespaces.len() > 1) {
+            remove_directory(seeded)?;
+            namespaces.retain(|namespace| namespace != seeded);
+        }
         let [namespace] = namespaces.as_slice() else {
             return if namespaces.is_empty() {
                 Ok(None)
@@ -96,7 +102,8 @@ impl CompiledCode {
         Ok(())
     }
 
-    /// Install the staged files into the namespace that ends in `example`'s modification time.
+    /// Install the staged files into the namespace that ends in `example`'s modification time
+    /// and return that namespace.
     ///
     /// # Errors
     /// Returns an error when the time or a copy fails.
@@ -105,7 +112,7 @@ impl CompiledCode {
         staged: &Path,
         user_cache: &Path,
         example: &Path,
-    ) -> io::Result<()> {
+    ) -> io::Result<PathBuf> {
         let namespace = user_cache.join("wasmtime/modules").join(format!(
             "{}-{}",
             self.namespace,
@@ -115,7 +122,7 @@ impl CompiledCode {
         for name in self.files.keys() {
             copy(&staged.join(name), &namespace.join(name))?;
         }
-        Ok(())
+        Ok(namespace)
     }
 }
 

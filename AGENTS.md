@@ -286,6 +286,8 @@ through the scripted provider, the native-only, non-optional `maestro-cli`
 to `maestro-listeners` development edge for the controlled print adapter,
 the native-only, non-optional `maestro-extensions-wasm` to `maestro-models`
 development edge for component tests of the native schema validator,
+the native-only, non-optional `maestro-extensions-wasm` to `maestro-extensions-wasmtime`
+development edge for the product's one engine configuration,
 and the native, non-optional dev-dependencies
 of the twenty-six declared callers on `maestro-test-process`, the owner of
 checked child tests (see

@@ -694,11 +694,12 @@ Archived CI shards receive `TEST_ARCHIVE=1` and `TEST_PREPARE_OUTPUT` pointing t
 The `test_prepare` command in `.github/ci.toml` is the development tool's
 `prepare-test-setup prepare`. Shared CI runs it only when a selected package is
 named by `test_prepare_packages` there, the packages that nextest's
-`author-component` setup serves. Shared CI caches the bundle under the contents of
-the files that `test_prepare_inputs` matches and restores it instead of preparing again.
-Those patterns name the crates the preparation builds, `maestro-extensions-wasm` and
-`maestro-tooling`, and every workspace crate they depend on through a path dependency of
-any kind, plus the fixed inputs, so a change to any other crate keeps the cached bundle.
+`author-component` and `browser-author` setups serve. Shared CI caches the bundle under the
+contents of the files that `test_prepare_inputs` matches and restores it instead of preparing
+again. Those patterns name the crates the preparation builds, `maestro-extensions-wasm`,
+`maestro-tooling` and `maestro-web`, and every workspace crate they depend on through a path
+dependency of any kind, plus the fixed inputs, so a change to any other crate keeps the cached
+bundle.
 The preparation reads that closure from the workspace metadata, compiling nothing, and
 records it in the bundle manifest, so a shard validates the same files without Cargo.
 `ci_cache_key_names_exactly_the_files_the_preparation_reads` fails when a file the
@@ -707,7 +708,8 @@ dependency of a built crate needs its pattern. Markdown that crates embed only a
 documentation changes no staged file, so no pattern names it. The command runs the existing
 component-discovery example from a separate build directory with a user cache of its own, then stages the
 component files, the compiled code the example left in that cache, that built example,
-the development tool itself and a content manifest. The compiled code is the one cache
+the browser graph described under [Browser author build](#browser-author-build), the
+development tool itself and a content manifest. The compiled code is the one cache
 namespace the engine named for the example's modification time; preparation fails on a
 namespace that does not end in that time or on more than one, and stages none when the host
 keeps its cache elsewhere. Shared CI transfers
@@ -724,10 +726,27 @@ or compile pass. Archived runs
 require the bundle and fail without starting Cargo when it is missing or stale.
 Other runs reuse an existing manifest, rejecting stale or incomplete files; without
 a manifest they keep local auto-build. Archive strictness
-requires the shared CI release that supplies `TEST_ARCHIVE=1`. Source hashes
-include the built crates and their path dependencies, examples, assets, Cargo
-configuration, locked dependencies and the toolchain. The variable names in the
-bundle follow component discovery's own rule and fixed author and context pair.
+requires the shared CI release that supplies `TEST_ARCHIVE=1`. The manifest records one
+digest per artifact instead of one for the whole bundle. All components share one digest over
+the WebAssembly closure of `maestro-extensions-wasm` (its dependencies and development
+dependencies, without the edges gated to native targets), the lock entries of the registry
+packages that closure uses, the workspace manifest, Cargo configuration and the toolchain;
+each component adds a digest of the example files Cargo reports it read, so a helper module
+that several components share is part of each of them. The setup example and the development
+tool, and the browser graph, each hash the closure of their own packages with the examples,
+assets, locked dependencies and toolchain they read. A shard's `author-component` setup checks
+the shared, component and tool digests, and its `browser-author` setup checks the browser
+digest, so a change to the tooling or the application leaves the components valid. The variable
+names in the bundle follow component discovery's own rule and fixed author and context pair.
+
+When `TEST_PREPARE_BASE` names the directory of an earlier bundle, the preparation reads it
+first. A base prepared from the same shared digest, so the same toolchain, supplies every
+component whose example files are unchanged: the preparation hands those to the setup
+example through the component variables, and the example builds only the others in its one
+Cargo call. The base's compiled code seeds the build's cache, and is dropped again when the
+example writes another engine's namespace. A base that is missing, unreadable or prepared from
+other shared inputs is ignored and everything is built; the base directory may be the output
+directory.
 File timestamps do not affect reuse, but the staged example finds component
 sources at the checkout path it was built in, so both jobs must use the same
 checkout path, as shared CI does.
@@ -822,6 +841,10 @@ and global fallbacks, then includes dependent crates. Use `test_inputs` in
 read them. A file owned by another workspace member already selects that member
 and its dependents. Only otherwise unowned, undeclared paths use the all-or-none fallback:
 they select every test, or none when the file is Markdown or under `docs/`.
+The conventions check names every test that reads `docs/`, `examples/` or `assets/` at
+run time, through a `../../` path, a join onto the workspace root or a call to
+`get_docs_path`, `get_examples_path` or `get_package_dir`, and fails until
+`test_inputs` routes that directory to the reading package.
 
 ### Browser author build
 
@@ -832,8 +855,19 @@ Whichever of them ran first on a shard paid for all of that while about a thousa
 other tests used the same cores. That took 120 to 290 seconds, and the test that paid
 changed with scheduling, so any of them could reach the hang limit.
 
-The nextest setup `nextest-setup browser-author` pays the cost once, before
-the first browser author test of a run, and only on a shard that runs one. It lints
+The test preparation pays the cost once per bundle: it builds the graph with the recipes
+below in `target/browser-author` of the checkout and stages that directory in the bundle,
+without `debug/incremental`, which Cargo rewrites on the next build and which is a seventh
+of its size. The bundle manifest records whether it holds a graph; a build that fails leaves
+it out and the shards build it themselves. A shard's `nextest-setup browser-author` replaces
+`target/browser-author` with the staged graph, after checking that the checkout still holds
+the files the bundle was prepared from, and gives every file of it one modification time
+taken when it installs. Cargo rebuilds a unit when a source or an output it builds on is
+newer than its fingerprint, so a graph that is newer than the checkout and has no output
+newer than another leaves the recipes nothing to compile.
+
+The setup runs before the first browser author test of a run, and only on a shard that runs
+one. Without a bundle it pays the whole cost itself. It lints
 `maestro-web` for `wasm32-unknown-unknown` as `browser-check` does, without the
 formatting repair that would rewrite sources, then runs `browser-example-check`,
 `browser-library-build` and `browser-debug-build` in the checkout. It removes the

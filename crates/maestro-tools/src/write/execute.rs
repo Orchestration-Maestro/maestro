@@ -1,7 +1,7 @@
 //! Ordered, cancellable execution of one write.
 
 use super::{WriteOperations, WriteToolInput};
-use crate::utils::diagnostics::{diagnostic, guarded};
+use crate::utils::diagnostics::{blocking, guarded};
 use maestro_agent::AgentToolResult;
 use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo};
 use std::sync::Arc;
@@ -15,19 +15,11 @@ impl WriteOperations for NativeWriteOperations {
         absolute_path: String,
         content: String,
     ) -> BoxFuture<Result<(), DiagnosticErrorInfo>> {
-        Box::pin(async move {
-            tokio::fs::write(absolute_path, content)
-                .await
-                .map_err(|error| diagnostic(&error))
-        })
+        Box::pin(blocking(move || std::fs::write(absolute_path, content)))
     }
 
     fn mkdir(&self, dir: String) -> BoxFuture<Result<(), DiagnosticErrorInfo>> {
-        Box::pin(async move {
-            tokio::fs::create_dir_all(dir)
-                .await
-                .map_err(|error| diagnostic(&error))
-        })
+        Box::pin(blocking(move || std::fs::create_dir_all(dir)))
     }
 }
 

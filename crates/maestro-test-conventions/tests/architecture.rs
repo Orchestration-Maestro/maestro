@@ -3506,6 +3506,39 @@ fn guest_schema_validation_edge_is_native_development_only() {
     );
 }
 
+/// The guest's component tests share the product engine through one native development edge,
+/// never a product edge.
+#[test]
+fn guest_engine_edge_is_native_development_only() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-extensions-wasm", "maestro-extensions-wasmtime"]);
+    let declaration = "engine = { package = \"maestro-extensions-wasmtime\", path = \"../maestro-extensions-wasmtime\" }";
+    assert_eq!(
+        caller_declares(
+            &workspace,
+            "maestro-extensions-wasm",
+            &format!("[{NATIVE_DEV}]\n{declaration}")
+        ),
+        Ok(())
+    );
+    for table in [
+        "dependencies",
+        "build-dependencies",
+        "dev-dependencies",
+        "target.'cfg(target_arch = \"wasm32\")'.dev-dependencies",
+    ] {
+        assert!(
+            caller_declares(
+                &workspace,
+                "maestro-extensions-wasm",
+                &format!("[{table}]\n{declaration}")
+            )
+            .is_err(),
+            "{table}"
+        );
+    }
+}
+
 /// Native link traversal can be shared without adding an effect owner or a dependency cycle.
 #[test]
 fn final_link_consumers_may_use_the_path_utility() {

@@ -205,3 +205,24 @@ fn size_formatting_rounds_positive_half_ties_up() -> Result<(), Box<dyn std::err
 fn size_formatting_retains_number_spelling() -> Result<(), Box<dyn std::error::Error>> {
     check("size_formatting_retains_number_spelling")
 }
+
+#[test]
+fn tail_keeps_whole_scalars_of_an_oversized_line_ending_in_a_newline() {
+    let text = format!("ab{}\n", "€".repeat(10));
+    let result = truncate_tail(
+        &text,
+        TruncationOptions {
+            max_lines: None,
+            max_bytes: Some(11),
+        },
+    );
+    assert_eq!(result.content, "€€€\n");
+    assert_eq!((result.total_bytes, result.total_lines), (33, 2));
+    assert_eq!((result.output_bytes, result.output_lines), (10, 2));
+    assert!(result.truncated && result.last_line_partial);
+    assert!(matches!(
+        result.truncated_by,
+        Some(maestro_tools::TruncationBy::Bytes)
+    ));
+    assert_eq!(result.max_bytes, 11);
+}

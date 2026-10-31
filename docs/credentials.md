@@ -106,8 +106,14 @@ interface.
 `FileAuthStorageBackend` (native builds) keeps credentials at a caller-supplied
 path, relative paths resolving against the working directory. Missing parent
 directories are created with mode 0700 and a missing file is created, only while
-the sidecar `<path>.lock` is held, containing `{}` with mode 0600 on Unix; writes
-set mode 0600. Synchronous acquisition delegates to [the shared file-lock operation](locking.md),
+the sidecar `<path>.lock` is held, containing `{}` with mode 0600 on Unix. A write
+goes through `write_auth_file`, the one writer of the credential file: it narrows an
+existing file to mode 0600, then publishes the text through
+[the shared atomic replacement](locking.md#atomic-replacement) at mode 0600, following a
+symbolic link at the path. A file its owner made read-only is refused and left unchanged.
+A write that fails leaves the previous file whole. The startup conversion of legacy
+credentials and the standalone account file call the same writer. Synchronous acquisition
+delegates to [the shared file-lock operation](locking.md),
 and the lock is released after every outcome. File bytes are read as
 lossy UTF-8. The asynchronous operation `with_lock_async` instead tries the lock
 immediately and after waits of 100, 200, 400, 800, 1600, 3200, 6400 and then three of
