@@ -597,6 +597,8 @@ fn payload_for(
 #[test]
 fn blank_required_text_is_replaced_by_the_placeholder() -> Result<(), Box<dyn std::error::Error>> {
     let model = european_model()?;
+    let mut uncached = BedrockOptions::default();
+    uncached.common.cache_retention = Some(crate::CacheRetention::None);
     let payload = payload_for(
         &model,
         &serde_json::json!([
@@ -607,7 +609,7 @@ fn blank_required_text_is_replaced_by_the_placeholder() -> Result<(), Box<dyn st
                 {"type": "text", "text": "hello"},
             ], "timestamp": 3},
         ]),
-        &BedrockOptions::default(),
+        &uncached,
     )?;
     assert_eq!(
         payload["messages"],

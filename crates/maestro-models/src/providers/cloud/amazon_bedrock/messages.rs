@@ -147,6 +147,14 @@ pub(super) fn tool_config(
     })
 }
 
+/// Text sent in place of a required block that has no text.
+const EMPTY_TEXT_PLACEHOLDER: &str = "<empty>";
+
+/// Whether `text` holds only whitespace.
+fn blank(text: &str) -> bool {
+    text.trim_matches(whitespace).is_empty()
+}
+
 /// A text block holding `text` as written.
 fn text_block(text: String) -> Union<ContentBlock> {
     ContentBlock {
@@ -156,23 +164,29 @@ fn text_block(text: String) -> Union<ContentBlock> {
     .into()
 }
 
-/// A user turn; text is kept as written.
+/// A user turn; blank text blocks are dropped and a turn left without a block, or whose plain
+/// text is blank, holds the placeholder.
 fn user_message(content: UserContent) -> Result<Message, RequestFailure> {
-    let blocks = match content {
+    let mut blocks = match content {
+        UserContent::Text(text) if blank(&text) => Vec::new(),
         UserContent::Text(text) => vec![text_block(text)],
         UserContent::Blocks(blocks) => blocks
             .into_iter()
-            .map(|block| {
-                let (text, image) = media(block)?;
-                Ok(ContentBlock {
+            .filter_map(|block| match media(block) {
+                Ok((Some(text), _)) if blank(&text) => None,
+                Ok((text, image)) => Some(Ok(ContentBlock {
                     text,
                     image,
                     ..ContentBlock::default()
                 }
-                .into())
+                .into())),
+                Err(failure) => Some(Err(failure)),
             })
-            .collect::<Result<_, RequestFailure>>()?,
+            .collect::<Result<Vec<_>, RequestFailure>>()?,
     };
+    if blocks.is_empty() {
+        blocks.push(text_block(EMPTY_TEXT_PLACEHOLDER.to_owned()));
+    }
     Ok(Message {
         role: Some("user".to_owned()),
         content: Some(blocks),
@@ -212,9 +226,7 @@ fn assistant_block(block: AssistantContent, claude: bool) -> Option<Union<Conten
         .into()
     };
     match block {
-        AssistantContent::Text(text) => {
-            (!text.text.trim_matches(whitespace).is_empty()).then(|| text_block(text.text))
-        }
+        AssistantContent::Text(text) => (!blank(&text.text)).then(|| text_block(text.text)),
         AssistantContent::ToolCall(call) => Some(
             ContentBlock {
                 tool_use: Some(ToolUseBlock {
@@ -228,7 +240,7 @@ fn assistant_block(block: AssistantContent, claude: bool) -> Option<Union<Conten
             .into(),
         ),
         AssistantContent::Thinking(thinking) => {
-            if thinking.thinking.trim_matches(whitespace).is_empty() {
+            if blank(&thinking.thinking) {
                 return None;
             }
             let signature = thinking
@@ -260,21 +272,33 @@ fn tool_results(
     })
 }
 
-/// One tool result with its status.
+/// One tool result with its status; blank text is dropped and a result left without content
+/// holds the placeholder.
 fn tool_result(result: ToolResultMessage) -> Result<Union<ContentBlock>, RequestFailure> {
-    let content = result
-        .content
-        .into_iter()
-        .map(|block| {
-            let (text, image) = media(block)?;
-            Ok(ToolResultContentBlock {
+    let mut content = Vec::new();
+    for block in result.content {
+        let (text, image) = media(block)?;
+        if text.as_deref().is_some_and(blank) {
+            continue;
+        }
+        content.push(
+            ToolResultContentBlock {
                 text,
                 image,
                 ..ToolResultContentBlock::default()
             }
-            .into())
-        })
-        .collect::<Result<_, RequestFailure>>()?;
+            .into(),
+        );
+    }
+    if content.is_empty() {
+        content.push(
+            ToolResultContentBlock {
+                text: Some(EMPTY_TEXT_PLACEHOLDER.to_owned()),
+                ..ToolResultContentBlock::default()
+            }
+            .into(),
+        );
+    }
     Ok(ContentBlock {
         tool_result: Some(ToolResultBlock {
             tool_use_id: Some(result.tool_call_id),
