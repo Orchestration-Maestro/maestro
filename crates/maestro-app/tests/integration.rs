@@ -1,6 +1,7 @@
 //! Shared integration-test executable.
 #![cfg(test)]
 
+mod agent_session_branch_summary_checks;
 mod agent_session_branching_checks;
 mod agent_session_concurrent_checks;
 mod agent_session_input_checks;
