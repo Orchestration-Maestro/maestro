@@ -289,6 +289,10 @@ fn absolute(path: &str) -> io::Result<String> {
 
 /// Publishes a new branch without overwriting a file that another writer created.
 pub(super) fn rewrite(path: &str, entries: &[FileEntry]) -> io::Result<()> {
+    #[cfg(test)]
+    if let Some(before) = super::tests::BEFORE_BRANCH.take() {
+        before(path);
+    }
     if super::storage::rewrite_session_file(
         path,
         &Sha256::digest([]).into(),
