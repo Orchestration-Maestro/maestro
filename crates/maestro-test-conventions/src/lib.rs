@@ -30,6 +30,8 @@ mod source;
 mod temp_directories;
 /// Nextest's default budget and documented slow-test exceptions.
 mod test_budget;
+/// Repository directories that tests read at run time.
+mod test_input_routes;
 /// Test-owned timed-wait and optional polling checks.
 mod time_limits;
 
@@ -115,5 +117,6 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
     time_limits::check(&members)?;
     duplicates::check(&members)?;
     example_helpers::check(&members)?;
-    temp_directories::check(&members)
+    temp_directories::check(&members)?;
+    test_input_routes::check(root, &members)
 }
