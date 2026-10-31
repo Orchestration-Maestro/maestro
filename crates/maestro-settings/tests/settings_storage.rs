@@ -417,6 +417,28 @@ mod tests {
     }
 
     #[test]
+    fn saves_publish_a_new_file_and_keep_the_previous_one_whole() {
+        let root = Scratch::new().unwrap();
+        let file = support::settings_file(root.path(), SettingsScope::Global);
+        let previous = file.with_file_name("previous.json");
+        fs::create_dir_all(file.parent().unwrap()).unwrap();
+        fs::write(&file, "{\"theme\": \"old\"}").unwrap();
+        fs::hard_link(&file, &previous).unwrap();
+
+        file_storage(root.path())
+            .with_write_lock(SettingsScope::Global, &mut |_| {
+                Ok(Some("{\"theme\": \"new\"}".into()))
+            })
+            .unwrap();
+
+        assert_eq!(fs::read_to_string(&file).unwrap(), "{\"theme\": \"new\"}");
+        assert_eq!(
+            fs::read_to_string(&previous).unwrap(),
+            "{\"theme\": \"old\"}"
+        );
+    }
+
+    #[test]
     fn global_key_edit_merges_fresh_global_scope() {
         if support::run_lock_child() {
             return;

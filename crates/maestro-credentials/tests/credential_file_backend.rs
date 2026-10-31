@@ -340,6 +340,25 @@ mod tests {
         assert_eq!(mode(&path), 0o600);
     }
 
+    #[test]
+    fn writes_publish_a_new_file_and_keep_the_previous_one_whole() {
+        let dir = TempDir::without_forks("atomic");
+        let path = dir.path("auth.json");
+        let previous = dir.path("previous.json");
+        std::fs::write(&path, pretty(&[("a", "1")])).unwrap();
+        std::fs::hard_link(&path, &previous).unwrap();
+        let storage = AuthStorage::create(&path);
+        storage.set("b", api_key("2"));
+        assert_eq!(
+            std::fs::read_to_string(&path).unwrap(),
+            pretty(&[("a", "1"), ("b", "2")])
+        );
+        assert_eq!(
+            std::fs::read_to_string(&previous).unwrap(),
+            pretty(&[("a", "1")])
+        );
+    }
+
     #[cfg(unix)]
     #[test]
     fn removed_or_absent_records_rewrite_the_document() {
