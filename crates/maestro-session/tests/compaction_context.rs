@@ -2,8 +2,8 @@
 #![cfg(test)]
 use maestro_session::{
     CompactionSettings, DEFAULT_COMPACTION_SETTINGS, estimate_context_tokens, estimate_tokens,
-    find_cut_point, find_turn_start_index, get_last_assistant_usage, prepare_compaction,
-    serialize_conversation,
+    find_cut_point, find_turn_start_index, get_last_assistant_usage, prepare_branch_entries,
+    prepare_compaction, serialize_conversation,
 };
 use serde_json::{Value, json};
 
@@ -198,6 +198,57 @@ fn empty_branch_summaries_are_neither_cuts_nor_turn_starts() {
     let cut = find_cut_point(&entries, 0, entries.len(), 1.0).unwrap();
     assert_eq!(cut.first_kept_entry_index, 1);
     assert_eq!(cut.turn_start_index, Some(0));
+}
+
+#[test]
+fn a_zero_budget_crosses_at_the_newest_message_even_when_it_weighs_nothing() {
+    let entries = [
+        message_entry("u1", &user("hi", 1)),
+        message_entry("a", &assistant("ok", &usage(1), 2)),
+        message_entry("u2", &user("", 3)),
+    ];
+    let cut = find_cut_point(&entries, 0, entries.len(), 0.0).unwrap();
+    assert_eq!(cut.first_kept_entry_index, 2);
+    assert_eq!(cut.turn_start_index, None);
+    assert!(!cut.is_split_turn);
+}
+
+#[test]
+fn summary_input_omits_an_empty_branch_summary() {
+    let entries = [
+        message_entry("u1", &user("hi", 1)),
+        branch_summary_entry("b", ""),
+        message_entry("a1", &assistant("hello", &usage(1), 2)),
+        message_entry("u2", &user("again", 3)),
+        message_entry("a2", &assistant("ok", &usage(1), 4)),
+    ];
+    let settings = CompactionSettings {
+        keep_recent_tokens: 1.0,
+        ..DEFAULT_COMPACTION_SETTINGS
+    };
+    let prepared = prepare_compaction(&entries, &settings).unwrap().unwrap();
+    let roles: Vec<_> = prepared
+        .messages_to_summarize
+        .iter()
+        .map(|message| message["role"].as_str().unwrap())
+        .collect();
+    assert_eq!(roles, ["user", "assistant", "user"]);
+}
+
+#[test]
+fn branch_preparation_omits_an_empty_branch_summary() {
+    let entries = [
+        message_entry("u", &user("hi", 1)),
+        branch_summary_entry("b", ""),
+        custom_entry("c", "note"),
+    ];
+    let prepared = prepare_branch_entries(&entries, None).unwrap();
+    let roles: Vec<_> = prepared
+        .messages
+        .iter()
+        .map(|message| message["role"].as_str().unwrap())
+        .collect();
+    assert_eq!(roles, ["user", "custom"]);
 }
 
 #[test]
