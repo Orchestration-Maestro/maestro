@@ -275,3 +275,13 @@ fn panes_turn_fish_reflow_handling_off_unless_the_parent_chose() {
         );
     });
 }
+
+#[cfg(unix)]
+#[test]
+fn process_variable_reads_the_real_environment_by_exact_name() {
+    let path = OsStr::new("PATH");
+    assert_eq!(process_variable(path), std::env::var_os(path));
+    assert!(process_variable(path).is_some());
+    let flipped = OsStr::new("path");
+    assert_eq!(process_variable(flipped), std::env::var_os(flipped));
+}
