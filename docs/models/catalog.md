@@ -52,7 +52,9 @@ The generator applies these rules, so the committed catalog carries their result
 - All Xiaomi variants route through the `OpenAI`-compatible `/v1` endpoints, replay thinking as
   `reasoning_content`, and the token plans omit `MiMo` V2 Flash.
 - Moonshot and the `OpenCode` Kimi K2.6 routes use the thinking-object format, so thinking off sends
-  a disabled thinking object. Gateway completion models send explicit limits as `max_tokens`.
+  a disabled thinking object, and neither sends `reasoning_effort`. `OpenCode` Go Kimi K2.6 hides
+  minimal, low and medium and has no off level. Gateway completion models send explicit limits as
+  `max_tokens`.
 - Nine extended-context `GitHub` Copilot models have a one-million-token window; other providers
   keep theirs. Direct `MiniMax` models keep their upstream limits.
 - Grok 3 and Grok 3 Fast stay when the upstream feed omits them.

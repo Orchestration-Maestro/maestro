@@ -40,8 +40,8 @@ A Claude request without an explicit `max_tokens` sends the model's advertised c
 `inferenceConfig.maxTokens`; other Bedrock models send none unless asked.
 
 Thinking settings apply only to reasoning Claude models. Opus 4.6 to 4.8, Sonnet 4.6 and Sonnet 5
-candidates use adaptive thinking with mapped effort; Opus 4.7 and 4.8 preserve native extra-high effort before
-consulting the descriptor map. Other Claude candidates use fixed budgets from
+candidates use adaptive thinking with mapped effort; Opus 4.7 preserves native extra-high effort
+before consulting the descriptor map. Other Claude candidates use fixed budgets from
 [`ThinkingBudgets`](../model-options.md), with interleaved thinking enabled unless explicitly
 false. Display defaults to summarized; a government region selected from the option or
 region environment variables, or a government model identifier, omits the display. The
