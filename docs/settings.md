@@ -485,13 +485,24 @@ An extension path never implies a package.
 
 ### Home directory in paths
 
-Every configured path reads `~` one way. An exact `~` is the home directory, and `~/`
-(`~\` on Windows) followed by more text joins that text below it. The text stays as
-written: repeated separators and `..` segments are not collapsed, and an absolute
-remainder stays below the home directory. On Windows either separator joins natively and
-empty components are dropped. Every other spelling, `~name` included, is returned as
-written and is a relative path. The home directory is read only for the two expanded
-forms, and an empty home leaves the rest relative.
+Every configured path reads a leading `~` one way. An exact `~` is the home directory.
+`~/` (`~\` on Windows) followed by more text puts that text below the home directory.
+Every other spelling, `~name` included, stays as written and is a relative path. The home
+directory is read only for the first two forms.
+
+How the text is put below the home directory depends on the setting:
+
+- Settings, resource, prompt, skill, package, completion and extension paths join it with
+  the path module's normalizing join. `.`, `..` and repeated separators resolve, and an
+  empty home leaves a relative result. An exact `~` returns the home as supplied, except in
+  extension paths, which join it too.
+- Tool paths, the application directory options, the daemon's new-terminal directory and
+  git include paths append the text as written, so a repeated separator or `..` stays but
+  an absolute remainder still lies below the home directory. A home that ends in a
+  separator gains none, and an empty home gives a rooted result.
+
+On Windows either separator introduces the text, and the appended form drops empty
+components and joins with `\`.
 
 ## Example
 

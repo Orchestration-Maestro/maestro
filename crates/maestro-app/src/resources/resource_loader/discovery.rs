@@ -3,7 +3,7 @@
 use super::{DefaultEventBus, DefaultResourceLoader, ResourceExtensionPath, ResourceKind};
 use indexmap::IndexMap;
 use maestro_packages::{PackageManager, ResolvedPaths, ResolvedResource};
-use maestro_path::{SEP, expand_tilde, join};
+use maestro_path::{SEP, expand_tilde_joined, join};
 use maestro_resources::{
     PathMetadata, SourceOrigin, SourceScope, canonicalize_path,
     paths::{home_directory, resolve},
@@ -294,7 +294,7 @@ fn expand_resource_path(
     path: &str,
     home: impl FnOnce() -> io::Result<String>,
 ) -> io::Result<String> {
-    expand_tilde(path.trim_matches(maestro_text::is_whitespace_scalar), home)
+    expand_tilde_joined(path.trim_matches(maestro_text::is_whitespace_scalar), home)
 }
 
 #[cfg(test)]

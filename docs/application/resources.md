@@ -55,7 +55,8 @@ append text still goes first.
 Additional paths are trimmed, a leading `~` reads as
 [settings](../settings.md#home-directory-in-paths) describes, and the result is resolved
 against the loader's working directory. Merging keeps the first path per real path. A
-missing additional skill, prompt template or theme path is reported as an error unless a diagnostic already names it.
+missing additional skill, prompt template or theme path is reported as an error unless a
+diagnostic already names it.
 
 ### Base package inputs
 

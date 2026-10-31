@@ -4,6 +4,7 @@ use crate::{
     EventBusController, ExtensionExecution, create_extension_runtime,
     types::{ExtensionAPI, ExtensionLoadError, LoadExtensionsResult, ModuleLoader},
 };
+use maestro_path::{Tilde, parse_tilde};
 use maestro_resources::paths::{home_directory, resolve};
 use maestro_tools::path_utils::resolve_existing_spelling;
 use std::io;
@@ -15,11 +16,29 @@ fn anchor_path(
     cwd: &str,
     home: impl FnOnce() -> io::Result<String>,
 ) -> io::Result<String> {
-    let expanded = maestro_path::expand_tilde(path, home)?;
+    let expanded = expand_extension_path(path, home)?;
     if maestro_path::is_absolute(&expanded) {
         return Ok(expanded);
     }
     resolve(&[cwd, &expanded])
+}
+
+/// Join the rest of a leading `~` below the home directory through `home`.
+///
+/// The rest is always joined, an exact `~` included, so a home spelling that ends in `/` or
+/// `/.` is normalized. Characters stay as written, so the selector still sees the written
+/// candidate before it falls back to the space-replaced one. Any other path, `~name` included,
+/// is returned as written without reading the home directory.
+fn expand_extension_path(
+    path: &str,
+    home: impl FnOnce() -> io::Result<String>,
+) -> io::Result<String> {
+    let rest = match parse_tilde(path) {
+        Tilde::Other => return Ok(path.to_owned()),
+        Tilde::Home => "",
+        Tilde::Below(rest) => rest,
+    };
+    Ok(maestro_path::join(&[&home()?, rest]))
 }
 
 /// Anchors `extension_path` at `cwd` and resolves it through
@@ -28,7 +47,7 @@ fn anchor_path(
 pub(super) fn resolve_path(extension_path: &str, cwd: &str) -> io::Result<String> {
     resolve_existing_spelling(
         extension_path,
-        |path| maestro_path::expand_tilde(path, home_directory),
+        |path| expand_extension_path(path, home_directory),
         |path| anchor_path(path, cwd, home_directory),
     )
 }

@@ -63,7 +63,8 @@ pub fn resolve(paths: &[&str]) -> io::Result<String> {
 /// Returns the working-directory error of a resolution that needed it.
 pub(crate) fn resolve_explicit_path(path: &str, cwd: &str, home: &str) -> io::Result<String> {
     let path = path.trim_matches(text_whitespace);
-    let Ok(normalized) = maestro_path::expand_tilde(path, || Ok::<_, Infallible>(home.to_owned()));
+    let Ok(normalized) =
+        maestro_path::expand_tilde_joined(path, || Ok::<_, Infallible>(home.to_owned()));
     if maestro_path::is_absolute(&normalized) {
         Ok(normalized)
     } else {
