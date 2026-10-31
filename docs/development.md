@@ -80,6 +80,7 @@ commands from the checkout using the pinned toolchain and checked-in lock:
 ```powershell
 $env:CARGO_BUILD_JOBS = '3'
 cargo nextest run --locked -p maestro-app --test integration -E 'test(/^footer_metadata::/)' --no-fail-fast
+just prepare-tests
 cargo nextest run --locked -p maestro-extensions-wasm --no-fail-fast
 cargo nextest run --locked -p maestro-extensions-wasm --release -E 'test(/^tests::maestro_component_contract_keeps_sync_and_async_calls$/)' --no-fail-fast
 ```
@@ -496,6 +497,186 @@ such as name filters and `-- --ignored`, `-- --exact NAME` or `-- --nocapture`.
 An unmatched ordinary-test filter fails rather than passing an empty selection.
 Use direct `cargo test --doc` for doctest-only runs and direct `cargo nextest run`
 for runner-only flags or target selection. `tui-test-ansi` runs only nextest.
+
+### Slowest-first test order
+
+The 64 tests that took more than 30 seconds in the baseline merge group have
+distinct priorities in `.config/nextest.toml`: 100 down to 37, longest first.
+Other tests retain priority 0. These are
+[nextest's built-in priorities](https://nexte.st/docs/configuration/test-priorities/),
+not a scheduler or a shard planner. They change order within each shard, not the
+count partitions (32 in CI, declared as `test_shard_count` in `.github/ci.toml`), test
+membership, retries, time limits or coverage policy.
+Existing timeout comments retain their older CI maxima; priority ranks use the
+newer measurements below, not timeout ceilings or diagnostic phase timings.
+
+The baseline is [merge-group run 40795869386](https://github.com/Orchestration-Maestro/maestro/actions/runs/40795869386),
+revision `15ce820ba3808f0238f20fe0c33c95886e62bde2`. Its nextest spans in shard order
+(1 through 16), in seconds, are:
+
+```text
+460.205 / 620.165 / 509.068 / 462.917 / 436.846 / 595.020 / 423.375 / 496.749
+717.762 / 421.140 / 584.600 / 443.033 / 372.985 / 462.106 / 427.599 / 621.239
+```
+
+The slowest shard is **717.762 seconds**; the spread is **344.777 seconds**.
+The final successful `(binary, test)` identities total **15,620**, matching the
+sum of the shard summaries, with no identity shared by two shards. The reported
+inventory is 15,624; four intentionally ignored child probes remain excluded.
+Retries do not add identities to this accounting. Setup-script durations are
+excluded from per-test ranks, but included in the shard spans above.
+
+Hosted after-times remain to be recorded on #3613 from this change's own
+merge-group run after landing: pull-request CI skips test shards. Compare its
+slowest nextest span and max-minus-min spread against the baseline, recording
+the revision, selected inventory and any intervening slow-test fixes. No
+wall-time improvement is claimed before that comparison. Priorities cannot
+remove setup work (183.158–306.567 seconds in this baseline), serialized browser
+build work or uneven fixed count assignments, so some imbalance may remain.
+
+The fast tooling regression
+`nextest_priorities::measured_priorities_order_tests_without_changing_shards`
+runs nextest against controlled bodies with the real tooling overrides. One
+worker proves descending order for the three slowest tooling tests, before an
+unprioritized short test. It uses a fixed 16-way split, independent of CI's
+`test_shard_count`, and compares every partition's membership with and
+without priorities, checks an exactly-once union and keeps an intentional
+selected failure visible. It does not run the expensive browser bodies.
+
+#### Measured successful test durations and priorities (seconds)
+
+| Priority | Package / test | Seconds |
+| ---: | --- | ---: |
+| 100 | `maestro-tooling` / `browser_author_build::browser_check_repairs_formatting` | 155.470 |
+| 99 | `maestro-tooling` / `browser_author_build::browser_author_bootstraps_from_empty_build_state` | 137.793 |
+| 98 | `maestro-tooling` / `browser_author_build::browser_author_check_preserves_adjacent_locks` | 109.765 |
+| 97 | `maestro-tooling` / `browser_author_build::browser_author_checks_accept_valid_sources` | 105.572 |
+| 96 | `maestro-extensions-wasmtime` / `component_events::input::component_input_chains_text_preserves_images_and_forwards_sources` | 101.546 |
+| 95 | `maestro-tooling` / `browser_author_build::browser_native_checks_keep_inputs_and_refuse_bad_sources` | 101.208 |
+| 94 | `maestro-tooling` / `browser_author_build::browser_author_preparation_is_route_local` | 85.522 |
+| 93 | `maestro-extensions-wasmtime` / `canonical_theme::canonical_standalone_theme_keeps_live_palette_without_ui` | 77.348 |
+| 92 | `maestro-extensions-wasmtime` / `component_events::component_handler_presence_tracks_registration` | 76.967 |
+| 91 | `maestro-extensions-wasmtime` / `canonical_theme::canonical_theme_strikethrough` | 72.902 |
+| 90 | `maestro-extensions-wasmtime` / `component_events::component_tool_results_consume_prior_content` | 72.483 |
+| 89 | `maestro-models` / `browser_build::maestro_browser_environment_has_no_key` | 71.882 |
+| 88 | `maestro-extensions-wasmtime` / `git_checkpoint_example::git_checkpoint_component_requires_checkpoint_ui_and_yes` | 68.837 |
+| 87 | `maestro-tooling` / `browser_author_build::browser_assets_follow_relative_selected_identity` | 60.280 |
+| 86 | `maestro-tooling` / `browser_author_build::browser_author_hook_uses_resolved_configuration_directory` | 55.338 |
+| 85 | `maestro-tooling` / `browser_author_build::browser_author_trunk_rejects_stale_lock_without_writes` | 53.384 |
+| 84 | `maestro-extensions-wasmtime` / `extension_guide::extension_guide_builds_and_loads_from_a_clean_folder` | 52.177 |
+| 83 | `maestro-extensions-wasmtime` / `canonical_schema::native_registration_and_enumeration_preserve_authored_schema_kinds` | 51.407 |
+| 82 | `maestro-tooling` / `browser_author_build::browser_author_watch_ignores_generated_outputs_and_keeps_authored_roots` | 51.184 |
+| 81 | `maestro-extensions-wasm` / `tests::trigger_compact_example::trigger_compact_component_matches_host_requests` | 48.948 |
+| 80 | `maestro-test-conventions` / `architecture::real_workspace_obeys_crate_rules` | 45.737 |
+| 79 | `maestro-tooling` / `browser_author_build::browser_build_emits_wasm_and_prepared_assets` | 44.135 |
+| 78 | `maestro-extensions-wasm` / `tests::shutdown_example::shutdown_component_runs_every_registration` | 43.566 |
+| 77 | `maestro-tooling` / `browser_author_build::browser_author_included_files_rebuild_without_source_changes` | 41.429 |
+| 76 | `maestro-extensions-wasm` / `tests::preset_example::preset_layers_restore_branch_instructions_without_reapplying_settings` | 40.680 |
+| 75 | `maestro-markdown` / `tests::container_depth::repeated_quote_list_resumption_keeps_reference_depth` | 40.392 |
+| 74 | `maestro-tooling` / `browser_author_build::browser_build_rejects_missing_or_failing_inputs` | 39.254 |
+| 73 | `maestro-tooling` / `browser_author_build::browser_example_development_serves_rebuilt_external_assets` | 39.186 |
+| 72 | `maestro-extensions-wasm` / `tests::protected_paths_example::protected_paths_component_matches_the_hook` | 37.400 |
+| 71 | `maestro-tooling` / `build_recipes::maestro_selected_watch_rebuilds_cargo_configuration` | 37.229 |
+| 70 | `maestro-tooling` / `browser_author_build::browser_compile_watch_rebuilds_external_identity` | 36.977 |
+| 69 | `maestro-extensions-wasmtime` / `asynchronous_reentry::routed_completion_keeps_its_prefix_and_absent_result` | 36.706 |
+| 68 | `maestro-extensions-wasm` / `tests::notify_example::notify_component_windows_command_is_controlled` | 36.366 |
+| 67 | `maestro-markdown` / `tests::container_depth::deep_indented_list_parses_on_a_small_stack` | 36.253 |
+| 66 | `maestro-extensions-wasm` / `tests::permission_gate_example::permission_gate_component_preserves_patterns_and_decisions` | 36.218 |
+| 65 | `maestro-extensions-wasm` / `tests::model_status_example::model_status_component_runs_selection_hook` | 36.052 |
+| 64 | `maestro-tooling` / `browser_author_build::browser_author_unrelated_workspace_bump_keeps_fixture_lock` | 36.036 |
+| 63 | `maestro-extensions-wasm` / `tests::status_line_example::status_line_component_preserves_count_after_host_rejection` | 36.019 |
+| 62 | `maestro-extensions-wasm` / `tests::snake_example::snake_controls_apply_arrow_and_letter_turns` | 34.791 |
+| 61 | `maestro-extensions-wasm` / `tests::component_driver::message_renderer_example::message_renderer_truncates_numeric_timestamps` | 34.321 |
+| 60 | `maestro-extensions-wasmtime` / `authored_streams::ending_without_a_result_keeps_observation_pending` | 33.702 |
+| 59 | `maestro-extensions-wasmtime` / `git_checkpoint_example::git_checkpoint_component_clears_checkpoints_but_keeps_current_entry` | 33.605 |
+| 58 | `maestro-extensions-wasmtime` / `asynchronous_reentry::routed_retained_setup_runs_its_prefix_before_its_first_poll_returns` | 33.466 |
+| 57 | `maestro-extensions-wasm` / `tests::component_driver::schema_qualification::schema_callbacks_preserve_supplied_errors_on_owning_guest` | 33.437 |
+| 56 | `maestro-extensions-wasm` / `tests::titlebar_spinner_example::titlebar_spinner_component_runs_lifecycle` | 33.069 |
+| 55 | `maestro-extensions-wasm` / `tests::pirate_example::pirate_factories_keep_separate_state` | 32.826 |
+| 54 | `maestro-extensions-wasm` / `tests::space_invaders_example::space_invaders_resume_redraws_current_controls_without_losing_save` | 32.531 |
+| 53 | `maestro-extensions-wasm` / `tests::space_invaders_example::space_invaders_ticks_match_reference_movement_fire_and_collisions` | 32.371 |
+| 52 | `maestro-extensions-wasmtime` / `compilation_cache::component_load_populates_the_user_compilation_cache` | 32.216 |
+| 51 | `maestro-test-conventions` / `boundaries::runtime_dependencies_stay_in_the_runtime_adapter` | 32.167 |
+| 50 | `maestro-extensions-wasm` / `tests::questionnaire_example::questionnaire_retains_supplied_question_metadata` | 32.017 |
+| 49 | `maestro-extensions-wasm` / `tests::questionnaire_example::questionnaire_headless_and_empty_return_errors` | 31.997 |
+| 48 | `maestro-extensions-wasm` / `tests::snake_example::snake_ticks_move_grow_turn_and_save_through_session_entries` | 31.944 |
+| 47 | `maestro-test-conventions` / `architecture::forbidden_direct_edges_are_rejected` | 31.726 |
+| 46 | `maestro-extensions-wasmtime` / `tests::builtin_operations::builtin_bash_initial_progress_failure_prevents_exec` | 31.648 |
+| 45 | `maestro-extensions-wasm` / `tests::preset_example::preset_startup_flag_is_applied_before_returning_and_overrides_saved_name` | 31.576 |
+| 44 | `maestro-extensions-wasmtime` / `factory::tests::faulted_store_drops_once_only_after_the_last_admission_ends` | 31.525 |
+| 43 | `maestro-extensions-wasmtime` / `tests::builtin_factories::builtin_factory_construction_is_lazy_and_fresh` | 31.281 |
+| 42 | `maestro-extensions-wasm` / `tests::snake_example::snake_headless_command_requires_interactive_mode` | 31.215 |
+| 41 | `maestro-extensions-wasmtime` / `tests::builtin_operations::builtin_read_options_preserve_reverse_operations` | 30.949 |
+| 40 | `maestro-extensions-wasmtime` / `tests::builtin_operations::builtin_mutations_release_after_error_and_alias_paths` | 30.745 |
+| 39 | `maestro-extensions-wasmtime` / `tests::builtin_operations::builtin_find_callbacks_receive_pattern_root_ignore_and_limit` | 30.323 |
+| 38 | `maestro-tooling` / `browser_author_build::browser_author_projection_failure_prevents_dependent_build` | 30.158 |
+| 37 | `maestro-extensions-wasm` / `tests::preset_example::preset_cycles_restore_original_settings_and_persist_cleared_branch_state` | 30.154 |
+
+#### Refreshing priorities
+
+To refresh the ranks:
+
+1. Download the latest successful merge-group logs with
+   `gh api repos/Orchestration-Maestro/maestro/actions/runs/RUN_ID/logs > logs.zip`.
+   Record the run URL, revision, shard summaries and complete per-test durations.
+2. Read final successful `PASS [ Ns] (completed/total) binary test` rows, including
+   successful retry rows. Exclude `SETUP PASS` and final-summary repeats. Check
+   unique identities across shards against the summed summaries and eligible
+   inventory; account separately for intentionally ignored probes and retries.
+3. Sort tests exceeding 30 seconds by descending duration. Remove old priority
+   fields, assign distinct descending priorities starting at 100 and leave other
+   tests at 0. For tied durations, order by binary then test name.
+   Never change an exception limit or selection filter to refresh a priority.
+4. Update this evidence table and run the focused tooling regression:
+   `cargo nextest run --locked -p maestro-tooling --test integration -E 'test(measured_priorities_order_tests_without_changing_shards)'`.
+   If the three slowest tooling identities change, update its controlled bodies
+   and expected order to match the new measurements.
+5. Record the next merge-group run's slowest span and spread on #3613, with its
+   inventory and revision. Explain setup, serialization or source changes rather
+   than treating per-test duration sums as shard wall time.
+
+### Test time budget
+
+Nextest flags a test as slow every 30 seconds and kills it after four periods,
+at 120 seconds. The 30-second flag is the budget: fix a slow test at its cause,
+and do not approve one on headroom. The 120-second kill is a hang limit, not a
+budget. It stops a hung test and leaves a busy shared runner room to finish a
+test that normally runs well inside it. The default profile sets both:
+
+```toml
+[profile.default]
+slow-timeout = { period = "30s", terminate-after = 4 }
+```
+
+A test that needs more than 120 seconds gets an exception in
+`.config/nextest.toml`. It must select exactly one test, or one shared fixture
+group, and name the measured work and an open issue that will remove it:
+
+```toml
+[[profile.default.overrides]]
+filter = "package(=maestro-example) & test(=component::loads)"
+# Measured: 143.549s; cause: compiling the component fixture; #3589
+slow-timeout = { period = "30s", terminate-after = 5 }
+```
+
+Keep `period = "30s"` so the test still prints SLOW every 30 seconds, and set
+`terminate-after` to the fewest whole periods that cover the measured duration.
+If a hosted run killed the test, record the kill time as the lower bound and say
+so in the `cause:` text. Keep the `Measured:` seconds (over 120), `cause:`
+description and `#NNNN` issue in comments immediately above `slow-timeout`. Each
+exception needs its own comment; another override's comment does not apply. A
+test that finishes within 120 seconds needs no exception.
+
+The conventions check rejects a default other than the flag and hang limit, a
+profile limit above the hang limit, a profile that changes the 30-second
+period, an exception that changes the 30-second period or that the hang limit
+already covers, an undocumented exception and an exception whose
+`terminate-after` is not the fewest periods covering its `Measured:` seconds.
+It checks references offline; the author and reviewer verify with GitHub that
+the linked issue is still open. The change fixing the slowness must delete its
+override as well as close the issue. Each existing exception has its own issue,
+and #3589 tracks them together.
+
 Development and test profiles use `debug = "line-tables-only"` for workspace crates:
 backtraces retain file:line for workspace code, without debugger variable views.
 Dependencies build without debug info, so their frames show function names only;
@@ -503,27 +684,116 @@ this keeps target directories about a sixth smaller.
 They also build `cranelift-codegen` and `regalloc2` optimised, because tests
 compile extension components and an unoptimised code generator makes each
 compile about five times slower, and `syn` and `proc-macro2`
-optimised, because the conventions tests parse every workspace source; release
-builds are unchanged.
+optimised, because the conventions tests parse every workspace source, and `sha2`
+optimised, because the test setup hashes the lock files on every nextest run and an
+unoptimised digest makes its reused-directory path about three times slower;
+release builds are unchanged.
 
-Before guest-authoring tests, nextest's shell launcher locates the active
+Archived CI shards receive `TEST_ARCHIVE=1` and `TEST_PREPARE_OUTPUT` pointing to
+`target/test-setup`.
+The `test_prepare` command in `.github/ci.toml` is the development tool's
+`prepare-test-setup prepare`. Shared CI runs it only when a selected package is
+named by `test_prepare_packages` there, the packages that nextest's
+`author-component` setup serves. Shared CI caches the bundle under the contents of
+the files that `test_prepare_inputs` matches and restores it instead of preparing again.
+Those patterns name the crates the preparation builds, `maestro-extensions-wasm` and
+`maestro-tooling`, and every workspace crate they depend on through a path dependency of
+any kind, plus the fixed inputs, so a change to any other crate keeps the cached bundle.
+The preparation reads that closure from the workspace metadata, compiling nothing, and
+records it in the bundle manifest, so a shard validates the same files without Cargo.
+`ci_cache_key_names_exactly_the_files_the_preparation_reads` fails when a file the
+preparation fingerprints is not matched or a pattern names anything else, so a new
+dependency of a built crate needs its pattern. Markdown that crates embed only as
+documentation changes no staged file, so no pattern names it. The command runs the existing
+component-discovery example from a separate build directory with a user cache of its own, then stages the
+component files, the compiled code the example left in that cache, that built example,
+the development tool itself and a content manifest. The compiled code is the one cache
+namespace the engine named for the example's modification time; preparation fails on a
+namespace that does not end in that time or on more than one, and stages none when the host
+keeps its cache elsewhere. Shared CI transfers
+these files separately from the native test archive, so a shard does not need the
+tool in its archive. Nextest runs the staged tool's
+`nextest-setup author-component`, which checks source and artifact hashes, including every
+compiled-code file, installs the staged example beside the extracted executables and
+installs the compiled code in the user cache (`XDG_CACHE_HOME`, else `~/.cache`) under the
+modification time that copy of the example has, and writes the component paths to
+`NEXTEST_ENV`. The setup then gives the executables that same modification time, as
+below, so they share a compile-cache namespace with the installed code. It runs the example
+on the prepared components, which finds every component compiled and starts no Cargo build
+or compile pass. Archived runs
+require the bundle and fail without starting Cargo when it is missing or stale.
+Other runs reuse an existing manifest, rejecting stale or incomplete files; without
+a manifest they keep local auto-build. Archive strictness
+requires the shared CI release that supplies `TEST_ARCHIVE=1`. Source hashes
+include the built crates and their path dependencies, examples, assets, Cargo
+configuration, locked dependencies and the toolchain. The variable names in the
+bundle follow component discovery's own rule and fixed author and context pair.
+File timestamps do not affect reuse, but the staged example finds component
+sources at the checkout path it was built in, so both jobs must use the same
+checkout path, as shared CI does.
+
+For a local check of that boundary, run:
+
+```sh
+cargo run --quiet --locked -p maestro-tooling --bin development -- \
+    prepare-test-setup prepare "$PWD/target/test-setup" "$PWD/target/test-prepare"
+TEST_PREPARE_OUTPUT="$PWD/target/test-setup" cargo nextest run --locked -p maestro-extensions-wasm
+```
+
+The development tool's `nextest-setup` command runs every nextest setup entry:
+`author-component`, `fixture-sources`, `browser-author` and
+`normalize-component-cache`. `.config/nextest.toml` names only these commands, and the
+conventions check rejects a shell script under `.config/`. The `author-component` entry
+runs the tool from `target/test-setup/development`: a shard receives it in the downloaded
+bundle, and `just prepare-tests` installs it. `just test` and `just check` run that recipe first.
+When you start nextest by hand on a package the entry serves and the tool is missing,
+nextest prints the missing path `target/test-setup/development`; run `just prepare-tests`
+once and start nextest again. Run it again after a change to `maestro-tooling`, as nextest
+runs a staged copy that is outdated without a word. The tooling entries run
+`debug/development` from the target directory, which every `maestro-tooling` test build
+produces.
+
+With `TEST_ARCHIVE` unset and no prepared bundle, local runs build the example
+automatically. Before guest-authoring tests, the `author-component` setup locates the active
 artifact directory through its documented platform library search path. It runs
 the `prepare_author_component` example that the test build put in that directory,
-as long as the example is newer than its source, the shared build module, the
-package manifest and `Cargo.lock`. Running it through Cargo instead would resolve
-features for that one package and recompile the engine. When the example is missing
-or older, as after a `--lib` or filtered selection, the launcher builds and runs it
-through Cargo in the same target directory and profile.
-The launcher fails if the directory cannot be resolved rather than building
+as long as the example is newer than its source, the shared build and component
+discovery sources, the package manifest and `Cargo.lock`. Running it through Cargo instead would resolve features for
+that one package and recompile the engine. When the example is missing or older, as
+after a `--lib` or filtered selection, the setup builds it through Cargo in the
+same target directory and profile before running it directly.
+The setup fails if the directory cannot be resolved rather than building
 elsewhere. It uses `NEXTEST_LD_LIBRARY_PATH` on Linux,
-`NEXTEST_DYLD_FALLBACK_LIBRARY_PATH` on macOS and `PATH` through Git's shell
-on Windows, where the shell converts the search list to colon-separated paths.
-The example builds the author component, warms the Wasmtime compilation cache
-in the default user cache and exports its path to the tests' processes.
-The Git-pinned engine partitions cached code by host executable modification
-time, so setup does not warm another binary's entries; nextest processes of
-the same test binary reuse its compiled bytes after their first load.
-The component build removes `RUSTC_WRAPPER`, where the coverage tool puts its
+`NEXTEST_DYLD_FALLBACK_LIBRARY_PATH` on macOS and `PATH` on Windows, split with the
+platform's own separator.
+Before running the example, the setup's cache normalization (`nextest-setup normalize-component-cache`) gives executable
+artifacts in the profile directory, `deps` and `examples` their newest existing
+modification time. This advances older outputs without making them older than
+their compiler inputs. It skips an executable that a workspace library it builds on
+has outdated: Cargo rebuilds an executable only while a dependency's output is newer
+than it, so advancing a binary that a rebuilt library has outdated would hide the
+rebuild. The libraries an executable builds on come from the crate named in its
+dependency information and the workspace crates `Cargo.lock` lists for it; a library's
+own test binary does not build on its output. Without that information, any newer
+library output outdates the executable. A run from a nextest archive (`TEST_ARCHIVE`
+set) skips this check, because nextest never runs Cargo on an archive. Without the
+skip, the library the setup builds for the setup example would outdate every
+restored test binary, and each would compile its components cold. A skipped test binary
+compiles its components itself on first use. A skipped example would warm code that no
+test binary reads, so normalization then exits with status 3 and the setup rebuilds
+the example through Cargo before it runs. Cargo ignores some library outputs that
+normalization counts, such as the check-only metadata a lint run writes, so the example
+can stay outdated after that build. The setup then logs one line and runs it anyway.
+Test binaries do not read the code it warms, which costs a cache miss and never fails
+setup. The Git-pinned engine includes the shared modification time in its cache
+namespace, so the preparer and consuming test binaries share compiled code.
+The example builds every exported component in one Cargo invocation, so Cargo
+compiles them in parallel, warms their Wasmtime compilation cache
+in the default user cache on up to four threads and exports each path to the tests'
+processes. Component contents, compiler settings and CPU features still determine
+cache compatibility.
+The shared component builder resolves these source-marked paths before invoking
+Cargo. The component build removes `RUSTC_WRAPPER`, where the coverage tool puts its
 instrumenting wrapper, and keeps `CARGO_BUILD_RUSTC_WRAPPER`, where shared CI
 sets the compile cache. So the component stays uninstrumented while its
 compiles still reach the cache.
@@ -552,6 +822,90 @@ and global fallbacks, then includes dependent crates. Use `test_inputs` in
 read them. A file owned by another workspace member already selects that member
 and its dependents. Only otherwise unowned, undeclared paths use the all-or-none fallback:
 they select every test, or none when the file is Markdown or under `docs/`.
+
+### Browser author build
+
+A test shard starts with an empty target directory and no compile cache. The
+browser author tests run the browser recipes, which compile the native bootstrap
+programs and the WebAssembly fixture, and lint the delivered browser library.
+Whichever of them ran first on a shard paid for all of that while about a thousand
+other tests used the same cores. That took 120 to 290 seconds, and the test that paid
+changed with scheduling, so any of them could reach the hang limit.
+
+The nextest setup `nextest-setup browser-author` pays the cost once, before
+the first browser author test of a run, and only on a shard that runs one. It lints
+`maestro-web` for `wasm32-unknown-unknown` as `browser-check` does, without the
+formatting repair that would rewrite sources, then runs `browser-example-check`,
+`browser-library-build` and `browser-debug-build` in the checkout. It removes the
+runner's coverage flags and profile path from those commands and restores the compiler
+wrapper that preceded coverage, as the tests do for their own children. It builds in
+`target/browser-author` and exports that path as `MAESTRO_BROWSER_TARGET_DIR`, which
+`Browser` gives to every recipe and helper. Cargo records the spelling of the target
+directory in what it compiles, so the setup and the tests must name the same one: a
+test that built into a differently spelled directory recompiled every dependency. Output
+built for one checkout path serves another, so each test's copy of the checkout reuses it.
+
+`browser_author_bootstraps_from_empty_build_state` builds from an empty state on
+purpose, so the setup is not run for it. Its checkout drops the per-package
+optimization levels of the root manifest, which only pay off for tests that run the
+optimized crates repeatedly, and the test reserves every core with `threads-required`,
+so other tests do not stretch its compiler jobs past the hang limit. A recipe that fails during setup prints a
+warning and does not stop the run; the tests run the same recipes and report the
+failure. Plain Cargo tests, and nextest runs without the setup, use the test build's own
+target directory.
+
+### Cargo state of tooling fixtures
+
+Cargo locks the package cache of its home while it resolves, even with
+`--offline`, so two tests that start `cargo` in one home wait for each other.
+Tooling fixtures therefore run Cargo in a private `CARGO_HOME` that
+`toolchain_support::fixture_command` creates beside the fixture. The recipe
+tool build, every `Workspace` command, the consumer workspaces and their hook
+runs, the standalone asset and wasm probe fixtures, and lock generation and
+metadata queries on the browser fixture manifest use one.
+
+A fixture that resolves registry crates reads one offline source configuration.
+The nextest setup `nextest-setup fixture-sources` vendors the crates
+named by `fixtures/registry_sources/Cargo.toml`, at the versions the workspace
+lock selects, together with the browser fixture's crates. It runs once per run,
+writes `target/fixture-sources/<hash>/`, and reuses that directory while the
+inputs stay unchanged. The set stays small because Cargo reads every vendored
+package on each run; a test checks that every registry crate the tooling crates
+declare is named in that manifest. The setup exports the configuration path as
+`MAESTRO_TEST_CARGO_SOURCES`; outside nextest the first test that needs it runs
+the same command. A fixture opts in with `Workspace::use_prepared_sources` or
+`Browser::cargo`, which copy the configuration into its private home. A fixture
+without registry dependencies copies nothing. The cold browser build still
+vendors the whole workspace for itself, because it compiles every dependency.
+
+Cargo builds that share one target directory with other builds, the test build's or the
+one the browser author setup prepares, keep the shared home.
+A registry crate's fingerprint includes its source path, so a private home with
+vendored sources recompiles every registry dependency in that target, and going
+back to the shared home recompiles them again. The browser recipe and native
+builds (`Browser::command` and `Browser::native_command`) are such builds; the
+`browser-author` group and the browser file lock already run them one at a time.
+Queries of the whole workspace, tests in other crates that build it, and the
+in-process `maestro_tooling::run` calls on dependency-free fixtures also keep the
+shared home. A watch recipe starts `cargo run` and, beneath it, `cargo build` in one
+home, so its first build prints a wait on its own `cargo run`, not on another
+test.
+
+On Unix, when `RUSTC_WRAPPER` is set, `fixture_command` points it at a script,
+`rustc-wrapper.sh`, in the fixture root. The script unsets `CARGO_HOME` and runs
+the original wrapper. `sccache` hashes every `CARGO_*` variable into the key of
+each rustc call, so a wrapper that saw the private home would give the registry
+crates of each fixture a key that no other fixture shares. Cargo itself keeps the
+private home and its lock. `fixture_command_hides_cargo_home_from_the_compiler_wrapper`
+runs a fixture build behind a recording wrapper and checks that it never sees
+`CARGO_HOME`.
+
+Three tests (`workspace_fixtures_never_reach_the_shared_cargo_home`,
+`browser_resolution_never_reaches_the_shared_cargo_home` and
+`consumer_workspace_never_reaches_the_shared_cargo_home`) rerun a recipe
+workspace, a browser resolution and a consumer workspace in a child whose shared
+`CARGO_HOME` holds a directory where Cargo expects its lock file. A fixture that
+still reaches the shared home fails at once instead of waiting for another test.
 
 ### Child-process tests
 
@@ -605,7 +959,9 @@ fixture parse, so don't spawn a child per case yourself. A case that needs a fre
 process for other state, such as a process-wide counter or files created per
 case, keeps its own child. Use `TestProcess::case(id)` to select that case. Set a
 child's temporary directory with `TestProcess::temp_dir(path)`, which writes the
-variables each platform reads, never `TMPDIR` alone.
+variables each platform reads, never `TMPDIR` alone. A child that replaces `HOME`
+and loads a prepared component passes `user_cache_home()` as `XDG_CACHE_HOME`,
+which only Linux reads, so it reuses the setup's compiled code instead of compiling the component again.
 Read child roles through `maestro_test_process::selection()`, not environment
 variables. `selection.is_child()` distinguishes the parent from a child.
 `selection.runs_case(id)` accepts the parent, wildcard children and the child
@@ -628,20 +984,61 @@ and release it before waiting for completion. Pipe both output streams explicitl
 `spawn` otherwise retains inherited stdin. Live pipe-closure transactions use the
 single-test isolation described above, not a process-wide owner lock.
 
-### Compile cache warm-up
+### Compile cache snapshot
 
 Shared CI restores a compiled-cache snapshot in each Linux job, but only pushes
-to `main` save one. `.github/workflows/warm-cache.yml` runs on every push to
-`main` and calls the shared workflow with `warm-cache: true`. That builds the
-full coverage test graph, then runs only the tests selected by
-`warm_test_filter` in `.github/ci.toml`. Today that is one guest-authoring test,
-so the author component's compiles enter the snapshot that merge-queue test
-shards restore. The snapshot is capped at 1 GiB and evicts its least recently
-used entries, so the selection stays narrow. The warm-up is never a required
-check, and a newer push cancels a running one. Its `uses:` pin moves with each shared-CI
-release re-pin
+to `main` save one. The full suite after landing runs on every push to `main`
+and saves the snapshots that a merge group's preparation job restores: the
+author component's compiles, and beside them the prepared test setup bundle. The
+test shards only download the artifact that job builds. No caller names a
+`concurrency-key`: the key names the coverage manifest, and merge groups search the
+manifest of the default key as their baseline, which a main push run publishes only
+under that key.
+
+## Full-suite runs after landing
+
+`Full suite after landing` runs the shared Rust CI on the exact commit of every
+push to main. It runs all test shards, doctests and declared Chromium tests,
+even when the merge queue selected fewer crates. Later pushes do not cancel
+or replace queued landing runs. This is separate from required merge checks.
+
+Push runs never read a coverage baseline: the lookup runs only for merge
+groups. The suite caller still grants `actions: read`, because the
+shared declaration job declares it and a caller that grants less makes the run
+fail to start. The suite caller and the reporter caller pin the
+released shared CI commit that the organization rulesets require. Each pin
+moves with every shared-CI release re-pin
 ([Orchestration-Maestro/.github#231](https://github.com/Orchestration-Maestro/.github/issues/231)).
-A stale pin fails nothing; it only costs snapshot hits.
+
+`Failed landing reports` listens for the completed main-push run. The shared
+reporter creates one failure issue per landing commit with the merged PR,
+failed-test log lines and run link, then proposes a revert PR against main.
+The revert names the original PR and failure issue. It runs normal required
+checks and enters the merge queue like any other PR; automation never pushes
+the revert directly to main. Repeated handling reuses the existing issue and
+open or closed revert PR, including when an earlier attempt only pushed the
+revert branch. When the merge queue squashes several PRs in one push, only the
+last commit has a suite run: the issue then names every PR in that push, newest
+first, and the reporter fails with the run link without a revert. Revert the
+culprit in a normal reviewed PR. Passing suites create neither artifact.
+
+The reporting job needs read access to Actions runs and contents. Writes use
+the existing release App's repository-scoped token, minted from
+`RELEASE_APP_CLIENT_ID` and `RELEASE_APP_PRIVATE_KEY`, with contents, issues and
+pull requests write access, plus workflows write access so it can revert CI
+changes. The App must be installed here and the organization
+secret available here. This token lets the revert trigger checks; test jobs do
+not receive it. The reporting workflow alone is declared in
+`privileged_trigger_workflows` for the existing trigger audit.
+
+Unknown PR attribution, missing permissions or a revert conflict fails the
+reporter with the original run link. The reporter also stops without an issue
+or a revert when no earlier full-suite run on main bounds the push (the first
+landing), or when the run did not pass but has no failed test, doctest or
+Chromium job, such as a cancelled run. Inspect that run and the failure issue;
+resolve a conflict in a reviewed PR. Do not bypass required checks or push to
+main to recover. The workflow-run listener becomes active after it lands on
+the default branch.
 
 ## Fuzzing
 

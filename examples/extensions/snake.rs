@@ -1,4 +1,5 @@
 //! Play Snake in a custom terminal view, saving a paused game in session entries.
+// maestro-component: MAESTRO_SNAKE_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

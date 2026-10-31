@@ -29,5 +29,6 @@ allowlist names its repository.
 The runtime and native test host enable `cache` to reuse compiled bytes through
 Wasmtime's safe, content-keyed user cache. Cache setup, read or write failures
 fall back to compilation. Each load keeps its own Store. The Git build includes
-the host executable's modification time in cache keys, so separate host binaries
-do not share entries, but isolated test processes of the same binary do.
+the host executable's modification time in cache keys. The test setup aligns
+executable timestamps before warming every exported component, so separate test
+binaries reuse compatible entries.

@@ -23,6 +23,12 @@ pub mod example_files;
 
 /// Derived extension documentation table.
 mod example_index;
+/// Path dependencies between workspace members.
+mod member_graph;
+/// Setup commands that nextest runs before the tests that need them.
+mod nextest_setup;
+/// Reusable test-setup staging and validation.
+mod test_setup;
 /// Filesystem watching and Cargo compilation dispatch.
 mod watch;
 
@@ -87,6 +93,8 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
             }
             Ok(ExitCode::SUCCESS)
         }
+        Some("nextest-setup") => nextest_setup::run(args),
+        Some("prepare-test-setup") => test_setup::run(args, cargo, checkout),
         Some("watch") => watch::run(args, cargo),
         Some("watch-step") => watch::step(args, cargo),
         Some("test-offline") => {

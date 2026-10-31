@@ -1,4 +1,5 @@
 //! Summarizes the complete prepared conversation with a separately selected model.
+// maestro-component: MAESTRO_CUSTOM_COMPACTION_COMPONENT
 #![cfg(target_arch = "wasm32")]
 #![forbid(
     clippy::pedantic,
