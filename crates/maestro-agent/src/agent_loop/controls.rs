@@ -89,7 +89,7 @@ impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Driver<'_, C, 
                 context: &self.context,
                 new_messages: messages,
             },
-            None,
+            self.options.signal.clone(),
         )
         .await?;
         let Some(update) = update else {
