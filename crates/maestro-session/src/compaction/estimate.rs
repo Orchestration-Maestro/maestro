@@ -2,6 +2,7 @@
 use super::CompactionSettings;
 use crate::session_manager::context::property;
 use maestro_json::is_truthy;
+use maestro_models::{ESTIMATED_IMAGE_CHARS, tokens_for_chars, utf16_units};
 use serde::Deserialize;
 use serde::de::Error as _;
 use serde_json::Value;
@@ -111,7 +112,7 @@ fn block_units(block: &Value, role: &Role) -> Result<f64, serde_json::Error> {
                 .ok_or_else(|| serde_json::Error::custom("missing arguments"))?;
             Ok(name + utf16_units(&maestro_json::compact_json(arguments)?))
         }
-        Some("image") if matches!(role, Role::WithImages) => Ok(4800.0),
+        Some("image") if matches!(role, Role::WithImages) => Ok(ESTIMATED_IMAGE_CHARS),
         _ => Ok(0.0),
     }
 }
@@ -137,7 +138,7 @@ pub fn estimate_tokens(message: &Value) -> Result<f64, serde_json::Error> {
             }
         }
     };
-    Ok((chars / 4.0).ceil())
+    Ok(tokens_for_chars(chars))
 }
 /// Estimate context from the latest successful usage and the trailing messages.
 ///
@@ -165,9 +166,4 @@ pub fn estimate_context_tokens(
         trailing_tokens,
         last_usage_index: latest.map(|(index, _)| index),
     })
-}
-
-/// Count string units directly without a JSON container or integer narrowing.
-fn utf16_units(text: &str) -> f64 {
-    text.encode_utf16().fold(0.0, |count, _| count + 1.0)
 }

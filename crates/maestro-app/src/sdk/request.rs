@@ -73,9 +73,9 @@ pub(super) fn build_agent(
     }))
 }
 
-/// The provider request: the catalog's key and headers, the provider retry settings where
-/// the request sets none, and the attribution, credential and request headers merged in that
-/// order.
+/// The provider request: the catalog's key and headers, the provider retry settings and then
+/// the HTTP idle timeout where the request sets none, and the attribution, credential and
+/// request headers merged in that order.
 fn stream_fn(services: &Services, spawn: &AgentSpawner<Local>) -> maestro_agent::StreamFn<Local> {
     let registry = Arc::clone(&services.model_registry);
     let settings = Rc::clone(&services.settings_manager);
@@ -92,10 +92,11 @@ fn stream_fn(services: &Services, spawn: &AgentSpawner<Local>) -> maestro_agent:
                     return Err(DiagnosticErrorInfo::error(error));
                 }
             };
-            let (retry, attribution) = {
+            let (retry, idle_timeout, attribution) = {
                 let settings = settings.borrow();
                 (
                     settings.get_provider_retry_settings(),
+                    request_timeout(&settings),
                     get_attribution_headers(
                         &model,
                         &settings,
@@ -105,7 +106,10 @@ fn stream_fn(services: &Services, spawn: &AgentSpawner<Local>) -> maestro_agent:
             };
             let common = &mut options.common;
             common.api_key = api_key;
-            common.timeout_ms = common.timeout_ms.or(retry.timeout_ms);
+            common.timeout_ms = common
+                .timeout_ms
+                .or(retry.timeout_ms)
+                .or(Some(idle_timeout));
             common.max_retries = common.max_retries.or(retry.max_retries);
             common.max_retry_delay_ms =
                 common.max_retry_delay_ms.or(Some(retry.max_retry_delay_ms));
@@ -113,6 +117,18 @@ fn stream_fn(services: &Services, spawn: &AgentSpawner<Local>) -> maestro_agent:
             maestro_models::stream_simple_for::<Local>(model, context, Some(options), submission)
         })
     })
+}
+
+/// The request timeout the HTTP idle timeout setting supplies, in milliseconds. The setting's
+/// zero disables the limit, which a provider timeout of zero would instead make immediate, so
+/// it asks for the largest timeout the request carries, `i32::MAX` milliseconds.
+fn request_timeout(settings: &SettingsManager) -> f64 {
+    let idle = settings.get_http_idle_timeout_ms();
+    if idle > 0.0 {
+        idle
+    } else {
+        f64::from(i32::MAX)
+    }
 }
 
 /// The headers of each present map, later ones replacing earlier values; absent when none

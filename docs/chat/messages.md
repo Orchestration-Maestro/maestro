@@ -33,11 +33,17 @@ text it displays, so tool-call arguments keep whatever JSON value was stored.
 `update_content` replaces the retained shared handle, releasing a stored record,
 and rebuilds the inner content. Both thinking setters and `invalidate` rebuild from that handle, observing
 edits through a surviving message alias. Any tool-call block suppresses prompt
-markers and failure notices. Without tools, aborted/error messages append their
-notice, and nonempty rendering receives the same markers as a user message.
+markers and failure notices, except the output-length notice below. Without tools,
+aborted/error messages append their notice, and nonempty rendering receives the
+same markers as a user message.
 Absent/empty abort errors and `Request was aborted` display `Operation aborted`;
 absent/empty error text displays `Error: Unknown error`. Successful stop reasons
 ignore error text. Whitespace-only errors are not trimmed.
+
+A message that stopped at the output token limit (stop reason `length`) always
+appends `Error: Model stopped because it reached the maximum output token limit.
+The response may be incomplete.`, with or without tool calls, because the limit can
+cut a tool call short before its own row can report anything.
 
 ## Summaries
 

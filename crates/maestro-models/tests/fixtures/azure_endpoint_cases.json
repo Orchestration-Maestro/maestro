@@ -10948,11 +10948,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "bodyKeys": [
             "model",
@@ -11018,11 +11018,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "keys": [
             "model",
@@ -11088,11 +11088,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "bodyKeys": [
             "model",
@@ -11158,11 +11158,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "keys": [
             "model",
@@ -11227,11 +11227,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "bodyKeys": [
             "model",
@@ -11297,11 +11297,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "keys": [
             "model",
@@ -27661,11 +27661,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "bodyKeys": [
             "model",
@@ -27731,11 +27731,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "keys": [
             "model",
@@ -27795,15 +27795,15 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "minimal",
               "summary": "auto"
             },
             "include": [
               "reasoning.encrypted_content"
-            ]
+            ],
+            "store": false
           },
           "bodyKeys": [
             "model",
@@ -27870,15 +27870,15 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "minimal",
               "summary": "auto"
             },
             "include": [
               "reasoning.encrypted_content"
-            ]
+            ],
+            "store": false
           },
           "keys": [
             "model",
@@ -27939,15 +27939,15 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "high",
               "summary": "auto"
             },
             "include": [
               "reasoning.encrypted_content"
-            ]
+            ],
+            "store": false
           },
           "bodyKeys": [
             "model",
@@ -28014,15 +28014,15 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "high",
               "summary": "auto"
             },
             "include": [
               "reasoning.encrypted_content"
-            ]
+            ],
+            "store": false
           },
           "keys": [
             "model",
@@ -29447,11 +29447,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "bodyKeys": [
             "model",
@@ -29517,11 +29517,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "keys": [
             "model",
@@ -29591,8 +29591,8 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000
+            "max_output_tokens": 64000,
+            "store": false
           },
           "bodyKeys": [
             "model",
@@ -29657,8 +29657,8 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000
+            "max_output_tokens": 64000,
+            "store": false
           },
           "keys": [
             "model",
@@ -29723,15 +29723,15 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "high",
               "summary": "auto"
             },
             "include": [
               "reasoning.encrypted_content"
-            ]
+            ],
+            "store": false
           },
           "bodyKeys": [
             "model",
@@ -29798,15 +29798,15 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "high",
               "summary": "auto"
             },
             "include": [
               "reasoning.encrypted_content"
-            ]
+            ],
+            "store": false
           },
           "keys": [
             "model",
@@ -34703,11 +34703,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "keys": [
             "model",
@@ -34765,11 +34765,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "bodyKeys": [
             "model",
@@ -34835,11 +34835,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "keys": [
             "model",
@@ -34923,11 +34923,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "keys": [
             "model",
@@ -34974,11 +34974,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "bodyKeys": [
             "model",
@@ -35041,11 +35041,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "keys": [
             "model",
@@ -35105,11 +35105,11 @@
               }
             ],
             "stream": false,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "bodyKeys": [
             "model",
@@ -35175,11 +35175,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "keys": [
             "model",
@@ -37013,11 +37013,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "bodyKeys": [
             "model",
@@ -37103,11 +37103,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "keys": [
             "model",
@@ -37165,11 +37165,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "bodyKeys": [
             "model",
@@ -37265,11 +37265,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "keys": [
             "model",
@@ -37327,11 +37327,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "bodyKeys": [
             "model",
@@ -37397,11 +37397,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "keys": [
             "model",
@@ -37459,11 +37459,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "bodyKeys": [
             "model",
@@ -37529,11 +37529,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "keys": [
             "model",
@@ -37591,11 +37591,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "bodyKeys": [
             "model",
@@ -37675,11 +37675,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "keys": [
             "model",
@@ -37737,11 +37737,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "bodyKeys": [
             "model",
@@ -37807,11 +37807,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "keys": [
             "model",
@@ -37869,11 +37869,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "bodyKeys": [
             "model",
@@ -37939,11 +37939,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "keys": [
             "model",
@@ -38001,11 +38001,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "bodyKeys": [
             "model",
@@ -38071,11 +38071,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "keys": [
             "model",
@@ -38133,11 +38133,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "bodyKeys": [
             "model",
@@ -38204,11 +38204,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "keys": [
             "model",
@@ -38266,11 +38266,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "bodyKeys": [
             "model",
@@ -38354,11 +38354,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "keys": [
             "model",
@@ -38416,11 +38416,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "bodyKeys": [
             "model",
@@ -38487,11 +38487,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "keys": [
             "model",
@@ -41825,11 +41825,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "keys": [
             "model",
@@ -41876,11 +41876,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "bodyKeys": [
             "model",
@@ -41947,11 +41947,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "keys": [
             "model",
@@ -42009,11 +42009,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "bodyKeys": [
             "model",
@@ -42079,11 +42079,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "keys": [
             "model",
@@ -42142,11 +42142,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "bodyKeys": [
             "model",
@@ -42209,11 +42209,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "keys": [
             "model",
@@ -42271,11 +42271,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "bodyKeys": [
             "model",
@@ -42341,11 +42341,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "keys": [
             "model",
@@ -43417,11 +43417,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "bodyKeys": [
             "model",
@@ -43484,11 +43484,11 @@
               }
             ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
-            }
+            },
+            "store": false
           },
           "keys": [
             "model",

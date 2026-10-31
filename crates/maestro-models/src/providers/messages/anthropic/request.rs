@@ -242,14 +242,13 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
         }
     }
 
-    /// The output limit: the caller's unless it is zero or not a number, otherwise a third of
-    /// the model's, truncated.
+    /// The output limit: the caller's unless it is zero or not a number, otherwise the model's.
     fn max_tokens(&self) -> f64 {
         self.options
             .common
             .max_tokens
             .filter(|tokens| *tokens != 0.0 && !tokens.is_nan())
-            .unwrap_or_else(|| (self.model.max_tokens / 3.0).trunc())
+            .unwrap_or(self.model.max_tokens)
     }
 
     /// Build the request payload as JSON.

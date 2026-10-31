@@ -14,6 +14,10 @@ mod tests {
         task::{Context, Poll, Waker},
     };
 
+    fn empty_context() -> maestro_models::Context {
+        serde_json::from_value(serde_json::json!({"messages": []})).unwrap()
+    }
+
     fn model(max_tokens: f64) -> Model {
         serde_json::from_value(serde_json::json!({
             "id": "controlled", "name": "Controlled", "api": "fixture", "provider": "fixture",
@@ -59,7 +63,7 @@ mod tests {
             },
             ..Default::default()
         };
-        let base = build_base_options(&model(8.0), Some(&options), None);
+        let base = build_base_options(&model(8.0), &empty_context(), Some(&options), None);
         assert_eq!(calls.load(Ordering::SeqCst), 0);
         assert_common_fields(&base, &options.common);
         assert!(SharedHandle::ptr_eq(
@@ -83,7 +87,7 @@ mod tests {
         assert_eq!(options.common.max_tokens, Some(-7.0));
         options.common.max_tokens = Some(0.0);
         assert_eq!(
-            build_base_options(&model(8.0), Some(&options), None).max_tokens,
+            build_base_options(&model(8.0), &empty_context(), Some(&options), None).max_tokens,
             Some(0.0)
         );
     }
@@ -107,11 +111,11 @@ mod tests {
         for (limit, expected) in [
             (12.0, Some(12.0)),
             (32000.0, Some(32000.0)),
-            (64000.0, Some(32000.0)),
+            (64000.0, Some(64000.0)),
             (0.0, None),
             (-1.0, None),
         ] {
-            let base = build_base_options(&model(limit), None, None);
+            let base = build_base_options(&model(limit), &empty_context(), None, None);
             assert_eq!(base.max_tokens, expected);
             assert!(base.temperature.is_none() && base.api_key.is_none() && base.signal.is_none());
             assert!(
@@ -127,8 +131,13 @@ mod tests {
                     && base.max_retry_delay_ms.is_none()
             );
             assert_eq!(
-                build_base_options(&model(limit), Some(&SimpleStreamOptions::default()), None)
-                    .max_tokens,
+                build_base_options(
+                    &model(limit),
+                    &empty_context(),
+                    Some(&SimpleStreamOptions::default()),
+                    None
+                )
+                .max_tokens,
                 expected
             );
         }
@@ -141,19 +150,19 @@ mod tests {
             (Some("separate"), "separate"),
             (Some("  "), "  "),
         ] {
-            let base = build_base_options(&model(10.0), Some(&options), key);
+            let base = build_base_options(&model(10.0), &empty_context(), Some(&options), key);
             assert_eq!(base.max_tokens, Some(90000.0));
             assert_eq!(base.api_key.as_deref(), Some(expected));
         }
         options.common.api_key = Some(String::new());
         assert_eq!(
-            build_base_options(&model(10.0), Some(&options), Some(""))
+            build_base_options(&model(10.0), &empty_context(), Some(&options), Some(""))
                 .api_key
                 .as_deref(),
             Some("")
         );
         assert_eq!(
-            build_base_options(&model(10.0), None, Some("key"))
+            build_base_options(&model(10.0), &empty_context(), None, Some("key"))
                 .api_key
                 .as_deref(),
             Some("key")
@@ -188,7 +197,7 @@ mod tests {
             (ThinkingLevel::High, 17384.0, 16384.0),
             (ThinkingLevel::Xhigh, 17384.0, 16384.0),
         ] {
-            let adjusted = adjust_max_tokens_for_thinking(1000.0, 100_000.0, level, None);
+            let adjusted = adjust_max_tokens_for_thinking(Some(1000.0), 100_000.0, level, None);
             assert_eq!(
                 (adjusted.max_tokens, adjusted.thinking_budget),
                 (total, budget)
@@ -202,7 +211,8 @@ mod tests {
             (100.0, 0.0, (0.0, 0.0)),
             (-100.0, 10000.0, (1948.0, 924.0)),
         ] {
-            let adjusted = adjust_max_tokens_for_thinking(base, limit, ThinkingLevel::Low, None);
+            let adjusted =
+                adjust_max_tokens_for_thinking(Some(base), limit, ThinkingLevel::Low, None);
             assert_eq!((adjusted.max_tokens, adjusted.thinking_budget), expected);
         }
         assert_custom_budgets();
@@ -224,7 +234,8 @@ mod tests {
             (ThinkingLevel::High, 99.0),
             (ThinkingLevel::Xhigh, 99.0),
         ] {
-            let adjusted = adjust_max_tokens_for_thinking(1000.0, 100_000.0, level, Some(&custom));
+            let adjusted =
+                adjust_max_tokens_for_thinking(Some(1000.0), 100_000.0, level, Some(&custom));
             assert_eq!(Some(adjusted.thinking_budget), Some(expected));
         }
         let medium_override = ThinkingBudgets {
@@ -232,7 +243,7 @@ mod tests {
             ..Default::default()
         };
         let adjusted = adjust_max_tokens_for_thinking(
-            1000.0,
+            Some(1000.0),
             100_000.0,
             ThinkingLevel::Medium,
             Some(&medium_override),
@@ -250,7 +261,7 @@ mod tests {
         ] {
             assert_eq!(
                 Some(
-                    adjust_max_tokens_for_thinking(1000.0, 100_000.0, level, Some(&absent))
+                    adjust_max_tokens_for_thinking(Some(1000.0), 100_000.0, level, Some(&absent))
                         .thinking_budget
                 ),
                 Some(budget)
@@ -292,8 +303,12 @@ mod tests {
                 low: Some(budget),
                 ..Default::default()
             };
-            let adjusted =
-                adjust_max_tokens_for_thinking(base, limit, ThinkingLevel::Low, Some(&custom));
+            let adjusted = adjust_max_tokens_for_thinking(
+                Some(base),
+                limit,
+                ThinkingLevel::Low,
+                Some(&custom),
+            );
             assert_float(adjusted.max_tokens, expected_limit);
             assert_float(adjusted.thinking_budget, expected_budget);
         }

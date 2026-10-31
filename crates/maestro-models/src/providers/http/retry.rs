@@ -73,6 +73,16 @@ fn whole_number(name: &str, value: f64) -> Result<f64, RequestFailure> {
     }
 }
 
+/// The longest wait of one request as a duration: a whole number of milliseconds of at least
+/// zero, where one too long to represent never elapses.
+///
+/// # Errors
+/// Fails when the setting is fractional, nonfinite or negative.
+pub(crate) fn request_timeout(milliseconds: f64) -> Result<Duration, RequestFailure> {
+    let milliseconds = whole_number("timeout", milliseconds)?;
+    Ok(Duration::try_from_secs_f64(milliseconds / 1000.0).unwrap_or(Duration::MAX))
+}
+
 /// Count the retries a request may make as an exact integer.
 ///
 /// A whole number converts exactly through the seconds of a duration, so no lossy cast is
@@ -204,9 +214,8 @@ pub(crate) async fn send_with_status_error<E: ProviderExecution>(
     options: &StreamOptions<E>,
     format_error: fn(u16, &str) -> RequestFailure,
 ) -> Result<HttpResponse, RequestFailure> {
-    let timeout_ms = whole_number("timeout", options.timeout_ms.unwrap_or(DEFAULT_TIMEOUT_MS))?;
+    let timeout = request_timeout(options.timeout_ms.unwrap_or(DEFAULT_TIMEOUT_MS))?;
     let budget = retry_budget(options.max_retries.unwrap_or(DEFAULT_RETRIES))?;
-    let timeout = Duration::try_from_secs_f64(timeout_ms / 1000.0).unwrap_or(Duration::MAX);
     let policy = RequestPolicy {
         timeout: Some(timeout),
         retries: budget,
