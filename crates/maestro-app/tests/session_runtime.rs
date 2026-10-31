@@ -15,7 +15,7 @@ use maestro_extensions::{
     ExtensionFactory, ForkPosition, MessageEndEvent, MessageEndEventResult, NativeAgentMessage,
     SessionBeforeSwitchEvent, SessionBeforeSwitchResult, SessionShutdownEvent,
 };
-use maestro_models::Local;
+use maestro_models::{Local, StopReason};
 use maestro_session::session_manager::ReadonlySessionManager;
 use maestro_session::{Presence, SessionManager};
 use serde_json::{Value, json};
@@ -836,5 +836,43 @@ fn completes_a_tool_turn_then_reloads_and_replaces_with_fresh_contexts() {
         let stale = before_replacement.cwd().unwrap_err().to_string();
         assert!(stale.starts_with("This extension ctx is stale"), "{stale}");
         assert_eq!(probe_source(&runtime.session()), ["<probe>"]);
+    });
+}
+
+#[test]
+fn command_wait_for_idle_returns_after_the_run_settles() {
+    on_task_set(|_| async {
+        let (h, runtime, _) = runtime_for("wait-settles", Vec::new()).await;
+        let session = runtime.session();
+        session.settings_manager().borrow_mut().apply_overrides(
+            serde_json::from_value(json!({"retry": {"baseDelayMs": 30}})).unwrap(),
+        );
+        script_responses(
+            &h,
+            vec![
+                answer("", Some(StopReason::Error), Some("overloaded_error")),
+                answer("recovered", None, None),
+            ],
+        );
+        let started = Rc::new(tokio::sync::Notify::new());
+        let notify = Rc::clone(&started);
+        drop(session.subscribe(Rc::new(move |event| {
+            if matches!(event, maestro_app::AgentSessionEvent::AutoRetryStart { .. }) {
+                notify.notify_one();
+            }
+        })));
+        let prompted = Rc::clone(&session);
+        let running = tokio::task::spawn_local(async move {
+            prompted.prompt("question", PromptOptions::default()).await
+        });
+        started.notified().await;
+        let runtime = Rc::new(runtime);
+        let actions = runtime.command_context_actions();
+        (actions.operations().wait_for_idle)().await.unwrap();
+        assert!(
+            !session.is_streaming(),
+            "the wait outlasted the retry's backoff and the recovered answer"
+        );
+        running.await.unwrap().unwrap();
     });
 }
