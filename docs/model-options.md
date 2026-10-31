@@ -9,9 +9,9 @@ credential resolution, provider invocation or hook execution.
   then fitted to the room the model's context window leaves: the window less the
   estimated tokens of the system prompt, tools and messages and 4,096 safety tokens,
   never below one token. A limit already inside that room, such as an explicit 2,000,
-  is kept; a model with no window keeps its limit. A separately supplied
-  nonempty key overrides the option key; empty or absent keys fall back without
-  trimming. Reasoning settings and thinking budgets are not common output fields.
+  is kept; a model with no window keeps its limit, raised to one token when it is
+  lower. A separately supplied nonempty key overrides the option key; empty or absent
+  keys fall back without trimming. Reasoning settings and thinking budgets are not common output fields.
   `build_base_options_for` performs the same preparation for an explicit execution
   family, sharing its original payload and response hooks without invoking them.
   `build_base_options` keeps the default thread-safe SDK signature.
@@ -28,6 +28,9 @@ credential resolution, provider invocation or hook execution.
   output tokens, never below zero. There is no unconditional output reserve,
   rounding or input validation. A NaN sum or model limit produces a NaN combined limit.
 - `is_context_overflow` classifies a borrowed assistant response as described below.
+- `utf16_units`, `tokens_for_chars` and `ESTIMATED_IMAGE_CHARS` are the parts of the
+  token estimate: four UTF-16 units per token, rounded up, and 4,800 units per image.
+  The output limit above and session compaction both count with them.
 
 ## Cache retention
 
@@ -42,8 +45,8 @@ affinity and compatibility policy.
 A session request without its own `timeout_ms` takes the provider retry setting, then
 the `httpIdleTimeoutMs` setting, so every provider that reads the timeout honours it;
 see the [SDK guide](application/sdk.md). The Mistral transport applies the same timeout
-to the wait for each stream chunk, see
-[reasoning conversations](models/reasoning-conversations.md).
+to the wait for each stream chunk, and rejects a negative or fractional value as the
+other providers do; see [reasoning conversations](models/reasoning-conversations.md).
 
 ## Three context-overflow signals
 

@@ -63,7 +63,8 @@ pub fn build_params(
 /// Missing reasoning requests disabled thinking. An effort is clamped to the model's supported
 /// levels first; extra-high and off both select high. Level-based families map the effort to a
 /// level and ignore custom budgets; other models use the selected budget slot or the family
-/// default. The context and cancellation are not inspected.
+/// default. The context is read only to estimate the room left for the output limit; cancellation
+/// is not inspected.
 ///
 /// # Errors
 /// Fails with `No API key for provider: <provider>` when neither a nonempty supplied key nor

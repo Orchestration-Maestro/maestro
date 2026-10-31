@@ -145,7 +145,7 @@ signature are read together; unknown members and later candidates are never deco
 content-generation request. It sends nothing, calls no hook and never reads a retained timeout,
 retry or transport setting; `GoogleOptions` is also exported at the crate root. Two operations compose:
 
-- `build_simple_options(model, options)` selects raw options from simple ones.
+- `build_simple_options(model, context, options)` selects raw options from simple ones.
 - `build_params(model, context, options)` builds `GenerateContentParameters` from the
   [converted](#content-generation-conversion) context and raw options.
 
@@ -168,7 +168,7 @@ let simple = SimpleStreamOptions {
     reasoning: Some(ThinkingLevel::Low),
     ..SimpleStreamOptions::default()
 };
-let options = build_simple_options(&model, Some(&simple)).expect("a key is supplied");
+let options = build_simple_options(&model, &context, Some(&simple)).expect("a key is supplied");
 let params = build_params(&model, &context, Some(&options)).expect("not aborted");
 let wire = serde_json::to_value(&params).expect("serializes");
 assert_eq!(
@@ -195,8 +195,9 @@ anywhere in the model identifier, with ASCII digits only), and a zero budget oth
 
 `build_simple_options` fails with `No API key for provider: <provider>` unless a nonempty
 supplied key (kept untrimmed) or the provider's environment key exists; it does so before
-anything else and does not inspect the context or the signal, which `build_params` checks
-later. Common settings come from [`build_base_options`](../model-options.md), which also decides the
+anything else. It reads the context only to estimate the room left for the output limit and
+does not inspect the signal, which `build_params` checks later. Common settings come from
+[`build_base_options`](../model-options.md), which also decides the
 output limit; no thinking tokens are added;
 the simple tool choice is not forwarded. Missing reasoning selects disabled thinking. A
 requested effort is first clamped to the model's supported levels, and off and extra-high
