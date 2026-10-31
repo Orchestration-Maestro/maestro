@@ -555,29 +555,39 @@ fn repin_failure_never_publishes_settings() {
     }
 }
 
+#[cfg(unix)]
 #[test]
 fn repin_persistence_keeps_current_git_spelling_and_appends_absent_sources() {
     use maestro_packages::InstalledSourceScope::{Project, User};
     for scope in [User, Project] {
         for present in [false, true] {
-            let fixture = Fixture::new(&json!({}));
+            let (manager, settings, effects, tree) =
+                crate::support::uninstalled(&json!({}), &json!([]));
             let entry =
                 maestro_settings::PackageSource::Source("git:example.test/team/repo@old".into());
             let entries = present.then_some(entry).into_iter().collect();
-            match scope {
-                User => fixture.settings.borrow_mut().set_packages(entries),
-                Project => fixture.settings.borrow_mut().set_project_packages(entries),
-            }
             let target = match scope {
-                User => fixture.agent("git/example.test/team/repo"),
-                Project => fixture.project(".maestro/git/example.test/team/repo"),
+                User => {
+                    settings.borrow_mut().set_packages(entries);
+                    "/home/reader/agent/git/example.test/team/repo"
+                }
+                Project => {
+                    settings.borrow_mut().set_project_packages(entries);
+                    "/work/project/.maestro/git/example.test/team/repo"
+                }
             };
-            std::fs::create_dir_all(target).unwrap();
+            std::fs::create_dir_all(crate::support::below(tree.path(), target)).unwrap();
+            // The refreshed head equals the installed one, so the checkout is current.
+            *effects.capture_outputs.borrow_mut() = ["origin/main", "tip", "same", "same"]
+                .map(|text| Ok(text.to_owned()))
+                .into();
             let source = "https://example.test/team/repo";
-            block_on(fixture.manager.install_and_persist(source, Some(scope))).unwrap();
+            crate::runtime::runtime()
+                .block_on(manager.install_and_persist(source, Some(scope)))
+                .unwrap();
             let settings = match scope {
-                User => fixture.settings.borrow().get_global_settings(),
-                Project => fixture.settings.borrow().get_project_settings(),
+                User => settings.borrow().get_global_settings(),
+                Project => settings.borrow().get_project_settings(),
             };
             assert_eq!(
                 settings.0["packages"],
@@ -587,7 +597,17 @@ fn repin_persistence_keeps_current_git_spelling_and_appends_absent_sources() {
                     source
                 }])
             );
-            assert!(fixture.calls().is_empty());
+            let verbs: Vec<_> = effects
+                .calls
+                .borrow()
+                .iter()
+                .map(|(_, args)| args[0].clone())
+                .collect();
+            assert_eq!(
+                verbs,
+                ["rev-parse", "rev-parse", "fetch", "rev-parse", "rev-parse"],
+                "an unpinned install refreshes the checkout and installs nothing"
+            );
         }
     }
 }
@@ -630,7 +650,7 @@ fn check_repin_case(layout: &str, kind: &str) {
     );
     *fixture.fail.borrow_mut() = "dependencies".into();
     let first = fixture.run(fixture.manager.install_and_persist(&source, None));
-    if matches!(kind, "current" | "no-ref") {
+    if kind == "current" {
         first.unwrap();
         assert!(fixture.dependencies.borrow().is_empty());
         assert_eq!(
@@ -1265,7 +1285,7 @@ fn check_repin_probe_failure(probe: &'static str) {
     *fixture.effects.capture_hook.borrow_mut() =
         Some(std::rc::Rc::new(move |command, args, cwd| {
             let fails = if probe == "ref" {
-                args.starts_with(&["rev-parse".into(), "--revs-only".into()])
+                args.starts_with(&["for-each-ref".into()])
             } else {
                 args == ["rev-parse", "--symbolic-full-name", "HEAD"]
             };
@@ -1307,8 +1327,8 @@ fn check_repin_probe_failure(probe: &'static str) {
             .iter()
             .any(|(_, args)| matches!(
                 args[0].as_str(),
-                "fetch" | "checkout" | "clean" | "reset" | "symbolic-ref"
-            )),
+                "checkout" | "clean" | "reset" | "symbolic-ref"
+            ) || (probe == "selection" && args[0] == "fetch")),
         "failed probes must not start acquisition or recovery effects"
     );
 }
