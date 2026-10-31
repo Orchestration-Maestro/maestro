@@ -17,9 +17,10 @@
           "/chosen",
           "install",
           "-g",
+          "--ignore-scripts",
           "@old/agent"
         ],
-        "display": "npm --prefix /chosen install -g @old/agent"
+        "display": "npm --prefix /chosen install -g --ignore-scripts @old/agent"
       }
     },
     "trace": [

@@ -43,10 +43,10 @@ pub use tui::{
 
 pub use images::terminal_image::{
     CellDimensions, ITerm2Options, ImageDimensions, ImageProtocol, ImageRenderOptions, ImageSize,
-    KittyOptions, RenderedImage, TerminalCapabilities, TerminalImage, calculate_image_rows,
-    delete_all_kitty_images, delete_kitty_image, encode_i_term2, encode_kitty, get_gif_dimensions,
-    get_image_dimensions, get_jpeg_dimensions, get_png_dimensions, get_webp_dimensions, hyperlink,
-    image_fallback, is_image_line,
+    KittyOptions, RenderedImage, TERM_PROGRAM, TerminalCapabilities, TerminalImage,
+    calculate_image_rows, delete_all_kitty_images, delete_kitty_image, encode_i_term2,
+    encode_kitty, get_gif_dimensions, get_image_dimensions, get_jpeg_dimensions,
+    get_png_dimensions, get_webp_dimensions, hyperlink, image_fallback, is_image_line,
 };
 
 pub use keybindings::{

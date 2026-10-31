@@ -3,10 +3,10 @@ use super::{
     DefaultPackageManager, InstalledSourceScope, PackageOperations,
     sources::{self, Source},
 };
-use maestro_path::{Cwd, dirname, join, relative};
+use maestro_path::{Cwd, Tilde, dirname, expand_tilde_joined, join, parse_tilde, relative};
 use maestro_resources::{
     SourceScope,
-    paths::{CONFIG_DIR_NAME, expand_tilde_text, resolve},
+    paths::{CONFIG_DIR_NAME, home_directory, resolve},
 };
 use sha2::{Digest, Sha256};
 use std::{io, path::Path};
@@ -21,7 +21,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     ) -> io::Result<Option<String>> {
         let parsed = sources::parse(source);
         let path = if let Source::Local(path) = parsed {
-            resolve_local(path, &self.base(scope), super::operations::home_dir)?
+            resolve_local(path, &self.base(scope), home_directory)?
         } else {
             self.remote_path(&parsed, scope.resource_scope())?
         };
@@ -43,9 +43,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
                 Ok(join(&[&root, name]))
             }
             Source::Git(git) => Ok(self.git_path(git, scope)),
-            Source::Local(path) => {
-                resolve_local(path, &self.options.cwd, super::operations::home_dir)
-            }
+            Source::Local(path) => resolve_local(path, &self.options.cwd, home_directory),
         }
     }
     /// Selects the npm root path for project or temporary installation.
@@ -84,7 +82,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         scope: InstalledSourceScope,
     ) -> io::Result<String> {
         if let Source::Local(path) = sources::parse(source) {
-            let resolved = resolve_local(path, &self.options.cwd, super::operations::home_dir)?;
+            let resolved = resolve_local(path, &self.options.cwd, home_directory)?;
             let base = resolve(&[&self.base(scope)])?;
             let resolved = resolve(&[&resolved])?;
             let result = relative(
@@ -133,10 +131,10 @@ pub(super) fn resolve_local(
     home: impl FnOnce() -> io::Result<String>,
 ) -> io::Result<String> {
     let source = crate::trim(source);
-    if source.starts_with('~') {
-        return expand_tilde_text(source, home);
+    if parse_tilde(source) == Tilde::Other {
+        return resolve(&[base, source]);
     }
-    resolve(&[base, source])
+    expand_tilde_joined(source, home)
 }
 
 #[cfg(test)]
@@ -154,9 +152,10 @@ mod tests {
                     ("~", r"C:\h", r"C:\h"),
                     ("~/", r"C:\h", r"C:\h"),
                     ("~/x", r"C:\h", r"C:\h\x"),
-                    ("~x", r"C:\h", r"C:\h\x"),
+                    ("~x", r"C:\h", r"C:\b\~x"),
                     ("~", r"C:\h\.", r"C:\h\."),
                     ("~", "", ""),
+                    ("~/x", "", "x"),
                 ],
             )
         } else {
@@ -166,9 +165,10 @@ mod tests {
                     ("~", "/h", "/h"),
                     ("~/", "/h", "/h"),
                     ("~/x", "/h", "/h/x"),
-                    ("~x", "/h", "/h/x"),
+                    ("~x", "/h", "/b/~x"),
                     ("~", "/h/.", "/h/."),
                     ("~", "", ""),
+                    ("~/x", "", "x"),
                 ],
             )
         };

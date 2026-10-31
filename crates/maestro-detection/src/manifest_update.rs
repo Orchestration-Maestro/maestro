@@ -352,7 +352,7 @@ fn agent_outcome(
         },
     )
 }
-/// Saves the status through the same atomic byte publication owner as documents.
+/// Saves status through the same recoverable byte publication owner as documents.
 fn save_status(root: &Path, status: &ManifestUpdateStatus) -> Result<(), String> {
     let content = toml::to_string_pretty(status).map_err(|error| error.to_string())?;
     atomic_write(&status_path(root), content.as_bytes())

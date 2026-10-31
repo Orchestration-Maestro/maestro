@@ -341,22 +341,17 @@ mod tests {
     }
 
     #[test]
-    fn writes_publish_a_new_file_and_keep_the_previous_one_whole() {
-        let dir = TempDir::without_forks("atomic");
+    fn writes_reach_a_hard_linked_file_in_place() {
+        let dir = TempDir::without_forks("in-place");
         let path = dir.path("auth.json");
-        let previous = dir.path("previous.json");
+        let linked = dir.path("linked.json");
         std::fs::write(&path, pretty(&[("a", "1")])).unwrap();
-        std::fs::hard_link(&path, &previous).unwrap();
+        std::fs::hard_link(&path, &linked).unwrap();
         let storage = AuthStorage::create(&path);
         storage.set("b", api_key("2"));
-        assert_eq!(
-            std::fs::read_to_string(&path).unwrap(),
-            pretty(&[("a", "1"), ("b", "2")])
-        );
-        assert_eq!(
-            std::fs::read_to_string(&previous).unwrap(),
-            pretty(&[("a", "1")])
-        );
+        let expected = pretty(&[("a", "1"), ("b", "2")]);
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), expected);
+        assert_eq!(std::fs::read_to_string(&linked).unwrap(), expected);
     }
 
     #[cfg(unix)]

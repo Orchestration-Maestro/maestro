@@ -171,7 +171,7 @@
         "baseUrl": "https://api.openai.com/v1",
         "reasoning": true,
         "thinkingLevelMap": {
-          "off": null,
+          "off": "none",
           "xhigh": "xhigh"
         },
         "input": [

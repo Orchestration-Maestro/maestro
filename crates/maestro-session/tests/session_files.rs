@@ -66,7 +66,6 @@ fn new_histories_publish_only_at_first_assistant() {
 fn published_histories_never_republish_the_header() {
     for (content, users) in [
         ("", 0),
-        ("garbage", 0),
         (
             "{\"type\":\"session\",\"version\":3,\"id\":\"existing\",\"cwd\":\"stored\"}\n",
             0,
@@ -508,6 +507,7 @@ fn continuation_uses_millisecond_ties_and_existing_catches() {
     assert!(find_most_recent_session(directory.text()).is_none());
     assert!(find_most_recent_session(directory.path().join("missing").to_str().unwrap()).is_none());
     directory.file("ignored.JSONL", jsonl(&[header(&json!("cwd"))]));
+    directory.file("ignored.jsonl.lock", jsonl(&[header(&json!("cwd"))]));
     directory.file("invalid.jsonl", "bad");
     assert!(find_most_recent_session(directory.text()).is_none());
     let first = directory.file("first.jsonl", jsonl(&[header(&json!("a"))]));
@@ -722,6 +722,48 @@ fn opening_missing_file_preserves_explicit_path_until_publication() {
         3
     );
     assert_eq!(fs::read_dir(directory.text()).unwrap().count(), 1);
+    assert!(!path.with_extension("jsonl.lock").exists());
+}
+
+#[test]
+fn opening_a_nonempty_invalid_file_refuses_it_and_leaves_its_bytes() {
+    let directory = Directory::new();
+    let invalid = [
+        ("text.jsonl", "not a session\n".to_owned()),
+        ("blank.jsonl", "\n".to_owned()),
+        (
+            "message.jsonl",
+            jsonl(&[json!({"type":"message","id":"a","message":{"role":"user"}})]),
+        ),
+        (
+            "nameless.jsonl",
+            jsonl(&[json!({"type":"session","version":3})]),
+        ),
+    ];
+    let mut memory = SessionManager::in_memory(Some("cwd")).unwrap();
+    for (name, content) in invalid {
+        let path = directory.file(name, &content);
+        let error = SessionManager::open(&path, None, Some("cwd"))
+            .err()
+            .unwrap();
+        assert_eq!(error.kind(), std::io::ErrorKind::InvalidData, "{name}");
+        assert_eq!(
+            error.to_string(),
+            format!("Session file is not a valid session: {path}")
+        );
+        assert!(memory.set_session_file(&path).is_err(), "{name}");
+        assert_eq!(fs::read_to_string(&path).unwrap(), content, "{name}");
+    }
+}
+
+#[test]
+fn opening_an_empty_file_initialises_it() {
+    let directory = Directory::new();
+    let path = directory.file("empty.jsonl", "");
+    let manager = SessionManager::open(&path, None, Some("cwd")).unwrap();
+    let stored = load_entries_from_file(&path).unwrap();
+    assert_eq!(stored.len(), 1);
+    assert_eq!(stored[0]["id"], manager.get_session_id());
 }
 
 #[test]

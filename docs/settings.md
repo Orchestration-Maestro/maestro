@@ -350,9 +350,11 @@ no stronger exclusion promised. Native decorators forward write intent to retain
 the native guarantee. In-memory callbacks still run without a lock and retain
 last-writer behavior.
 
-The native adapter publishes each write through [the shared atomic replacement](locking.md),
-following a symbolic link at the settings path and keeping the file's existing permissions,
-so a failed write leaves the previous file whole. A read-only settings file is refused and left
+The native adapter publishes each write through
+[the shared recoverable byte publication](locking.md#recoverable-byte-publication),
+following a symbolic link at the settings path. The text is written in place, keeping the
+file's permissions, ownership and hard links, and a write cut short is completed, not rolled
+back, by the next coordinated writer. A read-only settings file is refused and left
 unchanged. In-memory writes are not durable.
 
 ## Saved text
@@ -463,7 +465,7 @@ extensions left it, and extension hooks see every event as before.
 | `shellPath` | string | unset | Custom shell path |
 | `shellCommandPrefix` | string | unset | Prefix for every shell command |
 | `npmCommand` | string[] | unset | Package-manager argument vector |
-| `sessionDir` | string | unset | An exact `~` reads as the home directory; a `~/` prefix is joined onto it through `maestro-path`; bytes of the home directory that are not valid UTF-8 read as U+FFFD; every other text, and any text while the home directory is unknown, is returned as written, including the empty string |
+| `sessionDir` | string | unset | A leading `~` reads as [Home directory in paths](#home-directory-in-paths); bytes of the home directory that are not valid UTF-8 read as U+FFFD; any text while the home directory is unknown is returned as written, including the empty string |
 | `enabledModels` | string[] | unset | Model patterns for cycling |
 
 ### Resources
@@ -480,6 +482,27 @@ extensions left it, and extension hooks see every event as before.
 The lists are stored and returned as written. Path resolution, patterns, package
 installation, update checks and reporting belong to the owners of those features.
 An extension path never implies a package.
+
+### Home directory in paths
+
+Every configured path reads a leading `~` one way. An exact `~` is the home directory.
+`~/` (`~\` on Windows) followed by more text puts that text below the home directory.
+Every other spelling, `~name` included, stays as written and is a relative path. The home
+directory is read only for the first two forms.
+
+How the text is put below the home directory depends on the setting:
+
+- Settings, resource, prompt, skill, package, completion and extension paths join it with
+  the path module's normalizing join. `.`, `..` and repeated separators resolve, and an
+  empty home leaves a relative result. An exact `~` returns the home as supplied, except in
+  extension paths, which join it too.
+- Tool paths, the application directory options, the daemon's new-terminal directory and
+  git include paths append the text as written, so a repeated separator or `..` stays but
+  an absolute remainder still lies below the home directory. A home that ends in a
+  separator gains none, and an empty home gives a rooted result.
+
+On Windows either separator introduces the text, and the appended form drops empty
+components and joins with `\`.
 
 ## Example
 

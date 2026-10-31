@@ -20,7 +20,7 @@ impl ModelFileOperations for Missing {
 fn memory_and_missing_files_use_complete_offline_catalog() {
     let auth = support::auth();
     let expected: Vec<_> = get_providers().iter().flat_map(|p| get_models(p)).collect();
-    assert_eq!(expected.len(), 970);
+    assert_eq!(expected.len(), 974);
     for registry in [
         ModelRegistry::in_memory(auth.clone(), crate::support::values()).unwrap(),
         ModelRegistry::with_operations(auth.clone(), "absent", Missing, crate::support::values())
@@ -161,7 +161,7 @@ fn native_and_controlled_reads_share_failure_boundaries() {
     fail.store(false, std::sync::atomic::Ordering::SeqCst);
     disappeared.refresh().unwrap();
     assert_eq!(disappeared.get_error(), None);
-    assert_eq!(disappeared.get_all().read().unwrap().len(), 970);
+    assert_eq!(disappeared.get_all().read().unwrap().len(), 974);
     std::fs::OpenOptions::new()
         .create_new(true)
         .write(true)
@@ -172,7 +172,7 @@ fn native_and_controlled_reads_share_failure_boundaries() {
     for registry in [&mut native, &mut controlled] {
         registry.refresh().unwrap();
         assert_eq!(registry.get_error(), None);
-        assert_eq!(registry.get_all().read().unwrap().len(), 970);
+        assert_eq!(registry.get_all().read().unwrap().len(), 974);
     }
     native_replacement_decodes_utf8();
 }

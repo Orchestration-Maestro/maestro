@@ -1,5 +1,6 @@
 //! Failure records and cancellable native work shared by the tools.
 
+use crate::file_mutation_queue::running_admission;
 use futures_util::future::{Either, select};
 use maestro_models::{Cancellation, DiagnosticCode, DiagnosticErrorInfo};
 use std::{future::Future, io, pin::pin};
@@ -20,10 +21,18 @@ pub(crate) fn diagnostic(error: &io::Error) -> DiagnosticErrorInfo {
 }
 
 /// Run blocking filesystem work off the caller's task.
+///
+/// Work started inside a queued file mutation keeps that file's queue held until it returns, so
+/// dropping the awaiting future never lets a later mutation overlap it.
 pub(crate) async fn blocking<T: Send + 'static>(
     work: impl FnOnce() -> io::Result<T> + Send + 'static,
 ) -> Result<T, DiagnosticErrorInfo> {
-    let task = tokio::task::spawn_blocking(work);
+    let admission = running_admission();
+    let task = tokio::task::spawn_blocking(move || {
+        let result = work();
+        drop(admission);
+        result
+    });
     let result = task.await.map_err(io::Error::other).and_then(|done| done);
     result.map_err(|error| diagnostic(&error))
 }

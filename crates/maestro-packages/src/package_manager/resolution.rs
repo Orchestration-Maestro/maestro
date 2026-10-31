@@ -1,5 +1,8 @@
 //! Explicit source resolution with resource provenance.
-use maestro_resources::{PathMetadata, paths::CONFIG_DIR_NAME};
+use maestro_resources::{
+    PathMetadata,
+    paths::{CONFIG_DIR_NAME, home_directory},
+};
 /// One discovered resource with its original path and provenance.
 pub struct ResolvedResource {
     /// The authored resource path.
@@ -106,7 +109,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
                 SourceScope::Project => join(&[&self.options.cwd, CONFIG_DIR_NAME]).into(),
                 SourceScope::Temporary => self.options.cwd.as_str().into(),
             };
-            let path = super::paths::resolve_local(path, &base, super::operations::home_dir)?;
+            let path = super::paths::resolve_local(path, &base, home_directory)?;
             if Path::new(&path).exists() {
                 result.package(source, scope, &path, &base)?;
             }
@@ -193,7 +196,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         result: &mut Accumulator,
     ) -> io::Result<()> {
         for kind in ResourceType::ALL {
-            let entries = manifest.entries(kind.name())?;
+            let entries = manifest.entries(kind.name()).unwrap_or_default();
             let files = super::manifest::collect_manifest_entries(&entries, path, kind)?;
             let enabled = super::resource_patterns::apply_patterns(&files, &entries, path)?;
             for file in files.iter().filter(|file| enabled.contains(file.as_str())) {

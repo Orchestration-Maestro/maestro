@@ -49,9 +49,9 @@ members, with two-space JSON and no final newline, and a supplied `type` member
 takes the tag's slot. A valid array or scalar root is refused with the owner's
 file-shape error and left untouched, so a login cannot silently drop stored
 credentials. The file is stored through the credentials crate's `write_auth_file`
-([credentials](credentials.md)): it is replaced atomically, so a failed write leaves the
-previous file whole, and it is readable only by its owner on Unix. Errors keep the
-`Error:` line and exit status one.
+([credentials](credentials.md)): it is written in place under the shared recoverable
+publication, so a write cut short is completed by the next coordinated writer, and it is
+readable only by its owner on Unix. Errors keep the `Error:` line and exit status one.
 
 This is not the session credential store: the command only reads and writes the
 standalone account file at that caller-relative path, and offers no path option.
