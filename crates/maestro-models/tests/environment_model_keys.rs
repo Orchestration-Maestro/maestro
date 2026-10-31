@@ -9,10 +9,7 @@ const PRECEDENCE: &str = "maestro_environment_keys_follow_provider_precedence";
 
 #[cfg(not(target_arch = "wasm32"))]
 const PROVIDERS: &[(&str, &[&str])] = &[
-    (
-        "github-copilot",
-        &["COPILOT_GITHUB_TOKEN", "GH_TOKEN", "GITHUB_TOKEN"],
-    ),
+    ("github-copilot", &["COPILOT_GITHUB_TOKEN"]),
     ("anthropic", &["ANTHROPIC_OAUTH_TOKEN", "ANTHROPIC_API_KEY"]),
     ("openai", &["OPENAI_API_KEY"]),
     ("azure-openai-responses", &["AZURE_OPENAI_API_KEY"]),
@@ -98,6 +95,46 @@ fn maestro_environment_keys_follow_provider_precedence() -> TestResult {
             (Some(vec!["OPENAI_API_KEY"]), Some(value)),
         )?;
     }
+    Ok(())
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+const COPILOT: &str = "maestro_copilot_keys_ignore_generic_github_tokens";
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn maestro_copilot_keys_ignore_generic_github_tokens() -> TestResult {
+    if child()? {
+        return Ok(());
+    }
+    let directory = Directory::new()?;
+    for generic in [
+        &[("GH_TOKEN", "generic")][..],
+        &[("GITHUB_TOKEN", "generic")],
+        &[("GH_TOKEN", "generic"), ("GITHUB_TOKEN", "generic")],
+    ] {
+        run(
+            maestro_test_process::TestProcess::current(COPILOT)?
+                .env_clear()
+                .case("*"),
+            &directory,
+            &vars(generic),
+            "github-copilot",
+            (None, None),
+        )?;
+    }
+    run(
+        maestro_test_process::TestProcess::current(COPILOT)?
+            .env_clear()
+            .case("*"),
+        &directory,
+        &vars(&[
+            ("GH_TOKEN", "generic"),
+            ("COPILOT_GITHUB_TOKEN", "dedicated"),
+        ]),
+        "github-copilot",
+        (Some(vec!["COPILOT_GITHUB_TOKEN"]), Some("dedicated")),
+    )?;
     Ok(())
 }
 
