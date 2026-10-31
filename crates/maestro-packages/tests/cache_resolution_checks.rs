@@ -301,9 +301,9 @@ fn successful_install_collects_without_rechecking_version() {
     });
 }
 
-/// Replays remote resource failures propagate after acquisition.
+/// Replays remote malformed resource lists are ignored after acquisition.
 #[test]
-fn remote_resource_failures_propagate_after_acquisition() {
+fn remote_malformed_resource_lists_are_ignored_after_acquisition() {
     crate::runtime::run(async {
         cache_support::cases(&["remote_manifest_bad"]).await;
     });

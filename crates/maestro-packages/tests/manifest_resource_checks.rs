@@ -48,9 +48,7 @@ struct Row {
     #[serde(default)]
     manifest_directory: bool,
     /// Successful output.
-    expected: Option<Expected>,
-    /// Failure category.
-    error: Option<Failure>,
+    expected: Expected,
 }
 /// Expected public resources by kind.
 #[derive(Deserialize)]
@@ -88,13 +86,6 @@ struct Metadata {
     origin: maestro_resources::SourceOrigin,
     /// Package base.
     base_dir: Option<String>,
-}
-/// Expected error category.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Failure {
-    /// Native category.
-    kind: String,
 }
 /// Exclusively creates one setup file.
 pub(crate) fn write(path: &Path, text: &str) {
@@ -226,24 +217,7 @@ async fn run_case(row: Row) {
         .map(|s| s.replace("$ROOT", &root))
         .collect();
     let result = manager.resolve_extension_sources(&sources, None).await;
-    match (row.expected, row.error) {
-        (Some(expected), None) => {
-            compare_result(&result.unwrap(), &expected, &root, &row.id);
-        }
-        (None, Some(error)) => {
-            assert_eq!(error.kind, "InvalidData");
-            assert_eq!(
-                result
-                    .err()
-                    .expect("installed remote malformed list must fail")
-                    .kind(),
-                std::io::ErrorKind::InvalidData,
-                "{}",
-                row.id
-            );
-        }
-        _ => panic!("case must specify one outcome"),
-    }
+    compare_result(&result.unwrap(), &row.expected, &root, &row.id);
     assert_eq!(
         events.borrow().len(),
         row.events.len(),
@@ -341,10 +315,50 @@ fn a_failed_local_source_does_not_stop_later_sources() {
     cases("a_failed_local_source_does_not_stop_later_sources");
 }
 
-/// Recorded installed remote manifest errors propagate behavior.
+/// Recorded installed remote malformed lists are ignored behavior.
 #[test]
-fn installed_remote_manifest_errors_propagate() {
-    cases("installed_remote_manifest_errors_propagate");
+fn installed_remote_malformed_lists_are_ignored() {
+    cases("installed_remote_malformed_lists_are_ignored");
+}
+
+/// A malformed resource list is ignored with a diagnostic while valid lists still load.
+#[test]
+fn malformed_resource_lists_are_ignored_with_a_diagnostic() {
+    crate::runtime::run(async {
+        let scratch = scratch::Scratch::new().unwrap();
+        let root = scratch.path().to_string_lossy();
+        let package = format!("{root}/pkg");
+        write(&Path::new(&package).join("prompts/a.md"), "");
+        let manifest = Path::new(&package).join("package.json");
+        write(
+            &manifest,
+            r#"{"maestro":{"skills":5,"prompts":["prompts/a.md"]}}"#,
+        );
+        let (_, settings, _) = support::manager(&serde_json::json!({}));
+        let manager = DefaultPackageManager::new(
+            PackageManagerOptions {
+                cwd: maestro_path::join(&[&root, "project"]),
+                agent_dir: maestro_path::join(&[&root, "agent"]),
+                settings_manager: settings,
+            },
+            support::Controlled(Rc::new(support::Effects::default())),
+        );
+        let result = manager
+            .resolve_extension_sources(std::slice::from_ref(&package), None)
+            .await
+            .unwrap();
+        assert!(result.skills.is_empty());
+        let prompts: Vec<_> = result.prompts.iter().map(|p| p.path.as_str()).collect();
+        assert_eq!(prompts, [format!("{package}/prompts/a.md")]);
+        let [diagnostic] = result.diagnostics.as_slice() else {
+            panic!("expected one diagnostic, got {:?}", result.diagnostics);
+        };
+        assert_eq!(diagnostic.path.as_deref(), manifest.to_str());
+        assert_eq!(
+            diagnostic.message,
+            "package.json \"maestro.skills\" is not a list of strings and was ignored"
+        );
+    });
 }
 
 /// Recorded manifest duplicates use the last selected member behavior.

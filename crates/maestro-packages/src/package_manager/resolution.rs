@@ -36,6 +36,8 @@ pub struct ResolvedPaths {
     pub themes: Vec<ResolvedResource>,
     /// Browser contribution files.
     pub contributions: Vec<ResolvedResource>,
+    /// Manifest fields that were ignored while resolving.
+    pub diagnostics: Vec<maestro_resources::ResourceDiagnostic>,
 }
 use super::{
     DefaultPackageManager, PackageOperations,
