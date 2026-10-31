@@ -20,14 +20,16 @@ impl Manifest {
     pub fn field(&self, name: &str) -> Option<&RawValue> {
         self.fields.get(name).map(AsRef::as_ref)
     }
-    /// Reads one string list; a false, absent or malformed value contributes no entries.
-    #[must_use]
-    pub fn entries(&self, name: &str) -> Vec<String> {
+    /// Consumes one complete string list; false values contribute no entries.
+    ///
+    /// # Errors
+    /// Returns `InvalidData` when a present truthy value is not a list of strings.
+    pub fn entries(&self, name: &str) -> io::Result<Vec<String>> {
         let Some(raw) = self.field(name).filter(|raw| truthy(raw)) else {
-            return Vec::new();
+            return Ok(Vec::new());
         };
-        // A list that is not entirely strings is ignored whole, so the other lists still load.
-        serde_json::from_str(raw.get()).unwrap_or_default()
+        serde_json::from_str(raw.get())
+            .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))
     }
 }
 /// Reads the selected branding member, treating unreadable manifests as absent.
@@ -52,17 +54,30 @@ pub fn is_extension_file(name: &str) -> bool {
 }
 /// Selects the existing manifest entries in list order, else the first existing index.
 ///
-/// A malformed extension list is ignored.
+/// A list that holds a non-string item contributes no entries when `ignore_malformed` is set.
 ///
 /// # Errors
-/// Returns the working-directory failure of resolving a relative entry.
-pub fn resolve_extension_entries(dir: &str) -> io::Result<Option<Vec<String>>> {
+/// Returns `InvalidData` when the manifest's extension list holds a non-string item and
+/// `ignore_malformed` is not set.
+pub fn resolve_extension_entries(
+    dir: &str,
+    ignore_malformed: bool,
+) -> io::Result<Option<Vec<String>>> {
     let manifest_path = join(&[dir, "package.json"]);
     if Path::new(&manifest_path).exists()
         && let Some(manifest) = read_maestro_manifest_file(&manifest_path)
+        && manifest
+            .field("extensions")
+            .is_some_and(|raw| raw.get().starts_with('['))
     {
         let mut found = Vec::new();
-        for entry in manifest.entries("extensions") {
+        let listed = manifest.entries("extensions");
+        let listed = if ignore_malformed {
+            listed.unwrap_or_default()
+        } else {
+            listed?
+        };
+        for entry in listed {
             let path = crate::paths::resolve(&[dir, &entry])?;
             if Path::new(&path).exists() {
                 found.push(path);

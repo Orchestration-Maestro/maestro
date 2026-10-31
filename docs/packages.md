@@ -258,8 +258,10 @@ conventions. Object members select `extensions`, `skills`, `prompts`, `themes`
 and `contributions`; other present shapes have no named lists. Omitted lists add
 no resources. A list that is present and truthy but is not a list of strings is
 ignored whole and adds no resources; the other lists still load, and nothing
-fails. One reader, `maestro_resources::package_manifest::Manifest::entries`, serves package
-resolution, filtered packages and extension entry points.
+fails. One reader, `maestro_resources::package_manifest::Manifest::entries`, reports
+such a list as `InvalidData`: package resolution, filtered packages and conventional
+package discovery ignore that report, while extension loading fails on a non-string
+item.
 
 Positive manifest entries containing `*` or `?` expand against the package root
 without trimming. Other entries, including brace-only or bracket-only forms,

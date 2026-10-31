@@ -193,7 +193,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         result: &mut Accumulator,
     ) -> io::Result<()> {
         for kind in ResourceType::ALL {
-            let entries = manifest.entries(kind.name());
+            let entries = manifest.entries(kind.name()).unwrap_or_default();
             let files = super::manifest::collect_manifest_entries(&entries, path, kind)?;
             let enabled = super::resource_patterns::apply_patterns(&files, &entries, path)?;
             for file in files.iter().filter(|file| enabled.contains(file.as_str())) {
