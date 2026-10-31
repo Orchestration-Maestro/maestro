@@ -76,9 +76,27 @@ const PREFERRED_PORT: u16 = 53692;
 pub(super) async fn bind(
     state: String,
 ) -> Result<crate::oauth::native::CallbackServer, OAuthError> {
-    match crate::oauth::native::bind(state.clone(), PREFERRED_PORT, route).await {
+    bind_with(state, |key| std::env::var(key).ok()).await
+}
+
+/// Bind as [`bind`] does, reading the binding host from `environment`.
+#[cfg(not(target_arch = "wasm32"))]
+pub(super) async fn bind_with(
+    state: String,
+    environment: impl Fn(&str) -> Option<String>,
+) -> Result<crate::oauth::native::CallbackServer, OAuthError> {
+    let bind_on = |state: String, port: u16| {
+        crate::oauth::native::bind_with(
+            state,
+            port,
+            route,
+            &environment,
+            crate::oauth::native::native_accept,
+        )
+    };
+    match bind_on(state.clone(), PREFERRED_PORT).await {
         Ok(server) => Ok(server),
-        Err(_) => crate::oauth::native::bind(state, 0, route).await,
+        Err(_) => bind_on(state, 0).await,
     }
 }
 /// Reject native serving only at the browser effect boundary.

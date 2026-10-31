@@ -916,6 +916,33 @@ fn login_callbacks_run_in_source_order_and_fail_cleanly() {
 }
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
+fn sign_in_continues_with_pasted_input_when_no_port_binds() {
+    run(async {
+        let callbacks = Interaction::new(None, "pasted", "");
+        let redirects = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let seen = redirects.clone();
+        let fetch: Fetch = Arc::new(move |request| {
+            let body: serde_json::Value = serde_json::from_slice(&request.body).unwrap();
+            seen.lock().unwrap().push(body["redirect_uri"].clone());
+            success_fetch()(request)
+        });
+        let credentials = super::login_with(
+            callbacks.clone(),
+            fetch,
+            || Ok(pkce()),
+            |state| super::callback::bind_with(state, |_| Some("192.0.2.1".into())),
+        )
+        .await
+        .unwrap();
+        assert_eq!(credentials.access, "access");
+        assert_eq!(
+            *redirects.lock().unwrap(),
+            [serde_json::json!("http://localhost:53692/callback")]
+        );
+    });
+}
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
 fn login_wait_has_no_deadline() {
     run(async {
         tokio::time::pause();

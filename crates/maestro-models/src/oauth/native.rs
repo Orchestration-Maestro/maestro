@@ -61,23 +61,6 @@ pub(super) fn callback_host(value: Option<String>) -> String {
         .unwrap_or_else(|| "127.0.0.1".into())
 }
 
-/// Bind the native accepting listener.
-#[cfg(not(target_arch = "wasm32"))]
-pub(super) async fn bind(
-    state: String,
-    port: u16,
-    route: fn(&str, &str) -> CallbackResponse,
-) -> Result<CallbackServer, OAuthError> {
-    bind_with(
-        state,
-        port,
-        route,
-        |key| std::env::var(key).ok(),
-        native_accept,
-    )
-    .await
-}
-
 /// One borrowing native accept step, replaceable at the effect boundary.
 #[cfg(not(target_arch = "wasm32"))]
 pub(super) type Accept<'a> = std::pin::Pin<
@@ -91,7 +74,7 @@ pub(super) type Accept<'a> = std::pin::Pin<
 
 /// Accept a real native peer without transferring listener ownership.
 #[cfg(not(target_arch = "wasm32"))]
-fn native_accept(listener: &tokio::net::TcpListener) -> Accept<'_> {
+pub(super) fn native_accept(listener: &tokio::net::TcpListener) -> Accept<'_> {
     Box::pin(listener.accept())
 }
 
