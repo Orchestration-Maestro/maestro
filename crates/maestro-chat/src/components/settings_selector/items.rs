@@ -41,7 +41,6 @@ pub(super) fn rows(
         callbacks.clone(),
         theme.clone(),
     ));
-    items.push(http_idle_timeout(config.behavior.http_idle_timeout_ms));
     items
 }
 /// Composes one display segment using the construction-time capability.
@@ -203,6 +202,7 @@ fn session_rows(config: &SettingsConfig) -> Vec<SettingItem> {
             config.transport.as_str().into(),
             &["sse", "websocket", "websocket-cached", "auto"],
         ),
+        http_idle_timeout(config.behavior.http_idle_timeout_ms),
     ]
 }
 /// The HTTP idle timeout choices: their displayed label and milliseconds.
@@ -227,7 +227,7 @@ fn http_idle_timeout(milliseconds: f64) -> SettingItem {
     )
 }
 /// The label of a timeout: its choice, otherwise its whole seconds.
-fn http_idle_timeout_label(milliseconds: f64) -> String {
+pub(crate) fn http_idle_timeout_label(milliseconds: f64) -> String {
     HTTP_IDLE_TIMEOUTS
         .iter()
         .find(|(_, choice)| (*choice - milliseconds).abs() < 0.5)

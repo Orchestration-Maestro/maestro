@@ -1,5 +1,6 @@
 //! Searchable session, display and behavior settings with nested selectors.
 mod items;
+pub(crate) use items::http_idle_timeout_label;
 mod submenus;
 use super::dynamic_border::DynamicBorder;
 use maestro_app::{

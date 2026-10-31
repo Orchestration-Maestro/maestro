@@ -1,5 +1,6 @@
 //! Change settings live from the interactive mode.
 use super::InteractiveMode;
+use crate::components::settings_selector::http_idle_timeout_label;
 use crate::{
     AssistantMessageComponent, BehaviorSettings, SessionSettings, SettingsCallbacks,
     SettingsConfig, SettingsSelectorComponent, TerminalDisplaySettings, ToolExecutionComponent,
@@ -105,7 +106,7 @@ impl InteractiveMode {
             on_enable_install_telemetry_change: self
                 .save_setting(SettingsManager::set_enable_install_telemetry),
             on_http_idle_timeout_ms_change: self
-                .save_setting(SettingsManager::set_http_idle_timeout_ms),
+                .fallible_setting_callback(Self::settings_http_idle_timeout),
             on_double_escape_action_change: self
                 .save_setting(SettingsManager::set_double_escape_action),
             on_tree_filter_mode_change: self.save_setting(SettingsManager::set_tree_filter_mode),
@@ -250,6 +251,20 @@ impl InteractiveMode {
             .set_enable_skill_commands(enabled);
         self.setup_autocomplete_provider()
             .map_err(|error| -> Box<dyn Error> { error })
+    }
+
+    /// Saves the idle limit for HTTP waits and names it in the transcript.
+    fn settings_http_idle_timeout(&self, milliseconds: f64) -> Result<(), Box<dyn Error>> {
+        self.runtime_host
+            .session()
+            .settings_manager()
+            .borrow_mut()
+            .set_http_idle_timeout_ms(milliseconds);
+        self.show_status(&format!(
+            "HTTP idle timeout: {}",
+            http_idle_timeout_label(milliseconds)
+        ))?;
+        Ok(())
     }
 
     /// Saves the transport before changing the next request's live preference.

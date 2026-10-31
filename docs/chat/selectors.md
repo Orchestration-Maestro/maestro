@@ -169,9 +169,9 @@ This returns the same retained `SettingsList` handle, independently of the
 `Container` chrome. The searchable main view shows at most ten rows in this
 order: auto-compact, show images, image width, auto-resize images, block images,
 skill commands, hardware cursor, editor padding, autocomplete max items, clear
-on shrink, terminal progress, steering mode, follow-up mode, transport, hidden
-thinking, collapsed changelog, quiet startup, install telemetry, double-escape
-action, tree filter, warnings, thinking level, theme and HTTP idle timeout. Show
+on shrink, terminal progress, steering mode, follow-up mode, transport, HTTP idle
+timeout, hidden thinking, collapsed changelog, quiet startup, install telemetry,
+double-escape action, tree filter, warnings, thinking level and theme. Show
 images and image width appear only when the supplied terminal supports inline
 images, giving 24 rows with image support and 22 without. Support is sampled once at construction;
 changing capabilities affects new panels, not retained ones. The toolkit owns
@@ -183,7 +183,8 @@ image width through `60`, `80`, `120`, editor padding through `0`–`3`, and
 autocomplete height through `3`, `5`, `7`, `10`, `15`, `20`, and the HTTP idle
 timeout through `30 sec`, `1 min`, `2 min`, `5 min` and `disabled` (reported as
 `30000`, `60000`, `120000`, `300000` and `0` milliseconds; an unmatched value
-displays as its seconds). An unmatched value
+displays as its seconds). Interactive mode saves the chosen limit and
+shows `HTTP idle timeout: <label>` in the transcript. An unmatched value
 advances to the first choice. These fixed decimal choices report `f64` values;
 boolean choices report `bool` values.
 
