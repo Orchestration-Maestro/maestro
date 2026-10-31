@@ -201,7 +201,7 @@ projection/writer, preserving unread metadata without decoding execution records
 
 Serialization separates labels with blank lines and groups assistant text and tools in
 that order. Assistant thinking is never written, in compaction, branch summaries or the
-exported conversation text. Arguments pair by name for object roots; array and string roots
+serialization helper extensions call. Arguments pair by name for object roots; array and string roots
 pair their positions instead (`echo(0=1, 1=2)`), and other roots name none. Only
 tool-result text is clipped at 2000 Unicode scalar values,
 with an omitted-character notice; user and assistant text stay complete. Branch
