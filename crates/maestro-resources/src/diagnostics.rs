@@ -40,7 +40,7 @@ pub struct ResourceDiagnostic {
 }
 impl ResourceDiagnostic {
     /// Associate a warning with a file.
-    pub(crate) fn warning(path: &str, message: impl Into<String>) -> Self {
+    pub fn warning(path: &str, message: impl Into<String>) -> Self {
         Self {
             r#type: DiagnosticType::Warning,
             message: message.into(),

@@ -254,7 +254,11 @@ A present `maestro` member in `package.json` selects resources instead of
 conventional discovery; missing, null, false, zero or empty-string members use
 conventions. Object members select `extensions`, `skills`, `prompts`, `themes`
 and `contributions`; other present shapes have no named lists. Omitted lists add
-no resources.
+no resources. A list that is present and truthy but is not a list of strings is
+ignored whole and adds no resources; resolution records a warning against
+`package.json` in `ResolvedPaths::diagnostics`, and the other lists still load.
+One reader, `maestro_resources::package_manifest::Manifest::entries`, serves package
+resolution, filtered packages and extension entry points.
 
 Positive manifest entries containing `*` or `?` expand against the package root
 without trimming. Other entries, including brace-only or bracket-only forms,

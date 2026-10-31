@@ -103,6 +103,7 @@ provide crash recovery or concurrent-writer isolation.
 
 Corrected package defects:
 
+- A malformed resource list in a package manifest no longer fails the package; it is ignored with a warning and the other lists load (see [package-root manifests](packages.md#package-root-manifests)).
 - Failed fresh acquisition no longer leaves partial contents that a retry skips.
 - Explicit version changes no longer leave an old checkout or stale settings pin.
 - Failed changed updates restore their previous revision so the next attempt retries.

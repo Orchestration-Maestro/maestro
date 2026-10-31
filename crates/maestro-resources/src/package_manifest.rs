@@ -20,17 +20,36 @@ impl Manifest {
     pub fn field(&self, name: &str) -> Option<&RawValue> {
         self.fields.get(name).map(AsRef::as_ref)
     }
-    /// Consumes one complete string list; false values contribute no entries.
+    /// Reads one string list; false values contribute no entries.
     ///
-    /// # Errors
-    /// Returns `InvalidData` when a present truthy value is not a list of strings.
-    pub fn entries(&self, name: &str) -> io::Result<Vec<String>> {
+    /// A present truthy value that is not a list of strings is ignored whole and
+    /// reported in [`ManifestEntries::ignored`].
+    #[must_use]
+    pub fn entries(&self, name: &str) -> ManifestEntries {
         let Some(raw) = self.field(name).filter(|raw| truthy(raw)) else {
-            return Ok(Vec::new());
+            return ManifestEntries::default();
         };
-        serde_json::from_str(raw.get())
-            .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))
+        match serde_json::from_str(raw.get()) {
+            Ok(entries) => ManifestEntries {
+                entries,
+                ignored: None,
+            },
+            Err(_) => ManifestEntries {
+                entries: Vec::new(),
+                ignored: Some(format!(
+                    "package.json \"maestro.{name}\" is not a list of strings and was ignored"
+                )),
+            },
+        }
     }
+}
+/// A resource list read from a manifest, with the reason it was ignored when malformed.
+#[derive(Default)]
+pub struct ManifestEntries {
+    /// The listed entries; empty when the field is absent, false or malformed.
+    pub entries: Vec<String>,
+    /// Why a malformed field was ignored.
+    pub ignored: Option<String>,
 }
 /// Reads the selected branding member, treating unreadable manifests as absent.
 #[must_use]
@@ -54,25 +73,24 @@ pub fn is_extension_file(name: &str) -> bool {
 }
 /// Selects the existing manifest entries in list order, else the first existing index.
 ///
+/// A malformed extension list is ignored.
+///
 /// # Errors
-/// Returns `InvalidData` when the manifest's extension list holds a non-string item.
+/// Returns the working-directory failure of resolving a relative entry.
 pub fn resolve_extension_entries(dir: &str) -> io::Result<Option<Vec<String>>> {
     let manifest_path = join(&[dir, "package.json"]);
     if Path::new(&manifest_path).exists()
         && let Some(manifest) = read_maestro_manifest_file(&manifest_path)
-        && let Some(entries) = manifest
-            .field("extensions")
-            .filter(|raw| raw.get().starts_with('['))
     {
-        let mut found = Vec::new();
-        let entries: Vec<String> = serde_json::from_str(entries.get())
-            .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
-        for entry in entries {
-            let path = crate::paths::resolve(&[dir, &entry])?;
-            if Path::new(&path).exists() {
-                found.push(path);
-            }
-        }
+        let found: Vec<String> = manifest
+            .entries("extensions")
+            .entries
+            .iter()
+            .map(|entry| crate::paths::resolve(&[dir, entry]))
+            .collect::<io::Result<Vec<_>>>()?
+            .into_iter()
+            .filter(|path| Path::new(path).exists())
+            .collect();
         if !found.is_empty() {
             return Ok(Some(found));
         }
