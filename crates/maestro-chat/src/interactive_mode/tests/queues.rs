@@ -804,7 +804,7 @@ struct Displayed {
 fn key_display_capitalizes_each_live_binding_without_reordering() {
     const TEST: &str = "key_display_capitalizes_each_live_binding_without_reordering";
     for (KeyName::CapitalizeKey { key }, expected) in cases::<KeyName, Displayed>(TEST) {
-        assert_eq!(InteractiveMode::capitalize_key(&key), expected.result);
+        assert_eq!(maestro_app::format_key_text(&key, true), expected.result);
     }
     isolated(TEST, async |directory| {
         // The mode publishes the application's key registry, which the display reads live.
