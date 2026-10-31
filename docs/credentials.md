@@ -118,9 +118,11 @@ and the lock is released after every outcome. File bytes are read as
 lossy UTF-8. The asynchronous operation `with_lock_async` instead tries the lock
 immediately and after waits of 100, 200, 400, 800, 1600, 3200, 6400 and then three of
 10000 ms (11 attempts, 42,700 ms), returning the lock-held error when the last attempt
-also finds it taken; other lock errors return at once. `InMemoryAuthStorageBackend` runs each callback on an owned copy of
-the text with nothing held, so callbacks may reenter it and the last write wins; this
-holds for the asynchronous operation too.
+also finds it taken; other lock errors return at once. `InMemoryAuthStorageBackend` runs a synchronous callback on an owned copy of the
+text with nothing held, so it may reenter the backend and the last write wins. The
+asynchronous operation `with_lock_async` runs callbacks one at a time: each reads
+the text the previous one stored, so two providers changed at once both stay. An
+awaited callback must not reenter `with_lock_async`.
 `AuthStorage::from_storage` accepts either, or any `AuthStorageBackend`.
 
 ## Configured values

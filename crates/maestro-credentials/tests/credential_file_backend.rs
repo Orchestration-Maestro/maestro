@@ -528,35 +528,6 @@ mod tests {
         });
     }
 
-    /// Append one character to the stored text `changes` times.
-    fn append_changes(backend: &InMemoryAuthStorageBackend, changes: usize) {
-        for _ in 0..changes {
-            backend
-                .with_lock(&mut |current| Ok(Some(format!("{}x", current.unwrap_or_default()))))
-                .unwrap();
-        }
-    }
-
-    #[test]
-    fn sync_memory_callbacks_keep_every_concurrent_change() {
-        const THREADS: usize = 8;
-        const CHANGES: usize = 200;
-        let backend = Arc::new(InMemoryAuthStorageBackend::default());
-        let workers: Vec<_> = (0..THREADS)
-            .map(|_| {
-                let backend = Arc::clone(&backend);
-                std::thread::spawn(move || append_changes(&backend, CHANGES))
-            })
-            .collect();
-        for worker in workers {
-            worker.join().unwrap();
-        }
-        assert_eq!(
-            memory_text(&backend).map(|text| text.len()),
-            Some(THREADS * CHANGES)
-        );
-    }
-
     #[test]
     fn async_file_roundtrip_preserves_no_write_and_empty_write() {
         block_on(async {
