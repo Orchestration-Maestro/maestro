@@ -650,6 +650,47 @@ fn prepare_reports_reused_and_built_component_counts() {
     }
 }
 
+/// A base with more reusable components than the example exports returns an error, not a panic.
+#[test]
+fn prepare_rejects_oversupplied_component_counts() {
+    if selection().is_child() {
+        let root = PathBuf::from(std::env::var_os("MAESTRO_FIXTURE_ROOT").unwrap());
+        let error = run_prepare(&root).expect_err("oversupplied base must fail preparation");
+        assert_eq!(error.kind(), std::io::ErrorKind::Other);
+        assert_eq!(
+            error.to_string(),
+            "base supplied 5 components but preparation staged only 4"
+        );
+        assert!(!root.join("target/test-setup/components.json").exists());
+        return;
+    }
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    marked_fixture(root);
+    prepare(root);
+    let base = root.join("target/test-setup");
+    edit_manifest(&base, |components| {
+        components.insert(
+            "MAESTRO_UNUSED_COMPONENT".to_owned(),
+            components["MAESTRO_AUTHOR_COMPONENT"].clone(),
+        );
+    });
+    fs::copy(
+        base.join("MAESTRO_AUTHOR_COMPONENT.wasm"),
+        base.join("MAESTRO_UNUSED_COMPONENT.wasm"),
+    )
+    .unwrap();
+
+    let output = prepare_as_child("prepare_rejects_oversupplied_component_counts", root, &base);
+    assert_success(&output);
+    assert!(
+        !String::from_utf8(output.stdout)
+            .unwrap()
+            .lines()
+            .any(|line| line.starts_with("components:"))
+    );
+}
+
 /// A base prepared from the same inputs supplies every component; one edited example builds
 /// only itself; a base from another toolchain supplies nothing; no base builds everything.
 #[test]
