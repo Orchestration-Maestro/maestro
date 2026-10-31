@@ -84,9 +84,9 @@ resolved again through
 A scan reads one directory level in name order, hidden names included. It adds
 the extension files and links, and the declared entries of other directories and
 links, following the [entry rules](../packages.md#conventional-resource-discovery).
-A missing or unreadable directory adds nothing, and so does a directory where
-any child's manifest lists a non-string item. The same manifest error in a
-configured directory fails the whole call.
+A missing or unreadable directory adds nothing. A manifest that lists a non-string
+item declares no entries, so a scanned child falls back to its index file and a
+configured directory falls back to a one-level scan.
 
 The caller passes the agent directory; the application owns its default.
 

@@ -62,8 +62,7 @@ impl Discovered {
 /// wins.
 ///
 /// # Errors
-/// Returns a resolution error, or `InvalidData` for a configured directory whose manifest
-/// lists a non-string item.
+/// Returns a path-resolution error.
 pub async fn discover_and_load_extensions<E: ExtensionExecution>(
     configured_paths: &[String],
     cwd: &str,
