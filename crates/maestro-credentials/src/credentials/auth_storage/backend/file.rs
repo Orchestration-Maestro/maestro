@@ -104,15 +104,15 @@ fn initialize(path: &Path) -> io::Result<()> {
     }
 }
 
-/// Replace the credential file at `path` with `text` in one atomic publication, readable only by
-/// its owner on Unix.
+/// Publishes `text` as the credential file at `path` through the shared recoverable writer,
+/// readable only by its owner on Unix.
 ///
-/// The text is written to a sibling that is renamed over the file, so a failure at any step leaves
-/// the previous file whole. A symbolic link at `path` is followed and a missing parent directory is
-/// created. An existing file must be writable by its owner: it is narrowed to mode 0600 through the
-/// handle that proved this, so the new text is never published under looser bits, and a read-only
-/// file is refused without a change. A failed parent-directory sync after the rename is not
-/// reported: the text is already published.
+/// The text is written in place under the shared exclusion, so a hard link to the file sees it,
+/// and a write cut short is completed, not rolled back, by the next coordinated writer. A symbolic
+/// link at `path` is followed and a missing parent directory is created. An existing file must be
+/// writable by its owner: it is narrowed to mode 0600 through the handle that proved this, so the
+/// new text is never written under looser bits, and a read-only file is refused without a change.
+/// A failed parent-directory sync after the write is not reported: the text is already written.
 ///
 /// # Errors
 /// Returns the native error of the narrowing or of the publication.

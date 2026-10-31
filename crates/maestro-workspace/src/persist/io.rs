@@ -36,9 +36,17 @@ fn save_json_to_path<T: serde::Serialize>(path: &Path, snapshot: &T) -> io::Resu
 /// Removes only the supplied pathname, tolerating absence.
 ///
 /// # Errors
-/// Returns native removal errors other than not found.
+/// Returns native lock, recovery and removal errors other than an absent parent or file.
 pub fn clear_path(path: &Path) -> io::Result<()> {
-    match fs::remove_file(path) {
+    let parent = path
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."));
+    if path.as_os_str().is_empty() || !parent.try_exists()? {
+        return Ok(());
+    }
+    let holder = maestro_lock::acquire_write(path, false)?;
+    match fs::remove_file(holder.path()) {
         Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(()),
         result => result,
     }

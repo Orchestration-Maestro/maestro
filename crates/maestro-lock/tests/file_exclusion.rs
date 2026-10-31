@@ -36,3 +36,18 @@ fn acquired_file_preserves_handle_and_exclusion_until_release() {
     drop(acquired);
     std::fs::remove_file(path).unwrap();
 }
+
+#[test]
+fn waiting_acquisition_retains_native_exclusion() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let path = root.path().join("waiting.lock");
+    let original = File::create(&path).unwrap();
+    let acquired = maestro_lock::acquire_waiting(original).unwrap();
+    let independent = File::options().read(true).write(true).open(&path).unwrap();
+    assert!(matches!(
+        independent.try_lock(),
+        Err(TryLockError::WouldBlock)
+    ));
+    drop(acquired);
+    independent.try_lock().unwrap();
+}
