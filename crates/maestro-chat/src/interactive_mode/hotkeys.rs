@@ -49,7 +49,7 @@ fn navigation_keys() -> String {
         r"**Navigation**
 | Key | Action |
 |-----|--------|
-| `{}` / `{}` / `{}` / `{}` | Move cursor / browse history (Up when empty) |
+| `{}` / `{}` / `{}` / `{}` | Move cursor / browse history |
 | `{}` / `{}` | Move by word |
 | `{}` | Start of line |
 | `{}` | End of line |
