@@ -18,6 +18,37 @@ pub struct SummaryOptions {
     /// Explicit reasoning selection; absent and off omit reasoning.
     pub thinking_level: Option<maestro_agent::ThinkingLevel>,
 }
+/// Summary text and the provider usage of the request that produced it.
+#[derive(Clone, Debug, PartialEq)]
+pub struct GeneratedSummary {
+    /// The summary text.
+    pub text: String,
+    /// Usage the provider reported for the request.
+    pub usage: maestro_models::Usage,
+}
+/// Start a history summary like [`generate_summary`] and keep the provider usage.
+#[must_use]
+pub fn generate_summary_with_usage(
+    current_messages: &[serde_json::Value],
+    model: &Model,
+    reserve_tokens: f64,
+    previous_summary: Option<&str>,
+    options: &SummaryOptions,
+) -> BoxFuture<Result<GeneratedSummary, DiagnosticErrorInfo>> {
+    let text = generate_summary(
+        current_messages,
+        model,
+        reserve_tokens,
+        previous_summary,
+        options,
+    );
+    Box::pin(async move {
+        Ok(GeneratedSummary {
+            text: text.await?,
+            usage: maestro_models::Usage::default(),
+        })
+    })
+}
 /// Start a history summary now, returning an independently owned observation.
 ///
 /// Projection errors precede invocation; adapter setup errors retain their diagnostics.
