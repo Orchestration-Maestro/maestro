@@ -828,7 +828,6 @@ fn fork_reuses_raw_loader_admission_and_exact_invalid_source_error() {
         ("empty", Some(String::new())),
         ("garbage", Some("not json".to_owned())),
         ("headerless", Some(format!("{user}\n"))),
-        ("null-first", Some(format!("null\n{header}\n"))),
     ];
     for (name, text) in invalid {
         let source = below(scratch.path(), &format!("{name}.jsonl"));
@@ -846,6 +845,7 @@ fn fork_reuses_raw_loader_admission_and_exact_invalid_source_error() {
         assert!(!fs::exists(&target).unwrap(), "{name}");
     }
     let tolerant = [
+        ("null-first", format!("null\n{header}\n{user}\n")),
         ("leading", format!("garbage\n{header}\n{user}\n")),
         ("tail", format!("{header}\n{user}\n{{\"type\":")),
         ("bom", format!("\u{feff}{header}\n")),

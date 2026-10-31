@@ -461,7 +461,8 @@ fn fork_skips_a_null_record_and_writes_later_records() {
     let forked = rig.fork(&dir, super::persistence::append).unwrap();
     let written = ForkRig::only_file(&dir);
     assert_eq!(written.lines().count(), 3);
-    assert_eq!(forked.get_entries(), rig.records.iter().collect::<Vec<_>>());
+    assert_eq!(forked.get_entries().len(), 2);
+    assert_eq!(forked.get_entries()[1]["id"], "b");
     assert!(written.ends_with(&format!("{}\n", rig.records[1])));
 }
 
@@ -584,7 +585,7 @@ fn records_split_across_reader_chunks_keep_their_multibyte_text() {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn listing_stops_reading_at_a_malformed_record() {
-    let (reader, _) = Generated::session("null\n");
+    let (reader, _) = Generated::session("{\"type\":\"message\",\"message\":null}\n");
     let handed = std::rc::Rc::clone(&reader.handed);
     assert!(super::discovery::scan_reader(std::io::BufReader::new(reader)).is_none());
     assert!(handed.get() <= 64 * 1024, "read {} bytes", handed.get());

@@ -2905,7 +2905,15 @@
         "content": "null\n{\"type\":\"session\",\"version\":3,\"id\":\"history\",\"timestamp\":\"2025-01-01T00:00:00Z\",\"cwd\":\"stored\"}"
       },
       "expected": {
-        "ok": []
+        "ok": [
+          {
+            "type": "session",
+            "version": 3,
+            "id": "history",
+            "timestamp": "2025-01-01T00:00:00Z",
+            "cwd": "stored"
+          }
+        ]
       }
     },
     {

@@ -136,7 +136,10 @@ fn discovery_reached_malformed_fields_discard_only_the_file() {
     write_session(&scratch, "bad.jsonl", "bad", &[]);
     std::fs::write(
         scratch.path().join("bad.jsonl"),
-        format!("{}\nnull\n", session_header("bad")),
+        format!(
+            "{}\n{{\"type\":\"message\",\"message\":null}}\n",
+            session_header("bad")
+        ),
     )
     .unwrap();
     write_session(&scratch, "good.jsonl", "good", &[("user", "hi", 5000)]);
