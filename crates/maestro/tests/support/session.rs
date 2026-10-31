@@ -16,19 +16,21 @@ pub async fn component_session(
     widgets: Rc<dyn maestro_app::ExtensionWidgets>,
 ) -> Rc<AgentSession> {
     let io = maestro_app::extension_native_io::extension_native_io(&local);
-    let mut resources =
-        ResourceLoaderOptions::<Local>::new(local, Rc::new(|_| Box::pin(async { Ok(None) })));
-    resources
-        .extension_factories
-        .push(maestro_extensions_wasmtime::artifact_factory_with_io(
-            component,
-            widgets,
-            maestro_extensions_wasmtime::Installation {
-                version: env!("CARGO_PKG_VERSION").into(),
-                agent_dir: root.path("agent").display().to_string(),
-            },
-            io,
-        ));
+    let installation = maestro_extensions_wasmtime::Installation {
+        version: env!("CARGO_PKG_VERSION").into(),
+        agent_dir: root.path("agent").display().to_string(),
+    };
+    let loader: maestro_app::ModuleLoader<Local> = Rc::new(move |path| {
+        let factory = maestro_extensions_wasmtime::artifact_factory_with_io(
+            path.to_owned(),
+            Rc::clone(&widgets),
+            installation.clone(),
+            Rc::clone(&io),
+        );
+        Box::pin(std::future::ready(Ok(Some(factory))))
+    });
+    let mut resources = ResourceLoaderOptions::<Local>::new(local, loader);
+    resources.additional_extension_paths.push(component);
     resources.system_prompt = Some(String::new());
     resources.append_system_prompt = Some(Vec::new());
     resources.offline = Some(true);

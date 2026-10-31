@@ -255,6 +255,10 @@ name = "resource_component_reloaded"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "sdk_standard_component"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "rpc_demo"
 path = "../../examples/extensions/rpc_demo.rs"
 crate-type = ["cdylib"]
