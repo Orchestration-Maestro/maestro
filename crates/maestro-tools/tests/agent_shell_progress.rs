@@ -217,6 +217,53 @@ fn bash_progress_without_observer_needs_no_timer() {
     assert!(details.truncation.unwrap().last_line_partial);
 }
 
+#[test]
+fn bash_notice_names_the_oversized_line_that_ends_with_a_newline() {
+    let ops = Immediate(Arc::new(|_, _, options| {
+        (options.on_data)(&[vec![b'A'; 60000], b"\n".to_vec()].concat());
+        Ok(BashExecResult {
+            exit_code: Some(0.0),
+        })
+    }));
+    let definition = create_bash_tool_definition::<()>(
+        "/work".into(),
+        "/bin".into(),
+        BashToolOptions {
+            operations: Some(Arc::new(ops)),
+            ..BashToolOptions::default()
+        },
+    );
+    let mut future = (definition.execute)(
+        "call".into(),
+        BashToolInput {
+            command: "literal".into(),
+            timeout: None,
+        },
+        None,
+        None,
+        None,
+    );
+    let poll = future
+        .as_mut()
+        .poll(&mut std::task::Context::from_waker(std::task::Waker::noop()));
+    let std::task::Poll::Ready(Ok(result)) = poll else {
+        panic!("immediate supplied operation must finish without a runtime");
+    };
+    let details = result.details.unwrap();
+    let path = details.full_output_path.unwrap();
+    let text = json!(result.content)[0]["text"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    std::fs::remove_file(&path).unwrap();
+    let kept = format!("{}\n", "A".repeat(51199));
+    assert_eq!(
+        text,
+        format!("{kept}\n\n[Showing last 50.0KB of line 1 (line is 58.6KB). Full output: {path}]")
+    );
+    assert_eq!(details.truncation.unwrap().total_bytes, 60001);
+}
+
 /// Holds the original operation pending after two chunks, then settles as selected.
 struct Held {
     release: Arc<tokio::sync::Notify>,
