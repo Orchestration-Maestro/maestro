@@ -15,37 +15,20 @@ fn anchor_path(
     cwd: &str,
     home: impl FnOnce() -> io::Result<String>,
 ) -> io::Result<String> {
-    let expanded = expand_extension_path(path, home)?;
+    let expanded = maestro_path::expand_tilde(path, home)?;
     if maestro_path::is_absolute(&expanded) {
         return Ok(expanded);
     }
     resolve(&[cwd, &expanded])
 }
 
-/// Join the rest of a leading `~` below the home directory through `home`.
-///
-/// The rest is always joined, an empty one included, so a home spelling that ends in `/` or `/.`
-/// is normalized. Characters stay as written, so the selector still sees the written candidate
-/// before it falls back to the space-replaced one. Any other path is returned as written without
-/// reading the home directory.
-fn expand_extension_path(
-    path: &str,
-    home: impl FnOnce() -> io::Result<String>,
-) -> io::Result<String> {
-    if !path.starts_with('~') {
-        return Ok(path.to_owned());
-    }
-    let rest = path.strip_prefix('~').unwrap_or_default();
-    let rest = rest.strip_prefix('/').unwrap_or(rest);
-    Ok(maestro_path::join(&[&home()?, rest]))
-}
 /// Anchors `extension_path` at `cwd` and resolves it through
 /// [`resolve_existing_spelling`], which keeps the spelling of the directories the file
 /// system holds.
 pub(super) fn resolve_path(extension_path: &str, cwd: &str) -> io::Result<String> {
     resolve_existing_spelling(
         extension_path,
-        |path| expand_extension_path(path, home_directory),
+        |path| maestro_path::expand_tilde(path, home_directory),
         |path| anchor_path(path, cwd, home_directory),
     )
 }

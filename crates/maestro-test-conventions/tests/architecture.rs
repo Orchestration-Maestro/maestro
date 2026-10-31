@@ -2983,7 +2983,7 @@ impl PatternCalls {
             return;
         };
         match segment.ident.to_string().as_str() {
-            "expand_tilde_text" => self.expands = true,
+            "expand_tilde" => self.expands = true,
             "is_absolute" => self.checks_absolute = true,
             "resolve" => self.resolves = true,
             _ => {}
@@ -3111,7 +3111,7 @@ fn tracked_rust_sources(root: &std::path::Path) -> Vec<(String, String)> {
 fn pattern_owners_in(sources: &[(String, String)]) -> Vec<PatternOwner> {
     let mut owners: Vec<PatternOwner> = sources
         .iter()
-        .filter(|(_, source)| source.contains("expand_tilde_text"))
+        .filter(|(_, source)| source.contains("expand_tilde"))
         .flat_map(|(path, source)| pattern_owners(path, source))
         .collect();
     owners.sort();
@@ -3211,7 +3211,7 @@ fn assert_tracked_delegation(sources: &[(String, String)]) {
 const OWNER_BODY: &str = "\
 fn resolve_explicit_path(path: &str, cwd: &str, home: &str) -> std::io::Result<String> {
     let path = path.trim_matches(whitespace);
-    let normalized = expand_tilde_text(path, || Ok(home.to_owned()))?;
+    let normalized = expand_tilde(path, || Ok(home.to_owned()))?;
     if is_absolute(&normalized) {
         Ok(normalized)
     } else {
@@ -3232,7 +3232,7 @@ const SKILL_BODY: &str = "\
 fn normalize_skill_path(path: &str, options: &Options<'_>) -> std::io::Result<String> {
     let path = path.trim_matches(whitespace);
     if path.starts_with('~') {
-        return expand_tilde_text(path, || Ok(options.home.to_owned()));
+        return expand_tilde(path, || Ok(options.home.to_owned()));
     }
     if is_absolute(path) {
         return Ok(path.to_owned());
@@ -3245,7 +3245,7 @@ fn normalize_skill_path(path: &str, options: &Options<'_>) -> std::io::Result<St
 const PROMPT_BODY: &str = "\
 fn resolve_prompt_path(path: &str, options: Options<'_>) -> std::io::Result<String> {
     let path = path.trim_matches(whitespace);
-    let normalized = expand_tilde_text(path, || Ok(options.home.to_owned()))?;
+    let normalized = expand_tilde(path, || Ok(options.home.to_owned()))?;
     if is_absolute(&normalized) {
         Ok(normalized)
     } else {
@@ -3301,7 +3301,7 @@ fn normalize_skill_path(path: &str, options: &Options<'_>) -> std::io::Result<St
 /// A sibling policy that expands in one function and always resolves in another.
 const RESOURCE_BODY: &str = "\
 fn expand_resource_path(path: &str, home: Home) -> std::io::Result<String> {
-    expand_tilde_text(path.trim_matches(whitespace), home)
+    expand_tilde(path.trim_matches(whitespace), home)
 }
 fn resolve_resource_path(cwd: &str, path: &str, home: Home) -> std::io::Result<String> {
     let expanded = expand_resource_path(path, home)?;
@@ -3313,7 +3313,7 @@ fn resolve_resource_path(cwd: &str, path: &str, home: Home) -> std::io::Result<S
 const OWNER_AND_COPY: &str = "\
 fn resolve_explicit_path(path: &str, cwd: &str, home: &str) -> std::io::Result<String> {
     let path = path.trim_matches(whitespace);
-    let normalized = expand_tilde_text(path, || Ok(home.to_owned()))?;
+    let normalized = expand_tilde(path, || Ok(home.to_owned()))?;
     if is_absolute(&normalized) {
         Ok(normalized)
     } else {
@@ -3322,7 +3322,7 @@ fn resolve_explicit_path(path: &str, cwd: &str, home: &str) -> std::io::Result<S
 }
 fn resolve_explicit_path_copy(path: &str, cwd: &str, home: &str) -> std::io::Result<String> {
     let path = path.trim_matches(whitespace);
-    let normalized = expand_tilde_text(path, || Ok(home.to_owned()))?;
+    let normalized = expand_tilde(path, || Ok(home.to_owned()))?;
     if is_absolute(&normalized) {
         Ok(normalized)
     } else {
@@ -3333,7 +3333,8 @@ fn resolve_explicit_path_copy(path: &str, cwd: &str, home: &str) -> std::io::Res
 
 /// Expanding a tilde, checking the result is absolute and resolving it has one implementation,
 /// which both instruction loaders call; an inline copy in a caller or a second copy beside the
-/// owner is rejected.
+/// owner is rejected. The extension loader's anchor is the one other holder: it reads the home
+/// lazily, keeps the written spelling of its input and trims nothing.
 #[test]
 fn explicit_instruction_paths_share_their_resolver() {
     let controls: [(&str, &str, &[&str]); 6] = [
@@ -3359,10 +3360,16 @@ fn explicit_instruction_paths_share_their_resolver() {
     let sources = tracked_rust_sources(&root);
     assert_eq!(
         pattern_owners_in(&sources),
-        [(
-            "crates/maestro-resources/src/paths.rs".to_owned(),
-            "resolve_explicit_path".to_owned()
-        )]
+        [
+            (
+                "crates/maestro-extensions/src/loader/paths.rs".to_owned(),
+                "anchor_path".to_owned()
+            ),
+            (
+                "crates/maestro-resources/src/paths.rs".to_owned(),
+                "resolve_explicit_path".to_owned()
+            )
+        ]
     );
     assert_forwarding_controls();
     assert_tracked_delegation(&sources);

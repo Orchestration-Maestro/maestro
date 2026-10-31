@@ -1,6 +1,7 @@
 //! Terminal, image, editor and session-directory preferences.
 
-use maestro_resources::paths::{expand_tilde_text, native_home_directory};
+use maestro_path::expand_tilde;
+use maestro_resources::paths::native_home_directory;
 use serde_json::Value;
 use std::io;
 
@@ -32,11 +33,7 @@ fn expand_session_dir(configured: &str) -> String {
 /// Expand the two supported home forms through `home`, keeping every other spelling as
 /// written and returning the configured text when the home lookup fails.
 fn expand_session_dir_with(configured: &str, home: impl FnOnce() -> io::Result<String>) -> String {
-    let supported = matches!(configured.strip_prefix('~'), Some(rest) if rest.is_empty() || rest.starts_with('/'));
-    if !supported {
-        return configured.to_owned();
-    }
-    expand_tilde_text(configured, home).unwrap_or_else(|_| configured.to_owned())
+    expand_tilde(configured, home).unwrap_or_else(|_| configured.to_owned())
 }
 
 impl SettingsManager {

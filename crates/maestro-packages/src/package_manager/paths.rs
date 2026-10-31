@@ -3,10 +3,10 @@ use super::{
     DefaultPackageManager, InstalledSourceScope, PackageOperations,
     sources::{self, Source},
 };
-use maestro_path::{Cwd, dirname, join, relative};
+use maestro_path::{Cwd, dirname, expand_tilde, join, relative};
 use maestro_resources::{
     SourceScope,
-    paths::{CONFIG_DIR_NAME, expand_tilde_text, home_directory, resolve},
+    paths::{CONFIG_DIR_NAME, home_directory, resolve},
 };
 use sha2::{Digest, Sha256};
 use std::{io, path::Path};
@@ -131,10 +131,11 @@ pub(super) fn resolve_local(
     home: impl FnOnce() -> io::Result<String>,
 ) -> io::Result<String> {
     let source = crate::trim(source);
-    if source.starts_with('~') {
-        return expand_tilde_text(source, home);
+    let expanded = expand_tilde(source, home)?;
+    if expanded == source {
+        return resolve(&[base, source]);
     }
-    resolve(&[base, source])
+    Ok(expanded)
 }
 
 #[cfg(test)]

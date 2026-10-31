@@ -463,7 +463,7 @@ extensions left it, and extension hooks see every event as before.
 | `shellPath` | string | unset | Custom shell path |
 | `shellCommandPrefix` | string | unset | Prefix for every shell command |
 | `npmCommand` | string[] | unset | Package-manager argument vector |
-| `sessionDir` | string | unset | An exact `~` reads as the home directory; a `~/` prefix is joined onto it through `maestro-path`; bytes of the home directory that are not valid UTF-8 read as U+FFFD; every other text, and any text while the home directory is unknown, is returned as written, including the empty string |
+| `sessionDir` | string | unset | A leading `~` reads as [Home directory in paths](#home-directory-in-paths); bytes of the home directory that are not valid UTF-8 read as U+FFFD; any text while the home directory is unknown is returned as written, including the empty string |
 | `enabledModels` | string[] | unset | Model patterns for cycling |
 
 ### Resources
@@ -480,6 +480,16 @@ extensions left it, and extension hooks see every event as before.
 The lists are stored and returned as written. Path resolution, patterns, package
 installation, update checks and reporting belong to the owners of those features.
 An extension path never implies a package.
+
+### Home directory in paths
+
+Every configured path reads `~` one way. An exact `~` is the home directory, and `~/`
+(`~\` on Windows) followed by more text joins that text below it. The text stays as
+written: repeated separators and `..` segments are not collapsed, and an absolute
+remainder stays below the home directory. On Windows either separator joins natively and
+empty components are dropped. Every other spelling, `~name` included, is returned as
+written and is a relative path. The home directory is read only for the two expanded
+forms, and an empty home leaves the rest relative.
 
 ## Example
 

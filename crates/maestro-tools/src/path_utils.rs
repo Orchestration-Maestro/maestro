@@ -42,32 +42,15 @@ fn expand_written_path(file_path: &str) -> io::Result<String> {
     expand_written_path_with(file_path, home_directory)
 }
 
-/// Expand the two home forms this resolver accepts: an exact `~` gives the home directory, and
-/// a `~/` prefix gives the home followed by the rest exactly as written, separators and parent
-/// segments included.
-///
-/// Any other spelling, a `~` followed by other text included, is returned as written and reads
-/// no home directory.
+/// Strip one leading `@`, then expand a leading `~` by [`maestro_path::expand_tilde`].
 ///
 /// # Errors
-/// Returns the error `home` returns for an accepted form.
+/// Returns the error `home` returns for an expanded form.
 fn expand_written_path_with(
     file_path: &str,
     home: impl FnOnce() -> io::Result<String>,
 ) -> io::Result<String> {
-    let file_path = file_path.strip_prefix('@').unwrap_or(file_path);
-    let Some(rest) = file_path
-        .strip_prefix('~')
-        .filter(|rest| rest.is_empty() || rest.starts_with('/'))
-    else {
-        return Ok(file_path.to_owned());
-    };
-    let home = home()?;
-    Ok(if rest.is_empty() {
-        home
-    } else {
-        format!("{home}{rest}")
-    })
+    maestro_path::expand_tilde(file_path.strip_prefix('@').unwrap_or(file_path), home)
 }
 
 /// Strip one leading `@`, replace Unicode spaces and expand a bare `~` or `~/`.

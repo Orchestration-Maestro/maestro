@@ -73,10 +73,7 @@ pub(super) fn expand_home<O: AutocompleteOperations>(
     operations: &O,
     raw: &str,
 ) -> io::Result<String> {
-    if !matches!(raw.strip_prefix('~'), Some(rest) if rest.is_empty() || rest.starts_with('/')) {
-        return Ok(raw.to_owned());
-    }
-    let mut expanded = maestro_resources::paths::expand_tilde_text(raw, || operations.home_dir())?;
+    let mut expanded = maestro_path::expand_tilde(raw, || operations.home_dir())?;
     if raw.ends_with('/') && !expanded.ends_with('/') {
         expanded.push('/');
     }
