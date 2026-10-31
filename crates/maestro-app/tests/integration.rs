@@ -8,6 +8,7 @@ mod agent_session_prompt_checks;
 mod agent_session_queue_checks;
 mod agent_session_retry_checks;
 mod agent_session_retry_events_checks;
+mod agent_session_run_checks;
 mod agent_session_runtime_checks;
 mod agent_session_runtime_events_checks;
 mod agent_session_stats_checks;
