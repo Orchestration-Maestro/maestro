@@ -99,7 +99,6 @@ fn production_code_is_not_a_test_read() {
 }
 
 #[test]
-#[ignore = "the check does not yet treat package-directory resolvers as reads"]
 fn unrouted_read_through_a_package_directory_resolver_is_named() {
     for (call, prefix) in [
         ("get_docs_path()", "docs/"),
@@ -117,7 +116,6 @@ fn unrouted_read_through_a_package_directory_resolver_is_named() {
 }
 
 #[test]
-#[ignore = "the check does not yet treat package-directory resolvers as reads"]
 fn package_directory_read_names_the_docs_and_examples_it_holds() {
     let contents = "fn package() -> String {\n    get_package_dir().unwrap()\n}\n";
     let (workspace, path) = workspace(contents, "\"fuzz/\" = []");
@@ -133,7 +131,6 @@ fn package_directory_read_names_the_docs_and_examples_it_holds() {
 }
 
 #[test]
-#[ignore = "the check does not yet treat package-directory resolvers as reads"]
 fn unrouted_resolver_read_inside_a_macro_is_named() {
     let contents =
         "fn check() {\n    assert!(std::path::Path::new(&get_docs_path().unwrap()).is_dir());\n}\n";

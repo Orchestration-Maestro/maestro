@@ -11,6 +11,14 @@ use crate::source::{Member, Source, inherit_test_context, test_scope};
 /// Repository directories whose changes select only the packages that read them.
 const DIRECTORIES: [&str; 3] = ["docs", "examples", "assets"];
 
+/// Package-directory resolvers and the repository directories each one leads to; in a source
+/// checkout the package directory is the workspace root.
+const RESOLVERS: [(&str, &[&str]); 3] = [
+    ("get_docs_path", &["docs"]),
+    ("get_examples_path", &["examples"]),
+    ("get_package_dir", &["docs", "examples"]),
+];
+
 /// Read the CI configuration's `test_inputs` routes, or `None` when the workspace has none.
 fn routes(root: &Path) -> Result<Option<toml::Table>, String> {
     let path = root.join(".github/ci.toml");
@@ -37,7 +45,8 @@ fn routed(configuration: &toml::Table, directory: &str, package: &str) -> bool {
 /// to the reading package.
 ///
 /// A test reads a directory when a string literal climbs out of the crate directory into it
-/// (`../../assets/...`), or joins it onto a path in a file that climbs to the workspace root.
+/// (`../../assets/...`), joins it onto a path in a file that climbs to the workspace root, or
+/// calls a package-directory resolver.
 /// Compile-time `include_*!` arguments and attributes are not reads.
 pub(crate) fn check(root: &Path, members: &[Member]) -> Result<(), String> {
     let Some(configuration) = routes(root)? else {
@@ -117,6 +126,22 @@ impl Reads {
         self.climbs |= segments.windows(2).any(|pair| pair == ["..", ".."]);
     }
 
+    /// Record a test-owned use of `name` when it is a package-directory resolver.
+    fn resolver(&mut self, name: &str, line: usize) {
+        if !self.testing {
+            return;
+        }
+        for (resolver, directories) in RESOLVERS {
+            if resolver == name {
+                self.direct.extend(
+                    directories
+                        .iter()
+                        .map(|directory| (line, format!("{directory}/"))),
+                );
+            }
+        }
+    }
+
     /// Record the literal that a path-joining call appends.
     fn joined(&mut self, value: &str, line: usize) {
         let first = value.split('/').next().unwrap_or_default();
@@ -142,7 +167,10 @@ impl Reads {
                     self.literal(&value, literal.span().start().line);
                 }
             }
-            TokenTree::Ident(name) => self.climbs |= self.testing && name == "ancestors",
+            TokenTree::Ident(name) => {
+                self.climbs |= self.testing && name == "ancestors";
+                self.resolver(&name.to_string(), name.span().start().line);
+            }
             TokenTree::Group(group) => {
                 if previous.is_some_and(is_join) {
                     self.joined_argument(&group.stream());
@@ -192,6 +220,16 @@ impl<'ast> Visit<'ast> for Reads {
         if let syn::Lit::Str(literal) = &expression.lit {
             self.literal(&literal.value(), literal.span().start().line);
         }
+    }
+
+    fn visit_expr_path(&mut self, expression: &'ast syn::ExprPath) {
+        if let Some(segment) = expression.path.segments.last() {
+            self.resolver(
+                &segment.ident.to_string(),
+                segment.ident.span().start().line,
+            );
+        }
+        syn::visit::visit_expr_path(self, expression);
     }
 
     fn visit_expr_method_call(&mut self, call: &'ast syn::ExprMethodCall) {

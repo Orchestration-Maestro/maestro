@@ -103,7 +103,8 @@ mod time_limits;
 /// A test that reads `docs/`, `examples/` or `assets/` at run time must have that directory
 /// routed to its package in `test_inputs` of `.github/ci.toml`. A read is a string literal
 /// that climbs out of the crate directory into the directory, or one that joins the
-/// directory in a file that climbs to the workspace root. Compile-time `include_*!`
+/// directory in a file that climbs to the workspace root, or a call to the package-directory
+/// resolver `get_docs_path`, `get_examples_path` or `get_package_dir`. Compile-time `include_*!`
 /// arguments and attributes are not reads. Each unrouted read is reported with its file
 /// and line.
 ///
