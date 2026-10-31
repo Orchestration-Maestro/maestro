@@ -10,7 +10,10 @@ use maestro_models::{Cancellation, DiagnosticCode, ModelInput};
 use maestro_tools::{ReadOperations, ReadToolInput, ReadToolOptions, create_read_tool_definition};
 use read_support::*;
 use serde_json::{Value, json};
-use std::sync::{Arc, RwLock, atomic::Ordering};
+use std::sync::{
+    Arc, RwLock,
+    atomic::{AtomicBool, Ordering},
+};
 
 /// A one-pixel PNG.
 const TINY_PNG: &str = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGD4DwABBAEAX+XDSwAAAABJRU5ErkJggg==";
@@ -673,4 +676,29 @@ fn read_uses_magic_and_preserves_image_order() {
             ])
         );
     }
+}
+
+#[test]
+fn read_image_resize_yields_to_other_runtime_tasks() {
+    let wide = blank_image(2200, 20, ImageOutputFormat::Png);
+    let ops = Arc::new(ScriptedOps::new(&wide).with_mime("image/png"));
+    let tool = tool_over(&ops);
+    let ran = Arc::new(AtomicBool::new(false));
+    let ran_before_read_returned = crate::runtime::run(async {
+        let flag = Arc::clone(&ran);
+        let ticker = tokio::spawn(async move { flag.store(true, Ordering::SeqCst) });
+        let result = (tool.execute)(
+            "call".into(),
+            input("/work/i", None, None),
+            None,
+            None,
+            None,
+        )
+        .await;
+        let seen = ran.load(Ordering::SeqCst);
+        ticker.await.unwrap();
+        assert_eq!(result.unwrap().content.len(), 2);
+        seen
+    });
+    assert!(ran_before_read_returned);
 }
