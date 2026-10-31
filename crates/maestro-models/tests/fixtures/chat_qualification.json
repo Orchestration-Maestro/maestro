@@ -1578,7 +1578,7 @@
             "stream_options": {
               "include_usage": true
             },
-            "max_tokens": 32000
+            "max_tokens": 251899
           }
         }
       ],
@@ -1697,7 +1697,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000
+            "max_output_tokens": 128000
           }
         }
       ],
@@ -1820,7 +1820,7 @@
             "stream_options": {
               "include_usage": true
             },
-            "max_tokens": 32000
+            "max_tokens": 251903
           }
         }
       ],
@@ -1945,7 +1945,7 @@
             "stream_options": {
               "include_usage": true
             },
-            "max_tokens": 32000
+            "max_tokens": 251903
           }
         }
       ],
@@ -3950,7 +3950,7 @@
               "include_usage": true
             },
             "store": false,
-            "max_completion_tokens": 32000
+            "max_completion_tokens": 40960
           }
         }
       ],
@@ -4072,7 +4072,7 @@
               "include_usage": true
             },
             "store": false,
-            "max_completion_tokens": 32000,
+            "max_completion_tokens": 40960,
             "reasoning_effort": "default"
           }
         }
@@ -4195,7 +4195,7 @@
               "include_usage": true
             },
             "store": false,
-            "max_completion_tokens": 32000,
+            "max_completion_tokens": 40960,
             "reasoning_effort": "default"
           }
         }
@@ -4318,7 +4318,7 @@
               "include_usage": true
             },
             "store": false,
-            "max_completion_tokens": 32000,
+            "max_completion_tokens": 40960,
             "reasoning_effort": "default"
           }
         }
@@ -4441,7 +4441,7 @@
               "include_usage": true
             },
             "store": false,
-            "max_completion_tokens": 32000,
+            "max_completion_tokens": 40960,
             "reasoning_effort": "default"
           }
         }
@@ -4564,7 +4564,7 @@
               "include_usage": true
             },
             "store": false,
-            "max_completion_tokens": 32000,
+            "max_completion_tokens": 40960,
             "reasoning_effort": "default"
           }
         }
@@ -4680,7 +4680,7 @@
               "include_usage": true
             },
             "store": false,
-            "max_completion_tokens": 32000
+            "max_completion_tokens": 65536
           }
         }
       ],
@@ -4796,7 +4796,7 @@
               "include_usage": true
             },
             "store": false,
-            "max_completion_tokens": 32000,
+            "max_completion_tokens": 65536,
             "reasoning_effort": "minimal"
           }
         }
@@ -4913,7 +4913,7 @@
               "include_usage": true
             },
             "store": false,
-            "max_completion_tokens": 32000,
+            "max_completion_tokens": 65536,
             "reasoning_effort": "low"
           }
         }
@@ -5030,7 +5030,7 @@
               "include_usage": true
             },
             "store": false,
-            "max_completion_tokens": 32000,
+            "max_completion_tokens": 65536,
             "reasoning_effort": "medium"
           }
         }
@@ -5147,7 +5147,7 @@
               "include_usage": true
             },
             "store": false,
-            "max_completion_tokens": 32000,
+            "max_completion_tokens": 65536,
             "reasoning_effort": "high"
           }
         }
@@ -5264,7 +5264,7 @@
               "include_usage": true
             },
             "store": false,
-            "max_completion_tokens": 32000,
+            "max_completion_tokens": 65536,
             "reasoning_effort": "high"
           }
         }
@@ -5448,7 +5448,7 @@
             "stream_options": {
               "include_usage": true
             },
-            "max_completion_tokens": 32000,
+            "max_completion_tokens": 131072,
             "tools": [
               {
                 "type": "function",
@@ -5607,7 +5607,7 @@
             "stream_options": {
               "include_usage": true
             },
-            "max_completion_tokens": 32000,
+            "max_completion_tokens": 131072,
             "tools": [
               {
                 "type": "function",
@@ -5766,7 +5766,7 @@
             "stream_options": {
               "include_usage": true
             },
-            "max_completion_tokens": 32000,
+            "max_completion_tokens": 131072,
             "tools": [
               {
                 "type": "function",
@@ -5924,7 +5924,7 @@
             "stream_options": {
               "include_usage": true
             },
-            "max_completion_tokens": 32000,
+            "max_completion_tokens": 98304,
             "tools": [
               {
                 "type": "function",
@@ -6082,7 +6082,7 @@
             "stream_options": {
               "include_usage": true
             },
-            "max_completion_tokens": 32000,
+            "max_completion_tokens": 98304,
             "tools": [
               {
                 "type": "function",
@@ -6241,7 +6241,7 @@
             "stream_options": {
               "include_usage": true
             },
-            "max_completion_tokens": 32000,
+            "max_completion_tokens": 131072,
             "tools": [
               {
                 "type": "function",
@@ -6382,7 +6382,7 @@
             "stream_options": {
               "include_usage": true
             },
-            "max_completion_tokens": 32000,
+            "max_completion_tokens": 131072,
             "enable_thinking": false
           }
         }
@@ -6503,7 +6503,7 @@
             "stream_options": {
               "include_usage": true
             },
-            "max_completion_tokens": 32000,
+            "max_completion_tokens": 131072,
             "enable_thinking": false
           }
         }
@@ -9229,7 +9229,7 @@
             "stream_options": {
               "include_usage": true
             },
-            "max_completion_tokens": 32000,
+            "max_completion_tokens": 131072,
             "enable_thinking": false
           }
         }

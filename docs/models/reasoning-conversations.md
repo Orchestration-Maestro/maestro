@@ -81,9 +81,12 @@ variants combine. Credential headers are validated before authored overrides, so
 an override cannot conceal an invalid credential header. This provider does not
 call the response hook.
 
-Private sending makes one attempt. Without a caller cancellation signal, one
-30-second deadline covers request setup and body reads; a supplied signal disables
-that deadline. Admission requires status 200 with `text/event-stream`, allowing
+Private sending makes one attempt. The longest wait for the response headers or for
+the next body chunk is the configured `timeout_ms`, restarted by the headers and by
+each chunk, so a long stream that keeps arriving never times out and a stalled one
+ends with a timeout error once the wait elapses, with or without a caller
+cancellation signal. Without a configured timeout, a request with no signal waits
+30 seconds and a request with a signal waits without limit. Admission requires status 200 with `text/event-stream`, allowing
 case differences and parameters. A 422 JSON response is syntax-checked without
 selecting error-record fields. Nonempty trimmed HTTP error bodies retain at most
 4,000 Unicode scalars before a truncation suffix; native causes and empty-body

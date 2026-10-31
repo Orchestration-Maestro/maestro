@@ -49,7 +49,7 @@ pub(crate) use headers::{
 pub(crate) use maestro_text::decode_utf8;
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) use retry::{RequestPolicy, RetryStatuses, send_with_policy};
-pub(crate) use retry::{send, send_with_status_error};
+pub(crate) use retry::{request_timeout, send, send_with_status_error};
 pub(crate) use runtime::sleep;
 pub(crate) use runtime::spawn_detached;
 pub use runtime::{Raced, race};
