@@ -73,7 +73,7 @@ impl<E: super::AgentExecution> AgentToolRecord<E> {
         }
     }
 }
-/// Encode typed final or partial details without changing content or termination.
+/// Encode typed final or partial details without changing content, termination or usage.
 pub(crate) fn encode_result<D: serde::Serialize>(
     result: AgentToolResult<D>,
 ) -> Result<AgentToolResult, DiagnosticErrorInfo> {
@@ -85,7 +85,7 @@ pub(crate) fn encode_result<D: serde::Serialize>(
             .transpose()
             .map_err(|error| json_error(&error))?,
         terminate: result.terminate,
-        usage: None,
+        usage: result.usage,
     })
 }
 /// Preserve the JSON boundary's failure text in the tool error channel.

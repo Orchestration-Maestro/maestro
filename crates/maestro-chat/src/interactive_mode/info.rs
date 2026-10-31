@@ -58,7 +58,7 @@ pub(super) fn session_info(
     theme: &Theme,
     stats: &SessionStats,
     name: Option<&str>,
-    _buckets: &[UsageCostBreakdownEntry],
+    buckets: &[UsageCostBreakdownEntry],
 ) -> Result<String, Box<dyn Error>> {
     let numbers = LocaleNumberFormat::new(&|key| std::env::var(key).ok())?;
     let label = |text| theme.fg(&ThemeColor::Dim, text);
@@ -97,10 +97,17 @@ pub(super) fn session_info(
         }
     }
     if stats.cost > 0.0 {
-        let cost = ryu_js::Buffer::new()
-            .format_to_fixed(stats.cost, 4)
-            .to_owned();
+        let fixed = |cost| ryu_js::Buffer::new().format_to_fixed(cost, 4).to_owned();
+        let cost = fixed(stats.cost);
         write!(info, "\n{}\n{} {cost}", heading("Cost"), label("Total:")?)?;
+        if buckets.len() > 1 {
+            for bucket in buckets {
+                let tokens = numbers.format(bucket.tokens)?;
+                let text = format!("{}:", bucket.key);
+                let key = theme.fg(&ThemeColor::Dim, &text)?;
+                write!(info, "\n  {key} {} ({tokens} tokens)", fixed(bucket.cost))?;
+            }
+        }
     }
     Ok(info)
 }

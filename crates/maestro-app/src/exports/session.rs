@@ -39,7 +39,7 @@ pub use crate::skill_block::{ParsedSkillBlock, parse_skill_block};
 pub use crate::agent_session::{
     AgentSession, AgentSessionConfig, AgentSessionEvent, AgentSessionEventListener,
     ExtensionBindings, ModelCycleResult, NavigateTreeResult, PromptOptions, SessionStats,
-    UsageCostBreakdownEntry, delivery_mode, usage_cost_breakdown,
+    UsageCostBreakdownEntry, UsageTotals, delivery_mode, usage_cost_breakdown, usage_totals,
 };
 
 #[cfg(not(target_arch = "wasm32"))]

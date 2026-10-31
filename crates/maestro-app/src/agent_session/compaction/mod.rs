@@ -152,7 +152,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
         let options = CompactionOptions {
             details: result.details.clone(),
             from_hook: Presence::Present(from_extension),
-            usage: Presence::Missing,
+            usage: result.usage.clone(),
         };
         let mut manager = self.session_manager.borrow_mut();
         let id = manager
@@ -218,7 +218,7 @@ fn stored_result(result: CompactionResult<maestro_session::CompactionDetails>) -
         first_kept_entry_id: result.first_kept_entry_id,
         tokens_before: result.tokens_before,
         details: generated_details(&result.details),
-        usage: Presence::Missing,
+        usage: result.usage,
     }
 }
 

@@ -31,6 +31,8 @@ struct BranchSummary {
     text: String,
     /// Its stored details.
     details: Presence<Value>,
+    /// The usage of the requests that produced it.
+    usage: Presence<maestro_models::Usage>,
     /// Whether an extension supplied it.
     from_extension: bool,
 }
@@ -246,6 +248,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
             Presence::Present(summary) if summarize => Some(BranchSummary {
                 text: summary.summary,
                 details: summary.details,
+                usage: summary.usage,
                 from_extension: true,
             }),
             _ => None,
@@ -277,7 +280,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
             replace_instructions: choices.replace_instructions,
             reserve_tokens: Some(reserve_tokens),
         };
-        let (text, read_files, modified_files) =
+        let (text, read_files, modified_files, usage) =
             match generate_branch_summary(entries, &options).await? {
                 BranchSummaryResult::Aborted { .. } => return Ok(None),
                 BranchSummaryResult::Error { error } => {
@@ -287,15 +290,23 @@ impl<E: ExtensionExecution> AgentSession<E> {
                     summary,
                     read_files,
                     modified_files,
-                    ..
-                } => (summary, read_files, modified_files),
-                BranchSummaryResult::NoContent { summary } => (summary, Vec::new(), Vec::new()),
+                    usage,
+                } => (
+                    summary,
+                    read_files,
+                    modified_files,
+                    Presence::Present(usage),
+                ),
+                BranchSummaryResult::NoContent { summary } => {
+                    (summary, Vec::new(), Vec::new(), Presence::Missing)
+                }
             };
         Ok(Some(BranchSummary {
             text,
             details: Presence::Present(
                 json!({"readFiles": read_files, "modifiedFiles": modified_files}),
             ),
+            usage,
             from_extension: false,
         }))
     }
@@ -359,7 +370,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
                     BranchSummaryOptions {
                         details: summary.details,
                         from_hook: Presence::Present(summary.from_extension),
-                        usage: Presence::Missing,
+                        usage: summary.usage,
                     },
                 )
                 .map_err(thrown)?;
