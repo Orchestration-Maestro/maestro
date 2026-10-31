@@ -556,7 +556,7 @@ fn repin_failure_never_publishes_settings() {
 
 #[cfg(unix)]
 #[test]
-fn repin_persistence_keeps_current_git_spelling_and_appends_absent_sources() {
+fn repin_persistence_replaces_current_git_spelling_and_appends_absent_sources() {
     use maestro_packages::InstalledSourceScope::{Project, User};
     for scope in [User, Project] {
         for present in [false, true] {
@@ -588,14 +588,7 @@ fn repin_persistence_keeps_current_git_spelling_and_appends_absent_sources() {
                 User => settings.borrow().get_global_settings(),
                 Project => settings.borrow().get_project_settings(),
             };
-            assert_eq!(
-                settings.0["packages"],
-                json!([if present {
-                    "git:example.test/team/repo@old"
-                } else {
-                    source
-                }])
-            );
+            assert_eq!(settings.0["packages"], json!([source]));
             let verbs: Vec<_> = effects
                 .calls
                 .borrow()
