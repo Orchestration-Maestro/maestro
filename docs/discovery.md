@@ -30,10 +30,12 @@ and a file whose reached record is malformed stops being read there.
 
 ## Per-session metadata
 
-A file becomes a `SessionInfo` when its first parsed record has `type` `session`,
+Listing skips `null`, `false`, zero numbers (including `-0` and `0.0`) and empty
+strings before checking records. A file becomes a `SessionInfo` when its first
+remaining record has `type` `session`,
 so the header needs no string `id` (identity and `parentSession` pass through as
 supplied or absent). The file fails, and is silently skipped, when it cannot be
-read or stat-ed, when a reached record is `null`, or when a selected field has an
+read or stat-ed, or when a selected field has an
 unusable type: a `message` record whose `message` member is missing or `null`; for
 a `user` or `assistant` message, `content` that is neither a string nor an array
 or a `null` content block; or a `session_info` name that is neither a string nor

@@ -1,5 +1,9 @@
 //! Native JSONL loading and continuation selection.
-use super::{FileEntry, conversions::invalid, records::for_each_entry};
+use super::{
+    FileEntry,
+    conversions::invalid,
+    records::{Admission, for_each_entry},
+};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::{
@@ -76,11 +80,11 @@ pub(super) struct Snapshot {
 }
 
 impl Snapshot {
-    /// Read `reader` to its end, keeping records only behind a valid first header.
+    /// Read to the end, skipping empty JSON values and requiring a valid first header.
     pub(super) fn read(reader: impl Read) -> io::Result<Self> {
         let mut hashing = Hashing::new(reader);
         let mut entries = Vec::new();
-        for_each_entry(BufReader::new(&mut hashing), |entry| {
+        for_each_entry(BufReader::new(&mut hashing), Admission::Nonempty, |entry| {
             entries.push(entry);
             ControlFlow::Continue(())
         })?;

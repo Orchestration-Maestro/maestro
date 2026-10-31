@@ -4,7 +4,7 @@ use super::{
     SessionInfo, SessionManager,
     context::{ecma_whitespace, observation, property},
     files::{get_default_session_dir, jsonl_path, modified_millis},
-    records::for_each_entry,
+    records::{Admission, for_each_entry},
 };
 use crate::messages::{millis_number, timestamp_millis};
 use futures_util::{StreamExt, stream};
@@ -139,11 +139,12 @@ fn read_session_info(path: &str) -> Option<SessionInfo> {
 
 /// The session header and the facts of every later record, or `None` when the first record is
 /// not a session header or a reached record is malformed; reading stops at that record.
+/// Null, false, zero and empty-string records are skipped before either check.
 pub(super) fn scan_reader(reader: impl BufRead) -> Option<(Value, Scan)> {
     let mut header: Option<Value> = None;
     let mut scan = Scan::default();
     let mut admitted = true;
-    for_each_entry(reader, |entry| {
+    for_each_entry(reader, Admission::Nonempty, |entry| {
         admitted = match &header {
             None => is_session_header(&entry),
             Some(_) => scan_entry(&entry, &mut scan).is_ok(),
@@ -179,7 +180,7 @@ pub(super) struct Scan {
     activity: f64,
 }
 
-/// Fold one entry into the scan; a reached null record or malformed selected field fails the file.
+/// Fold one admitted entry into the scan; a malformed selected field fails the file.
 fn scan_entry(entry: &Value, scan: &mut Scan) -> Result<(), serde_json::Error> {
     match property(Some(entry), "type")?.and_then(Value::as_str) {
         Some("session_info") => scan.name = session_name(entry)?,

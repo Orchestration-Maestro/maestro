@@ -548,11 +548,15 @@ fn records_are_handed_over_while_the_file_is_still_being_read() {
     let head = reader.head.len();
     let handed = std::rc::Rc::clone(&reader.handed);
     let (mut index, mut worst_lag) = (0, 0);
-    super::records::for_each_entry(std::io::BufReader::new(reader), |_| {
-        worst_lag = worst_lag.max(handed.get() - (head + index * line));
-        index += 1;
-        std::ops::ControlFlow::Continue(())
-    })
+    super::records::for_each_entry(
+        std::io::BufReader::new(reader),
+        super::records::Admission::Nonempty,
+        |_| {
+            worst_lag = worst_lag.max(handed.get() - (head + index * line));
+            index += 1;
+            std::ops::ControlFlow::Continue(())
+        },
+    )
     .unwrap();
     assert_eq!(index, 4001);
     assert!(worst_lag <= 16 * 1024, "read {worst_lag} bytes ahead");
@@ -574,7 +578,7 @@ fn records_split_across_reader_chunks_keep_their_multibyte_text() {
     let text = "{\"id\":\"é€\"}\n{\"id\":\"b\"}";
     let reader = std::io::BufReader::with_capacity(1, text.as_bytes());
     let mut ids = Vec::new();
-    super::records::for_each_entry(reader, |entry| {
+    super::records::for_each_entry(reader, super::records::Admission::Nonempty, |entry| {
         ids.push(entry["id"].as_str().unwrap().to_owned());
         std::ops::ControlFlow::Continue(())
     })

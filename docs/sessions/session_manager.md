@@ -13,7 +13,9 @@ See also the [session format](https://github.com/Orchestration-Maestro/maestro/b
 `FileEntry` and `SessionEntry` are ordered JSON values, not validated schemas.
 `parse_session_entries` removes outer ECMAScript whitespace, splits at LF, skips
 blank or malformed lines and accepts native JSON values without requiring a
-header. Nonblank interior lines are parsed without extra trimming. Native JSON
+header, including `null`, `false`, zero numbers and empty strings. The native
+loader skips those four empty values before checking the header or building its
+index; listing skips them too. Nonblank interior lines are parsed without extra trimming. Native JSON
 numeric and nesting limits apply. Object members keep their first position with
 the last duplicate value; omitted and null properties remain distinct.
 
