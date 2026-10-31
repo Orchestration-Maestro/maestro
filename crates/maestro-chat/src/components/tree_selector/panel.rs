@@ -380,3 +380,6 @@ impl InputHandler for LabelInput {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;
