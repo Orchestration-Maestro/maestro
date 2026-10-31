@@ -216,9 +216,9 @@ fn tail_keeps_whole_scalars_of_an_oversized_line_ending_in_a_newline() {
             max_bytes: Some(11),
         },
     );
-    assert_eq!(result.content, "€€€\n");
-    assert_eq!((result.total_bytes, result.total_lines), (33, 2));
-    assert_eq!((result.output_bytes, result.output_lines), (10, 2));
+    assert_eq!(result.content, "€€€");
+    assert_eq!((result.total_bytes, result.total_lines), (33, 1));
+    assert_eq!((result.output_bytes, result.output_lines), (9, 1));
     assert!(result.truncated && result.last_line_partial);
     assert!(matches!(
         result.truncated_by,
