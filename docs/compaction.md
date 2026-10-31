@@ -97,6 +97,10 @@ using the [message projection](sessions/messages.md) formatting and the shared s
 above. It starts the registered model completion before returning an owned future;
 borrowed inputs need not outlive that future. A fresh request timestamp is used.
 
+`generate_summary_with_usage` takes the same operands and returns a `GeneratedSummary`:
+the summary text with the `Usage` the provider reported for that request.
+`generate_summary` keeps returning the text alone.
+
 Supply the API key explicitly (empty is retained), optional ordered headers and shared
 cancellation. Reasoning is omitted unless the model supports it and an enabled level
 is explicitly selected. No thinking level is chosen by default. Nonempty prior text

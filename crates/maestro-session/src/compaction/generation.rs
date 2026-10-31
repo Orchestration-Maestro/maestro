@@ -26,29 +26,6 @@ pub struct GeneratedSummary {
     /// Usage the provider reported for the request.
     pub usage: maestro_models::Usage,
 }
-/// Start a history summary like [`generate_summary`] and keep the provider usage.
-#[must_use]
-pub fn generate_summary_with_usage(
-    current_messages: &[serde_json::Value],
-    model: &Model,
-    reserve_tokens: f64,
-    previous_summary: Option<&str>,
-    options: &SummaryOptions,
-) -> BoxFuture<Result<GeneratedSummary, DiagnosticErrorInfo>> {
-    let text = generate_summary(
-        current_messages,
-        model,
-        reserve_tokens,
-        previous_summary,
-        options,
-    );
-    Box::pin(async move {
-        Ok(GeneratedSummary {
-            text: text.await?,
-            usage: maestro_models::Usage::default(),
-        })
-    })
-}
 /// Start a history summary now, returning an independently owned observation.
 ///
 /// Projection errors precede invocation; adapter setup errors retain their diagnostics.
@@ -61,6 +38,27 @@ pub fn generate_summary(
     previous_summary: Option<&str>,
     options: &SummaryOptions,
 ) -> BoxFuture<Result<String, DiagnosticErrorInfo>> {
+    let summary = generate_summary_with_usage(
+        current_messages,
+        model,
+        reserve_tokens,
+        previous_summary,
+        options,
+    );
+    Box::pin(async move { Ok(summary.await?.text) })
+}
+/// Start a history summary like [`generate_summary`], keeping the provider usage.
+///
+/// The usage is the request's own, whatever its outcome: an aborted request reports what it
+/// consumed with the partial text.
+#[must_use]
+pub fn generate_summary_with_usage(
+    current_messages: &[serde_json::Value],
+    model: &Model,
+    reserve_tokens: f64,
+    previous_summary: Option<&str>,
+    options: &SummaryOptions,
+) -> BoxFuture<Result<GeneratedSummary, DiagnosticErrorInfo>> {
     let previous = previous_summary.filter(|text| !text.is_empty());
     let base = if previous.is_some() {
         prompts::UPDATE_SUMMARIZATION_PROMPT
@@ -100,7 +98,7 @@ fn request(
     max_tokens: f64,
     options: &SummaryOptions,
     error_prefix: &'static str,
-) -> BoxFuture<Result<String, DiagnosticErrorInfo>> {
+) -> BoxFuture<Result<GeneratedSummary, DiagnosticErrorInfo>> {
     let prompt = match prompt {
         Ok(prompt) => prompt,
         Err(error) => {
@@ -144,15 +142,18 @@ fn request(
                 "{error_prefix}: {message}"
             )));
         }
-        Ok(response
-            .content
-            .iter()
-            .filter_map(|block| match block {
-                AssistantContent::Text(text) => Some(text.text.as_str()),
-                _ => None,
-            })
-            .collect::<Vec<_>>()
-            .join("\n"))
+        Ok(GeneratedSummary {
+            text: response
+                .content
+                .iter()
+                .filter_map(|block| match block {
+                    AssistantContent::Text(text) => Some(text.text.as_str()),
+                    _ => None,
+                })
+                .collect::<Vec<_>>()
+                .join("\n"),
+            usage: response.usage.clone(),
+        })
     })
 }
 
@@ -246,11 +247,12 @@ fn generate_turn_prefix_summary(
             prompts::TURN_PREFIX_SUMMARIZATION_PROMPT
         )
     });
-    request(
+    let summary = request(
         prompt,
         model,
         (0.5 * reserve).floor(),
         options,
         "Turn prefix summarization failed",
-    )
+    );
+    Box::pin(async move { Ok(summary.await?.text) })
 }
