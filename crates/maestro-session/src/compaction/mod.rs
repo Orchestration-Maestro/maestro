@@ -69,6 +69,7 @@ pub use branch_summarization::{CollectEntriesResult, collect_entries_for_branch_
 pub use branch_summarization::{BranchPreparation, BranchSummaryDetails, prepare_branch_entries};
 
 pub use branch_summarization::{
-    BranchSummaryResult, GenerateBranchSummaryOptions, generate_branch_summary,
+    BranchSummaryRequest, BranchSummaryResult, GenerateBranchSummaryOptions,
+    generate_branch_summary, generate_branch_summary_with,
 };
 pub use utils::SUMMARIZATION_SYSTEM_PROMPT;
