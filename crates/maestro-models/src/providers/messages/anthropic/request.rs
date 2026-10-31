@@ -147,14 +147,6 @@ impl<'a> ToolSelection<'a> {
     }
 }
 
-/// The compatibility flags of a model that shape a request.
-struct Compat {
-    /// Whether the service streams tool arguments as they are written.
-    eager_input_streaming: bool,
-    /// Whether the model supports the one-hour cache lifetime.
-    long_cache_retention: bool,
-}
-
 /// One invocation's inputs with the cache policy resolved from them.
 pub(super) struct Invocation<'a, E: crate::ProviderExecution> {
     /// Target model.
@@ -204,20 +196,15 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
         Ok(invocation)
     }
 
-    /// The compatibility flags of the model, each on unless the model turns it off.
-    fn compat(&self) -> Compat {
-        let flag = |name| {
-            self.model
-                .compat
-                .as_ref()
-                .and_then(|compat| compat.0.get(name))
-                .filter(|value| !value.is_null())
-                .is_none_or(enabled)
-        };
-        Compat {
-            eager_input_streaming: flag("supportsEagerToolInputStreaming"),
-            long_cache_retention: flag("supportsLongCacheRetention"),
-        }
+    /// The model's compatibility flag `name`; a flag the model leaves out or sets to `null` is
+    /// `default`.
+    fn flag(&self, name: &str, default: bool) -> bool {
+        self.model
+            .compat
+            .as_ref()
+            .and_then(|compat| compat.0.get(name))
+            .filter(|value| !value.is_null())
+            .map_or(default, enabled)
     }
 
     /// The marker the retention asks for: none for `none`, a one-hour lifetime for `long` on a
@@ -225,7 +212,9 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
     fn cache_control(&self) -> Option<CacheControl> {
         match self.retention {
             CacheRetention::None => None,
-            CacheRetention::Long if self.compat().long_cache_retention => Some(CacheControl::LONG),
+            CacheRetention::Long if self.flag("supportsLongCacheRetention", true) => {
+                Some(CacheControl::LONG)
+            }
             CacheRetention::Short | CacheRetention::Long => Some(CacheControl::SHORT),
         }
     }
@@ -250,7 +239,13 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
         let (thinking, output_config) = self.thinking_fields();
         let payload = Payload {
             model: &self.model.id,
-            messages: convert(self.model, self.context, cache, self.naming),
+            messages: convert(
+                self.model,
+                self.context,
+                cache,
+                self.naming,
+                self.flag("allowEmptySignature", false),
+            ),
             max_tokens: self.max_tokens(),
             stream: true,
             system: self.system(cache),
@@ -265,8 +260,8 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
                 .map(|declared| {
                     tools(
                         declared,
-                        self.compat().eager_input_streaming,
-                        cache,
+                        self.flag("supportsEagerToolInputStreaming", true),
+                        cache.filter(|_| self.flag("supportsCacheControlOnTools", true)),
                         self.naming,
                     )
                 }),
@@ -339,7 +334,7 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
     fn betas(&self) -> Vec<&'static str> {
         let tools_declared = self.context.tools.as_deref().is_some_and(|t| !t.is_empty());
         let mut betas = Vec::new();
-        if tools_declared && !self.compat().eager_input_streaming {
+        if tools_declared && !self.flag("supportsEagerToolInputStreaming", true) {
             betas.push(FINE_GRAINED_TOOL_STREAMING_BETA);
         }
         if self.options.interleaved_thinking.unwrap_or(true)
@@ -414,6 +409,9 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
                 headers.insert("authorization".to_owned(), format!("Bearer {token}"));
             }
         }
+        if !account && !subscription {
+            self.add_session_affinity(&mut headers);
+        }
         let mut betas = self.betas();
         if subscription {
             betas.splice(0..0, ["claude-code-20250219", "oauth-2025-04-20"]);
@@ -427,6 +425,17 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
         headers.insert("content-type".to_owned(), "application/json".to_owned());
         self.headers = headers;
         Ok(())
+    }
+
+    /// Send the session identifier as an affinity header when the model's compatibility turns it
+    /// on and caching is not off.
+    fn add_session_affinity(&self, headers: &mut IndexMap<String, String>) {
+        if self.retention != CacheRetention::None
+            && self.flag("sendSessionAffinityHeaders", false)
+            && let Some(session) = self.options.common.session_id.as_deref()
+        {
+            headers.insert("x-session-affinity".to_owned(), session.to_owned());
+        }
     }
 
     /// Apply model, account-history and caller layers in that order.
