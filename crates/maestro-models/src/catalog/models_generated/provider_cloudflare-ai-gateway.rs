@@ -561,6 +561,42 @@ compat: None,
 /// Construct a model descriptor.
 fn model_31() -> crate::Model {
 crate::Model {
+id: "workers-ai/@cf/google/gemma-4-26b-a4b-it".into(),
+name: "Gemma 4 26B A4B IT".into(),
+api: "openai-completions".into(),
+provider: "cloudflare-ai-gateway".into(),
+base_url: "https://gateway.ai.cloudflare.com/v1/{CLOUDFLARE_ACCOUNT_ID}/{CLOUDFLARE_GATEWAY_ID}/compat".into(),
+reasoning: true,
+thinking_level_map: None,
+input: vec![crate::ModelInput::Text,crate::ModelInput::Image],
+cost: crate::ModelCost { input: 0.1, output: 0.3, cache_read: 0.0, cache_write: 0.0 },
+context_window: 256_000.0,
+max_tokens: 16_384.0,
+headers: None,
+compat: Some(crate::ModelCompat([("sendSessionAffinityHeaders".into(), serde_json::Value::Bool(true))].into_iter().collect())),
+}
+}
+/// Construct a model descriptor.
+fn model_32() -> crate::Model {
+crate::Model {
+id: "workers-ai/@cf/meta/llama-4-scout-17b-16e-instruct".into(),
+name: "Llama 4 Scout 17B 16E Instruct".into(),
+api: "openai-completions".into(),
+provider: "cloudflare-ai-gateway".into(),
+base_url: "https://gateway.ai.cloudflare.com/v1/{CLOUDFLARE_ACCOUNT_ID}/{CLOUDFLARE_GATEWAY_ID}/compat".into(),
+reasoning: false,
+thinking_level_map: None,
+input: vec![crate::ModelInput::Text,crate::ModelInput::Image],
+cost: crate::ModelCost { input: 0.27, output: 0.85, cache_read: 0.0, cache_write: 0.0 },
+context_window: 128_000.0,
+max_tokens: 16_384.0,
+headers: None,
+compat: Some(crate::ModelCompat([("sendSessionAffinityHeaders".into(), serde_json::Value::Bool(true))].into_iter().collect())),
+}
+}
+/// Construct a model descriptor.
+fn model_33() -> crate::Model {
+crate::Model {
 id: "workers-ai/@cf/moonshotai/kimi-k2.5".into(),
 name: "Kimi K2.5".into(),
 api: "openai-completions".into(),
@@ -577,7 +613,7 @@ compat: Some(crate::ModelCompat([("sendSessionAffinityHeaders".into(), serde_jso
 }
 }
 /// Construct a model descriptor.
-fn model_32() -> crate::Model {
+fn model_34() -> crate::Model {
 crate::Model {
 id: "workers-ai/@cf/moonshotai/kimi-k2.6".into(),
 name: "Kimi K2.6".into(),
@@ -595,7 +631,7 @@ compat: Some(crate::ModelCompat([("sendSessionAffinityHeaders".into(), serde_jso
 }
 }
 /// Construct a model descriptor.
-fn model_33() -> crate::Model {
+fn model_35() -> crate::Model {
 crate::Model {
 id: "workers-ai/@cf/nvidia/nemotron-3-120b-a12b".into(),
 name: "Nemotron 3 Super 120B".into(),
@@ -613,7 +649,43 @@ compat: Some(crate::ModelCompat([("sendSessionAffinityHeaders".into(), serde_jso
 }
 }
 /// Construct a model descriptor.
-fn model_34() -> crate::Model {
+fn model_36() -> crate::Model {
+crate::Model {
+id: "workers-ai/@cf/openai/gpt-oss-120b".into(),
+name: "GPT OSS 120B".into(),
+api: "openai-completions".into(),
+provider: "cloudflare-ai-gateway".into(),
+base_url: "https://gateway.ai.cloudflare.com/v1/{CLOUDFLARE_ACCOUNT_ID}/{CLOUDFLARE_GATEWAY_ID}/compat".into(),
+reasoning: true,
+thinking_level_map: None,
+input: vec![crate::ModelInput::Text],
+cost: crate::ModelCost { input: 0.35, output: 0.75, cache_read: 0.0, cache_write: 0.0 },
+context_window: 128_000.0,
+max_tokens: 16_384.0,
+headers: None,
+compat: Some(crate::ModelCompat([("sendSessionAffinityHeaders".into(), serde_json::Value::Bool(true))].into_iter().collect())),
+}
+}
+/// Construct a model descriptor.
+fn model_37() -> crate::Model {
+crate::Model {
+id: "workers-ai/@cf/openai/gpt-oss-20b".into(),
+name: "GPT OSS 20B".into(),
+api: "openai-completions".into(),
+provider: "cloudflare-ai-gateway".into(),
+base_url: "https://gateway.ai.cloudflare.com/v1/{CLOUDFLARE_ACCOUNT_ID}/{CLOUDFLARE_GATEWAY_ID}/compat".into(),
+reasoning: true,
+thinking_level_map: None,
+input: vec![crate::ModelInput::Text],
+cost: crate::ModelCost { input: 0.2, output: 0.3, cache_read: 0.0, cache_write: 0.0 },
+context_window: 128_000.0,
+max_tokens: 16_384.0,
+headers: None,
+compat: Some(crate::ModelCompat([("sendSessionAffinityHeaders".into(), serde_json::Value::Bool(true))].into_iter().collect())),
+}
+}
+/// Construct a model descriptor.
+fn model_38() -> crate::Model {
 crate::Model {
 id: "workers-ai/@cf/zai-org/glm-4.7-flash".into(),
 name: "GLM-4.7-Flash".into(),
@@ -665,10 +737,14 @@ const MODELS: &[(&str, ModelConstructor)] = &[
 ("o3-mini", model_28),
 ("o3-pro", model_29),
 ("o4-mini", model_30),
-("workers-ai/@cf/moonshotai/kimi-k2.5", model_31),
-("workers-ai/@cf/moonshotai/kimi-k2.6", model_32),
-("workers-ai/@cf/nvidia/nemotron-3-120b-a12b", model_33),
-("workers-ai/@cf/zai-org/glm-4.7-flash", model_34),
+("workers-ai/@cf/google/gemma-4-26b-a4b-it", model_31),
+("workers-ai/@cf/meta/llama-4-scout-17b-16e-instruct", model_32),
+("workers-ai/@cf/moonshotai/kimi-k2.5", model_33),
+("workers-ai/@cf/moonshotai/kimi-k2.6", model_34),
+("workers-ai/@cf/nvidia/nemotron-3-120b-a12b", model_35),
+("workers-ai/@cf/openai/gpt-oss-120b", model_36),
+("workers-ai/@cf/openai/gpt-oss-20b", model_37),
+("workers-ai/@cf/zai-org/glm-4.7-flash", model_38),
 ];
 /// Assemble this provider's models in emitted order.
 pub(super) fn models() -> indexmap::IndexMap<&'static str, crate::Model> {

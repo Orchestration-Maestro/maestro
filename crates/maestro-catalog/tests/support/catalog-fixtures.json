@@ -8824,6 +8824,14 @@
           ],
           [
             "cloudflare-ai-gateway",
+            "workers-ai/@cf/google/gemma-4-26b-a4b-it"
+          ],
+          [
+            "cloudflare-ai-gateway",
+            "workers-ai/@cf/meta/llama-4-scout-17b-16e-instruct"
+          ],
+          [
+            "cloudflare-ai-gateway",
             "workers-ai/@cf/moonshotai/kimi-k2.5"
           ],
           [
@@ -8833,6 +8841,14 @@
           [
             "cloudflare-ai-gateway",
             "workers-ai/@cf/nvidia/nemotron-3-120b-a12b"
+          ],
+          [
+            "cloudflare-ai-gateway",
+            "workers-ai/@cf/openai/gpt-oss-120b"
+          ],
+          [
+            "cloudflare-ai-gateway",
+            "workers-ai/@cf/openai/gpt-oss-20b"
           ],
           [
             "cloudflare-ai-gateway",
@@ -12825,6 +12841,14 @@
           ],
           [
             "cloudflare-ai-gateway",
+            "workers-ai/@cf/google/gemma-4-26b-a4b-it"
+          ],
+          [
+            "cloudflare-ai-gateway",
+            "workers-ai/@cf/meta/llama-4-scout-17b-16e-instruct"
+          ],
+          [
+            "cloudflare-ai-gateway",
             "workers-ai/@cf/moonshotai/kimi-k2.5"
           ],
           [
@@ -12834,6 +12858,14 @@
           [
             "cloudflare-ai-gateway",
             "workers-ai/@cf/nvidia/nemotron-3-120b-a12b"
+          ],
+          [
+            "cloudflare-ai-gateway",
+            "workers-ai/@cf/openai/gpt-oss-120b"
+          ],
+          [
+            "cloudflare-ai-gateway",
+            "workers-ai/@cf/openai/gpt-oss-20b"
           ],
           [
             "cloudflare-ai-gateway",
@@ -16784,6 +16816,14 @@
           ],
           [
             "cloudflare-ai-gateway",
+            "workers-ai/@cf/google/gemma-4-26b-a4b-it"
+          ],
+          [
+            "cloudflare-ai-gateway",
+            "workers-ai/@cf/meta/llama-4-scout-17b-16e-instruct"
+          ],
+          [
+            "cloudflare-ai-gateway",
             "workers-ai/@cf/moonshotai/kimi-k2.5"
           ],
           [
@@ -16793,6 +16833,14 @@
           [
             "cloudflare-ai-gateway",
             "workers-ai/@cf/nvidia/nemotron-3-120b-a12b"
+          ],
+          [
+            "cloudflare-ai-gateway",
+            "workers-ai/@cf/openai/gpt-oss-120b"
+          ],
+          [
+            "cloudflare-ai-gateway",
+            "workers-ai/@cf/openai/gpt-oss-20b"
           ],
           [
             "cloudflare-ai-gateway",
