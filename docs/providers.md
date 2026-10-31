@@ -314,6 +314,10 @@ For a new protocol or OAuth flow, use an extension's provider registration:
 [guest provider interfaces](extensions/guest.md) and [OAuth contracts](models/oauth.md).
 These routes do not change the built-in credential precedence above.
 
+A chat-completions model that sets `vercelGatewayRouting` in its compatibility (`only`, `order`)
+sends that routing to the Vercel AI Gateway whatever its base URL, so a gateway reached through
+your own endpoint keeps the routing you configured.
+
 ## Troubleshoot without exposing a key
 
 - No models listed: check the exact provider ID, empty variables and the selected
