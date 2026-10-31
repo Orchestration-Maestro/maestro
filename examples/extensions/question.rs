@@ -1,4 +1,5 @@
 //! An opt-in single-question tool with an inline custom answer.
+// maestro-component: MAESTRO_QUESTION_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

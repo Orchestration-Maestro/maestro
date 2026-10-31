@@ -13,7 +13,7 @@ use maestro_test_directory::Scratch;
 /// # Errors
 /// Returns an error if building, compiling, mounting or starting the component fails.
 fn start(root: &Scratch) -> Result<Harness, String> {
-    let path = super::build::component("file_trigger", "MAESTRO_FILE_TRIGGER_COMPONENT")?;
+    let path = super::build::example_component("file_trigger")?;
     let (engine, component) = super::build::compile(&path).map_err(|e| e.to_string())?;
     let mut wasi = wasmtime_wasi::WasiCtxBuilder::new();
     wasi.preopened_dir(root.path(), "/tmp", wasmtime_wasi::FsPerms::ReadWrite)

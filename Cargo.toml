@@ -76,5 +76,9 @@ opt-level = 3
 [profile.dev.package.regress]
 opt-level = 3
 
+# The test setup hashes the lock files on every nextest run; an unoptimised digest makes the reused-directory path about three times slower.
+[profile.dev.package.sha2]
+opt-level = 3
+
 [profile.test]
 debug = "line-tables-only"

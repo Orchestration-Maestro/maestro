@@ -1,4 +1,5 @@
 //! A model-status extension that reports the model each selection chose.
+// maestro-component: MAESTRO_MODEL_STATUS_COMPONENT
 #![cfg(any(test, target_arch = "wasm32"))]
 #![forbid(
     clippy::pedantic,

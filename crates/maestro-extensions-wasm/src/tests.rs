@@ -39,6 +39,8 @@ mod authored_streams;
 mod background;
 mod basic_ui;
 mod build;
+mod build_cargo;
+mod build_warm;
 mod bus_callbacks;
 pub(crate) mod bus_host;
 pub(crate) mod catalog_host;

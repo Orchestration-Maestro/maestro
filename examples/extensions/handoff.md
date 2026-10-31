@@ -25,6 +25,7 @@ credentials and terminal, with no network calls or extension installation.
 ## Controlled runs
 
 ```sh
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- just prepare-tests
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasmtime --test integration -- handoff_
 ```
