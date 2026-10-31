@@ -132,6 +132,12 @@ fn maestro_responses_events_insert_final_only_tool() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
+fn maestro_responses_events_open_unmatched_final_items() -> TestResult {
+    event_rows("maestro_responses_events_open_unmatched_final_items", 2)
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
 fn maestro_responses_events_map_completion_status() -> TestResult {
     event_rows("maestro_responses_events_map_completion_status", 10)?;
     for (status, error) in [

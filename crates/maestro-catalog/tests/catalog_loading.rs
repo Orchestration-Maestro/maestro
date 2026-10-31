@@ -200,18 +200,18 @@ fn native_replacement_decodes_utf8() {
     assert_eq!(registry.get_error(), None);
 }
 
-/// Count the object schemas that declare the response-protocol compatibility flags and the
-/// ones among them that also declare the developer-role flag as a boolean.
-fn response_compat_schemas(schema: &serde_json::Value, counts: &mut (usize, usize)) {
+/// Count the object schemas that declare the compatibility flag `anchor` and the ones among
+/// them that also declare each flag of `flags` as a boolean.
+fn compat_schemas(schema: &serde_json::Value, anchor: &str, flags: &[&str], counts: &mut [usize]) {
     let children: Vec<&serde_json::Value> = match schema {
         serde_json::Value::Object(members) => {
             let declared = members
                 .get("properties")
-                .filter(|properties| properties.get("sendSessionIdHeader").is_some());
+                .filter(|properties| properties.get(anchor).is_some());
             if let Some(properties) = declared {
-                counts.0 += 1;
-                if properties["supportsDeveloperRole"]["type"] == "boolean" {
-                    counts.1 += 1;
+                counts[0] += 1;
+                for (count, flag) in counts[1..].iter_mut().zip(flags) {
+                    *count += usize::from(properties[*flag]["type"] == "boolean");
                 }
             }
             members.values().collect()
@@ -220,7 +220,7 @@ fn response_compat_schemas(schema: &serde_json::Value, counts: &mut (usize, usiz
         _ => Vec::new(),
     };
     for child in children {
-        response_compat_schemas(child, counts);
+        compat_schemas(child, anchor, flags, counts);
     }
 }
 
@@ -228,11 +228,38 @@ fn response_compat_schemas(schema: &serde_json::Value, counts: &mut (usize, usiz
 fn response_compat_schema_accepts_the_developer_role_flag() {
     let schema: serde_json::Value =
         serde_json::from_str(include_str!("../assets/models.schema.json")).unwrap();
-    let mut counts = (0, 0);
-    response_compat_schemas(&schema, &mut counts);
+    let mut counts = [0; 2];
+    compat_schemas(
+        &schema,
+        "sendSessionIdHeader",
+        &["supportsDeveloperRole"],
+        &mut counts,
+    );
     assert_eq!(
         counts,
-        (3, 3),
+        [3, 3],
+        "provider, custom model and override schemas"
+    );
+}
+
+#[test]
+fn messages_compat_schema_accepts_the_affinity_cache_and_signature_flags() {
+    let schema: serde_json::Value =
+        serde_json::from_str(include_str!("../assets/models.schema.json")).unwrap();
+    let mut counts = [0; 4];
+    compat_schemas(
+        &schema,
+        "supportsEagerToolInputStreaming",
+        &[
+            "sendSessionAffinityHeaders",
+            "supportsCacheControlOnTools",
+            "allowEmptySignature",
+        ],
+        &mut counts,
+    );
+    assert_eq!(
+        counts,
+        [3, 3, 3, 3],
         "provider, custom model and override schemas"
     );
 }
