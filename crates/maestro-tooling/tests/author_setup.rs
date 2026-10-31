@@ -583,10 +583,12 @@ fn prepare_as_child(test: &str, root: &Path, base: &Path) -> Output {
         .unwrap()
 }
 
-/// The child half of the base tests: prepare the fixture checkout named by the environment.
+/// The child half of the base tests: prepare the fixture checkout named by the environment into
+/// the output directory it names, `target/next-setup` unless it names none.
 fn child_prepare() {
     let root = PathBuf::from(std::env::var_os("MAESTRO_FIXTURE_ROOT").unwrap());
-    let arguments = ["prepare-test-setup", "prepare", "target/next-setup"].map(Into::into);
+    let output = std::env::var_os("MAESTRO_FIXTURE_OUTPUT").unwrap_or("target/next-setup".into());
+    let arguments = ["prepare-test-setup".into(), "prepare".into(), output];
     let target = root.join("target/next-prepare").into();
     maestro_tooling::run(
         &[&arguments[..], &[target]].concat(),
@@ -696,6 +698,35 @@ fn prepare_drops_compiled_code_of_another_engine() {
         serde_json::from_slice(&fs::read(root.join("target/next-setup/components.json")).unwrap())
             .unwrap();
     assert_eq!(manifest["compiled"]["namespace"], "wasmtime-newer");
+}
+
+/// A base that is the directory being prepared still supplies its components: nothing is built
+/// and the staged components keep their bytes.
+#[test]
+fn prepare_reuses_a_base_in_its_own_output_directory() {
+    if selection().is_child() {
+        return child_prepare();
+    }
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    marked_fixture(root);
+    prepare(root);
+    let bundle = root.join("target/test-setup");
+    let _ = fs::remove_file(root.join("built"));
+    assert_success(
+        &TestProcess::current("prepare_reuses_a_base_in_its_own_output_directory")
+            .unwrap()
+            .case("base")
+            .nocapture()
+            .env("MAESTRO_FIXTURE_ROOT", root)
+            .env("MAESTRO_FIXTURE_OUTPUT", "target/test-setup")
+            .env("TEST_PREPARE_BASE", &bundle)
+            .output()
+            .unwrap(),
+    );
+    assert!(!root.join("built").exists());
+    let staged = fs::read(bundle.join("MAESTRO_ALPHA_COMPONENT.wasm")).unwrap();
+    assert_eq!(staged, b"component bytes");
 }
 
 /// The fixture setup example: it records the author component it was given and writes
