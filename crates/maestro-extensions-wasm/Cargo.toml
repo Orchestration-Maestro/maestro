@@ -6,7 +6,8 @@ license.workspace = true
 repository.workspace = true
 description = "Author-side contract for native-async extension components."
 
-# Keep these targets in name order, so a new example inserts at its own place.
+# `just example-index` renders these targets from the example sources.
+# example-index:start
 [[example]]
 name = "author_component"
 crate-type = ["cdylib"]
@@ -24,6 +25,11 @@ crate-type = ["cdylib"]
 [[example]]
 name = "bookmark"
 path = "../../examples/extensions/bookmark.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "border_status_editor"
+path = "../../examples/extensions/border_status_editor.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -114,6 +120,11 @@ name = "hook_component"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "inline_bash"
+path = "../../examples/extensions/inline_bash.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "input_transform"
 path = "../../examples/extensions/input_transform.rs"
 crate-type = ["cdylib"]
@@ -143,6 +154,11 @@ path = "../../examples/extensions/minimal_mode.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "modal_editor"
+path = "../../examples/extensions/modal_editor.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "model_status"
 path = "../../examples/extensions/model_status.rs"
 crate-type = ["cdylib"]
@@ -158,6 +174,11 @@ crate-type = ["cdylib"]
 [[example]]
 name = "notify"
 path = "../../examples/extensions/notify.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "overlay_qa_tests"
+path = "../../examples/extensions/overlay_qa_tests.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -181,6 +202,11 @@ path = "../../examples/extensions/preset.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "project_rules"
+path = "../../examples/extensions/project_rules.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "prompt_customizer"
 path = "../../examples/extensions/prompt_customizer.rs"
 crate-type = ["cdylib"]
@@ -188,6 +214,11 @@ crate-type = ["cdylib"]
 [[example]]
 name = "protected_paths"
 path = "../../examples/extensions/protected_paths.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "provider_payload"
+path = "../../examples/extensions/provider_payload.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -206,6 +237,11 @@ path = "../../examples/extensions/questionnaire.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "rainbow_editor"
+path = "../../examples/extensions/rainbow_editor.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "reload_runtime"
 path = "../../examples/extensions/reload_runtime.rs"
 crate-type = ["cdylib"]
@@ -216,6 +252,11 @@ crate-type = ["cdylib"]
 
 [[example]]
 name = "resource_component_reloaded"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "rpc_demo"
+path = "../../examples/extensions/rpc_demo.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -246,6 +287,11 @@ crate-type = ["cdylib"]
 [[example]]
 name = "status_line"
 path = "../../examples/extensions/status_line.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "structured_output"
+path = "../../examples/extensions/structured_output.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -313,9 +359,15 @@ path = "../../examples/extensions/with-deps/main.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "working_indicator"
+path = "../../examples/extensions/working_indicator.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "working_message_test"
 path = "../../examples/extensions/working_message_test.rs"
 crate-type = ["cdylib"]
+# example-index:end
 
 [dependencies]
 maestro-tool = { path = "../maestro-tool" }
@@ -328,12 +380,14 @@ serde.workspace = true
 serde_json = { workspace = true, features = ["raw_value", "unbounded_depth"] }
 
 [dev-dependencies]
+maestro-listing = { path = "../maestro-listing" }
 chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
 num-traits.workspace = true
 regex.workspace = true
 ryu-js.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-test-directory.workspace = true
 maestro-models = { path = "../maestro-models" }
 wasmtime = { git = "https://github.com/bytecodealliance/wasmtime", rev = "ffff2e2db24a291f02429f123aba1631fa8eea67", default-features = false, features = ["std", "runtime", "cranelift", "component-model-async", "cache"] }
 wasmtime-wasi = { git = "https://github.com/bytecodealliance/wasmtime", rev = "ffff2e2db24a291f02429f123aba1631fa8eea67", default-features = false, features = ["p2", "p3"] }

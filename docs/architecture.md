@@ -153,7 +153,9 @@ The listing leaf `maestro-listing` is declared core below layer 0 with no worksp
 dependencies, including `maestro-path`. It owns directory listing: one directory's
 entries, sorted by file name on every platform. Only resources, theme, the toolkit,
 tools and session may depend on it, on native targets; they keep kind filtering,
-name decoding and any further ordering.
+name decoding and any further ordering. Guest-authoring examples may use it through
+a portable development dependency from `maestro-extensions-wasm`, never a normal
+or build dependency.
 Synchronous capture follows the timeout handling in the
 [contract](specs/maestro-port.md#crates-and-delivery-order). The checker verifies
 dependency ownership, not target predicates.
@@ -283,6 +285,9 @@ closures and impl bodies.
 Clippy rejects the ambiguous `serde_json::Map::remove` in every target `just check`
 compiles. `shift_remove` keeps the remaining key order; `swap_remove` is only for
 maps whose remaining order is never observed. Ordinary maps are unaffected.
+
+Conventions reject a shell script directly under `.config/`: nextest's setup entries call
+the development tool in `maestro-tooling`, which has the type checker, the linter and tests.
 
 Tests wait on completion signals; shared CI bounds the whole job. Conventions
 report recognized test-owned timer calls with file and line: Tokio

@@ -42,12 +42,15 @@ async fn counted(size: usize, rescan: bool) -> ExtensionResult<Value> {
     }))
 }
 
-/// Exercise one-pass forwarding and a deliberate quadratic negative control.
+/// Exercise one-pass forwarding, and a deliberate quadratic negative control that is small
+/// because each of its pushes, classifications and deliveries crosses the component boundary.
 pub async fn admission() -> ExtensionResult<Value> {
     let mut single_pass = Vec::new();
-    let mut rescanned = Vec::new();
     for size in [64, 128, 256] {
         single_pass.push(counted(size, false).await?);
+    }
+    let mut rescanned = Vec::new();
+    for size in [16, 32, 64] {
         rescanned.push(counted(size, true).await?);
     }
     Ok(json!({"singlePass": single_pass, "rescanned": rescanned}))

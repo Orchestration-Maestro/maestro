@@ -759,3 +759,12 @@ pending.await;
 let errors = settings.borrow_mut().drain_errors();
 # }
 ```
+
+## Workspace keybinding reset
+
+Workspace shortcut overrides live in `keybindings.json`, not `settings.json`.
+The application keybinding owner provides a timestamped backup and atomic reset
+of only `multiplexer.*` actions. See [keybinding reset](keybindings.md#reset-multiplexer-overrides)
+for backup naming, preserved entries and failure handling. Saved settings and
+keybinding files remain strict JSON; annotated defaults are documentation, not a
+replacement file format.

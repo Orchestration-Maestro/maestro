@@ -35,7 +35,9 @@ impl Browser {
     /// Prepare isolated inputs without locking the shared Trunk build output.
     /// Every build command must supply its own Cargo target directory.
     pub fn cold() -> Self {
-        Self::prepare(None)
+        let browser = Self::prepare(None);
+        browser.workspace.use_plain_dev_profile();
+        browser
     }
 
     /// Copy authored inputs while retaining any shared-output lock.
@@ -103,10 +105,18 @@ impl Browser {
         browser
     }
 
+    /// Resolve the fixture manifest's crates from the run's prepared sources, in a private Cargo
+    /// home. Builds that share the test build's target, and resolution of the whole workspace,
+    /// keep the shared home, so their compiled dependencies stay fresh.
+    pub fn cargo(&self) -> Command {
+        self.workspace.use_prepared_sources();
+        self.workspace.toolchain_command(env!("CARGO"))
+    }
+
     pub fn generate_lockfile(&self) {
         record("phase: cargo generate-lockfile");
         let status = super::recipe_support::setup_status(
-            super::toolchain_support::command("cargo")
+            self.cargo()
                 .args(["generate-lockfile", "--offline", "--manifest-path"])
                 .arg(self.fixture("Cargo.toml")),
         );
@@ -139,14 +149,7 @@ impl Browser {
         command
             .current_dir(self.workspace.path())
             .env("CARGO_BUILD_JOBS", "3")
-            .env(
-                "CARGO_TARGET_DIR",
-                Path::new(env!("CARGO_BIN_EXE_development"))
-                    .parent()
-                    .unwrap()
-                    .parent()
-                    .unwrap(),
-            )
+            .env("CARGO_TARGET_DIR", target_directory())
             .env("TRUNK_SKIP_VERSION_CHECK", "true")
             // Trunk's completion emoji depends on LANG, even with piped output.
             .env("LANG", "C.UTF-8");
@@ -163,6 +166,22 @@ impl Browser {
     pub fn fixture(&self, path: &str) -> PathBuf {
         self.path(FIXTURE).join(path)
     }
+}
+
+/// The target directory every browser build shares: the run's prepared one when nextest supplies
+/// it, otherwise the one the test build wrote.
+pub fn target_directory() -> PathBuf {
+    std::env::var_os("MAESTRO_BROWSER_TARGET_DIR").map_or_else(
+        || {
+            Path::new(env!("CARGO_BIN_EXE_development"))
+                .parent()
+                .unwrap()
+                .parent()
+                .unwrap()
+                .to_path_buf()
+        },
+        PathBuf::from,
+    )
 }
 
 pub fn success(output: &Output) {

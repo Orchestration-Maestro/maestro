@@ -3782,6 +3782,7 @@ dependencies = [
  "maestro-json",
  "maestro-listeners",
  "maestro-listing",
+ "maestro-lock",
  "maestro-markdown",
  "maestro-models",
  "maestro-packages",
@@ -4126,8 +4127,10 @@ dependencies = [
  "maestro-dependencies",
  "maestro-entry",
  "maestro-json",
+ "maestro-listing",
  "maestro-models",
  "maestro-request",
+ "maestro-test-directory",
  "maestro-tool",
  "num-traits",
  "regex",
@@ -4598,6 +4601,7 @@ dependencies = [
  "maestro-test-process",
  "serde",
  "serde_json",
+ "sha2 0.11.0",
  "toml",
 ]
 

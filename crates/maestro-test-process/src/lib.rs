@@ -8,9 +8,11 @@
 //! callers keep their exit, signal and product assertions. [`TestProcess::invoke_with`]
 //! checks eligibility only; its caller proves startup through its own transport. A test that closes a pipe end
 //! while a child is live runs alone through [`run_alone`]. Cases that read process variables
-//! share one cleared child per distinct environment through [`run_per_environment`].
+//! share one cleared child per distinct environment through [`run_per_environment`]. A child
+//! that replaces `HOME` keeps this process's Linux user cache through [`user_cache_home`].
 
 mod alone;
+mod cache;
 #[cfg(windows)]
 mod console;
 mod environment;
@@ -20,6 +22,7 @@ mod selection;
 mod test_process;
 
 pub use alone::run_alone;
+pub use cache::user_cache_home;
 #[cfg(windows)]
 pub use console::on_console;
 pub use environment::{CaseSelection, local_zone_follows_tz, run_per_environment, selection};

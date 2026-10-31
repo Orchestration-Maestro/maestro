@@ -772,7 +772,7 @@ fn canonical_header_factories_replace_dispose_and_restore() {
 
 /// Footer metadata whose branch listeners the test runs.
 #[derive(Default)]
-struct Metadata {
+pub(super) struct Metadata {
     /// Current branch.
     branch: RefCell<Option<String>>,
     /// Live extension statuses.

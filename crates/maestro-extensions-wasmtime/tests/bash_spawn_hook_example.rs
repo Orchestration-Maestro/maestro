@@ -58,6 +58,7 @@ fn bash_spawn_hook_sources_profile_and_preserves_native_execution() {
         .env_clear()
         .env("PATH", "/usr/bin:/bin")
         .env("HOME", scratch.path())
+        .envs(maestro_test_process::user_cache_home().map(|path| ("XDG_CACHE_HOME", path)))
         .env("MAESTRO_BASH_HOOK_CHILD", "1")
         .env("MAESTRO_BASH_SPAWN_HOOK_COMPONENT", component)
         .env("MAESTRO_SPAWN_HOOK", "old-value")
