@@ -430,27 +430,16 @@ mod tests {
         })
     }
 
-    /// Callback that expects `"a"`, waits for `wait_for`, raises `raise` and replaces the text.
-    fn handshake<'a>(
-        wait_for: &'a AtomicBool,
-        raise: &'a AtomicBool,
-        next: &'static str,
-    ) -> AsyncLockUpdate<'a> {
-        Box::new(move |current| Box::pin(handshake_body(current, (wait_for, raise), next)))
-    }
-
-    /// Body of [`handshake`]; a waiter that never sees its flag is a test failure by hang.
-    async fn handshake_body(
-        current: Option<String>,
-        flags: (&AtomicBool, &AtomicBool),
-        next: &str,
-    ) -> LockUpdate {
-        assert_eq!(current.as_deref(), Some("a"));
-        flags.1.store(true, Ordering::SeqCst);
-        while !flags.0.load(Ordering::SeqCst) {
-            tokio::task::yield_now().await;
-        }
-        Ok(Some(next.to_owned()))
+    /// Callback that appends `marker` to the text it saw after yielding twice, so a second
+    /// callback started meanwhile would read the same text if nothing serialized them.
+    fn appending<'a>(marker: &'static str) -> AsyncLockUpdate<'a> {
+        Box::new(move |current| {
+            Box::pin(async move {
+                tokio::task::yield_now().await;
+                tokio::task::yield_now().await;
+                Ok(Some(format!("{}{marker}", current.unwrap_or_default())))
+            })
+        })
     }
 
     /// Callback that counts its runs.
@@ -513,7 +502,7 @@ mod tests {
     }
 
     #[test]
-    fn async_memory_callbacks_are_unlocked_and_last_write_wins() {
+    fn async_memory_callbacks_report_input_and_outcome() {
         block_on(async {
             let outcomes = [Ok(None), Ok(Some("b")), Ok(Some("")), Err("refused")];
             for (initial, outcome) in [None, Some(""), Some("a")]
@@ -522,23 +511,50 @@ mod tests {
             {
                 memory_input_and_outcome(initial, outcome).await;
             }
+        });
+    }
 
+    #[test]
+    fn async_memory_callbacks_run_one_at_a_time() {
+        block_on(async {
             let backend = InMemoryAuthStorageBackend::default();
-            backend
-                .with_lock_async(replacing(
-                    &std::sync::Mutex::new(Vec::new()),
-                    Ok(Some("a".into())),
-                ))
-                .await
-                .unwrap();
-            let (first_waits, second_done) = (AtomicBool::new(false), AtomicBool::new(false));
-            let first = backend.with_lock_async(handshake(&second_done, &first_waits, "first"));
-            let second = backend.with_lock_async(handshake(&first_waits, &second_done, "second"));
-            let (first, second) = tokio::join!(first, second);
+            let (first, second) = tokio::join!(
+                backend.with_lock_async(appending("first;")),
+                backend.with_lock_async(appending("second;"))
+            );
             first.unwrap();
             second.unwrap();
-            assert_eq!(memory_text(&backend), Some("first".into()));
+            assert_eq!(memory_text(&backend), Some("first;second;".into()));
         });
+    }
+
+    /// Append one character to the stored text `changes` times.
+    fn append_changes(backend: &InMemoryAuthStorageBackend, changes: usize) {
+        for _ in 0..changes {
+            backend
+                .with_lock(&mut |current| Ok(Some(format!("{}x", current.unwrap_or_default()))))
+                .unwrap();
+        }
+    }
+
+    #[test]
+    fn sync_memory_callbacks_keep_every_concurrent_change() {
+        const THREADS: usize = 8;
+        const CHANGES: usize = 200;
+        let backend = Arc::new(InMemoryAuthStorageBackend::default());
+        let workers: Vec<_> = (0..THREADS)
+            .map(|_| {
+                let backend = Arc::clone(&backend);
+                std::thread::spawn(move || append_changes(&backend, CHANGES))
+            })
+            .collect();
+        for worker in workers {
+            worker.join().unwrap();
+        }
+        assert_eq!(
+            memory_text(&backend).map(|text| text.len()),
+            Some(THREADS * CHANGES)
+        );
     }
 
     #[test]
