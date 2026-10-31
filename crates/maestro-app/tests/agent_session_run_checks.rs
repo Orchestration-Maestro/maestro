@@ -42,6 +42,7 @@ fn prompt_resolves_after_retry_and_compaction_while_streaming_throughout() {
             50,
         )
         .await;
+        assert!(h.session.is_idle());
         start_prompt(&h, "one").await.unwrap().unwrap();
         let seen: Rc<RefCell<Vec<(String, bool)>>> = Rc::default();
         let record = Rc::clone(&seen);
@@ -53,6 +54,7 @@ fn prompt_resolves_after_retry_and_compaction_while_streaming_throughout() {
                 AgentSessionEvent::CompactionEnd { .. } => "compaction_end",
                 _ => return,
             };
+            assert_eq!(session.is_idle(), !session.is_streaming());
             record
                 .borrow_mut()
                 .push((kind.into(), session.is_streaming()));
@@ -64,6 +66,7 @@ fn prompt_resolves_after_retry_and_compaction_while_streaming_throughout() {
             h.session.is_streaming(),
             "the retry wait belongs to the run"
         );
+        assert!(!h.session.is_idle());
         running.await.unwrap().unwrap();
         let seen = seen.borrow();
         let kinds: Vec<&str> = seen.iter().map(|(kind, _)| kind.as_str()).collect();
@@ -73,6 +76,7 @@ fn prompt_resolves_after_retry_and_compaction_while_streaming_throughout() {
             "the run flag held from the retry through the compaction: {seen:?}"
         );
         assert!(!h.session.is_streaming());
+        assert!(h.session.is_idle());
     });
 }
 
