@@ -74,21 +74,8 @@ pub fn build_system_prompt(options: &BuildSystemPromptOptions) -> io::Result<Str
 /// call for, the trimmed caller guidelines, then the two standing ones.
 fn guidelines(options: &BuildSystemPromptOptions, tools: &[&str]) -> String {
     let has = |name: &str| tools.contains(&name);
-    let searches: Vec<&str> = ["grep", "find", "ls"]
-        .into_iter()
-        .filter(|name| has(name))
-        .collect();
-    let exploration = match (has("bash"), searches.as_slice()) {
-        (true, []) => {
-            Some("Use bash for file operations like listing and searching files".to_owned())
-        }
-        (true, names) => Some(format!(
-            "Prefer the {} {} over bash for file exploration (faster, respects .gitignore)",
-            names.join("/"),
-            if names.len() == 1 { "tool" } else { "tools" },
-        )),
-        (false, _) => None,
-    };
+    let exploration = (has("bash") && !["grep", "find", "ls"].into_iter().any(has))
+        .then_some("Use bash for file operations like ls, rg, find");
     let extra = options
         .prompt_guidelines
         .present()
@@ -99,7 +86,7 @@ fn guidelines(options: &BuildSystemPromptOptions, tools: &[&str]) -> String {
     let mut seen = HashSet::new();
     exploration
         .iter()
-        .map(String::as_str)
+        .copied()
         .chain(extra)
         .chain([
             "Be concise in your responses",
