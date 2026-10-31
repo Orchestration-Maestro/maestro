@@ -189,7 +189,7 @@ fn command_for_method(
         if method != InstallMethod::Yarn {
             removal.push("-g".into());
         }
-        removal.extend([IGNORE_SCRIPTS.into(), name.into()]);
+        removal.push(name.into());
         Some(step(command.clone(), removal))
     };
     args.push(verb.into());
