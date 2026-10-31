@@ -310,6 +310,18 @@ fn failed_extraction_keeps_a_consistent_owner() {
     assert_ne!(manager.get_session_file().unwrap(), path);
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn branch_publication_refuses_a_competing_file() {
+    let scratch = Scratch::new().unwrap();
+    let path = scratch.path().join("branch.jsonl");
+    let competing = b"{\"type\":\"session\",\"id\":\"competing\",\"version\":3}\n";
+    std::fs::write(&path, competing).unwrap();
+    let error = super::persistence::rewrite(path.to_str().unwrap(), &[]).unwrap_err();
+    assert_eq!(error.kind(), std::io::ErrorKind::AlreadyExists);
+    assert_eq!(std::fs::read(&path).unwrap(), competing);
+}
+
 /// A readable source below a scratch root, forked into chosen directories.
 #[cfg(not(target_arch = "wasm32"))]
 struct ForkRig {
@@ -355,10 +367,15 @@ impl ForkRig {
         super::SessionManager::fork_with(&self.source, "/t", Some(dir), "", write)
     }
 
-    /// The single file created in a destination directory.
+    /// The single session file created beside its persistent lock sidecar.
     fn only_file(dir: &str) -> String {
-        let entry = std::fs::read_dir(dir).unwrap().next().unwrap().unwrap();
-        std::fs::read_to_string(entry.path()).unwrap()
+        let files: Vec<_> = std::fs::read_dir(dir)
+            .unwrap()
+            .map(Result::unwrap)
+            .filter(|entry| entry.file_name().to_string_lossy().ends_with(".jsonl"))
+            .collect();
+        assert_eq!(files.len(), 1);
+        std::fs::read_to_string(files[0].path()).unwrap()
     }
 }
 

@@ -290,23 +290,13 @@ async fn signal_identity_case() {
         signal.unwrap().abort();
         Box::pin(async { Ok(None) })
     }));
-    config.after_tool_call = Some(Arc::new(|c, signal| {
-        assert!(signal.unwrap().is_aborted());
-        assert!(
-            !c.context
-                .messages
-                .read()
-                .unwrap()
-                .iter()
-                .any(|m| matches!(m, maestro_agent::AgentMessage::ToolResult(_)))
-        );
-        Box::pin(async { Ok(None) })
+    config.after_tool_call = Some(Arc::new(|_, _| {
+        panic!("an aborted call reaches no after hook");
     }));
-    let context = with_execute(Arc::new(|_, _, signal, _| {
-        assert!(signal.unwrap().is_aborted());
-        ready(Ok(result()))
+    let context = with_execute(Arc::new(|_, _, _, _| {
+        panic!("an aborted call is not executed");
     }));
-    let mut options = responses(vec![requesting]);
+    let mut options = responses(vec![requesting, assistant("done")]);
     options.signal = Some(invocation.clone());
     let returned = run_agent_loop(
         vec![],
@@ -317,7 +307,7 @@ async fn signal_identity_case() {
     )
     .await
     .unwrap();
-    assert_eq!(returned.len(), 2);
+    assert_eq!(returned.len(), 3);
     assert!(invocation.is_aborted());
     assert!(!configured.is_aborted());
 }

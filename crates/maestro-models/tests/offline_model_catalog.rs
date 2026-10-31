@@ -93,7 +93,7 @@ fn maestro_catalog_retains_every_descriptor() {
             counts[3] += usize::from(model.headers.is_some());
         }
     }
-    assert_eq!(counts, [970, 157, 71, 28]);
+    assert_eq!(counts, [974, 158, 94, 28]);
     assert_eq!(
         protocols,
         [

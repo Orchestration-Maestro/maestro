@@ -25,7 +25,15 @@ Dedicated routes preserve their own outcomes:
 - Input hooks chain transforms and stop on `Handled`. Missing or null replacement
   images retain the current images; an explicit list, even empty or equal, marks
   image replacement. `Continue` preserves mutable image edits without declaring a
-  transform. Text changed and restored can finish as `Continue`.
+  transform. Text changed and restored can finish as `Continue`. The event carries
+  `streaming_behavior` (`steer` or `followUp`) only when the input arrives while a
+  response streams and the caller chose a delivery; idle input carries none.
+
+An extension's `abort` goes to the abort handler the host bound with the session's
+extensions. The interactive mode binds one that does what the interrupt key does: it moves
+every queued message back into the editor exactly as typed, then stops the running turn,
+whether or not a tool confirmation is open. Without a bound handler, the session aborts its
+own run.
 
 Tool-call hooks retain the last nonblocking result and stop on an explicit block.
 Their errors propagate unchanged, without error-listener delivery. Edited arguments

@@ -26,7 +26,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// otherwise the input handlers, then skill and template expansion, then streaming
     /// admission, the deferred shell results, the credential check and the pre-prompt
     /// compaction run before the user message, the next-turn messages and the extension
-    /// messages are sent. Returns after the agent and any retry settle.
+    /// messages are sent. Returns after the run settles: the agent, any retry, compaction
+    /// and queued continuation.
     ///
     /// `options.preflight_result` hears once whether the prompt was accepted, before the
     /// agent is prompted. The prompt starts when this is called and belongs to the session:
@@ -70,9 +71,83 @@ impl<E: ExtensionExecution> AgentSession<E> {
         let Some(messages) = messages else {
             return Ok(());
         };
-        self.agent.prompt(PromptInput::Messages(messages)).await?;
-        self.wait_for_retry().await;
+        self.run_agent(PromptInput::Messages(messages)).await
+    }
+
+    /// The one run: marks it active, prompts the agent, then retries, compacts and delivers
+    /// queued messages until nothing is left, and settles last. Every start of the agent
+    /// goes through it, so the run flag and the idle waiters cover all of its work.
+    pub(super) async fn run_agent(
+        self: &Rc<Self>,
+        input: PromptInput<CustomAgentMessages>,
+    ) -> Result<(), DiagnosticErrorInfo> {
+        if !self.begin_run() {
+            // The agent refuses a second start while the first run is active.
+            return self.agent.prompt(input).await.map(drop);
+        }
+        let outcome = self.drive_run(input).await;
+        outcome.and(self.settle_run())
+    }
+
+    /// Marks a run active; false when one already is.
+    fn begin_run(&self) -> bool {
+        let mut state = self.state.borrow_mut();
+        if state.run_gate.is_some() {
+            return false;
+        }
+        let (open, closed) = tokio::sync::oneshot::channel();
+        state.run_gate = Some(futures_util::future::FutureExt::shared(closed));
+        state.run_open = Some(open);
+        true
+    }
+
+    /// Prompts the agent, then continues it for as long as the finished response asks.
+    async fn drive_run(
+        self: &Rc<Self>,
+        input: PromptInput<CustomAgentMessages>,
+    ) -> Result<(), DiagnosticErrorInfo> {
+        self.agent.prompt(input).await?;
+        while self.finish_response_run().await? {
+            self.agent.r#continue().await?;
+        }
         Ok(())
+    }
+
+    /// Ends the run: appends the shell results kept while it ran, marks it inactive and
+    /// releases every idle waiter.
+    fn settle_run(&self) -> Result<(), DiagnosticErrorInfo> {
+        let flushed = self
+            .flush_pending_bash_messages()
+            .and(self.flush_pending_custom_messages(None));
+        let (gate, open) = {
+            let mut state = self.state.borrow_mut();
+            state.system_prompt_override = None;
+            (state.run_gate.take(), state.run_open.take())
+        };
+        drop(gate);
+        drop(open);
+        flushed
+    }
+
+    /// Once the agent's events are processed, retries a recoverable failure or checks
+    /// compaction for the newest response; reports whether the agent continues. Messages
+    /// still queued continue the run, whatever the response's stop reason.
+    async fn finish_response_run(self: &Rc<Self>) -> Result<bool, DiagnosticErrorInfo> {
+        if let Some(queue) = self.agent_event_queue() {
+            drop(queue.await);
+        }
+        let last = self.state.borrow_mut().last_assistant_message.take();
+        let Some(last) = last else {
+            return Ok(false);
+        };
+        let message = read(&last).clone();
+        if self.is_retryable_error(&message) && self.handle_retryable_error(&message).await {
+            return Ok(true);
+        }
+        if self.check_compaction(&message, true).await? {
+            return Ok(true);
+        }
+        Ok(self.agent.has_queued_messages())
     }
 
     /// Runs every step before the agent is prompted; absent when the prompt ends without
@@ -87,7 +162,14 @@ impl<E: ExtensionExecution> AgentSession<E> {
             return Ok(None);
         }
         let source = options.source.unwrap_or(InputSource::Interactive);
-        let Some((mut text, images)) = self.emit_input(text, options.images, source).await? else {
+        let behavior = options
+            .streaming_behavior
+            .clone()
+            .filter(|_| self.is_streaming());
+        let Some((mut text, images)) = self
+            .emit_input(text, options.images, source, behavior)
+            .await?
+        else {
             return Ok(None);
         };
         if expand {
@@ -123,6 +205,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
         text: &str,
         images: Option<Vec<ImageContent>>,
         source: InputSource,
+        behavior: Option<UserMessageDelivery>,
     ) -> Result<Option<(String, Option<Vec<ImageContent>>)>, DiagnosticErrorInfo> {
         if !self.extension_runner().has_handlers("input") {
             return Ok(Some((text.to_owned(), images)));
@@ -130,7 +213,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
         let mut current = images.map_or(Presence::Missing, Presence::Present);
         let result = self
             .extension_runner()
-            .emit_input(text, &mut current, source)
+            .emit_input(text, &mut current, source, behavior)
             .await
             .map_err(thrown)?;
         let images = match current {
@@ -162,7 +245,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
     }
 
     /// The user message, then the next-turn messages, then the extensions' messages; the
-    /// extensions' system prompt replaces the base prompt, which is otherwise restored.
+    /// extensions' system prompt, even an empty one, replaces the base prompt for the run,
+    /// which is otherwise restored.
     async fn assemble_messages(
         &self,
         text: String,
@@ -188,8 +272,12 @@ impl<E: ExtensionExecution> AgentSession<E> {
             (result.messages, result.system_prompt)
         });
         messages.extend(added.into_iter().flatten().map(custom_message));
-        let prompt = prompt.filter(|prompt| !prompt.is_empty());
-        write(self.agent.state()).system_prompt = prompt.unwrap_or(base);
+        let effective = {
+            let mut state = self.state.borrow_mut();
+            state.system_prompt_override = prompt;
+            state.effective_system_prompt()
+        };
+        write(self.agent.state()).system_prompt = effective;
         Ok(messages)
     }
 

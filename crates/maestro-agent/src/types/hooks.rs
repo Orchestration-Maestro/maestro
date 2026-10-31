@@ -79,6 +79,24 @@ pub struct ShouldStopAfterTurnContext<
     /// Entries produced by this operation, including prompts when supplied.
     pub new_messages: &'a [AgentMessage<C>],
 }
+/// The completed turn the next-turn preparation reads.
+pub type PrepareNextTurnContext<'a, C, E = super::Threaded> = ShouldStopAfterTurnContext<'a, C, E>;
+/// Replacement runtime state for the next provider request; absent parts keep the current
+/// ones. The request already sent is never changed.
+pub struct AgentLoopTurnUpdate<
+    C: CustomAgentMessages = crate::NoCustomMessages,
+    E: super::AgentExecution = super::Threaded,
+> {
+    /// Instructions, history and tools for the next request.
+    pub context: Option<AgentContextRecord<C, E>>,
+    /// Model for the next request.
+    pub model: Option<std::sync::Arc<std::sync::RwLock<maestro_models::Model>>>,
+    /// Thinking level for the next request.
+    pub thinking_level: Option<maestro_models::ModelThinkingLevel>,
+}
+/// Retained `PrepareNextTurn` callback.
+pub type PrepareNextTurn<C, E = super::Threaded> =
+    <E as maestro_models::Execution>::Shared<<E as super::AgentExecution>::PrepareNextTurn<C>>;
 /// Completed-turn stop callback.
 pub type ShouldStopAfterTurn<C, E = super::Threaded> =
     <E as maestro_models::Execution>::Shared<<E as super::AgentExecution>::Stop<C>>;

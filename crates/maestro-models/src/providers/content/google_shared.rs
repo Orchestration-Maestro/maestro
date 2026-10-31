@@ -5,7 +5,7 @@ use std::iter;
 use serde::Serialize;
 use serde_json::Value;
 
-use crate::arguments::json_parse::whitespace;
+use crate::arguments::json_parse::is_blank;
 use crate::arguments::replay::nullish_default;
 use crate::projection::IMAGE_PLACEHOLDER;
 use crate::projection::normalize_tool_call_id;
@@ -350,11 +350,6 @@ fn model_part(block: AssistantContent, with_ids: bool) -> Option<Part> {
         }),
         _ => None,
     }
-}
-
-/// Report whether text holds nothing but whitespace.
-fn is_blank(text: &str) -> bool {
-    text.trim_matches(whitespace).is_empty()
 }
 
 /// Build thought metadata, keeping a signature only when it is shaped like base64.

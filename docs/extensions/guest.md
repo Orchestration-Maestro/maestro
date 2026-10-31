@@ -344,7 +344,7 @@ differs from a result whose properties are all omitted.
 | `session_shutdown` | `SessionShutdownEvent` | `reason` (`quit`, `reload`, `new`, `resume`, `fork`), `targetSessionFile?` |
 | `before_provider_request` | `BeforeProviderRequestEvent` | `payload` |
 | `after_provider_response` | `AfterProviderResponseEvent` | `status`, `headers` |
-| `input` | `InputEvent` | `text`, `images?`, `source` (`interactive`, `rpc`, `extension`) |
+| `input` | `InputEvent` | `text`, `images?`, `source` (`interactive`, `rpc`, `extension`), `streamingBehavior?` (`steer`, `followUp`) |
 
 Before-compaction `preparation` holds `firstKeptEntryId`, `messagesToSummarize`,
 `turnPrefixMessages`, `isSplitTurn`, `tokensBefore`, `previousSummary?`, `fileOps` and

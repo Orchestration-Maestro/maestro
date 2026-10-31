@@ -1,8 +1,11 @@
 #![doc = include_str!("../../../../docs/branch_summary.md")]
 use crate::SessionEntry;
 use crate::session_manager::ReadonlySessionManager;
+use maestro_agent::{AgentExecution, StreamFn};
+use maestro_models::Threaded;
 use serde_json::Value;
 use std::collections::HashSet;
+use std::future::Future;
 /// Borrowed abandoned entries and the deepest shared ancestor.
 #[derive(Debug, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -172,7 +175,7 @@ pub enum BranchSummaryResult {
     },
 }
 /// Caller-owned controls for an abandoned-branch request.
-pub struct GenerateBranchSummaryOptions {
+pub struct GenerateBranchSummaryOptions<E: AgentExecution = Threaded> {
     /// Explicit model selection.
     pub model: maestro_models::Model,
     /// Explicit authentication, including an empty key.
@@ -187,6 +190,8 @@ pub struct GenerateBranchSummaryOptions {
     pub replace_instructions: bool,
     /// Prompt/response reservation; omitted means 16384 tokens.
     pub reserve_tokens: Option<f64>,
+    /// Sends the request in place of the registered completion.
+    pub stream_fn: Option<StreamFn<E>>,
 }
 
 /// Context preceding generated branch text.
@@ -228,11 +233,71 @@ Keep each section concise. Preserve exact file paths, function names, and error 
 /// Start a branch summary eagerly and return an independently owned observation.
 /// No history is mutated or saved. Projection errors precede invocation; adapter
 /// failures propagate, while aborted/error responses have their own result shapes.
-#[must_use]
-pub fn generate_branch_summary(
+/// The request goes to `options.stream_fn` when it is set, otherwise to the registered
+/// completion.
+///
+/// # Errors
+/// Returns the preparation failure or the failure of the request, once the future is awaited.
+pub fn generate_branch_summary<E: AgentExecution>(
     entries: &[SessionEntry],
-    options: &GenerateBranchSummaryOptions,
-) -> maestro_models::BoxFuture<Result<BranchSummaryResult, maestro_models::DiagnosticErrorInfo>> {
+    options: &GenerateBranchSummaryOptions<E>,
+) -> impl Future<Output = Result<BranchSummaryResult, maestro_models::DiagnosticErrorInfo>> + use<E>
+{
+    let started = start(entries, options);
+    async move {
+        let (completion, details) = match started {
+            Started::Done(outcome) => return outcome,
+            Started::Pending {
+                completion,
+                details,
+            } => (completion, details),
+        };
+        let response = match completion {
+            Completion::Registered(response) => response.await?,
+            Completion::Replaced(stream) => stream.await?.result().await,
+        };
+        let response = response
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        Ok(result(&response, details))
+    }
+}
+/// A branch summary that ended before any request, or one waiting for its response.
+enum Started<E: AgentExecution> {
+    /// The outcome, when no request was needed or the projection failed.
+    Done(Result<BranchSummaryResult, maestro_models::DiagnosticErrorInfo>),
+    /// The request in flight and the file lists to append to its response.
+    Pending {
+        /// The request's response.
+        completion: Completion<E>,
+        /// The branch's file lists.
+        details: BranchSummaryDetails,
+    },
+}
+/// The request in flight, from the registered completion or the supplied stream function.
+enum Completion<E: AgentExecution> {
+    /// The registered completion's response.
+    Registered(
+        maestro_models::BoxFuture<
+            Result<maestro_models::SharedAssistantMessage, maestro_models::DiagnosticErrorInfo>,
+        >,
+    ),
+    /// The stream the supplied stream function opens.
+    Replaced(
+        <E as maestro_models::Execution>::Future<
+            'static,
+            Result<
+                maestro_models::AssistantMessageEventStream,
+                maestro_models::DiagnosticErrorInfo,
+            >,
+        >,
+    ),
+}
+/// Prepare the branch and start its request.
+fn start<E: AgentExecution>(
+    entries: &[SessionEntry],
+    options: &GenerateBranchSummaryOptions<E>,
+) -> Started<E> {
     let window = if options.model.context_window == 0.0 {
         128_000.0
     } else {
@@ -244,18 +309,16 @@ pub fn generate_branch_summary(
     );
     let preparation = match preparation {
         Ok(preparation) => preparation,
-        Err(error) => return failed(error),
+        Err(error) => return Started::Done(Err(failed(&error))),
     };
     if preparation.messages.is_empty() {
-        return Box::pin(async {
-            Ok(BranchSummaryResult::NoContent {
-                summary: "No content to summarize".into(),
-            })
-        });
+        return Started::Done(Ok(BranchSummaryResult::NoContent {
+            summary: "No content to summarize".into(),
+        }));
     }
     let conversation = match super::utils::serialize_raw_conversation(&preparation.messages) {
         Ok(text) => text,
-        Err(error) => return failed(error),
+        Err(error) => return Started::Done(Err(failed(&error))),
     };
     let instructions = match options
         .custom_instructions
@@ -269,56 +332,63 @@ pub fn generate_branch_summary(
     let prompt = format!("<conversation>\n{conversation}\n</conversation>\n\n{instructions}");
     let completion = complete(prompt, options);
     let details = super::compute_file_lists(&preparation.file_ops);
-    Box::pin(async move {
-        let response = completion.await?;
-        let response = response
-            .read()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        Ok(result(&response, details))
-    })
+    Started::Pending {
+        completion,
+        details,
+    }
 }
 /// Preserve the existing native diagnostic boundary before asynchronous work.
-fn failed(
-    error: serde_json::Error,
-) -> maestro_models::BoxFuture<Result<BranchSummaryResult, maestro_models::DiagnosticErrorInfo>> {
-    Box::pin(async move {
-        Err(maestro_models::DiagnosticErrorInfo::error(
-            error.to_string(),
-        ))
-    })
+fn failed(error: &serde_json::Error) -> maestro_models::DiagnosticErrorInfo {
+    maestro_models::DiagnosticErrorInfo::error(error.to_string())
 }
-/// Invoke the existing eager completion owner with branch-specific controls only.
-fn complete(
+/// Send the request with branch-specific controls only: through the supplied stream
+/// function, or else the existing eager completion owner.
+fn complete<E: AgentExecution>(
     prompt: String,
-    options: &GenerateBranchSummaryOptions,
-) -> maestro_models::BoxFuture<
-    Result<maestro_models::SharedAssistantMessage, maestro_models::DiagnosticErrorInfo>,
-> {
+    options: &GenerateBranchSummaryOptions<E>,
+) -> Completion<E> {
     use maestro_models::{
-        Context, Message, SimpleStreamOptions, StreamOptions, TextContent, UserBlock, UserContent,
-        UserMessage,
+        Context, JsonObject, Message, ProviderObjects, ProviderStreamOptions, TextContent,
+        UserBlock, UserContent, UserMessage,
     };
-    maestro_models::complete_simple(
-        options.model.clone(),
-        Context {
-            system_prompt: Some(super::utils::SUMMARIZATION_SYSTEM_PROMPT.into()),
-            messages: vec![Message::User(UserMessage {
-                content: UserContent::Blocks(vec![UserBlock::Text(TextContent::new(prompt))]),
-                timestamp: maestro_models::timestamp_now(),
-            })],
-            tools: None,
-        },
-        Some(SimpleStreamOptions {
-            common: StreamOptions {
-                max_tokens: Some(2048.0),
-                api_key: Some(options.api_key.clone()),
-                headers: options.headers.clone(),
-                signal: Some(options.signal.clone()),
-                ..Default::default()
-            },
+    let context = Context {
+        system_prompt: Some(super::utils::SUMMARIZATION_SYSTEM_PROMPT.into()),
+        messages: vec![Message::User(UserMessage {
+            content: UserContent::Blocks(vec![UserBlock::Text(TextContent::new(prompt))]),
+            timestamp: maestro_models::timestamp_now(),
+        })],
+        tools: None,
+    };
+    let model = options.model.clone();
+    let Some(stream_fn) = &options.stream_fn else {
+        return Completion::Registered(maestro_models::complete_simple(
+            model,
+            context,
+            Some(simple_options::<Threaded, E>(options)),
+        ));
+    };
+    let simple = simple_options::<E, E>(options);
+    let open = ProviderStreamOptions {
+        common: simple.common.clone(),
+        extra: JsonObject::new(),
+        objects: ProviderObjects::default(),
+    };
+    Completion::Replaced(stream_fn(model, context, simple, open))
+}
+/// The invocation options of a branch request in the stream family `X`.
+fn simple_options<X: maestro_models::ProviderExecution, E: AgentExecution>(
+    options: &GenerateBranchSummaryOptions<E>,
+) -> maestro_models::SimpleStreamOptions<X> {
+    maestro_models::SimpleStreamOptions {
+        common: maestro_models::StreamOptions {
+            max_tokens: Some(2048.0),
+            api_key: Some(options.api_key.clone()),
+            headers: options.headers.clone(),
+            signal: Some(options.signal.clone()),
             ..Default::default()
-        }),
-    )
+        },
+        ..Default::default()
+    }
 }
 /// Apply the branch response policy and append disjoint sorted file sections.
 fn result(

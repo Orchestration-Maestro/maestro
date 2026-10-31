@@ -157,6 +157,7 @@ impl Connection {
         ExtensionBindings {
             ui_context: Some(ExtensionUIContext::new(Rc::clone(&session.ui) as Rc<_>).into()),
             command_context_actions: Some(session.options.runtime.command_context_actions()),
+            abort_handler: None,
             shutdown_handler: Some(Rc::new(move || {
                 if let Some(connection) = weak.upgrade() {
                     connection.lifecycle.borrow_mut().shutdown_requested = true;

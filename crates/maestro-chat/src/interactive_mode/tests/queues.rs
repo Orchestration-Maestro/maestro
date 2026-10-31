@@ -1045,17 +1045,22 @@ async fn controlled_in(directory: &Path, refuse: bool, setup: Setup) -> (World, 
 /// The failure the harness's own compaction always ends with.
 const COMPACTION_FAILURE: &str = "Compaction failed: Nothing to compact (session too small)";
 
-/// Appends a notice the mode shows for a compaction that failed, painted and padded.
-fn with_notice(mut observed: Observed, world: &World, text: &str) -> Observed {
+/// The row the mode shows for the error `text`, painted and padded.
+fn error_row(world: &World, text: &str) -> String {
     let painted_row = painted(
         &world.themes.theme().get().unwrap(),
         &[format!(" @error@{text}\x1b[39m")],
     )
     .remove(0);
     let pad = 80usize.saturating_sub(text.chars().count() + 1);
+    format!("{painted_row}{}", " ".repeat(pad))
+}
+
+/// Appends a notice the mode shows for a compaction that failed, painted and padded.
+fn with_notice(mut observed: Observed, world: &World, text: &str) -> Observed {
     observed
         .chat
-        .extend([String::new(), format!("{painted_row}{}", " ".repeat(pad))]);
+        .extend([String::new(), error_row(world, text)]);
     observed
 }
 
@@ -1071,12 +1076,27 @@ fn with_compaction_notice(observed: Observed, world: &World) -> Observed {
         .unwrap_or_default();
     let named = format!("Error: {COMPACTION_FAILURE}");
     let mut observed = with_notice(observed, world, &named);
+    let prompted = !delivered.is_empty();
     observed.chat.extend(delivered);
     observed
         .errors
         .push(format!("{COMPACTION_FAILURE}\x1b[39m"));
+    if prompted {
+        // The delivered prompt then fails to start a response, and the mode shows that failure.
+        observed.chat.extend([
+            "\x1b]133;A\x07".to_owned(),
+            format!(
+                "\x1b]133;B\x07\x1b]133;C\x07{}",
+                error_row(world, &format!("Error: {PROVIDER_FAILURE}"))
+            ),
+        ]);
+        observed.errors.push(format!("{PROVIDER_FAILURE}\x1b[39m"));
+    }
     observed
 }
+
+/// The failure of the delivered input when no provider is registered.
+const PROVIDER_FAILURE: &str = "No API provider registered for api: unknown";
 
 /// The notice the automatic compaction attempt ends with when no provider is registered.
 const AUTO_COMPACTION_FAILURE: &str =
@@ -2720,4 +2740,44 @@ fn shell_dispatch_precedes_streaming_and_compaction_admission() {
             }
         },
     );
+}
+
+#[test]
+fn extension_abort_restores_queued_input_exactly_as_typed() {
+    const TEST: &str = "extension_abort_restores_queued_input_exactly_as_typed";
+    isolated(TEST, async |directory| {
+        streaming(&started(directory).await, async |world, held| {
+            let session = world.mode.runtime_host.session();
+            session.steer("  queued  steer ", &[]).unwrap();
+            world.mode.editor.set_text("");
+            session.extension_runner().create_context().abort().unwrap();
+            assert_eq!(world.mode.editor.get_text(), "  queued  steer ");
+            assert_eq!(session.pending_message_count(), 0);
+            assert_eq!(held.aborts(), 1);
+        })
+        .await;
+    });
+}
+
+#[test]
+fn extension_abort_during_a_confirmation_restores_queued_input() {
+    const TEST: &str = "extension_abort_during_a_confirmation_restores_queued_input";
+    isolated(TEST, async |directory| {
+        streaming(&started(directory).await, async |world, held| {
+            let session = world.mode.runtime_host.session();
+            session.steer("queued steer", &[]).unwrap();
+            world.mode.editor.set_text("");
+            let ui = maestro_app::ExtensionUIContext::new(world.mode.clone());
+            let mut confirmation =
+                std::pin::pin!(ui.confirm("Run the tool?".into(), "bash".into(), None));
+            assert!(
+                poll(&mut confirmation).is_none(),
+                "the confirmation stays open"
+            );
+            session.extension_runner().create_context().abort().unwrap();
+            assert_eq!(world.mode.editor.get_text(), "queued steer");
+            assert_eq!(held.aborts(), 1);
+        })
+        .await;
+    });
 }

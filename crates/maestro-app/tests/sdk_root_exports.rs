@@ -229,7 +229,7 @@ fn names_the_tool_resource_and_theme_operations_at_the_root() {
         std::any::type_name_of_val(&maestro_app::find_turn_start_index),
         std::any::type_name_of_val(&maestro_app::format_size),
         std::any::type_name_of_val(&maestro_app::format_skills_for_prompt),
-        std::any::type_name_of_val(&maestro_app::generate_branch_summary),
+        std::any::type_name_of_val(&maestro_app::generate_branch_summary::<maestro_models::Local>),
         std::any::type_name_of_val(&maestro_app::generate_summary),
         std::any::type_name_of_val(&maestro_app::get_language_from_path),
         std::any::type_name_of_val(&maestro_app::get_last_assistant_usage),

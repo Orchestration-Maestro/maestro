@@ -2429,7 +2429,7 @@
       },
       {
         "label": "pendingAfterTurn",
-        "value": true
+        "value": false
       },
       {
         "ok": {

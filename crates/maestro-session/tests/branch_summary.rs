@@ -113,3 +113,9 @@ fn branch_success_appends_sorted_disjoint_file_sections() {
 fn branch_completion_owns_request_after_inputs_drop() {
     support::branch_summary::lifetime();
 }
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn branch_request_goes_through_a_supplied_stream_function() {
+    support::branch_summary::stream_function();
+}

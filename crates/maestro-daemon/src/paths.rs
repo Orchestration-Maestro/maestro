@@ -1,6 +1,18 @@
 //! Authored daemon paths rooted in a supplied agent directory.
 
 use maestro_detection::agents::{Agent, agent_label};
+use std::path::PathBuf;
+
+/// The home directory the daemon observes.
+///
+/// On Unix `HOME` as set, an empty value included, otherwise the account directory;
+/// elsewhere the account directory. Every daemon read of the home directory goes through
+/// this one lookup, which follows `maestro_resources::paths::native_home_directory`.
+#[must_use]
+pub fn home_directory() -> Option<PathBuf> {
+    let variable = std::env::var_os("HOME").map(PathBuf::from);
+    maestro_path::homedir(variable.filter(|_| cfg!(unix)), std::env::home_dir)
+}
 
 /// Agent-wide resources and a validated optional daemon identity.
 #[derive(Clone, Debug, PartialEq, Eq)]

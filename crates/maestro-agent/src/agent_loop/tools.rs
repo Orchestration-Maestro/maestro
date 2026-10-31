@@ -57,6 +57,9 @@ impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Driver<'_, C, 
             all_terminate &= result.terminate == Some(true);
             let message = self.execution_end(call, result, is_error).await?;
             results.push(self.artifact(message).await?);
+            if self.aborted() {
+                break;
+            }
         }
         let again = !results.is_empty() && !all_terminate;
         Ok((results, again))
@@ -84,6 +87,9 @@ impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Driver<'_, C, 
                         self.execution_end(call, error_result(error), true).await?,
                     ));
                 }
+            }
+            if self.aborted() {
+                break;
             }
         }
         let mut work: FuturesUnordered<_> = allowed
@@ -142,8 +148,8 @@ impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Driver<'_, C, 
         (index, call): (usize, &mut ToolCall),
     ) -> Result<Prepared<E>, DiagnosticErrorInfo> {
         let mut prepared = self.prepare(response, (index, call))?;
-        if let Some(before) = &self.config.before_tool_call
-            && let Some(result) = before(
+        if let Some(before) = &self.config.before_tool_call {
+            let decision = before(
                 crate::BeforeToolCallContext {
                     assistant_message: response,
                     tool_call: call,
@@ -152,17 +158,27 @@ impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Driver<'_, C, 
                 },
                 self.options.signal.clone(),
             )
-            .await?
-            && result.block
-        {
-            return Err(failure(
-                result
-                    .reason
-                    .filter(|s| !s.is_empty())
-                    .unwrap_or_else(|| "Tool execution was blocked".into()),
-            ));
+            .await?;
+            if self.aborted() {
+                return Err(failure("Operation aborted"));
+            }
+            if let Some(result) = decision.filter(|result| result.block) {
+                return Err(failure(
+                    result
+                        .reason
+                        .filter(|s| !s.is_empty())
+                        .unwrap_or_else(|| "Tool execution was blocked".into()),
+                ));
+            }
         }
         Ok(prepared)
+    }
+    /// Whether the run's signal was aborted.
+    fn aborted(&self) -> bool {
+        self.options
+            .signal
+            .as_ref()
+            .is_some_and(maestro_models::Cancellation::is_aborted)
     }
     /// Retain the first exactly named tool from the current inventory.
     fn lookup(&self, name: &str) -> Option<SharedAgentTool<E>> {
