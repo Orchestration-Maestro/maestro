@@ -76,6 +76,13 @@ sibling directory, then renamed to the installed path. Preparation or publicatio
 failure removes only that owned stage when cleanup succeeds; cleanup failure is
 reported. Dropping the staging guard attempts cleanup, not child cancellation.
 
+Installing again over an existing checkout always contacts the remote. An
+explicit ref is fetched first, with tags updated by force, so a branch or tag
+that moved upstream resolves to its new commit: a remote branch of that name is
+checked out as a local branch reset to the fetched tip, and any other ref form is
+checked out as given. An unpinned checkout is refreshed to its upstream branch the
+same way a configured update does.
+
 Existing checkouts with a changed explicit ref, and changed upstream updates,
 are prepared in place using their effective Git configuration. Before mutation,
 the manager records HEAD and its attached/detached selection. Probe failures

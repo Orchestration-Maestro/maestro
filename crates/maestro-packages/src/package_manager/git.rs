@@ -258,23 +258,26 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         if !Path::new(&path).exists() {
             return self.install_git(git, scope).await.map(drop);
         }
-        let target = self.get_local_git_update_target(&path).await?;
+        self.refresh_git(&path).await.map(drop)
+    }
+    /// Fetches the upstream branch and replaces the checkout when its head changed.
+    async fn refresh_git(&self, path: &str) -> io::Result<SourceAcquisition> {
+        let target = self.get_local_git_update_target(path).await?;
         let args = ["fetch", "--prune", "--no-tags", "origin", &target.refspec].map(str::to_owned);
-        self.run_command("git", &args, Some(&path)).await?;
-        let local = self.git_capture(&path, &["rev-parse", "HEAD"], &[]).await?;
+        self.run_command("git", &args, Some(path)).await?;
+        let local = self.git_capture(path, &["rev-parse", "HEAD"], &[]).await?;
         let refreshed = self
-            .git_capture(&path, &["rev-parse", target.reference], &[])
+            .git_capture(path, &["rev-parse", target.reference], &[])
             .await?;
         if crate::trim(&local) == crate::trim(&refreshed) {
-            return Ok(());
+            return Ok(SourceAcquisition::CurrentGit);
         }
         self.change_git_revision(
-            &path,
+            path,
             &["reset", "--hard", target.reference].map(str::to_owned),
             false,
         )
         .await
-        .map(drop)
     }
 }
 
@@ -324,33 +327,36 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         )
         .await
     }
-    /// Checks local presence before fetching, without predicting checkout selection.
-    async fn has_git_ref(&self, path: &str, reference: &str) -> io::Result<bool> {
-        for candidate in [
-            format!("{reference}^{{commit}}"),
-            format!("refs/remotes/origin/{reference}^{{commit}}"),
-        ] {
-            let oid = self
-                .git_capture(path, &["rev-parse", "--revs-only", &candidate], &[])
-                .await?;
-            let oid = crate::trim(&oid);
-            if !oid.is_empty() {
-                return Ok(true);
-            }
-        }
-        Ok(false)
-    }
-    /// Applies an explicit changed ref in the original checkout and configuration.
+    /// Brings an existing checkout up to date with the requested ref, or with its
+    /// upstream branch when no ref is requested.
     async fn repin_git(&self, git: &GitSource, path: &str) -> io::Result<SourceAcquisition> {
         let Some(reference) = &git.r#ref else {
-            return Ok(SourceAcquisition::CurrentGit);
+            return self.refresh_git(path).await;
         };
-        if !self.has_git_ref(path, reference).await? {
-            self.run_command("git", &["fetch", "origin"].map(str::to_owned), Some(path))
-                .await?;
-        }
-        self.change_git_revision(path, &["checkout", reference].map(str::to_owned), true)
-            .await
+        let previous = self.get_git_head(path).await?;
+        let fetch = ["fetch", "--force", "--tags", "origin"].map(str::to_owned);
+        self.run_command("git", &fetch, Some(path)).await?;
+        let remote = format!("refs/remotes/origin/{reference}");
+        let listed = self
+            .git_capture(
+                path,
+                &[
+                    "for-each-ref",
+                    "--format=%(if)%(symref)%(then)%(else)%(refname)%(end)",
+                    &remote,
+                ],
+                &[],
+            )
+            .await?;
+        // A remote branch is followed by name; any other ref form is checked out as given.
+        let args = if listed.lines().any(|line| crate::trim(line) == remote) {
+            ["checkout", "-B", reference, &remote]
+                .map(str::to_owned)
+                .to_vec()
+        } else {
+            vec!["checkout".to_owned(), reference.clone()]
+        };
+        self.apply_git_revision(path, &previous, &args, true).await
     }
     /// Changes revision and prepares dependencies, recovering HEAD after any mutation failure.
     async fn change_git_revision(
@@ -360,6 +366,17 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         compare_checkout: bool,
     ) -> io::Result<SourceAcquisition> {
         let previous = self.get_git_head(path).await?;
+        self.apply_git_revision(path, &previous, args, compare_checkout)
+            .await
+    }
+    /// Runs the revision change from the captured selection, restoring it on failure.
+    async fn apply_git_revision(
+        &self,
+        path: &str,
+        previous: &GitHead,
+        args: &[String],
+        compare_checkout: bool,
+    ) -> io::Result<SourceAcquisition> {
         let result = async {
             self.run_command("git", args, Some(path)).await?;
             if compare_checkout
@@ -380,7 +397,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             Ok(outcome) => Ok(outcome),
             Err(error) => Err(with_recovery(
                 error,
-                self.restore_git_head(path, &previous).await,
+                self.restore_git_head(path, previous).await,
             )),
         }
     }
