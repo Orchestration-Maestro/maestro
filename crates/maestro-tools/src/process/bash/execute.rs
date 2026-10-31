@@ -1,5 +1,5 @@
 //! Per-call raw output and progress execution.
-use super::{BashExecOptions, BashExecution, BashSpawnContext, BashToolDetails};
+use super::{BashExecOptions, BashExecution, BashSpawnContext, BashToolDetails, result::LineBytes};
 use crate::{
     output::output_accumulator::{OutputAccumulator, OutputAccumulatorOptions, OutputSnapshot},
     utils::diagnostics::diagnostic,
@@ -83,7 +83,7 @@ impl Progress {
     fn finish<E: BashExecution>(
         mut self,
         update: Option<&AgentToolUpdateCallback<BashToolDetails, E>>,
-    ) -> io::Result<(OutputSnapshot, usize)> {
+    ) -> io::Result<(OutputSnapshot, LineBytes)> {
         if self.error.is_none() {
             self.error = self.output.finish().err();
         }
@@ -100,10 +100,9 @@ impl Progress {
         let closed = self.output.close_temp_file();
         let snapshot = snapshot?;
         closed?;
-        let line_bytes = if snapshot.content.ends_with('\n') {
-            self.output.get_ended_line_bytes()
-        } else {
-            self.output.get_last_line_bytes()
+        let line_bytes = LineBytes {
+            last: self.output.get_last_line_bytes(),
+            ended: self.output.ended_line_bytes(),
         };
         Ok((snapshot, line_bytes))
     }
@@ -171,10 +170,10 @@ pub(crate) async fn run(
     let state = state
         .into_inner()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
-    let (snapshot, last_line_bytes) = state
+    let (snapshot, line_bytes) = state
         .finish::<$mode>(update.as_ref())
         .map_err(|error| diagnostic(&error))?;
-    crate::process::bash::result::settle(snapshot, last_line_bytes, result)
+    crate::process::bash::result::settle(snapshot, line_bytes, result)
 }
 
 }; }

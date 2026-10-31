@@ -185,7 +185,7 @@ impl OutputAccumulator {
 
     /// Return the byte count of the most recent newline-terminated line.
     #[must_use]
-    pub fn get_ended_line_bytes(&self) -> usize {
+    pub(crate) fn ended_line_bytes(&self) -> usize {
         self.ended_line_bytes
     }
 

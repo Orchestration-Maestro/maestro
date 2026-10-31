@@ -11,10 +11,19 @@ use crate::{
 use maestro_agent::AgentToolResult;
 use maestro_models::DiagnosticErrorInfo;
 
+/// Byte counts of the two lines a partial tail notice can name.
+#[derive(Clone, Copy)]
+pub(super) struct LineBytes {
+    /// The unterminated line at the end of the output.
+    pub(super) last: usize,
+    /// The most recent newline-terminated line.
+    pub(super) ended: usize,
+}
+
 /// Format the selected tail, preserving raw text and its newline entries.
 fn format(
     snapshot: OutputSnapshot,
-    last_line_bytes: usize,
+    line_bytes: LineBytes,
     empty: &str,
 ) -> (String, Option<BashToolDetails>) {
     let OutputSnapshot {
@@ -35,11 +44,15 @@ fn format(
     let path = full_output_path.as_deref().unwrap_or_default();
     let notice = if truncation.last_line_partial {
         // A final newline ends the partial line, leaving an empty entry after it.
-        let line = if text.ends_with('\n') { end - 1 } else { end };
+        let (line, bytes) = if text.ends_with('\n') {
+            (end - 1, line_bytes.ended)
+        } else {
+            (end, line_bytes.last)
+        };
         format!(
             "[Showing last {} of line {line} (line is {}). Full output: {path}]",
             format_size(float(truncation.output_bytes)),
-            format_size(float(last_line_bytes))
+            format_size(float(bytes))
         )
     } else if matches!(truncation.truncated_by, Some(TruncationBy::Lines)) {
         format!("[Showing lines {start}-{end} of {end}. Full output: {path}]")
@@ -72,12 +85,12 @@ fn status(text: &str, message: &str) -> DiagnosticErrorInfo {
 /// Classify settlement after decoding and artifact closure.
 pub(super) fn settle(
     snapshot: OutputSnapshot,
-    last_line_bytes: usize,
+    line_bytes: LineBytes,
     result: Result<BashExecResult, BashError>,
 ) -> Result<AgentToolResult<BashToolDetails>, DiagnosticErrorInfo> {
     let (text, details) = format(
         snapshot,
-        last_line_bytes,
+        line_bytes,
         if result.is_ok() { "(no output)" } else { "" },
     );
     match result {

@@ -65,9 +65,7 @@ selected decoded text without finishing decoding; selection is owned by
 
 A snapshot drops a leading fragment of a trimmed line only when more text follows its
 newline; a fragment that is the whole retained tail is the end of an oversized line and
-stays. `get_ended_line_bytes` reports the byte count of the latest newline-terminated
-line, which is the oversized line a partial tail notice names when output ends with a
-newline.
+stays. A bash tail notice names the oversized line itself when output ends with a newline.
 
 Overflow artifacts preserve original bytes, including invalid UTF-8 and an initial
 BOM that the display decoder removes. A snapshot path identifies an artifact;
