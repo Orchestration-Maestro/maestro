@@ -363,11 +363,16 @@ impl TestProcess {
 
     /// Hand the configured command to a caller that starts the child itself.
     ///
+    /// The command re-runs the selected test with this builder's environment, directory,
+    /// descriptors and harness flags, for production code that spawns its own children. This
+    /// checks selection, not startup: the child's standard output begins with
+    /// [`crate::HARNESS_START`], which the caller can look for before claiming the test ran.
+    ///
     /// # Errors
     ///
     /// Fails when the test is not eligible.
-    pub fn command(self) -> Result<Command, TestProcessError> {
-        Err(self.failure("the command route is not implemented"))
+    pub fn command(mut self) -> Result<Command, TestProcessError> {
+        self.prepare()
     }
 
     /// Run through the caller's own invoker and prove the returned output started the test.
