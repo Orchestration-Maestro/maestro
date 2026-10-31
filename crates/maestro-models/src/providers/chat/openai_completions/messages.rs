@@ -6,7 +6,7 @@ use serde::{Serialize, Serializer};
 use serde_json::Value;
 
 use super::compat::{OpenAICompletionsCapability as Capability, ResolvedOpenAICompletionsCompat};
-use crate::arguments::json_parse::whitespace;
+use crate::arguments::json_parse::is_blank;
 use crate::projection::IMAGE_PLACEHOLDER;
 use crate::providers::json_text::{compact_json, is_truthy, json_value, raw_json};
 use crate::{
@@ -290,11 +290,6 @@ fn text_part(text: impl Into<String>) -> ChatCompletionContentPart {
     })
 }
 
-/// Report whether trimming leaves any text.
-fn has_text(text: &str) -> bool {
-    !text.trim_matches(whitespace).is_empty()
-}
-
 /// The blocks of an assistant turn that the wire format carries.
 struct AssistantBlocks<'a> {
     /// Text blocks with visible characters.
@@ -315,10 +310,10 @@ impl<'a> AssistantBlocks<'a> {
         };
         for block in &assistant.content {
             match block {
-                AssistantContent::Text(text) if has_text(&text.text) => {
+                AssistantContent::Text(text) if !is_blank(&text.text) => {
                     blocks.texts.push(&text.text);
                 }
-                AssistantContent::Thinking(thinking) if has_text(&thinking.thinking) => {
+                AssistantContent::Thinking(thinking) if !is_blank(&thinking.thinking) => {
                     blocks.thinking.push(thinking);
                 }
                 AssistantContent::ToolCall(call) => blocks.calls.push(call),

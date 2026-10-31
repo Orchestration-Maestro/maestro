@@ -279,7 +279,9 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
                 payload.thinking = Some(Thinking {
                     r#type: if enabled { "enabled" } else { "disabled" },
                 });
-                payload.reasoning_effort = effort.map(|level| self.effort_name(level));
+                if self.compat.has(Capability::SupportsReasoningEffort) {
+                    payload.reasoning_effort = effort.map(|level| self.effort_name(level));
+                }
             }
             ThinkingFormat::Openrouter => {
                 payload.reasoning = match (effort, off) {
