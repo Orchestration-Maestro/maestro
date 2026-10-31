@@ -418,11 +418,14 @@ fn context(created: &CreateAgentSessionResult) -> (Option<f64>, Option<f64>) {
 /// A saved history whose compaction is followed by one answer carrying `extra`.
 fn after_compaction(cwd: &str, extra: &Value) -> SessionManager {
     let mut manager = saved_history(cwd, &usage([7, 3, 2, 1], 1.0, None), true);
+    let now = maestro_models::timestamp_now();
     manager
-        .append_message(json!({"role": "user", "content": "later question", "timestamp": 1000}))
+        .append_message(json!({"role": "user", "content": "later question", "timestamp": now}))
         .unwrap();
+    let mut extra = extra.clone();
+    extra["timestamp"] = json!(now);
     manager
-        .append_message(assistant("later answer", 1000, extra))
+        .append_message(assistant("later answer", 1000, &extra))
         .unwrap();
     manager
 }

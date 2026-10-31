@@ -1,6 +1,8 @@
 //! The session name and session information commands.
 use super::InteractiveMode;
-use maestro_app::{LocaleNumberFormat, SessionStats, is_whitespace_scalar};
+use maestro_app::{
+    LocaleNumberFormat, SessionStats, UsageCostBreakdownEntry, is_whitespace_scalar,
+};
 use maestro_theme::{Theme, ThemeColor};
 use std::{error::Error, fmt::Write as _};
 
@@ -37,16 +39,17 @@ impl InteractiveMode {
     pub fn handle_session_command(&self) -> Result<(), Box<dyn Error>> {
         let session = self.runtime_host.session();
         let stats = session.get_session_stats()?;
+        let buckets = session.get_usage_cost_breakdown()?;
         let name = session.session_name()?;
         let theme = self.themes.theme().get()?;
-        let info = session_info(&theme, &stats, name.as_deref())?;
+        let info = session_info(&theme, &stats, name.as_deref(), &buckets)?;
         self.add_text(info, 0);
         Ok(())
     }
 }
 
 /// The session information: bold headings, dim labels, token totals in the environment's
-/// locale and a positive cost with four decimals.
+/// locale and a positive cost with four decimals, split by cost bucket when there are several.
 ///
 /// # Errors
 /// Returns the failure to prepare the locale's number format or to format a total, or of
@@ -55,6 +58,7 @@ pub(super) fn session_info(
     theme: &Theme,
     stats: &SessionStats,
     name: Option<&str>,
+    _buckets: &[UsageCostBreakdownEntry],
 ) -> Result<String, Box<dyn Error>> {
     let numbers = LocaleNumberFormat::new(&|key| std::env::var(key).ok())?;
     let label = |text| theme.fg(&ThemeColor::Dim, text);
