@@ -136,10 +136,7 @@ pub(super) fn additional_model_request_fields<E: crate::ProviderExecution>(
     }
     let mut fields = json!({"thinking": thinking});
     if adaptive {
-        let native_xhigh = ["opus-4-7", "opus-4-8"]
-            .iter()
-            .any(|version| mentions(model, version));
-        let effort = if level == ThinkingLevel::Xhigh && native_xhigh {
+        let effort = if level == ThinkingLevel::Xhigh && mentions(model, "opus-4-7") {
             "xhigh".to_owned()
         } else {
             map_thinking_level_to_effort(model, level)
