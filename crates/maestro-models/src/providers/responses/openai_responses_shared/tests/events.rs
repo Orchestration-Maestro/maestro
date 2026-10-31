@@ -481,7 +481,7 @@ fn maestro_responses_events_share_live_output() -> TestResult {
 fn maestro_responses_events_ignore_malformed_unselected_fields() -> TestResult {
     event_rows(
         "maestro_responses_events_ignore_malformed_unselected_fields",
-        33,
+        31,
     )?;
     let events = [
         r#"{"type":"future.event","delta":"\ud800","response":{"id":"\ud800"}}"#,
