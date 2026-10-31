@@ -55,7 +55,7 @@ fn native_update_probes_capture_only_helper_output() {
     assert_eq!(selected.args, expect("install", "new-agent"));
     assert_eq!(
         selected.steps.unwrap()[0].args,
-        expect("uninstall", "agent")
+        [alias, "uninstall", "-g", "agent"]
     );
     let failed = vec![configured[0].clone(), "fail".into()];
     let error = get_self_update_command(&context, "agent", Some(&failed), None).unwrap_err();
