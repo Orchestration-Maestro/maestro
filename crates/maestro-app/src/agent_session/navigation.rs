@@ -274,7 +274,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
             custom_instructions: choices.custom_instructions.clone(),
             replace_instructions: choices.replace_instructions,
             reserve_tokens: Some(reserve_tokens),
-            stream_fn: None,
+            stream_fn: read(&self.agent.stream_fn).clone(),
         };
         let (text, read_files, modified_files) =
             match generate_branch_summary(entries, &options).await? {
