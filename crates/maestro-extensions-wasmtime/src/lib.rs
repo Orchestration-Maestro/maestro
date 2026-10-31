@@ -91,6 +91,7 @@ mod ui_imports;
 mod ui_reads;
 mod ui_themes;
 mod wasi;
+pub use wasi::Stdout;
 mod widget_editor_imports;
 mod widget_editors;
 mod widget_foreign;

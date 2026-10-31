@@ -7,14 +7,16 @@ use maestro_app::{
     },
 };
 use maestro_theme::{SyntectHighlighter, ThemeState};
+use maestro_tui::tui::TerminalHandle;
 use std::{error::Error, rc::Rc};
 use tokio::task::LocalSet;
 
-/// Construct the delivered interactive and RPC adapters only when startup selects them.
+/// Wire the interactive and RPC adapters to the supplied native terminal.
 pub fn launchers(
     local: Rc<LocalSet>,
     themes: &'static Rc<ThemeState>,
     export: Rc<dyn ExportOperations>,
+    terminal: TerminalHandle,
 ) -> ModeLaunchers {
     let interactive_local = Rc::clone(&local);
     ModeLaunchers {
@@ -24,6 +26,7 @@ pub fn launchers(
                 options,
                 Rc::clone(&interactive_local),
                 Rc::clone(themes),
+                terminal.clone(),
             )
         }),
         rpc: Rc::new(move |runtime| {
@@ -63,11 +66,17 @@ fn interactive(
     options: InteractiveModeOptions,
     local: Rc<LocalSet>,
     themes: Rc<ThemeState>,
+    terminal: TerminalHandle,
 ) -> Result<Rc<dyn InteractiveModeRunner>, Box<dyn Error>> {
     Ok(maestro_chat::InteractiveMode::new(
         runtime,
         options,
-        maestro_cli::input::selector::native_terminal(Rc::clone(&local)),
+        (
+            terminal,
+            Rc::new(maestro_tui_crossterm::ProcessTuiRuntime::new(Rc::clone(
+                &local,
+            ))),
+        ),
         themes,
         Rc::new(
             maestro_app::presentation_data::footer_data_provider::NativeFooterOperations::new(

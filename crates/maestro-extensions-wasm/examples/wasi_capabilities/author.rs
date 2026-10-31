@@ -28,6 +28,9 @@ pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
                 serde_json::from_str(&request).map_err(|error| error.to_string())?;
             stdio::output(&request).await?;
         }
+        if let Ok(endpoint) = std::env::var("MAESTRO_WASI_ROOT_OUTPUT") {
+            return root_output(&api, endpoint);
+        }
         let reporter = api.clone();
         let calls = Rc::new(Cell::new(0));
         api.on(
@@ -129,4 +132,41 @@ fn basics(request: &Value) -> Result<Value, String> {
     Ok(
         json!({"before":before,"after":std::fs::read(path).map_err(|error| error.to_string())?,"env":observe()}),
     )
+}
+
+/// Registers byte output and native execution through the executable's ordinary loader.
+fn root_output(api: &ExtensionAPI, endpoint: String) -> Result<(), String> {
+    use maestro_extensions_wasm::CommandOptions;
+    api.on(
+        "session_start",
+        Rc::new(|_, context| {
+            Box::pin(async move {
+                context.ui()?.set_title("ROOT-STDOUT-READY")?;
+                Ok(None)
+            })
+        }),
+    )?;
+    let native = api.native_io();
+    api.register_command("stdout-probe", CommandOptions {
+        description: None,
+        get_argument_completions: None,
+        handler: Rc::new(move |generation, context| {
+            let (native, endpoint) = (native.clone(), endpoint.clone());
+            Box::pin(async move {
+                if generation == "reload" { return context.reload().await; }
+                let mut bytes = b"\x1b[36m".to_vec();
+                bytes.extend(b"guest\0\xff".repeat(300_000));
+                bytes.extend_from_slice(b"\x1b[0m");
+                let result = stdio::output(&json!({"generation":generation,"bytes":bytes})).await;
+                let reply = result.unwrap_or_else(|error| json!({"error":error}));
+                let script = "import socket,sys; s=socket.socket(socket.AF_UNIX); s.connect(sys.argv[1]); s.sendall(sys.argv[2].encode()); s.close()";
+                let child = native.spawn("python3".into(), vec!["-c".into(), script.into(), endpoint, reply.to_string()], maestro_extensions_wasm::child_process::SpawnOptions {
+                    stdio: [maestro_extensions_wasm::child_process::Stdio::Ignore; 3],
+                    ..Default::default()
+                }).await?;
+                if child.wait().await?.code != Some(0) { return Err("native acknowledgement failed".into()); }
+                context.ui()?.set_title("ROOT-STDOUT-DONE")
+            })
+        }),
+    })
 }

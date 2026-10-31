@@ -17,7 +17,7 @@ use super::output::{
     PROGRESS_CLEAR, first_failure,
 };
 use super::platform::{self, Acquired, Task};
-use super::{InputCallback, OutputPort, ProcessTerminal, ResizeCallback, Shared};
+use super::{InputCallback, ProcessTerminal, ResizeCallback, Shared};
 
 /// How long after `start` a missing keyboard reply selects the fallback reporting mode.
 const NEGOTIATION: Duration = Duration::from_millis(150);
@@ -85,9 +85,7 @@ impl ProcessTerminal {
         on_resize: ResizeCallback,
     ) -> io::Result<Task> {
         let stream = platform::acquire(acquired)?;
-        self.shared
-            .output
-            .open(&self.local, Rc::downgrade(&self.shared))?;
+        self.shared.open_output(&self.local)?;
         self.shared.emit(&[PASTE_ON, KEYBOARD_QUERY].concat())?;
         let generation = self.shared.install(on_input, on_resize);
         let input = Input::new(

@@ -96,3 +96,93 @@ fn compose_frames() {
         assert_eq!(collector.join().unwrap(), expected);
     });
 }
+
+#[cfg(target_os = "linux")]
+#[test]
+fn shipped_component_stdout_survives_blocked_output_and_reload() {
+    for generation in ["p2", "p3"] {
+        let root = crate::support::Root::new();
+        root.models("http://127.0.0.1:1/v1");
+        let environment = root.command(&[]);
+        let output = std::process::Command::new("python3")
+            .arg(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/tests/fixtures/component_stdout.py"
+            ))
+            .arg(env!("CARGO_BIN_EXE_maestro"))
+            .arg(std::env::var_os("MAESTRO_WASI_COMPONENT").unwrap())
+            .arg(generation)
+            .arg(root.path("ack"))
+            .env_clear()
+            .envs(
+                environment
+                    .get_envs()
+                    .filter_map(|(key, value)| value.map(|value| (key, value))),
+            )
+            .current_dir(root.path("project"))
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{generation}: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+}
+
+#[test]
+fn component_output_without_newline_is_flushed_before_terminal_start() {
+    let selected = selection();
+    for generation in ["p2", "p3"] {
+        if !selected.is_child() {
+            let output = TestProcess::current(
+                "component_output_without_newline_is_flushed_before_terminal_start",
+            )
+            .unwrap()
+            .case(generation)
+            .nocapture()
+            .env(
+                "MAESTRO_WASI_STARTUP_OUTPUT",
+                json!({"op":"output","generation":generation,"bytes":b"guest-without-newline"})
+                    .to_string(),
+            )
+            .output()
+            .unwrap();
+            assert!(
+                output.status.success(),
+                "{generation}: {}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        } else if selected.runs_case(generation) {
+            let rig = terminal_support::Rig::paused();
+            let output = terminal_support::pipe_output();
+            let terminal = ProcessTerminal::new(rig.local());
+            rig.run(async {
+                let factory = artifact_factory_with_stdout(
+                    std::env::var("MAESTRO_WASI_COMPONENT").unwrap(),
+                    crate::support::widgets(),
+                    maestro_extensions_wasmtime::Installation {
+                        version: maestro_app::configuration::config::VERSION.into(),
+                        agent_dir: "/controlled-agent".into(),
+                    },
+                    Box::new(terminal.standard_output_writer()),
+                    false,
+                );
+                let bus = create_event_bus_for::<Local>(
+                    Rc::new(|_| panic!("no tails")),
+                    Rc::new(|_| panic!("no errors")),
+                );
+                let _owner = load_extension_from_factory::<Local>(
+                    factory,
+                    "/work".into(),
+                    bus.for_extension(),
+                    create_extension_runtime::<Local>(),
+                    None,
+                )
+                .await
+                .unwrap();
+                assert_eq!(output.take(), "guest-without-newline");
+            });
+        }
+    }
+}

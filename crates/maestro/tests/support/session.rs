@@ -28,6 +28,7 @@ pub async fn component_session(
                 agent_dir: root.path("agent").display().to_string(),
             },
             io,
+            None,
         ));
     resources.system_prompt = Some(String::new());
     resources.append_system_prompt = Some(Vec::new());

@@ -121,6 +121,8 @@ struct Shared {
     /// Where output goes: the live writer, retained across input generations, or a
     /// synchronous write.
     output: platform::Output,
+    /// Standard byte writes routed through the current output generation.
+    stdout: output::StandardOutput,
 }
 
 impl Shared {
@@ -140,11 +142,6 @@ impl Shared {
     /// Writes conditional controls through the same output owner.
     fn emit_if(&self, condition: bool, text: &str) -> io::Result<()> {
         if condition { self.emit(text) } else { Ok(()) }
-    }
-
-    /// Takes the writer out of service before draining any retained front.
-    fn finish_output(&self) -> io::Result<()> {
-        self.output.finish()
     }
 
     /// Whether `generation` is the one whose task may still act.
@@ -205,6 +202,14 @@ impl Shared {
 }
 
 impl ProcessTerminal {
+    /// Returns a sendable byte writer that follows start, stop and subsequent restarts.
+    ///
+    /// Obtaining or retaining the writer does not start the terminal.
+    #[must_use]
+    pub fn standard_output_writer(&self) -> output::StandardOutput {
+        self.shared.stdout.clone()
+    }
+
     /// Returns the active queued writer, or `None` while stopped or writing synchronously.
     ///
     /// The handle may cross threads; it never shares the terminal's local byte queue.
@@ -234,6 +239,7 @@ impl ProcessTerminal {
                 failure: RefCell::new(None),
                 errors: Rc::new(OutputErrors::default()),
                 output: platform::Output::new(),
+                stdout: output::StandardOutput::default(),
             }),
             running: None,
             progress: None,

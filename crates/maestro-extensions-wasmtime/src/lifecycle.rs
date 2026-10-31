@@ -97,7 +97,7 @@ impl State {
         callbacks: Callbacks,
         path: &str,
         installation: crate::Installation,
-        output: Option<crate::wasi::Output>,
+        output: Option<crate::Stdout>,
     ) -> wasmtime::Result<Self> {
         Ok(Self {
             installation,
