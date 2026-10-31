@@ -34,7 +34,7 @@ const GROUPS: [&str; 26] = [
     "edit_execution_binds_expanded_paths_before_polling",
     "edit_operation_failures_stop_later_stages",
     "edit_native_failures_do_not_create_targets",
-    "edit_abort_drops_each_pending_stage_and_releases_queue",
+    "edit_abort_keeps_each_pending_stage_and_queue",
     "edit_synchronous_abort_wins_over_stage_result",
     "edit_preaborted_call_starts_no_operations",
     "edit_parallel_calls_preserve_both_changes",
