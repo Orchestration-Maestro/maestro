@@ -84,7 +84,7 @@ impl SessionManager {
             tokens_before,
             details: options.details,
             from_hook: options.from_hook,
-            usage: Presence::Missing,
+            usage: options.usage,
         })
     }
 
@@ -154,7 +154,7 @@ impl SessionManager {
             summary: summary.to_owned(),
             details: options.details,
             from_hook: options.from_hook,
-            usage: Presence::Missing,
+            usage: options.usage,
         })
     }
 }

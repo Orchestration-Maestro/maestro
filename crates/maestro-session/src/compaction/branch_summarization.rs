@@ -355,7 +355,7 @@ fn result(
                 ),
                 read_files: details.read_files,
                 modified_files: details.modified_files,
-                usage: maestro_models::Usage::default(),
+                usage: response.usage.clone(),
             }
         }
     }

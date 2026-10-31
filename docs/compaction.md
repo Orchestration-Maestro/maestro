@@ -113,7 +113,8 @@ from [the entry owner](entry.md). For a split turn with a nonempty prefix, histo
 prefix requests start before either is awaited; an empty history uses `No prior history.`
 without a history request. Prefix instructions omit prior-summary and custom focus.
 The merged summary receives sorted file sections and present file details. The result
-retains the prepared ID and token count; saving it is a separate caller operation.
+retains the prepared ID and token count, and carries the provider usage of its requests
+(added together for a split turn); saving it is a separate caller operation.
 
 Projection failures return JSON diagnostics before that request starts. Adapter setup
 errors retain their diagnostics. Error responses use `Summarization failed: ...` or
