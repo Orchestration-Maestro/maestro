@@ -29,7 +29,9 @@ is released.
 
 `is_streaming` is true from the start of the run through its last continuation.
 `prompt`, `wait_for_idle` and `abort` return only after the settle step, and so
-do the idle waits of the extension and interactive command contexts. A message
+do the idle waits of the extension and interactive command contexts. `dispose` stops
+the work a run waits on (a retry wait, a compaction, a branch summary, a shell command and
+the response) without awaiting it, and the run then settles on its own. A message
 sent with `send_custom_message` while a run is active is queued: steering unless
 follow-up is asked for. A response that was aborted leaves queued messages
 queued.

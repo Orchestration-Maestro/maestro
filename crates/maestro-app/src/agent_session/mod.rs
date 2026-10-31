@@ -204,10 +204,16 @@ impl<E: ExtensionExecution> AgentSession<E> {
         }
     }
 
-    /// Invalidates every extension context with the stale-context guidance, stops agent
-    /// delivery, drops every session listener and releases the session's provider resources.
-    /// Nothing running is aborted or awaited.
+    /// Stops the work in flight (a waiting retry, a compaction, a branch summary, a shell
+    /// command and the response) without awaiting it, invalidates every extension context
+    /// with the stale-context guidance, stops agent delivery, drops every session listener and
+    /// releases the session's provider resources. A run that was waiting settles on its own.
     pub fn dispose(&self) {
+        self.abort_retry();
+        self.abort_compaction();
+        self.abort_branch_summary();
+        self.abort_bash();
+        self.agent.abort();
         self.extension_runner().invalidate(None);
         self.disconnect_from_agent();
         let listeners = std::mem::take(&mut *self.event_listeners.borrow_mut());
