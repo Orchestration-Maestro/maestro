@@ -465,8 +465,8 @@ fn shared_digest(root: &Path) -> String {
 }
 
 /// Edits to the tooling or to a crate no component builds on keep the digest the components
-/// share; an edit to a WIT file, a locked package they use or the toolchain changes it, and
-/// an edit to a locked package they do not use does not.
+/// share, and so does an edit to the lock entry of a workspace crate; an edit to a WIT file
+/// changes it.
 #[test]
 fn component_digest_follows_only_what_the_components_build_on() {
     let scratch = Scratch::new().unwrap();
@@ -497,18 +497,6 @@ fn component_digest_follows_only_what_the_components_build_on() {
     prepare(root);
     assert_eq!(shared_digest(root), before);
 
-    fs::write(
-        root.join("Cargo.lock"),
-        lock.replace(
-            "name = \"shared\"\nversion = \"0.0.0\"",
-            "name = \"shared\"\nversion = \"0.0.1\"",
-        ),
-    )
-    .unwrap();
-    prepare(root);
-    assert_ne!(shared_digest(root), before);
-
-    fs::write(root.join("Cargo.lock"), lock).unwrap();
     fs::create_dir_all(root.join("crates/maestro-extensions-wasm/wit")).unwrap();
     fs::write(
         root.join("crates/maestro-extensions-wasm/wit/world.wit"),

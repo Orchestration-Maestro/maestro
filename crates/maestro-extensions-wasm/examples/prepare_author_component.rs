@@ -29,7 +29,7 @@ fn main() -> Result<(), String> {
         root.join("examples"),
         root.join("../../examples/extensions"),
     ];
-    let mut names = build::cargo::FIXED_EXAMPLES.map(str::to_owned).to_vec();
+    let mut names = components::FIXED_EXAMPLES.map(str::to_owned).to_vec();
     components::visit(&folders, |name, _| {
         names.push(name.to_owned());
         Ok(())

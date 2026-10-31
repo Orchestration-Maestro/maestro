@@ -12,7 +12,7 @@ pub mod cargo;
 
 /// The example target of the shared author extension.
 #[cfg(test)]
-const AUTHOR_EXAMPLE: &str = cargo::FIXED_EXAMPLES[0];
+const AUTHOR_EXAMPLE: &str = cargo::components::FIXED_EXAMPLES[0];
 
 /// The component built from the shared author extension.
 ///

@@ -7,10 +7,6 @@ use std::process::Command;
 /// Source marker traversal shared with component preparation.
 pub mod components;
 
-/// The author and context examples, which no source marker names, in the order of the fixed
-/// exports that supply their artifacts.
-pub const FIXED_EXAMPLES: [&str; 2] = ["author_component", "context_bridge"];
-
 /// Uses a prepared example or builds the selected component in the host test output.
 ///
 /// # Errors
@@ -126,7 +122,7 @@ fn artifact(messages: &str, name: &str) -> Result<PathBuf, String> {
 
 /// Looks up a supplied artifact through the same source markers that preparation visits.
 fn prepared_component(directory: &Path, name: &str) -> Result<Option<PathBuf>, String> {
-    if let Some((_, variable)) = FIXED_EXAMPLES
+    if let Some((_, variable)) = components::FIXED_EXAMPLES
         .iter()
         .zip(components::FIXED_VARIABLES)
         .find(|(example, _)| **example == name)
