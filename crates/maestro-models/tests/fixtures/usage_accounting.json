@@ -1821,7 +1821,9 @@
           "stream_options": {
             "include_usage": true
           },
-          "enable_thinking": false
+          "thinking": {
+            "type": "disabled"
+          }
         }
       ],
       "requests": [
@@ -1848,7 +1850,9 @@
             "stream_options": {
               "include_usage": true
             },
-            "enable_thinking": false
+            "thinking": {
+              "type": "disabled"
+            }
           }
         }
       ],
@@ -9134,7 +9138,9 @@
           "stream_options": {
             "include_usage": true
           },
-          "enable_thinking": false
+          "thinking": {
+            "type": "disabled"
+          }
         }
       ],
       "requests": [
@@ -9161,7 +9167,9 @@
             "stream_options": {
               "include_usage": true
             },
-            "enable_thinking": false
+            "thinking": {
+              "type": "disabled"
+            }
           }
         }
       ],
@@ -9338,7 +9346,9 @@
           "stream_options": {
             "include_usage": true
           },
-          "enable_thinking": false
+          "thinking": {
+            "type": "disabled"
+          }
         }
       ],
       "requests": [
@@ -9373,7 +9383,9 @@
             "stream_options": {
               "include_usage": true
             },
-            "enable_thinking": false
+            "thinking": {
+              "type": "disabled"
+            }
           }
         }
       ],

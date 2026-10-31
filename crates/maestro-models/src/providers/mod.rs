@@ -9,6 +9,7 @@ pub mod faux;
 pub mod http;
 pub(crate) mod json_text;
 pub mod messages;
+pub(crate) mod model_compat;
 pub(crate) mod nullable;
 pub(crate) mod openai_prompt_cache;
 pub mod reasoning;

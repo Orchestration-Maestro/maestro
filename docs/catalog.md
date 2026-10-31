@@ -56,6 +56,9 @@ model; custom-model fields take precedence. Omitted custom metadata uses the ID
 as name, text input, no reasoning, zero prices, a 128000 context window and a
 16384 output limit.
 
+The `modelOverrides` of a provider also apply to the models an extension registers for it,
+and their `headers` are merged over the registered model's own.
+
 Provider URL and compatibility overrides precede built-in model metadata
 changes. Partial prices and thinking-level maps retain unsupplied fields;
 explicit thinking nulls remain null. Compatibility overlays merge a router or

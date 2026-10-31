@@ -1768,7 +1768,9 @@
           "stream_options": {
             "include_usage": true
           },
-          "enable_thinking": false
+          "thinking": {
+            "type": "disabled"
+          }
         }
       ],
       "requests": [
@@ -1795,7 +1797,9 @@
             "stream_options": {
               "include_usage": true
             },
-            "enable_thinking": false
+            "thinking": {
+              "type": "disabled"
+            }
           }
         }
       ],
@@ -3481,7 +3485,7 @@
           "model": "deepseek/deepseek-v3.2",
           "messages": [
             {
-              "role": "developer",
+              "role": "system",
               "content": "You are a helpful assistant."
             },
             {
@@ -3511,7 +3515,7 @@
             "model": "deepseek/deepseek-v3.2",
             "messages": [
               {
-                "role": "developer",
+                "role": "system",
                 "content": "You are a helpful assistant."
               },
               {
@@ -3741,7 +3745,7 @@
           "model": "google/gemini-2.5-flash",
           "messages": [
             {
-              "role": "developer",
+              "role": "system",
               "content": "You are a helpful assistant."
             },
             {
@@ -3771,7 +3775,7 @@
             "model": "google/gemini-2.5-flash",
             "messages": [
               {
-                "role": "developer",
+                "role": "system",
                 "content": "You are a helpful assistant."
               },
               {
@@ -8789,7 +8793,7 @@
           "model": "z-ai/glm-4.5v",
           "messages": [
             {
-              "role": "developer",
+              "role": "system",
               "content": "You are a helpful assistant that uses tools when asked."
             },
             {
@@ -8833,7 +8837,7 @@
             "model": "z-ai/glm-4.5v",
             "messages": [
               {
-                "role": "developer",
+                "role": "system",
                 "content": "You are a helpful assistant that uses tools when asked."
               },
               {
@@ -9032,7 +9036,7 @@
           "model": "z-ai/glm-4.5v",
           "messages": [
             {
-              "role": "developer",
+              "role": "system",
               "content": "You are a helpful assistant that uses tools when asked."
             },
             {
@@ -9110,7 +9114,7 @@
             "model": "z-ai/glm-4.5v",
             "messages": [
               {
-                "role": "developer",
+                "role": "system",
                 "content": "You are a helpful assistant that uses tools when asked."
               },
               {
@@ -9307,7 +9311,7 @@
           "model": "z-ai/glm-4.5v",
           "messages": [
             {
-              "role": "developer",
+              "role": "system",
               "content": "You are a helpful assistant that uses tools when asked."
             },
             {
@@ -9351,7 +9355,7 @@
             "model": "z-ai/glm-4.5v",
             "messages": [
               {
-                "role": "developer",
+                "role": "system",
                 "content": "You are a helpful assistant that uses tools when asked."
               },
               {
@@ -9554,7 +9558,7 @@
           "model": "z-ai/glm-4.5v",
           "messages": [
             {
-              "role": "developer",
+              "role": "system",
               "content": "You are a helpful assistant that uses tools when asked."
             },
             {
@@ -9632,7 +9636,7 @@
             "model": "z-ai/glm-4.5v",
             "messages": [
               {
-                "role": "developer",
+                "role": "system",
                 "content": "You are a helpful assistant that uses tools when asked."
               },
               {
@@ -68543,7 +68547,9 @@
           "stream_options": {
             "include_usage": true
           },
-          "enable_thinking": false
+          "thinking": {
+            "type": "disabled"
+          }
         }
       ],
       "requests": [
@@ -68570,7 +68576,9 @@
             "stream_options": {
               "include_usage": true
             },
-            "enable_thinking": false
+            "thinking": {
+              "type": "disabled"
+            }
           }
         }
       ],
@@ -68700,7 +68708,9 @@
           "stream_options": {
             "include_usage": true
           },
-          "enable_thinking": false
+          "thinking": {
+            "type": "disabled"
+          }
         }
       ],
       "requests": [
@@ -68727,7 +68737,9 @@
             "stream_options": {
               "include_usage": true
             },
-            "enable_thinking": false
+            "thinking": {
+              "type": "disabled"
+            }
           }
         }
       ],
@@ -68857,7 +68869,9 @@
           "stream_options": {
             "include_usage": true
           },
-          "enable_thinking": false
+          "thinking": {
+            "type": "disabled"
+          }
         }
       ],
       "requests": [
@@ -68884,7 +68898,9 @@
             "stream_options": {
               "include_usage": true
             },
-            "enable_thinking": false
+            "thinking": {
+              "type": "disabled"
+            }
           }
         }
       ],
@@ -69019,7 +69035,9 @@
           "stream_options": {
             "include_usage": true
           },
-          "enable_thinking": false
+          "thinking": {
+            "type": "disabled"
+          }
         }
       ],
       "requests": [
@@ -69046,7 +69064,9 @@
             "stream_options": {
               "include_usage": true
             },
-            "enable_thinking": false
+            "thinking": {
+              "type": "disabled"
+            }
           }
         }
       ],
@@ -69181,7 +69201,9 @@
           "stream_options": {
             "include_usage": true
           },
-          "enable_thinking": false
+          "thinking": {
+            "type": "disabled"
+          }
         }
       ],
       "requests": [
@@ -69208,7 +69230,9 @@
             "stream_options": {
               "include_usage": true
             },
-            "enable_thinking": false
+            "thinking": {
+              "type": "disabled"
+            }
           }
         }
       ],
@@ -69338,7 +69362,9 @@
           "stream_options": {
             "include_usage": true
           },
-          "enable_thinking": false
+          "thinking": {
+            "type": "disabled"
+          }
         }
       ],
       "requests": [
@@ -69365,7 +69391,9 @@
             "stream_options": {
               "include_usage": true
             },
-            "enable_thinking": false
+            "thinking": {
+              "type": "disabled"
+            }
           }
         }
       ],
@@ -69495,7 +69523,9 @@
           "stream_options": {
             "include_usage": true
           },
-          "enable_thinking": false
+          "thinking": {
+            "type": "disabled"
+          }
         }
       ],
       "requests": [
@@ -69522,7 +69552,9 @@
             "stream_options": {
               "include_usage": true
             },
-            "enable_thinking": false
+            "thinking": {
+              "type": "disabled"
+            }
           }
         }
       ],
@@ -69657,7 +69689,9 @@
           "stream_options": {
             "include_usage": true
           },
-          "enable_thinking": false
+          "thinking": {
+            "type": "disabled"
+          }
         }
       ],
       "requests": [
@@ -69684,7 +69718,9 @@
             "stream_options": {
               "include_usage": true
             },
-            "enable_thinking": false
+            "thinking": {
+              "type": "disabled"
+            }
           }
         }
       ],
@@ -69819,7 +69855,9 @@
           "stream_options": {
             "include_usage": true
           },
-          "enable_thinking": false
+          "thinking": {
+            "type": "disabled"
+          }
         }
       ],
       "requests": [
@@ -69846,7 +69884,9 @@
             "stream_options": {
               "include_usage": true
             },
-            "enable_thinking": false
+            "thinking": {
+              "type": "disabled"
+            }
           }
         }
       ],
@@ -69976,7 +70016,9 @@
           "stream_options": {
             "include_usage": true
           },
-          "enable_thinking": false
+          "thinking": {
+            "type": "disabled"
+          }
         }
       ],
       "requests": [
@@ -70003,7 +70045,9 @@
             "stream_options": {
               "include_usage": true
             },
-            "enable_thinking": false
+            "thinking": {
+              "type": "disabled"
+            }
           }
         }
       ],
@@ -70133,7 +70177,9 @@
           "stream_options": {
             "include_usage": true
           },
-          "enable_thinking": false
+          "thinking": {
+            "type": "disabled"
+          }
         }
       ],
       "requests": [
@@ -70160,7 +70206,9 @@
             "stream_options": {
               "include_usage": true
             },
-            "enable_thinking": false
+            "thinking": {
+              "type": "disabled"
+            }
           }
         }
       ],
@@ -70295,7 +70343,9 @@
           "stream_options": {
             "include_usage": true
           },
-          "enable_thinking": false
+          "thinking": {
+            "type": "disabled"
+          }
         }
       ],
       "requests": [
@@ -70322,7 +70372,9 @@
             "stream_options": {
               "include_usage": true
             },
-            "enable_thinking": false
+            "thinking": {
+              "type": "disabled"
+            }
           }
         }
       ],
@@ -71258,7 +71310,9 @@
           "stream_options": {
             "include_usage": true
           },
-          "enable_thinking": false
+          "thinking": {
+            "type": "disabled"
+          }
         }
       ],
       "requests": [
@@ -71285,7 +71339,9 @@
             "stream_options": {
               "include_usage": true
             },
-            "enable_thinking": false
+            "thinking": {
+              "type": "disabled"
+            }
           }
         }
       ],
@@ -71385,7 +71441,9 @@
           "stream_options": {
             "include_usage": true
           },
-          "enable_thinking": false
+          "thinking": {
+            "type": "disabled"
+          }
         }
       ],
       "requests": [
@@ -71412,7 +71470,9 @@
             "stream_options": {
               "include_usage": true
             },
-            "enable_thinking": false
+            "thinking": {
+              "type": "disabled"
+            }
           }
         }
       ],
@@ -71542,7 +71602,9 @@
           "stream_options": {
             "include_usage": true
           },
-          "enable_thinking": false
+          "thinking": {
+            "type": "disabled"
+          }
         }
       ],
       "requests": [
@@ -71569,7 +71631,9 @@
             "stream_options": {
               "include_usage": true
             },
-            "enable_thinking": false
+            "thinking": {
+              "type": "disabled"
+            }
           }
         }
       ],
@@ -71673,7 +71737,9 @@
           "stream_options": {
             "include_usage": true
           },
-          "enable_thinking": false
+          "thinking": {
+            "type": "disabled"
+          }
         }
       ],
       "requests": [
@@ -71700,7 +71766,9 @@
             "stream_options": {
               "include_usage": true
             },
-            "enable_thinking": false
+            "thinking": {
+              "type": "disabled"
+            }
           }
         }
       ],

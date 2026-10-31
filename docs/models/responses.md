@@ -171,13 +171,15 @@ already-framed response event text. They open no connection.
 `convert_responses_messages` uses the existing
 [conversation projection](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/conversation-projection.md).
 The nonempty system prompt is included by default, as `developer` for reasoning
-models and `system` otherwise. User content retains its part order; empty block
+models and `system` otherwise, or when the model's compatibility sets
+`supportsDeveloperRole` to `false`. User content retains its part order; empty block
 lists produce no item, while empty text does.
 
 Assistant text becomes a completed message. Version-one text signatures select
 identity and recognized phase; other nonempty signatures supply the identity
 literally. Identities longer than 64 UTF-16 units are hashed. Missing or empty
-identities use the number of preceding turns that produced items. Thinking is
+identities use the number of preceding turns that produced items, and the later text
+blocks of one turn add their position, so the identities of a turn differ. Thinking is
 replayed only when it has a nonempty signature. Replay uses the owning
 [JSON conversion rules](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/arguments.md);
 numeric spelling can change.
@@ -200,17 +202,21 @@ initial message's last content part is inspected only when a matching delta need
 its kind.
 
 Text, thinking and tool-call updates share the supplied output handle. Every
-opened block retains its index even if a caller appends another block. Final
+opened block retains its index even if a caller appends another block. Each open item
+is tracked by the `output_index` its events carry, so items that finish out of order keep
+their own reasoning signature, text and call arguments; events without an index share one
+item. Final
 message items replace provisional text. Reasoning selects nonempty final summary,
-then nonempty final content, otherwise retains provisional thinking. An unmatched
-final message or reasoning item is ignored. Final text is stored before signature
+then nonempty final content, otherwise retains provisional thinking. A final
+reasoning, message or call item with no earlier added event opens its block, then
+finishes it. Final text is stored before signature
 conversion; a conversion failure emits no end event. Final reasoning retains its
 whole item as compact JSON after successful conversion. Encoded message signatures
 retain truthy phases; recognized phases are selected only during history conversion.
 Existing
 calls use nonempty scratch arguments before final arguments and ignore final
-identity. Final-only calls are inserted before publishing their end. When creating
-a call, an omitted item ID leaves the call identity alone; a present string ID
+identity. A call that only finishes opens first, so its start precedes its end.
+When creating a call, an omitted item ID leaves the call identity alone; a present string ID
 appends `|{id}`. A `call_id` containing `|` returns a native diagnostic because
 it cannot be distinguished from the compound identity. Argument
 completion delegates to the owning JSON helper; nonobject results become `{}`.

@@ -3,7 +3,6 @@
 /// Simple key resolution and typed request preparation.
 mod simple;
 pub(super) mod source;
-use maestro_json::is_truthy as enabled;
 pub(crate) use simple::dispatch_simple;
 pub use simple::{stream_simple_openai_responses, stream_simple_openai_responses_for};
 use source::{Prepared, Source};
@@ -25,6 +24,7 @@ use crate::providers::http::{
     send_with_status_error,
 };
 use crate::providers::json_text::compact_json;
+use crate::providers::model_compat::compat_flag;
 use crate::providers::openai_prompt_cache::prompt_cache_key;
 use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, CacheRetention, Context,
@@ -255,12 +255,7 @@ impl<E: ProviderExecution> Request<'_, E> {
 
     /// Resolve a nullish-enabled response option at its consuming branch.
     fn compat(&self, name: &str) -> bool {
-        self.model
-            .compat
-            .as_ref()
-            .and_then(|compat| compat.0.get(name))
-            .filter(|value| !value.is_null())
-            .is_none_or(enabled)
+        compat_flag(self.model, name, true)
     }
 
     /// Ordered case-insensitive header layers with gateway authorization applied last.
