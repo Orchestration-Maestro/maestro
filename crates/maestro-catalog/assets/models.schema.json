@@ -316,6 +316,9 @@
                 {
                   "type": "object",
                   "properties": {
+                    "supportsDeveloperRole": {
+                      "type": "boolean"
+                    },
                     "sendSessionIdHeader": {
                       "type": "boolean"
                     },
@@ -766,6 +769,9 @@
                       {
                         "type": "object",
                         "properties": {
+                          "supportsDeveloperRole": {
+                            "type": "boolean"
+                          },
                           "sendSessionIdHeader": {
                             "type": "boolean"
                           },
@@ -1196,6 +1202,9 @@
                         {
                           "type": "object",
                           "properties": {
+                            "supportsDeveloperRole": {
+                              "type": "boolean"
+                            },
                             "sendSessionIdHeader": {
                               "type": "boolean"
                             },

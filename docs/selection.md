@@ -35,7 +35,7 @@ provider identities containing slashes. Failed inferred selection retries the
 full raw input before synthesizing a custom descriptor.
 Custom fallback copies the provider's configured default, otherwise its first
 model, changing only ID/name. `DEFAULT_MODEL_PER_PROVIDER` is an ordered mutable
-table. Custom results are detached handles, not new registry entries.
+table; the `zai` and `zai-coding-cn` providers default to `glm-5.3`. Custom results are detached handles, not new registry entries.
 
 The result keeps model, thinking, warning and error independently optional.
 `resolve_cli_model` emits no output and owns no process exit. Callers decide how to
