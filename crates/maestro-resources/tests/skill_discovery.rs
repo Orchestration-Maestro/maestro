@@ -721,7 +721,7 @@ fn maestro_skills_load_the_complete_fixture_tree() {
     ];
     expected.sort_unstable();
     assert_eq!(names, expected);
-    assert_eq!(result.diagnostics.len(), 10);
+    assert_eq!(result.diagnostics.len(), 6);
     assert!(result.skills.iter().all(
         |s| s.file_path.starts_with(support::text(&root)) && s.source_info.source == "fixture"
     ));
