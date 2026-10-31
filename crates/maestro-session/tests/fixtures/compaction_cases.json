@@ -2253,8 +2253,8 @@
       "kind": "value",
       "value": {
         "firstKeptEntryIndex": 0,
-        "turnStartIndex": 0,
-        "isSplitTurn": true
+        "turnStartIndex": -1,
+        "isSplitTurn": false
       }
     }
   },
@@ -2289,7 +2289,8 @@
     "args": [
       [
         {
-          "type": "custom_message"
+          "type": "custom_message",
+          "content": "x"
         },
         {
           "type": "message",
@@ -2312,8 +2313,8 @@
       "kind": "value",
       "value": {
         "firstKeptEntryIndex": 0,
-        "turnStartIndex": 0,
-        "isSplitTurn": true
+        "turnStartIndex": -1,
+        "isSplitTurn": false
       }
     }
   },
@@ -2324,7 +2325,8 @@
     "args": [
       [
         {
-          "type": "branch_summary"
+          "type": "branch_summary",
+          "summary": "s"
         },
         {
           "type": "message",
@@ -2348,7 +2350,8 @@
     "args": [
       [
         {
-          "type": "branch_summary"
+          "type": "branch_summary",
+          "summary": "s"
         },
         {
           "type": "message",
@@ -2371,8 +2374,8 @@
       "kind": "value",
       "value": {
         "firstKeptEntryIndex": 0,
-        "turnStartIndex": 0,
-        "isSplitTurn": true
+        "turnStartIndex": -1,
+        "isSplitTurn": false
       }
     }
   },
@@ -2400,7 +2403,7 @@
     ],
     "output": {
       "kind": "value",
-      "value": -1
+      "value": 0
     }
   },
   {
@@ -2466,7 +2469,7 @@
     ],
     "output": {
       "kind": "value",
-      "value": -1
+      "value": 0
     }
   },
   {
@@ -3917,7 +3920,7 @@
         "firstKeptEntryId": "e0",
         "messagesToSummarize": [],
         "turnPrefixMessages": [],
-        "isSplitTurn": true,
+        "isSplitTurn": false,
         "tokensBefore": 2,
         "fileOps": {
           "read": [],
@@ -6544,8 +6547,8 @@
       "kind": "value",
       "value": {
         "firstKeptEntryIndex": 2,
-        "turnStartIndex": 2,
-        "isSplitTurn": true
+        "turnStartIndex": -1,
+        "isSplitTurn": false
       }
     }
   },
@@ -6575,7 +6578,8 @@
           }
         },
         {
-          "type": "custom_message"
+          "type": "custom_message",
+          "content": "x"
         }
       ],
       0,
@@ -6586,8 +6590,8 @@
       "kind": "value",
       "value": {
         "firstKeptEntryIndex": 2,
-        "turnStartIndex": 2,
-        "isSplitTurn": true
+        "turnStartIndex": -1,
+        "isSplitTurn": false
       }
     }
   },
@@ -6617,7 +6621,8 @@
           }
         },
         {
-          "type": "branch_summary"
+          "type": "branch_summary",
+          "summary": "s"
         }
       ],
       0,
@@ -6628,8 +6633,8 @@
       "kind": "value",
       "value": {
         "firstKeptEntryIndex": 2,
-        "turnStartIndex": 2,
-        "isSplitTurn": true
+        "turnStartIndex": -1,
+        "isSplitTurn": false
       }
     }
   },
@@ -6674,8 +6679,8 @@
       "kind": "value",
       "value": {
         "firstKeptEntryIndex": 2,
-        "turnStartIndex": 0,
-        "isSplitTurn": true
+        "turnStartIndex": -1,
+        "isSplitTurn": false
       }
     }
   },
@@ -6720,8 +6725,8 @@
       "kind": "value",
       "value": {
         "firstKeptEntryIndex": 2,
-        "turnStartIndex": 0,
-        "isSplitTurn": true
+        "turnStartIndex": -1,
+        "isSplitTurn": false
       }
     }
   },
@@ -6766,8 +6771,8 @@
       "kind": "value",
       "value": {
         "firstKeptEntryIndex": 2,
-        "turnStartIndex": 0,
-        "isSplitTurn": true
+        "turnStartIndex": -1,
+        "isSplitTurn": false
       }
     }
   },
