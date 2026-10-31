@@ -20,6 +20,9 @@ use std::{
 /// The most session files whose metadata loads at the same time.
 const MAX_CONCURRENT_LOADS: usize = 10;
 
+/// Largest absolute epoch millisecond value accepted as a record date.
+const MAX_DATE_MILLIS: f64 = 8.64e15;
+
 /// Progress callback receiving completed and total candidate counts; an error stops the listing.
 pub type SessionListProgress<'a> = dyn FnMut(usize, usize) -> io::Result<()> + 'a;
 
@@ -204,7 +207,7 @@ fn session_name(entry: &Value) -> Result<Option<String>, serde_json::Error> {
     }
 }
 
-/// Index a user or assistant message that has content and track its activity time.
+/// Index a user or assistant message with content, reading scalar record dates as activity.
 fn scan_message(entry: &Value, scan: &mut Scan) -> Result<(), serde_json::Error> {
     let message = entry.get("message");
     let Some(role) = property(message, "role")?.and_then(Value::as_str) else {
@@ -216,14 +219,16 @@ fn scan_message(entry: &Value, scan: &mut Scan) -> Result<(), serde_json::Error>
     if role != "user" && role != "assistant" {
         return Ok(());
     }
-    let activity = match message.and_then(|message| message.get("timestamp")) {
-        Some(Value::Number(time)) => time.as_f64(),
-        _ => entry
-            .get("timestamp")
-            .and_then(Value::as_str)
-            .map(timestamp_millis)
-            .filter(|time| !time.is_nan()),
-    };
+    let activity =
+        if let Some(Value::Number(time)) = message.and_then(|message| message.get("timestamp")) {
+            time.as_f64()
+        } else {
+            let time = match entry.get("timestamp") {
+                Some(Value::Bool(value)) => f64::from(u8::from(*value)),
+                timestamp => created_millis(timestamp),
+            };
+            (time.abs() <= MAX_DATE_MILLIS).then_some(time.trunc())
+        };
     scan.activity = scan.activity.max(activity.unwrap_or(0.0));
     let text = message_text(content)?;
     if !text.is_empty() {

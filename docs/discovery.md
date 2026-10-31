@@ -56,7 +56,10 @@ is not failed; those lines are skipped by the shared parser.
 - `modified` is the greatest activity time of eligible messages when positive,
   independently of whether their text is empty. A
   numeric message `timestamp` is that message's activity (even zero or
-  negative); otherwise its record `timestamp` string is parsed. When no positive
+  negative); otherwise its record `timestamp` is read as a date: strings are
+  parsed, numbers are epoch milliseconds, `true` is 1, and `false` and `null`
+  are 0. Missing values, arrays, objects and numbers outside ±8.64e15 milliseconds
+  contribute no activity. When no positive
   activity exists, a header `timestamp` that is a date-parsable string is used;
   a numeric, null, missing or unparsable header time does not qualify, and the
   file's modification time is used instead.
