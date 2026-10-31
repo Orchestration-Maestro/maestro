@@ -153,3 +153,62 @@ fn assert_retention_payload(api: &str, body: &serde_json::Value, expected: &str)
         );
     }
 }
+
+#[cfg(not(target_arch = "wasm32"))]
+/// A session-derived cache key keeps its first 64 Unicode scalars in every OpenAI-style protocol.
+#[test]
+fn maestro_prompt_cache_keys_stop_at_64_characters() -> TestResult {
+    use crate::bundled;
+    use maestro_models::{ProviderStreamOptions, StreamOptions, stream};
+    let _registry = bundled::registry();
+    let sixty_three = "a".repeat(63);
+    let sessions = [
+        ("x".repeat(100), "x".repeat(64)),
+        ("y".repeat(64), "y".repeat(64)),
+        ("z".repeat(10), "z".repeat(10)),
+        (format!("{sixty_three}éé"), format!("{sixty_three}é")),
+        (format!("{sixty_three}😀😀"), format!("{sixty_three}😀")),
+    ];
+    for (api, base_url) in [
+        ("openai-completions", "https://api.openai.com/v1"),
+        ("openai-responses", "https://api.openai.com/v1"),
+        ("openai-codex-responses", "https://controlled.invalid"),
+        (
+            "azure-openai-responses",
+            "https://controlled.openai.azure.com/openai/v1",
+        ),
+    ] {
+        for (session, expected) in &sessions {
+            maestro_models::reset_api_providers();
+            let model = bundled::descriptor(api, base_url)?;
+            let (fetch, requests) = bundled::fetch(bundled::text_body(api, "ok"));
+            let options = ProviderStreamOptions {
+                common: StreamOptions {
+                    api_key: Some(bundled::api_key(api)),
+                    session_id: Some(session.clone()),
+                    fetch: Some(fetch),
+                    ..StreamOptions::default()
+                },
+                ..ProviderStreamOptions::default()
+            };
+            let result = crate::runtime::run::<crate::TestResult<_>>(async {
+                Ok(stream(model, bundled::conversation()?, Some(options))?
+                    .result()
+                    .await)
+            })?;
+            assert!(
+                bundled::error_of(&result).is_none(),
+                "{api}: request failed"
+            );
+            let requests = bundled::recorded(&requests);
+            assert_eq!(requests.len(), 1, "{api}");
+            assert_eq!(
+                requests[0].body["prompt_cache_key"],
+                serde_json::json!(expected),
+                "{api} with a {}-character session",
+                session.chars().count()
+            );
+        }
+    }
+    Ok(())
+}
