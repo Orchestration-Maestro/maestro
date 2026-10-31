@@ -33,6 +33,14 @@ pub(crate) struct Spawn {
 }
 /// One operation on an original native capability.
 pub(crate) enum Request {
+    /// Atomic byte publication and a possible postcommit warning.
+    SaveFile(String, Vec<u8>, u32, Reply<Option<String>>, Admission),
+    /// Native permission observation.
+    FileMode(String, Reply<u32>),
+    /// Native permission change.
+    SetFileMode(String, u32, Reply<()>),
+    /// Recursive native directory creation.
+    CreateDir(String, u32, Reply<()>),
     /// Admits a literal native launch.
     Spawn(Spawn, Async<Child>, Admission),
     /// Signals a native PID or supported process group.
@@ -63,7 +71,16 @@ impl Request {
             Self::Spawn(_, reply, _) => {
                 let _ = reply.send(Err(error));
             }
-            Self::Kill(_, _, reply) | Self::Close(reply) => {
+            Self::SaveFile(_, _, _, reply, _) => {
+                let _ = reply.send(Err(error));
+            }
+            Self::FileMode(_, reply) => {
+                let _ = reply.send(Err(error));
+            }
+            Self::SetFileMode(_, _, reply)
+            | Self::CreateDir(_, _, reply)
+            | Self::Kill(_, _, reply)
+            | Self::Close(reply) => {
                 let _ = reply.send(Err(error));
             }
             Self::Pid(reply) => {
@@ -107,13 +124,36 @@ impl Registry {
 impl State {
     /// Selects the original capability outside every registry borrow.
     pub(super) fn native(&self, id: u64, request: Request) {
+        let operations = self
+            .registry
+            .resources
+            .borrow()
+            .native_io
+            .clone()
+            .ok_or_else(|| "native I/O capability unavailable".to_owned());
         match request {
+            Request::SaveFile(path, bytes, mode, reply, admission) => self.admit(
+                Box::pin(async move {
+                    let result = match operations {
+                        Ok(io) => io.save_file(path, bytes, mode).await,
+                        Err(error) => Err(error),
+                    };
+                    let _ = reply.send(result);
+                }),
+                admission,
+            ),
+            Request::FileMode(path, reply) => {
+                let _ = reply.send(operations.and_then(|io| io.file_mode(&path)));
+            }
+            Request::SetFileMode(path, mode, reply) => {
+                let _ = reply.send(operations.and_then(|io| io.set_file_mode(&path, mode)));
+            }
+            Request::CreateDir(path, mode, reply) => {
+                let _ = reply.send(operations.and_then(|io| io.create_dir(&path, mode)));
+            }
             Request::Spawn(spawn, reply, admission) => self.native_spawn(spawn, reply, admission),
             Request::Kill(pid, signal, reply) => {
-                let operations = self.registry.resources.borrow().native_io.clone();
-                let result = operations
-                    .ok_or_else(|| "native I/O capability unavailable".to_owned())
-                    .and_then(|io| io.kill(pid, signal));
+                let result = operations.and_then(|io| io.kill(pid, signal));
                 let _ = reply.send(result);
             }
             request @ (Request::Pid(_)

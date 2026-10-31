@@ -3,6 +3,8 @@ use maestro_extensions::native_io::{
     ChildProcess, ExitStatus, IoFuture, NativeIo, Readable, Request, Response, SpawnOptions, Stdio,
     Writable,
 };
+/// Native paths, permissions and byte publication policy.
+mod files;
 /// HTTP response and body resource ownership.
 mod http;
 use http::Http;
@@ -27,6 +29,24 @@ struct Operations {
     local: Weak<LocalSet>,
 }
 impl NativeIo for Operations {
+    fn save_file(&self, path: String, bytes: Vec<u8>, mode: u32) -> IoFuture<'_, Option<String>> {
+        Box::pin(async move {
+            tokio::task::spawn_blocking(move || files::save_file(&path, &bytes, mode))
+                .await
+                .map_err(|error| error.to_string())?
+                .map_err(|error| error.to_string())
+        })
+    }
+    fn file_mode(&self, path: &str) -> Result<u32, String> {
+        files::file_mode(path).map_err(|error| error.to_string())
+    }
+    fn set_file_mode(&self, path: &str, mode: u32) -> Result<(), String> {
+        files::set_file_mode(path, mode).map_err(|error| error.to_string())
+    }
+    fn create_dir(&self, path: &str, mode: u32) -> Result<(), String> {
+        files::create_dir(path, mode).map_err(|error| error.to_string())
+    }
+
     fn watch(
         &self,
         path: String,

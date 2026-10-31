@@ -14,6 +14,9 @@ use std::rc::Rc;
 #[path = "native_io_component/children.rs"]
 mod children;
 #[cfg(target_arch = "wasm32")]
+#[path = "native_io_component/files.rs"]
+mod files;
+#[cfg(target_arch = "wasm32")]
 #[path = "native_io_component/http.rs"]
 mod http;
 #[cfg(target_arch = "wasm32")]
@@ -31,6 +34,7 @@ fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
         children::register(&api, Rc::clone(&io))?;
         http::register(&api, Rc::clone(&io))?;
         watch::register(&api, Rc::clone(&io))?;
+        files::register(&api, Rc::clone(&io))?;
         let direct = Rc::clone(&io);
         api.register_command(
             "native-wait",

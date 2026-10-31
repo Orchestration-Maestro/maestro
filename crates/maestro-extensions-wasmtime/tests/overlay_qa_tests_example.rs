@@ -91,6 +91,18 @@ impl Process {
     }
 }
 impl NativeIo for Process {
+    fn save_file(&self, _: String, _: Vec<u8>, _: u32) -> IoFuture<'_, Option<String>> {
+        Box::pin(std::future::ready(Err("no file saves".into())))
+    }
+    fn file_mode(&self, _: &str) -> Result<u32, String> {
+        Err("no file modes".into())
+    }
+    fn set_file_mode(&self, _: &str, _: u32) -> Result<(), String> {
+        Err("no permission changes".into())
+    }
+    fn create_dir(&self, _: &str, _: u32) -> Result<(), String> {
+        Err("no directory creation".into())
+    }
     fn watch(&self, _: String, _: Rc<dyn Fn()>) -> Result<Rc<dyn FsWatcher>, String> {
         Err("no watches".into())
     }

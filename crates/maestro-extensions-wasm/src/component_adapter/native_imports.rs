@@ -8,6 +8,15 @@ use crate::{ExtensionFuture, ExtensionResult};
 
 /// Native resource operations implemented by generated and controlled imports.
 pub trait NativeImports {
+    /// Forwards the native filesystem operation unchanged.
+    fn save_file(&self, path: &str, bytes: &[u8], mode: u32) -> Result<Option<String>, String>;
+    /// Forwards the native filesystem operation unchanged.
+    fn file_mode(&self, path: &str) -> Result<u32, String>;
+    /// Forwards the native filesystem operation unchanged.
+    fn set_file_mode(&self, path: &str, mode: u32) -> Result<(), String>;
+    /// Forwards the native filesystem operation unchanged.
+    fn create_dir(&self, path: &str, mode: u32) -> Result<(), String>;
+
     /// Independently owned native watch registration.
     type Watcher: 'static;
     /// Stops the original native watch.

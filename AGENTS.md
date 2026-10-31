@@ -164,7 +164,8 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
 - `maestro-watch` and `maestro-lock` are declared core leaves below layer 0.
   Watch has no workspace dependencies; lock may use the optional path utility
   without changing its leaf status. Only theme/application
-  may depend on watch; only settings/credentials/workspace/detection/session/application may depend on lock. Follow the
+  may depend on watch; only settings/credentials/workspace/detection/session/application may depend on lock.
+  Application uses maestro-lock: atomic file publication, on native targets only. Follow the
   [shared filesystem effect contract](docs/specs/maestro-port.md#crates-and-delivery-order):
   watch owns creation/close helpers, injected watch/timer interfaces and native
   notifications; lock owns bounded and waiting acquisition of caller-opened files and byte-oriented

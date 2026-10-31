@@ -110,6 +110,13 @@ interface host {
     /// Original edit effects retain structured access failures until native formatting.
     variant edit-operation { read-file, write-file(string), access }
     record local-edit { target: u32, operation: edit-operation, path: string }
+    /// A committed save may carry a durability warning; errors precede publication.
+    save-file: func(path: string, bytes: list<u8>, mode: u32) -> result<option<string>, string>;
+    /// Native Unix permission bits, unsupported on non-Unix hosts.
+    file-mode: func(path: string) -> result<u32, string>;
+    set-file-mode: func(path: string, mode: u32) -> result<_, string>;
+    /// Recursive creation; existing directories remain unchanged.
+    create-dir: func(path: string, mode: u32) -> result<_, string>;
     /// Owned native file watch; drop and close stop notification delivery.
     resource fs-watcher { close: func() -> result<_, string>; }
     watch: func(path: string, listener: borrow<callback>) -> result<fs-watcher, string>;

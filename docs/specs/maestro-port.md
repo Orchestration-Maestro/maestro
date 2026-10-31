@@ -542,7 +542,7 @@ Move the existing matchers only after this contract lands, through
 workspace dependencies; lock may use the optional path utility, which does not
 change its leaf status. Only theme and application
 may depend on watch; only settings, credentials, workspace, detection, session and application
-may depend on lock. Application uses maestro-lock: atomic file publication.
+may depend on lock. Application uses maestro-lock: atomic file publication, on native targets only.
 
 `maestro-watch::fs_watch` owns watch creation/close helpers, the injected
 watch/timer interface and the native notification adapter. Reload, refresh,
@@ -557,7 +557,10 @@ parent directory is synced. Replacement preserves existing native permissions;
 a supplied creation mode applies only to missing files. Unix creation applies
 permission bits before first visibility; Windows maps only owner-write to the
 read-only attribute, without configuring ACLs. Workspace snapshot storage and detection catalog publication use this operation;
-feature owners retain serialization and symbolic-link policy. File creation for
+feature owners retain serialization and symbolic-link policy. Native extension
+file saves are owned by `maestro-app::extension_native_io::files`; the application
+uses the lock owner for publication. The guest and runtime adapter forward calls
+without their own writer or dependency on lock. File creation for
 lock acquisition, permissions, in-place settings/credentials persistence, unlocking
 policy and asynchronous credential acquisition remain with settings and
 credentials. Neither leaf introduces a common background runtime, scheduler,

@@ -1422,6 +1422,7 @@ fn check_permitted_declarations(workspace: &Workspace, from: &str, targets: &[&s
         .iter()
         .enumerate()
         .filter(|(_, target)| from != "maestro" || !required_targets(from).contains(target))
+        .filter(|(_, target)| !(from == "maestro-app" && **target == "maestro-lock"))
         .collect();
     for optional in [false, true] {
         let mut declarations = String::new();
@@ -1441,11 +1442,24 @@ fn check_permitted_declarations(workspace: &Workspace, from: &str, targets: &[&s
                 append_required_root_wiring(&mut declarations, from, kind);
             }
         }
+        append_application_lock(&mut declarations, from, targets);
         workspace.member(from, from, &declarations);
         assert_eq!(
             check_workspace(workspace.root.path()),
             Ok(()),
             "{from} -> {targets:?} (optional: {optional})"
+        );
+    }
+}
+
+/// Keep the application's publication edge native in broad valid-graph fixtures.
+fn append_application_lock(declarations: &mut String, from: &str, targets: &[&str]) {
+    if from == "maestro-app" && targets.contains(&"maestro-lock") {
+        declarations.push_str(
+            r#"
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+publication = { package = "maestro-lock", path = "../maestro-lock" }
+"#,
         );
     }
 }
@@ -2069,6 +2083,7 @@ fn complete_permitted_graph_is_acyclic() {
                 .copied()
                 .chain(utility)
                 .filter(|target| from != "maestro" || !required_targets(from).contains(target))
+                .filter(|target| !(from == "maestro-app" && *target == "maestro-lock"))
                 .enumerate()
             {
                 writeln!(
@@ -2078,6 +2093,7 @@ fn complete_permitted_graph_is_acyclic() {
                 .unwrap();
             }
             append_required_root_wiring(&mut declarations, from, kind);
+            append_application_lock(&mut declarations, from, targets);
             workspace.member(from, from, &declarations);
         }
         assert_eq!(
@@ -2547,6 +2563,61 @@ fn extension_and_rpc_test_edges_are_native() {
                     "{owner}: {target} test support must be a native, non-optional development dependency"
                 )),
                 "{target} in {table}"
+            );
+        }
+    }
+}
+
+#[test]
+fn application_lock_edge_keeps_publication_native_owned() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-app", "maestro-lock"]);
+    for (table, permitted) in [
+        (
+            "target.'cfg(not(target_arch = \"wasm32\"))'.dependencies",
+            true,
+        ),
+        (
+            "target.'cfg(not(target_arch = \"wasm32\"))'.build-dependencies",
+            true,
+        ),
+        ("dependencies", false),
+        ("target.'cfg(target_arch = \"wasm32\")'.dependencies", false),
+    ] {
+        workspace.member(
+            "maestro-app",
+            "maestro-app",
+            &format!(
+                r#"[{table}]
+publication = {{ package = "maestro-lock", path = "../maestro-lock" }}"#
+            ),
+        );
+        assert_eq!(
+            check_workspace(workspace.root.path()),
+            if permitted {
+                Ok(())
+            } else {
+                Err("maestro-app: maestro-lock must be a native dependency".into())
+            }
+        );
+    }
+    for from in ["maestro-extensions-wasmtime", "maestro-extensions-wasm"] {
+        let workspace = Workspace::new();
+        workspace.foundation(&[from, "maestro-lock"]);
+        for (kind, extra) in DECLARATIONS {
+            workspace.member(
+                from,
+                from,
+                &format!(
+                    r#"[{kind}]
+alias = {{ package = "maestro-lock", path = "../maestro-lock"{extra} }}"#
+                ),
+            );
+            assert_eq!(
+                check_workspace(workspace.root.path()),
+                Err(format!(
+                    "forbidden production dependency: {from} -> maestro-lock"
+                ))
             );
         }
     }

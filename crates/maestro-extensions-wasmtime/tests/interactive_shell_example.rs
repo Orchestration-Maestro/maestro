@@ -166,6 +166,23 @@ struct Io {
     launches: std::cell::Cell<usize>,
 }
 impl maestro_extensions::native_io::NativeIo for Io {
+    fn save_file(
+        &self,
+        _: String,
+        _: Vec<u8>,
+        _: u32,
+    ) -> maestro_extensions::native_io::IoFuture<'_, Option<String>> {
+        panic!("no file save")
+    }
+    fn file_mode(&self, _: &str) -> Result<u32, String> {
+        panic!("no file mode")
+    }
+    fn set_file_mode(&self, _: &str, _: u32) -> Result<(), String> {
+        panic!("no permission change")
+    }
+    fn create_dir(&self, _: &str, _: u32) -> Result<(), String> {
+        panic!("no directory creation")
+    }
     fn spawn(
         &self,
         shell: String,

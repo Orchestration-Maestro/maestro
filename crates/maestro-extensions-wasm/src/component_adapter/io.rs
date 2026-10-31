@@ -12,6 +12,18 @@ use std::time::Duration;
 pub(super) struct Io<I: Imports>(pub(super) I);
 
 impl<I: Imports> NativeIo for Io<I> {
+    fn create_dir(&self, path: &str, mode: u32) -> Result<(), String> {
+        self.0.create_dir(path, mode)
+    }
+    fn set_file_mode(&self, path: &str, mode: u32) -> Result<(), String> {
+        self.0.set_file_mode(path, mode)
+    }
+    fn file_mode(&self, path: &str) -> Result<u32, String> {
+        self.0.file_mode(path)
+    }
+    fn save_file(&self, path: &str, bytes: &[u8], mode: u32) -> Result<Option<String>, String> {
+        self.0.save_file(path, bytes, mode)
+    }
     fn watch(
         &self,
         path: String,
