@@ -176,11 +176,14 @@ workspace/tab/pane names, public numbers, selection, working directories, split
 axes and resume provenance. Screen history is stored separately and can be
 removed by saving without history.
 
-Saving writes pretty JSON without a trailing newline through the shared
-[recoverable in-place publication](locking.md#recoverable-byte-publication) operation, following symbolic
-links. Topology commits before history is saved or removed; failure on the second
-file does not undo the first. Snapshot saves ignore postcommit directory-sync
-advisories.
+Saving follows symbolic links and creates missing parent directories. It writes
+pretty JSON without a trailing newline to `<name>.json.tmp`, syncs the temporary
+file, renames it over the target, then syncs the parent directory. A failure before
+the rename removes the temporary file and leaves the previous snapshot unchanged.
+A crash before rename leaves the previous snapshot readable. Hard links keep the
+old bytes. Topology commits before history is saved or removed; failure on the
+second file does not undo the first. Parent-directory sync errors are returned
+after the new snapshot has committed.
 
 Missing files load silently as absent. Read, parse and unsupported-version failures
 produce warnings and return no snapshot. Only version 1 is accepted; there is no

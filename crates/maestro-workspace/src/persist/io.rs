@@ -1,6 +1,6 @@
 //! Supplied-path snapshot storage and load diagnostics.
 use super::snapshot::{SessionHistorySnapshot, SessionSnapshot};
-use maestro_lock::{Replace, replace};
+use maestro_lock::{Symlinks, Temporary, atomic_replace};
 use std::{fs, io, path::Path};
 
 /// Saves topology before saving or removing separate history.
@@ -20,18 +20,14 @@ pub fn save_to_paths(
         None => clear_path(history_path),
     }
 }
-/// Serializes once and delegates byte publication to the lock leaf.
+/// Serializes once and atomically renames synced bytes over the resolved target.
 fn save_json_to_path<T: serde::Serialize>(path: &Path, snapshot: &T) -> io::Result<()> {
     let bytes = serde_json::to_vec_pretty(snapshot)?;
-    replace(
-        path,
-        &bytes,
-        Replace {
-            through_symlinks: true,
-            ..Replace::default()
-        },
-    )?;
-    Ok(())
+    let committed = atomic_replace(path, &bytes, Symlinks::Follow, Temporary::Fixed("json.tmp"))?;
+    match committed.dir_sync {
+        Some(error) => Err(error),
+        None => Ok(()),
+    }
 }
 /// Removes only the supplied pathname, tolerating absence.
 ///
