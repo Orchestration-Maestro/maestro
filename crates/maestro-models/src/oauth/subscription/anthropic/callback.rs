@@ -67,11 +67,12 @@ fn html_error(
 }
 
 /// Port tried first, so it can be forwarded into containers or over SSH.
-#[cfg(not(target_arch = "wasm32"))]
-const PREFERRED_PORT: u16 = 53692;
+pub(super) const PREFERRED_PORT: u16 = 53692;
 
 /// Bind the subscription callback listener on the preferred port, or on any free loopback
-/// port when that one cannot be bound; the server reports the port it holds.
+/// port when that one cannot be bound; the server reports the port it holds. When no port
+/// can be bound the server is already cancelled and holds none, so sign-in continues with
+/// pasted input.
 #[cfg(not(target_arch = "wasm32"))]
 pub(super) async fn bind(
     state: String,
@@ -96,7 +97,9 @@ pub(super) async fn bind_with(
     };
     match bind_on(state.clone(), PREFERRED_PORT).await {
         Ok(server) => Ok(server),
-        Err(_) => bind_on(state, 0).await,
+        Err(_) => Ok(bind_on(state, 0)
+            .await
+            .unwrap_or_else(|_| crate::oauth::native::CallbackServer::cancelled())),
     }
 }
 /// Reject native serving only at the browser effect boundary.

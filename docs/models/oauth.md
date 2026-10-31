@@ -138,10 +138,11 @@ the loss of all observation handles.
 Login binds a native listener at `127.0.0.1:53692`; a nonempty
 `MAESTRO_OAUTH_CALLBACK_HOST` changes only its binding host. When port 53692
 cannot be bound, login binds any free port on the same host instead. If that
-also fails, login returns a native binding error before interaction callbacks
-run. The redirect address is `http://localhost:` followed by the bound port and
-`/callback`; the authorization address, the prompt placeholder and the token
-exchange all name that port. A browser binding attempt returns
+also fails, login continues without a listener: the wait for a callback is already
+cancelled, so the manual-input callback or the prompt supplies the code. The redirect
+address is `http://localhost:` followed by the bound port, or `53692` when no port is
+bound, and `/callback`; the authorization address, the prompt placeholder and the token
+exchange all name that address. A browser binding attempt returns
 `Anthropic OAuth requires a native callback listener`; importing the library,
 PKCE, pages and refresh do not require that listener. Interaction is supplied by
 library callbacks: this library does not open a browser or provide a UI.

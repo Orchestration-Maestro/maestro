@@ -783,7 +783,7 @@ fn pkce() -> crate::Pkce {
 /// Owned listener seam whose stopped witness follows shutdown observation.
 fn listener() -> super::native::CallbackServer {
     let mut server = super::native::CallbackServer::new();
-    server.port = 53692;
+    server.port = Some(53692);
     let stop = server.stop.clone();
     let stopped = server.stopped.clone();
     tokio::spawn(async move {

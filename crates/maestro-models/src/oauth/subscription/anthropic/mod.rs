@@ -29,7 +29,7 @@ const SCOPES: &str = "org:create_api_key user:profile user:inference user:sessio
 /// This provider does not consult the caller's selector or cancellation signal.
 ///
 /// # Errors
-/// Returns entropy, binding, interaction, transport or token validation failures.
+/// Returns entropy, interaction, transport or token validation failures.
 pub fn login_anthropic(
     callbacks: OAuthCallbacks,
     fetch: Option<Fetch>,
@@ -128,7 +128,7 @@ async fn select_code(
     pkce: &Pkce,
     server: &CallbackServer,
 ) -> Result<exchange::Grant, OAuthError> {
-    let redirect_uri = redirect_uri(server.port);
+    let redirect_uri = redirect_uri(server.port.unwrap_or(callback::PREFERRED_PORT));
     callbacks.on_auth(auth_info(pkce, &redirect_uri))?;
     let manual = callbacks
         .on_manual_code_input()
