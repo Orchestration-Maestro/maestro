@@ -1534,7 +1534,7 @@ fn native_restarting_active_terminal_replaces_resources_once() {
                 .terminal
                 .start(second.0.callback(), second.1.callback())
                 .unwrap();
-            output.written("\x1b[?2004h\x1b[?u\x1b[c").await;
+            output.written(START_BYTES).await;
             until(|| open_descriptors() == one_reader).await;
             feed.send(b"a");
             second.0.delivered(1).await;
@@ -1547,8 +1547,9 @@ fn native_restarting_active_terminal_replaces_resources_once() {
             elapse(1000).await;
             output.written("\x1b[>4;2m\x1b]9;4;3\x07").await;
             first.terminal.stop().unwrap();
+            // Each start pushed the flags once, so the stop pops them once per start.
             output
-                .written(&format!("\x1b]9;4;0;\x07{STOP_BYTES}\x1b[>4;0m"))
+                .written(&format!("\x1b]9;4;0;\x07{STOP_BYTES}\x1b[<u\x1b[>4;0m"))
                 .await;
             assert_eq!((stdin_attributes(), stdin_flags()), (before, flags));
         });

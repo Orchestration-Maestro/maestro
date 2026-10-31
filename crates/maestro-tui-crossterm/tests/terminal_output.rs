@@ -794,7 +794,9 @@ fn native_output_restart_keeps_pending_bytes() {
             assert!(terminal.pending_output_bytes() > 0);
             terminal.start(Box::new(|_| {}), Box::new(|| {})).unwrap();
             terminal.write("new").unwrap();
-            let expected = format!("{data}\x1b[?2004h\x1b[?u\x1b[cnew\x1b[?2004l\x1b[<u");
+            // The restart requests the flags again, so the stop pops both requests.
+            let expected =
+                format!("{data}\x1b[?2004h\x1b[>7u\x1b[?u\x1b[cnew\x1b[?2004l\x1b[<u\x1b[<u");
             let collector = collect_bytes(output, expected.len());
             terminal.stop().unwrap();
             assert_eq!(collector.join().unwrap(), expected.as_bytes());
