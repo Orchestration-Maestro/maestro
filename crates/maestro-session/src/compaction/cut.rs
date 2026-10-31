@@ -94,9 +94,6 @@ fn crossing(
             continue;
         };
         let weight = super::estimate_tokens(&message)?;
-        if weight == 0.0 {
-            continue;
-        }
         tokens += weight;
         if tokens >= keep {
             return Ok(Some(index));
@@ -133,9 +130,7 @@ pub fn find_cut_point(
         .unwrap_or(first);
     while cut > start_index {
         let previous = &entries[cut - 1];
-        let compaction =
-            property(Some(previous), "type")?.and_then(Value::as_str) == Some("compaction");
-        if compaction || context_message(previous)?.is_some() {
+        if context_message(previous)?.is_some() {
             break;
         }
         cut -= 1;
