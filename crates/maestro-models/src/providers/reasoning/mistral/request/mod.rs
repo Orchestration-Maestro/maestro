@@ -227,6 +227,11 @@ pub(super) async fn prepare<E: ProviderExecution>(
         .into_bytes();
     let headers = transport::headers(&key, authored_headers(&model, &options.common))?;
     let url = transport::endpoint(&base)?;
+    let timeout = options
+        .common
+        .timeout_ms
+        .map(crate::providers::http::request_timeout)
+        .transpose()?;
     Ok(Prepared {
         request: crate::HttpRequest {
             method: "POST".into(),
@@ -240,7 +245,7 @@ pub(super) async fn prepare<E: ProviderExecution>(
             .fetch
             .clone()
             .unwrap_or_else(crate::default_fetch),
-        timeout: transport::timeout(options.common.timeout_ms),
+        timeout,
     })
 }
 

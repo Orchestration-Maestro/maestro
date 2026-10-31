@@ -96,19 +96,6 @@ pub(in crate::providers::reasoning::mistral) fn media_type(
 /// response or a chunk.
 const DEFAULT_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
 
-/// The configured timeout in milliseconds as a duration; a negative or non-numeric one is
-/// ignored and one too long to represent never elapses.
-pub(in crate::providers::reasoning::mistral) fn timeout(
-    milliseconds: Option<f64>,
-) -> Option<std::time::Duration> {
-    milliseconds
-        .filter(|milliseconds| *milliseconds >= 0.0)
-        .map(|milliseconds| {
-            std::time::Duration::try_from_secs_f64(milliseconds / 1000.0)
-                .unwrap_or(std::time::Duration::MAX)
-        })
-}
-
 /// A timer that ends the wait with a timeout after `limit`.
 fn timer(limit: std::time::Duration) -> crate::BoxFuture<crate::FetchError> {
     Box::pin(async move {
