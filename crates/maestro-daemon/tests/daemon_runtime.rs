@@ -42,7 +42,10 @@ fn app(config: &Config) -> maestro_daemon::app::App<fn() -> u128> {
 
 /// Builds the daemon with the setup entry's own harness arguments.
 #[cfg(unix)]
-fn app_with_args(config: &Config, args: &[String]) -> maestro_daemon::app::App<fn() -> u128> {
+pub(crate) fn app_with_args(
+    config: &Config,
+    args: &[String],
+) -> maestro_daemon::app::App<fn() -> u128> {
     let manifests = std::sync::Arc::new(std::sync::RwLock::new(
         maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
     ));

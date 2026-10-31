@@ -100,3 +100,60 @@ fn window_title(home: &std::path::Path) -> String {
     app.configure_window_title("{workspace}");
     app.window_title().unwrap()
 }
+
+/// Missing HOME and an unreadable process directory fall back to the filesystem root.
+#[test]
+fn daemon_home_without_readable_cwd_uses_root() {
+    let Some(_) = maestro_test_process::run_per_environment(
+        "daemon_home::daemon_home_without_readable_cwd_uses_root",
+        [Home::Unset],
+        |case| variable(*case),
+    )
+    .unwrap() else {
+        return;
+    };
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    scratch.enter_removed("cwd").unwrap();
+    for policy in [NewTerminalCwdConfig::Home, NewTerminalCwdConfig::Follow] {
+        assert_eq!(new_workspace_directory(policy), PathBuf::from("/"));
+    }
+}
+
+/// Creation never shortens the account directory to a home label when HOME is absent.
+#[test]
+fn daemon_creation_without_home_labels_the_account_directory_by_name() {
+    let Some(_) = maestro_test_process::run_per_environment(
+        "daemon_home::daemon_creation_without_home_labels_the_account_directory_by_name",
+        [Home::Unset],
+        |case| variable(*case),
+    )
+    .unwrap() else {
+        return;
+    };
+    let Some(account) = std::env::home_dir() else {
+        return;
+    };
+    maestro_test_process::TestProcess::named("repository_identity::setup_entry")
+        .unwrap()
+        .nocapture()
+        .single_threaded()
+        .invoke_with(|args| {
+            crate::support::runtime::block_on(async {
+                let mut config = maestro_daemon::settings::model::Config::default();
+                config.terminal.default_shell = "/bin/sh".into();
+                let mut app = crate::daemon_runtime::app_with_args(&config, args);
+                app.create_workspace_with_options(account.clone(), true)
+                    .unwrap();
+                let expected = account
+                    .file_name()
+                    .unwrap_or(account.as_os_str())
+                    .to_string_lossy();
+                assert_eq!(app.state.topology.workspaces[0].cached_auto_label, expected);
+                for (_, runtime) in app.terminal_runtimes.drain_for_handoff() {
+                    runtime.shutdown().await;
+                }
+            });
+            Ok::<_, std::io::Error>(())
+        })
+        .unwrap();
+}
