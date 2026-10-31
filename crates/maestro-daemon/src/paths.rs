@@ -6,7 +6,8 @@ use std::path::PathBuf;
 /// The home directory the daemon observes.
 ///
 /// On Unix this is `HOME` as set, including an empty value, without an account fallback.
-/// On other platforms it is the native account home.
+/// On Windows, tries usable `USERPROFILE`, rooted `HOMEDRIVE` plus `HOMEPATH`, then `HOME`.
+/// Empty Windows values and `~` are unusable; no platform consults the account directory.
 #[must_use]
 pub fn home_directory() -> Option<PathBuf> {
     home_directory_from_env(cfg!(windows), |key| std::env::var_os(key))
@@ -17,7 +18,20 @@ fn home_directory_from_env(
     windows: bool,
     environment: impl Fn(&str) -> Option<std::ffi::OsString>,
 ) -> Option<PathBuf> {
-    environment(if windows { "USERPROFILE" } else { "HOME" }).map(PathBuf::from)
+    if !windows {
+        return environment("HOME").map(PathBuf::from);
+    }
+    let usable = |key| environment(key).filter(|value| !value.is_empty() && value != "~");
+    if let Some(profile) = usable("USERPROFILE") {
+        return Some(profile.into());
+    }
+    if let (Some(mut drive), Some(path)) = (usable("HOMEDRIVE"), usable("HOMEPATH"))
+        && path.to_string_lossy().starts_with(['\\', '/'])
+    {
+        drive.push(path);
+        return Some(drive.into());
+    }
+    usable("HOME").map(PathBuf::from)
 }
 
 /// Agent-wide resources and a validated optional daemon identity.
