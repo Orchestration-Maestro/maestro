@@ -1,6 +1,7 @@
 //! Configured sources through the supplied-operation manager.
+use crate::resolution_support::case_in_child;
 #[cfg(unix)]
-use crate::resolution_support::{case_in_child, case_in_removed_cwd};
+use crate::resolution_support::case_in_removed_cwd;
 #[cfg(unix)]
 use crate::scratch;
 use crate::support;
@@ -826,4 +827,50 @@ fn queried_hosted_shortcut_matches_https_for_add_and_remove() {
         settings.borrow().get_global_settings().0["packages"],
         json!([])
     );
+}
+
+/// Package sources select a nonempty HOME on every platform, retaining literal user names.
+#[test]
+fn package_sources_honor_nonempty_home_on_every_platform() {
+    let Some(root) = case_in_child("nonempty home", |base| {
+        vec![("HOME", Some(format!("{base}/home")))]
+    }) else {
+        return;
+    };
+    let (manager, _, _) = support::manager_below(&root, &json!({}), &json!([]), None);
+    for (source, relative) in [
+        ("~", "home"),
+        ("~/name", "home/name"),
+        ("~name", "/work/project/.maestro/~name"),
+    ] {
+        let expected = support::below(&root, relative);
+        std::fs::create_dir_all(&expected).unwrap();
+        assert_eq!(
+            manager
+                .get_installed_path(source, maestro_packages::InstalledSourceScope::Project)
+                .unwrap(),
+            Some(expected)
+        );
+    }
+}
+
+/// An absent or empty Windows HOME leaves package sources at the native account directory.
+#[cfg(windows)]
+#[test]
+fn windows_packages_fall_back_when_home_is_empty_or_unset() {
+    for value in [None, Some("")] {
+        let Some(root) = case_in_child(if value.is_some() { "empty" } else { "unset" }, |_| {
+            vec![("HOME", value.map(str::to_owned))]
+        }) else {
+            continue;
+        };
+        let (manager, _, _) = support::manager_below(&root, &json!({}), &json!([]), None);
+        let home = maestro_resources::paths::home_directory().unwrap();
+        assert_eq!(
+            manager
+                .get_installed_path("~", maestro_packages::InstalledSourceScope::Project)
+                .unwrap(),
+            Some(home)
+        );
+    }
 }
