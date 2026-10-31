@@ -677,6 +677,35 @@ fn prepare_builds_only_the_components_a_base_cannot_supply() {
     );
 }
 
+/// `TEST_PREPARE_BASE` is a path list: the first bundle the preparation accepts supplies the
+/// components, so a bundle from another toolchain ahead of a matching one is skipped.
+#[test]
+fn prepare_uses_the_first_accepted_base_of_a_list() {
+    if selection().is_child() {
+        return child_prepare();
+    }
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    marked_fixture(root);
+    prepare(root);
+    let matching = root.join("target/matching-setup");
+    fs::rename(root.join("target/test-setup"), &matching).unwrap();
+    prepare(root);
+    let foreign = root.join("target/test-setup");
+    edit_manifest_value(&foreign, |manifest| {
+        manifest["shared"]["digest"] = "other toolchain".into();
+    });
+    let list = std::env::join_paths([&foreign, &matching]).unwrap();
+    assert_eq!(
+        prepare_with_base(
+            "prepare_uses_the_first_accepted_base_of_a_list",
+            root,
+            Path::new(&list)
+        ),
+        Vec::<String>::new()
+    );
+}
+
 /// The code a base compiled seeds the new bundle, so the setup example, which finds its
 /// components supplied, compiles nothing again.
 #[test]
