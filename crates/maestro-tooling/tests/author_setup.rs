@@ -205,6 +205,134 @@ fn install_stages_only_the_preparing_command() {
     );
 }
 
+/// The recipes the browser graph is built with, as one `justfile` stands for them. The first
+/// builds the graph and what Cargo regenerates beside it, or records that it found the graph
+/// installed; the others do nothing.
+const BROWSER_RECIPES: &str = "browser-example-check:\n\
+    \tmkdir -p \"$CARGO_TARGET_DIR/debug/incremental\"\n\
+    \tif [ -f \"$CARGO_TARGET_DIR/debug/graph\" ]; then echo installed >> \"$PWD/recipes.log\"; \
+    else echo built >> \"$PWD/recipes.log\"; echo graph > \"$CARGO_TARGET_DIR/debug/graph\"; \
+    echo regenerated > \"$CARGO_TARGET_DIR/debug/incremental/state\"; fi\n\
+    browser-library-build:\n\ttrue\n\
+    browser-debug-build:\n\ttrue\n";
+
+/// The recipes with a first one that leaves a partial graph and fails.
+const FAILING_BROWSER_RECIPES: &str = "browser-example-check:\n\
+    \tmkdir -p \"$CARGO_TARGET_DIR/debug\"\n\
+    \techo partial > \"$CARGO_TARGET_DIR/debug/graph\"\n\
+    \tfalse\n\
+    browser-library-build:\n\ttrue\n\
+    browser-debug-build:\n\ttrue\n";
+
+/// The bundle records the browser graph, stages it without what Cargo regenerates itself and
+/// carries it beside the components.
+#[test]
+fn prepared_bundle_carries_the_browser_graph() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture(root);
+    fs::write(root.join("justfile"), BROWSER_RECIPES).unwrap();
+    prepare(root);
+    let staged = root.join("target/test-setup/browser-author");
+    assert_eq!(
+        fs::read_to_string(staged.join("debug/graph")).unwrap(),
+        "graph\n"
+    );
+    assert!(!staged.join("debug/incremental").exists());
+    assert_eq!(bundle_manifest(root)["browser"], true);
+}
+
+/// A graph whose build failed is not staged, so a shard builds it itself instead of installing
+/// a partial one.
+#[test]
+fn prepared_bundle_leaves_out_a_failed_browser_graph() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture(root);
+    fs::write(root.join("justfile"), FAILING_BROWSER_RECIPES).unwrap();
+    prepare(root);
+    assert!(!root.join("target/test-setup/browser-author").exists());
+    assert_eq!(bundle_manifest(root)["browser"], false);
+}
+
+/// A shard installs the bundle's graph before the recipes run, under one modification time that
+/// is not older than any file of its checkout, so the recipes find it.
+#[test]
+fn browser_setup_installs_the_prepared_graph_before_the_recipes() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture(root);
+    fs::write(root.join("justfile"), BROWSER_RECIPES).unwrap();
+    prepare(root);
+    fs::remove_dir_all(root.join("target/browser-author")).unwrap();
+    let source = root.join("crates/maestro-web/src/lib.rs");
+    fs::File::open(&source)
+        .unwrap()
+        .set_modified(std::time::SystemTime::now())
+        .unwrap();
+
+    assert_success(&browser_command(root).output().unwrap());
+
+    assert_eq!(
+        fs::read_to_string(root.join("recipes.log")).unwrap(),
+        "built\ninstalled\n"
+    );
+    let source_time = fs::metadata(&source).unwrap().modified().unwrap();
+    let times = tree_times(&root.join("target/browser-author"));
+    assert!(!times.is_empty());
+    assert!(
+        times
+            .iter()
+            .all(|time| *time == times[0] && *time >= source_time)
+    );
+    assert_eq!(
+        fs::read_to_string(root.join("nextest-env")).unwrap(),
+        format!(
+            "MAESTRO_BROWSER_TARGET_DIR={}\n",
+            root.join("target/browser-author").display()
+        )
+    );
+}
+
+/// A bundle prepared from other sources than the checkout holds installs nothing.
+#[test]
+fn browser_setup_refuses_a_graph_prepared_from_other_sources() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture(root);
+    fs::write(root.join("justfile"), BROWSER_RECIPES).unwrap();
+    prepare(root);
+    fs::remove_dir_all(root.join("target/browser-author")).unwrap();
+    fs::write(root.join("crates/maestro-web/src/lib.rs"), "edited source").unwrap();
+
+    let output = browser_command(root).output().unwrap();
+
+    assert!(!output.status.success());
+    assert!(String::from_utf8_lossy(&output.stderr).contains("stale prepared"));
+    assert!(!root.join("target/browser-author").exists());
+    assert_eq!(
+        fs::read_to_string(root.join("recipes.log")).unwrap(),
+        "built\n"
+    );
+}
+
+/// A bundle without a graph leaves the shard to build it, as a run without a bundle does.
+#[test]
+fn browser_setup_builds_when_the_bundle_holds_no_graph() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture(root);
+    prepare(root);
+    fs::write(root.join("justfile"), BROWSER_RECIPES).unwrap();
+
+    assert_success(&browser_command(root).output().unwrap());
+
+    assert_eq!(
+        fs::read_to_string(root.join("recipes.log")).unwrap(),
+        "built\n"
+    );
+}
+
 /// Archived runs give every extracted executable, and the installed setup example, one
 /// modification time so test processes share a compile-cache namespace with the installed
 /// compiled code.
@@ -391,6 +519,7 @@ echo y > "$XDG_CACHE_HOME/wasmtime/modules/wasmtime-other-${seconds}000/key"
 const CARGO: &str = r#"#!/bin/sh
 set -eu
 if [ "$1" = metadata ]; then exec "@cargo@" "$@"; fi
+if [ "$1" = clippy ]; then exit 0; fi
 case " $* " in *" --profile dev "*) ;; *) echo "build without the dev profile: $*" >&2; exit 1 ;; esac
 echo build >> builds
 mode=$1
@@ -451,6 +580,7 @@ fn workspace(root: &Path) {
         root.join("Cargo.lock"),
         "version = 4\n\n[[package]]\nname = \"maestro-extensions-wasm\"\nversion = \"0.0.0\"\ndependencies = [\n \"shared\",\n]\n\n\
          [[package]]\nname = \"maestro-tooling\"\nversion = \"0.0.0\"\n\n\
+         [[package]]\nname = \"maestro-web\"\nversion = \"0.0.0\"\n\n\
          [[package]]\nname = \"shared\"\nversion = \"0.0.0\"\n\n\
          [[package]]\nname = \"unrelated\"\nversion = \"0.0.0\"\n",
     )
@@ -461,6 +591,7 @@ fn workspace(root: &Path) {
             "\n[dependencies]\nshared = { path = \"../shared\" }\n",
         ),
         ("maestro-tooling", ""),
+        ("maestro-web", ""),
         ("shared", ""),
         ("unrelated", ""),
     ] {
@@ -525,7 +656,11 @@ fn export(root: &Path, prepared: &Path, archived: bool) -> Output {
 
 /// The command `export` runs, with the user cache inside the fixture.
 fn export_command(root: &Path, prepared: &Path, archived: bool) -> Command {
-    let mut command = setup_command();
+    shard_command(setup_command(), root, prepared, archived)
+}
+
+/// `command` in the environment of a shard that runs from the fixture checkout.
+fn shard_command(mut command: Command, root: &Path, prepared: &Path, archived: bool) -> Command {
     if archived {
         command.env("TEST_ARCHIVE", "1");
     } else {
@@ -629,6 +764,33 @@ fn edit_manifest_value(prepared: &Path, edit: impl FnOnce(&mut serde_json::Value
         serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
     edit(&mut manifest);
     fs::write(path, serde_json::to_vec(&manifest).unwrap()).unwrap();
+}
+
+/// The bundle's manifest of the fixture checkout.
+fn bundle_manifest(root: &Path) -> serde_json::Value {
+    serde_json::from_slice(&fs::read(root.join("target/test-setup/components.json")).unwrap())
+        .unwrap()
+}
+
+/// The modification time of every file under `directory`.
+fn tree_times(directory: &Path) -> Vec<std::time::SystemTime> {
+    let mut times = Vec::new();
+    for entry in fs::read_dir(directory).unwrap() {
+        let path = entry.unwrap().path();
+        if path.is_dir() {
+            times.extend(tree_times(&path));
+        } else {
+            times.push(fs::metadata(&path).unwrap().modified().unwrap());
+        }
+    }
+    times
+}
+
+/// The browser setup of an archived shard, run from the fixture checkout.
+fn browser_command(root: &Path) -> Command {
+    let mut command = Command::new(env!("CARGO_BIN_EXE_development"));
+    command.args(["nextest-setup", "browser-author"]);
+    shard_command(command, root, &root.join("target/test-setup"), true)
 }
 
 /// The author-component setup, as nextest's setup entry runs it.
