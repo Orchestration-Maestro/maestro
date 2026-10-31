@@ -38,9 +38,9 @@ fn maestro_skills_load_valid_metadata_and_source() {
     assert_eq!(skill.source_info.origin, SourceOrigin::TopLevel);
 }
 
-/// Parent mismatch warns without omitting the described resource.
+/// A name that differs from the containing directory loads without a warning.
 #[test]
-fn maestro_skills_warn_on_parent_mismatch() {
+fn maestro_skills_accept_name_that_differs_from_directory() {
     let dir = Directory::new();
     let file = dir.file(
         "calendar/SKILL.md",
@@ -52,20 +52,8 @@ fn maestro_skills_warn_on_parent_mismatch() {
         source: "path",
     });
     assert_eq!(result.skills.len(), 1);
-    assert_eq!(result.diagnostics.len(), 1);
-    assert_eq!(
-        result.diagnostics[0].message,
-        "name \"other\" does not match parent directory \"calendar\""
-    );
-    assert_eq!(
-        result.diagnostics[0].path.as_deref(),
-        Some(support::text(&file))
-    );
-    assert_eq!(
-        result.diagnostics[0].r#type,
-        maestro_resources::DiagnosticType::Warning
-    );
-    assert!(result.diagnostics[0].collision.is_none());
+    assert_eq!(result.skills[0].name, "other");
+    assert!(result.diagnostics.is_empty());
 }
 
 /// Name warnings retain their authored order and count complete characters.
@@ -90,19 +78,18 @@ fn maestro_skills_keep_name_warning_order() {
             .map(|d| d.message.as_str())
             .collect::<Vec<_>>(),
         vec![
-            format!("name \"{name}\" does not match parent directory \"parent\""),
-            "name exceeds 64 characters (65)".into(),
-            "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)".into(),
-            "name must not start or end with a hyphen".into(),
-            "name must not contain consecutive hyphens".into(),
+            "name exceeds 64 characters (65)",
+            "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "name must not start or end with a hyphen",
+            "name must not contain consecutive hyphens",
         ]
     );
     for (name, expected) in [
         ("a0-b".to_string(), 0),
         ("a".repeat(64), 0),
         ("a".repeat(65), 1),
-        ("😀".repeat(64), 2),
-        ("😀".repeat(65), 3),
+        ("😀".repeat(64), 1),
+        ("😀".repeat(65), 2),
         ("a.b".into(), 1),
     ] {
         let parent = if name.contains('😀') {
@@ -152,7 +139,6 @@ fn maestro_skills_validate_description_before_name() {
                     .collect::<Vec<_>>(),
                 vec![
                     "description is required",
-                    "name \"Other\" does not match parent directory \"parent\"",
                     "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)"
                 ]
             );
