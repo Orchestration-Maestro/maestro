@@ -205,15 +205,16 @@ is tracked by the `output_index` its events carry, so items that finish out of o
 their own reasoning signature, text and call arguments; events without an index share one
 item. Final
 message items replace provisional text. Reasoning selects nonempty final summary,
-then nonempty final content, otherwise retains provisional thinking. An unmatched
-final message or reasoning item is ignored. Final text is stored before signature
+then nonempty final content, otherwise retains provisional thinking. A final
+reasoning, message or call item with no earlier added event opens its block, then
+finishes it. Final text is stored before signature
 conversion; a conversion failure emits no end event. Final reasoning retains its
 whole item as compact JSON after successful conversion. Encoded message signatures
 retain truthy phases; recognized phases are selected only during history conversion.
 Existing
 calls use nonempty scratch arguments before final arguments and ignore final
-identity. Final-only calls are inserted before publishing their end. When creating
-a call, an omitted item ID leaves the call identity alone; a present string ID
+identity. A call that only finishes opens first, so its start precedes its end.
+When creating a call, an omitted item ID leaves the call identity alone; a present string ID
 appends `|{id}`. A `call_id` containing `|` returns a native diagnostic because
 it cannot be distinguished from the compound identity. Argument
 completion delegates to the owning JSON helper; nonobject results become `{}`.

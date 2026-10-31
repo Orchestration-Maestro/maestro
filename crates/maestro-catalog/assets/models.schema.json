@@ -335,6 +335,15 @@
                     },
                     "supportsLongCacheRetention": {
                       "type": "boolean"
+                    },
+                    "sendSessionAffinityHeaders": {
+                      "type": "boolean"
+                    },
+                    "supportsCacheControlOnTools": {
+                      "type": "boolean"
+                    },
+                    "allowEmptySignature": {
+                      "type": "boolean"
                     }
                   }
                 }
@@ -788,6 +797,15 @@
                           },
                           "supportsLongCacheRetention": {
                             "type": "boolean"
+                          },
+                          "sendSessionAffinityHeaders": {
+                            "type": "boolean"
+                          },
+                          "supportsCacheControlOnTools": {
+                            "type": "boolean"
+                          },
+                          "allowEmptySignature": {
+                            "type": "boolean"
                           }
                         }
                       }
@@ -1220,6 +1238,15 @@
                               "type": "boolean"
                             },
                             "supportsLongCacheRetention": {
+                              "type": "boolean"
+                            },
+                            "sendSessionAffinityHeaders": {
+                              "type": "boolean"
+                            },
+                            "supportsCacheControlOnTools": {
+                              "type": "boolean"
+                            },
+                            "allowEmptySignature": {
                               "type": "boolean"
                             }
                           }

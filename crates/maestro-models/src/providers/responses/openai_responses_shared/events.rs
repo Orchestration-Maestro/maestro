@@ -346,8 +346,12 @@ impl<'a> Reducer<'a> {
         Ok(())
     }
 
-    /// Replace final content on the captured block and clear the open state.
+    /// Replace final content on the captured block and clear the open state. A known item that
+    /// finishes without having been added opens its block first.
     fn item_done(&mut self, raw: &RawValue) -> Result<(), DiagnosticErrorInfo> {
+        if matches!(self.current, Current::Idle) {
+            self.item_added(raw)?;
+        }
         match (kind(raw, "type")?.as_str(), &self.current) {
             ("reasoning", Current::Reasoning(_, _)) => {
                 let summary = joined(raw, "summary", false)?;
@@ -361,36 +365,17 @@ impl<'a> Reducer<'a> {
                 self.final_text(Some(content));
                 self.end(signature(raw)?);
             }
-            ("function_call", _) => self.function_done(raw)?,
+            ("function_call", Current::Function(_, scratch)) => {
+                let arguments = if scratch.is_empty() {
+                    parsed_arguments(&arguments(raw)?)
+                } else {
+                    parsed_arguments(scratch)
+                };
+                self.end_call(arguments);
+            }
             _ => return Ok(()),
         }
         self.current = Current::Idle;
-        Ok(())
-    }
-
-    /// Finalize existing calls without reading unused identity, or insert a final-only call.
-    fn function_done(&self, raw: &RawValue) -> Result<(), DiagnosticErrorInfo> {
-        let arguments = match &self.current {
-            Current::Function(_, scratch) if !scratch.is_empty() => parsed_arguments(scratch),
-            _ => parsed_arguments(&arguments(raw)?),
-        };
-        if matches!(self.current, Current::Function(_, _)) {
-            self.end_call(arguments);
-        } else {
-            let tool_call = call(raw, arguments)?;
-            let block = Block::ToolCall(tool_call.clone());
-            let partial = Arc::clone(self.output);
-            let index = self.change(|message| {
-                let index = message.content.len();
-                message.content.push(block);
-                index
-            });
-            self.stream.push(Update::ToolcallEnd {
-                content_index: index,
-                tool_call,
-                partial,
-            });
-        }
         Ok(())
     }
 

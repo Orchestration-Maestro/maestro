@@ -147,10 +147,48 @@ impl<'a> ToolSelection<'a> {
     }
 }
 
+/// The compatibility flags of a model that shape its tool definitions.
+struct ToolCompat {
+    /// Whether the service streams tool arguments as they are written.
+    eager_input_streaming: bool,
+    /// Whether the last tool may carry a cache marker.
+    cache_control: bool,
+}
+
+/// The compatibility flags of a model that shape a request, each read once with its default.
+struct Compat {
+    /// Flags of the tool definitions.
+    tools: ToolCompat,
+    /// Whether the model supports the one-hour cache lifetime.
+    long_cache_retention: bool,
+    /// Whether unsigned thinking is replayed with an empty signature.
+    allow_empty_signature: bool,
+    /// Whether the session identifier is sent as an affinity header.
+    session_affinity_headers: bool,
+}
+
+impl Compat {
+    /// Read the flags of `model`: tool streaming and both cache flags are on unless the model
+    /// turns them off, the other two off unless it turns them on.
+    fn of(model: &Model) -> Self {
+        Self {
+            tools: ToolCompat {
+                eager_input_streaming: compat_flag(model, "supportsEagerToolInputStreaming", true),
+                cache_control: compat_flag(model, "supportsCacheControlOnTools", true),
+            },
+            long_cache_retention: compat_flag(model, "supportsLongCacheRetention", true),
+            allow_empty_signature: compat_flag(model, "allowEmptySignature", false),
+            session_affinity_headers: compat_flag(model, "sendSessionAffinityHeaders", false),
+        }
+    }
+}
+
 /// One invocation's inputs with the cache policy resolved from them.
 pub(super) struct Invocation<'a, E: crate::ProviderExecution> {
     /// Target model.
     model: &'a Model,
+    /// Compatibility flags of the model.
+    compat: Compat,
     /// Conversation to send.
     context: &'a Context,
     /// Caller options.
@@ -181,6 +219,7 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
         let retention = resolve_cache_retention(options.common.cache_retention);
         let mut invocation = Self {
             model,
+            compat: Compat::of(model),
             context,
             options,
             retention,
@@ -201,9 +240,7 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
     fn cache_control(&self) -> Option<CacheControl> {
         match self.retention {
             CacheRetention::None => None,
-            CacheRetention::Long if compat_flag(self.model, "supportsLongCacheRetention", true) => {
-                Some(CacheControl::LONG)
-            }
+            CacheRetention::Long if self.compat.long_cache_retention => Some(CacheControl::LONG),
             CacheRetention::Short | CacheRetention::Long => Some(CacheControl::SHORT),
         }
     }
@@ -233,7 +270,7 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
                 self.context,
                 cache,
                 self.naming,
-                compat_flag(self.model, "allowEmptySignature", false),
+                self.compat.allow_empty_signature,
             ),
             max_tokens: self.max_tokens(),
             stream: true,
@@ -249,10 +286,8 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
                 .map(|declared| {
                     tools(
                         declared,
-                        compat_flag(self.model, "supportsEagerToolInputStreaming", true),
-                        cache.filter(|_| {
-                            compat_flag(self.model, "supportsCacheControlOnTools", true)
-                        }),
+                        self.compat.tools.eager_input_streaming,
+                        cache.filter(|_| self.compat.tools.cache_control),
                         self.naming,
                     )
                 }),
@@ -325,7 +360,7 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
     fn betas(&self) -> Vec<&'static str> {
         let tools_declared = self.context.tools.as_deref().is_some_and(|t| !t.is_empty());
         let mut betas = Vec::new();
-        if tools_declared && !compat_flag(self.model, "supportsEagerToolInputStreaming", true) {
+        if tools_declared && !self.compat.tools.eager_input_streaming {
             betas.push(FINE_GRAINED_TOOL_STREAMING_BETA);
         }
         if self.options.interleaved_thinking.unwrap_or(true)
@@ -422,8 +457,13 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
     /// on and caching is not off.
     fn add_session_affinity(&self, headers: &mut IndexMap<String, String>) {
         if self.retention != CacheRetention::None
-            && compat_flag(self.model, "sendSessionAffinityHeaders", false)
-            && let Some(session) = self.options.common.session_id.as_deref()
+            && self.compat.session_affinity_headers
+            && let Some(session) = self
+                .options
+                .common
+                .session_id
+                .as_deref()
+                .filter(|id| !id.is_empty())
         {
             headers.insert("x-session-affinity".to_owned(), session.to_owned());
         }
