@@ -223,7 +223,8 @@ and fresh entry identities.
 Memory history returns `None` and keeps any selected filename. Native history
 returns the new lexical filename, records the previous file as `parentSession`
 and writes the file at once only when a retained message is from the assistant;
-otherwise it waits for [first publication](#native-history). A publication error
+otherwise it waits for [first publication](#native-history). Publication overwrites
+any bytes already at the new filename under the shared write lock. A publication error
 leaves the new history installed and the previous publication state.
 
 `SessionManager::fork_from(source, target_cwd, session_dir, agent_dir)` copies
