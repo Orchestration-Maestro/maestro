@@ -14,6 +14,7 @@ mod daemon_construction;
 mod daemon_environment;
 mod daemon_events;
 mod daemon_git_status;
+mod daemon_home;
 mod daemon_ids;
 mod daemon_instances;
 mod daemon_paths;
