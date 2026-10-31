@@ -160,7 +160,14 @@ impl<E: ExtensionExecution> AgentSession<E> {
             return Ok(None);
         }
         let source = options.source.unwrap_or(InputSource::Interactive);
-        let Some((mut text, images)) = self.emit_input(text, options.images, source).await? else {
+        let behavior = options
+            .streaming_behavior
+            .clone()
+            .filter(|_| self.is_streaming());
+        let Some((mut text, images)) = self
+            .emit_input(text, options.images, source, behavior)
+            .await?
+        else {
             return Ok(None);
         };
         if expand {
@@ -196,6 +203,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
         text: &str,
         images: Option<Vec<ImageContent>>,
         source: InputSource,
+        behavior: Option<UserMessageDelivery>,
     ) -> Result<Option<(String, Option<Vec<ImageContent>>)>, DiagnosticErrorInfo> {
         if !self.extension_runner().has_handlers("input") {
             return Ok(Some((text.to_owned(), images)));
@@ -203,7 +211,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
         let mut current = images.map_or(Presence::Missing, Presence::Present);
         let result = self
             .extension_runner()
-            .emit_input(text, &mut current, source)
+            .emit_input(text, &mut current, source, behavior)
             .await
             .map_err(thrown)?;
         let images = match current {
