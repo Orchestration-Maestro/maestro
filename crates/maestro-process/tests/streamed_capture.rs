@@ -1,11 +1,12 @@
 //! Raw streaming through the captured-child lifecycle.
 #![cfg(unix)]
 #![cfg(test)]
-use crate::child_programs::{self, async_command, harness, without_harness};
+use crate::child_programs::{self, async_command};
 use maestro_process::child_process::{
     CapturedChild, OutputMode, WaitOptions, wait_for_child_process,
 };
 use maestro_test_process::HARNESS_START;
+use maestro_test_process::child::{harness, without_harness};
 use std::io::Write as _;
 
 /// Collects the harness start bytes from the first chunks and releases the child once they

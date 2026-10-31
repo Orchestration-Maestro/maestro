@@ -1,10 +1,11 @@
 //! Captured native children observed through the public lifecycle interface.
 #![cfg(test)]
 #![cfg(unix)]
-use crate::child_programs::{self, async_command, harness, without_harness};
+use crate::child_programs::{self, async_command};
 use maestro_process::child_process::{
     CapturedChild, OutputMode, Termination, WaitOptions, wait_for_child_process,
 };
+use maestro_test_process::child::{harness, without_harness};
 use std::cell::Cell;
 use std::future::Future;
 use std::os::unix::process::ExitStatusExt;

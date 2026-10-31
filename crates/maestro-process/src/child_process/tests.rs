@@ -4,8 +4,9 @@ use super::{
     CapturedChild, SpawnSyncError, Termination, WaitOptions, capture, fill, wait_for_child_process,
 };
 use super::{OutputMode, SpawnSyncOptions};
-use children::{async_command, harness};
+use children::async_command;
 use maestro_test_process::HARNESS_START;
+use maestro_test_process::child::harness;
 use std::io::Read;
 use std::{
     cell::Cell,

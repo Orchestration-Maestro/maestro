@@ -1,8 +1,9 @@
 //! Public helper launch semantics.
 #![cfg(test)]
 #![cfg(unix)]
-use crate::child_programs::{self, async_command, harness};
+use crate::child_programs::{self, async_command};
 use maestro_process::{OutputMode, SpawnSyncOptions, spawn_sync};
+use maestro_test_process::child::harness;
 use tokio::process::Command;
 
 #[test]

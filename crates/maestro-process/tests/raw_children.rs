@@ -1,8 +1,9 @@
 //! Raw byte resources retain the captured-child owner's exit and EOF phases.
 #![cfg(all(test, unix))]
-use crate::child_programs::{self, async_command, harness};
+use crate::child_programs::{self, async_command};
 use maestro_process::child_process::{RawChild, RawOutput};
 use maestro_test_process::HARNESS_START;
+use maestro_test_process::child::harness;
 use std::{
     process::Stdio,
     task::{Context, Waker},

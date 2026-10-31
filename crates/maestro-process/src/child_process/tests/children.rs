@@ -2,8 +2,11 @@
 //!
 //! Each program is an ignored test that only a parent test selects. Its arguments are
 //! variables, and it ends through `std::process::exit` so no harness epilogue follows its
-//! output. The harness writes [`HARNESS_START`] to standard output before the program runs.
-use maestro_test_process::{HARNESS_START, TestProcess};
+//! output. The harness writes the start bytes to standard output before the program runs.
+use maestro_test_process::TestProcess;
+use maestro_test_process::child::{
+    connect, leave, port, read_input, receive, variable, write_stderr, write_stdout,
+};
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::process::{Command, Stdio};
@@ -25,44 +28,9 @@ pub(in crate::child_process) fn async_command(
     command(program, variables).into()
 }
 
-/// The standard output a program produces when it writes `body`.
-pub(in crate::child_process) fn harness(body: &[u8]) -> Vec<u8> {
-    [HARNESS_START, body].concat()
-}
-
-/// The text of variable `name`.
-fn variable(name: &str) -> String {
-    std::env::var(name).unwrap()
-}
-
-/// Writes `bytes` to standard output and flushes them.
-fn write_stdout(bytes: &[u8]) -> std::io::Result<()> {
-    let mut out = std::io::stdout();
-    out.write_all(bytes).and_then(|()| out.flush())
-}
-
-/// Ends the process with `code` after flushing standard output.
-fn leave(code: i32) -> ! {
-    let _ = std::io::stdout().flush();
-    std::process::exit(code)
-}
-
-/// Everything standard input holds until it ends.
-fn read_input() -> Vec<u8> {
-    let mut input = Vec::new();
-    std::io::stdin().read_to_end(&mut input).unwrap();
-    input
-}
-
-/// Waits for one byte from `socket`; `None` once the peer closed it.
-fn receive(socket: &mut TcpStream) -> Option<u8> {
-    let mut byte = [0];
-    (socket.read(&mut byte).unwrap() == 1).then_some(byte[0])
-}
-
 /// A connection to the port variable `name` names on this host.
 fn connect_to(name: &str) -> TcpStream {
-    TcpStream::connect(("127.0.0.1", variable(name).parse().unwrap())).unwrap()
+    connect(port(name).unwrap()).unwrap()
 }
 
 /// Starts `program` as a descendant that keeps this process's three descriptors, and
@@ -82,7 +50,7 @@ fn spawn_linked(program: impl Fn(), variables: &[(&str, &str)]) -> TcpStream {
 
 /// Waits until the process that started this descendant ended.
 fn await_parent_exit() {
-    receive(&mut connect_to("CHILD_LINK_PORT"));
+    receive(&mut connect_to("CHILD_LINK_PORT")).unwrap();
 }
 
 /// An operation that writes bytes to one output stream.
@@ -118,10 +86,10 @@ pub(in crate::child_process) fn stubborn() {
         }
     });
     socket.write_all(b"READY").unwrap();
-    receive(&mut socket);
+    receive(&mut socket).unwrap();
     if std::env::var("CHILD_AFTER").as_deref() == Ok("echo") {
-        write_stdout(&[read_input(), b" complete".to_vec()].concat()).unwrap();
-        std::io::stderr().write_all(b"diag").unwrap();
+        write_stdout(&[read_input().unwrap(), b" complete".to_vec()].concat()).unwrap();
+        write_stderr(b"diag").unwrap();
     }
     leave(0)
 }
@@ -131,8 +99,8 @@ pub(in crate::child_process) fn stubborn() {
 #[ignore = "runs only inside a controlled child"]
 pub(in crate::child_process) fn inherited_output() {
     write_stdout(b"prefix").unwrap();
-    std::io::stderr().write_all(b"diag").unwrap();
-    let port = variable("CHILD_PORT");
+    write_stderr(b"diag").unwrap();
+    let port = variable("CHILD_PORT").unwrap();
     spawn_linked(inherited_output_descendant, &[("CHILD_PORT", &port)]);
     leave(0)
 }
@@ -144,7 +112,7 @@ pub(in crate::child_process) fn inherited_output() {
 pub(in crate::child_process) fn inherited_output_descendant() {
     await_parent_exit();
     let mut socket = connect_to("CHILD_PORT");
-    if receive(&mut socket).is_some() {
+    if receive(&mut socket).unwrap().is_some() {
         let mut result = Vec::new();
         let writers: [Writer; 2] = [
             |bytes| write_stdout(bytes),
@@ -177,7 +145,7 @@ pub(in crate::child_process) fn prefix_then_wait() {
 pub(in crate::child_process) fn input_hold() {
     let pid = std::process::id().to_string();
     if std::env::var_os("CHILD_EXITED").is_some() {
-        let port = variable("CHILD_PORT");
+        let port = variable("CHILD_PORT").unwrap();
         let overflow = std::env::var("CHILD_OVERFLOW").unwrap_or_default();
         let variables = [
             ("CHILD_PORT", port.as_str()),
@@ -201,21 +169,21 @@ pub(in crate::child_process) fn input_hold_descendant() {
     {
         close_streams("12");
     }
-    hold_input(&variable("PARENT_PID"));
+    hold_input(&variable("PARENT_PID").unwrap());
 }
 
 /// Reports `pid`, waits for release, and with `CHILD_OVERFLOW` overflows and finishes.
 fn hold_input(pid: &str) -> ! {
     let mut socket = connect_to("CHILD_PORT");
     socket.write_all(format!("{pid}\n").as_bytes()).unwrap();
-    receive(&mut socket);
+    receive(&mut socket).unwrap();
     if !std::env::var("CHILD_OVERFLOW")
         .unwrap_or_default()
         .is_empty()
     {
         write_stdout(b"overflow").unwrap();
         close_streams("12");
-        receive(&mut socket);
+        receive(&mut socket).unwrap();
         socket.write_all(b"done").unwrap();
     }
     leave(0)
@@ -226,7 +194,7 @@ fn hold_input(pid: &str) -> ! {
 #[ignore = "runs only inside a controlled child"]
 pub(in crate::child_process) fn ready_then_wait() {
     write_stdout(b"ready\n").unwrap();
-    read_input();
+    read_input().unwrap();
     leave(0)
 }
 

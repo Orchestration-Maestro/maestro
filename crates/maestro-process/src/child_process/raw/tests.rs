@@ -30,7 +30,7 @@ fn raw_read_failure_keeps_prefix_and_sibling_controls() {
         )
         .unwrap();
         let worker = tokio::task::spawn_local(work);
-        let expected = crate::child_process::tests::children::harness(b"prefix");
+        let expected = maestro_test_process::child::harness(b"prefix");
         assert_eq!(
             prefix(child.stdout.as_ref().unwrap(), expected.len()).await,
             expected

@@ -2,14 +2,17 @@
 //!
 //! Each program is an ignored test that only a parent test selects. It reads its arguments
 //! from variables and its trailing operands, and ends through `std::process::exit` so no
-//! harness epilogue follows its output. The harness writes [`HARNESS_START`] to standard
-//! output before the program runs; parents compare output through [`harness`].
+//! harness epilogue follows its output. The harness writes the start bytes to standard output
+//! before the program runs; parents compare output through `maestro_test_process::child`.
 #![cfg(test)]
 #![cfg(unix)]
-use maestro_test_process::{HARNESS_START, TestProcess};
+use maestro_test_process::TestProcess;
+use maestro_test_process::child::{
+    announce, connect, is_null, leave, port, read_input, receive, variable, write_stderr,
+    write_stdout,
+};
 use std::io::{Read, Write};
 use std::net::TcpStream;
-use std::os::unix::fs::MetadataExt;
 use std::process::{Command, Stdio};
 
 /// The command that runs `program` with `variables` added to its environment.
@@ -26,75 +29,9 @@ pub fn async_command(program: impl Fn(), variables: &[(&str, &str)]) -> tokio::p
     command(program, variables).into()
 }
 
-/// The standard output a program produces when it writes `body`.
-pub fn harness(body: &[u8]) -> Vec<u8> {
-    [HARNESS_START, body].concat()
-}
-
-/// `output` without the harness start bytes of every process that wrote to it.
-pub fn without_harness(output: &[u8]) -> Vec<u8> {
-    let mut rest = output;
-    let mut kept = Vec::new();
-    while let Some(at) = rest
-        .windows(HARNESS_START.len())
-        .position(|window| window == HARNESS_START)
-    {
-        kept.extend_from_slice(&rest[..at]);
-        rest = &rest[at + HARNESS_START.len()..];
-    }
-    kept.extend_from_slice(rest);
-    kept
-}
-
-/// The text of variable `name`.
-fn variable(name: &str) -> String {
-    std::env::var(name).unwrap()
-}
-
-/// Writes `bytes` to standard output and flushes them.
-fn write_stdout(bytes: &[u8]) -> std::io::Result<()> {
-    let mut out = std::io::stdout();
-    out.write_all(bytes).and_then(|()| out.flush())
-}
-
-/// Writes `bytes` to standard error.
-fn write_stderr(bytes: &[u8]) -> std::io::Result<()> {
-    std::io::stderr().write_all(bytes)
-}
-
-/// Ends the process with `code` after flushing standard output.
-fn leave(code: i32) -> ! {
-    let _ = std::io::stdout().flush();
-    std::process::exit(code)
-}
-
-/// Everything standard input holds until it ends.
-fn read_input() -> Vec<u8> {
-    let mut input = Vec::new();
-    std::io::stdin().read_to_end(&mut input).unwrap();
-    input
-}
-
-/// Waits for one byte from `socket`; `None` once the peer closed it.
-fn receive(socket: &mut TcpStream) -> Option<u8> {
-    let mut byte = [0];
-    (socket.read(&mut byte).unwrap() == 1).then_some(byte[0])
-}
-
 /// A connection to the parent's listener.
-fn connect() -> TcpStream {
-    TcpStream::connect(("127.0.0.1", variable("CHILD_PORT").parse().unwrap())).unwrap()
-}
-
-/// Sends `text` followed by a newline.
-fn announce(socket: &mut TcpStream, text: &str) {
-    socket.write_all(format!("{text}\n").as_bytes()).unwrap();
-}
-
-/// Whether the descriptor behind `path` is the null device.
-fn is_null(path: &str) -> bool {
-    let null = std::fs::metadata("/dev/null").unwrap();
-    std::fs::metadata(path).unwrap().rdev() == null.rdev()
+fn parent() -> TcpStream {
+    connect(port("CHILD_PORT").unwrap()).unwrap()
 }
 
 /// An operation that writes bytes to one output stream.
@@ -132,19 +69,19 @@ pub fn spawn_descendant(program: impl Fn(), variables: &[(&str, &str)]) -> std::
 
 /// Waits for the process that started this descendant to end.
 fn await_parent_exit() {
-    read_input();
+    read_input().unwrap();
 }
 
 /// Reports readiness to the parent's listener and returns the connection.
 fn ready() -> TcpStream {
-    let mut socket = connect();
+    let mut socket = parent();
     socket.write_all(b"READY").unwrap();
     socket
 }
 
 /// Holds until the parent releases the connection.
 fn hold() {
-    receive(&mut ready());
+    receive(&mut ready()).unwrap();
 }
 
 /// Writes `tail` to each standard descriptor not named in `closed` and ends.
@@ -162,15 +99,15 @@ fn finish(closed: &str) -> ! {
 #[test]
 #[ignore = "runs only inside a controlled child"]
 pub fn echo_input() {
-    let kind: &[u8] = if is_null("/dev/stdin") {
+    let kind: &[u8] = if is_null("/dev/stdin").unwrap() {
         b"null:"
     } else {
         b"pipe:"
     };
-    let input = read_input();
+    let input = read_input().unwrap();
     write_stdout(&[kind, &input].concat()).unwrap();
     write_stderr(b"diag\0\xff").unwrap();
-    leave(variable("CHILD_EXIT").parse().unwrap())
+    leave(variable("CHILD_EXIT").unwrap().parse().unwrap())
 }
 
 /// Writes a large body while reading a large input.
@@ -178,7 +115,7 @@ pub fn echo_input() {
 #[ignore = "runs only inside a controlled child"]
 pub fn concurrent_io() {
     write_stdout(&vec![b'y'; 262_144]).unwrap();
-    let data = read_input();
+    let data = read_input().unwrap();
     write_stdout(&data[..2]).unwrap();
     write_stderr(data.len().to_string().as_bytes()).unwrap();
     leave(0)
@@ -188,10 +125,10 @@ pub fn concurrent_io() {
 #[test]
 #[ignore = "runs only inside a controlled child"]
 pub fn socket_consumer() {
-    let mut socket = connect();
-    announce(&mut socket, &std::process::id().to_string());
-    assert_eq!(receive(&mut socket), Some(b'!'));
-    socket.write_all(&read_input()).unwrap();
+    let mut socket = parent();
+    announce(&mut socket, &std::process::id().to_string()).unwrap();
+    assert_eq!(receive(&mut socket).unwrap(), Some(b'!'));
+    socket.write_all(&read_input().unwrap()).unwrap();
     leave(0)
 }
 
@@ -200,9 +137,9 @@ pub fn socket_consumer() {
 #[ignore = "runs only inside a controlled child"]
 pub fn closed_input_effect() {
     close_streams("0");
-    let mut socket = connect();
-    announce(&mut socket, &std::process::id().to_string());
-    assert_eq!(receive(&mut socket), Some(b'!'));
+    let mut socket = parent();
+    announce(&mut socket, &std::process::id().to_string()).unwrap();
+    assert_eq!(receive(&mut socket).unwrap(), Some(b'!'));
     socket.write_all(b"effect").unwrap();
     leave(0)
 }
@@ -212,7 +149,7 @@ pub fn closed_input_effect() {
 #[ignore = "runs only inside a controlled child"]
 pub fn closed_input_report() {
     close_streams("0");
-    announce(&mut connect(), &std::process::id().to_string());
+    announce(&mut parent(), &std::process::id().to_string()).unwrap();
     leave(0)
 }
 
@@ -220,16 +157,16 @@ pub fn closed_input_report() {
 #[test]
 #[ignore = "runs only inside a controlled child"]
 pub fn inherited_launch_target() {
-    assert_eq!(read_input(), b"inherited-input");
+    assert_eq!(read_input().unwrap(), b"inherited-input");
     let arguments: Vec<String> = std::env::args().collect();
     let operands = &arguments[arguments.len() - 4..];
     assert_eq!(operands, ["literal $HOME;|", "", "repeat", "repeat"]);
-    assert_eq!(variable("MAESTRO_OPERAND"), "chosen");
-    let directory = std::fs::canonicalize(variable("MAESTRO_DIRECTORY")).unwrap();
+    assert_eq!(variable("MAESTRO_OPERAND").unwrap(), "chosen");
+    let directory = std::fs::canonicalize(variable("MAESTRO_DIRECTORY").unwrap()).unwrap();
     assert_eq!(std::env::current_dir().unwrap(), directory);
     write_stdout(b"inherited-out\0\xff").unwrap();
     write_stderr(b"inherited-err").unwrap();
-    match variable("CHILD_EXIT").as_str() {
+    match variable("CHILD_EXIT").unwrap().as_str() {
         "signal" => kill_self(rustix::process::Signal::TERM),
         code => leave(code.parse().unwrap()),
     }
@@ -239,9 +176,9 @@ pub fn inherited_launch_target() {
 #[test]
 #[ignore = "runs only inside a controlled child"]
 pub fn discarded_output_parent() {
-    assert_eq!(read_input(), b"copied");
+    assert_eq!(read_input().unwrap(), b"copied");
     let pid = std::process::id().to_string();
-    let port = variable("CHILD_PORT");
+    let port = variable("CHILD_PORT").unwrap();
     let variables = [("PARENT_PID", pid.as_str()), ("CHILD_PORT", port.as_str())];
     let descendant = spawn_descendant(discarded_output_descendant, &variables);
     std::mem::forget(descendant);
@@ -253,13 +190,17 @@ pub fn discarded_output_parent() {
 #[ignore = "runs only inside a controlled child"]
 pub fn discarded_output_descendant() {
     await_parent_exit();
-    let mut socket = connect();
-    announce(&mut socket, &variable("PARENT_PID"));
-    assert_eq!(receive(&mut socket), Some(b'?'));
+    let mut socket = parent();
+    announce(&mut socket, &variable("PARENT_PID").unwrap()).unwrap();
+    assert_eq!(receive(&mut socket).unwrap(), Some(b'?'));
     socket
-        .write_all(if is_null("/dev/stdout") { b"N" } else { b"P" })
+        .write_all(if is_null("/dev/stdout").unwrap() {
+            b"N"
+        } else {
+            b"P"
+        })
         .unwrap();
-    assert_eq!(receive(&mut socket), Some(b'!'));
+    assert_eq!(receive(&mut socket).unwrap(), Some(b'!'));
     write_stdout(b"descendant output").unwrap();
     leave(0)
 }
@@ -268,7 +209,7 @@ pub fn discarded_output_descendant() {
 #[test]
 #[ignore = "runs only inside a controlled child"]
 pub fn held_child() {
-    let mode = variable("CHILD_MODE");
+    let mode = variable("CHILD_MODE").unwrap();
     let closed = std::env::var("CHILD_CLOSED").unwrap_or_default();
     match mode.as_str() {
         "live" | "exit" => {
@@ -279,7 +220,7 @@ pub fn held_child() {
                 hold();
                 finish(&closed);
             }
-            let port = variable("CHILD_PORT");
+            let port = variable("CHILD_PORT").unwrap();
             let variables = [
                 ("CHILD_PORT", port.as_str()),
                 ("CHILD_CLOSED", &closed),
@@ -302,7 +243,7 @@ pub fn held_child() {
             leave(0)
         }
         _ => {
-            let port = variable("CHILD_PORT");
+            let port = variable("CHILD_PORT").unwrap();
             let descendant = command(held_descendant, &[("CHILD_PORT", port.as_str())])
                 .spawn()
                 .unwrap();
@@ -334,13 +275,18 @@ pub fn held_descendant() {
 #[test]
 #[ignore = "runs only inside a controlled child"]
 pub fn raw_stream_writer() {
-    assert!(read_input().is_empty());
+    assert!(read_input().unwrap().is_empty());
     let mut diagnostic = b"diag\0\xff".to_vec();
     diagnostic.extend(vec![b'e'; 300_000]);
     write_stderr(&diagnostic).unwrap();
     let argument = std::env::args().next_back().unwrap();
     let directory = std::env::current_dir().unwrap();
-    let mut head = format!("{argument}|{}|{}", directory.display(), variable("PROBE")).into_bytes();
+    let mut head = format!(
+        "{argument}|{}|{}",
+        directory.display(),
+        variable("PROBE").unwrap()
+    )
+    .into_bytes();
     head.extend_from_slice(b"\0\xe2");
     write_stdout(&head).unwrap();
     write_stdout(&[vec![b'o'; 300_000], b"\x82\xac\xff".to_vec()].concat()).unwrap();
@@ -351,7 +297,7 @@ pub fn raw_stream_writer() {
 #[test]
 #[ignore = "runs only inside a controlled child"]
 pub fn sized_writer() {
-    let size = |name| variable(name).parse::<usize>().unwrap();
+    let size = |name| variable(name).unwrap().parse::<usize>().unwrap();
     write_stdout(&vec![b'x'; size("CHILD_OUT")]).unwrap();
     write_stderr(&vec![b'y'; size("CHILD_ERR")]).unwrap();
     leave(0)
@@ -361,11 +307,11 @@ pub fn sized_writer() {
 #[test]
 #[ignore = "runs only inside a controlled child"]
 pub fn overflowing_writer() {
-    let mut socket = connect();
-    announce(&mut socket, &std::process::id().to_string());
-    receive(&mut socket);
+    let mut socket = parent();
+    announce(&mut socket, &std::process::id().to_string()).unwrap();
+    receive(&mut socket).unwrap();
     write_stdout(&vec![b'x'; 100_000]).unwrap();
-    receive(&mut socket);
+    receive(&mut socket).unwrap();
     leave(0)
 }
 
@@ -373,21 +319,21 @@ pub fn overflowing_writer() {
 #[test]
 #[ignore = "runs only inside a controlled child"]
 pub fn capture_probe() {
-    assert!(read_input().is_empty());
+    assert!(read_input().unwrap().is_empty());
     write_stderr(b"ignored").unwrap();
     let arguments: Vec<String> = std::env::args().collect();
     let flag = |null| if null { "True" } else { "False" };
     let mut fields = arguments[arguments.len() - 3..].to_vec();
     fields.extend([
-        variable("MAESTRO_CAPTURE"),
+        variable("MAESTRO_CAPTURE").unwrap(),
         std::env::current_dir().unwrap().display().to_string(),
-        flag(is_null("/dev/stdin")).to_owned(),
-        flag(is_null("/dev/stderr")).to_owned(),
+        flag(is_null("/dev/stdin").unwrap()).to_owned(),
+        flag(is_null("/dev/stderr").unwrap()).to_owned(),
     ]);
     let mut body = fields.join("|").into_bytes();
     body.extend_from_slice(b"\0\xff");
     write_stdout(&body).unwrap();
-    leave(variable("CHILD_EXIT").parse().unwrap())
+    leave(variable("CHILD_EXIT").unwrap().parse().unwrap())
 }
 
 /// Ends through a termination signal it raises on itself.
@@ -434,19 +380,19 @@ pub fn prefix_then_wait() {
 #[test]
 #[ignore = "runs only inside a controlled child"]
 pub fn acknowledged_writer() {
-    let mut socket = connect();
+    let mut socket = parent();
     for (index, (stream, bytes)) in [(1, &b"a\0"[..]), (2, b"b"), (1, b"c")]
         .into_iter()
         .enumerate()
     {
-        assert_eq!(receive(&mut socket), Some(b'g'), "write {index}");
+        assert_eq!(receive(&mut socket).unwrap(), Some(b'g'), "write {index}");
         match stream {
             1 => write_stdout(bytes),
             _ => write_stderr(bytes),
         }
         .unwrap();
     }
-    assert_eq!(receive(&mut socket), Some(b'g'));
+    assert_eq!(receive(&mut socket).unwrap(), Some(b'g'));
     leave(0)
 }
 
@@ -454,10 +400,10 @@ pub fn acknowledged_writer() {
 #[test]
 #[ignore = "runs only inside a controlled child"]
 pub fn two_stream_writer() {
-    let mut socket = connect();
-    assert_eq!(receive(&mut socket), Some(b'g'));
+    let mut socket = parent();
+    assert_eq!(receive(&mut socket).unwrap(), Some(b'g'));
     write_stdout(b"one").unwrap();
-    assert_eq!(receive(&mut socket), Some(b'g'));
+    assert_eq!(receive(&mut socket).unwrap(), Some(b'g'));
     write_stderr(b"two").unwrap();
     leave(0)
 }
@@ -475,7 +421,7 @@ pub fn line_answerer() {
     fields.extend(arguments[arguments.len() - 2..].iter().cloned());
     fields.extend([
         std::env::current_dir().unwrap().display().to_string(),
-        variable("PROBE"),
+        variable("PROBE").unwrap(),
     ]);
     write_stdout(fields.join("|").as_bytes()).unwrap();
     leave(3)
@@ -491,7 +437,7 @@ pub fn terminable() {
         signal_hook::flag::register(signal_hook::consts::SIGTERM, survived).unwrap();
     }
     write_stdout(b"ready\n").unwrap();
-    read_input();
+    read_input().unwrap();
     leave(0)
 }
 
@@ -520,7 +466,7 @@ pub fn closed_output_then_exit() {
 #[ignore = "runs only inside a controlled child"]
 pub fn ready_then_echo() {
     write_stdout(b"ready").unwrap();
-    write_stdout(&read_input()).unwrap();
+    write_stdout(&read_input().unwrap()).unwrap();
     leave(0)
 }
 
@@ -551,7 +497,7 @@ pub fn blocked_signals_launcher() {
     )
     .unwrap();
     let mut arguments = vec![program.clone()];
-    for argument in variable("CHILD_EXEC_ARGS").split('\u{1f}') {
+    for argument in variable("CHILD_EXEC_ARGS").unwrap().split('\u{1f}') {
         arguments.push(std::ffi::CString::new(argument).unwrap());
     }
     nix::unistd::execv(&program, &arguments).unwrap();
