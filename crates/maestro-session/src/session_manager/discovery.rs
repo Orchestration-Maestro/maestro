@@ -3,7 +3,8 @@
 use super::{
     SessionInfo, SessionManager,
     context::{ecma_whitespace, observation, property},
-    files::{for_each_entry, get_default_session_dir, jsonl_path, modified_millis},
+    files::{get_default_session_dir, jsonl_path, modified_millis},
+    records::for_each_entry,
 };
 use crate::messages::{millis_number, timestamp_millis};
 use futures_util::{StreamExt, stream};
