@@ -3224,44 +3224,6 @@
         {
           "extensions": [
             {
-              "path": "$ROOT/work/.maestro/extensions/a.ts",
-              "resolvedPath": "$ROOT/work/.maestro/extensions/a.ts",
-              "sourceInfo": {
-                "path": "$ROOT/work/.maestro/extensions/a.ts",
-                "source": "local",
-                "scope": "temporary",
-                "origin": "top-level",
-                "baseDir": "$ROOT/work/.maestro/extensions"
-              },
-              "commands": [
-                "a"
-              ],
-              "flags": [],
-              "tools": [],
-              "handlers": [],
-              "messageRenderers": [],
-              "shortcuts": []
-            },
-            {
-              "path": "$ROOT/work/.maestro/extensions/z.ts",
-              "resolvedPath": "$ROOT/work/.maestro/extensions/z.ts",
-              "sourceInfo": {
-                "path": "$ROOT/work/.maestro/extensions/z.ts",
-                "source": "local",
-                "scope": "temporary",
-                "origin": "top-level",
-                "baseDir": "$ROOT/work/.maestro/extensions"
-              },
-              "commands": [
-                "z"
-              ],
-              "flags": [],
-              "tools": [],
-              "handlers": [],
-              "messageRenderers": [],
-              "shortcuts": []
-            },
-            {
               "path": "$ROOT/agent/extensions/global.ts",
               "resolvedPath": "$ROOT/agent/extensions/global.ts",
               "sourceInfo": {
@@ -3323,29 +3285,7 @@
     "expected": {
       "outcomes": [
         {
-          "extensions": [
-            {
-              "path": "$ROOT/cfg/bad/x.ts",
-              "resolvedPath": "$ROOT/cfg/bad/x.ts",
-              "sourceInfo": {
-                "path": "$ROOT/cfg/bad/x.ts",
-                "source": "local",
-                "scope": "temporary",
-                "origin": "top-level",
-                "baseDir": "$ROOT/cfg/bad"
-              },
-              "commands": [
-                "x"
-              ],
-              "flags": [],
-              "tools": [],
-              "handlers": [],
-              "messageRenderers": [],
-              "shortcuts": []
-            }
-          ],
-          "errors": [],
-          "flagValues": {}
+          "rejected": true
         }
       ],
       "received": []

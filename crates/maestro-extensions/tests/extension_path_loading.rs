@@ -228,7 +228,7 @@ fn discovery_follows_links_and_skips_unlistable_directories() {
 }
 
 #[test]
-fn malformed_manifest_lists_are_ignored_in_discovered_and_configured_directories() {
+fn manifest_item_errors_drop_a_directory_or_reject_a_configured_one() {
     check(&[
         "discover_bad_manifest_in_subdirectory",
         "discover_bad_manifest_in_configured_directory",
