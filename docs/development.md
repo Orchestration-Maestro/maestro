@@ -824,6 +824,9 @@ and global fallbacks, then includes dependent crates. Use `test_inputs` in
 read them. A file owned by another workspace member already selects that member
 and its dependents. Only otherwise unowned, undeclared paths use the all-or-none fallback:
 they select every test, or none when the file is Markdown or under `docs/`.
+The conventions check names every test that reads `docs/`, `examples/` or `assets/` at
+run time, through a `../../` path or a join onto the workspace root, and fails until
+`test_inputs` routes that directory to the reading package.
 
 ### Browser author build
 

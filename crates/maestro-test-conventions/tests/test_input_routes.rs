@@ -38,7 +38,6 @@ const MANIFEST_READ: &str = "fn brand() -> &'static str {\n    concat!(env!(\"CA
 const ANCESTOR_READ: &str = "fn guide() -> String {\n    let root = std::path::Path::new(env!(\"CARGO_MANIFEST_DIR\")).ancestors().nth(2).unwrap();\n    std::fs::read_to_string(root.join(\"docs/extensions.md\")).unwrap()\n}\n";
 
 #[test]
-#[ignore = "fails until the check reads the routes"]
 fn unrouted_manifest_relative_read_is_named() {
     let (workspace, path) = workspace(MANIFEST_READ, "\"assets/\" = []");
     assert_eq!(
@@ -48,7 +47,6 @@ fn unrouted_manifest_relative_read_is_named() {
 }
 
 #[test]
-#[ignore = "fails until the check reads the routes"]
 fn unrouted_read_through_the_workspace_root_is_named() {
     let (workspace, path) = workspace(ANCESTOR_READ, "\"docs/\" = [\"maestro-text\"]");
     assert_eq!(
@@ -58,7 +56,6 @@ fn unrouted_read_through_the_workspace_root_is_named() {
 }
 
 #[test]
-#[ignore = "fails until the check reads the routes"]
 fn read_of_a_directory_with_no_route_entry_is_named() {
     let (workspace, path) = workspace(ANCESTOR_READ, "\"fuzz/\" = []");
     assert_eq!(

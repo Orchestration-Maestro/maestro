@@ -100,6 +100,13 @@ mod time_limits;
 /// accepted. The scope grows with each migration batch and disappears when every
 /// crate uses the owner.
 ///
+/// A test that reads `docs/`, `examples/` or `assets/` at run time must have that directory
+/// routed to its package in `test_inputs` of `.github/ci.toml`. A read is a string literal
+/// that climbs out of the crate directory into the directory, or one that joins the
+/// directory in a file that climbs to the workspace root. Compile-time `include_*!`
+/// arguments and attributes are not reads. Each unrouted read is reported with its file
+/// and line.
+///
 /// # Errors
 ///
 /// Returns a human-readable diagnostic on malformed input or a violated boundary.
