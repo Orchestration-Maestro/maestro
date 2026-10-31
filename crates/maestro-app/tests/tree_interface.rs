@@ -144,6 +144,7 @@ fn summary_records() {
         summary: "summary".into(),
         details: null(),
         from_hook: null(),
+        usage: maestro_session::Presence::Missing,
     };
     record(
         branch,
@@ -157,6 +158,7 @@ fn summary_records() {
         tokens_before: 12.0,
         details: null(),
         from_hook: null(),
+        usage: maestro_session::Presence::Missing,
     };
     record(
         compaction,

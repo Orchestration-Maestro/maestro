@@ -28,6 +28,7 @@ pub fn definition(
                     content: vec![],
                     details: Some(args),
                     terminate: None,
+                    usage: None,
                 })
             })
         }),

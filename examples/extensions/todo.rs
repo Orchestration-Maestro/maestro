@@ -101,6 +101,7 @@ fn execute(state: &RefCell<TodoDetails>, params: &Value) -> ExtensionResult<Agen
                 .into(),
         ),
         terminate: Presence::Missing,
+        usage: None,
     })
 }
 

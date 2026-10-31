@@ -49,6 +49,7 @@ fn echo_result(params: Value, name: &str, prefix: &str) -> ExtensionResult<Agent
         )))],
         details: Presence::Present(json!({"tool":name,"prefix":prefix}).to_string().into()),
         terminate: Presence::Missing,
+        usage: None,
     })
 }
 

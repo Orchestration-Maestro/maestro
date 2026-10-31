@@ -85,6 +85,7 @@ async fn after_tool_call(
             .details
             .clone()
             .map_or(Presence::Missing, Presence::Present),
+        usage: Presence::Missing,
     };
     let Some(result) = runner.emit_tool_result(&event).await.map_err(thrown)? else {
         return Ok(None);
@@ -104,6 +105,7 @@ async fn after_tool_call(
                 .unwrap_or(context.is_error),
         ),
         terminate: None,
+        usage: None,
     }))
 }
 

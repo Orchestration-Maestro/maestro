@@ -149,7 +149,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
             BeforeCompaction::Cancelled => {
                 return Err(DiagnosticErrorInfo::error("Compaction cancelled"));
             }
-            BeforeCompaction::Supplied { result } => (result, true),
+            BeforeCompaction::Supplied { result } => (*result, true),
             BeforeCompaction::Continue { preparation } => (
                 self.summarize(&preparation, auth, custom_instructions, signal)
                     .await?,

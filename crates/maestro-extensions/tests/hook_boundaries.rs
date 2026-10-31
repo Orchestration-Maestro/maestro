@@ -126,6 +126,7 @@ fn tool_result() -> ToolResultEvent {
         content: serde_json::from_value(json!([{ "type":"text","text":"original" }])).unwrap(),
         is_error: true,
         details: Presence::Present(json!({"original":true})),
+        usage: Presence::Missing,
     }
 }
 #[test]
@@ -161,6 +162,7 @@ fn tool_result_empty_patch_leaves_absence_and_original_top_level() {
                         content: Presence::Missing,
                         details: Presence::Missing,
                         is_error: Presence::Missing,
+                        usage: Presence::Missing,
                     }))))
                 }),
             )

@@ -1,5 +1,6 @@
 //! Session and tree event records supplied to author handlers.
 use crate::presence::Presence;
+use crate::types::Usage;
 use serde::{Deserialize, Serialize};
 /// Notification containing the persisted compaction entry.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -60,6 +61,9 @@ pub struct SessionBeforeTreeSummary<D> {
     /// Opaque details in the caller's representation.
     #[serde(default, skip_serializing_if = "Presence::is_missing")]
     pub details: Presence<D>,
+    /// Usage of the model calls that produced the summary.
+    #[serde(default, skip_serializing_if = "Presence::is_missing")]
+    pub usage: Presence<Usage>,
 }
 /// Optional cancellation, summary and navigation-summary overrides.
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -16,7 +16,9 @@ use maestro_models::{Cancellation, DiagnosticErrorInfo, Model};
 use maestro_session::{
     BranchSummaryResult, GenerateBranchSummaryOptions, Presence,
     collect_entries_for_branch_summary, generate_branch_summary,
-    session_manager::{BranchSummaryEntry, NavigateTreeOptions, ReadonlySessionManager},
+    session_manager::{
+        BranchSummaryEntry, BranchSummaryOptions, NavigateTreeOptions, ReadonlySessionManager,
+    },
 };
 use serde::Deserialize as _;
 use serde_json::{Value, json};
@@ -353,8 +355,11 @@ impl<E: ExtensionExecution> AgentSession<E> {
                 .branch_with_summary(
                     new_leaf_id,
                     &summary.text,
-                    summary.details,
-                    Presence::Present(summary.from_extension),
+                    BranchSummaryOptions {
+                        details: summary.details,
+                        from_hook: Presence::Present(summary.from_extension),
+                        usage: Presence::Missing,
+                    },
                 )
                 .map_err(thrown)?;
             let entry = manager.get_entry(&id).unwrap_or(&Value::Null);

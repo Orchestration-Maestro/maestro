@@ -83,6 +83,6 @@ pub use maestro_session::session_manager::{
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_extensions::runner::ExtensionRunnerSession;
 #[cfg(not(target_arch = "wasm32"))]
-pub use maestro_session::session_manager::CompactionOptions;
-#[cfg(not(target_arch = "wasm32"))]
 pub use maestro_session::session_manager::ReadonlySessionManager;
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_session::session_manager::{BranchSummaryOptions, CompactionOptions};

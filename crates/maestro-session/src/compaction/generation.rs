@@ -214,6 +214,7 @@ pub fn compact(
             first_kept_entry_id: id,
             tokens_before,
             details: Presence::Present(details),
+            usage: Presence::Missing,
         })
     })
 }

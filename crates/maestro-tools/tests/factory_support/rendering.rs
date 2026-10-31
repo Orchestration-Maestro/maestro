@@ -37,6 +37,7 @@ fn compare<P, D: serde::Serialize, S>(
             content: serde_json::from_value(json!([{"type":"text","text":"complete"}])).unwrap(),
             details: None,
             terminate: None,
+            usage: None,
         };
         let component = crate::display_support::native(
             tool.render_result.as_ref().unwrap(),

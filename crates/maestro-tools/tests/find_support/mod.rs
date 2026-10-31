@@ -271,6 +271,7 @@ fn result(value: &Value) -> AgentToolResult<FindToolDetails> {
         content: recorded.content,
         details,
         terminate: None,
+        usage: None,
     }
 }
 /// Public renderer definition with a poison native transport.

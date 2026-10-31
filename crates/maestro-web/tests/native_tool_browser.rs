@@ -288,6 +288,7 @@ fn native_binding(
         timestamp: 1.,
         details: Some(details),
         is_error: false,
+        usage: None,
     };
     (renderer, result)
 }

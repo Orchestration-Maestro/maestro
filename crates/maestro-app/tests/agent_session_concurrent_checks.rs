@@ -163,6 +163,7 @@ fn dummy_tools(failing: Option<&'static str>) -> IndexMap<String, SharedAgentToo
                     content: vec![text_block(format!("working:{q}"))],
                     details: Some(json!({"phase": "working"})),
                     terminate: None,
+                    usage: None,
                 });
             }
             let result = if failing == Some(q.as_str()) {
@@ -172,6 +173,7 @@ fn dummy_tools(failing: Option<&'static str>) -> IndexMap<String, SharedAgentToo
                     content: vec![text_block(format!("result:{q}"))],
                     details: Some(json!({})),
                     terminate: None,
+                    usage: None,
                 })
             };
             Box::pin(std::future::ready(result))

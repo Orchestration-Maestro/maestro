@@ -67,6 +67,7 @@ pub fn summary_result(
             first_kept_entry_id: event.data.preparation.first_kept_entry_id.clone(),
             tokens_before: event.data.preparation.tokens_before,
             details: Presence::Present(json!({})),
+            usage: Presence::Missing,
         }),
     }
 }
@@ -448,6 +449,7 @@ pub fn tool_definition(
                     content: vec![],
                     details: None,
                     terminate: None,
+                    usage: None,
                 })
             })
         }),
@@ -2092,6 +2094,7 @@ pub fn waiting_tool(
                     )],
                     details: Some(json!({})),
                     terminate: None,
+                    usage: None,
                 })
             })
         }),
@@ -2133,6 +2136,7 @@ pub fn echo_tools(
                 content: vec![maestro_models::UserBlock::Text(echoed)],
                 details: Some(json!({})),
                 terminate: None,
+                usage: None,
             })))
         }),
         execution_mode: None,

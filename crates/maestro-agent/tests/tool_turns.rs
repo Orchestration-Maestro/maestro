@@ -101,6 +101,7 @@ async fn preparation_precedes_validation_and_preserves_raw_events_case() {
                     content: vec![],
                     details: Some(serde_json::Value::Null),
                     terminate: Some(true),
+                    usage: None,
                 })
             })
         }),
@@ -189,6 +190,31 @@ async fn progress_runs_while_execution_is_pending_case() {
     );
 }
 
+/// A tool whose result terminates the run and carries the original details.
+fn terminating_echo() -> AgentTool {
+    AgentTool {
+        description: None,
+        definition: Tool {
+            name: "echo".into(),
+            description: "Echo".into(),
+            parameters: serde_json::json!({"type":"object"}).into(),
+        },
+        label: "Echo".into(),
+        prepare_arguments: None,
+        execution_mode: None,
+        execute: Arc::new(|_, _, _, _| {
+            Box::pin(async {
+                Ok(AgentToolResult {
+                    content: vec![],
+                    details: Some(serde_json::json!({"original":true})),
+                    terminate: Some(true),
+                    usage: None,
+                })
+            })
+        }),
+    }
+}
+
 /// Artifact callbacks and history observe the same mutable entry.
 #[test]
 fn tool_artifacts_keep_content_details_and_timestamps() {
@@ -209,26 +235,7 @@ async fn tool_artifacts_keep_content_details_and_timestamps_case() {
     let mut context = context();
     let history = Arc::clone(&context.messages);
     context.tools = Some(Arc::new(RwLock::new(vec![Arc::new(RwLock::new(
-        AgentTool {
-            description: None,
-            definition: Tool {
-                name: "echo".into(),
-                description: "Echo".into(),
-                parameters: serde_json::json!({"type":"object"}).into(),
-            },
-            label: "Echo".into(),
-            prepare_arguments: None,
-            execution_mode: None,
-            execute: Arc::new(|_, _, _, _| {
-                Box::pin(async {
-                    Ok(AgentToolResult {
-                        content: vec![],
-                        details: Some(serde_json::json!({"original":true})),
-                        terminate: Some(true),
-                    })
-                })
-            }),
-        },
+        terminating_echo(),
     ))])));
     let retained = Arc::new(Mutex::new(None));
     let observed = Arc::clone(&retained);
@@ -563,6 +570,7 @@ fn ordered_tools(
                             content: vec![],
                             details: Some(serde_json::Value::Null),
                             terminate: None,
+                            usage: None,
                         })
                     })
                 }),

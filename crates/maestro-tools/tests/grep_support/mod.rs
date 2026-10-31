@@ -307,6 +307,7 @@ pub fn rendered_result(value: &Value) -> maestro_agent::AgentToolResult<GrepTool
         content: serde_json::from_value(value["content"].clone()).unwrap(),
         details,
         terminate: None,
+        usage: None,
     }
 }
 /// Check the shared rendering driver against this tool's recorded rows.

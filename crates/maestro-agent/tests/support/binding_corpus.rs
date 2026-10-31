@@ -379,6 +379,7 @@ fn captured_tool(agent: &Agent) {
             content: vec![],
             details: Some(json!({})),
             terminate: None,
+            usage: None,
         }))
     }))
     .tools

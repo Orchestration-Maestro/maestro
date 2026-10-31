@@ -764,6 +764,7 @@ fn ls_result(result: &Value) -> AgentToolResult<LsToolDetails> {
         content,
         details,
         terminate: None,
+        usage: None,
     }
 }
 

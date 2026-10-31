@@ -85,6 +85,7 @@ pub(crate) fn encode_result<D: serde::Serialize>(
             .transpose()
             .map_err(|error| json_error(&error))?,
         terminate: result.terminate,
+        usage: None,
     })
 }
 /// Preserve the JSON boundary's failure text in the tool error channel.

@@ -133,6 +133,7 @@ fn recorded_result(value: &Value) -> AgentToolResult<EditToolDetails> {
             first_changed_line: details.first_changed_line,
         }),
         terminate: None,
+        usage: None,
     }
 }
 /// Visible output, preserving order and repetition.
@@ -447,6 +448,7 @@ fn replay_native(row: &Row, case: &NativeCase, exists: bool) {
                 first_changed_line: details.first_changed_line,
             }),
             terminate: None,
+            usage: None,
         },
         false,
         None,
@@ -475,6 +477,7 @@ async fn preview_native(row: &Row, case: &NativeCase, call: &ComponentHandle) {
                     first_changed_line: details.first_changed_line,
                 }),
                 terminate: None,
+                usage: None,
             },
             false,
             None,
@@ -560,6 +563,7 @@ fn edit_result_without_call_renders_detached_output() {
             content: vec![],
             details: None,
             terminate: None,
+            usage: None,
         };
         let out = row.result(&input, &empty, error, previous.clone());
         assert!(Rc::ptr_eq(previous.as_ref().unwrap(), &out));

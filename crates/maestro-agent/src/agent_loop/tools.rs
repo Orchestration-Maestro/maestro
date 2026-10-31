@@ -291,6 +291,7 @@ impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Driver<'_, C, 
             details: result.details.clone(),
             is_error,
             timestamp: 0.0,
+            usage: None,
         };
         (self.emit)(AgentEvent::ToolExecutionEnd {
             tool_call: call,

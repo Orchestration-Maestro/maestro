@@ -138,6 +138,7 @@ pub fn result() -> maestro_agent::AgentToolResult {
     maestro_agent::AgentToolResult {
         content: vec![],
         details: Some(serde_json::Value::Null),
+        usage: None,
         terminate: Some(true),
     }
 }

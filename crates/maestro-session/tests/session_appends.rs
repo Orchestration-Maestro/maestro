@@ -6,7 +6,9 @@ use crate::support;
 use maestro_models::UserContent;
 use maestro_request::presence::Presence;
 use maestro_session::SessionManager;
-use maestro_session::session_manager::{CompactionOptions, ReadonlySessionManager};
+use maestro_session::session_manager::{
+    BranchSummaryOptions, CompactionOptions, ReadonlySessionManager,
+};
 use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::io;
@@ -61,7 +63,7 @@ fn remaining_appends_keep_accepted_memory_after_io_failure() {
             )
         }),
         ("branch_summary", |m, root| {
-            m.branch_with_summary(Some(root), "recap", Presence::Missing, Presence::Missing)
+            m.branch_with_summary(Some(root), "recap", BranchSummaryOptions::default())
         }),
     ];
     for (kind, append) in cases {
@@ -90,6 +92,7 @@ fn append_every_kind(manager: &mut SessionManager, root: &str) {
     let options = CompactionOptions {
         details: details.clone(),
         from_hook: Presence::Present(true),
+        usage: Presence::Missing,
     };
     manager
         .append_compaction("recap", "absent", 17.0, options)
@@ -106,7 +109,15 @@ fn append_every_kind(manager: &mut SessionManager, root: &str) {
         .append_label_change(root, Presence::Present("mark"))
         .unwrap();
     manager
-        .branch_with_summary(None, "abandoned", details, Presence::Null)
+        .branch_with_summary(
+            None,
+            "abandoned",
+            BranchSummaryOptions {
+                details,
+                from_hook: Presence::Null,
+                usage: Presence::Missing,
+            },
+        )
         .unwrap();
 }
 

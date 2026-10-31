@@ -66,6 +66,7 @@ impl<E: ExtensionExecution> ExtensionRunner<E> {
             content: Presence::Present(event.content),
             details: event.details,
             is_error: Presence::Present(event.is_error),
+            usage: Presence::Missing,
         }))
     }
 }

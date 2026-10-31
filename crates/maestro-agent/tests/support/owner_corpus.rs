@@ -252,6 +252,7 @@ fn tool(input: &Arc<Input>) -> maestro_agent::SharedAgentTool {
                     ))],
                     details: Some(json!({"partial":true})),
                     terminate: None,
+                    usage: None,
                 });
             }
             ready(Ok(maestro_agent::AgentToolResult {
@@ -260,6 +261,7 @@ fn tool(input: &Arc<Input>) -> maestro_agent::SharedAgentTool {
                 ))],
                 details: Some(json!({"result":true})),
                 terminate: Some(true),
+                usage: None,
             }))
         }),
     }))

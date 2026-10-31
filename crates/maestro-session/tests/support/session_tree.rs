@@ -229,6 +229,7 @@ fn apply(
             maestro_session::session_manager::CompactionOptions {
                 details: presence(args, 3),
                 from_hook: flag(args, 4),
+                usage: maestro_session::Presence::Missing,
             },
         ),
         "appendCustomEntry" => {
@@ -255,8 +256,11 @@ fn apply(
         "branchWithSummary" => manager.branch_with_summary(
             args[0].as_str(),
             args[1].as_str().unwrap(),
-            presence(args, 2),
-            flag(args, 3),
+            maestro_session::session_manager::BranchSummaryOptions {
+                details: presence(args, 2),
+                from_hook: flag(args, 3),
+                usage: maestro_session::Presence::Missing,
+            },
         ),
         "branch" => return manager.branch(&text(args, 0, named)).map(|()| None),
         "resetLeaf" => {

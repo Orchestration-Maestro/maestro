@@ -406,6 +406,7 @@ fn registered_tool_aliases_release_after_last_consumer() {
                     content: vec![],
                     details: Some(json!("old")),
                     terminate: None,
+                    usage: None,
                 })
             })
         });
@@ -672,6 +673,7 @@ fn heterogeneous_definition() -> LocalDefinition<OtherParameters, OtherDetails, 
                         answer: params.count.to_string(),
                     }),
                     terminate: None,
+                    usage: None,
                 })
             })
         }),
@@ -754,6 +756,7 @@ fn ready_details<D: 'static>(
         content: vec![],
         details,
         terminate: None,
+        usage: None,
     })))
 }
 /// Local registered definition with explicit argument, details and state families.
@@ -780,6 +783,7 @@ fn forwarding_definition(seen: &Rc<std::cell::RefCell<Vec<ExtensionContext>>>) -
                 content: vec![],
                 details: Some(json!({"partial":2})),
                 terminate: None,
+                usage: None,
             });
         }
         Box::pin(async {
@@ -788,6 +792,7 @@ fn forwarding_definition(seen: &Rc<std::cell::RefCell<Vec<ExtensionContext>>>) -
                 content: vec![],
                 details: Some(json!({"answer":3})),
                 terminate: Some(true),
+                usage: None,
             })
         })
     });

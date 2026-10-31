@@ -139,6 +139,7 @@ fn reporting_tools() -> IndexMap<String, SharedAgentTool<Local>> {
                     content: vec![UserBlock::Text(TextContent::new(format!("SIN {SIN}")))],
                     details: Some(json!({"sin": SIN})),
                     terminate: None,
+                    usage: None,
                 });
             }
             let done = TextContent::new("checked result".into());
@@ -146,6 +147,7 @@ fn reporting_tools() -> IndexMap<String, SharedAgentTool<Local>> {
                 content: vec![UserBlock::Text(done)],
                 details: Some(json!({})),
                 terminate: None,
+                usage: None,
             })))
         }),
         execution_mode: None,

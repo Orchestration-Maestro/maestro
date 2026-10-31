@@ -87,7 +87,7 @@ Message entries hold one `message` object whose `role` selects its shape.
 | --- | --- |
 | `user` | `content` (string or text/image blocks), `timestamp` (Unix milliseconds) |
 | `assistant` | `content` (text, thinking and `toolCall` blocks), `api`, `provider`, `model`, `usage`, `stopReason`, optional `errorMessage`, `timestamp` |
-| `toolResult` | `toolCallId`, `toolName`, `content` (text/image blocks), optional `details`, `isError`, `timestamp` |
+| `toolResult` | `toolCallId`, `toolName`, `content` (text/image blocks), optional `details`, optional `usage`, `isError`, `timestamp` |
 | `bashExecution` | `command`, `output`, `exitCode` (number or absent), `cancelled`, `truncated`, optional `fullOutputPath`, optional `excludeFromContext`, `timestamp` |
 | `custom` | `customType`, `content`, `display`, optional `details`, `timestamp` |
 | `branchSummary` | `summary`, `fromId`, `timestamp` |
@@ -150,7 +150,8 @@ Recorded when the model changes mid-session.
 
 ### Compaction
 
-Stores a summary of earlier messages. `details` (implementation data) and
+Stores a summary of earlier messages. `details` (implementation data), `usage` (the
+provider usage of the calls that generated the summary; session totals include it) and
 `fromHook` (true when an extension produced the summary) are optional.
 
 ```jsonl
@@ -160,7 +161,7 @@ Stores a summary of earlier messages. `details` (implementation data) and
 ### Branch summary
 
 Summarizes the abandoned path when the selection moves to another branch.
-`details` and `fromHook` are optional, as for compaction.
+`details`, `usage` and `fromHook` are optional, as for compaction.
 
 ```jsonl
 {"type":"branch_summary","id":"a7b8c9d0","parentId":"a1b2c3d4","timestamp":"2024-12-03T14:15:00.000Z","fromId":"f6a7b8c9","summary":"Branch explored approach A..."}

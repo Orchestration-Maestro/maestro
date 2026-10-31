@@ -76,7 +76,7 @@ crossing a message, another context entry or a compaction boundary.
 ### Stored compaction record
 
 Records contain `type: "compaction"`, `id`, nullable `parentId`, ISO string `timestamp`,
-`summary`, `firstKeptEntryId`, `tokensBefore` and optional `fromHook`/`details`.
+`summary`, `firstKeptEntryId`, `tokensBefore` and optional `fromHook`/`details`/`usage`.
 The [entry owner](../entry.md) supplies Rust record types; stored histories remain raw
 JSON until selected fields are consumed. Built-in `CompactionDetails` contains
 `readFiles` and `modifiedFiles`. Extensions may store other JSON details, so built-in
@@ -114,7 +114,7 @@ The summary attaches to the selected target, not to the abandoned leaf. The exis
 `branch_with_summary` operation records the selected point as `fromId` (or literal
 `root` for no selected parent); do not infer an abandoned-leaf identity from its name.
 A branch record contains `type: "branch_summary"`, `id`, nullable `parentId`, ISO string
-`timestamp`, `summary`, `fromId` and optional `fromHook`/`details`. Built-in
+`timestamp`, `summary`, `fromId` and optional `fromHook`/`details`/`usage`. Built-in
 `BranchSummaryDetails` has the same two file arrays as compaction details. Extension
 details may instead contain application-defined JSON.
 
@@ -237,6 +237,7 @@ let custom = SessionBeforeCompactResult {
         first_kept_entry_id: preparation.first_kept_entry_id.clone(),
         tokens_before: preparation.tokens_before,
         details: Presence::Missing,
+        usage: Presence::Missing,
     }),
 };
 ```

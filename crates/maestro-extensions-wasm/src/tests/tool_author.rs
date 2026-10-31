@@ -235,6 +235,7 @@ fn control_kept(kept: &RefCell<Kept>, control: &str) -> ExtensionResult<Value> {
             content: vec![],
             details: maestro_extensions_wasm::Presence::Missing,
             terminate: maestro_extensions_wasm::Presence::Missing,
+            usage: None,
         })?;
     }
     let old = kept.replace(owned);

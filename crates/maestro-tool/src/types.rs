@@ -13,7 +13,7 @@ pub enum ToolExecutionMode {
 
 use maestro_request::{
     presence::Omittable,
-    types::{TextContent, UserBlock},
+    types::{TextContent, Usage, UserBlock},
 };
 
 /// Tool output with caller-selected optional field representations.
@@ -28,6 +28,9 @@ pub struct AgentToolResult<D: Omittable, T: Omittable> {
     /// Requested termination.
     #[serde(default, skip_serializing_if = "Omittable::is_omitted")]
     pub terminate: T,
+    /// Usage of model calls the tool made itself, kept outside the conversation's context.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub usage: Option<Usage>,
 }
 
 impl<D> AgentToolResult<Option<D>, Option<bool>> {
@@ -37,6 +40,7 @@ impl<D> AgentToolResult<Option<D>, Option<bool>> {
         Self {
             content: vec![UserBlock::Text(TextContent::new(text))],
             details,
+            usage: None,
             terminate: None,
         }
     }

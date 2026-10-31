@@ -254,6 +254,9 @@ pub struct ToolResultMessage<TDetails = serde_json::Value> {
         deserialize_with = "super::present"
     )]
     pub details: Option<TDetails>,
+    /// Usage of model calls the tool made itself, kept outside the conversation's context.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub usage: Option<Usage>,
     /// Is error.
     pub is_error: bool,
     /// Timestamp.

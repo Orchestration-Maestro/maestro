@@ -659,6 +659,7 @@ let tool = AgentTool::typed(
             content: vec![UserBlock::Text(TextContent { text: params.text, text_signature: None })],
             details: Some(()),
             terminate: Some(true),
+            usage: None,
         })))
     }),
 );

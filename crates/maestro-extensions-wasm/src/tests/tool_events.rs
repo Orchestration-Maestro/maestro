@@ -44,6 +44,7 @@ fn maestro_tool_name_checks_are_exact() {
             } else {
                 Presence::Missing
             },
+            usage: Presence::Missing,
         };
         let observed = if row.get("query").is_some() {
             is_tool_call_event_type(row["query"].as_str().unwrap(), &call)

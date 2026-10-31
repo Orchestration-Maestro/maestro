@@ -56,6 +56,7 @@ fn dispatch<D: 'static>(
             details: None,
             is_error: true,
             timestamp,
+            usage: None,
         })
     } else {
         None

@@ -61,6 +61,7 @@ fn typed_body(calls: Arc<AtomicUsize>) -> ExecuteTool<Parameters, Details> {
                     doubled: args.count + 1,
                 }),
                 terminate: Some(false),
+                usage: None,
             });
             Ok(AgentToolResult {
                 content: vec![UserBlock::Text(maestro_models::TextContent::new(
@@ -70,6 +71,7 @@ fn typed_body(calls: Arc<AtomicUsize>) -> ExecuteTool<Parameters, Details> {
                     doubled: args.count * 2,
                 }),
                 terminate: Some(true),
+                usage: None,
             })
         })
     })
@@ -137,6 +139,7 @@ fn maestro_typed_tool_uses_host_json_number_semantics() {
                     content: Vec::new(),
                     details: Some(f64::INFINITY),
                     terminate: None,
+                    usage: None,
                 })
             })
         }),
@@ -168,12 +171,14 @@ fn encoding_failure_tool(progress: bool) -> AgentTool {
                         content: Vec::new(),
                         details: Some(Unencodable(true)),
                         terminate: None,
+                        usage: None,
                     });
                 }
                 Ok(AgentToolResult {
                     content: Vec::new(),
                     details: Some(Unencodable(!progress)),
                     terminate: None,
+                    usage: None,
                 })
             })
         }),
@@ -205,6 +210,7 @@ fn maestro_typed_tool_returns_callback_and_encoding_failures() {
                     content: Vec::new(),
                     details: None,
                     terminate: None,
+                    usage: None,
                 })
             })
         }),
