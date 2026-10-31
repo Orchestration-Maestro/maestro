@@ -2,7 +2,7 @@
 use super::{MistralOptions, request};
 use crate::options::resolve_api_key;
 use crate::providers::{
-    assistant_output::{conclude, fail, initial_message, start_producer_for},
+    assistant_output::{conclude_with, fail, initial_message, start_producer_for},
     http::RequestFailure,
 };
 use crate::{
@@ -12,6 +12,10 @@ use crate::{
 };
 use std::borrow::Cow;
 use std::sync::{Arc, RwLock};
+
+/// Failure text of a response that finishes with the reason `error`, which the provider uses
+/// for transient server failures; its "server error" wording makes the session retry it.
+const ERROR_FINISH_TEXT: &str = "Provider stopped with: error (server error)";
 
 /// Start a raw conversation stream on the caller's runtime.
 ///
@@ -209,7 +213,9 @@ async fn produce<E: ProviderExecution>(
         partial: Arc::clone(output),
     });
     super::sse::read(body, model, stream, output).await?;
-    conclude(stream, output, options.common.signal.as_ref())
+    conclude_with(stream, output, options.common.signal.as_ref(), |_| {
+        ERROR_FINISH_TEXT
+    })
 }
 
 /// Pass raw controls to the existing producer without a simple-effort override.
