@@ -147,6 +147,20 @@
           "submenu": false
         },
         {
+          "id": "http-idle-timeout",
+          "label": "HTTP idle timeout",
+          "description": "Maximum idle gap while waiting for HTTP headers or body chunks. Disable for local models that pause longer than five minutes.",
+          "current_value": "5 min",
+          "values": [
+            "30 sec",
+            "1 min",
+            "2 min",
+            "5 min",
+            "disabled"
+          ],
+          "submenu": false
+        },
+        {
           "id": "hide-thinking",
           "label": "Hide thinking",
           "description": "Hide thinking blocks in assistant responses",
@@ -236,20 +250,6 @@
           "description": "Color theme for the interface",
           "current_value": "dark",
           "submenu": true
-        },
-        {
-          "id": "http-idle-timeout",
-          "label": "HTTP idle timeout",
-          "description": "Maximum idle gap while waiting for HTTP headers or body chunks. Disable for local models that pause longer than five minutes.",
-          "current_value": "5 min",
-          "values": [
-            "30 sec",
-            "1 min",
-            "2 min",
-            "5 min",
-            "disabled"
-          ],
-          "submenu": false
         }
       ],
       "lines": [
@@ -447,6 +447,20 @@
           "submenu": false
         },
         {
+          "id": "http-idle-timeout",
+          "label": "HTTP idle timeout",
+          "description": "Maximum idle gap while waiting for HTTP headers or body chunks. Disable for local models that pause longer than five minutes.",
+          "current_value": "5 min",
+          "values": [
+            "30 sec",
+            "1 min",
+            "2 min",
+            "5 min",
+            "disabled"
+          ],
+          "submenu": false
+        },
+        {
           "id": "hide-thinking",
           "label": "Hide thinking",
           "description": "Hide thinking blocks in assistant responses",
@@ -536,20 +550,6 @@
           "description": "Color theme for the interface",
           "current_value": "dark",
           "submenu": true
-        },
-        {
-          "id": "http-idle-timeout",
-          "label": "HTTP idle timeout",
-          "description": "Maximum idle gap while waiting for HTTP headers or body chunks. Disable for local models that pause longer than five minutes.",
-          "current_value": "5 min",
-          "values": [
-            "30 sec",
-            "1 min",
-            "2 min",
-            "5 min",
-            "disabled"
-          ],
-          "submenu": false
         }
       ],
       "lines": [
@@ -747,6 +747,20 @@
           "submenu": false
         },
         {
+          "id": "http-idle-timeout",
+          "label": "HTTP idle timeout",
+          "description": "Maximum idle gap while waiting for HTTP headers or body chunks. Disable for local models that pause longer than five minutes.",
+          "current_value": "5 min",
+          "values": [
+            "30 sec",
+            "1 min",
+            "2 min",
+            "5 min",
+            "disabled"
+          ],
+          "submenu": false
+        },
+        {
           "id": "hide-thinking",
           "label": "Hide thinking",
           "description": "Hide thinking blocks in assistant responses",
@@ -836,20 +850,6 @@
           "description": "Color theme for the interface",
           "current_value": "dark",
           "submenu": true
-        },
-        {
-          "id": "http-idle-timeout",
-          "label": "HTTP idle timeout",
-          "description": "Maximum idle gap while waiting for HTTP headers or body chunks. Disable for local models that pause longer than five minutes.",
-          "current_value": "5 min",
-          "values": [
-            "30 sec",
-            "1 min",
-            "2 min",
-            "5 min",
-            "disabled"
-          ],
-          "submenu": false
         }
       ],
       "lines": [
@@ -2088,7 +2088,7 @@
             "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
             "  Follow-up mode          \u001b[38;5;33mall\u001b[39m",
             "  Transport               \u001b[38;5;33mauto\u001b[39m",
-            "  Hide thinking           \u001b[38;5;33mfalse\u001b[39m",
+            "  HTTP idle timeout       \u001b[38;5;33m5 min\u001b[39m",
             "\u001b[38;5;34m  (9/22)\u001b[39m",
             "",
             "\u001b[38;5;34m  Show OSC 9;4 progress indicators in the terminal tab bar\u001b[39m",
@@ -2112,7 +2112,7 @@
             "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
             "  Follow-up mode          \u001b[38;5;33mall\u001b[39m",
             "  Transport               \u001b[38;5;33mauto\u001b[39m",
-            "  Hide thinking           \u001b[38;5;33mfalse\u001b[39m",
+            "  HTTP idle timeout       \u001b[38;5;33m5 min\u001b[39m",
             "\u001b[38;5;34m  (9/22)\u001b[39m",
             "",
             "\u001b[38;5;34m  Show OSC 9;4 progress indicators in the terminal tab bar\u001b[39m",
@@ -2141,7 +2141,7 @@
             "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
             "  Follow-up mode          \u001b[38;5;33mall\u001b[39m",
             "  Transport               \u001b[38;5;33mauto\u001b[39m",
-            "  Hide thinking           \u001b[38;5;33mfalse\u001b[39m",
+            "  HTTP idle timeout       \u001b[38;5;33m5 min\u001b[39m",
             "\u001b[38;5;34m  (9/22)\u001b[39m",
             "",
             "\u001b[38;5;34m  Show OSC 9;4 progress indicators in the terminal tab bar\u001b[39m",
@@ -2187,7 +2187,7 @@
             "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
             "  Follow-up mode          \u001b[38;5;33mall\u001b[39m",
             "  Transport               \u001b[38;5;33mauto\u001b[39m",
-            "  Hide thinking           \u001b[38;5;33mfalse\u001b[39m",
+            "  HTTP idle timeout       \u001b[38;5;33m5 min\u001b[39m",
             "\u001b[38;5;34m  (9/22)\u001b[39m",
             "",
             "\u001b[38;5;34m  Show OSC 9;4 progress indicators in the terminal tab bar\u001b[39m",
@@ -2211,7 +2211,7 @@
             "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
             "  Follow-up mode          \u001b[38;5;33mall\u001b[39m",
             "  Transport               \u001b[38;5;33mauto\u001b[39m",
-            "  Hide thinking           \u001b[38;5;33mfalse\u001b[39m",
+            "  HTTP idle timeout       \u001b[38;5;33m5 min\u001b[39m",
             "\u001b[38;5;34m  (9/22)\u001b[39m",
             "",
             "\u001b[38;5;34m  Show OSC 9;4 progress indicators in the terminal tab bar\u001b[39m",
@@ -2240,7 +2240,7 @@
             "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
             "  Follow-up mode          \u001b[38;5;33mall\u001b[39m",
             "  Transport               \u001b[38;5;33mauto\u001b[39m",
-            "  Hide thinking           \u001b[38;5;33mfalse\u001b[39m",
+            "  HTTP idle timeout       \u001b[38;5;33m5 min\u001b[39m",
             "\u001b[38;5;34m  (9/22)\u001b[39m",
             "",
             "\u001b[38;5;34m  Show OSC 9;4 progress indicators in the terminal tab bar\u001b[39m",
@@ -8215,7 +8215,7 @@
           "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
           "  Follow-up mode          \u001b[38;5;33mall\u001b[39m",
           "  Transport               \u001b[38;5;33mauto\u001b[39m",
-          "  Hide thinking           \u001b[38;5;33mfalse\u001b[39m",
+          "  HTTP idle timeout       \u001b[38;5;33m5 min\u001b[39m",
           "\u001b[38;5;34m  (11/24)\u001b[39m",
           "",
           "\u001b[38;5;34m  Show OSC 9;4 progress indicators in the terminal tab bar\u001b[39m",
@@ -8239,7 +8239,7 @@
           "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
           "  Follow-up mode          \u001b[38;5;33mall\u001b[39m",
           "  Transport               \u001b[38;5;33mauto\u001b[39m",
-          "  Hide thinking           \u001b[38;5;33mfalse\u001b[39m",
+          "  HTTP idle timeout       \u001b[38;5;33m5 min\u001b[39m",
           "\u001b[38;5;34m  (11/24)\u001b[39m",
           "",
           "\u001b[38;5;34m  Show OSC 9;4 progress indicators in the terminal tab bar\u001b[39m",
@@ -8266,7 +8266,7 @@
               "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
               "  Follow-up mode          \u001b[38;5;33mall\u001b[39m",
               "  Transport               \u001b[38;5;33mauto\u001b[39m",
-              "  Hide thinking           \u001b[38;5;33mfalse\u001b[39m",
+              "  HTTP idle timeout       \u001b[38;5;33m5 min\u001b[39m",
               "\u001b[38;5;34m  (11/24)\u001b[39m",
               "",
               "\u001b[38;5;34m  Show OSC 9;4 progress indicators in the terminal tab bar\u001b[39m",
@@ -8499,6 +8499,20 @@
             "submenu": false
           },
           {
+            "id": "http-idle-timeout",
+            "label": "HTTP idle timeout",
+            "description": "Maximum idle gap while waiting for HTTP headers or body chunks. Disable for local models that pause longer than five minutes.",
+            "current_value": "5 min",
+            "values": [
+              "30 sec",
+              "1 min",
+              "2 min",
+              "5 min",
+              "disabled"
+            ],
+            "submenu": false
+          },
+          {
             "id": "hide-thinking",
             "label": "Hide thinking",
             "description": "Hide thinking blocks in assistant responses",
@@ -8588,20 +8602,6 @@
             "description": "Color theme for the interface",
             "current_value": "dark",
             "submenu": true
-          },
-          {
-            "id": "http-idle-timeout",
-            "label": "HTTP idle timeout",
-            "description": "Maximum idle gap while waiting for HTTP headers or body chunks. Disable for local models that pause longer than five minutes.",
-            "current_value": "5 min",
-            "values": [
-              "30 sec",
-              "1 min",
-              "2 min",
-              "5 min",
-              "disabled"
-            ],
-            "submenu": false
           }
         ],
         "lines": [
@@ -8827,6 +8827,20 @@
             "submenu": false
           },
           {
+            "id": "http-idle-timeout",
+            "label": "HTTP idle timeout",
+            "description": "Maximum idle gap while waiting for HTTP headers or body chunks. Disable for local models that pause longer than five minutes.",
+            "current_value": "5 min",
+            "values": [
+              "30 sec",
+              "1 min",
+              "2 min",
+              "5 min",
+              "disabled"
+            ],
+            "submenu": false
+          },
+          {
             "id": "hide-thinking",
             "label": "Hide thinking",
             "description": "Hide thinking blocks in assistant responses",
@@ -8916,20 +8930,6 @@
             "description": "Color theme for the interface",
             "current_value": "dark",
             "submenu": true
-          },
-          {
-            "id": "http-idle-timeout",
-            "label": "HTTP idle timeout",
-            "description": "Maximum idle gap while waiting for HTTP headers or body chunks. Disable for local models that pause longer than five minutes.",
-            "current_value": "5 min",
-            "values": [
-              "30 sec",
-              "1 min",
-              "2 min",
-              "5 min",
-              "disabled"
-            ],
-            "submenu": false
           }
         ],
         "lines": [
@@ -9155,6 +9155,20 @@
             "submenu": false
           },
           {
+            "id": "http-idle-timeout",
+            "label": "HTTP idle timeout",
+            "description": "Maximum idle gap while waiting for HTTP headers or body chunks. Disable for local models that pause longer than five minutes.",
+            "current_value": "5 min",
+            "values": [
+              "30 sec",
+              "1 min",
+              "2 min",
+              "5 min",
+              "disabled"
+            ],
+            "submenu": false
+          },
+          {
             "id": "hide-thinking",
             "label": "Hide thinking",
             "description": "Hide thinking blocks in assistant responses",
@@ -9244,20 +9258,6 @@
             "description": "Color theme for the interface",
             "current_value": "dark",
             "submenu": true
-          },
-          {
-            "id": "http-idle-timeout",
-            "label": "HTTP idle timeout",
-            "description": "Maximum idle gap while waiting for HTTP headers or body chunks. Disable for local models that pause longer than five minutes.",
-            "current_value": "5 min",
-            "values": [
-              "30 sec",
-              "1 min",
-              "2 min",
-              "5 min",
-              "disabled"
-            ],
-            "submenu": false
           }
         ],
         "lines": [
@@ -12202,7 +12202,7 @@
           "  Steer\u001b[0m...\u001b[0m",
           "  Follo\u001b[0m...\u001b[0m",
           "  Trans\u001b[0m...\u001b[0m",
-          "  Hide \u001b[0m...\u001b[0m",
+          "  HTTP \u001b[0m...\u001b[0m",
           "\u001b[38;5;34m  (11/24\u001b[0m\u001b[39m",
           "",
           "\u001b[38;5;34m  Show\u001b[39m",
@@ -12236,7 +12236,7 @@
           "  Steer\u001b[0m...\u001b[0m",
           "  Follo\u001b[0m...\u001b[0m",
           "  Trans\u001b[0m...\u001b[0m",
-          "  Hide \u001b[0m...\u001b[0m",
+          "  HTTP \u001b[0m...\u001b[0m",
           "\u001b[38;5;38m  (11/24\u001b[0m\u001b[39m",
           "",
           "\u001b[38;5;38m  Show\u001b[39m",
@@ -12279,7 +12279,7 @@
           "  Steering mode           \u001b[38;5;33mone-at-a-tim\u001b[0m\u001b[39m",
           "  Follow-up mode          \u001b[38;5;33mall\u001b[39m",
           "  Transport               \u001b[38;5;33mauto\u001b[39m",
-          "  Hide thinking           \u001b[38;5;33mfalse\u001b[39m",
+          "  HTTP idle timeout       \u001b[38;5;33m5 min\u001b[39m",
           "\u001b[38;5;34m  (11/24)\u001b[39m",
           "",
           "\u001b[38;5;34m  Show OSC 9;4 progress indicators in\u001b[39m",
@@ -12304,7 +12304,7 @@
           "  Steering mode           \u001b[38;5;37mone-at-a-tim\u001b[0m\u001b[39m",
           "  Follow-up mode          \u001b[38;5;37mall\u001b[39m",
           "  Transport               \u001b[38;5;37mauto\u001b[39m",
-          "  Hide thinking           \u001b[38;5;37mfalse\u001b[39m",
+          "  HTTP idle timeout       \u001b[38;5;37m5 min\u001b[39m",
           "\u001b[38;5;38m  (11/24)\u001b[39m",
           "",
           "\u001b[38;5;38m  Show OSC 9;4 progress indicators in\u001b[39m",
@@ -12338,7 +12338,7 @@
           "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
           "  Follow-up mode          \u001b[38;5;33mall\u001b[39m",
           "  Transport               \u001b[38;5;33mauto\u001b[39m",
-          "  Hide thinking           \u001b[38;5;33mfalse\u001b[39m",
+          "  HTTP idle timeout       \u001b[38;5;33m5 min\u001b[39m",
           "\u001b[38;5;34m  (11/24)\u001b[39m",
           "",
           "\u001b[38;5;34m  Show OSC 9;4 progress indicators in the terminal tab bar\u001b[39m",
@@ -12362,7 +12362,7 @@
           "  Steering mode           \u001b[38;5;37mone-at-a-time\u001b[39m",
           "  Follow-up mode          \u001b[38;5;37mall\u001b[39m",
           "  Transport               \u001b[38;5;37mauto\u001b[39m",
-          "  Hide thinking           \u001b[38;5;37mfalse\u001b[39m",
+          "  HTTP idle timeout       \u001b[38;5;37m5 min\u001b[39m",
           "\u001b[38;5;38m  (11/24)\u001b[39m",
           "",
           "\u001b[38;5;38m  Show OSC 9;4 progress indicators in the terminal tab bar\u001b[39m",
@@ -12395,7 +12395,7 @@
           "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
           "  Follow-up mode          \u001b[38;5;33mall\u001b[39m",
           "  Transport               \u001b[38;5;33mauto\u001b[39m",
-          "  Hide thinking           \u001b[38;5;33mfalse\u001b[39m",
+          "  HTTP idle timeout       \u001b[38;5;33m5 min\u001b[39m",
           "\u001b[38;5;34m  (11/24)\u001b[39m",
           "",
           "\u001b[38;5;34m  Show OSC 9;4 progress indicators in the terminal tab bar\u001b[39m",
@@ -12419,7 +12419,7 @@
           "  Steering mode           \u001b[38;5;37mone-at-a-time\u001b[39m",
           "  Follow-up mode          \u001b[38;5;37mall\u001b[39m",
           "  Transport               \u001b[38;5;37mauto\u001b[39m",
-          "  Hide thinking           \u001b[38;5;37mfalse\u001b[39m",
+          "  HTTP idle timeout       \u001b[38;5;37m5 min\u001b[39m",
           "\u001b[38;5;38m  (11/24)\u001b[39m",
           "",
           "\u001b[38;5;38m  Show OSC 9;4 progress indicators in the terminal tab bar\u001b[39m",

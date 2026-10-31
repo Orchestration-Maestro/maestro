@@ -259,6 +259,7 @@ pub fn select_with_images(
         "steering-mode",
         "follow-up-mode",
         "transport",
+        "http-idle-timeout",
         "hide-thinking",
         "collapse-changelog",
         "quiet-startup",
@@ -268,7 +269,6 @@ pub fn select_with_images(
         "warnings",
         "thinking",
         "theme",
-        "http-idle-timeout",
     ];
     let index = ids
         .iter()
