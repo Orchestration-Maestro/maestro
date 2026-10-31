@@ -713,9 +713,9 @@ async fn requested_case(directory: &Path, requested: bool, transient: (bool, boo
 }
 
 #[test]
-fn termination_signal_unregisters_and_drains_before_cleanup() {
+fn termination_signal_unregisters_and_disposes_before_terminal_writes() {
     native::run(
-        "termination_signal_unregisters_and_drains_before_cleanup",
+        "termination_signal_unregisters_and_disposes_before_terminal_writes",
         "term",
         "TERM",
         None,
@@ -723,9 +723,9 @@ fn termination_signal_unregisters_and_drains_before_cleanup() {
 }
 
 #[test]
-fn hangup_skips_terminal_and_runtime_cleanup() {
+fn hangup_runs_the_graceful_shutdown_and_exits_normally() {
     native::run(
-        "hangup_skips_terminal_and_runtime_cleanup",
+        "hangup_runs_the_graceful_shutdown_and_exits_normally",
         "hup",
         "HUP",
         None,
