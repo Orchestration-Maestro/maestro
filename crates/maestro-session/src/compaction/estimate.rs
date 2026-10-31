@@ -62,7 +62,7 @@ pub fn get_last_assistant_usage(
 }
 /// Selected role policy, independent of unused message fields.
 enum Role {
-    /// Plain user content.
+    /// User text and image attachments.
     User,
     /// Assistant categories.
     Assistant,
@@ -111,7 +111,7 @@ fn block_units(block: &Value, role: &Role) -> Result<f64, serde_json::Error> {
                 .ok_or_else(|| serde_json::Error::custom("missing arguments"))?;
             Ok(name + utf16_units(&maestro_json::compact_json(arguments)?))
         }
-        Some("image") if matches!(role, Role::WithImages) => Ok(4800.0),
+        Some("image") if matches!(role, Role::User | Role::WithImages) => Ok(4800.0),
         _ => Ok(0.0),
     }
 }

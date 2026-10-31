@@ -55,8 +55,8 @@ all supplied messages.
 
 `estimate_tokens` rounds up UTF-16 code units divided by four. It includes assistant
 text, thinking and canonical JSON tool arguments, shell command/output even when
-excluded from model context, and unwrapped summary text. User images add nothing;
-custom/tool-result images add 4800 units each. Unknown roles contribute zero.
+excluded from model context, and unwrapped summary text. Each image in a user, custom
+or tool-result message adds 4800 units. Unknown roles contribute zero.
 
 `find_cut_point` accepts an existing half-open index range. It counts only message
 entries backwards, crosses at the retained budget and selects the next valid cut,
