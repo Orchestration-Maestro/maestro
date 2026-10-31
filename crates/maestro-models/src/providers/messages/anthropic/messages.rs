@@ -209,6 +209,7 @@ pub(super) fn convert(
     context: &Context,
     cache: Option<CacheControl>,
     naming: Naming,
+    allow_empty_signature: bool,
 ) -> Vec<WireMessage> {
     let normalize = |id: &str, _: &Model, _: &AssistantMessage| normalize_tool_call_id(id);
     let history = transform_messages(&context.messages, model, Some(&normalize));
@@ -217,7 +218,9 @@ pub(super) fn convert(
     while let Some(message) = remaining.next() {
         wire.extend(match message {
             Message::User(user) => user_message(&user.content),
-            Message::Assistant(assistant) => assistant_message(assistant, naming),
+            Message::Assistant(assistant) => {
+                assistant_message(assistant, naming, allow_empty_signature)
+            }
             Message::ToolResult(first) => Some(tool_results(first, &mut remaining)),
         });
     }
@@ -254,11 +257,15 @@ fn user_message(content: &UserContent) -> Option<WireMessage> {
 }
 
 /// Convert an assistant turn; a turn without any block produces no message.
-fn assistant_message(assistant: &AssistantMessage, naming: Naming) -> Option<WireMessage> {
+fn assistant_message(
+    assistant: &AssistantMessage,
+    naming: Naming,
+    allow_empty_signature: bool,
+) -> Option<WireMessage> {
     let blocks: Vec<Block> = assistant
         .content
         .iter()
-        .filter_map(|block| assistant_block(block, naming))
+        .filter_map(|block| assistant_block(block, naming, allow_empty_signature))
         .collect();
     (!blocks.is_empty()).then_some(WireMessage {
         role: Role::Assistant,
@@ -267,9 +274,14 @@ fn assistant_message(assistant: &AssistantMessage, naming: Naming) -> Option<Wir
 }
 
 /// Convert one block of an assistant turn. Blank text and blank unredacted reasoning are
-/// dropped; unredacted reasoning without a nonblank signature becomes plain text; redacted
-/// reasoning is kept whatever its text, with its opaque payload.
-fn assistant_block(block: &AssistantContent, naming: Naming) -> Option<Block> {
+/// dropped; unredacted reasoning without a nonblank signature becomes plain text, or is kept
+/// with an empty signature when the model accepts one; redacted reasoning is kept whatever its
+/// text, with its opaque payload.
+fn assistant_block(
+    block: &AssistantContent,
+    naming: Naming,
+    allow_empty_signature: bool,
+) -> Option<Block> {
     match block {
         AssistantContent::Text(text) => (!is_blank(&text.text)).then(|| Block::text(&text.text)),
         AssistantContent::Thinking(thinking) if thinking.redacted == Some(true) => {
@@ -287,6 +299,10 @@ fn assistant_block(block: &AssistantContent, naming: Naming) -> Option<Block> {
                 Some(signature) => Block::Thinking {
                     thinking: thinking.thinking.clone(),
                     signature: signature.to_owned(),
+                },
+                None if allow_empty_signature => Block::Thinking {
+                    thinking: thinking.thinking.clone(),
+                    signature: String::new(),
                 },
                 None => Block::text(&thinking.thinking),
             },

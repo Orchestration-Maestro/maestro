@@ -124,7 +124,8 @@ is the next value of the caller's `counter` (a missing name reads `undefined`). 
 signature is kept when nonempty.
 
 A nonempty finish reason is mapped with `map_stop_reason`, and any call in the message
-then makes the outcome `toolUse`; a reason that maps to `error` is recorded, not returned.
+then turns a `stop` outcome into `toolUse`; `length` and `error` outcomes stay, and a reason
+that maps to `error` is recorded, not returned.
 A usage report replaces the previous one: input is the prompt count minus the cached count
 (without clamping), output is the candidate plus thought counts, cache read is the cached
 count, cache write is zero, and the total is the reported total, never a sum. Cost is

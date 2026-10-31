@@ -87,17 +87,17 @@ omitted; a zero temperature is sent. A NaN or infinite temperature and an infini
 limit are sent as `null`, the way JSON text writes them. `OpenRouter` routing preferences are
 forwarded without field selection when the base URL contains `openrouter.ai` and the
 supplied value is truthy. Gateway routing selects only truthy `only` and `order`, in
-that order, when the base URL contains `ai-gateway.vercel.sh`; empty arrays are truthy.
+that order, whatever the base URL; empty arrays are truthy.
 
 Reasoning follows the model's convention. A model that does not reason sends no
 reasoning fields. For one that does, `openai` sends a requested level as
 `reasoning_effort` (only where the endpoint accepts that field), `deepseek` as
-`reasoning_effort` with `thinking: enabled`, `openrouter` as `reasoning.effort`, `zai` and
-`qwen` as `enable_thinking: true`, and `qwen-chat-template` as `enable_thinking: true`
+`reasoning_effort` with `thinking: enabled`, `openrouter` as `reasoning.effort`, `zai` as
+`thinking: enabled`, `qwen` as `enable_thinking: true`, and `qwen-chat-template` as `enable_thinking: true`
 (with `preserve_thinking: true`) in `chat_template_kwargs`. Where a level is sent by name
 (`openai`, `deepseek`, `openrouter`), the name is the model's `thinking_level_map` entry,
 or the level's own name when the map has none (a `null` entry included). With no level
-requested, `zai` and `qwen` send `enable_thinking: false`, `qwen-chat-template` sends it
+requested, `zai` sends `thinking: disabled`, `qwen` sends `enable_thinking: false`, `qwen-chat-template` sends it
 in `chat_template_kwargs`, `deepseek` sends `thinking: disabled`, `openrouter` sends the
 map's `off` name (effort `none` when the map has no entry, nothing when it is `null`) and
 `openai` sends the map's `off` name when it has one, again only where the endpoint accepts
@@ -107,7 +107,7 @@ Cache retention follows the shared [options policy](../model-options.md#cache-re
 `none` suppresses
 prompt-cache and affinity fields. Cache markers, where the compatibility selects the
 `anthropic` style (by default the `openrouter` provider with a model whose ID starts with
-`anthropic/`), go on the first instruction, the last tool and the last conversation text;
+`anthropic/` or `~anthropic/`), go on the first instruction, the last tool and the last conversation text;
 with `long` retention they carry a one-hour lifetime where the compatibility supports it.
 `long` sends the `24h` retention and the session key only where the compatibility supports
 long caching; direct `OpenAI` URLs send the session key for any retention but `none`.
@@ -128,7 +128,11 @@ Other such IDs are kept, except for the `openai` provider, where they are cut to
 UTF-16 units at a character boundary. Blank assistant text and reasoning are dropped:
 spaces, line breaks, the no-break space and the byte-order mark count as blank, U+0085
 and U+200B do not. User text is kept as it is, and kept assistant text is never trimmed.
-Instructions use the developer role when the model reasons and the endpoint supports it.
+Instructions use the developer role when the model reasons and the endpoint supports it;
+an `OpenRouter` endpoint supports it only for model IDs starting with `anthropic/` or
+`openai/`. Reasoning replays in the field its block's signature names; the `opencode-go`
+provider streams its reasoning as `reasoning` and takes it back as `reasoning_content`, so
+the block carries and replays that name.
 Tool results are grouped; when the model accepts images, their images follow as one user
 message (preceded by an assistant bridge when the endpoint requires one). Tool-call
 arguments are written as compact JSON with array-index keys first in numeric order and

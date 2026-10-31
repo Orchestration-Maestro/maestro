@@ -5,7 +5,9 @@ use serde::ser::{SerializeMap, SerializeStruct};
 use serde::{Serialize, Serializer};
 use serde_json::Value;
 
-use super::compat::{OpenAICompletionsCapability as Capability, ResolvedOpenAICompletionsCompat};
+use super::compat::{
+    OpenAICompletionsCapability as Capability, ResolvedOpenAICompletionsCompat, reasoning_field,
+};
 use crate::arguments::json_parse::is_blank;
 use crate::projection::IMAGE_PLACEHOLDER;
 use crate::providers::json_text::{compact_json, is_truthy, json_value, raw_json};
@@ -331,7 +333,7 @@ fn convert_assistant(
     compat: &ResolvedOpenAICompletionsCompat,
 ) -> Result<Option<ChatCompletionMessageParam>, DiagnosticErrorInfo> {
     let blocks = AssistantBlocks::of(assistant);
-    let (content, mut extension_fields) = replay_content(&blocks, compat);
+    let (content, mut extension_fields) = replay_content(&blocks, model, compat);
     let tool_calls = blocks
         .calls
         .iter()
@@ -371,6 +373,7 @@ fn convert_assistant(
 /// Choose the assistant content and the reasoning replay fields for the endpoint.
 fn replay_content(
     blocks: &AssistantBlocks<'_>,
+    model: &Model,
     compat: &ResolvedOpenAICompletionsCompat,
 ) -> (Option<ChatCompletionContent>, JsonObject) {
     let mut content = compat
@@ -398,7 +401,10 @@ fn replay_content(
         .and_then(|first| first.thinking_signature.as_deref())
         .filter(|signature| !signature.is_empty());
     if let Some(signature) = signature {
-        fields.insert(signature.to_owned(), Value::String(reasoning.join("\n")));
+        fields.insert(
+            reasoning_field(model, signature).to_owned(),
+            Value::String(reasoning.join("\n")),
+        );
     }
     (content, fields)
 }
