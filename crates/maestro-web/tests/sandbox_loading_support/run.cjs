@@ -296,16 +296,18 @@ async function run({root, chromium, executablePath, inventory, log = console.log
       assert.deepEqual(missing, [], `missing/non-callable exports: ${missing.join(', ')}`);
     });
     for (const family of families) {
-      for (const name of inventory[family]) {
-        log(`START ${family} ${name}`);
-        // Exports receive the page bootstrap's module import, as an embedder supplies it.
-        await withPage(name, page => page.evaluate(async name => {
-          const module = await import('/sandbox.js');
-          await module.default();
-          await module[name](url => import(url));
-        }, name), family === 'contributions' ? '/contributions.html' : '/');
-        passed[family]++;
-        log(`PASS ${family} ${name}`);
+      for (let index = 0; index < inventory[family].length; index += 2) {
+        await Promise.all(inventory[family].slice(index, index + 2).map(async name => {
+          log(`START ${family} ${name}`);
+          // Exports receive the page bootstrap's module import, as an embedder supplies it.
+          await withPage(name, page => page.evaluate(async name => {
+            const module = await import('/sandbox.js');
+            await module.default();
+            await module[name](url => import(url));
+          }, name), family === 'contributions' ? '/contributions.html' : '/');
+          passed[family]++;
+          log(`PASS ${family} ${name}`);
+        }));
       }
       log(`FAMILY ${family} ${passed[family]}/${inventory[family].length}`);
     }

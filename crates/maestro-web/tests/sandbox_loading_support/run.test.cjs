@@ -92,38 +92,38 @@ test('inventory_requires_every_callable_export', async t => {
   }
 });
 
-test('exports_run_serially_in_fresh_pages', async t => {
+test('exports_run_two_at_a_time_in_fresh_pages', async t => {
   const seen = [];
-  let closed = 0;
-  let release, started, completed = false;
+  let closed = 0, peak = 0, release, started, secondStarted;
   const gate = new Promise(resolve => { release = resolve; });
   const entered = new Promise(resolve => { started = resolve; });
+  const secondEntered = new Promise(resolve => { secondStarted = resolve; });
   const root = fixture(t, {
-    [first]: "await window.serialWitness('first');",
-    [inventory.execution[1]]: "await window.serialWitness('second');",
+    [first]: "await window.parallelWitness('first'); throw Error('parallel stop');",
+    [inventory.execution[1]]: "await window.parallelWitness('second'); await new Promise(() => {});",
   }, `if (window.initialized) throw Error('reused module'); window.initialized = true;`);
   const driver = observedBrowser(async page => {
-    assert.equal(seen.length, closed, 'previous page closed before next page');
     seen.push(page);
+    peak = Math.max(peak, seen.length - closed);
+    assert(seen.length - closed <= 2, 'at most two isolated pages');
     page.once('close', () => closed++);
-    await page.exposeBinding('serialWitness', async (_, phase) => {
-      if (phase === 'first') { started(); await gate; completed = true; }
-      else assert(completed, 'next export cannot precede prior settlement');
+    await page.exposeBinding('parallelWitness', async (_, phase) => {
+      if (phase === 'first') { started(); await gate; }
+      else secondStarted();
     });
   });
-  const running = execute(root, {chromium: driver});
-  await entered;
-  assert.equal(seen.length, 2, 'only inventory and the pending first export');
-  release();
-  const lines = await running;
-  assert.equal(seen.length, all.length + 1, 'inventory page plus a fresh page per assertion');
-  assert.equal(new Set(seen).size, all.length + 1);
-  assert.deepEqual(lines.filter(line => line.startsWith('START ')).map(line => line.split(' ')[2]), all);
-  assert.deepEqual(lines.filter(line => line.startsWith('PASS ')).map(line => line.split(' ')[2]), all);
-  assert(lines.includes('FAMILY execution 26/26'));
-  assert(lines.includes('FAMILY loading 49/49'));
-  assert(lines.includes(`FAMILY contributions ${inventory.contributions.length}/${inventory.contributions.length}`));
-  assert.equal(lines.at(-1), `COMPLETE ${all.length}/${all.length}`);
+  const lines = [];
+  const running = execute(root, {chromium: driver, log: line => lines.push(line)});
+  const rejected = assert.rejects(running, new RegExp(`${first}.*parallel stop`, 's'));
+  try {
+    await entered;
+    assert(lines.includes(`START execution ${inventory.execution[1]}`), 'second export starts while first is pending');
+    await secondEntered;
+  } finally { release(); await rejected; }
+  assert.equal(peak, 2, 'two pages overlap');
+  assert.equal(closed, seen.length, 'every isolated page closes');
+  assert.equal(new Set(seen.map(page => page.context())).size, seen.length, 'distinct browser contexts');
+  assert(!lines.some(line => line.startsWith('COMPLETE ')), 'failure cannot report success');
 });
 
 test('assertion_failures_keep_sync_and_async_errors', async t => {
@@ -148,7 +148,22 @@ test('unexpected_page_errors_fail', async t => {
 
 test('expected_policy_error_matches_once', async t => {
   const root = fixture(t);
-  assert.equal((await execute(root)).at(-1), `COMPLETE ${all.length}/${all.length}`);
+  const seen = [];
+  let closed = 0;
+  const driver = observedBrowser(async page => {
+    seen.push(page);
+    page.once('close', () => closed++);
+  });
+  const lines = await execute(root, {chromium: driver});
+  assert.equal(closed, seen.length, 'every isolated page closes');
+  assert.equal(seen.length, all.length + 1, 'inventory page plus a fresh page per assertion');
+  assert.equal(new Set(seen).size, all.length + 1);
+  assert.deepEqual(lines.filter(line => line.startsWith('START ')).map(line => line.split(' ')[2]), all);
+  assert.deepEqual(lines.filter(line => line.startsWith('PASS ')).map(line => line.split(' ')[2]).sort(), [...all].sort());
+  assert(lines.includes('FAMILY execution 26/26'));
+  assert(lines.includes('FAMILY loading 49/49'));
+  assert(lines.includes(`FAMILY contributions ${inventory.contributions.length}/${inventory.contributions.length}`));
+  assert.equal(lines.at(-1), `COMPLETE ${all.length}/${all.length}`);
 });
 
 test('expected_policy_error_is_required', async t => {
@@ -754,14 +769,16 @@ window.prepareDelivery = async function(nested, svg) {
         return true;
       });
       assert.equal(lines.filter(line => line === `PHASE ${first} click returned ${sandboxId}`).length, scenario === 'stale' ? 1 : 0);
-      assert(!lines.some(line => line.startsWith('PASS ') || line.startsWith('COMPLETE ')));
+      assert(!lines.some(line => line === `PASS execution ${first}` || line.startsWith('COMPLETE ')));
     }
   }
 }
 
-test('sandbox_click_rejects_absent_or_untrusted_delivery', async t => {
-  for (const scenario of ['ignored', 'containing', 'other-target', 'untrusted']) await clickDelivery(t, scenario);
-});
+for (const scenario of ['ignored', 'containing', 'other-target', 'untrusted']) {
+  test(`sandbox_click_rejects_absent_or_untrusted_delivery_${scenario}`, async t => {
+    await clickDelivery(t, scenario);
+  });
+}
 
 test('sandbox_click_does_not_reuse_an_earlier_receipt', async t => {
   await clickDelivery(t, 'stale');
