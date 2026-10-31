@@ -573,6 +573,11 @@ values to `SelectionEnvironment`; selection never mutates the process environmen
 | `MAESTRO_DAEMON` | Daemon selection |
 | `MAESTRO_CLIENT_SOCKET_PATH` | Daemon selection |
 
+The daemon finds the home directory through `maestro_daemon::paths::home_directory`. On
+Unix it uses `HOME` as set, an empty value included, and otherwise the account directory;
+elsewhere it uses the account directory. New workspace directories, the git configuration
+lookup and the window title's home shortening all read it from there.
+
 Optional context fields are injected only when present. The manifest identifier
 and the identifier of an action declared by that manifest are distinct values.
 Build flags, test inputs and unrelated runtime settings are not daemon-selection

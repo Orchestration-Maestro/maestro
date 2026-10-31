@@ -4,6 +4,7 @@ use super::{
     resolution::Accumulator,
     resource_discovery::{ResourceType, collect_files_from_paths},
 };
+use maestro_resources::paths::home_directory;
 use maestro_resources::{PathMetadata, SourceOrigin};
 use maestro_settings::Settings;
 use std::io;
@@ -60,7 +61,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             entries.into_iter().partition(|entry| is_pattern(entry));
         let paths = plain
             .iter()
-            .map(|entry| super::paths::resolve_local(entry, &base, super::operations::home_dir))
+            .map(|entry| super::paths::resolve_local(entry, &base, home_directory))
             .collect::<io::Result<Vec<_>>>()?;
         let metadata = PathMetadata {
             source: "local".into(),
