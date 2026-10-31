@@ -399,7 +399,6 @@ hosted requests independently of these preferences.
 
 | Additional environment group | Controls and runtime reference |
 | --- | --- |
-| Anthropic raw client | `ANTHROPIC_AUTH_TOKEN` adds an ambient bearer in ordinary key mode; it is not the simple wrapper's provider key; [message protocol](models/messages.md#key-and-client) |
 | Azure endpoint | `AZURE_OPENAI_BASE_URL` or `AZURE_OPENAI_RESOURCE_NAME`; `AZURE_OPENAI_API_VERSION` defaults to `v1`; `AZURE_OPENAI_DEPLOYMENT_NAME_MAP` maps model IDs to deployments; [Responses](models/responses.md) |
 | Cloudflare routing | `CLOUDFLARE_ACCOUNT_ID`, plus `CLOUDFLARE_GATEWAY_ID` for AI Gateway; [chat completions](models/chat-completions.md) |
 | Bedrock credentials | `AWS_PROFILE`, paired `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`, `AWS_BEARER_TOKEN_BEDROCK`, `AWS_CONTAINER_CREDENTIALS_RELATIVE_URI`, `AWS_CONTAINER_CREDENTIALS_FULL_URI`, `AWS_WEB_IDENTITY_TOKEN_FILE`; [cloud conversations](models/cloud-conversations.md) |
