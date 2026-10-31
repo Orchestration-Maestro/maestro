@@ -473,7 +473,7 @@
         "tokens": 0,
         "usageTokens": 0,
         "trailingTokens": 0,
-        "lastUsageIndex": 0
+        "lastUsageIndex": null
       }
     }
   },

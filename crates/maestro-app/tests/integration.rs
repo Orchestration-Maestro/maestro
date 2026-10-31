@@ -53,6 +53,7 @@ mod clipboard_status;
 mod command_operations;
 mod configuration_paths;
 mod context_discovery;
+mod context_usage_estimates;
 mod daemon_connection;
 #[cfg(unix)]
 #[path = "support/default_configuration.rs"]
