@@ -9,11 +9,15 @@ use std::path::PathBuf;
 /// On other platforms it is the native account home.
 #[must_use]
 pub fn home_directory() -> Option<PathBuf> {
-    if cfg!(unix) {
-        std::env::var_os("HOME").map(PathBuf::from)
-    } else {
-        maestro_path::native_homedir()
-    }
+    home_directory_from_env(cfg!(windows), |key| std::env::var_os(key))
+}
+
+/// Select the platform's workspace home from supplied environment observations.
+fn home_directory_from_env(
+    windows: bool,
+    environment: impl Fn(&str) -> Option<std::ffi::OsString>,
+) -> Option<PathBuf> {
+    environment(if windows { "USERPROFILE" } else { "HOME" }).map(PathBuf::from)
 }
 
 /// Agent-wide resources and a validated optional daemon identity.
@@ -231,3 +235,6 @@ fn has_windows_reserved_stem_for_path_component(value: &str) -> bool {
     let stem = value.split('.').next().unwrap_or(value);
     maestro_path::win32::is_reserved(stem)
 }
+
+#[cfg(test)]
+mod tests;
