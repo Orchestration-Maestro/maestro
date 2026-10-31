@@ -104,8 +104,8 @@ fn scope_banner_keeps_snapshot_labels_and_nested_styles() {
                 assert_eq!(
                     h.recorder.events(),
                     [
-                        format!("stdout:{}\n", case.expected),
                         "factory".into(),
+                        format!("stdout:{}\n", case.expected),
                         "run".into()
                     ]
                 );
@@ -447,7 +447,7 @@ fn failure_events(phase: &str) -> Vec<String> {
         "run" => vec!["factory", &prior, "run"],
         "rpc" => vec![&prior, "rpc"],
         "stop" => vec!["factory", "init", &timing, "stop"],
-        "stdout.write" => vec!["stdout.write"],
+        "stdout.write" => vec!["factory", "stdout.write"],
         "stderr.write" => vec!["factory", "init", "stderr.write"],
         "stdout.flush" => vec![
             "factory",
