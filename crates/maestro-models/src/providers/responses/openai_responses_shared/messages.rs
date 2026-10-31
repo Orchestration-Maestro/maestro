@@ -8,6 +8,7 @@ use serde_json::{Map, Value, json};
 use super::{ConvertResponsesMessagesOptions, ConvertResponsesToolsOptions, native};
 use crate::projection::IMAGE_PLACEHOLDER;
 use crate::providers::json_text::{compact_json, json_value, member, raw_json, raw_number};
+use crate::providers::model_compat::compat_flag;
 use crate::{
     AssistantContent, AssistantMessage, Context, DiagnosticErrorInfo, Message, Model, ModelInput,
     TextContent, TextPhase, Tool, ToolCall, ToolResultMessage, UserBlock, UserContent, UserMessage,
@@ -44,12 +45,7 @@ pub(crate) fn convert_responses_messages<S: BuildHasher>(
         .as_deref()
         .filter(|prompt| include_prompt && !prompt.is_empty())
     {
-        let developer_role = model
-            .compat
-            .as_ref()
-            .and_then(|compat| compat.0.get("supportsDeveloperRole"))
-            != Some(&Value::Bool(false));
-        let role = if model.reasoning && developer_role {
+        let role = if model.reasoning && compat_flag(model, "supportsDeveloperRole", true) {
             "developer"
         } else {
             "system"

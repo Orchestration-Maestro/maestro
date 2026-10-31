@@ -1,7 +1,6 @@
 //! Request construction: endpoint, headers, cache policy and the typed payload.
 
 use indexmap::IndexMap;
-use maestro_json::is_truthy as enabled;
 use serde::Serialize;
 use serde_json::Value;
 use std::borrow::Cow;
@@ -19,6 +18,7 @@ use crate::providers::http::{
     HttpRequest, RequestFailure, copied, edge_whitespace, endpoint_url, layer,
 };
 use crate::providers::json_text::compact_json;
+use crate::providers::model_compat::compat_flag;
 use crate::{CacheRetention, Context, Model, ToolChoice, get_env_api_key};
 
 /// Environment variable that supplies a bearer token next to the key.
@@ -196,23 +196,12 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
         Ok(invocation)
     }
 
-    /// The model's compatibility flag `name`; a flag the model leaves out or sets to `null` is
-    /// `default`.
-    fn flag(&self, name: &str, default: bool) -> bool {
-        self.model
-            .compat
-            .as_ref()
-            .and_then(|compat| compat.0.get(name))
-            .filter(|value| !value.is_null())
-            .map_or(default, enabled)
-    }
-
     /// The marker the retention asks for: none for `none`, a one-hour lifetime for `long` on a
     /// model that supports it, otherwise the default lifetime.
     fn cache_control(&self) -> Option<CacheControl> {
         match self.retention {
             CacheRetention::None => None,
-            CacheRetention::Long if self.flag("supportsLongCacheRetention", true) => {
+            CacheRetention::Long if compat_flag(self.model, "supportsLongCacheRetention", true) => {
                 Some(CacheControl::LONG)
             }
             CacheRetention::Short | CacheRetention::Long => Some(CacheControl::SHORT),
@@ -244,7 +233,7 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
                 self.context,
                 cache,
                 self.naming,
-                self.flag("allowEmptySignature", false),
+                compat_flag(self.model, "allowEmptySignature", false),
             ),
             max_tokens: self.max_tokens(),
             stream: true,
@@ -260,8 +249,10 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
                 .map(|declared| {
                     tools(
                         declared,
-                        self.flag("supportsEagerToolInputStreaming", true),
-                        cache.filter(|_| self.flag("supportsCacheControlOnTools", true)),
+                        compat_flag(self.model, "supportsEagerToolInputStreaming", true),
+                        cache.filter(|_| {
+                            compat_flag(self.model, "supportsCacheControlOnTools", true)
+                        }),
                         self.naming,
                     )
                 }),
@@ -334,7 +325,7 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
     fn betas(&self) -> Vec<&'static str> {
         let tools_declared = self.context.tools.as_deref().is_some_and(|t| !t.is_empty());
         let mut betas = Vec::new();
-        if tools_declared && !self.flag("supportsEagerToolInputStreaming", true) {
+        if tools_declared && !compat_flag(self.model, "supportsEagerToolInputStreaming", true) {
             betas.push(FINE_GRAINED_TOOL_STREAMING_BETA);
         }
         if self.options.interleaved_thinking.unwrap_or(true)
@@ -431,7 +422,7 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
     /// on and caching is not off.
     fn add_session_affinity(&self, headers: &mut IndexMap<String, String>) {
         if self.retention != CacheRetention::None
-            && self.flag("sendSessionAffinityHeaders", false)
+            && compat_flag(self.model, "sendSessionAffinityHeaders", false)
             && let Some(session) = self.options.common.session_id.as_deref()
         {
             headers.insert("x-session-affinity".to_owned(), session.to_owned());
