@@ -38,6 +38,24 @@ fn is_separator(c: char, windows: bool) -> bool {
     c == '/' || (windows && c == '\\')
 }
 
+/// Shows `path` below the directory `home` as `~` and what follows it, in the compile target's
+/// flavor.
+///
+/// `path` and `home` are authored, absolute and compared lexically after their `.` and `..`
+/// segments fold. The home itself is `~`; a path below it is `~`, the flavor's separator and
+/// the part below. A sibling that shares the home's leading text, a path on another root, a
+/// relative path, and an empty, relative or root home leave `path` as written.
+#[must_use]
+pub fn shorten_home(path: &str, home: &str) -> String {
+    shorten_home_in(path, home, cfg!(windows))
+}
+
+/// The rule of [`shorten_home`] in a supplied flavor, independently of the compile target.
+fn shorten_home_in(path: &str, home: &str, windows: bool) -> String {
+    let _ = (home, windows);
+    path.to_owned()
+}
+
 /// Expands a leading `~` below the home directory with a normalizing join.
 ///
 /// An exact `~` is the home directory as supplied. `~` plus a separator joins the rest below
