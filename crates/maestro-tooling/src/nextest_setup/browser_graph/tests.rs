@@ -7,7 +7,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use maestro_test_directory::Scratch;
 
-use super::{install, stage};
+use super::{install, set_tree_time, stage};
 
 /// The build script of the workspace's feature unifier, which every native workspace crate builds
 /// on, so the fixture's dependency runs the script a real graph runs.
@@ -56,23 +56,6 @@ fn build(root: &Path, target: &Path) -> String {
     report
 }
 
-/// Give every file under `directory` the modification time `time`.
-fn set_times(directory: &Path, time: SystemTime) {
-    for entry in fs::read_dir(directory).unwrap() {
-        let path = entry.unwrap().path();
-        if path.is_dir() {
-            set_times(&path, time);
-        } else {
-            fs::File::options()
-                .write(true)
-                .open(path)
-                .unwrap()
-                .set_modified(time)
-                .unwrap();
-        }
-    }
-}
-
 /// A graph installed from a bundle that an earlier job built leaves Cargo nothing to compile in
 /// a checkout whose files are all newer than every file the bundle carries.
 #[test]
@@ -85,7 +68,7 @@ fn installed_graph_leaves_cargo_nothing_to_compile_in_a_newer_checkout() {
     assert!(build(root, &target).contains("Compiling dependency"));
     stage(&target, &staged).unwrap();
     // A bundle extracted in a later job keeps the times of the job that built it.
-    set_times(&staged, UNIX_EPOCH + Duration::from_secs(1_000_000_000));
+    set_tree_time(&staged, UNIX_EPOCH + Duration::from_secs(1_000_000_000)).unwrap();
     fs::remove_dir_all(&target).unwrap();
     for source in [
         "Cargo.toml",

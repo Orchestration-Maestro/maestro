@@ -68,8 +68,6 @@ struct Manifest {
     components: BTreeMap<String, String>,
     /// Digest of the staged setup example.
     example: String,
-    /// Whether the bundle holds the built browser graph.
-    browser: bool,
     /// The code the example compiled, when the host keeps it in a user cache.
     compiled: Option<CompiledCode>,
 }
@@ -133,7 +131,7 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
         copy(Path::new(source), &staged)?;
         components.insert(variable.to_owned(), digest(&std::fs::read(&staged)?));
     }
-    let browser = stage_browser_graph(cargo, checkout, output)?;
+    stage_browser_graph(cargo, checkout, output)?;
     if inputs(checkout, &crates)? != fingerprint {
         return Err(io::Error::other(format!(
             "inputs changed during preparation: {}",
@@ -149,22 +147,20 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
         crates,
         components,
         example: digest(&std::fs::read(&staged)?),
-        browser,
         compiled,
     };
     std::fs::write(output.join(MANIFEST), serde_json::to_vec(&manifest)?)
 }
 
-/// Build the browser graph in the checkout and stage it in `output`. Whether the bundle holds
-/// one: a build that fails leaves the shards to build it themselves.
-fn stage_browser_graph(cargo: &Path, checkout: &Path, output: &Path) -> io::Result<bool> {
+/// Build the browser graph in the checkout and stage it in `output`.
+///
+/// # Errors
+/// Returns the build commands that failed, so no shard has to build the graph again.
+fn stage_browser_graph(cargo: &Path, checkout: &Path, output: &Path) -> io::Result<()> {
     let staged = output.join(browser_graph::STAGED);
     remove_directory(&staged)?;
-    if !browser_graph::build(checkout, cargo.as_os_str()) {
-        return Ok(false);
-    }
-    browser_graph::stage(&checkout.join(browser_graph::TARGET), &staged)?;
-    Ok(true)
+    browser_graph::build(checkout, cargo.as_os_str())?;
+    browser_graph::stage(&checkout.join(browser_graph::TARGET), &staged)
 }
 
 /// Copy this command into `output`, where the nextest setup entries run it.
@@ -288,7 +284,7 @@ fn export(
     std::fs::write(environment, lines.concat())
 }
 
-/// Install the browser graph of the bundle in `output` at `target`, when the bundle holds one.
+/// Install the browser graph of the bundle in `output` at `target`.
 ///
 /// # Errors
 /// Returns a missing or stale bundle, or a failed copy.
@@ -297,10 +293,8 @@ pub(crate) fn install_browser_graph(
     output: &Path,
     target: &Path,
 ) -> io::Result<()> {
-    if read_manifest(checkout, output)?.browser {
-        browser_graph::install(&output.join(browser_graph::STAGED), target)?;
-    }
-    Ok(())
+    read_manifest(checkout, output)?;
+    browser_graph::install(&output.join(browser_graph::STAGED), target)
 }
 
 /// Read the manifest of the bundle in `output` and check that the checkout still holds the files

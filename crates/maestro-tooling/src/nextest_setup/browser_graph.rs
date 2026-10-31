@@ -8,8 +8,9 @@
 //! the recipes find nothing to rebuild. A run without a bundle builds the graph itself. The
 //! recipes run in this checkout with the runner's instrumentation removed, as the tests remove
 //! it from their own children, and in the target directory the tests are told to use, spelled
-//! the same way because Cargo records that spelling in what it compiles. A recipe that fails
-//! here only loses the saving: the tests run the same recipes and report their own failures.
+//! the same way because Cargo records that spelling in what it compiles. A recipe that fails in
+//! a shard only loses the saving: the tests run the same recipes and report their own failures.
+//! The preparation, which builds the graph for every shard, fails instead.
 
 use std::ffi::{OsStr, OsString};
 use std::io;
@@ -62,7 +63,9 @@ pub(super) fn run(checkout: &Path) -> io::Result<ExitCode> {
     if let Some(bundle) = prepared_bundle(checkout) {
         install_browser_graph(checkout, &bundle, &target)?;
     }
-    build(checkout, &cargo());
+    if let Err(error) = build(checkout, &cargo()) {
+        eprintln!("warning: {error}; the browser tests report it themselves");
+    }
     let mut entry = OsString::from("MAESTRO_BROWSER_TARGET_DIR=");
     entry.push(&target);
     export(&entry)?;
@@ -70,8 +73,10 @@ pub(super) fn run(checkout: &Path) -> io::Result<ExitCode> {
 }
 
 /// Build the browser graph in `target/browser-author` with the Cargo executable `cargo`.
-/// Whether every command succeeded.
-pub(crate) fn build(checkout: &Path, cargo: &OsStr) -> bool {
+///
+/// # Errors
+/// Returns the commands that failed, after every command has run.
+pub(crate) fn build(checkout: &Path, cargo: &OsStr) -> io::Result<()> {
     let target = checkout.join(TARGET);
     let mut lint = command(cargo, checkout, &target);
     // The library lint of `browser-check`, without its formatting repair, which would rewrite
@@ -88,13 +93,21 @@ pub(crate) fn build(checkout: &Path, cargo: &OsStr) -> bool {
         "-D",
         "warnings",
     ]);
-    let mut built = attempt(lint);
+    let mut failed: Vec<String> = Vec::new();
+    failed.extend(failure(lint));
     for recipe in RECIPES {
         let mut just = command("just", checkout, &target);
         just.arg(recipe);
-        built &= attempt(just);
+        failed.extend(failure(just));
     }
-    built
+    if failed.is_empty() {
+        Ok(())
+    } else {
+        Err(io::Error::other(format!(
+            "the browser graph did not build: {} failed",
+            failed.join(", ")
+        )))
+    }
 }
 
 /// Copy the graph built in `target` into `staged`, without the incremental state that no later
@@ -133,21 +146,20 @@ fn command(program: impl AsRef<OsStr>, checkout: &Path, target: &Path) -> Comman
     command
 }
 
-/// Run `command`, and warn instead of failing when it does not succeed. Whether it did.
-fn attempt(mut command: Command) -> bool {
-    let succeeded = command.status().is_ok_and(|status| status.success());
-    if !succeeded {
-        let arguments: Vec<_> = command
-            .get_args()
-            .map(|argument| argument.to_string_lossy())
-            .collect();
-        eprintln!(
-            "warning: {} {} failed; the browser tests report it themselves",
-            command.get_program().to_string_lossy(),
-            arguments.join(" ")
-        );
+/// Run `command`. The command line when it did not succeed.
+fn failure(mut command: Command) -> Option<String> {
+    if command.status().is_ok_and(|status| status.success()) {
+        return None;
     }
-    succeeded
+    let arguments = command
+        .get_args()
+        .map(|argument| argument.to_string_lossy());
+    Some(
+        std::iter::once(command.get_program().to_string_lossy())
+            .chain(arguments)
+            .collect::<Vec<_>>()
+            .join(" "),
+    )
 }
 
 #[cfg(test)]
