@@ -320,6 +320,8 @@ struct Payload<'a> {
     input: Vec<Value>,
     /// Request streaming.
     stream: bool,
+    /// Asks the service not to keep the response.
+    store: bool,
     /// Supplied session key, independent of cache retention.
     #[serde(skip_serializing_if = "Option::is_none")]
     prompt_cache_key: Option<&'a str>,
@@ -365,6 +367,7 @@ fn build_params<E: ProviderExecution>(
             None,
         )?,
         stream: true,
+        store: false,
         prompt_cache_key: options.common.session_id.as_deref().map(prompt_cache_key),
         max_output_tokens: options
             .common

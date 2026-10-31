@@ -112,7 +112,7 @@ identity or rates.
 
 Before `on_payload`, the initial payload uses the supplied session ID, cut to 64 Unicode characters, as
 `prompt_cache_key`, including an empty string, independently of retention. It
-omits store, retention, service tier and metadata. Reasoning uses the shared
+sets `store` to `false` and omits retention, service tier and metadata. Reasoning uses the shared
 effort mapping without the standard endpoint's account-provider exception;
 summary-only requests select literal `medium`. The hook can replace the entire
 payload, including these selections and omissions.
