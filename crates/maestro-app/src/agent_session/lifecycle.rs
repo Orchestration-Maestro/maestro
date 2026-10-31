@@ -121,6 +121,7 @@ impl AgentSession<Local> {
             bound.command_context_actions = bindings
                 .command_context_actions
                 .or(bound.command_context_actions.take());
+            bound.abort_handler = bindings.abort_handler.or(bound.abort_handler.take());
             bound.shutdown_handler = bindings.shutdown_handler.or(bound.shutdown_handler.take());
             bound.on_error = bindings.on_error.or(bound.on_error.take());
         }
@@ -220,6 +221,7 @@ impl AgentSession<Local> {
             let bound = &state.bindings;
             bound.ui_context.is_some()
                 || bound.command_context_actions.is_some()
+                || bound.abort_handler.is_some()
                 || bound.shutdown_handler.is_some()
                 || bound.on_error.is_some()
         };

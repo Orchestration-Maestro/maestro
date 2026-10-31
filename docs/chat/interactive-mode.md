@@ -405,6 +405,10 @@ line then says `Restored 1 queued message to editor`,
 `Restored <n> queued messages to editor` or `No queued messages to restore`; with
 nothing queued the editor is left as it was.
 
+An extension that aborts from its context gets the streaming case of the interrupt key: the
+queued messages return to the editor exactly as typed and the response stops, including while
+one of its confirmation dialogs is open.
+
 The interrupt key (Escape by default) takes the first case that applies: while a
 response streams it restores the queued messages the same way and then stops the
 response, even when nothing was queued; while a shell command runs it cancels that
