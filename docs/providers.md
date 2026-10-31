@@ -118,6 +118,12 @@ and the [built-in display names](../crates/maestro-catalog/src/provider_display_
 Configured authentication is not proof that a token works. Ambient discovery
 checks are described in [request authentication](request-authentication.md).
 
+## Request attribution
+
+Attribution and session headers match the provider name or the base URL's parsed host, not
+a substring of the address, so a proxy path that names a gateway gets none of them. The
+headers and their conditions are listed in the [SDK guide](application/sdk.md).
+
 ## Routing preferences
 
 A model's `openRouterRouting` compatibility value is sent as the request's `provider`
