@@ -51,22 +51,6 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             .map(str::to_owned)
             .ok_or_else(|| io::Error::other("Failed to determine remote HEAD"))
     }
-    /// Whether `refname` names a non-symbolic ref of the checkout exactly.
-    pub(super) async fn git_ref_exists(&self, path: &str, refname: &str) -> io::Result<bool> {
-        let listed = self
-            .git_capture(
-                path,
-                &[
-                    "for-each-ref",
-                    "--format=%(if)%(symref)%(then)%(else)%(refname)%(end)",
-                    "--",
-                    refname,
-                ],
-                &[],
-            )
-            .await?;
-        Ok(listed.lines().any(|name| crate::trim(name) == refname))
-    }
     /// Supplies the common Git network capture operands at the consuming call.
     pub(super) async fn git_capture(
         &self,

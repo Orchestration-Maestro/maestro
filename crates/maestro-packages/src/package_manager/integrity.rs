@@ -69,11 +69,18 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     ) -> io::Result<Option<String>> {
         let reference = git.r#ref.as_deref().unwrap_or_default();
         let branch = format!("refs/heads/{reference}");
+        let branches = self
+            .git_capture(
+                path,
+                &["for-each-ref", "--format=%(refname)", "--", &branch],
+                &[],
+            )
+            .await?;
         let mut candidates = vec![
             format!("{reference}^{{commit}}"),
             format!("refs/remotes/origin/{reference}^{{commit}}"),
         ];
-        if self.git_ref_exists(path, &branch).await? {
+        if branches.lines().any(|name| name == branch) {
             candidates.insert(0, format!("{branch}^{{commit}}"));
         }
         for candidate in candidates {
