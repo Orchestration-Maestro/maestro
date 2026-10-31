@@ -557,6 +557,30 @@ fn records_are_handed_over_while_the_file_is_still_being_read() {
     assert!(worst_lag <= 16 * 1024, "read {worst_lag} bytes ahead");
 }
 
+#[test]
+fn parse_session_entries_drops_outer_ecmascript_whitespace_of_the_first_and_last_record() {
+    let text = "\u{a0}\u{feff}{\"id\":\"a\"}\n\n{\"id\":\"b\"}\r\n{\"id\":\"c\"}\u{2028}";
+    let ids: Vec<_> = super::parse_session_entries(text)
+        .iter()
+        .map(|entry| entry["id"].as_str().unwrap().to_owned())
+        .collect();
+    assert_eq!(ids, ["a", "b", "c"]);
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn records_split_across_reader_chunks_keep_their_multibyte_text() {
+    let text = "{\"id\":\"é€\"}\n{\"id\":\"b\"}";
+    let reader = std::io::BufReader::with_capacity(1, text.as_bytes());
+    let mut ids = Vec::new();
+    super::files::for_each_entry(reader, |entry| {
+        ids.push(entry["id"].as_str().unwrap().to_owned());
+        std::ops::ControlFlow::Continue(())
+    })
+    .unwrap();
+    assert_eq!(ids, ["é€", "b"]);
+}
+
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn listing_stops_reading_at_a_malformed_record() {
