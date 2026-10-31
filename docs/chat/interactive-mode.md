@@ -142,18 +142,22 @@ and do not add signal-only detached-child cleanup.
 
 ## Native shutdown
 
-On Unix, TERM kills tracked detached children, then starts graceful shutdown. The
-mode removes its handlers and drains terminal input with the existing 1,000 ms
-maximum and default 50 ms idle period. It stops the presentation, awaits application
-disposal and exits 0. Admission happens before asynchronous work is scheduled;
-repeated requests do not repeat shutdown. A drain, progress, UI-stop or disposal
-failure ends that sequence without a successful exit.
+On Unix, TERM and HUP kill tracked detached children, then start graceful shutdown. The
+mode removes its handlers and awaits application disposal first, so the extensions'
+shutdown handlers run before any terminal write and cannot be skipped when a later write
+fails on a dead terminal. It then drains terminal input with the existing 1,000 ms
+maximum and default 50 ms idle period, stops the presentation and exits 0. A quit by key,
+command or extension request keeps the opposite order: drain, stop the presentation, then
+dispose, so extension cleanup cannot repaint the last frame. Admission happens before
+asynchronous work is scheduled; repeated requests do not repeat shutdown. A drain,
+progress, UI-stop or disposal failure ends that sequence without a successful exit.
 
-HUP and native stdout/stderr disconnection errors take the emergency route:
-remove handlers, kill tracked children and exit 129, without draining, restoring
-the terminal or disposing the application runtime. EIO, broken-pipe and
-not-connected errors select this route; input errors and other output errors
-keep their existing handling. During graceful disposal, once the mode's signal
+Native stdout/stderr disconnection errors take the emergency route: remove handlers,
+kill tracked children and exit 129, without draining, restoring the terminal or
+disposing the application runtime. A hangup that leaves the terminal dead reaches the
+same route through the failing terminal writes of the graceful sequence. EIO,
+broken-pipe and not-connected errors select this route; input errors and other output
+errors keep their existing handling. During graceful disposal, once the mode's signal
 handlers are removed and no other registration in the process is live, a later
 termination or hangup signal takes its native default action. Windows
 console-close integration is not provided by this mode.

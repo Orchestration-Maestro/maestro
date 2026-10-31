@@ -337,8 +337,8 @@ pub(super) fn replace_effects(
     mode
 }
 
-/// Signal callbacks whose ownership the controlled native registration keeps.
-type Signals = (Rc<dyn Fn()>, Rc<dyn Fn()>);
+/// The signal callback whose ownership the controlled native registration keeps.
+type Signals = Rc<dyn Fn()>;
 
 /// Observable process effects without touching the real process.
 pub(super) struct Effects {
@@ -367,17 +367,13 @@ impl super::super::lifecycle::LifecycleEffects for Effects {
     fn now_ms(&self) -> i64 {
         self.now.get()
     }
-    fn register_signals(
-        &self,
-        terminate: Rc<dyn Fn()>,
-        hangup: Rc<dyn Fn()>,
-    ) -> std::io::Result<Box<dyn Fn()>> {
+    fn register_signals(&self, shutdown: Rc<dyn Fn()>) -> std::io::Result<Box<dyn Fn()>> {
         if self.fail_registration.get() {
             return Err(std::io::Error::from(std::io::ErrorKind::PermissionDenied));
         }
         self.events.borrow_mut().push("register".into());
         assert!(self.signals.borrow().is_none());
-        *self.signals.borrow_mut() = Some((terminate, hangup));
+        *self.signals.borrow_mut() = Some(shutdown);
         let signals = Rc::clone(&self.signals);
         let events = Rc::clone(&self.events);
         Ok(Box::new(move || {
@@ -464,8 +460,7 @@ fn lifecycle_callbacks_release_the_mode() {
         assert!(weak.upgrade().is_none());
         assert!(!stdout.registered());
         assert!(!stderr.registered());
-        signals.0();
-        signals.1();
+        signals();
         stdout.emit(&std::io::Error::from(std::io::ErrorKind::BrokenPipe));
         terminal.send_input("\x04");
         assert_eq!(*rig.effects.events.borrow(), ["register", "remove"]);

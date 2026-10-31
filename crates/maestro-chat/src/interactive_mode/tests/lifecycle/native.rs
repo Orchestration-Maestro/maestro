@@ -24,8 +24,8 @@ impl LifecycleEffects for Native {
     fn now_ms(&self) -> i64 {
         self.inner.now_ms()
     }
-    fn register_signals(&self, term: Rc<dyn Fn()>, hup: Rc<dyn Fn()>) -> io::Result<Box<dyn Fn()>> {
-        let remove = self.inner.register_signals(term, hup)?;
+    fn register_signals(&self, shutdown: Rc<dyn Fn()>) -> io::Result<Box<dyn Fn()>> {
+        let remove = self.inner.register_signals(shutdown)?;
         self.events.borrow_mut().push("register".into());
         let events = Rc::clone(&self.events);
         let removed = Cell::new(false);
