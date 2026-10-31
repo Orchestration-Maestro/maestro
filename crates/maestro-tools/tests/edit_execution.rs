@@ -278,7 +278,7 @@ fn edit_synchronous_abort_wins_over_stage_result() {
         assert_eq!(Some(ops.script.names()), expected.events);
         let message = if args.fails.unwrap() {
             if args.stage == "access" {
-                "Could not edit file: sync-file. stage failed."
+                "Could not edit file: sync-file. Error code: E_CONTROL."
             } else {
                 "stage failed"
             }
