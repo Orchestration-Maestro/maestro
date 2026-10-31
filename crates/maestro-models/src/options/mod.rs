@@ -1,5 +1,6 @@
 //! Shared invocation helpers.
 mod context_estimate;
+pub use context_estimate::{ESTIMATED_IMAGE_CHARS, tokens_for_chars, utf16_units};
 mod simple_options;
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) use simple_options::thinking_budget;

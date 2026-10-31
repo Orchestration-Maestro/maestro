@@ -1,25 +1,29 @@
-//! Estimated token size of a request, used to fit an output budget in the room the context
-//! window leaves.
+//! Estimated token size of a conversation: the one estimate the output budget and the
+//! session's compaction both count with.
 use num_traits::ToPrimitive;
 
+use serde_json::Value;
+
 use crate::{
-    AssistantContent, AssistantMessage, Context, Message, StopReason, UserBlock, UserContent,
+    AssistantContent, AssistantMessage, Context, Message, StopReason, Tool, UserBlock, UserContent,
 };
 
 /// Characters counted as one token.
 const CHARS_PER_TOKEN: f64 = 4.0;
 /// Characters counted for one image block.
-const IMAGE_CHARS: f64 = 4800.0;
+pub const ESTIMATED_IMAGE_CHARS: f64 = 4800.0;
 /// Characters counted for a value that cannot be written as JSON.
 const UNSERIALIZABLE_CHARS: f64 = 16.0;
 
 /// UTF-16 code units of `text`, the unit the characters-per-token figure is measured in.
-fn units(text: &str) -> f64 {
+#[must_use]
+pub fn utf16_units(text: &str) -> f64 {
     text.encode_utf16().count().to_f64().unwrap_or(f64::MAX)
 }
 
 /// Tokens estimated for `chars` characters, rounded up.
-fn tokens(chars: f64) -> f64 {
+#[must_use]
+pub fn tokens_for_chars(chars: f64) -> f64 {
     (chars / CHARS_PER_TOKEN).ceil()
 }
 
@@ -28,8 +32,8 @@ fn block_chars(blocks: &[UserBlock]) -> f64 {
     blocks
         .iter()
         .map(|block| match block {
-            UserBlock::Text(text) => units(&text.text),
-            UserBlock::Image(_) => IMAGE_CHARS,
+            UserBlock::Text(text) => utf16_units(&text.text),
+            UserBlock::Image(_) => ESTIMATED_IMAGE_CHARS,
         })
         .sum()
 }
@@ -40,23 +44,30 @@ fn assistant_chars(message: &AssistantMessage) -> f64 {
         .content
         .iter()
         .map(|block| match block {
-            AssistantContent::Text(text) => units(&text.text),
-            AssistantContent::Thinking(thinking) => units(&thinking.thinking),
-            AssistantContent::ToolCall(call) => units(&call.name) + json_chars(&call.arguments),
+            AssistantContent::Text(text) => utf16_units(&text.text),
+            AssistantContent::Thinking(thinking) => utf16_units(&thinking.thinking),
+            AssistantContent::ToolCall(call) => {
+                utf16_units(&call.name) + json_chars(&call.arguments)
+            }
         })
         .sum()
 }
 
 /// Characters of the compact JSON of `value`.
-fn json_chars<T: serde::Serialize>(value: &T) -> f64 {
-    serde_json::to_string(value).map_or(UNSERIALIZABLE_CHARS, |json| units(&json))
+fn json_chars(value: &Value) -> f64 {
+    maestro_json::compact_json(value).map_or(UNSERIALIZABLE_CHARS, |json| utf16_units(&json))
+}
+
+/// Characters of the compact JSON of the tool declarations.
+fn tools_chars(tools: &[Tool]) -> f64 {
+    serde_json::to_value(tools).map_or(UNSERIALIZABLE_CHARS, |value| json_chars(&value))
 }
 
 /// Tokens estimated for one message from its characters.
 fn message_tokens(message: &Message) -> f64 {
-    tokens(match message {
+    tokens_for_chars(match message {
         Message::User(user) => match &user.content {
-            UserContent::Text(text) => units(text),
+            UserContent::Text(text) => utf16_units(text),
             UserContent::Blocks(blocks) => block_chars(blocks),
         },
         Message::ToolResult(result) => block_chars(&result.content),
@@ -109,11 +120,11 @@ pub(crate) fn estimate_context_tokens(context: &Context) -> f64 {
     let prefix = context
         .system_prompt
         .as_deref()
-        .map_or(0.0, |prompt| tokens(units(prompt)))
+        .map_or(0.0, |prompt| tokens_for_chars(utf16_units(prompt)))
         + context
             .tools
             .as_deref()
             .filter(|tools| !tools.is_empty())
-            .map_or(0.0, |tools| tokens(json_chars(&tools)));
+            .map_or(0.0, |tools| tokens_for_chars(tools_chars(tools)));
     prefix + context.messages.iter().map(message_tokens).sum::<f64>()
 }
