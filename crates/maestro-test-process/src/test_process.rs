@@ -121,11 +121,10 @@ impl TestProcess {
     /// # Errors
     ///
     /// Fails when the item has no module-qualified path.
-    pub fn child<F: Fn()>(_test: F) -> Result<Self, TestProcessError> {
-        Err(TestProcessError::new(
-            "child",
-            "the child route is not implemented",
-        ))
+    pub fn child<F: Fn()>(test: F) -> Result<Self, TestProcessError> {
+        Ok(Self::named(selection::test_name(test)?)?
+            .ignored()
+            .nocapture())
     }
 
     /// Select a test by its complete libtest identity, such as a sibling's.
