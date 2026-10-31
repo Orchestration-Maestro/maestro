@@ -1,8 +1,8 @@
-//! Byte and newline-entry truncation of tool output.
+//! Byte and line truncation of tool output.
 
 use serde::Serialize;
 
-/// Default newline-entry budget.
+/// Default line budget.
 pub const DEFAULT_MAX_LINES: usize = 2000;
 /// Default UTF-8 byte budget.
 pub const DEFAULT_MAX_BYTES: usize = 51200;
@@ -23,9 +23,9 @@ pub use maestro_tool::tools::truncate::TruncationBy;
 /// Selected output with native counts.
 pub type TruncationResult = maestro_tool::tools::truncate::TruncationResult<usize>;
 
-/// Account for an input before selecting output.
+/// Account for input lines, excluding the empty entry after a final newline.
 fn initial_result(content: &str, options: TruncationOptions) -> TruncationResult {
-    let total_lines = content.split('\n').count();
+    let total_lines = content.split_terminator('\n').count();
     let total_bytes = content.len();
     let max_lines = options.max_lines.unwrap_or(DEFAULT_MAX_LINES);
     let max_bytes = options.max_bytes.unwrap_or(DEFAULT_MAX_BYTES);
@@ -52,7 +52,7 @@ pub fn truncate_head(content: &str, options: TruncationOptions) -> TruncationRes
         return result;
     }
     if content
-        .split('\n')
+        .split_terminator('\n')
         .next()
         .is_some_and(|entry| entry.len() > result.max_bytes)
     {
@@ -66,7 +66,7 @@ pub fn truncate_head(content: &str, options: TruncationOptions) -> TruncationRes
     let mut selected = Vec::new();
     let mut bytes = 0;
     let mut reason = TruncationBy::Lines;
-    for entry in content.split('\n').take(result.max_lines) {
+    for entry in content.split_terminator('\n').take(result.max_lines) {
         let cost = entry.len() + usize::from(!selected.is_empty());
         if cost > result.max_bytes - bytes {
             reason = TruncationBy::Bytes;
@@ -85,8 +85,8 @@ pub fn truncate_head(content: &str, options: TruncationOptions) -> TruncationRes
 
 /// Retain trailing newline-separated entries.
 ///
-/// When the last line, with its terminating newline, exceeds the byte budget, its tail is kept on
-/// whole scalars and `last_line_partial` is set.
+/// A final newline terminates the last line without adding an empty entry. An oversized last
+/// line keeps a whole-scalar suffix without that newline and sets `last_line_partial`.
 #[must_use]
 pub fn truncate_tail(content: &str, options: TruncationOptions) -> TruncationResult {
     let mut result = initial_result(content, options);
@@ -96,21 +96,21 @@ pub fn truncate_tail(content: &str, options: TruncationOptions) -> TruncationRes
     let mut selected = Vec::new();
     let mut bytes = 0;
     let mut reason = TruncationBy::Lines;
-    for entry in content.rsplit('\n').take(result.max_lines) {
+    for entry in content.split_terminator('\n').rev().take(result.max_lines) {
         let cost = entry.len() + usize::from(!selected.is_empty());
         if cost > result.max_bytes - bytes {
             reason = TruncationBy::Bytes;
-            // A final newline ends the oversized line and takes one byte of the budget.
-            if matches!(selected.as_slice(), [] | [""])
-                && let Some(room) = result.max_bytes.checked_sub(selected.len())
-            {
-                selected.push(suffix_within_bytes(entry, room));
+            if selected.is_empty() {
+                selected.push(suffix_within_bytes(entry, result.max_bytes));
                 result.last_line_partial = true;
             }
             break;
         }
         selected.push(entry);
         bytes += cost;
+    }
+    if matches!(reason, TruncationBy::Lines) && selected.len() == result.total_lines {
+        reason = TruncationBy::Bytes;
     }
     selected.reverse();
     result.content = selected.join("\n");
