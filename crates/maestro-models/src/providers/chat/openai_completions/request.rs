@@ -22,6 +22,7 @@ use crate::providers::chat::github_copilot_headers::{
     build_copilot_dynamic_headers, has_copilot_vision_input,
 };
 use crate::providers::http::{RequestFailure, copied, layer};
+use crate::providers::openai_prompt_cache::prompt_cache_key;
 use crate::{
     CacheControlFormat, CacheRetention, Context, MaxTokensField, Message, Model,
     ModelThinkingLevel, ThinkingFormat, ThinkingLevel, get_env_api_key,
@@ -229,7 +230,12 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
         let direct = self.model.base_url.contains("api.openai.com")
             && !matches!(self.retention, CacheRetention::None);
         if direct || long {
-            payload.prompt_cache_key = self.options.common.session_id.as_deref();
+            payload.prompt_cache_key = self
+                .options
+                .common
+                .session_id
+                .as_deref()
+                .map(prompt_cache_key);
         }
         payload.prompt_cache_retention = long.then_some("24h");
     }
@@ -320,9 +326,7 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
                 .and_then(|compat| compat.0.get(name))
                 .filter(|value| super::compat::supplied(value))
         };
-        if self.model.base_url.contains("openrouter.ai") {
-            payload.provider = option("openRouterRouting");
-        }
+        payload.provider = option("openRouterRouting");
         if self.model.base_url.contains("ai-gateway.vercel.sh")
             && let Some(routing) = option("vercelGatewayRouting")
         {

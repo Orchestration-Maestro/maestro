@@ -66,12 +66,20 @@ fn html_error(
     })
 }
 
-/// Bind the subscription callback listener.
+/// Port tried first, so it can be forwarded into containers or over SSH.
+#[cfg(not(target_arch = "wasm32"))]
+const PREFERRED_PORT: u16 = 53692;
+
+/// Bind the subscription callback listener on the preferred port, or on any free loopback
+/// port when that one cannot be bound; the server reports the port it holds.
 #[cfg(not(target_arch = "wasm32"))]
 pub(super) async fn bind(
     state: String,
 ) -> Result<crate::oauth::native::CallbackServer, OAuthError> {
-    crate::oauth::native::bind(state, 53692, route).await
+    match crate::oauth::native::bind(state.clone(), PREFERRED_PORT, route).await {
+        Ok(server) => Ok(server),
+        Err(_) => crate::oauth::native::bind(state, 0, route).await,
+    }
 }
 /// Reject native serving only at the browser effect boundary.
 #[cfg(target_arch = "wasm32")]

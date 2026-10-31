@@ -84,7 +84,7 @@ are not trimmed. Use the variable spelling shown here. Provider IDs are case-sen
 | Anthropic | `anthropic` | `ANTHROPIC_OAUTH_TOKEN`, `ANTHROPIC_API_KEY` |
 | OpenAI | `openai` | `OPENAI_API_KEY` |
 | OpenAI Codex | `openai-codex` | None; subscription login |
-| GitHub Copilot | `github-copilot` | `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, `GITHUB_TOKEN` |
+| GitHub Copilot | `github-copilot` | `COPILOT_GITHUB_TOKEN` |
 | Azure OpenAI Responses | `azure-openai-responses` | `AZURE_OPENAI_API_KEY` |
 | Amazon Bedrock | `amazon-bedrock` | AWS credential chain, not an API-key field; see below |
 | Google Gemini | `google` | `GEMINI_API_KEY` |
@@ -117,6 +117,18 @@ These mappings come from the [environment-key owner](../crates/maestro-models/sr
 and the [built-in display names](../crates/maestro-catalog/src/provider_display_names.rs).
 Configured authentication is not proof that a token works. Ambient discovery
 checks are described in [request authentication](request-authentication.md).
+
+## Request attribution
+
+Attribution and session headers match the provider name or the base URL's parsed host, not
+a substring of the address, so a proxy path that names a gateway gets none of them. The
+headers and their conditions are listed in the [SDK guide](application/sdk.md).
+
+## Routing preferences
+
+A model's `openRouterRouting` compatibility value is sent as the request's `provider`
+object whenever it is set, through a proxy or custom base URL as well as the routing
+gateway itself.
 
 ## Credential file and key selection
 
