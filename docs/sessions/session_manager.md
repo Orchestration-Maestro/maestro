@@ -172,7 +172,7 @@ histories stay published: subsequent appends write one record. Append errors lea
 accepted memory and any partial bytes in place; failed switches retain the prior
 manager state. An empty file is initialised immediately at the selected path. A
 nonempty file without a valid session header is refused with `Session file is not a
-valid session: <path>` and keeps its bytes, so `open` and `set_session_file` never
+valid maestro session: <path>` and keeps its bytes, so `open` and `set_session_file` never
 erase a file that is not a session. A missing explicit file waits for first
 publication at that path.
 

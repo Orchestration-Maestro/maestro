@@ -102,12 +102,12 @@ impl Snapshot {
     /// Refuse a nonempty file that holds no valid session, so a rewrite cannot erase it.
     ///
     /// # Errors
-    /// Fails with `Session file is not a valid session: {path}` when bytes were read
+    /// Fails with `Session file is not a valid maestro session: {path}` when bytes were read
     /// but no admitted record came out of them.
     pub(super) fn require_session(&self, path: &str) -> io::Result<()> {
         if self.entries.is_empty() && self.len > 0 {
             return Err(invalid(&format!(
-                "Session file is not a valid session: {path}"
+                "Session file is not a valid maestro session: {path}"
             )));
         }
         Ok(())

@@ -91,7 +91,7 @@ impl SessionManager {
     ///
     /// # Errors
     /// Propagates required cwd, file, conversion and selected-field errors. A nonempty file
-    /// without a valid session header fails with `Session file is not a valid session: {path}`
+    /// without a valid session header fails with `Session file is not a valid maestro session: {path}`
     /// and is left unchanged; an empty file is initialised.
     pub fn open(
         path: &str,
