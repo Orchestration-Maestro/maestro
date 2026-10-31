@@ -705,6 +705,30 @@ fn overflow_recovery_is_attempted_once_then_reported() {
 }
 
 #[test]
+fn together_and_litellm_overflow_errors_start_compaction_recovery() {
+    on_paused_task_set(|_| async {
+        for text in [
+            "The input (140000 tokens) is longer than the model's context length (131072 tokens).",
+            "Requested token count exceeds the model's maximum context length of 131072 tokens",
+        ] {
+            let calls = Rc::new(Cell::new(0));
+            let h = seeded(json!({}), vec![counted_summary(Rc::clone(&calls))]).await;
+            let overflow = current_response(&StopReason::Error, text);
+            set_agent_messages(
+                &h,
+                &[
+                    user(&json!([{"type": "text", "text": "one"}]), 100),
+                    assistant("", 200, &answer_extra(&StopReason::Stop, None, 10)),
+                    serde_json::to_value(&overflow).unwrap(),
+                ],
+            );
+            h.session.check_compaction(&overflow, true).await.unwrap();
+            assert_eq!(calls.get(), 1, "{text}");
+        }
+    });
+}
+
+#[test]
 fn overflow_recovery_continues_after_one_hundred_milliseconds() {
     let expected = case(
         "compaction_checks",
