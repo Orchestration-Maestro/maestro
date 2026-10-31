@@ -337,19 +337,8 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         let fetch = ["fetch", "--force", "--tags", "origin"].map(str::to_owned);
         self.run_command("git", &fetch, Some(path)).await?;
         let remote = format!("refs/remotes/origin/{reference}");
-        let listed = self
-            .git_capture(
-                path,
-                &[
-                    "for-each-ref",
-                    "--format=%(if)%(symref)%(then)%(else)%(refname)%(end)",
-                    &remote,
-                ],
-                &[],
-            )
-            .await?;
         // A remote branch is followed by name; any other ref form is checked out as given.
-        let args = if listed.lines().any(|line| crate::trim(line) == remote) {
+        let args = if self.git_ref_exists(path, &remote).await? {
             ["checkout", "-B", reference, &remote]
                 .map(str::to_owned)
                 .to_vec()
