@@ -10,8 +10,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use kitty::ModifyOtherKeys;
 pub use kitty::Sequence;
-use names::{ALT, CTRL, Identifier, KEYPAD_ENTER, SHIFT, Target, raw_ctrl_char};
-pub use names::{Code, Key, KeyId, Named};
+use names::{ALT, CTRL, KEYPAD_ENTER, SHIFT, raw_ctrl_char};
+pub use names::{Code, Identifier, Key, KeyId, Named, Target};
 pub use parse::parse_terminal_key_sequence;
 
 /// The phase of an enhanced key report: the key going down, repeating or going up.

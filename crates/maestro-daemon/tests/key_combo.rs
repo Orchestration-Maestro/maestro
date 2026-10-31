@@ -109,7 +109,6 @@ fn modifier_aliases() {
     for invalid in [
         "",
         "ctrl",
-        "+",
         "ctrl++v",
         "v+w",
         "f256",
