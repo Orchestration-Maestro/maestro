@@ -190,3 +190,86 @@ fn key_combo_accepts_simple_char_combo() {
         Some((KeyCode::Char('v'), KeyModifiers::NONE))
     );
 }
+
+/// One spelling, a key report that names it for the chat keybindings, and the workspace combination.
+type Spelling = (&'static str, &'static str, (KeyCode, u8));
+
+#[test]
+fn one_key_grammar_for_both_frontends() {
+    let spellings: [Spelling; 5] = [
+        (
+            "ctrl++",
+            "\x1b[43;5u",
+            (KeyCode::Char('+'), KeyModifiers::CONTROL),
+        ),
+        ("+", "+", (KeyCode::Char('+'), KeyModifiers::NONE)),
+        ("ö", "ö", (KeyCode::Char('ö'), KeyModifiers::NONE)),
+        (
+            "alt+é",
+            "\x1b[233;3u",
+            (KeyCode::Char('é'), KeyModifiers::ALT),
+        ),
+        (
+            "shift+tab",
+            "\x1b[Z",
+            (KeyCode::BackTab, KeyModifiers::NONE),
+        ),
+    ];
+    for (spelling, report, combo) in spellings {
+        assert_eq!(
+            parse_key_combo(spelling),
+            Some(combo),
+            "workspace {spelling}"
+        );
+        assert!(
+            maestro_tui::matches_key(report, spelling),
+            "chat {spelling}"
+        );
+    }
+
+    for rejected in ["ctrl+", "ctrl+a+b"] {
+        assert_eq!(parse_key_combo(rejected), None, "workspace {rejected}");
+        for report in ["\x01", "\x02", "\x1b[97;5u", "\x1b[98;5u", "a", "b"] {
+            assert!(
+                !maestro_tui::matches_key(report, rejected),
+                "chat {rejected} {report:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn hyper_binding_requires_hyper() {
+    let hyper_k = parse_key_combo("hyper+k").expect("hyper+k parses");
+    assert_eq!(hyper_k, (KeyCode::Char('k'), KeyModifiers::HYPER));
+    assert!(terminal_key_matches_combo(
+        &TerminalKey::new(KeyCode::Char('k'), KeyModifiers::HYPER),
+        hyper_k.clone()
+    ));
+    assert!(!terminal_key_matches_combo(
+        &TerminalKey::new(KeyCode::Char('k'), KeyModifiers::NONE),
+        hyper_k
+    ));
+
+    assert!(maestro_tui::matches_key("\x1b[107;17u", "hyper+k"));
+    for report in ["k", "\x1b[107;5u", "\x1b[107;9u", "\x1b[107;1u"] {
+        assert!(
+            !maestro_tui::matches_key(report, "hyper+k"),
+            "chat hyper+k {report:?}"
+        );
+    }
+}
+
+#[test]
+fn unknown_modifier_word_is_rejected() {
+    for word in ["ctlr", "contrl", "windows", "shfit", "a"] {
+        let spelling = format!("{word}+k");
+        assert_eq!(parse_key_combo(&spelling), None, "workspace {spelling}");
+        for report in ["k", "\x0b", "\x1b[107;5u"] {
+            assert!(
+                !maestro_tui::matches_key(report, &spelling),
+                "chat {spelling} {report:?}"
+            );
+        }
+    }
+}
