@@ -273,13 +273,15 @@ fn summary_records_keep_the_usage_that_generated_them() {
     let plain = manager
         .append_compaction("bare", &root, 3.0, CompactionOptions::default())
         .unwrap();
-    let expected = serde_json::to_value(&usage).unwrap();
+    let stored_usage = |entry: &serde_json::Value| -> maestro_request::types::Usage {
+        serde_json::from_value(entry["usage"].clone()).unwrap()
+    };
     let written = std::fs::read_to_string(manager.get_session_file().unwrap()).unwrap();
     let stored = maestro_session::session_manager::parse_session_entries(&written);
     for id in [&compaction, &branch] {
-        assert_eq!(manager.get_entry(id).unwrap()["usage"], expected);
+        assert_eq!(stored_usage(manager.get_entry(id).unwrap()), usage);
         let reloaded = stored.iter().find(|entry| entry["id"] == id.as_str());
-        assert_eq!(reloaded.unwrap()["usage"], expected);
+        assert_eq!(stored_usage(reloaded.unwrap()), usage);
     }
     assert!(manager.get_entry(&plain).unwrap().get("usage").is_none());
 }
