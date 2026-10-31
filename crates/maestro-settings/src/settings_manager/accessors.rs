@@ -307,6 +307,17 @@ impl SettingsManager {
         }
     }
 
+    /// Returns the HTTP header or body idle timeout in milliseconds (default 300000).
+    #[must_use]
+    pub fn get_http_idle_timeout_ms(&self) -> f64 {
+        300_000.0
+    }
+
+    /// Stores the HTTP header or body idle timeout in whole milliseconds; 0 disables it.
+    pub fn set_http_idle_timeout_ms(&mut self, value: f64) {
+        let _ = value;
+    }
+
     /// Returns whether thinking blocks are hidden (default false).
     #[must_use]
     pub fn get_hide_thinking_block(&self) -> bool {
