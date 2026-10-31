@@ -372,8 +372,9 @@ fn write_around_other_output() {
         terminal.stop().unwrap();
     });
     terminal.write("second").unwrap();
-    let expected =
-        format!("first\x1b[?25l\x1b]0;t\x07{PROGRESS_CLEAR}{START_BYTES}\x1b[?2004l\x1b[<usecond");
+    let expected = format!(
+        "first\x1b[?25l\x1b]0;t\x07{PROGRESS_CLEAR}{START_BYTES}\x1b[?25h\x1b[?2004l\x1b[<usecond"
+    );
     assert_eq!(output.take(), expected);
     drop(output);
     let failure = terminal.write("lost").unwrap_err();

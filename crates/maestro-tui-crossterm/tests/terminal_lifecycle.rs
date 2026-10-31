@@ -1424,6 +1424,47 @@ fn native_dropped_terminal_releases_only_owned_active_resources() {
 }
 
 #[test]
+fn native_dropped_terminal_restores_every_mode_it_owns() {
+    isolated!(&[], || {
+        let rig = Rig::paused();
+        let output = pipe_output();
+        rig.run(async {
+            let (feed, mut session) = started(&rig, &output).await;
+            feed.send(b"\x1b[?62;4;52c");
+            output.written("\x1b[>4;2m").await;
+            session.terminal.hide_cursor().unwrap();
+            output.written("\x1b[?25l").await;
+            session.terminal.set_progress(true).unwrap();
+            output.written("\x1b]9;4;3\x07").await;
+            drop(session);
+            output
+                .written("\x1b[?25h\x1b]9;4;0;\x07\x1b[?2004l\x1b[<u\x1b[>4;0m")
+                .await;
+        });
+    });
+}
+
+#[test]
+fn native_stop_shows_the_cursor_only_while_it_is_hidden() {
+    isolated!(&[], || {
+        let rig = Rig::paused();
+        let output = pipe_output();
+        rig.run(async {
+            let (_feed, mut session) = started(&rig, &output).await;
+            session.terminal.hide_cursor().unwrap();
+            session.terminal.show_cursor().unwrap();
+            output.written("\x1b[?25l\x1b[?25h").await;
+            session.terminal.stop().unwrap();
+            output.written(STOP_BYTES).await;
+            session.terminal.hide_cursor().unwrap();
+            output.written("\x1b[?25l").await;
+            session.terminal.stop().unwrap();
+            output.written("\x1b[?25h\x1b[?2004l").await;
+        });
+    });
+}
+
+#[test]
 fn native_failed_restart_releases_every_owned_mode() {
     isolated!(0, &[], || {
         let rig = Rig::paused();
