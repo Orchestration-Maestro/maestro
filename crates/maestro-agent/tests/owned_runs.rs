@@ -984,6 +984,7 @@ fn synthetic_failure_publishes_message_and_turn_events_before_agent_end() {
         }));
         let kinds = Arc::new(Mutex::new(Vec::new()));
         let recorded = kinds.clone();
+        let observed_state = agent.state().clone();
         agent.subscribe(Arc::new(move |event, _| {
             let kind = match &*event.read().unwrap() {
                 AgentEvent::MessageStart {
@@ -996,7 +997,14 @@ fn synthetic_failure_publishes_message_and_turn_events_before_agent_end() {
                 AgentEvent::AgentEnd { .. } => "agent_end",
                 _ => return support::ready(Ok(())),
             };
-            recorded.lock().unwrap().push(kind);
+            recorded.lock().unwrap().push((
+                kind,
+                observed_state
+                    .read()
+                    .unwrap()
+                    .error_message()
+                    .map(str::to_owned),
+            ));
             support::ready(Ok(()))
         }));
         let run = agent.prompt(input("hello"));
@@ -1004,7 +1012,12 @@ fn synthetic_failure_publishes_message_and_turn_events_before_agent_end() {
         run.await.unwrap();
         assert_eq!(
             *kinds.lock().unwrap(),
-            ["assistant_start", "assistant_end", "turn_end", "agent_end"]
+            [
+                ("assistant_start", None),
+                ("assistant_end", None),
+                ("turn_end", Some("provider unreachable".into())),
+                ("agent_end", Some("provider unreachable".into())),
+            ]
         );
         let state = agent.state().read().unwrap();
         let stored = state.messages().read().unwrap();
