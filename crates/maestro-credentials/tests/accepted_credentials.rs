@@ -201,6 +201,21 @@ mod tests {
     }
 
     #[test]
+    fn reading_a_repaired_document_allows_writes_again() {
+        let dir = TempDir::new("repaired");
+        let path = dir.path("auth.json");
+        write_file(&path, "{invalid-json");
+        let storage = AuthStorage::create(&path);
+        write_file(&path, &pretty_keys(&[("google", "g")]));
+        assert_eq!(storage.list(), ["google"]);
+        storage.set("openai", api_key("o"));
+        assert_eq!(
+            read_file(&path),
+            pretty_keys(&[("google", "g"), ("openai", "o")])
+        );
+    }
+
+    #[test]
     fn failed_reload_keeps_records_and_drains_errors_in_order() {
         let dir = TempDir::new("failed-reload");
         let path = dir.path("auth.json");

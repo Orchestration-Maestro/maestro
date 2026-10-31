@@ -10,7 +10,7 @@ mod tests {
         TempDir, api_key, block_on, block_on_paused, is_child, memory_text, run_child,
     };
     use maestro_credentials::{
-        AsyncLockUpdate, AuthStorage, AuthStorageBackend, ConfigValueOperations,
+        AsyncLockUpdate, AuthSource, AuthStorage, AuthStorageBackend, ConfigValueOperations,
         FileAuthStorageBackend, InMemoryAuthStorageBackend, LockUpdate,
     };
     use maestro_models::{BoxFuture, OAuthCredentials, OAuthError};
@@ -556,6 +556,28 @@ mod tests {
         assert_eq!(
             reader.get_all().into_iter().collect::<Vec<_>>(),
             [("written".to_owned(), api_key("fresh"))]
+        );
+    }
+
+    #[test]
+    fn request_key_follows_a_key_another_storage_replaced() {
+        let dir = TempDir::new("reread-request-key");
+        let path = dir.path("auth.json");
+        let reader = AuthStorage::create(&path);
+        reader.set("stored-provider", api_key("old"));
+        AuthStorage::create(&path).set("stored-provider", api_key("new"));
+        let key = block_on(reader.get_api_key("stored-provider", false, &NoOperations)).unwrap();
+        assert_eq!(key.as_deref(), Some("new"));
+    }
+
+    #[test]
+    fn auth_checks_see_credentials_another_storage_wrote() {
+        let (_dir, reader) = after_another_storage_writes("reread-auth");
+        assert!(reader.has_auth("written").unwrap());
+        let status = reader.get_auth_status("written").unwrap();
+        assert_eq!(
+            (status.configured, status.source),
+            (true, Some(AuthSource::Stored))
         );
     }
 
