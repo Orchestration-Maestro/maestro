@@ -10,3 +10,18 @@ pub(crate) fn prompt_cache_key(session: &str) -> &str {
         .nth(MAX_KEY_CHARACTERS)
         .map_or(session, |(end, _)| session.split_at(end).0)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::prompt_cache_key;
+
+    /// A four-byte character that straddles the limit is cut whole, never split.
+    #[test]
+    fn four_byte_characters_at_the_limit_are_never_split() {
+        let sixty_three = "a".repeat(63);
+        let session = format!("{sixty_three}😀😀");
+        assert_eq!(prompt_cache_key(&session), format!("{sixty_three}😀"));
+        let exact = format!("{sixty_three}😀");
+        assert_eq!(prompt_cache_key(&exact), exact);
+    }
+}
