@@ -154,6 +154,8 @@ pub enum BranchSummaryResult {
         read_files: Vec<String>,
         /// Edited or written paths.
         modified_files: Vec<String>,
+        /// Usage the provider reported for the request.
+        usage: maestro_models::Usage,
     },
     /// Empty preparation; no request was made.
     NoContent {
@@ -353,6 +355,7 @@ fn result(
                 ),
                 read_files: details.read_files,
                 modified_files: details.modified_files,
+                usage: maestro_models::Usage::default(),
             }
         }
     }

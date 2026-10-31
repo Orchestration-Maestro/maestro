@@ -287,6 +287,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
                     summary,
                     read_files,
                     modified_files,
+                    ..
                 } => (summary, read_files, modified_files),
                 BranchSummaryResult::NoContent { summary } => (summary, Vec::new(), Vec::new()),
             };

@@ -7,6 +7,14 @@ use std::sync::Arc;
 use support::*;
 
 /// Validated arguments can be changed to values outside their original schema.
+/// The usage of model calls a tool made itself.
+fn nested_usage() -> maestro_models::Usage {
+    serde_json::from_value(serde_json::json!({"input": 4, "output": 2, "cacheRead": 0,
+        "cacheWrite": 0, "totalTokens": 6,
+        "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "total": 0.5}}))
+    .unwrap()
+}
+
 #[test]
 fn before_hook_mutation_reaches_execution_without_revalidation() {
     run(async {
@@ -112,6 +120,7 @@ async fn recovery_case() {
                     content: Some(vec![]),
                     is_error: Some(false),
                     terminate: Some(true),
+                    usage: Some(nested_usage()),
                     ..Default::default()
                 }))
             };
@@ -138,6 +147,7 @@ async fn recovery_case() {
             assert_eq!(returned.len(), 3);
         } else {
             assert!(r.content.is_empty());
+            assert_eq!(r.usage, Some(nested_usage()));
             assert_eq!(returned.len(), 2);
         }
     }

@@ -224,6 +224,7 @@ mod theme_selection;
 mod tree_cancel_compacting_checks;
 mod tree_interface;
 mod tree_traversal_checks;
+mod usage_accounting;
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "support/watching.rs"]
 mod watching;
