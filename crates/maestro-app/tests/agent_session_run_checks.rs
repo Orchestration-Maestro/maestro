@@ -2,8 +2,8 @@
 //! and every waiter returns only after the run settles.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Harness, HarnessOptions, Scripted, custom_note, harness, on_task_set, start_prompt,
-    summary_provider,
+    Harness, HarnessOptions, Scripted, custom_note, get_assistant_texts, harness, on_task_set,
+    start_prompt, summary_provider,
 };
 use maestro_app::AgentSessionEvent;
 use maestro_session::messages::SendMessageOptions;
@@ -84,6 +84,68 @@ fn prompt_resolves_after_retry_and_compaction_while_streaming_throughout() {
         assert!(
             seen.iter().all(|(_, streaming)| *streaming),
             "the run flag held from the retry through the compaction: {seen:?}"
+        );
+        assert!(!h.session.is_streaming());
+    });
+}
+
+#[test]
+fn prompt_continues_through_an_overflow_recovery() {
+    on_task_set(|_| async {
+        let h = compacting(
+            vec![
+                Scripted::text("first"),
+                Scripted::context_overflow(),
+                Scripted::text("after recovery"),
+            ],
+            50,
+        )
+        .await;
+        start_prompt(&h, "one").await.unwrap().unwrap();
+        start_prompt(&h, "two").await.unwrap().unwrap();
+        assert_eq!(
+            h.requests.0.borrow().len(),
+            3,
+            "the recovery sent the turn again"
+        );
+        assert_eq!(
+            get_assistant_texts(&h).last().map(String::as_str),
+            Some("after recovery")
+        );
+        assert!(!h.session.is_streaming());
+    });
+}
+
+#[test]
+fn prompt_continues_with_a_message_queued_during_compaction() {
+    on_task_set(|_| async {
+        let h = compacting(
+            vec![
+                Scripted {
+                    usage: Some((1_000.0, 100.0)),
+                    ..Scripted::text("first")
+                },
+                Scripted::text("queued answer"),
+            ],
+            50,
+        )
+        .await;
+        let session = Rc::clone(&h.session);
+        drop(h.session.subscribe(Rc::new(move |event| {
+            if matches!(event, AgentSessionEvent::CompactionStart { .. }) {
+                session.follow_up("queued", &[]).unwrap();
+            }
+        })));
+        start_prompt(&h, "one").await.unwrap().unwrap();
+        assert_eq!(
+            h.requests.0.borrow().len(),
+            2,
+            "the queued message started another request"
+        );
+        assert_eq!(
+            get_assistant_texts(&h).last().map(String::as_str),
+            Some("queued answer"),
+            "the run delivered the queued message"
         );
         assert!(!h.session.is_streaming());
     });

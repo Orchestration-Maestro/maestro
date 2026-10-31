@@ -1785,6 +1785,8 @@ pub struct Scripted {
     pub usage: Option<(f64, f64)>,
     /// Whether the stream sends only the terminal event, so the response arrives whole.
     pub terminal_only: bool,
+    /// Whether the answer names the model the request asked for, as a provider's answer does.
+    pub names_requested_model: bool,
 }
 
 impl Scripted {
@@ -1801,6 +1803,14 @@ impl Scripted {
         Self {
             error: Some(error.into()),
             ..Self::default()
+        }
+    }
+
+    /// A failed answer from the requested model reporting a context overflow.
+    pub fn context_overflow() -> Self {
+        Self {
+            names_requested_model: true,
+            ..Self::failure("prompt is too long: 213462 tokens > 200000 maximum")
         }
     }
 
@@ -1823,12 +1833,17 @@ fn scripted_stream(
     responses: Vec<Scripted>,
     requests: ScriptedRequests,
 ) -> maestro_agent::StreamFn<Local> {
-    Rc::new(move |_, context, _, _| {
+    Rc::new(move |model, context, _, _| {
         let index = requests.0.borrow().len() % responses.len();
         requests.0.borrow_mut().push(context);
         let stream = maestro_models::AssistantMessageEventStream::new();
         let response = &responses[index];
-        stream_with_deltas(&stream, scripted_message(response), response.terminal_only);
+        let mut message = scripted_message(response);
+        if response.names_requested_model {
+            message.provider = model.provider;
+            message.model = model.id;
+        }
+        stream_with_deltas(&stream, message, response.terminal_only);
         Box::pin(std::future::ready(Ok(stream)))
     })
 }
