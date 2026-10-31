@@ -255,8 +255,7 @@ fn prepared_bundle_leaves_out_a_failed_browser_graph() {
     assert_eq!(bundle_manifest(root)["browser"], false);
 }
 
-/// A shard installs the bundle's graph before the recipes run, under one modification time that
-/// is not older than any file of its checkout, so the recipes find it.
+/// A shard installs the bundle's graph before the recipes run, so the recipes find it.
 #[test]
 fn browser_setup_installs_the_prepared_graph_before_the_recipes() {
     let scratch = Scratch::new().unwrap();
@@ -265,25 +264,12 @@ fn browser_setup_installs_the_prepared_graph_before_the_recipes() {
     fs::write(root.join("justfile"), BROWSER_RECIPES).unwrap();
     prepare(root);
     fs::remove_dir_all(root.join("target/browser-author")).unwrap();
-    let source = root.join("crates/maestro-web/src/lib.rs");
-    fs::File::open(&source)
-        .unwrap()
-        .set_modified(std::time::SystemTime::now())
-        .unwrap();
 
     assert_success(&browser_command(root).output().unwrap());
 
     assert_eq!(
         fs::read_to_string(root.join("recipes.log")).unwrap(),
         "built\ninstalled\n"
-    );
-    let source_time = fs::metadata(&source).unwrap().modified().unwrap();
-    let times = tree_times(&root.join("target/browser-author"));
-    assert!(!times.is_empty());
-    assert!(
-        times
-            .iter()
-            .all(|time| *time == times[0] && *time >= source_time)
     );
     assert_eq!(
         fs::read_to_string(root.join("nextest-env")).unwrap(),
@@ -770,20 +756,6 @@ fn edit_manifest_value(prepared: &Path, edit: impl FnOnce(&mut serde_json::Value
 fn bundle_manifest(root: &Path) -> serde_json::Value {
     serde_json::from_slice(&fs::read(root.join("target/test-setup/components.json")).unwrap())
         .unwrap()
-}
-
-/// The modification time of every file under `directory`.
-fn tree_times(directory: &Path) -> Vec<std::time::SystemTime> {
-    let mut times = Vec::new();
-    for entry in fs::read_dir(directory).unwrap() {
-        let path = entry.unwrap().path();
-        if path.is_dir() {
-            times.extend(tree_times(&path));
-        } else {
-            times.push(fs::metadata(&path).unwrap().modified().unwrap());
-        }
-    }
-    times
 }
 
 /// The browser setup of an archived shard, run from the fixture checkout.

@@ -22,7 +22,8 @@ command = { command-line = "debug/development nextest-setup fixture-sources", re
 filter = "package(maestro-tooling)"
 setup = "fixture-sources"
 
-# Builds the browser graph the browser author tests share, once before the first of them.
+# Installs the bundle's browser graph the browser author tests share, or builds it when the run has
+# no bundle, once before the first of them.
 # The cold-start test builds from an empty state on purpose, so nothing is prepared for it.
 # The `browser-author` test group below selects the same tests with the same filter; change
 # the two together.

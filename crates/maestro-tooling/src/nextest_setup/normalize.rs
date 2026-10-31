@@ -1,7 +1,8 @@
 //! Gives the executables of an artifact directory one modification time.
 //!
 //! The pinned engine's cache namespace includes the modification time of the executable that
-//! consumes it, so the setup example and the test binaries must share a time.
+//! consumes it, so the setup example and the test binaries must share a time. The installed
+//! browser graph shares one time as well, so Cargo finds no output newer than what builds on it.
 
 use std::collections::{HashMap, HashSet};
 use std::io;
@@ -47,6 +48,27 @@ struct Library {
     name: String,
     /// The time the file was last modified.
     modified: SystemTime,
+}
+
+/// Give every file under `directory` the modification time `time`, so that none outdates another
+/// and, for a time past the checkout's, none outdates a checkout file.
+///
+/// # Errors
+/// Returns a failed read or write.
+pub(super) fn set_tree_time(directory: &Path, time: SystemTime) -> io::Result<()> {
+    for entry in std::fs::read_dir(directory)? {
+        let entry = entry?;
+        let kind = entry.file_type()?;
+        if kind.is_dir() {
+            set_tree_time(&entry.path(), time)?;
+        } else if kind.is_file() {
+            std::fs::File::options()
+                .write(true)
+                .open(entry.path())?
+                .set_modified(time)?;
+        }
+    }
+    Ok(())
 }
 
 /// Whether nextest runs an archive, where nothing is rebuilt and every executable is current.

@@ -15,15 +15,21 @@ use std::ffi::{OsStr, OsString};
 use std::io;
 use std::path::Path;
 use std::process::{Command, ExitCode};
+use std::time::SystemTime;
 
+use super::normalize::set_tree_time;
 use super::{cargo, export, nonempty, prepared_bundle};
-use crate::test_setup::install_browser_graph;
+use crate::copy_assets::copy_tree;
+use crate::test_setup::{install_browser_graph, remove_directory};
 
 /// The checkout directory the graph is built in and the tests are told to use.
 pub(crate) const TARGET: &str = "target/browser-author";
 
 /// The bundle directory that holds the staged graph.
 pub(crate) const STAGED: &str = "browser-author";
+
+/// The graph's incremental compilation state, which Cargo rewrites on the next build.
+const INCREMENTAL: &str = "debug/incremental";
 
 /// Variables of the coverage runner that change what Cargo compiles.
 const INSTRUMENTATION: [&str; 9] = [
@@ -91,14 +97,19 @@ pub(crate) fn build(checkout: &Path, cargo: &OsStr) -> bool {
     built
 }
 
-/// Copy the graph built in `target` into `staged`.
-pub(crate) fn stage(_target: &Path, staged: &Path) -> io::Result<()> {
-    std::fs::create_dir_all(staged)
+/// Copy the graph built in `target` into `staged`, without the incremental state that no later
+/// build reads and that is a seventh of its size.
+pub(crate) fn stage(target: &Path, staged: &Path) -> io::Result<()> {
+    remove_directory(&target.join(INCREMENTAL))?;
+    copy_tree(target, staged)
 }
 
-/// Replace `target` with the graph staged in `staged`.
-pub(crate) fn install(_staged: &Path, target: &Path) -> io::Result<()> {
-    std::fs::create_dir_all(target)
+/// Replace `target` with the graph staged in `staged`, and give every file one modification time
+/// that is newer than the checkout, so Cargo finds nothing to rebuild.
+pub(crate) fn install(staged: &Path, target: &Path) -> io::Result<()> {
+    remove_directory(target)?;
+    copy_tree(staged, target)?;
+    set_tree_time(target, SystemTime::now())
 }
 
 /// A command for `program` in the checkout, without the runner's instrumentation and with the
