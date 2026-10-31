@@ -307,3 +307,24 @@ fn failed_temporary_creation_keeps_the_previous_snapshot_readable() {
     assert_eq!(loaded.unwrap().selected, 0);
     assert!(events.is_empty());
 }
+
+#[test]
+fn interrupted_temporary_snapshot_is_ignored_without_a_warning() {
+    use std::io::Write;
+    let dir = Directory::new();
+    let session = dir.path().join("session.json");
+    save_to_paths(&session, &dir.path().join("history.json"), &empty(), None).unwrap();
+    let previous = fs::read(&session).unwrap();
+    let mut temporary = fs::File::create(session.with_extension("json.tmp")).unwrap();
+    temporary
+        .write_all(b"{\"version\": 1,\"selected\":")
+        .unwrap();
+    temporary.sync_all().unwrap();
+    drop(temporary);
+
+    let (loaded, events) = capture(|| load(&session));
+
+    assert_eq!(loaded.unwrap().selected, 0);
+    assert!(events.is_empty());
+    assert_eq!(fs::read(&session).unwrap(), previous);
+}

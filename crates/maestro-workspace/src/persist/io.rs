@@ -6,7 +6,7 @@ use std::{fs, io, path::Path};
 /// Saves topology before saving or removing separate history.
 ///
 /// # Errors
-/// Returns serialization or precommit filesystem errors; a history error does
+/// Returns serialization or filesystem errors, including parent sync; a history error does
 /// not undo an already committed topology.
 pub fn save_to_paths(
     session_path: &Path,
