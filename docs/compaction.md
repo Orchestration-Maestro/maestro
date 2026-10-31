@@ -66,7 +66,8 @@ summaries and compaction summaries, crosses at the retained budget and selects t
 valid cut, falling back to the first candidate. Tool results cannot start cuts.
 Preceding metadata is absorbed without crossing an entry that is in context or a
 compaction boundary. `find_turn_start_index` treats user, shell, custom, branch-summary
-and compaction-summary messages, and the entries that become them, as turn starts. A cut
+and compaction-summary messages, and the custom-message and branch-summary entries that
+become them, as turn starts. A cut
 that is not itself a turn start but has one before it produces a split prefix, which may
 be empty.
 
@@ -77,7 +78,9 @@ assistant read/write/edit calls. Preparation tracks history and split prefixes, 
 the kept suffix, carrying previous built-in file details only when `fromHook` is falsy.
 `compute_file_lists` removes modified paths from reads, unions edits/writes and sorts
 both lists in UTF-16 lexical order. `format_file_operations` preserves supplied list
-order and duplicates in read-files/modified-files sections.
+order and duplicates in read-files/modified-files sections. Preparation reads each
+entry's message through the same projection as the cut search, so an empty branch summary
+and a compaction summary are not summary input.
 
 `serialize_conversation` accepts typed model messages, not raw application messages.
 Project application messages through the [message conversion interface](sessions/messages.md)

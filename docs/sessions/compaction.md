@@ -17,9 +17,11 @@ session-library operations. The [compaction API](../compaction.md),
 
 Automatic policy checks `contextTokens > contextWindow - reserveTokens` when enabled.
 The shipped reserve is 16384 and retained recent budget is 20000. Manual preparation
-is independent of the enabled flag. Applications may pass optional focus instructions.
+is independent of the enabled flag. A response that reports no tokens is measured by
+the last real usage plus the messages after it. Applications may pass optional focus
+instructions.
 
-1. Find a cut by accumulating estimates backwards through recent message entries.
+1. Find a cut by accumulating estimates backwards through the entries that put a message in context.
 2. Extract discarded history and any early split-turn prefix.
 3. Generate structured text, using nonempty previous-summary text as iterative context.
 4. Append a compaction record containing the returned summary and retained identity.
