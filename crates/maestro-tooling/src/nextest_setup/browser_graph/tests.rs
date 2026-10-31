@@ -9,7 +9,12 @@ use maestro_test_directory::Scratch;
 
 use super::{install, stage};
 
-/// Write a package that builds on a path dependency, so a build compiles two units.
+/// The build script of the workspace's feature unifier, which every native workspace crate builds
+/// on, so the fixture's dependency runs the script a real graph runs.
+const UNIFIER_BUILD_SCRIPT: &str = include_str!("../../../../maestro-dependencies/build.rs");
+
+/// Write a package that builds on a path dependency with the unifier's build script, so a build
+/// compiles two units and runs one script.
 fn write_checkout(root: &Path) {
     fs::create_dir_all(root.join("dependency/src")).unwrap();
     fs::create_dir_all(root.join("src")).unwrap();
@@ -24,6 +29,7 @@ fn write_checkout(root: &Path) {
         "[package]\nname = \"dependency\"\nversion = \"0.0.0\"\nedition = \"2024\"\n",
     )
     .unwrap();
+    fs::write(root.join("dependency/build.rs"), UNIFIER_BUILD_SCRIPT).unwrap();
     fs::write(
         root.join("dependency/src/lib.rs"),
         "pub fn one() -> u8 { 1 }\n",
@@ -68,7 +74,7 @@ fn set_times(directory: &Path, time: SystemTime) {
 }
 
 /// A graph installed from a bundle that an earlier job built leaves Cargo nothing to compile in
-/// a checkout whose sources are newer than every file the bundle carries.
+/// a checkout whose files are all newer than every file the bundle carries.
 #[test]
 fn installed_graph_leaves_cargo_nothing_to_compile_in_a_newer_checkout() {
     let scratch = Scratch::new().unwrap();
@@ -85,6 +91,7 @@ fn installed_graph_leaves_cargo_nothing_to_compile_in_a_newer_checkout() {
         "Cargo.toml",
         "src/lib.rs",
         "dependency/Cargo.toml",
+        "dependency/build.rs",
         "dependency/src/lib.rs",
     ] {
         fs::File::open(root.join(source))
