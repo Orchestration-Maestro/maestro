@@ -6,7 +6,7 @@ use super::{
     files::{for_each_entry, get_default_session_dir, jsonl_path, modified_millis},
 };
 use crate::messages::{millis_number, timestamp_millis};
-use futures_util::{StreamExt, stream::FuturesUnordered};
+use futures_util::{StreamExt, stream};
 use serde_json::Value;
 use std::{
     borrow::Cow,
@@ -15,6 +15,9 @@ use std::{
     io::{self, BufRead, BufReader},
     ops::ControlFlow,
 };
+
+/// The most session files whose metadata loads at the same time.
+const MAX_CONCURRENT_LOADS: usize = 10;
 
 /// Progress callback receiving completed and total candidate counts; an error stops the listing.
 pub type SessionListProgress<'a> = dyn FnMut(usize, usize) -> io::Result<()> + 'a;
@@ -87,22 +90,21 @@ async fn read_paths(
     .map_err(io::Error::other)?
 }
 
-/// Read every candidate concurrently in this task, reporting progress as each completes,
-/// then order the healthy results by input position and descending activity.
+/// Read the candidates in this task, at most `MAX_CONCURRENT_LOADS` at a time, reporting
+/// progress as each completes, then order the healthy results by input position and
+/// descending activity.
 pub(super) async fn collect<F: Future<Output = Option<SessionInfo>>>(
     files: Vec<String>,
     load: impl Fn(String) -> F,
     mut on_progress: Option<&mut SessionListProgress<'_>>,
 ) -> Vec<SessionInfo> {
     let total = files.len();
-    let mut pending: FuturesUnordered<_> = files
-        .iter()
-        .enumerate()
+    let mut pending = stream::iter(files.into_iter().enumerate())
         .map(|(index, file)| {
-            let loading = load(file.clone());
+            let loading = load(file);
             async move { (index, loading.await) }
         })
-        .collect();
+        .buffer_unordered(MAX_CONCURRENT_LOADS);
     let mut results: Vec<Option<SessionInfo>> = (0..total).map(|_| None).collect();
     let mut loaded = 0;
     while let Some((index, info)) = pending.next().await {

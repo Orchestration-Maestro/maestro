@@ -1,5 +1,5 @@
 //! Native JSONL loading and continuation selection.
-use super::{FileEntry, parse_session_entries};
+use super::{FileEntry, context::ecma_whitespace};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::{
@@ -67,20 +67,50 @@ pub fn load_entries_from_file(file_path: &str) -> io::Result<Vec<FileEntry>> {
 
 /// Hand each record of `reader` to `on_entry` until it breaks or the input ends.
 ///
-/// Blank and malformed lines are skipped. The outer ECMAScript whitespace of the
-/// first and last nonblank lines is dropped, as whole-text parsing drops it.
+/// Only the current line and the last nonblank one are held. Blank and malformed
+/// lines are skipped. The outer ECMAScript whitespace of the first and last nonblank
+/// lines is dropped, as whole-text parsing drops it.
 pub(super) fn for_each_entry(
     mut reader: impl BufRead,
     mut on_entry: impl FnMut(FileEntry) -> ControlFlow<()>,
 ) -> io::Result<()> {
-    let mut bytes = Vec::new();
-    reader.read_to_end(&mut bytes)?;
-    for entry in parse_session_entries(&String::from_utf8_lossy(&bytes)) {
-        if on_entry(entry).is_break() {
+    let mut line = Vec::new();
+    let mut held: Option<String> = None;
+    let mut first = true;
+    loop {
+        line.clear();
+        if reader.read_until(b'\n', &mut line)? == 0 {
             break;
         }
+        let text = String::from_utf8_lossy(&line);
+        if text.trim_matches(ecma_whitespace).is_empty() {
+            continue;
+        }
+        let text = if first {
+            text.trim_start_matches(ecma_whitespace).to_owned()
+        } else {
+            text.into_owned()
+        };
+        first = false;
+        if let Some(previous) = held.replace(text)
+            && parse_line(&previous, &mut on_entry).is_break()
+        {
+            return Ok(());
+        }
+    }
+    if let Some(last) = held {
+        // Nothing follows the last record, so its break has nothing left to stop.
+        let _ = parse_line(last.trim_end_matches(ecma_whitespace), &mut on_entry);
     }
     Ok(())
+}
+
+/// Hand the record on `line` to `on_entry`; a malformed line is skipped.
+fn parse_line(
+    line: &str,
+    on_entry: &mut impl FnMut(FileEntry) -> ControlFlow<()>,
+) -> ControlFlow<()> {
+    serde_json::from_str(line).map_or(ControlFlow::Continue(()), on_entry)
 }
 
 /// The records of one session file with the digest of the bytes they came from.
