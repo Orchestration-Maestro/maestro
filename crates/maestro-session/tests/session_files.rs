@@ -769,6 +769,7 @@ fn opening_missing_file_preserves_explicit_path_until_publication() {
     assert!(!path.with_extension("jsonl.lock").exists());
 }
 
+/// Refusing an unrelated file names Maestro and preserves the supplied bytes.
 #[test]
 fn opening_a_nonempty_invalid_file_refuses_it_and_leaves_its_bytes() {
     let directory = Directory::new();
@@ -793,9 +794,11 @@ fn opening_a_nonempty_invalid_file_refuses_it_and_leaves_its_bytes() {
         assert_eq!(error.kind(), std::io::ErrorKind::InvalidData, "{name}");
         assert_eq!(
             error.to_string(),
-            format!("Session file is not a valid session: {path}")
+            format!("Session file is not a valid maestro session: {path}")
         );
-        assert!(memory.set_session_file(&path).is_err(), "{name}");
+        let switched = memory.set_session_file(&path).unwrap_err();
+        assert_eq!(switched.kind(), std::io::ErrorKind::InvalidData, "{name}");
+        assert_eq!(switched.to_string(), error.to_string(), "{name}");
         assert_eq!(fs::read_to_string(&path).unwrap(), content, "{name}");
     }
 }
