@@ -226,3 +226,33 @@ fn tail_keeps_whole_scalars_of_an_oversized_line_ending_in_a_newline() {
     ));
     assert_eq!(result.max_bytes, 11);
 }
+
+#[test]
+fn tail_terminated_oversized_line_uses_full_byte_budget() {
+    let text = format!("{}\n", "X".repeat(300_000));
+    let tail = truncate_tail(
+        &text,
+        TruncationOptions {
+            max_bytes: Some(1024),
+            ..Default::default()
+        },
+    );
+    assert_eq!(tail.content, "X".repeat(1024));
+    assert_eq!((tail.total_lines, tail.output_lines), (1, 1));
+    assert!(tail.last_line_partial);
+}
+
+#[test]
+fn tail_omitted_final_newline_reports_bytes_not_lines() {
+    let tail = truncate_tail(
+        "abc\n",
+        TruncationOptions {
+            max_bytes: Some(3),
+            ..Default::default()
+        },
+    );
+    assert_eq!(tail.content, "abc");
+    assert_eq!((tail.total_lines, tail.output_lines), (1, 1));
+    assert_eq!(tail.truncated_by, Some(maestro_tools::TruncationBy::Bytes));
+    assert!(!tail.last_line_partial);
+}
