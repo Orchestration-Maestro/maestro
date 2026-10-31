@@ -40,6 +40,23 @@ formatted file would exceed 500 lines, using `_1`, `_2`, … suffixes for all of
 partitions. Provider assembly preserves original registry order, including
 interleaved families; filenames never determine enumeration order.
 
+## Provider rules
+
+The generator applies these rules, so the committed catalog carries their result:
+
+- Direct `OpenAI` Responses models that accept reasoning effort `none` map `off` to it. GPT-5.5 Pro
+  offers no off, minimal or low level, directly or through a gateway, and direct GPT-5.5 offers
+  no minimal level.
+- `OpenRouter` `DeepSeek` V4 maps `xhigh` to the gateway's own `xhigh`. `OpenRouter` Kimi K2.6 sends
+  system instructions and replays reasoning content.
+- All Xiaomi variants route through the `OpenAI`-compatible `/v1` endpoints, replay thinking as
+  `reasoning_content`, and the token plans omit `MiMo` V2 Flash.
+- Moonshot and the `OpenCode` Kimi K2.6 routes use the thinking-object format, so thinking off sends
+  a disabled thinking object. Gateway completion models send explicit limits as `max_tokens`.
+- Nine extended-context `GitHub` Copilot models have a one-million-token window; other providers
+  keep theirs. Direct `MiniMax` models keep their upstream limits.
+- Grok 3 and Grok 3 Fast stay when the upstream feed omits them.
+
 ## Controlled catalog example
 
 ```rust

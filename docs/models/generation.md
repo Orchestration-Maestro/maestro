@@ -58,8 +58,9 @@ Tool-capability filters select records before optional metadata is checked.
 models.dev requires literal `true` for tool support and reasoning. Text input is
 retained, with image input added by each feed's modality rule. The Cloudflare gateway strips
 supported OpenAI/Anthropic upstream prefixes and retains the Workers AI prefix.
-The two Kimi coding aliases normalize to the canonical ID and name, and defer
-only to an eligible, well-formed canonical record. Other selected IDs retain
+The three Kimi coding aliases (`k2p5`, `k2p6` and `k2p7`) normalize to the canonical ID and
+name, and defer only to an eligible, well-formed canonical record. The gateway's
+`workers-ai/` models that its feed omits are derived from the Workers AI entries. Other selected IDs retain
 their spelling. `OpenRouter` requires a supplied string name; Vercel and models.dev
 use a truthy supplied name or the selected ID, except the fixed Kimi alias name.
 
