@@ -26,6 +26,7 @@ impl<E: ExtensionExecution> ExtensionRunner<E> {
                 text: current_text.clone(),
                 images: std::mem::take(images),
                 source,
+                streaming_behavior: Presence::Missing,
             };
             let result = invocation.call(self, &mut event, context.clone()).await;
             *images = event.images;
