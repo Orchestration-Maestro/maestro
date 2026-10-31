@@ -127,10 +127,12 @@ intend to consume those letters instead of typing them.
 ## Key notation and terminal limits
 
 Combine the modifiers `ctrl`, `shift`, `alt`, `super` and `hyper` with `+`, for
-example `ctrl+shift+x`. The aliases `control`, `option` and `meta` (alt), and `cmd`
-and `command` (super), name the same modifiers. A word before the key that is not a
-modifier name, such as the typo in `ctlr+k`, makes the whole key string name nothing,
-so it never binds the plain key. `hyper+k` binds only a key reported with hyper held.
+example `ctrl+shift+x`. Modifier words may come before or after the key: `k+ctrl`
+names the same key as `ctrl+k`. The aliases `control`, `option` and `meta` (alt), and
+`cmd` and `command` (super), name the same modifiers. A word that is neither a
+modifier name nor the one key, such as the typo in `ctlr+k`, makes the whole key string
+name nothing, so it never binds the plain key. `hyper+k` binds only a key reported with
+hyper held.
 The workspace key combinations use the same notation.
 Use lowercase letters, digits, literal punctuation, `f1` through `f12`, or named
 keys: `escape` (`esc`), `enter` (`return`), `tab`, `space`, `backspace` (`bs`), `delete`,

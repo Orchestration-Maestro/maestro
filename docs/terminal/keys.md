@@ -49,7 +49,7 @@ assert_eq!(text.generated_text.as_deref(), Some("你好"));
 
 A key identifier names one key and the modifiers held with it: `ctrl+c`, `shift+tab`,
 `alt+enter`, `escape`, `f5`. The modifiers are `shift`, `ctrl`, `alt`, `super` and `hyper`,
-joined by `+` before the key in any order and in any letter case. `control`, `option` and
+joined by `+` in any position and in any letter case. `control`, `option` and
 `meta` are aliases of `ctrl` and `alt`, and `cmd` and `command` are aliases of `super`.
 Whitespace around a word is ignored. The keys are:
 
@@ -65,8 +65,8 @@ Whitespace around a word is ignored. The keys are:
 
 The identifier `+` and any identifier ending in `++` name the plus key, so `+` and
 `ctrl++` name plus without and with ctrl. An identifier ending in a single `+` after a
-word, such as `ctrl+`, has no key and never matches. A word before the key that is not a
-modifier name, as in `ctlr+k` or `ctrl+a+b`, makes the identifier name nothing: it never
+word, such as `ctrl+`, has no key and never matches. A word that is neither a modifier name
+nor the one key, as in `ctlr+k` or `ctrl+a+b`, makes the identifier name nothing: it never
 matches, and it never binds the plain key. `hyper+k` matches only a report that holds the
 hyper modifier. A key of one character is that character; an ASCII capital names its
 lowercase letter and is flagged as a capital. Chat reads it as that letter, so `K`
