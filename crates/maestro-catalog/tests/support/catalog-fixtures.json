@@ -931,17 +931,13 @@
             "api": "openai-completions",
             "provider": "openrouter",
             "baseUrl": "https://provider.invalid",
-            "compat": {
-              "requiresReasoningContentOnAssistantMessages": true,
-              "thinkingFormat": "deepseek"
-            },
             "reasoning": true,
             "thinkingLevelMap": {
               "minimal": null,
               "low": null,
               "medium": null,
               "high": "high",
-              "xhigh": "max"
+              "xhigh": "xhigh"
             },
             "input": [
               "text"
@@ -953,7 +949,10 @@
               "cacheWrite": 0
             },
             "contextWindow": 1048576,
-            "maxTokens": 384000
+            "maxTokens": 384000,
+            "compat": {
+              "requiresReasoningContentOnAssistantMessages": true
+            }
           },
           {
             "id": "deepseek/deepseek-v4-pro",
@@ -961,17 +960,13 @@
             "api": "openai-completions",
             "provider": "openrouter",
             "baseUrl": "https://provider.invalid",
-            "compat": {
-              "requiresReasoningContentOnAssistantMessages": true,
-              "thinkingFormat": "deepseek"
-            },
             "reasoning": true,
             "thinkingLevelMap": {
               "minimal": null,
               "low": null,
               "medium": null,
               "high": "high",
-              "xhigh": "max"
+              "xhigh": "xhigh"
             },
             "input": [
               "text"
@@ -983,7 +978,10 @@
               "cacheWrite": 0
             },
             "contextWindow": 131000,
-            "maxTokens": 131000
+            "maxTokens": 131000,
+            "compat": {
+              "requiresReasoningContentOnAssistantMessages": true
+            }
           },
           {
             "id": "essentialai/rnj-1-instruct",
@@ -2191,7 +2189,11 @@
               "cacheWrite": 0
             },
             "contextWindow": 262142,
-            "maxTokens": 262142
+            "maxTokens": 262142,
+            "compat": {
+              "supportsDeveloperRole": false,
+              "requiresReasoningContentOnAssistantMessages": true
+            }
           },
           {
             "id": "nex-agi/deepseek-v3.1-nex-n1",
@@ -3217,7 +3219,10 @@
             "baseUrl": "https://provider.invalid",
             "reasoning": true,
             "thinkingLevelMap": {
-              "xhigh": "xhigh"
+              "xhigh": "xhigh",
+              "off": null,
+              "minimal": null,
+              "low": null
             },
             "input": [
               "text",
@@ -20823,17 +20828,13 @@
             "api": "openai-completions",
             "provider": "openrouter",
             "baseUrl": "https://provider.invalid",
-            "compat": {
-              "requiresReasoningContentOnAssistantMessages": true,
-              "thinkingFormat": "deepseek"
-            },
             "reasoning": true,
             "thinkingLevelMap": {
               "minimal": null,
               "low": null,
               "medium": null,
               "high": "high",
-              "xhigh": "max"
+              "xhigh": "xhigh"
             },
             "input": [
               "text"
@@ -20845,7 +20846,10 @@
               "cacheWrite": 0
             },
             "contextWindow": 1048576,
-            "maxTokens": 384000
+            "maxTokens": 384000,
+            "compat": {
+              "requiresReasoningContentOnAssistantMessages": true
+            }
           },
           {
             "id": "deepseek/deepseek-v4-pro",
@@ -20853,17 +20857,13 @@
             "api": "openai-completions",
             "provider": "openrouter",
             "baseUrl": "https://provider.invalid",
-            "compat": {
-              "requiresReasoningContentOnAssistantMessages": true,
-              "thinkingFormat": "deepseek"
-            },
             "reasoning": true,
             "thinkingLevelMap": {
               "minimal": null,
               "low": null,
               "medium": null,
               "high": "high",
-              "xhigh": "max"
+              "xhigh": "xhigh"
             },
             "input": [
               "text"
@@ -20875,7 +20875,10 @@
               "cacheWrite": 0
             },
             "contextWindow": 131000,
-            "maxTokens": 131000
+            "maxTokens": 131000,
+            "compat": {
+              "requiresReasoningContentOnAssistantMessages": true
+            }
           },
           {
             "id": "essentialai/rnj-1-instruct",
@@ -22083,7 +22086,11 @@
               "cacheWrite": 0
             },
             "contextWindow": 262142,
-            "maxTokens": 262142
+            "maxTokens": 262142,
+            "compat": {
+              "supportsDeveloperRole": false,
+              "requiresReasoningContentOnAssistantMessages": true
+            }
           },
           {
             "id": "nex-agi/deepseek-v3.1-nex-n1",
@@ -23109,7 +23116,10 @@
             "baseUrl": "https://provider.invalid",
             "reasoning": true,
             "thinkingLevelMap": {
-              "xhigh": "xhigh"
+              "xhigh": "xhigh",
+              "off": null,
+              "minimal": null,
+              "low": null
             },
             "input": [
               "text",
@@ -35747,33 +35757,13 @@
             "api": "openai-completions",
             "provider": "openrouter",
             "baseUrl": "https://openrouter.ai/api/v1",
-            "compat": {
-              "requiresReasoningContentOnAssistantMessages": true,
-              "thinkingFormat": "deepseek",
-              "supportsStore": false,
-              "openRouterRouting": {
-                "order": [
-                  "z",
-                  "a",
-                  "z"
-                ],
-                "only": [
-                  "base"
-                ]
-              },
-              "vercelGatewayRouting": {
-                "only": [
-                  "base"
-                ]
-              }
-            },
             "reasoning": true,
             "thinkingLevelMap": {
               "minimal": null,
               "low": null,
               "medium": null,
               "high": "high",
-              "xhigh": "max"
+              "xhigh": "xhigh"
             },
             "input": [
               "text"
@@ -35785,17 +35775,9 @@
               "cacheWrite": 0
             },
             "contextWindow": 1048576,
-            "maxTokens": 384000
-          },
-          {
-            "id": "deepseek/deepseek-v4-pro",
-            "name": "DeepSeek: DeepSeek V4 Pro",
-            "api": "openai-completions",
-            "provider": "openrouter",
-            "baseUrl": "https://openrouter.ai/api/v1",
+            "maxTokens": 384000,
             "compat": {
               "requiresReasoningContentOnAssistantMessages": true,
-              "thinkingFormat": "deepseek",
               "supportsStore": false,
               "openRouterRouting": {
                 "order": [
@@ -35812,14 +35794,21 @@
                   "base"
                 ]
               }
-            },
+            }
+          },
+          {
+            "id": "deepseek/deepseek-v4-pro",
+            "name": "DeepSeek: DeepSeek V4 Pro",
+            "api": "openai-completions",
+            "provider": "openrouter",
+            "baseUrl": "https://openrouter.ai/api/v1",
             "reasoning": true,
             "thinkingLevelMap": {
               "minimal": null,
               "low": null,
               "medium": null,
               "high": "high",
-              "xhigh": "max"
+              "xhigh": "xhigh"
             },
             "input": [
               "text"
@@ -35831,7 +35820,26 @@
               "cacheWrite": 0
             },
             "contextWindow": 131000,
-            "maxTokens": 131000
+            "maxTokens": 131000,
+            "compat": {
+              "requiresReasoningContentOnAssistantMessages": true,
+              "supportsStore": false,
+              "openRouterRouting": {
+                "order": [
+                  "z",
+                  "a",
+                  "z"
+                ],
+                "only": [
+                  "base"
+                ]
+              },
+              "vercelGatewayRouting": {
+                "only": [
+                  "base"
+                ]
+              }
+            }
           },
           {
             "id": "essentialai/rnj-1-instruct",
@@ -38139,6 +38147,8 @@
             "contextWindow": 262142,
             "maxTokens": 262142,
             "compat": {
+              "supportsDeveloperRole": false,
+              "requiresReasoningContentOnAssistantMessages": true,
               "supportsStore": false,
               "openRouterRouting": {
                 "order": [
@@ -40081,7 +40091,10 @@
             "baseUrl": "https://openrouter.ai/api/v1",
             "reasoning": true,
             "thinkingLevelMap": {
-              "xhigh": "xhigh"
+              "xhigh": "xhigh",
+              "off": null,
+              "minimal": null,
+              "low": null
             },
             "input": [
               "text",
@@ -45699,7 +45712,7 @@
               "low": null,
               "medium": null,
               "high": "high",
-              "xhigh": "max"
+              "xhigh": "xhigh"
             },
             "input": [
               "text"
@@ -45714,7 +45727,6 @@
             "maxTokens": 384000.0,
             "compat": {
               "requiresReasoningContentOnAssistantMessages": true,
-              "thinkingFormat": "deepseek",
               "supportsUsageInStreaming": false,
               "supportsStrictMode": false
             }
@@ -45731,7 +45743,7 @@
               "low": null,
               "medium": null,
               "high": "high",
-              "xhigh": "max"
+              "xhigh": "xhigh"
             },
             "input": [
               "text"
@@ -45746,7 +45758,6 @@
             "maxTokens": 131000.0,
             "compat": {
               "requiresReasoningContentOnAssistantMessages": true,
-              "thinkingFormat": "deepseek",
               "supportsUsageInStreaming": false,
               "supportsStrictMode": false
             }
@@ -47203,6 +47214,8 @@
             "contextWindow": 262142.0,
             "maxTokens": 262142.0,
             "compat": {
+              "supportsDeveloperRole": false,
+              "requiresReasoningContentOnAssistantMessages": true,
               "supportsUsageInStreaming": false,
               "supportsStrictMode": false
             }
@@ -48431,7 +48444,10 @@
             "baseUrl": "https://openrouter.ai/api/v1",
             "reasoning": true,
             "thinkingLevelMap": {
-              "xhigh": "xhigh"
+              "xhigh": "xhigh",
+              "off": null,
+              "minimal": null,
+              "low": null
             },
             "input": [
               "text",
