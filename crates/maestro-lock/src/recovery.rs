@@ -6,7 +6,6 @@ use std::{
     fs::{self, File, OpenOptions},
     io::{self, Read, Write},
     path::Path,
-    time::{SystemTime, UNIX_EPOCH},
 };
 
 /// Identity, optional-mode flag and mode preceding the intended target bytes.
@@ -141,14 +140,7 @@ fn existing_target(path: &Path) -> io::Result<Option<File>> {
 /// Stages a private identity-prefixed copy, then durably publishes its recovery name.
 fn stage(guard: &WriteLock, bytes: &[u8], mode: Option<u32>) -> io::Result<()> {
     let root = recovery_root(guard)?;
-    let temporary = root.join(format!(
-        ".maestro-{}.{}.tmp",
-        std::process::id(),
-        SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_nanos()
-    ));
+    let temporary = crate::atomic::temporary_path(&guard.recovery, crate::Temporary::Unique);
     #[cfg(test)]
     crate::replace::tests::before_create(&temporary)?;
     let mut open = OpenOptions::new();

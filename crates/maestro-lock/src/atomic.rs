@@ -29,7 +29,7 @@ pub enum Temporary<'a> {
 ///
 /// Missing parents are created. Precommit failures remove the temporary file;
 /// parent-sync failures after rename are returned as a committed warning.
-/// This replaces the target inode rather than preserving hard links or access controls.
+/// Existing permission bits are retained. Hard links, ownership and ACLs are not preserved.
 ///
 /// # Errors
 /// Returns native link-resolution, directory-creation, temporary-write, sync or rename errors.
@@ -49,10 +49,17 @@ pub fn atomic_replace(
         .unwrap_or_else(|| Path::new("."));
     fs::create_dir_all(parent)?;
     let temporary = temporary_path(&target, temporary);
-    let mut file = File::create(&temporary)?;
-    let result = file.write_all(bytes).and_then(|()| file.sync_all());
-    drop(file);
-    if let Err(error) = result.and_then(|()| fs::rename(&temporary, &target)) {
+    #[cfg(test)]
+    crate::replace::tests::before_create(&temporary)?;
+    let file = File::create(&temporary)?;
+    let result = retain_permissions(&file, &target)
+        .and_then(|()| write_temporary(file, bytes))
+        .and_then(|()| {
+            #[cfg(test)]
+            crate::replace::tests::effect("rename")?;
+            fs::rename(&temporary, &target)
+        });
+    if let Err(error) = result {
         // Keep the publication error if cleanup also fails.
         let _ = fs::remove_file(&temporary);
         return Err(error);
@@ -62,8 +69,27 @@ pub fn atomic_replace(
     })
 }
 
+/// Keeps existing access bits before any intended bytes reach the temporary file.
+fn retain_permissions(file: &File, target: &Path) -> io::Result<()> {
+    match fs::metadata(target) {
+        Ok(metadata) => file.set_permissions(metadata.permissions()),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(error),
+    }
+}
+
+/// Writes and syncs all bytes before closing the temporary handle.
+fn write_temporary(mut file: File, bytes: &[u8]) -> io::Result<()> {
+    #[cfg(test)]
+    crate::replace::tests::effect("write_all")?;
+    file.write_all(bytes)?;
+    #[cfg(test)]
+    crate::replace::tests::effect("file_sync")?;
+    file.sync_all()
+}
+
 /// Selects the caller's fixed extension or a hidden per-publication name.
-fn temporary_path(target: &Path, temporary: Temporary<'_>) -> PathBuf {
+pub(crate) fn temporary_path(target: &Path, temporary: Temporary<'_>) -> PathBuf {
     match temporary {
         Temporary::Fixed(extension) => target.with_extension(extension),
         Temporary::Unique => {

@@ -49,5 +49,20 @@ on the next coordinated acquisition, not on an arbitrary native read.
 
 Settings and credentials retain their bounded acquisition of the sidecar lock, and
 publish their text through the shared recoverable publication operation, as do the
-standalone account file, workspace snapshots, detection catalogs and session rewrites.
+standalone account file and session rewrites.
 Serialization and scheduling remain with callers; no background recovery service is added.
+
+## Atomic byte publication
+
+Workspace snapshots and detection catalogs use `maestro_lock::atomic_replace` so
+unlocked readers see complete old or new files. It creates missing parents,
+writes and syncs a temporary file beside the target, closes it, renames it over
+the target and syncs the parent directory. Precommit failures remove the temporary
+file; a parent-sync error after rename is returned as a committed warning.
+
+The caller chooses whether to follow final symbolic links and whether to use a
+fixed temporary extension or a hidden name containing the target name, process
+ID and nanoseconds. Existing permission bits are applied before writing bytes.
+Renaming replaces the inode: hard links keep their old bytes, while ownership and
+ACLs are not preserved. This operation does not acquire the recoverable writer's
+lock or replay its recovery records.
