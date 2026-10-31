@@ -119,6 +119,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
         let flushed = self.flush_pending_bash_messages();
         let (gate, open) = {
             let mut state = self.state.borrow_mut();
+            state.system_prompt_override = None;
             (state.run_gate.take(), state.run_open.take())
         };
         drop(gate);
@@ -234,7 +235,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
     }
 
     /// The user message, then the next-turn messages, then the extensions' messages; the
-    /// extensions' system prompt replaces the base prompt, which is otherwise restored.
+    /// extensions' system prompt, even an empty one, replaces the base prompt for the run,
+    /// which is otherwise restored.
     async fn assemble_messages(
         &self,
         text: String,
@@ -260,8 +262,12 @@ impl<E: ExtensionExecution> AgentSession<E> {
             (result.messages, result.system_prompt)
         });
         messages.extend(added.into_iter().flatten().map(custom_message));
-        let prompt = prompt.filter(|prompt| !prompt.is_empty());
-        write(self.agent.state()).system_prompt = prompt.unwrap_or(base);
+        let effective = {
+            let mut state = self.state.borrow_mut();
+            state.system_prompt_override = prompt;
+            state.effective_system_prompt()
+        };
+        write(self.agent.state()).system_prompt = effective;
         Ok(messages)
     }
 
