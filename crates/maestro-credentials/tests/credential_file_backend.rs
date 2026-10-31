@@ -528,6 +528,43 @@ mod tests {
         });
     }
 
+    /// A storage that loaded an empty file, and the document another storage then writes to it.
+    fn after_another_storage_writes(name: &str) -> (TempDir, AuthStorage) {
+        let dir = TempDir::new(name);
+        let path = dir.path("auth.json");
+        let reader = AuthStorage::create(&path);
+        assert!(reader.list().is_empty());
+        AuthStorage::create(&path).set("written", api_key("fresh"));
+        (dir, reader)
+    }
+
+    #[test]
+    fn get_sees_credentials_another_storage_wrote() {
+        let (_dir, reader) = after_another_storage_writes("reread-get");
+        assert_eq!(reader.get("written"), Some(api_key("fresh")));
+    }
+
+    #[test]
+    fn list_sees_credentials_another_storage_wrote() {
+        let (_dir, reader) = after_another_storage_writes("reread-list");
+        assert_eq!(reader.list(), ["written"]);
+    }
+
+    #[test]
+    fn get_all_sees_credentials_another_storage_wrote() {
+        let (_dir, reader) = after_another_storage_writes("reread-all");
+        assert_eq!(
+            reader.get_all().into_iter().collect::<Vec<_>>(),
+            [("written".to_owned(), api_key("fresh"))]
+        );
+    }
+
+    #[test]
+    fn has_sees_credentials_another_storage_wrote() {
+        let (_dir, reader) = after_another_storage_writes("reread-has");
+        assert!(reader.has("written"));
+    }
+
     #[test]
     fn async_file_roundtrip_preserves_no_write_and_empty_write() {
         block_on(async {
