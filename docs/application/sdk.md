@@ -418,7 +418,10 @@ already exist: their directories, credentials, catalog, preferences and loader.
 Each provider request takes the catalog's key and headers for the model; a
 credential failure fails the request with its message. The provider retry
 settings supply the timeout, the retry limit and the longest retry delay where
-the request sets none. Headers merge in order: attribution headers, then the
+the request sets none, and the `httpIdleTimeoutMs` setting supplies the timeout
+when neither the request nor the provider retry settings set one; its `0` or
+`disabled` asks for the longest timeout a timer accepts, so every provider that
+reads the timeout stops limiting the wait. Headers merge in order: attribution headers, then the
 credential headers, then the request's own, later names replacing earlier
 values.
 
