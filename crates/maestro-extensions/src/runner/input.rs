@@ -6,6 +6,7 @@ use crate::{
 };
 use maestro_models::ImageContent;
 use maestro_session::Presence;
+use maestro_session::messages::UserMessageDelivery;
 
 impl<E: ExtensionExecution> ExtensionRunner<E> {
     /// Chains input transforms, preserving image edits and stopping on handled input.
@@ -16,7 +17,9 @@ impl<E: ExtensionExecution> ExtensionRunner<E> {
         text: &str,
         images: &mut Presence<Vec<ImageContent>>,
         source: InputSource,
+        streaming_behavior: Option<UserMessageDelivery>,
     ) -> Result<InputEventResult, EventError> {
+        let delivery = streaming_behavior.map_or(Presence::Missing, Presence::Present);
         let context = self.create_context();
         let mut cursor = HandlerCursor::default();
         let mut current_text = text.to_owned();
@@ -26,7 +29,7 @@ impl<E: ExtensionExecution> ExtensionRunner<E> {
                 text: current_text.clone(),
                 images: std::mem::take(images),
                 source,
-                streaming_behavior: Presence::Missing,
+                streaming_behavior: delivery.clone(),
             };
             let result = invocation.call(self, &mut event, context.clone()).await;
             *images = event.images;
