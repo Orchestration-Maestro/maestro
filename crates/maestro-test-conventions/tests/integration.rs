@@ -19,6 +19,7 @@ mod rpc_ownership;
 mod support;
 mod temp_directories;
 mod test_directories;
+mod test_input_routes;
 mod time_limits;
 
 mod test_budget;
