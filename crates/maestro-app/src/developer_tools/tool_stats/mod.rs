@@ -70,7 +70,13 @@ pub fn main(
     stdout: &mut dyn Write,
     stderr: &mut dyn Write,
 ) -> io::Result<ExitCode> {
-    main_with_opener(args, now, &platform_opener, stdout, stderr)
+    main_with_opener(
+        args,
+        now,
+        &|path| crate::utils::platform_opener(path, std::env::consts::OS),
+        stdout,
+        stderr,
+    )
 }
 
 /// Write the report and hand its path to `opener`.
@@ -429,19 +435,4 @@ fn bucket_labels() -> Vec<String> {
             None => format!("{low}+"),
         })
         .collect()
-}
-
-/// Open the written report with the platform's own viewer.
-fn platform_opener(path: &str) {
-    let (program, arguments) = match std::env::consts::OS {
-        "macos" => ("open", vec![path.to_owned()]),
-        "windows" => (
-            "cmd",
-            vec!["/c".to_owned(), "start".to_owned(), path.to_owned()],
-        ),
-        _ => ("xdg-open", vec![path.to_owned()]),
-    };
-    let mut command = maestro_process::command(program);
-    command.args(arguments);
-    drop(crate::spawn(command, None));
 }
