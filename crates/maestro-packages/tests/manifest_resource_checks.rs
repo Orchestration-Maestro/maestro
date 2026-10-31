@@ -321,44 +321,46 @@ fn installed_remote_malformed_lists_are_ignored() {
     cases("installed_remote_malformed_lists_are_ignored");
 }
 
-/// A malformed resource list is ignored with a diagnostic while valid lists still load.
+/// A malformed resource list is ignored while valid lists still load, with and without
+/// a resource filter on the package.
 #[test]
-fn malformed_resource_lists_are_ignored_with_a_diagnostic() {
-    crate::runtime::run(async {
-        let scratch = scratch::Scratch::new().unwrap();
-        let root = scratch.path().to_string_lossy();
-        let package = format!("{root}/pkg");
-        write(&Path::new(&package).join("prompts/a.md"), "");
-        let manifest = Path::new(&package).join("package.json");
-        write(
-            &manifest,
-            r#"{"maestro":{"skills":5,"prompts":["prompts/a.md"]}}"#,
-        );
-        let (_, settings, _) = support::manager(&serde_json::json!({}));
-        let manager = DefaultPackageManager::new(
-            PackageManagerOptions {
-                cwd: maestro_path::join(&[&root, "project"]),
-                agent_dir: maestro_path::join(&[&root, "agent"]),
-                settings_manager: settings,
-            },
-            support::Controlled(Rc::new(support::Effects::default())),
-        );
-        let result = manager
-            .resolve_extension_sources(std::slice::from_ref(&package), None)
-            .await
-            .unwrap();
-        assert!(result.skills.is_empty());
-        let prompts: Vec<_> = result.prompts.iter().map(|p| p.path.as_str()).collect();
-        assert_eq!(prompts, [format!("{package}/prompts/a.md")]);
-        let [diagnostic] = result.diagnostics.as_slice() else {
-            panic!("expected one diagnostic, got {:?}", result.diagnostics);
-        };
-        assert_eq!(diagnostic.path.as_deref(), manifest.to_str());
-        assert_eq!(
-            diagnostic.message,
-            "package.json \"maestro.skills\" is not a list of strings and was ignored"
-        );
-    });
+fn malformed_resource_lists_are_ignored_while_valid_lists_load() {
+    for filtered in [false, true] {
+        crate::runtime::run(async move {
+            let scratch = scratch::Scratch::new().unwrap();
+            let root = scratch.path().to_string_lossy();
+            let package = format!("{root}/pkg");
+            write(&Path::new(&package).join("prompts/a.md"), "");
+            write(
+                &Path::new(&package).join("package.json"),
+                r#"{"maestro":{"skills":5,"prompts":["prompts/a.md"]}}"#,
+            );
+            let entry = if filtered {
+                serde_json::json!({"source": package, "skills": ["*"]})
+            } else {
+                serde_json::json!(package)
+            };
+            let (_, settings, _) = support::manager(&serde_json::json!({"packages": [entry]}));
+            let manager = DefaultPackageManager::new(
+                PackageManagerOptions {
+                    cwd: maestro_path::join(&[&root, "project"]),
+                    agent_dir: maestro_path::join(&[&root, "agent"]),
+                    settings_manager: settings,
+                },
+                support::Controlled(Rc::new(support::Effects::default())),
+            );
+
+            let result = manager.resolve(None).await.unwrap();
+
+            assert!(result.skills.is_empty(), "filtered: {filtered}");
+            let prompts: Vec<_> = result.prompts.iter().map(|p| p.path.as_str()).collect();
+            assert_eq!(
+                prompts,
+                [format!("{package}/prompts/a.md")],
+                "filtered: {filtered}"
+            );
+        });
+    }
 }
 
 /// Recorded manifest duplicates use the last selected member behavior.
