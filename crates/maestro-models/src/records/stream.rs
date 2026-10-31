@@ -1,7 +1,7 @@
 //! Immediate invocation and eager, independently observed completion.
 pub use crate::builtins::get_env_api_key;
 
-use super::api_registry::{ApiProvider, get_api_provider};
+use super::api_registry::{ApiProvider, get_api_provider, get_api_stream_simple};
 use super::diagnostics::DiagnosticErrorInfo;
 use super::types::{
     AssistantMessageEventStream, BoxFuture, Context, Model, ProviderExecution, ProviderInvocation,
@@ -119,4 +119,22 @@ pub fn complete_simple_for<E: ProviderExecution>(
     submit: ProviderSpawner<E>,
 ) -> BoxFuture<Result<SharedAssistantMessage, DiagnosticErrorInfo>> {
     completion(stream_simple_for::<E>(model, context, options, submit))
+}
+
+/// Invoke a chosen simple protocol while retaining the supplied model identity.
+///
+/// # Errors
+/// Returns missing registration or adapter setup failure immediately.
+pub fn stream_simple_via_for<E: ProviderExecution>(
+    api: &str,
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions<E>>,
+    submit: ProviderSpawner<E>,
+) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
+    get_api_stream_simple(api)
+        .ok_or_else(|| {
+            DiagnosticErrorInfo::error(format!("No API provider registered for api: {api}"))
+        })?
+        .call(model, context, E::submission(options, E::provided(submit)))
 }
