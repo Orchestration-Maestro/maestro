@@ -17,3 +17,23 @@ fn only_the_expanded_forms_read_the_home_directory() {
         io::ErrorKind::NotFound
     );
 }
+
+/// Only forward-slash home forms expand, keeping the suffix exactly as authored.
+#[test]
+fn directory_paths_expand_only_forward_slash_home_forms() {
+    for (written, expected) in [
+        ("~/a//b", r"C:\h/a//b"),
+        ("~/x", r"C:\h/x"),
+        ("~/", r"C:\h/"),
+        ("~", r"C:\h"),
+    ] {
+        assert_eq!(
+            expand_written_path_with(written, || Ok(r"C:\h".to_owned())).unwrap(),
+            expected
+        );
+    }
+    for written in [r"~\x", r"~\"] {
+        let unread = || Err(io::Error::other("home was read"));
+        assert_eq!(expand_written_path_with(written, unread).unwrap(), written);
+    }
+}

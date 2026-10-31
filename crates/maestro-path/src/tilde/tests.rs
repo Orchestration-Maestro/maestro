@@ -68,26 +68,30 @@ fn posix_concatenation_appends_the_rest_as_written() {
     }
 }
 
-/// On Windows `~\x` expands, either separator joins natively and empty components drop.
+/// Windows tool and configuration paths keep forward-slash suffixes verbatim.
 #[test]
-fn windows_concatenation_joins_natively() {
+fn windows_concatenation_appends_the_rest_as_written() {
     let rows = [
         ("~", r"C:\h", r"C:\h"),
-        (r"~\", r"C:\h", r"C:\h"),
-        ("~/", r"C:\h", r"C:\h"),
-        (r"~\x", r"C:\h", r"C:\h\x"),
-        ("~/x", r"C:\h", r"C:\h\x"),
-        (r"~/a\b/c", r"C:\h", r"C:\h\a\b\c"),
-        (r"~\\x//y", r"C:\h", r"C:\h\x\y"),
-        ("~/x", r"C:\h\\", r"C:\h\\x"),
-        ("~/x", "C:/h/", "C:/h/x"),
-        (r"~\..\x", r"C:\h", r"C:\h\..\x"),
-        ("~/x", "", r"\x"),
+        (r"~\", r"C:\h", r"~\"),
+        ("~/", r"C:\h", r"C:\h/"),
+        (r"~\x", r"C:\h", r"~\x"),
+        ("~/x", r"C:\h", r"C:\h/x"),
+        ("~/a//b", r"C:\h", r"C:\h/a//b"),
+        (r"~/a\b/c", r"C:\h", r"C:\h/a\b/c"),
+        ("~/x", r"C:\h\", r"C:\h\/x"),
+        ("~/x", "C:/h/", "C:/h//x"),
+        ("~/x", "", "/x"),
         (r"~x", r"C:\h", r"~x"),
-        (r"~x\y", r"C:\h", r"~x\y"),
     ];
     for (written, home, expected) in rows {
         assert_eq!(expand(written, true, home), expected, "win32 {written:?}");
+    }
+    for written in [r"~\x", r"~\"] {
+        assert_eq!(
+            expand_tilde_with_flavor(written, true, unread).unwrap(),
+            written
+        );
     }
 }
 

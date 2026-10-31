@@ -21,7 +21,7 @@ fn host_parse_reads_the_three_forms() {
 #[test]
 fn concatenation_appends_the_rest_below_the_home() {
     let (home, below) = if cfg!(windows) {
-        (r"C:\h", r"C:\h\x")
+        (r"C:\h", r"C:\h/x")
     } else {
         ("/h", "/h/x")
     };
