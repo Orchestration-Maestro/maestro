@@ -109,17 +109,19 @@ fn initialize(path: &Path) -> io::Result<()> {
 ///
 /// The text is written to a sibling that is renamed over the file, so a failure at any step leaves
 /// the previous file whole. A symbolic link at `path` is followed and a missing parent directory is
-/// created. An existing file is narrowed to mode 0600 first, so the new text is never published
-/// under looser bits. A failed parent-directory sync after the rename is not reported: the text is
-/// already published.
+/// created. An existing file must be writable by its owner: it is narrowed to mode 0600 through the
+/// handle that proved this, so the new text is never published under looser bits, and a read-only
+/// file is refused without a change. A failed parent-directory sync after the rename is not
+/// reported: the text is already published.
 ///
 /// # Errors
 /// Returns the native error of the narrowing or of the publication.
 pub fn write_auth_file(path: &str, text: &str) -> io::Result<()> {
     #[cfg(unix)]
-    match fs::set_permissions(path, std::os::unix::fs::PermissionsExt::from_mode(0o600)) {
+    match fs::OpenOptions::new().write(true).open(path) {
+        Ok(file) => file.set_permissions(std::os::unix::fs::PermissionsExt::from_mode(0o600))?,
         Err(error) if error.kind() != ErrorKind::NotFound => return Err(error),
-        _ => {}
+        Err(_) => {}
     }
     maestro_lock::replace(
         Path::new(path),

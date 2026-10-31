@@ -18,6 +18,9 @@ syncs that file, closes it, renames it over the target,
 then opens and syncs the parent directory. Precommit failures return the native
 error and remove only a temporary file created by this call.
 
+An existing target is first opened for writing without truncation, so a file its owner made
+read-only is refused with the native error and left unchanged, as a write in place would be.
+
 Replacement preserves the effective existing file's native permissions. On Unix,
 the temporary file is created with those permission bits filtered by the umask;
 the exact bits are restored after writing and before sync and publication.
