@@ -265,7 +265,7 @@
       }
     },
     "expected": {
-      "value": "Run: npm --prefix C:\\prefix install -g @old/agent"
+      "value": "Run: npm --prefix C:\\prefix install -g --ignore-scripts @old/agent"
     },
     "trace": []
   }
