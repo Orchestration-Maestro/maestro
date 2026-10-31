@@ -293,7 +293,9 @@ A detected image becomes `Read image file [<mime>]`, then the delegated dimensio
 note, then a note when the active model (read from `ReadContext::model` after
 detection) lacks image input, and an image block. Fitting uses the image helpers
 above; `auto_resize_images: false` sends the original bytes, and an image that
-cannot be fitted yields only the text with the omission line. Native detection
+cannot be fitted yields only the text with the omission line. Base64 encoding, decoding,
+resizing and re-encoding run on the runtime's blocking pool, so a large image never
+stalls the terminal loop or other tasks. Native detection
 uses the [MIME sniff](#inline-image-preparation) and ignores extensions.
 
 ## Read rendering
