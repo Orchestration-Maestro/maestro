@@ -105,8 +105,6 @@ fn truncate_for_summary(text: &str) -> String {
 pub(crate) enum SummaryBlock<'a> {
     /// Visible text.
     Text(&'a str),
-    /// Reasoning text.
-    Thinking(&'a str),
     /// Named tool and its complete argument value.
     Tool(&'a str, &'a Value),
 }
@@ -145,18 +143,16 @@ fn argument_entries(arguments: &Value) -> Vec<(String, Cow<'_, Value>)> {
         Value::Null | Value::Bool(_) | Value::Number(_) => Vec::new(),
     }
 }
-/// Append assistant categories in thinking, text and tool order.
+/// Append assistant categories in text and tool order; thinking is never written.
 fn assistant_parts(
     blocks: &[SummaryBlock<'_>],
     parts: &mut Vec<String>,
 ) -> Result<(), serde_json::Error> {
-    let mut thinking = Vec::new();
     let mut text = Vec::new();
     let mut tools = Vec::new();
     for block in blocks {
         match block {
             SummaryBlock::Text(block) => text.push(*block),
-            SummaryBlock::Thinking(block) => thinking.push(*block),
             SummaryBlock::Tool(name, arguments) => {
                 let args = argument_entries(arguments)
                     .into_iter()
@@ -169,7 +165,6 @@ fn assistant_parts(
         }
     }
     for (label, blocks, separator) in [
-        ("Assistant thinking", thinking, "\n"),
         ("Assistant", text, "\n"),
         (
             "Assistant tool calls",
@@ -218,14 +213,12 @@ pub fn serialize_conversation(messages: &[Message]) -> Result<String, serde_json
                 message
                     .content
                     .iter()
-                    .map(|block| match block {
-                        AssistantContent::Text(block) => SummaryBlock::Text(&block.text),
-                        AssistantContent::Thinking(block) => {
-                            SummaryBlock::Thinking(&block.thinking)
-                        }
+                    .filter_map(|block| match block {
+                        AssistantContent::Text(block) => Some(SummaryBlock::Text(&block.text)),
                         AssistantContent::ToolCall(block) => {
-                            SummaryBlock::Tool(&block.name, &block.arguments)
+                            Some(SummaryBlock::Tool(&block.name, &block.arguments))
                         }
+                        AssistantContent::Thinking(_) => None,
                     })
                     .collect(),
             ),

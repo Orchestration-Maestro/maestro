@@ -81,9 +81,11 @@ order and duplicates in read-files/modified-files sections.
 
 `serialize_conversation` accepts typed model messages, not raw application messages.
 Project application messages through the [message conversion interface](sessions/messages.md)
-first. It emits user, assistant-thinking, assistant, assistant-tool-call and tool-result
-labels, with blank-line paragraph separators. Tool arguments use canonical JSON key
-and number spelling; assistant categories appear in thinking/text/tool order.
+first. It emits user, assistant, assistant-tool-call and tool-result labels, with
+blank-line paragraph separators. Assistant thinking is left out: providers return
+summaries of the reasoning, and replaying it can make the summary request larger than the
+context it summarizes. Tool arguments use canonical JSON key and number spelling;
+assistant categories appear in text/tool order.
 Only tool-result text is clipped at 2000 Unicode scalar values with an omitted-character
 notice. User and assistant text remain complete; stored content is not rewritten.
 
