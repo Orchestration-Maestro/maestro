@@ -86,7 +86,10 @@ pub(super) struct AgentSessionState<E: ExtensionExecution> {
 impl<E: ExtensionExecution> AgentSessionState<E> {
     /// The system prompt the agent uses now: the run's override, else the base prompt.
     pub(super) fn effective_system_prompt(&self) -> String {
-        (self.system_prompt_override.clone()).unwrap_or_else(|| self.base_system_prompt.clone())
+        self.system_prompt_override
+            .as_ref()
+            .unwrap_or(&self.base_system_prompt)
+            .clone()
     }
 
     /// Empty registries over the supplied scoped models and SDK tools, with an empty base
