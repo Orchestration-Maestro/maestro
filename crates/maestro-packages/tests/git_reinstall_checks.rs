@@ -14,19 +14,6 @@ fn publish_branch(fixture: &RetryFixture, name: &str, text: &str) {
     git(seed, &["checkout", "main"]);
 }
 
-/// Publishes `text` as a new commit under tag `name` on the fixture's remote, moving an earlier tag.
-fn publish_tag(fixture: &RetryFixture, name: &str, text: &str) {
-    let seed = &fixture.repo.seed;
-    std::fs::write(seed.join("content"), text).unwrap();
-    git(seed, &["add", "content"]);
-    git(seed, &["commit", "-m", text]);
-    git(seed, &["tag", "--force", name]);
-    git(
-        seed,
-        &["push", "--force", "origin", &format!("refs/tags/{name}")],
-    );
-}
-
 /// Installs `source` again over the fixture's checkout.
 fn reinstall(fixture: &RetryFixture, source: &str) {
     fixture.run(fixture.manager.install(source, None)).unwrap();
@@ -85,10 +72,13 @@ fn reinstall_with_a_moved_tag_checks_out_the_new_commit() {
         return;
     }
     let fixture = RetryFixture::new("ordinary");
-    publish_tag(&fixture, "v2", "two");
+    let remote = &fixture.repo.remote;
+    publish_branch(&fixture, "source", "two");
+    git(remote, &["tag", "--force", "v2", "source"]);
     git(&fixture.repo.target, &["fetch", "origin", "--tags"]);
     git(&fixture.repo.target, &["checkout", "v2"]);
-    publish_tag(&fixture, "v2", "three");
+    publish_branch(&fixture, "source", "three");
+    git(remote, &["tag", "--force", "v2", "source"]);
     reinstall(&fixture, "git:github.com/acme/tool@v2");
     let (head, remote) = heads(&fixture, "v2");
     assert_eq!(head, remote);
