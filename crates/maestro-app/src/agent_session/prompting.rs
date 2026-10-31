@@ -82,8 +82,9 @@ impl<E: ExtensionExecution> AgentSession<E> {
         input: PromptInput<CustomAgentMessages>,
     ) -> Result<(), DiagnosticErrorInfo> {
         if !self.begin_run() {
-            // The agent refuses a second start while the first run is active.
-            return self.agent.prompt(input).await.map(drop);
+            return Err(DiagnosticErrorInfo::error(
+                "Agent is already processing a prompt. Use steer() or followUp() to queue messages, or wait for completion.",
+            ));
         }
         let outcome = self.drive_run(input).await;
         outcome.and(self.settle_run())
