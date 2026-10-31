@@ -651,11 +651,12 @@ fn explicit_skill_paths_follow_the_reference_table() {
     } else {
         &[
             ("~", "/h", "/h"),
-            ("~/", "/h", "/h/"),
+            ("~/", "/h", "/h"),
             ("~/x", "/h", "/h/x"),
             ("~x", "/h", "/w/~x"),
             ("~", "/h/.", "/h/."),
             ("~", "", "/w"),
+            ("~/x", "", "/w/x"),
             ("~", "home", "/w/home"),
         ]
     };

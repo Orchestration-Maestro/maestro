@@ -1014,10 +1014,10 @@
     },
     "expected": {
       "before": {
-        "getSessionDir": "$ROOT/home//nested/../sessions/"
+        "getSessionDir": "$ROOT/home/sessions/"
       },
       "observed": {
-        "getSessionDir": "$ROOT/home//nested/../sessions/"
+        "getSessionDir": "$ROOT/home/sessions/"
       },
       "global": {
         "sessionDir": "~//nested/../sessions/"

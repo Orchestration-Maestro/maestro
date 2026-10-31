@@ -690,10 +690,6 @@
         "file",
         "work/~ h5.ts",
         "command:h5"
-      ],
-      [
-        "dir",
-        "home/sub"
       ]
     ],
     "calls": [
@@ -757,13 +753,13 @@
             },
             {
               "path": "~//h3.ts",
-              "resolvedPath": "$ROOT/home//h3.ts",
+              "resolvedPath": "$ROOT/home/h3.ts",
               "sourceInfo": {
                 "path": "~//h3.ts",
                 "source": "local",
                 "scope": "temporary",
                 "origin": "top-level",
-                "baseDir": "$ROOT/home/"
+                "baseDir": "$ROOT/home"
               },
               "commands": [
                 "h3"
@@ -776,13 +772,13 @@
             },
             {
               "path": "~/sub/../h4.ts",
-              "resolvedPath": "$ROOT/home/sub/../h4.ts",
+              "resolvedPath": "$ROOT/home/h4.ts",
               "sourceInfo": {
                 "path": "~/sub/../h4.ts",
                 "source": "local",
                 "scope": "temporary",
                 "origin": "top-level",
-                "baseDir": "$ROOT/home/sub/.."
+                "baseDir": "$ROOT/home"
               },
               "commands": [
                 "h4"

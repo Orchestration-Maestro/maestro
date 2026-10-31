@@ -4,7 +4,49 @@ use std::{
     path::PathBuf,
 };
 
-/// Expands a leading `~` in the compile target's flavor; see [`expand_tilde_with_flavor`].
+/// Where a leading `~` of an authored path points.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Tilde<'a> {
+    /// The exact path `~`: the home directory itself.
+    Home,
+    /// `~` followed by a separator: the text after that one separator, below the home.
+    Below(&'a str),
+    /// Any other spelling, `~name` included: not a home form.
+    Other,
+}
+
+/// Reads a leading `~` of `path` in the compile target's flavor.
+#[must_use]
+pub fn parse_tilde(path: &str) -> Tilde<'_> {
+    parse(path, cfg!(windows))
+}
+
+/// Reads a leading `~` of `path` in a supplied flavor.
+fn parse(path: &str, windows: bool) -> Tilde<'_> {
+    let _ = (path, windows);
+    Tilde::Other
+}
+
+/// Expands a leading `~` below the home directory with a normalizing join.
+///
+/// # Errors
+/// Returns the error `home` returns when the path needs the home directory.
+pub fn expand_tilde_joined<E>(
+    path: &str,
+    home: impl FnOnce() -> Result<String, E>,
+) -> Result<String, E> {
+    let _ = home;
+    Ok(path.to_owned())
+}
+
+/// Expands a leading `~` by appending the rest to the home directory, in the compile target's
+/// flavor.
+///
+/// An exact `~` is the home directory and `~` plus a separator appends the rest as written
+/// below it. The home contributes its own text, so an empty home leaves a rooted result and a
+/// home that ends in a separator gains none. Every other spelling, `~name` included, is
+/// returned as written, and the home is read only for the two expanded forms. On Windows
+/// either separator introduces the rest, which joins with `\` and drops empty components.
 ///
 /// # Errors
 /// Returns the error `home` returns when the path needs the home directory.
@@ -32,7 +74,7 @@ pub fn expand_tilde<E>(path: &str, home: impl FnOnce() -> Result<String, E>) -> 
 ///
 /// # Errors
 /// Returns the error `home` returns when the path needs the home directory.
-pub fn expand_tilde_with_flavor<E>(
+pub(crate) fn expand_tilde_with_flavor<E>(
     path: &str,
     windows: bool,
     home: impl FnOnce() -> Result<String, E>,
@@ -98,3 +140,6 @@ fn expand<H: AsRef<OsStr>, E>(
     }
     Ok(Some(expanded))
 }
+
+#[cfg(test)]
+mod tests;

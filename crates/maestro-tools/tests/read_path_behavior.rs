@@ -316,8 +316,8 @@ fn empty_home_is_used_verbatim() {
         &[("HOME", Some(""))],
     ) {
         assert_eq!(expand_path("plain").unwrap(), "plain");
-        assert_eq!(expand_path("~/x").unwrap(), "x");
-        assert_eq!(expand_path("~/").unwrap(), "");
+        assert_eq!(expand_path("~/x").unwrap(), "/x");
+        assert_eq!(expand_path("~/").unwrap(), "/");
         assert_eq!(expand_path("~").unwrap(), "");
     }
 }
