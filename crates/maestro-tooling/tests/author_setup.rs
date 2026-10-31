@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode, Output};
 
 use maestro_test_directory::Scratch;
+use maestro_test_process::{TestProcess, selection};
 
 /// Reusable outputs survive a move to another directory and never start a shard build.
 #[test]
@@ -455,6 +456,345 @@ fn author_setup_without_prepared_outputs_builds_locally() {
     }
 }
 
+/// The digest of the inputs every component shares, as the prepared bundle records it.
+fn shared_digest(root: &Path) -> String {
+    let manifest: serde_json::Value =
+        serde_json::from_slice(&fs::read(root.join("target/test-setup/components.json")).unwrap())
+            .unwrap();
+    manifest["shared"]["digest"].as_str().unwrap().to_owned()
+}
+
+/// Edits to the tooling or to a crate no component builds on keep the digest the components
+/// share, and so does an edit to the lock entry of a workspace crate; an edit to a WIT file
+/// changes it.
+#[test]
+fn component_digest_follows_only_what_the_components_build_on() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture(root);
+    prepare(root);
+    let before = shared_digest(root);
+
+    fs::write(
+        root.join("crates/maestro-tooling/src/lib.rs"),
+        "edited tooling",
+    )
+    .unwrap();
+    fs::write(
+        root.join("crates/unrelated/src/lib.rs"),
+        "edited application",
+    )
+    .unwrap();
+    let lock = fs::read_to_string(root.join("Cargo.lock")).unwrap();
+    fs::write(
+        root.join("Cargo.lock"),
+        lock.replace(
+            "name = \"unrelated\"\nversion = \"0.0.0\"",
+            "name = \"unrelated\"\nversion = \"0.0.1\"",
+        ),
+    )
+    .unwrap();
+    prepare(root);
+    assert_eq!(shared_digest(root), before);
+
+    fs::create_dir_all(root.join("crates/maestro-extensions-wasm/wit")).unwrap();
+    fs::write(
+        root.join("crates/maestro-extensions-wasm/wit/world.wit"),
+        "package maestro:fixture;",
+    )
+    .unwrap();
+    prepare(root);
+    assert_ne!(shared_digest(root), before);
+}
+
+/// The component bundle and the browser graph are each valid while only their own inputs are
+/// unchanged: a shard checks the artifact it installs, not the whole bundle.
+#[test]
+fn each_setup_checks_only_the_artifact_it_installs() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture(root);
+    prepare(root);
+    let bundle = root.join("target/test-setup");
+
+    fs::write(root.join("crates/maestro-web/src/lib.rs"), "edited web").unwrap();
+    assert_success(&export(root, &bundle, true));
+
+    fs::write(
+        root.join("crates/maestro-web/src/lib.rs"),
+        "original source",
+    )
+    .unwrap();
+    fs::write(
+        root.join("crates/maestro-extensions-wasm/src/lib.rs"),
+        "edited",
+    )
+    .unwrap();
+    fs::remove_dir_all(root.join("target/browser-author")).unwrap();
+    assert_success(&browser_command(root, true).output().unwrap());
+}
+
+/// The fixture setup example for a base bundle: it exports four components, takes each one
+/// it is given from its environment and builds the others. Building records the variable, writes
+/// the component and writes the dependency file Cargo leaves beside it, naming the example
+/// sources it read: the two marked components share a helper module and one library file.
+const FOUR_COMPONENTS_EXAMPLE: &str = r#"#!/bin/sh
+examples="$PWD/crates/maestro-extensions-wasm/../../examples/extensions"
+library="$PWD/crates/maestro-extensions-wasm/src/lib.rs"
+for variable in MAESTRO_AUTHOR_COMPONENT MAESTRO_CONTEXT_COMPONENT MAESTRO_ALPHA_COMPONENT MAESTRO_BETA_COMPONENT; do
+    eval "value=\${$variable-}"
+    if [ -z "$value" ]; then
+        echo "$variable" >> "$PWD/built"
+        value="$PWD/$variable.wasm"
+        cp "$PWD/component.wasm" "$value"
+        case "$variable" in
+            MAESTRO_ALPHA_COMPONENT) sources="$library $examples/alpha.rs $examples/support/tail.rs" ;;
+            MAESTRO_BETA_COMPONENT) sources="$library $examples/beta.rs $examples/support/tail.rs" ;;
+            *) sources="$library" ;;
+        esac
+        { echo "$value: $sources"; echo; for source in $sources; do echo "$source:"; done; } > "$PWD/$variable.d"
+    fi
+    echo "$variable=$value" >> "$NEXTEST_ENV"
+done
+"#;
+
+/// A checkout with two source-marked components beside the fixed author and context ones.
+fn marked_fixture(root: &Path) {
+    fixture_with(root, FOUR_COMPONENTS_EXAMPLE);
+    for (name, variable) in [("alpha", "ALPHA"), ("beta", "BETA")] {
+        fs::create_dir_all(root.join("examples/extensions")).unwrap();
+        fs::write(
+            root.join(format!("examples/extensions/{name}.rs")),
+            format!("// maestro-component: MAESTRO_{variable}_COMPONENT\n"),
+        )
+        .unwrap();
+    }
+    fs::create_dir_all(root.join("examples/extensions/support")).unwrap();
+    fs::write(
+        root.join("examples/extensions/support/tail.rs"),
+        "fn tail() {}\n",
+    )
+    .unwrap();
+    fs::create_dir_all(root.join("crates/maestro-extensions-wasm/examples")).unwrap();
+}
+
+/// Prepare into `target/next-setup` in a child process of the test `test`, whose environment
+/// names `base` as the base bundle.
+fn prepare_as_child(test: &str, root: &Path, base: &Path) -> Output {
+    TestProcess::current(test)
+        .unwrap()
+        .case("base")
+        .nocapture()
+        .env("MAESTRO_FIXTURE_ROOT", root)
+        .env("TEST_PREPARE_BASE", base)
+        .output()
+        .unwrap()
+}
+
+/// The child half of the base tests: prepare the fixture checkout named by the environment into
+/// the output directory it names, `target/next-setup` unless it names none.
+fn child_prepare() {
+    let root = PathBuf::from(std::env::var_os("MAESTRO_FIXTURE_ROOT").unwrap());
+    let output = std::env::var_os("MAESTRO_FIXTURE_OUTPUT").unwrap_or("target/next-setup".into());
+    let arguments = ["prepare-test-setup".into(), "prepare".into(), output];
+    let target = root.join("target/next-prepare").into();
+    maestro_tooling::run(
+        &[&arguments[..], &[target]].concat(),
+        &root.join("cargo"),
+        &root,
+    )
+    .unwrap();
+}
+
+/// Prepare with `base` in a child process of the test `test` and return the variables the setup
+/// example had to build.
+fn prepare_with_base(test: &str, root: &Path, base: &Path) -> Vec<String> {
+    let _ = fs::remove_file(root.join("built"));
+    assert_success(&prepare_as_child(test, root, base));
+    fs::read_to_string(root.join("built"))
+        .map(|built| built.lines().map(str::to_owned).collect())
+        .unwrap_or_default()
+}
+
+/// A base prepared from the same inputs supplies every component; one edited example builds
+/// only itself; a base from another toolchain supplies nothing; no base builds everything.
+#[test]
+fn prepare_builds_only_the_components_a_base_cannot_supply() {
+    if selection().is_child() {
+        return child_prepare();
+    }
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    marked_fixture(root);
+    prepare(root);
+    let base = root.join("target/test-setup");
+    assert_eq!(
+        fs::read_to_string(root.join("built"))
+            .unwrap()
+            .lines()
+            .count(),
+        4
+    );
+
+    assert_eq!(
+        prepare_with_base(
+            "prepare_builds_only_the_components_a_base_cannot_supply",
+            root,
+            &base
+        ),
+        Vec::<String>::new()
+    );
+    let reused = fs::read(root.join("target/next-setup/MAESTRO_ALPHA_COMPONENT.wasm")).unwrap();
+    assert_eq!(reused, b"component bytes");
+
+    fs::write(
+        root.join("examples/extensions/alpha.rs"),
+        "// maestro-component: MAESTRO_ALPHA_COMPONENT\n// edited\n",
+    )
+    .unwrap();
+    assert_eq!(
+        prepare_with_base(
+            "prepare_builds_only_the_components_a_base_cannot_supply",
+            root,
+            &base
+        ),
+        ["MAESTRO_ALPHA_COMPONENT"]
+    );
+
+    fs::write(
+        root.join("rust-toolchain.toml"),
+        "[toolchain]\nchannel = \"other\"\n",
+    )
+    .unwrap();
+    assert_eq!(
+        prepare_with_base(
+            "prepare_builds_only_the_components_a_base_cannot_supply",
+            root,
+            &base
+        )
+        .len(),
+        4
+    );
+}
+
+/// The code a base compiled seeds the new bundle, so the setup example, which finds its
+/// components supplied, compiles nothing again.
+#[test]
+fn prepare_seeds_compiled_code_from_a_base() {
+    if selection().is_child() {
+        return child_prepare();
+    }
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture(root);
+    prepare(root);
+    let base = root.join("target/test-setup");
+    assert_success(&prepare_as_child(
+        "prepare_seeds_compiled_code_from_a_base",
+        root,
+        &base,
+    ));
+    let seen = fs::read_to_string(root.join("seen")).unwrap();
+    assert_eq!(
+        seen.lines().last().unwrap(),
+        base.join("MAESTRO_AUTHOR_COMPONENT.wasm").to_str().unwrap()
+    );
+    let key = fs::read_to_string(root.join("target/next-setup/cache/key")).unwrap();
+    assert_eq!(key, "compiled");
+}
+
+/// Compiled code of another engine than the one that runs now is left out of the new bundle,
+/// which keeps only the namespace its own example wrote.
+#[test]
+fn prepare_drops_compiled_code_of_another_engine() {
+    if selection().is_child() {
+        return child_prepare();
+    }
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture(root);
+    prepare(root);
+    let base = root.join("target/test-setup");
+    fixture_with(root, &EXAMPLE.replace("wasmtime-fixture", "wasmtime-newer"));
+    assert_success(&prepare_as_child(
+        "prepare_drops_compiled_code_of_another_engine",
+        root,
+        &base,
+    ));
+    let manifest: serde_json::Value =
+        serde_json::from_slice(&fs::read(root.join("target/next-setup/components.json")).unwrap())
+            .unwrap();
+    assert_eq!(manifest["compiled"]["namespace"], "wasmtime-newer");
+}
+
+/// An edit to a module that several components read rebuilds each of them, and only them; the
+/// inputs a component records are the example files it read, not the library files that every
+/// component shares.
+#[test]
+fn prepare_rebuilds_the_components_that_read_an_edited_shared_module() {
+    if selection().is_child() {
+        return child_prepare();
+    }
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    marked_fixture(root);
+    prepare(root);
+    let base = root.join("target/test-setup");
+    let manifest: serde_json::Value =
+        serde_json::from_slice(&fs::read(base.join("components.json")).unwrap()).unwrap();
+    assert_eq!(
+        manifest["components"]["MAESTRO_ALPHA_COMPONENT"]["inputs"]["paths"],
+        serde_json::json!([
+            "examples/extensions/alpha.rs",
+            "examples/extensions/support/tail.rs"
+        ])
+    );
+
+    fs::write(
+        root.join("examples/extensions/support/tail.rs"),
+        "fn tail() { edited() }\n",
+    )
+    .unwrap();
+
+    assert_eq!(
+        prepare_with_base(
+            "prepare_rebuilds_the_components_that_read_an_edited_shared_module",
+            root,
+            &base
+        ),
+        ["MAESTRO_ALPHA_COMPONENT", "MAESTRO_BETA_COMPONENT"]
+    );
+}
+
+/// A base that is the directory being prepared still supplies its components: nothing is built
+/// and the staged components keep their bytes.
+#[test]
+fn prepare_reuses_a_base_in_its_own_output_directory() {
+    if selection().is_child() {
+        return child_prepare();
+    }
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    marked_fixture(root);
+    prepare(root);
+    let bundle = root.join("target/test-setup");
+    let _ = fs::remove_file(root.join("built"));
+    assert_success(
+        &TestProcess::current("prepare_reuses_a_base_in_its_own_output_directory")
+            .unwrap()
+            .case("base")
+            .nocapture()
+            .env("MAESTRO_FIXTURE_ROOT", root)
+            .env("MAESTRO_FIXTURE_OUTPUT", "target/test-setup")
+            .env("TEST_PREPARE_BASE", &bundle)
+            .output()
+            .unwrap(),
+    );
+    assert!(!root.join("built").exists());
+    let staged = fs::read(bundle.join("MAESTRO_ALPHA_COMPONENT.wasm")).unwrap();
+    assert_eq!(staged, b"component bytes");
+}
+
 /// The fixture setup example: it records the author component it was given and writes
 /// nextest's environment file from the components it was given, or from the checkout. It
 /// also exports `MAESTRO_COMPONENT`, a name source discovery accepts.
@@ -533,6 +873,14 @@ fn fixture_with(root: &Path, example: &str) {
     use std::os::unix::fs::PermissionsExt;
     workspace(root);
     fs::write(root.join("component.wasm"), "component bytes").unwrap();
+    fs::write(
+        root.join("component.d"),
+        format!(
+            "{0}/component.wasm: {0}/crates/maestro-extensions-wasm/src/lib.rs\n",
+            root.display()
+        ),
+    )
+    .unwrap();
     fs::write(root.join("justfile"), BROWSER_RECIPES).unwrap();
     executable(&root.join("target/debug/deps/older"), 100);
     executable(&root.join("target/debug/deps/newer"), 200);

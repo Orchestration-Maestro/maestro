@@ -3,7 +3,7 @@
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
-use cargo_metadata::{Metadata, Package};
+use cargo_metadata::{Dependency, Metadata, Package};
 use maestro_path::normalize_native;
 
 /// Workspace members in metadata package order.
@@ -37,12 +37,22 @@ pub(crate) fn dependency_edges(
     members: &[&Package],
     roots: &HashMap<PathBuf, usize>,
 ) -> Vec<Vec<usize>> {
+    dependency_edges_where(members, roots, |_| true)
+}
+
+/// Like `dependency_edges`, keeping only the dependencies `keep` accepts.
+pub(crate) fn dependency_edges_where(
+    members: &[&Package],
+    roots: &HashMap<PathBuf, usize>,
+    keep: impl Fn(&Dependency) -> bool,
+) -> Vec<Vec<usize>> {
     members
         .iter()
         .map(|package| {
             package
                 .dependencies
                 .iter()
+                .filter(|dependency| keep(dependency))
                 .filter_map(|dependency| dependency.path.as_deref())
                 .filter_map(|path| roots.get(&normalize_native(path.as_std_path())).copied())
                 .collect()
