@@ -42,6 +42,15 @@ pub(crate) fn aborted() -> DiagnosticErrorInfo {
     failure("Operation aborted")
 }
 
+/// Reject a cancelled call between operations without interrupting an in-flight operation.
+pub(crate) fn check_aborted(signal: Option<&Cancellation>) -> Result<(), DiagnosticErrorInfo> {
+    if signal.is_some_and(Cancellation::is_aborted) {
+        Err(aborted())
+    } else {
+        Ok(())
+    }
+}
+
 /// Start one operation unless cancelled, and settle as cancelled if the signal fires first.
 ///
 /// Cancellation wins over any result or failure observed after it.

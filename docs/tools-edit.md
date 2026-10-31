@@ -60,13 +60,13 @@ resolved path before `write_file`.
 ### Cancellation
 
 A call that is already cancelled when it reaches the front of its file's queue
-settles as `Operation aborted` without calling any operation. Directory creation and
-the write are each cancellable: when the signal fires first, or fires while an
-operation runs, the call settles as `Operation aborted`, drops the operation's
-pending future, never starts the next stage and lets the next queued call for the
-file proceed. Cancellation does not undo an effect that already happened. A native
-filesystem write that has already been handed to the runtime can still finish, and the
-file's queue stays held until it does, so the next call never overlaps it.
+settles as `Operation aborted` without calling any operation. During directory
+creation or writing, the call waits for the in-flight operation to settle, including
+supplied operations. A failed operation reports its own error; a successful one is
+followed by a signal check that reports `Operation aborted`. No later stage starts,
+and the file's queue stays held until the operation has settled. Cancellation does
+not undo an effect that already happened. Edits follow the same policy for access,
+read and write.
 A call that waits behind another call for the same file observes its signal only
 after that call has finished.
 
