@@ -278,9 +278,10 @@ against no directory, so nothing in its spelling comes from one. A directory the
 file system holds under the written spelling keeps it for absolute paths too.
 
 The signal is checked before each of the three operations and watched while one is
-pending. An abort seen there settles the read with `Operation aborted`, and a
-later operation does not start. A started operating-system call is not
-interrupted.
+pending, including image processing. An abort settles the read with `Operation
+aborted` immediately, and a later operation does not start. A started
+operating-system call or blocking-pool resize is not interrupted; it finishes in
+the background.
 
 Text is decoded lossily as UTF-8, split on LF with trailing empty entries kept,
 and selected with `offset` (one-based) and `limit`, both finite numbers handled
@@ -299,7 +300,8 @@ detection) lacks image input, and an image block. Fitting uses the image helpers
 above; `auto_resize_images: false` sends the original bytes, and an image that
 cannot be fitted yields only the text with the omission line. Base64 encoding, decoding,
 resizing and re-encoding run on the runtime's blocking pool, so a large image never
-stalls the terminal loop or other tasks. Native detection
+stalls the terminal loop or other tasks. An abort does not wait for that blocking
+work to finish. Native detection
 uses the [MIME sniff](#inline-image-preparation) and ignores extensions.
 
 ## Read rendering
