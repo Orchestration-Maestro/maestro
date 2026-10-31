@@ -3,6 +3,7 @@
 mod help;
 mod parse;
 
+pub(crate) use help::describe_options;
 pub use help::print_help;
 pub use parse::{is_valid_thinking_level, parse_args};
 

@@ -7,6 +7,8 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+clap = { version = "=4.6.7", default-features = false, features = ["std", "help", "usage", "string"] }
+clap_complete = { version = "=4.6.5", default-features = false }
 maestro-app = { path = "../maestro-app" }
 maestro-tui = { path = "../maestro-tui" }
 maestro-tui-crossterm = { path = "../maestro-tui-crossterm" }
