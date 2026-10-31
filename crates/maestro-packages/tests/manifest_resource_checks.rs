@@ -410,3 +410,67 @@ fn manifest_exclusions_keep_explicit_dependency_resources() {
 fn manifest_overrides_apply_to_prompts_and_themes() {
     cases("manifest_overrides_apply_to_prompts_and_themes");
 }
+
+/// Unfiltered kinds in object registrations use conventions for malformed manifest lists.
+#[test]
+fn filtered_packages_fall_back_only_for_absent_or_malformed_lists() {
+    for value in [
+        serde_json::json!(5),
+        serde_json::json!("x"),
+        serde_json::json!(["a", 7]),
+        serde_json::json!([]),
+    ] {
+        crate::runtime::run(async move {
+            let scratch = scratch::Scratch::new().unwrap();
+            let root = scratch.path().to_str().unwrap();
+            let package = maestro_path::join(&[root, "pkg"]);
+            let files = [
+                "extensions/a.wasm",
+                "skills/a.md",
+                "prompts/a.md",
+                "themes/a.json",
+            ];
+            for file in files {
+                write(&Path::new(&package).join(file), "");
+            }
+            write(
+                &Path::new(&package).join("package.json"),
+                &serde_json::json!({"maestro": {
+                    "extensions":value, "skills":value, "prompts":value, "themes":value
+                }})
+                .to_string(),
+            );
+            let (_, settings, _) =
+                support::manager(&serde_json::json!({"packages":[{"source":package}]}));
+            let manager = DefaultPackageManager::new(
+                PackageManagerOptions {
+                    cwd: maestro_path::join(&[root, "project"]),
+                    agent_dir: maestro_path::join(&[root, "agent"]),
+                    settings_manager: settings,
+                },
+                support::Controlled(Rc::new(support::Effects::default())),
+            );
+
+            let result = manager.resolve(None).await.unwrap();
+
+            let actual: Vec<_> = [
+                &result.extensions,
+                &result.skills,
+                &result.prompts,
+                &result.themes,
+            ]
+            .into_iter()
+            .flatten()
+            .map(|r| r.path.clone())
+            .collect();
+            let expected: Vec<_> = if value == serde_json::json!([]) {
+                Vec::new()
+            } else {
+                files
+                    .map(|file| maestro_path::join(&[&package, file]))
+                    .into()
+            };
+            assert_eq!(actual, expected, "manifest list: {value}");
+        });
+    }
+}
