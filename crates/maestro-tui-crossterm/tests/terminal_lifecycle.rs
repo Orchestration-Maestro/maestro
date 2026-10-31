@@ -17,8 +17,8 @@ use crate::lifecycle_support::{
     window_change,
 };
 use crate::support::{
-    Capture, Feed, Inputs, Resizes, Rig, START_BYTES, elapse, pipe_input, pipe_output, pty_output,
-    until,
+    Capture, Feed, Inputs, Resizes, Rig, START_BYTES, STOP_BYTES, elapse, pipe_input, pipe_output,
+    pty_output, until,
 };
 use maestro_tui::Terminal;
 use maestro_tui_crossterm::ProcessTerminal;
@@ -129,7 +129,7 @@ fn native_start_stop_restores_modes_and_listeners() {
         let (cooked, flags) = (stdin_attributes(), stdin_flags());
         rig.run(async {
             let mut session = start(&rig);
-            output.written("\x1b[?2004h\x1b[?u").await;
+            output.written(START_BYTES).await;
             assert_raw(&attributes(stdin()));
             assert!(stdin_flags().contains(OFlags::NONBLOCK));
             let reader = open_descriptors();
@@ -141,7 +141,7 @@ fn native_start_stop_restores_modes_and_listeners() {
                 (100, 30)
             );
             session.terminal.stop().unwrap();
-            output.written("\x1b[?2004l").await;
+            output.written(STOP_BYTES).await;
             assert_eq!((stdin_attributes(), stdin_flags()), (cooked, flags));
             session.terminal.stop().unwrap();
             output.written("\x1b[?2004l").await;
@@ -412,7 +412,7 @@ async fn started(rig: &Rig, output: &Capture) -> (Feed, Session) {
 }
 
 #[test]
-fn native_enables_fallback_at_150ms() {
+fn native_chooses_no_keyboard_mode_until_the_terminal_replies() {
     isolated!(&[], || {
         let rig = Rig::paused();
         let output = pipe_output();
@@ -421,72 +421,84 @@ fn native_enables_fallback_at_150ms() {
             elapse(149).await;
             feed.send(b"x");
             consumed().await;
-            assert_eq!(output.take(), "");
             elapse(1).await;
-            output.written("\x1b[>4;2m").await;
             elapse(1000).await;
             assert_eq!(output.take(), "");
+            assert_eq!(session.inputs.all(), ["x"]);
             assert!(!session.terminal.kitty_protocol_active());
             session.terminal.stop().unwrap();
-            output.written("\x1b[?2004l\x1b[>4;0m").await;
+            output.written(STOP_BYTES).await;
         });
     });
 }
 
 #[test]
-fn native_enables_flags_and_consumes_first_response() {
+fn native_falls_back_when_device_attributes_answer_without_a_kitty_reply() {
     isolated!(&[], || {
         let rig = Rig::paused();
         let output = pipe_output();
         rig.run(async {
             let (feed, mut session) = started(&rig, &output).await;
-            feed.send(b"\x1b[?0u");
-            output.written("\x1b[>7u").await;
-            assert!(session.terminal.kitty_protocol_active());
-            assert!(maestro_tui::is_kitty_protocol_active());
-            elapse(151).await;
-            assert_eq!(output.take(), "");
-            feed.send(b"\x1b[?1u");
-            consumed().await;
-            assert_eq!(session.inputs.all(), ["\x1b[?1u"]);
+            feed.send(b"\x1b[?62;4;52c");
+            output.written("\x1b[>4;2m").await;
+            assert!(session.inputs.all().is_empty());
+            assert!(!session.terminal.kitty_protocol_active());
+            elapse(1000).await;
             assert_eq!(output.take(), "");
             session.terminal.stop().unwrap();
-            output.written("\x1b[?2004l\x1b[<u").await;
-            assert!(!session.terminal.kitty_protocol_active());
-            assert!(!maestro_tui::is_kitty_protocol_active());
+            output.written(&format!("{STOP_BYTES}\x1b[>4;0m")).await;
         });
     });
 }
 
-/// Starts a terminal whose fallback mode was enabled and whose support reply came late, so
-/// both keyboard modes are on, and returns it with its input and what it has written.
-async fn with_both_keyboard_modes(rig: &Rig, output: &Capture) -> (Feed, Session) {
-    let (feed, session) = started(rig, output).await;
-    elapse(150).await;
-    output.written("\x1b[>4;2m").await;
-    feed.send(b"\x1b[?25u");
-    output.written("\x1b[>7u").await;
-    assert!(session.terminal.kitty_protocol_active());
-    assert!(session.inputs.all().is_empty());
-    (feed, session)
-}
-
 #[test]
-fn native_accepts_late_support_without_disabling_fallback() {
+fn native_turns_the_fallback_off_when_a_kitty_reply_arrives_late() {
     isolated!(0, &[], || {
         let rig = Rig::paused();
         let output = pipe_output();
         rig.run(async {
-            let (_feed, mut session) = with_both_keyboard_modes(&rig, &output).await;
+            let (feed, mut session) = started(&rig, &output).await;
+            feed.send(b"\x1b[?62;4;52c");
+            output.written("\x1b[>4;2m").await;
+            feed.send(b"\x1b[?7u");
+            output.written("\x1b[>4;0m").await;
+            assert!(session.terminal.kitty_protocol_active());
+            assert!(maestro_tui::is_kitty_protocol_active());
+            assert!(session.inputs.all().is_empty());
             session.terminal.stop().unwrap();
-            output.written("\x1b[?2004l\x1b[<u\x1b[>4;0m").await;
+            output.written(STOP_BYTES).await;
+            assert!(!maestro_tui::is_kitty_protocol_active());
         });
     });
     isolated!(1, &[], || {
         let rig = Rig::paused();
         let output = pipe_output();
         rig.run(async {
-            let (_feed, mut session) = with_both_keyboard_modes(&rig, &output).await;
+            let (feed, mut session) = started(&rig, &output).await;
+            feed.send(b"\x1b[?7u\x1b[?62;4;52c");
+            consumed().await;
+            assert_eq!(output.take(), "");
+            assert!(session.terminal.kitty_protocol_active());
+            assert!(session.inputs.all().is_empty());
+            feed.send(b"\x1b[?1u");
+            consumed().await;
+            assert_eq!(output.take(), "");
+            assert!(session.inputs.all().is_empty());
+            session.terminal.stop().unwrap();
+            output.written(STOP_BYTES).await;
+        });
+    });
+}
+
+#[test]
+fn native_drain_after_a_fallback_pops_the_flags_and_turns_it_off() {
+    isolated!(&[], || {
+        let rig = Rig::paused();
+        let output = pipe_output();
+        rig.run(async {
+            let (feed, mut session) = started(&rig, &output).await;
+            feed.send(b"\x1b[?62;4;52c");
+            output.written("\x1b[>4;2m").await;
             let (max, idle) = (Duration::ZERO, Duration::ZERO);
             session
                 .terminal
@@ -506,19 +518,44 @@ fn native_recognizes_only_ascii_decimal_protocol_replies() {
         let rig = Rig::paused();
         let output = pipe_output();
         rig.run(async {
-            let replies = ["\x1b[?0u", "\x1b[?000u", "\x1b[?999999999999999999999999u"];
-            let others = ["\x1b[?u", "\x1b[?-1u", "\x1b[?\u{ff11}u", "\x1b[?1;2u"];
-            for (reply, enables) in replies
-                .map(|r| (r, true))
-                .into_iter()
-                .chain(others.map(|o| (o, false)))
-            {
+            let fallback = "\x1b[>4;2m";
+            let replies = [
+                ("\x1b[?0u", fallback, false),
+                ("\x1b[?000u", fallback, false),
+                ("\x1b[?999999999999999999999999u", "", true),
+                ("\x1b[?7u", "", true),
+                ("\x1b[?c", fallback, false),
+                ("\x1b[?62;4;52c", fallback, false),
+            ];
+            let others = [
+                "\x1b[?u",
+                "\x1b[?-1u",
+                "\x1b[?\u{ff11}u",
+                "\x1b[?1;2u",
+                "\x1b[?1;u",
+            ];
+            for (reply, written, active) in replies {
                 let (feed, mut session) = started(&rig, &output).await;
                 feed.send(reply.as_bytes());
                 consumed().await;
-                let (written, delivered) = (output.take(), session.inputs.all());
-                assert_eq!(written, if enables { "\x1b[>7u" } else { "" }, "{reply:?}");
-                assert_eq!(delivered.is_empty(), enables, "{reply:?}");
+                let delivered = session.inputs.all();
+                assert_eq!(output.take(), written, "{reply:?}");
+                assert_eq!(
+                    session.terminal.kitty_protocol_active(),
+                    active,
+                    "{reply:?}"
+                );
+                assert!(delivered.is_empty(), "{reply:?}");
+                session.terminal.stop().unwrap();
+                output.take();
+            }
+            for other in others {
+                let (feed, mut session) = started(&rig, &output).await;
+                feed.send(other.as_bytes());
+                session.inputs.delivered(1).await;
+                assert_eq!(output.take(), "", "{other:?}");
+                assert_eq!(session.inputs.all(), [other], "{other:?}");
+                assert!(!session.terminal.kitty_protocol_active(), "{other:?}");
                 session.terminal.stop().unwrap();
                 output.take();
             }
@@ -532,7 +569,7 @@ fn native_buffers_split_replies_until_complete() {
         let rig = Rig::paused();
         let output = pipe_output();
         rig.run(async {
-            let reply = b"\x1b[?12u";
+            let reply = b"\x1b[?0u";
             for cut in 1..reply.len() {
                 let (feed, mut session) = started(&rig, &output).await;
                 feed.send(&reply[..cut]);
@@ -546,7 +583,7 @@ fn native_buffers_split_replies_until_complete() {
                 consumed().await;
                 assert_eq!(
                     (output.take(), session.inputs.count()),
-                    ("\x1b[>7u".into(), 0),
+                    ("\x1b[>4;2m".into(), 0),
                     "{cut}"
                 );
                 session.terminal.stop().unwrap();
@@ -558,17 +595,37 @@ fn native_buffers_split_replies_until_complete() {
             elapse(9).await;
             feed.send(b"7u");
             consumed().await;
-            assert_eq!(
-                (output.take(), session.inputs.count()),
-                ("\x1b[>7u".into(), 0)
-            );
+            assert_eq!((output.take(), session.inputs.count()), (String::new(), 0));
+            assert!(session.terminal.kitty_protocol_active());
             session.terminal.stop().unwrap();
         });
     });
 }
 
 #[test]
-fn native_expires_only_the_pending_fragment() {
+fn native_completes_a_split_reply_after_the_framing_gave_up() {
+    isolated!(&[], || {
+        let rig = Rig::paused();
+        let output = pipe_output();
+        rig.run(async {
+            let (feed, mut session) = started(&rig, &output).await;
+            feed.send(b"\x1b[?7");
+            consumed().await;
+            elapse(10).await;
+            elapse(100).await;
+            assert!(session.inputs.all().is_empty());
+            feed.send(b"u");
+            consumed().await;
+            assert!(session.terminal.kitty_protocol_active());
+            assert_eq!((output.take(), session.inputs.count()), (String::new(), 0));
+            session.terminal.stop().unwrap();
+            output.written(STOP_BYTES).await;
+        });
+    });
+}
+
+#[test]
+fn native_releases_a_held_fragment_as_input_after_150ms() {
     isolated!(&[], || {
         let rig = Rig::paused();
         let output = pipe_output();
@@ -576,7 +633,8 @@ fn native_expires_only_the_pending_fragment() {
             let (feed, mut session) = started(&rig, &output).await;
             feed.send(b"\x1b[?");
             consumed().await;
-            elapse(9).await;
+            elapse(10).await;
+            elapse(149).await;
             assert!(session.inputs.all().is_empty());
             elapse(1).await;
             session.inputs.delivered(1).await;
@@ -584,6 +642,26 @@ fn native_expires_only_the_pending_fragment() {
             feed.send(b"7u");
             consumed().await;
             assert_eq!(session.inputs.all(), ["\x1b[?", "7", "u"]);
+            assert_eq!(output.take(), "");
+            session.terminal.stop().unwrap();
+        });
+    });
+}
+
+#[test]
+fn native_replays_a_held_fragment_before_the_input_that_follows_it() {
+    isolated!(&[], || {
+        let rig = Rig::paused();
+        let output = pipe_output();
+        rig.run(async {
+            let (feed, mut session) = started(&rig, &output).await;
+            feed.send(b"\x1b[");
+            consumed().await;
+            elapse(10).await;
+            assert!(session.inputs.all().is_empty());
+            feed.send(b"x");
+            session.inputs.delivered(2).await;
+            assert_eq!(session.inputs.all(), ["\x1b[", "x"]);
             assert_eq!(output.take(), "");
             session.terminal.stop().unwrap();
         });
@@ -602,7 +680,7 @@ fn native_stop_cancels_all_mode_enable_work() {
             until(|| open_descriptors() < reader).await;
             elapse(151).await;
             elapse(1000).await;
-            output.written("\x1b[?2004l").await;
+            output.written(STOP_BYTES).await;
         });
     });
 }
@@ -636,23 +714,25 @@ fn native_stop_discards_pending_input() {
 }
 
 #[test]
-fn native_restart_ignores_prior_generation_timers() {
+fn native_restart_ignores_the_fragment_held_by_the_prior_generation() {
     isolated!(&[], || {
         let rig = Rig::paused();
         let output = pipe_output();
         rig.run(async {
-            let (_feed, mut session) = started(&rig, &output).await;
-            elapse(50).await;
+            let (feed, mut session) = started(&rig, &output).await;
+            feed.send(b"\x1b[?");
+            consumed().await;
+            elapse(10).await;
             session.terminal.stop().unwrap();
-            output.written("\x1b[?2004l").await;
+            output.written(STOP_BYTES).await;
             session
                 .terminal
                 .start(session.inputs.callback(), session.resizes.callback())
                 .unwrap();
             output.written(START_BYTES).await;
-            elapse(101).await;
-            assert_eq!(output.take(), "");
-            elapse(49).await;
+            elapse(1000).await;
+            assert_eq!((output.take(), session.inputs.count()), (String::new(), 0));
+            feed.send(b"\x1b[?62c");
             output.written("\x1b[>4;2m").await;
             session.terminal.stop().unwrap();
         });
@@ -660,7 +740,7 @@ fn native_restart_ignores_prior_generation_timers() {
 }
 
 #[test]
-fn native_eof_keeps_pending_buffer_and_negotiation_deadlines() {
+fn native_eof_keeps_pending_buffer_and_held_fragment_deadlines() {
     isolated!(&[], || {
         let rig = Rig::paused();
         let _input = pty_input();
@@ -675,15 +755,14 @@ fn native_eof_keeps_pending_buffer_and_negotiation_deadlines() {
             pipe.close();
             elapse(5).await;
             elapse(5).await;
+            elapse(150).await;
             session.inputs.delivered(1).await;
             assert_eq!(session.inputs.all(), ["\x1b["]);
             output.resize(90, 30);
             window_change();
             session.resizes.delivered(1).await;
-            elapse(140).await;
-            output.written("\x1b[>4;2m").await;
             session.terminal.stop().unwrap();
-            output.written("\x1b[?2004l\x1b[>4;0m").await;
+            output.written(STOP_BYTES).await;
         });
     });
 }
@@ -718,7 +797,8 @@ fn native_drain_uses_default_idle_exit_and_restores_handler() {
         rig.run(async {
             let (feed, mut session) = started(&rig, &output).await;
             feed.send(b"\x1b[?1u");
-            output.written("\x1b[>7u").await;
+            consumed().await;
+            assert!(session.terminal.kitty_protocol_active());
             let done = Cell::new(false);
             let drain = session.terminal.drain_input(None, None);
             output.written("\x1b[<u").await;
@@ -744,12 +824,12 @@ fn busy_drain_with_explicit_limits() {
     let output = pipe_output();
     rig.run(async {
         let (feed, mut session) = started(&rig, &output).await;
-        elapse(150).await;
+        feed.send(b"\x1b[?62c");
         output.written("\x1b[>4;2m").await;
         let done = Cell::new(false);
         let (max, idle) = (Duration::from_millis(120), Duration::from_millis(50));
         let drain = session.terminal.drain_input(Some(max), Some(idle));
-        output.written("\x1b[>4;0m").await;
+        output.written("\x1b[<u\x1b[>4;0m").await;
         drain_beside(drain, &done, async {
             elapse(40).await;
             feed.send(b"a");
@@ -848,7 +928,8 @@ fn native_drain_zero_limit_restores_immediately() {
         rig.run(async {
             let (feed, mut session) = started(&rig, &output).await;
             feed.send(b"\x1b[?1u");
-            output.written("\x1b[>7u").await;
+            consumed().await;
+            assert!(session.terminal.kitty_protocol_active());
             let (max, idle) = (Duration::ZERO, Duration::from_millis(50));
             session
                 .terminal
@@ -916,9 +997,9 @@ fn native_drain_cannot_reenable_keyboard_modes() {
                 until(|| done.get()).await;
             })
             .await;
-            assert_eq!(output.take(), "");
+            assert_eq!(output.take(), "\x1b[<u");
             assert!(session.inputs.all().is_empty());
-            feed.send(b"\x1b[?1u");
+            feed.send(b"\x1b[?1u\x1b[?62c");
             consumed().await;
             assert!(!session.terminal.kitty_protocol_active());
             assert_eq!((output.take(), session.inputs.count()), (String::new(), 0));
@@ -1033,7 +1114,8 @@ fn native_cancelled_drain_restores_handler() {
         rig.run(async {
             let (feed, mut session) = started(&rig, &output).await;
             feed.send(b"\x1b[?1u");
-            output.written("\x1b[>7u").await;
+            consumed().await;
+            assert!(session.terminal.kitty_protocol_active());
             let drain = session.terminal.drain_input(None, None);
             output.written("\x1b[<u").await;
             tokio::select! {
@@ -1115,7 +1197,7 @@ fn native_callbacks_can_reenter_output_and_stop() {
             feed.send(b"ab");
             until(|| open_descriptors() < reader).await;
             assert_eq!(*seen.borrow(), ["a"]);
-            output.written("reentered\x1b[?2004l").await;
+            output.written(&format!("reentered{STOP_BYTES}")).await;
             assert_eq!(Rc::strong_count(&terminal), 1);
         });
     });
@@ -1323,7 +1405,7 @@ fn native_dropped_terminal_releases_only_owned_active_resources() {
             let session = start(&rig);
             output.written(START_BYTES).await;
             drop(session);
-            output.written("\x1b[?2004l").await;
+            output.written(STOP_BYTES).await;
             assert_eq!((stdin_attributes(), stdin_flags()), (before, flags));
             let mut session = start(&rig);
             session.terminal.stop().unwrap();
@@ -1351,7 +1433,8 @@ fn native_failed_restart_releases_every_owned_mode() {
         rig.run(async {
             let mut session = start(&rig);
             feed.send(b"\x1b[?1u");
-            output.written(&format!("{START_BYTES}\x1b[>7u")).await;
+            output.written(START_BYTES).await;
+            consumed().await;
             session.terminal.set_progress(true).unwrap();
             output.written("\x1b]9;4;3\x07").await;
             let limit = DescriptorLimit::reached();
@@ -1371,11 +1454,11 @@ fn native_failed_restart_releases_every_owned_mode() {
     });
     isolated!(1, &[], || {
         let rig = Rig::paused();
-        let _feed = pipe_input();
+        let feed = pipe_input();
         let output = pipe_output();
         rig.run(async {
             let mut session = start(&rig);
-            elapse(150).await;
+            feed.send(b"\x1b[?62c");
             output.written(&format!("{START_BYTES}\x1b[>4;2m")).await;
             let limit = DescriptorLimit::reached();
             let restart = session
@@ -1384,7 +1467,7 @@ fn native_failed_restart_releases_every_owned_mode() {
             drop(limit);
             let failure = restart.unwrap_err();
             assert_eq!(failure.raw_os_error(), Some(Errno::MFILE.raw_os_error()));
-            output.written("\x1b[?2004l\x1b[>4;0m").await;
+            output.written(&format!("{STOP_BYTES}\x1b[>4;0m")).await;
             drop(session);
             assert_eq!(output.take(), "");
         });
@@ -1410,7 +1493,7 @@ fn native_restarting_active_terminal_replaces_resources_once() {
                 .terminal
                 .start(second.0.callback(), second.1.callback())
                 .unwrap();
-            output.written(START_BYTES).await;
+            output.written("\x1b[?2004h\x1b[?u\x1b[c").await;
             until(|| open_descriptors() == one_reader).await;
             feed.send(b"a");
             second.0.delivered(1).await;
@@ -1418,10 +1501,14 @@ fn native_restarting_active_terminal_replaces_resources_once() {
                 (first.inputs.count(), second.0.all()),
                 (0, vec!["a".to_owned()])
             );
+            feed.send(b"\x1b[?62c");
+            consumed().await;
             elapse(1000).await;
             output.written("\x1b[>4;2m\x1b]9;4;3\x07").await;
             first.terminal.stop().unwrap();
-            output.written("\x1b]9;4;0;\x07\x1b[?2004l\x1b[>4;0m").await;
+            output
+                .written(&format!("\x1b]9;4;0;\x07{STOP_BYTES}\x1b[>4;0m"))
+                .await;
             assert_eq!((stdin_attributes(), stdin_flags()), (before, flags));
         });
     });

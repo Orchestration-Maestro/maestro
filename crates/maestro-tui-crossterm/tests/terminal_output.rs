@@ -167,7 +167,7 @@ fn native_progress_repeats_one_keepalive_until_clear() {
 fn native_stop_clears_active_progress_before_input_modes() {
     isolated!(&[], || {
         let rig = Rig::paused();
-        let feed = pipe_input();
+        let _feed = pipe_input();
         let output = pipe_output();
         rig.run(async {
             let (inputs, resizes) = (Inputs::default(), Resizes::default());
@@ -175,8 +175,7 @@ fn native_stop_clears_active_progress_before_input_modes() {
             terminal
                 .start(inputs.callback(), resizes.callback())
                 .unwrap();
-            feed.send(b"\x1b[?1u");
-            output.written(&format!("{START_BYTES}\x1b[>7u")).await;
+            output.written(START_BYTES).await;
             terminal.set_progress(true).unwrap();
             output.written(PROGRESS_ACTIVE).await;
             terminal.stop().unwrap();
@@ -374,7 +373,7 @@ fn write_around_other_output() {
     });
     terminal.write("second").unwrap();
     let expected =
-        format!("first\x1b[?25l\x1b]0;t\x07{PROGRESS_CLEAR}{START_BYTES}\x1b[?2004lsecond");
+        format!("first\x1b[?25l\x1b]0;t\x07{PROGRESS_CLEAR}{START_BYTES}\x1b[?2004l\x1b[<usecond");
     assert_eq!(output.take(), expected);
     drop(output);
     let failure = terminal.write("lost").unwrap_err();
@@ -630,12 +629,10 @@ fn native_output_stop_and_drop_drain_before_modes() {
     for case in 0..2 {
         isolated!(case, &[], || {
             let rig = Rig::paused();
-            let input = pipe_input();
+            let _input = pipe_input();
             let output = pipe_output();
             rig.run(async {
                 let mut terminal = queued_terminal(&rig, &output).await;
-                input.send(b"\x1b[?1u");
-                output.written("\x1b[>7u").await;
                 let data = "d".repeat(2 * 1024 * 1024);
                 terminal.write(&data).unwrap();
                 support::until(|| terminal.pending_output_bytes() < data.len()).await;
@@ -660,13 +657,12 @@ fn native_output_stop_and_drop_drain_before_modes() {
 fn native_output_session_bytes_stay_identical() {
     isolated!(&[], || {
         let rig = Rig::paused();
-        let input = pipe_input();
+        let _input = pipe_input();
         let output = pipe_output();
         rig.run(async {
             let mut terminal = ProcessTerminal::new(rig.local());
             terminal.start(Box::new(|_| {}), Box::new(|| {})).unwrap();
-            input.send(b"\x1b[?1u");
-            output.written(&format!("{START_BYTES}\x1b[>7u")).await;
+            output.written(START_BYTES).await;
             terminal.write("first🦀first").unwrap();
             terminal.move_by(0).unwrap();
             terminal.move_by(-2).unwrap();
@@ -753,14 +749,14 @@ fn native_output_restores_output_flags() {
                 terminal.write("flags").unwrap();
                 // Some hosts' drain of a terminal waits until its reader takes this output.
                 let reader = Capture(output.0.try_clone().unwrap());
-                let collector = collect_bytes(reader, "flags\x1b[?2004l".len());
+                let collector = collect_bytes(reader, "flags\x1b[?2004l\x1b[<u".len());
                 if case % 4 < 2 {
                     terminal.stop().unwrap();
                 } else {
                     drop(terminal);
                 }
                 assert_eq!(support::stdout_flags(), flags);
-                assert_eq!(collector.join().unwrap(), b"flags\x1b[?2004l");
+                assert_eq!(collector.join().unwrap(), b"flags\x1b[?2004l\x1b[<u");
             });
         });
     }
@@ -797,7 +793,7 @@ fn native_output_restart_keeps_pending_bytes() {
             assert!(terminal.pending_output_bytes() > 0);
             terminal.start(Box::new(|_| {}), Box::new(|| {})).unwrap();
             terminal.write("new").unwrap();
-            let expected = format!("{data}{START_BYTES}new\x1b[?2004l");
+            let expected = format!("{data}\x1b[?2004h\x1b[?u\x1b[cnew\x1b[?2004l\x1b[<u");
             let collector = collect_bytes(output, expected.len());
             terminal.stop().unwrap();
             assert_eq!(collector.join().unwrap(), expected.as_bytes());
@@ -851,7 +847,10 @@ fn native_output_log_records_accepted_explicit_writes() {
             assert_eq!(fs::read_to_string(&path).unwrap(), "explicit");
             assert!(terminal.pending_output_bytes() > 0);
             terminal.stop().unwrap();
-            assert_eq!(output.take(), "explicit\x1b]0;unlogged\x07\x1b[?2004l");
+            assert_eq!(
+                output.take(),
+                "explicit\x1b]0;unlogged\x07\x1b[?2004l\x1b[<u"
+            );
             drop(output);
             assert!(terminal.write("refused").is_err());
             assert_eq!(fs::read_to_string(path).unwrap(), "explicit");
@@ -887,7 +886,7 @@ fn native_output_writer_orders_cross_thread_bytes() {
             .unwrap();
             terminal.write("frame-b").unwrap();
             writer.write_all(b"tail").unwrap();
-            let expected = b"frame-a\0\xff\x1b[31mframe-btail\x1b[?2004l";
+            let expected = b"frame-a\0\xff\x1b[31mframe-btail\x1b[?2004l\x1b[<u";
             let collector = collect_bytes(output, expected.len());
             terminal.stop().unwrap();
             assert_eq!(collector.join().unwrap(), expected);
@@ -912,7 +911,7 @@ fn native_output_writer_drains_then_closes_admission() {
             support::until(|| terminal.pending_output_bytes() < data.len()).await;
             assert!(terminal.pending_output_bytes() > 0);
             let mut expected = data.into_bytes();
-            expected.extend_from_slice(b"\xff\0external\x1b[?2004l");
+            expected.extend_from_slice(b"\xff\0external\x1b[?2004l\x1b[<u");
             let collector = collect_bytes(output, expected.len());
             terminal.stop().unwrap();
             assert_eq!(support::stdout_flags(), flags);
@@ -928,7 +927,7 @@ fn native_output_writer_drains_then_closes_admission() {
                 std::io::ErrorKind::BrokenPipe
             );
             terminal.stop().unwrap();
-            assert_eq!(next.take(), format!("{START_BYTES}fresh\x1b[?2004l"));
+            assert_eq!(next.take(), format!("{START_BYTES}fresh\x1b[?2004l\x1b[<u"));
         });
     });
     isolated!(1, &[], || {
@@ -981,7 +980,7 @@ fn native_output_writer_keeps_synchronous_destinations() {
         });
         assert_eq!(
             fs::read_to_string(&path).unwrap(),
-            format!("{START_BYTES}synchronous\x1b[?2004l")
+            format!("{START_BYTES}synchronous\x1b[?2004l\x1b[<u")
         );
     });
 }

@@ -38,7 +38,7 @@ fn read(input: &mut Input, bytes: &[u8]) {
 }
 
 #[test]
-fn eof_flushes_incomplete_utf8_and_keeps_deadlines_alive() {
+fn eof_flushes_incomplete_utf8() {
     drive(async {
         let (mut input, seen) = input();
         read(&mut input, &[0xe2, 0x82]);
@@ -46,9 +46,23 @@ fn eof_flushes_incomplete_utf8_and_keeps_deadlines_alive() {
         read(&mut input, b"");
         assert!(!input.reading());
         assert_eq!(&*seen.borrow(), &["\u{fffd}"]);
-        assert!(input.next_deadline().is_some());
         input.handle(Wake::Resize, &[]).unwrap();
         assert!(input.is_current());
+    });
+}
+
+#[test]
+fn eof_keeps_the_framing_and_held_fragment_deadlines_alive() {
+    drive(async {
+        let (mut input, seen) = input();
+        read(&mut input, b"\x1b[");
+        read(&mut input, b"");
+        assert!(!input.reading());
+        assert!(input.next_deadline().is_some());
+        tokio::time::advance(Duration::from_millis(10)).await;
+        input.handle(Wake::Deadline, &[]).unwrap();
+        assert!(seen.borrow().is_empty());
+        assert!(input.next_deadline().is_some());
     });
 }
 
@@ -63,7 +77,7 @@ fn split_utf8_nul_and_paste_follow_the_same_framing_path() {
 }
 
 #[test]
-fn fragment_deadline_releases_text_and_negotiation_deadline_selects_fallback() {
+fn fragment_deadline_releases_text_and_selects_no_keyboard_mode() {
     drive(async {
         let (mut input, seen) = input();
         read(&mut input, b"\x1b");
@@ -71,9 +85,27 @@ fn fragment_deadline_releases_text_and_negotiation_deadline_selects_fallback() {
         tokio::time::advance(Duration::from_secs(1)).await;
         input.handle(Wake::Deadline, &[]).unwrap();
         assert_eq!(&*seen.borrow(), &["\x1b"]);
-        assert!(input.shared.fallback.get());
+        assert!(!input.shared.fallback.get());
         assert!(input.next_deadline().is_none());
         input.handle(Wake::Deadline, &[]).unwrap();
+    });
+}
+
+#[test]
+fn reply_start_is_held_until_its_own_deadline_and_then_released_as_input() {
+    drive(async {
+        let (mut input, seen) = input();
+        read(&mut input, b"\x1b[");
+        tokio::time::advance(Duration::from_millis(10)).await;
+        input.handle(Wake::Deadline, &[]).unwrap();
+        assert!(seen.borrow().is_empty());
+        let due = input.next_deadline().unwrap();
+        tokio::time::advance(Duration::from_millis(149)).await;
+        assert!(due > tokio::time::Instant::now());
+        tokio::time::advance(Duration::from_millis(1)).await;
+        input.handle(Wake::Deadline, &[]).unwrap();
+        assert_eq!(&*seen.borrow(), &["\x1b["]);
+        assert!(input.next_deadline().is_none());
     });
 }
 
