@@ -1219,7 +1219,7 @@
         }
       ],
       "inferenceConfig": {
-        "maxTokens": 32000
+        "maxTokens": 32768
       },
       "toolConfig": {
         "tools": [
@@ -1309,7 +1309,7 @@
         }
       ],
       "inferenceConfig": {
-        "maxTokens": 32000
+        "maxTokens": 32768
       },
       "toolConfig": {
         "tools": [

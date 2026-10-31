@@ -25,7 +25,7 @@ use indexmap::IndexMap;
 
 #[cfg(not(target_arch = "wasm32"))]
 use crate::SharedAssistantMessage;
-use crate::options::token_base;
+use crate::options::fit_thinking;
 #[cfg(target_arch = "wasm32")]
 use crate::providers::assistant_output::fail;
 use crate::providers::assistant_output::initial_message_for_api;
@@ -37,8 +37,7 @@ use crate::providers::messages::anthropic::AnthropicThinkingDisplay;
 use crate::{
     AssistantMessageEventStream, Context, Local, Model, ProviderCall, ProviderExecution,
     ProviderInvocation, ProviderSpawner, SimpleStreamOptions, StreamOptions, StreamOptionsFamily,
-    ThinkingBudgets, ThinkingLevel, Threaded, ToolChoice, adjust_max_tokens_for_thinking,
-    build_base_options_for,
+    ThinkingBudgets, ThinkingLevel, Threaded, ToolChoice, build_base_options_for,
 };
 use thinking::{is_anthropic_claude_model, supports_adaptive_thinking};
 
@@ -155,22 +154,24 @@ fn simple_options<E: ProviderExecution>(
         raw.reasoning = Some(level);
         raw.thinking_budgets = thinking_budgets;
         if is_anthropic_claude_model(model) && !supports_adaptive_thinking(model) {
-            fit_budget(model, &mut raw, level);
+            fit_budget(model, context, &mut raw, level);
         }
     }
     raw
 }
 
-/// Store [`adjust_max_tokens_for_thinking`]'s returned token limit and budget in the selected
+/// Store [`fit_thinking`]'s returned token limit and budget in the selected
 /// level's slot, leaving the other budget slots as given.
 fn fit_budget<E: ProviderExecution>(
     model: &Model,
+    context: &Context,
     raw: &mut BedrockOptions<E>,
     level: ThinkingLevel,
 ) {
-    let adjusted = adjust_max_tokens_for_thinking(
-        Some(token_base(raw.common.max_tokens)),
-        model.max_tokens,
+    let adjusted = fit_thinking(
+        model,
+        context,
+        raw.common.max_tokens,
         level,
         raw.thinking_budgets.as_ref(),
     );

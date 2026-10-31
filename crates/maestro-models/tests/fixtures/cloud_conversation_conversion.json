@@ -20505,7 +20505,7 @@
             }
           ],
           "inferenceConfig": {
-            "maxTokens": 32000
+            "maxTokens": 32768
           }
         },
         "body": {
@@ -20525,7 +20525,7 @@
             }
           ],
           "inferenceConfig": {
-            "maxTokens": 32000
+            "maxTokens": 32768
           }
         }
       }
@@ -20684,7 +20684,7 @@
           "additionalModelRequestFields": {
             "thinking": {
               "type": "enabled",
-              "budget_tokens": 512,
+              "budget_tokens": 388,
               "display": "summarized"
             },
             "anthropic_beta": [
@@ -20714,7 +20714,7 @@
           "additionalModelRequestFields": {
             "thinking": {
               "type": "enabled",
-              "budget_tokens": 512,
+              "budget_tokens": 388,
               "display": "summarized"
             },
             "anthropic_beta": [
@@ -20766,7 +20766,7 @@
           "additionalModelRequestFields": {
             "thinking": {
               "type": "enabled",
-              "budget_tokens": 17,
+              "budget_tokens": 0,
               "display": "summarized"
             },
             "anthropic_beta": [
@@ -20796,7 +20796,7 @@
           "additionalModelRequestFields": {
             "thinking": {
               "type": "enabled",
-              "budget_tokens": 17,
+              "budget_tokens": 0,
               "display": "summarized"
             },
             "anthropic_beta": [
@@ -21092,7 +21092,7 @@
           "additionalModelRequestFields": {
             "thinking": {
               "type": "enabled",
-              "budget_tokens": 8192,
+              "budget_tokens": 7169,
               "display": "summarized"
             },
             "anthropic_beta": [
@@ -21122,7 +21122,7 @@
           "additionalModelRequestFields": {
             "thinking": {
               "type": "enabled",
-              "budget_tokens": 8192,
+              "budget_tokens": 7169,
               "display": "summarized"
             },
             "anthropic_beta": [

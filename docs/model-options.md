@@ -4,9 +4,12 @@
 credential resolution, provider invocation or hook execution.
 
 - `build_base_options` copies the 14 common invocation fields, retaining callback
-  and cancellation handles. A missing token limit uses the positive model limit
-  capped at 32,000; nonpositive model limits leave it absent. Explicit limits,
-  including zero or negative values, remain unchanged. A separately supplied
+  and cancellation handles. A missing token limit uses the positive model limit;
+  nonpositive model limits leave it absent. Every limit, supplied or defaulted, is
+  then fitted to the room the model's context window leaves: the window less the
+  estimated tokens of the system prompt, tools and messages and 4,096 safety tokens,
+  never below one token. A limit already inside that room, such as an explicit 2,000,
+  is kept; a model with no window keeps its limit. A separately supplied
   nonempty key overrides the option key; empty or absent keys fall back without
   trimming. Reasoning settings and thinking budgets are not common output fields.
   `build_base_options_for` performs the same preparation for an explicit execution
@@ -19,7 +22,8 @@ credential resolution, provider invocation or hook execution.
 - `adjust_max_tokens_for_thinking` selects budgets of 1,024 (minimal), 2,048 (low),
   8,192 (medium) or 16,384 (high and extra-high). Custom slots override individually,
   including zero. `AdjustedMaxTokens` carries the combined `max_tokens` and
-  `thinking_budget`: add the budget to the base and cap at the model limit. Only
+  `thinking_budget`: add the budget to the base and cap at the model limit; without
+  a base the combined limit is the model limit, and the budget fits inside it. Only
   when that limit is no larger than the budget, reduce the budget to leave 1,024
   output tokens, never below zero. There is no unconditional output reserve,
   rounding or input validation. A NaN sum or model limit produces a NaN combined limit.
@@ -69,7 +73,7 @@ rule to the classifier. These helpers never send such a request themselves.
 use maestro_models::{ThinkingLevel, adjust_max_tokens_for_thinking, clamp_reasoning};
 
 assert_eq!(clamp_reasoning(Some(ThinkingLevel::Xhigh)), Some(ThinkingLevel::High));
-let adjusted = adjust_max_tokens_for_thinking(16.0, 10_000.0, ThinkingLevel::Low, None);
+let adjusted = adjust_max_tokens_for_thinking(Some(16.0), 10_000.0, ThinkingLevel::Low, None);
 assert_eq!(adjusted.max_tokens, 2_064.0);
 assert_eq!(adjusted.thinking_budget, 2_048.0);
 ```
