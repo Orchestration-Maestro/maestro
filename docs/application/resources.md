@@ -52,10 +52,11 @@ extensions, skills, prompts, themes, context files, system prompt and appended
 texts. The appended-text override replaces the ordinary append choice; base
 append text still goes first.
 
-Additional paths are trimmed, a leading `~` becomes the home directory, and the
-result is resolved against the loader's working directory. Merging keeps the
-first path per real path. A missing additional skill, prompt template or theme
-path is reported as an error unless a diagnostic already names it.
+Additional paths are trimmed, a leading `~` reads as
+[settings](../settings.md#home-directory-in-paths) describes, and the result is resolved
+against the loader's working directory. Merging keeps the first path per real path. A
+missing additional skill, prompt template or theme path is reported as an error unless a
+diagnostic already names it.
 
 ### Base package inputs
 

@@ -218,6 +218,22 @@ fn gitdir_condition_expands_the_supplied_home() {
     );
 }
 
+/// An include path written `~//name` stays below the home instead of naming the root.
+#[test]
+fn include_path_with_repeated_separators_stays_below_the_home() {
+    let checkout = Checkout::new("");
+    checkout.write("repo/.git/config", "[include]\n\tpath = ~//included.cfg\n");
+    checkout.write("included.cfg", INCLUDED_TRACKING);
+    let with_home = ConfigEnvironment {
+        user_files: Vec::new(),
+        home: Some(checkout.scratch.path().to_path_buf()),
+    };
+    assert_eq!(
+        checkout.observe_with(&with_home).unwrap().remote,
+        "included"
+    );
+}
+
 #[test]
 fn gitdir_condition_ignores_case_only_when_asked() {
     let checkout = Checkout::new("");

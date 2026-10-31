@@ -8,6 +8,7 @@ mod extraction;
 mod files;
 #[cfg(not(target_arch = "wasm32"))]
 mod persistence;
+mod records;
 #[cfg(not(target_arch = "wasm32"))]
 mod storage;
 pub use conversions::migrate_session_entries;
