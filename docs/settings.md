@@ -427,6 +427,7 @@ save:
 | `retry.provider.timeoutMs` | number | unset | Optional timeout passed to the model provider |
 | `retry.provider.maxRetries` | number | unset | Optional retry limit passed to the model provider |
 | `retry.provider.maxRetryDelayMs` | number | `60000` | Largest accepted provider retry delay in milliseconds |
+| `httpIdleTimeoutMs` | number or `disabled` | `300000` | Longest wait, in whole milliseconds, for HTTP response headers or the next body chunk; `0` and `disabled` remove the limit; a negative or unusable value reads as the default; the setter ignores a negative or non-finite value |
 
 The crate stores and returns these values; applying them belongs to the callers.
 

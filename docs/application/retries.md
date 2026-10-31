@@ -38,3 +38,17 @@ A lost connection is an application retry like any other transient failure: the
 retry start carries the provider's own error text. A retry that succeeds keeps
 the recovery text; a retry that keeps failing ends with the error of its last
 attempt once the retry budget is spent. No transport setup retry is involved.
+
+## Failures that are retried
+
+Besides overload, rate limits, 5xx statuses and lost connections, the session
+retries a response whose error text says the stream ended before `message_stop`
+or that the upstream request buffer limit was exceeded while retrying. A Mistral
+response that finishes with the reason `error` reports "Provider stopped with:
+error (server error)", so it is retried as a server failure.
+
+A context overflow is never retried; compaction recovers it instead. The
+overflow classifier recognizes the Together wording "The input (N tokens) is
+longer than the model's context length (M tokens)" and the LiteLLM wording
+"Requested token count exceeds the model's maximum context length of M tokens"
+beside the other provider wordings.

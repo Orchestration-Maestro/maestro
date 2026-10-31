@@ -5,6 +5,8 @@ mod template;
 use super::jsonl::kept_lines;
 use super::{resolve_path, session_base};
 use indexmap::IndexMap;
+use maestro_models::{tokens_for_chars, utf16_units};
+use num_traits::ToPrimitive;
 use serde_json::Value;
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -346,10 +348,11 @@ fn compact(value: &Value) -> String {
     maestro_json::compact_json(value).unwrap_or_default()
 }
 
-/// The report's token estimate of one text: a quarter of its UTF-16 units, rounded up.
+/// The report's token estimate of one text, counted as the models crate counts a conversation.
 fn estimate_tokens(text: &str) -> u64 {
-    let units = text.encode_utf16().count() as u64;
-    units.div_ceil(4)
+    tokens_for_chars(utf16_units(text))
+        .to_u64()
+        .unwrap_or(u64::MAX)
 }
 
 /// The best-effort command key of one bash command.

@@ -9313,7 +9313,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
             }
@@ -9406,7 +9406,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
             }
@@ -9501,7 +9501,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
             }
@@ -23390,7 +23390,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
             }
@@ -23480,7 +23480,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "minimal",
               "summary": "auto"
@@ -23574,7 +23574,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "high",
               "summary": "auto"
@@ -24583,7 +24583,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
             }
@@ -24683,7 +24683,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000
+            "max_output_tokens": 64000
           }
         }
       ],
@@ -24776,7 +24776,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "high",
               "summary": "auto"
@@ -33269,7 +33269,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
             },
@@ -33400,7 +33400,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
             }
@@ -34825,7 +34825,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
             }
@@ -34913,7 +34913,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
             }
@@ -35001,7 +35001,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
             }
@@ -35090,7 +35090,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
             }
@@ -35192,7 +35192,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
             }
@@ -35300,7 +35300,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
             }
@@ -35388,7 +35388,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
             }
@@ -35476,7 +35476,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
             }
@@ -35564,7 +35564,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
             }
@@ -35653,7 +35653,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
             }
@@ -35743,7 +35743,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
             }
@@ -35831,7 +35831,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
             }
@@ -35919,7 +35919,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
             }
@@ -36008,7 +36008,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
             }
@@ -36096,7 +36096,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
             }
@@ -36451,7 +36451,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
             }
@@ -36540,7 +36540,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
             }
@@ -36703,7 +36703,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
             }
@@ -41387,7 +41387,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
             }
@@ -41491,7 +41491,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
             }
@@ -41596,7 +41596,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
             }
@@ -41701,7 +41701,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
             }
@@ -41805,7 +41805,7 @@
             ],
             "stream": true,
             "store": false,
-            "max_output_tokens": 32000,
+            "max_output_tokens": 64000,
             "reasoning": {
               "effort": "none"
             }
