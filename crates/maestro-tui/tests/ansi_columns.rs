@@ -67,7 +67,7 @@ fn column_slices_keep_whole_graphemes_and_direct_tab_metric() {
 
 #[test]
 fn slice_and_overlay_widths_count_a_tab_as_visible_width_does() {
-    let text = "out 192M\t.pi/skill-tests/results-ha";
+    let text = "out 192M\t.run/skill-logs/results-ha";
     let slice = slice_with_width(text, 0, 10, true);
     assert_eq!((slice.text.as_str(), slice.width), ("out 192M", 8));
     assert_eq!(visible_width(&slice.text), slice.width);
