@@ -314,13 +314,13 @@ fn settings_http_idle_timeout_change_is_saved_and_announced() {
                     .get_http_idle_timeout_ms()
             };
             assert!(saved().total_cmp(&300_000.0).is_eq());
-            choose(&list, "HTTP idle", 0);
+            choose(&list, "idle", 0);
             assert!(saved().total_cmp(&0.0).is_eq(), "the choice is saved");
             assert!(
                 super::actions::shows(&world.mode.chat_container, "HTTP idle timeout: disabled"),
                 "the transcript names the new limit"
             );
-            choose(&list, "HTTP idle", 0);
+            choose(&list, "idle", 0);
             assert!(saved().total_cmp(&30_000.0).is_eq());
             assert!(super::actions::shows(
                 &world.mode.chat_container,
