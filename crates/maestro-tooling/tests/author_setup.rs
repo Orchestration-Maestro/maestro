@@ -606,14 +606,11 @@ fn child_prepare() {
     .unwrap();
 }
 
-/// Prepare with `base` and return the variables the setup example had to build.
-fn prepare_with_base(root: &Path, base: &Path) -> Vec<String> {
+/// Prepare with `base` in a child process of the test `test` and return the variables the setup
+/// example had to build.
+fn prepare_with_base(test: &str, root: &Path, base: &Path) -> Vec<String> {
     let _ = fs::remove_file(root.join("built"));
-    assert_success(&prepare_as_child(
-        "prepare_builds_only_the_components_a_base_cannot_supply",
-        root,
-        base,
-    ));
+    assert_success(&prepare_as_child(test, root, base));
     fs::read_to_string(root.join("built"))
         .map(|built| built.lines().map(str::to_owned).collect())
         .unwrap_or_default()
@@ -639,7 +636,14 @@ fn prepare_builds_only_the_components_a_base_cannot_supply() {
         4
     );
 
-    assert_eq!(prepare_with_base(root, &base), Vec::<String>::new());
+    assert_eq!(
+        prepare_with_base(
+            "prepare_builds_only_the_components_a_base_cannot_supply",
+            root,
+            &base
+        ),
+        Vec::<String>::new()
+    );
     let reused = fs::read(root.join("target/next-setup/MAESTRO_ALPHA_COMPONENT.wasm")).unwrap();
     assert_eq!(reused, b"component bytes");
 
@@ -648,14 +652,29 @@ fn prepare_builds_only_the_components_a_base_cannot_supply() {
         "// maestro-component: MAESTRO_ALPHA_COMPONENT\n// edited\n",
     )
     .unwrap();
-    assert_eq!(prepare_with_base(root, &base), ["MAESTRO_ALPHA_COMPONENT"]);
+    assert_eq!(
+        prepare_with_base(
+            "prepare_builds_only_the_components_a_base_cannot_supply",
+            root,
+            &base
+        ),
+        ["MAESTRO_ALPHA_COMPONENT"]
+    );
 
     fs::write(
         root.join("rust-toolchain.toml"),
         "[toolchain]\nchannel = \"other\"\n",
     )
     .unwrap();
-    assert_eq!(prepare_with_base(root, &base).len(), 4);
+    assert_eq!(
+        prepare_with_base(
+            "prepare_builds_only_the_components_a_base_cannot_supply",
+            root,
+            &base
+        )
+        .len(),
+        4
+    );
 }
 
 /// The code a base compiled seeds the new bundle, so the setup example, which finds its
@@ -738,7 +757,11 @@ fn prepare_rebuilds_the_components_that_read_an_edited_shared_module() {
     .unwrap();
 
     assert_eq!(
-        prepare_with_base(root, &base),
+        prepare_with_base(
+            "prepare_rebuilds_the_components_that_read_an_edited_shared_module",
+            root,
+            &base
+        ),
         ["MAESTRO_ALPHA_COMPONENT", "MAESTRO_BETA_COMPONENT"]
     );
 }
@@ -850,7 +873,14 @@ fn fixture_with(root: &Path, example: &str) {
     use std::os::unix::fs::PermissionsExt;
     workspace(root);
     fs::write(root.join("component.wasm"), "component bytes").unwrap();
-    fs::write(root.join("component.d"), "component.wasm:\n").unwrap();
+    fs::write(
+        root.join("component.d"),
+        format!(
+            "{0}/component.wasm: {0}/crates/maestro-extensions-wasm/src/lib.rs\n",
+            root.display()
+        ),
+    )
+    .unwrap();
     fs::write(root.join("justfile"), BROWSER_RECIPES).unwrap();
     executable(&root.join("target/debug/deps/older"), 100);
     executable(&root.join("target/debug/deps/newer"), 200);

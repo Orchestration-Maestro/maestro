@@ -16,7 +16,7 @@ use super::{at, hex};
 use crate::cargo_lock::Lock;
 
 /// The paths and locked packages an artifact is prepared from, with the digest they had.
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub(super) struct Inputs {
     /// Repository-relative Git pathspecs of the files the artifact reads.
     paths: BTreeSet<String>,
@@ -42,6 +42,14 @@ impl Inputs {
             locked,
             digest,
         })
+    }
+
+    /// The repository-relative names of the files the paths list in `checkout`.
+    ///
+    /// # Errors
+    /// Returns a failed listing.
+    pub(super) fn files(&self, checkout: &Path) -> io::Result<BTreeSet<String>> {
+        listed(checkout, self.paths.iter().map(String::as_str))
     }
 
     /// Whether `checkout` still holds what the digest was taken from.

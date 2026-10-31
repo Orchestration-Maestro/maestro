@@ -731,7 +731,8 @@ digest per artifact instead of one for the whole bundle. All components share on
 the WebAssembly closure of `maestro-extensions-wasm` (its dependencies and development
 dependencies, without the edges gated to native targets), the lock entries of the registry
 packages that closure uses, the workspace manifest, Cargo configuration and the toolchain;
-each component adds a digest of its own example source. The setup example and the development
+each component adds a digest of the example files Cargo reports it read, so a helper module
+that several components share is part of each of them. The setup example and the development
 tool, and the browser graph, each hash the closure of their own packages with the examples,
 assets, locked dependencies and toolchain they read. A shard's `author-component` setup checks
 the shared, component and tool digests, and its `browser-author` setup checks the browser
@@ -740,7 +741,7 @@ names in the bundle follow component discovery's own rule and fixed author and c
 
 When `TEST_PREPARE_BASE` names the directory of an earlier bundle, the preparation reads it
 first. A base prepared from the same shared digest, so the same toolchain, supplies every
-component whose own source digest is unchanged: the preparation hands those to the setup
+component whose example files are unchanged: the preparation hands those to the setup
 example through the component variables, and the example builds only the others in its one
 Cargo call. The base's compiled code seeds the build's cache, and is dropped again when the
 example writes another engine's namespace. A base that is missing, unreadable or prepared from

@@ -1,11 +1,9 @@
 //! An earlier bundle that a preparation reuses what it can from.
 
-use std::collections::BTreeMap;
 use std::io;
 use std::path::{Path, PathBuf};
 
 use super::inputs::Inputs;
-use super::plan::own_inputs;
 use super::{COMPILED, Manifest, read_manifest, verify};
 
 /// A bundle prepared from the same shared inputs as the checkout.
@@ -14,6 +12,16 @@ pub(super) struct Base {
     directory: PathBuf,
     /// What the bundle records.
     manifest: Manifest,
+}
+
+/// A component file a base supplies, with the example files it was built from.
+pub(super) struct Supplied {
+    /// The variable that exports the component.
+    pub(super) variable: String,
+    /// The component file in the base.
+    pub(super) path: PathBuf,
+    /// The example files the base built it from.
+    pub(super) inputs: Inputs,
 }
 
 impl Base {
@@ -29,21 +37,20 @@ impl Base {
         })
     }
 
-    /// The staged component files whose own source is unchanged, by variable.
+    /// The staged components whose example files are unchanged.
     ///
     /// # Errors
-    /// Returns a failed listing or read of the example sources.
-    pub(super) fn supplied(
-        &self,
-        checkout: &Path,
-        names: &BTreeMap<String, String>,
-    ) -> io::Result<Vec<(String, PathBuf)>> {
+    /// Returns a failed listing or read of the example files.
+    pub(super) fn supplied(&self, checkout: &Path) -> io::Result<Vec<Supplied>> {
         let mut supplied = Vec::new();
         for (variable, component) in &self.manifest.components {
             let path = self.directory.join(format!("{variable}.wasm"));
-            let own = own_inputs(checkout, names.get(variable).map(String::as_str))?;
-            if own.digest == component.inputs.digest && verify(&path, &component.file).is_ok() {
-                supplied.push((variable.clone(), path));
+            if component.inputs.is_current(checkout)? && verify(&path, &component.file).is_ok() {
+                supplied.push(Supplied {
+                    variable: variable.clone(),
+                    path,
+                    inputs: component.inputs.clone(),
+                });
             }
         }
         Ok(supplied)

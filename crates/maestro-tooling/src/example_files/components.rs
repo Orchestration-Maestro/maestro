@@ -34,10 +34,6 @@ fn collect_into(folder: &Path, files: &mut Vec<PathBuf>) -> io::Result<()> {
 /// The author and context exports that every preparation provides, so no marker may reuse them.
 pub const FIXED_VARIABLES: [&str; 2] = ["MAESTRO_AUTHOR_COMPONENT", "MAESTRO_CONTEXT_COMPONENT"];
 
-/// The author and context examples, which no source marker names, in the order of the fixed
-/// exports that supply their artifacts.
-pub const FIXED_EXAMPLES: [&str; 2] = ["author_component", "context_bridge"];
-
 /// Visits marked components in source order, validating each export before its callback.
 ///
 /// Variables are unique across all roots, including the fixed author and context exports.

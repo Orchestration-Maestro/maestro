@@ -6,6 +6,8 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
+use crate::member_graph::closure;
+
 #[cfg(test)]
 mod tests;
 
@@ -102,7 +104,17 @@ impl<'a> LockGraph<'a> {
         &self,
         roots: impl IntoIterator<Item = &'n str>,
     ) -> Vec<&'a LockedPackage> {
-        let _ = (roots, &self.packages, &self.edges, &self.positions);
-        Vec::new()
+        let start = roots
+            .into_iter()
+            .filter_map(|name| self.positions.get(name))
+            .flatten()
+            .copied()
+            .collect();
+        let mut reached: Vec<usize> = closure(&self.edges, start).into_iter().collect();
+        reached.sort_unstable();
+        reached
+            .into_iter()
+            .map(|position| self.packages[position])
+            .collect()
     }
 }

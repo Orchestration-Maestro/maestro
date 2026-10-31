@@ -25,10 +25,10 @@ use sha2::{Digest, Sha256};
 use super::argument;
 use super::example_files::{FIXED_VARIABLES, validate_variable};
 use super::nextest_setup::browser_graph;
-use base::Base;
+use base::{Base, Supplied};
 use compiled_code::CompiledCode;
 use inputs::Inputs;
-use plan::{Artifacts, component_names, own_inputs};
+use plan::{Artifacts, component_inputs};
 use user_cache::user_cache_home;
 
 mod base;
@@ -58,11 +58,8 @@ const COMPONENT_PACKAGE: &str = "maestro-extensions-wasm";
 const TOOL_PACKAGES: [&str; 2] = [COMPONENT_PACKAGE, "maestro-tooling"];
 /// The packages the browser graph is built from.
 const BROWSER_PACKAGES: [&str; 2] = ["maestro-web", "maestro-tooling"];
-/// The directories whose sources are the examples, one component each.
-const EXAMPLE_FOLDERS: [&str; 2] = [
-    "crates/maestro-extensions-wasm/examples",
-    "examples/extensions",
-];
+/// The directory of the package's examples, which each component hashes for itself.
+const COMPONENT_EXAMPLES: &str = "crates/maestro-extensions-wasm/examples";
 /// What every artifact depends on besides the crates: the workspace manifest, the toolchain and
 /// the Cargo configuration.
 const SHARED_INPUTS: [&str; 3] = ["Cargo.toml", "rust-toolchain.toml", ".cargo"];
@@ -95,7 +92,7 @@ struct Manifest {
 struct Component {
     /// Digest of the component file.
     file: String,
-    /// The inputs of its own example source, beside the shared ones.
+    /// The example files it was built from, beside the shared inputs.
     inputs: Inputs,
 }
 
@@ -140,7 +137,6 @@ fn inherited_components(names: impl Iterator<Item = OsString>) -> Vec<OsString> 
 fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::Result<()> {
     std::fs::create_dir_all(output)?;
     let artifacts = Artifacts::read(cargo, checkout)?;
-    let names = component_names(checkout)?;
     let base = std::env::var_os(BASE)
         .filter(|name| !name.is_empty())
         .and_then(|name| Base::read(&checkout.join(name), &artifacts.shared));
@@ -151,18 +147,18 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
     let example = target.join("debug/examples").join(EXAMPLE);
     let (supplied, seeded) = match &base {
         Some(base) => (
-            base.supplied(checkout, &names)?,
+            base.supplied(checkout)?,
             base.seed(&cache_home(target), &example)?,
         ),
         None => (Vec::new(), None),
     };
     run_example(cargo, checkout, &example, target, &supplied)?;
-    let components = stage_components(checkout, output, target, &names)?;
+    let components = stage_components(checkout, output, target, &artifacts.shared, &supplied)?;
     stage_browser_graph(cargo, checkout, output)?;
-    let unchanged = artifacts.is_current(checkout)?
-        && components.values().try_fold(true, |all, component| {
-            component.inputs.is_current(checkout).map(|now| all && now)
-        })?;
+    let mut unchanged = artifacts.is_current(checkout)?;
+    for component in components.values() {
+        unchanged &= component.inputs.is_current(checkout)?;
+    }
     if !unchanged {
         return Err(io::Error::other(format!(
             "inputs changed during preparation: {}",
@@ -200,13 +196,17 @@ fn cache_home(target: &Path) -> PathBuf {
     target.join("cache-home")
 }
 
-/// Stage each component the setup example exported in `output`, with the inputs of its own source.
+/// Stage each component the setup example exported in `output`, with the example files it was
+/// built from: those the example reported in Cargo's dependency file, or those the base recorded
+/// for a component it supplied.
 fn stage_components(
     checkout: &Path,
     output: &Path,
     target: &Path,
-    names: &BTreeMap<String, String>,
+    shared: &Inputs,
+    supplied: &[Supplied],
 ) -> io::Result<BTreeMap<String, Component>> {
+    let shared = shared.files(checkout)?;
     let mut components = BTreeMap::new();
     for line in std::fs::read_to_string(environment_file(target))?.lines() {
         let (variable, source) = line
@@ -216,11 +216,15 @@ fn stage_components(
         if Path::new(source) != staged {
             copy(Path::new(source), &staged)?;
         }
+        let inputs = match supplied.iter().find(|base| base.variable == variable) {
+            Some(base) => base.inputs.clone(),
+            None => component_inputs(checkout, Path::new(source), &shared)?,
+        };
         components.insert(
             variable.to_owned(),
             Component {
                 file: digest(&std::fs::read(&staged)?),
-                inputs: own_inputs(checkout, names.get(variable).map(String::as_str))?,
+                inputs,
             },
         );
     }
@@ -280,7 +284,7 @@ fn run_example(
     checkout: &Path,
     example: &Path,
     target: &Path,
-    supplied: &[(String, PathBuf)],
+    supplied: &[Supplied],
 ) -> io::Result<()> {
     let mut run = Command::new(example);
     run.current_dir(checkout)
@@ -290,7 +294,7 @@ fn run_example(
     for name in inherited_components(std::env::vars_os().map(|(name, _)| name)) {
         run.env_remove(name);
     }
-    run.envs(supplied.iter().map(|(variable, path)| (variable, path)));
+    run.envs(supplied.iter().map(|base| (&base.variable, &base.path)));
     let status = run.status()?;
     if status.success() {
         Ok(())

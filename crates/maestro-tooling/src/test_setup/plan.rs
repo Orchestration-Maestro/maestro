@@ -1,11 +1,12 @@
 //! The inputs each artifact of the test bundle is prepared from, read from the workspace.
 //!
 //! The components build for WebAssembly from one package and its examples, the setup example and
-//! the development tool for the host from two packages, and the browser graph from two others.
-//! Each artifact hashes the closure of its own packages, so a change to another artifact's
-//! crates leaves it valid.
+//! the development tool for the host from two packages, and the browser graph from the web
+//! package and the tooling. Each artifact hashes the closure of its own packages, so a change to
+//! another artifact's crates leaves it valid; each component also hashes the example files it
+//! read.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 use std::io;
 use std::path::Path;
 
@@ -13,11 +14,11 @@ use cargo_metadata::{Dependency, DependencyKind, Metadata, Package};
 
 use super::inputs::{Inputs, locked_closure};
 use super::{
-    BROWSER_PACKAGES, COMPONENT_PACKAGE, EXAMPLE_FOLDERS, EXAMPLE_INPUTS, LOCKED_INPUTS,
-    SHARED_INPUTS, TOOL_PACKAGES,
+    BROWSER_PACKAGES, COMPONENT_EXAMPLES, COMPONENT_PACKAGE, EXAMPLE_INPUTS, LOCKED_INPUTS,
+    SHARED_INPUTS, TOOL_PACKAGES, at,
 };
-use crate::example_files::{FIXED_EXAMPLES, FIXED_VARIABLES, visit};
 use crate::member_graph::{closure, dependency_edges_where, member_roots, members};
+use maestro_path::normalize_native;
 
 /// The workspace-level gate that marks an edge as native only.
 const NATIVE_ONLY: &str = "cfg(not(target_arch = \"wasm32\"))";
@@ -161,7 +162,7 @@ pub(super) fn plan(metadata: &Metadata) -> io::Result<Plan> {
     // The examples are hashed one by one, beside the shared inputs.
     let mut shared = directories(metadata, &components);
     shared.extend(SHARED_INPUTS.map(str::to_owned));
-    shared.insert(format!(":(exclude){}", EXAMPLE_FOLDERS[0]));
+    shared.insert(format!(":(exclude){COMPONENT_EXAMPLES}"));
     let fixed = SHARED_INPUTS.into_iter().chain(LOCKED_INPUTS);
     Ok(Plan {
         shared,
@@ -175,45 +176,46 @@ pub(super) fn plan(metadata: &Metadata) -> io::Result<Plan> {
     })
 }
 
-/// The example target each component variable exports.
+/// The example files the component built at `wasm` read, beyond the `shared` ones, from the
+/// dependency file Cargo leaves beside it.
+///
+/// A file outside the checkout is not an input of the checkout.
 ///
 /// # Errors
-/// Returns a failed discovery of the marked components.
-pub(super) fn component_names(checkout: &Path) -> io::Result<BTreeMap<String, String>> {
-    let mut names: BTreeMap<String, String> = FIXED_VARIABLES
-        .into_iter()
-        .zip(FIXED_EXAMPLES)
-        .map(|(variable, name)| (variable.to_owned(), name.to_owned()))
-        .collect();
-    let folders: Vec<_> = EXAMPLE_FOLDERS
-        .iter()
-        .map(|folder| checkout.join(folder))
-        .filter(|folder| folder.is_dir())
-        .collect();
-    visit(&folders, |name, variable| {
-        names.insert(variable.to_owned(), name.to_owned());
-        Ok(())
-    })?;
-    Ok(names)
-}
-
-/// The inputs of the example source of the component target `name`, if it has one: its file, its
-/// module directory or its directory with an entry point.
-///
-/// # Errors
-/// Returns a failed listing or read.
-pub(super) fn own_inputs(checkout: &Path, name: Option<&str>) -> io::Result<Inputs> {
-    let paths = name
-        .into_iter()
-        .flat_map(|name| {
-            EXAMPLE_FOLDERS.into_iter().flat_map(move |folder| {
-                [
-                    format!("{folder}/{name}.rs"),
-                    format!("{folder}/{name}"),
-                    format!("{folder}/{}", name.replace('_', "-")),
-                ]
-            })
-        })
-        .collect();
+/// Returns a missing or unreadable dependency file, a path it cannot represent, or a failed listing
+/// or read.
+pub(super) fn component_inputs(
+    checkout: &Path,
+    wasm: &Path,
+    shared: &BTreeSet<String>,
+) -> io::Result<Inputs> {
+    let file = wasm.with_extension("d");
+    let text = std::fs::read_to_string(&file).map_err(|error| at(&file, &error))?;
+    let (_, sources) = text
+        .lines()
+        .next()
+        .and_then(|rule| rule.split_once(": "))
+        .ok_or_else(|| at(&file, "no dependency rule"))?;
+    let root = normalize_native(checkout);
+    let mut paths = BTreeSet::new();
+    for source in sources.split_whitespace() {
+        // A path with a space is written with a backslash before it, which splits it here.
+        if source.ends_with('\\') {
+            return Err(at(&file, format!("unsupported path {source}")));
+        }
+        let Ok(relative) = normalize_native(&checkout.join(source))
+            .strip_prefix(&root)
+            .map(Path::to_owned)
+        else {
+            continue;
+        };
+        let name = relative
+            .to_str()
+            .ok_or_else(|| at(&file, "a path that is not UTF-8"))?
+            .replace('\\', "/");
+        if checkout.join(&name).is_file() && !shared.contains(&name) {
+            paths.insert(name);
+        }
+    }
     Inputs::new(checkout, paths, BTreeSet::new())
 }
