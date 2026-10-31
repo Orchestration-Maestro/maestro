@@ -4,6 +4,7 @@ mod application_message_encoding;
 
 mod application_message_records;
 mod branch_summary;
+mod compaction_context;
 mod compaction_preparation;
 mod context_projection;
 mod converter_binding;

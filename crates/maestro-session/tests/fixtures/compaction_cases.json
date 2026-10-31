@@ -5418,7 +5418,7 @@
     ],
     "output": {
       "kind": "value",
-      "value": "[User]: ab\n\n[Assistant thinking]: think1\nthink2\n\n[Assistant]: text1\ntext2\n\n[Assistant tool calls]: read(path=\"a\"); write(path=\"b\")\n\n[Tool result]: out1out2"
+      "value": "[User]: ab\n\n[Assistant]: text1\ntext2\n\n[Assistant tool calls]: read(path=\"a\"); write(path=\"b\")\n\n[Tool result]: out1out2"
     }
   },
   {
@@ -5524,7 +5524,7 @@
     ],
     "output": {
       "kind": "value",
-      "value": "[Assistant thinking]: \n\n[Assistant]: "
+      "value": "[Assistant]: "
     }
   },
   {
@@ -7443,7 +7443,7 @@
     ],
     "output": {
       "kind": "value",
-      "value": "[User]: ﻿ \n\t\n\n[Assistant thinking]:      \n\n[Assistant]: ﻿\n\n[Tool result]:  \n"
+      "value": "[User]: ﻿ \n\t\n\n[Assistant]: ﻿\n\n[Tool result]:  \n"
     }
   },
   {
