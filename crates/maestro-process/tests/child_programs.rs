@@ -1,0 +1,558 @@
+//! Controlled children the process tests start by re-running this test executable.
+//!
+//! Each program is an ignored test that only a parent test selects. It reads its arguments
+//! from variables and its trailing operands, and ends through `std::process::exit` so no
+//! harness epilogue follows its output. The harness writes [`HARNESS_START`] to standard
+//! output before the program runs; parents compare output through [`harness`].
+#![cfg(test)]
+#![cfg(unix)]
+use maestro_test_process::{HARNESS_START, TestProcess};
+use std::io::{Read, Write};
+use std::net::TcpStream;
+use std::os::unix::fs::MetadataExt;
+use std::process::{Command, Stdio};
+
+/// The command that runs `program` with `variables` added to its environment.
+pub fn command(program: impl Fn(), variables: &[(&str, &str)]) -> Command {
+    TestProcess::child(program)
+        .unwrap()
+        .envs(variables.iter().copied())
+        .command()
+        .unwrap()
+}
+
+/// [`command`] as the asynchronous command the process owner takes.
+pub fn async_command(program: impl Fn(), variables: &[(&str, &str)]) -> tokio::process::Command {
+    command(program, variables).into()
+}
+
+/// The standard output a program produces when it writes `body`.
+pub fn harness(body: &[u8]) -> Vec<u8> {
+    [HARNESS_START, body].concat()
+}
+
+/// `output` without the harness start bytes of every process that wrote to it.
+pub fn without_harness(output: &[u8]) -> Vec<u8> {
+    let mut rest = output;
+    let mut kept = Vec::new();
+    while let Some(at) = rest
+        .windows(HARNESS_START.len())
+        .position(|window| window == HARNESS_START)
+    {
+        kept.extend_from_slice(&rest[..at]);
+        rest = &rest[at + HARNESS_START.len()..];
+    }
+    kept.extend_from_slice(rest);
+    kept
+}
+
+/// The text of variable `name`.
+fn variable(name: &str) -> String {
+    std::env::var(name).unwrap()
+}
+
+/// Writes `bytes` to standard output and flushes them.
+fn write_stdout(bytes: &[u8]) -> std::io::Result<()> {
+    let mut out = std::io::stdout();
+    out.write_all(bytes).and_then(|()| out.flush())
+}
+
+/// Writes `bytes` to standard error.
+fn write_stderr(bytes: &[u8]) -> std::io::Result<()> {
+    std::io::stderr().write_all(bytes)
+}
+
+/// Ends the process with `code` after flushing standard output.
+fn leave(code: i32) -> ! {
+    let _ = std::io::stdout().flush();
+    std::process::exit(code)
+}
+
+/// Everything standard input holds until it ends.
+fn read_input() -> Vec<u8> {
+    let mut input = Vec::new();
+    std::io::stdin().read_to_end(&mut input).unwrap();
+    input
+}
+
+/// Waits for one byte from `socket`; `None` once the peer closed it.
+fn receive(socket: &mut TcpStream) -> Option<u8> {
+    let mut byte = [0];
+    (socket.read(&mut byte).unwrap() == 1).then_some(byte[0])
+}
+
+/// A connection to the parent's listener.
+fn connect() -> TcpStream {
+    TcpStream::connect(("127.0.0.1", variable("CHILD_PORT").parse().unwrap())).unwrap()
+}
+
+/// Sends `text` followed by a newline.
+fn announce(socket: &mut TcpStream, text: &str) {
+    socket.write_all(format!("{text}\n").as_bytes()).unwrap();
+}
+
+/// Whether the descriptor behind `path` is the null device.
+fn is_null(path: &str) -> bool {
+    let null = std::fs::metadata("/dev/null").unwrap();
+    std::fs::metadata(path).unwrap().rdev() == null.rdev()
+}
+
+/// An operation that writes bytes to one output stream.
+type Writer = fn(&[u8]) -> std::io::Result<()>;
+
+/// Replaces each standard descriptor named in `streams` with the null device, so the
+/// parent observes the end of the pipe it held.
+fn close_streams(streams: &str) {
+    let null = std::fs::File::open("/dev/null").unwrap();
+    for stream in streams.chars() {
+        match stream {
+            '0' => rustix::stdio::dup2_stdin(&null),
+            '1' => rustix::stdio::dup2_stdout(&null),
+            _ => rustix::stdio::dup2_stderr(&null),
+        }
+        .unwrap();
+    }
+}
+
+/// Raises `signal` on this process and waits for it to take effect.
+fn kill_self(signal: rustix::process::Signal) -> ! {
+    rustix::process::kill_process(rustix::process::getpid(), signal).unwrap();
+    loop {
+        std::thread::park();
+    }
+}
+
+/// A descendant that outlives this process and holds its output descriptors: the program
+/// starts with a pipe on standard input that closes when this process ends.
+pub fn spawn_descendant(program: impl Fn(), variables: &[(&str, &str)]) -> std::process::Child {
+    let mut command = command(program, variables);
+    command.stdin(Stdio::piped());
+    command.spawn().unwrap()
+}
+
+/// Waits for the process that started this descendant to end.
+fn await_parent_exit() {
+    read_input();
+}
+
+/// Reports readiness to the parent's listener and returns the connection.
+fn ready() -> TcpStream {
+    let mut socket = connect();
+    socket.write_all(b"READY").unwrap();
+    socket
+}
+
+/// Holds until the parent releases the connection.
+fn hold() {
+    receive(&mut ready());
+}
+
+/// Writes `tail` to each standard descriptor not named in `closed` and ends.
+fn finish(closed: &str) -> ! {
+    let writers: [(char, Writer); 2] = [('1', write_stdout), ('2', write_stderr)];
+    for (stream, write) in writers {
+        if !closed.contains(stream) {
+            write(b"tail").unwrap();
+        }
+    }
+    leave(0)
+}
+
+/// Reports the null-device and byte checks the synchronous input tests expect.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn echo_input() {
+    let kind: &[u8] = if is_null("/dev/stdin") {
+        b"null:"
+    } else {
+        b"pipe:"
+    };
+    let input = read_input();
+    write_stdout(&[kind, &input].concat()).unwrap();
+    write_stderr(b"diag\0\xff").unwrap();
+    leave(variable("CHILD_EXIT").parse().unwrap())
+}
+
+/// Writes a large body while reading a large input.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn concurrent_io() {
+    write_stdout(&vec![b'y'; 262_144]).unwrap();
+    let data = read_input();
+    write_stdout(&data[..2]).unwrap();
+    write_stderr(data.len().to_string().as_bytes()).unwrap();
+    leave(0)
+}
+
+/// Reports its pid, waits for release, then returns the input it consumed.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn socket_consumer() {
+    let mut socket = connect();
+    announce(&mut socket, &std::process::id().to_string());
+    assert_eq!(receive(&mut socket), Some(b'!'));
+    socket.write_all(&read_input()).unwrap();
+    leave(0)
+}
+
+/// Closes its input, reports its pid, waits for release and reports an effect.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn closed_input_effect() {
+    close_streams("0");
+    let mut socket = connect();
+    announce(&mut socket, &std::process::id().to_string());
+    assert_eq!(receive(&mut socket), Some(b'!'));
+    socket.write_all(b"effect").unwrap();
+    leave(0)
+}
+
+/// Closes its input, reports its pid and ends.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn closed_input_report() {
+    close_streams("0");
+    announce(&mut connect(), &std::process::id().to_string());
+    leave(0)
+}
+
+/// Checks the launch it inherited and ends through the status `CHILD_EXIT` names.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn inherited_launch_target() {
+    assert_eq!(read_input(), b"inherited-input");
+    let arguments: Vec<String> = std::env::args().collect();
+    let operands = &arguments[arguments.len() - 4..];
+    assert_eq!(operands, ["literal $HOME;|", "", "repeat", "repeat"]);
+    assert_eq!(variable("MAESTRO_OPERAND"), "chosen");
+    let directory = std::fs::canonicalize(variable("MAESTRO_DIRECTORY")).unwrap();
+    assert_eq!(std::env::current_dir().unwrap(), directory);
+    write_stdout(b"inherited-out\0\xff").unwrap();
+    write_stderr(b"inherited-err").unwrap();
+    match variable("CHILD_EXIT").as_str() {
+        "signal" => kill_self(rustix::process::Signal::TERM),
+        code => leave(code.parse().unwrap()),
+    }
+}
+
+/// Leaves a descendant holding its output after the direct child ends.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn discarded_output_parent() {
+    assert_eq!(read_input(), b"copied");
+    let pid = std::process::id().to_string();
+    let port = variable("CHILD_PORT");
+    let variables = [("PARENT_PID", pid.as_str()), ("CHILD_PORT", port.as_str())];
+    let descendant = spawn_descendant(discarded_output_descendant, &variables);
+    std::mem::forget(descendant);
+    leave(7)
+}
+
+/// The descendant of [`discarded_output_parent`]: it reports which device its output is.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn discarded_output_descendant() {
+    await_parent_exit();
+    let mut socket = connect();
+    announce(&mut socket, &variable("PARENT_PID"));
+    assert_eq!(receive(&mut socket), Some(b'?'));
+    socket
+        .write_all(if is_null("/dev/stdout") { b"N" } else { b"P" })
+        .unwrap();
+    assert_eq!(receive(&mut socket), Some(b'!'));
+    write_stdout(b"descendant output").unwrap();
+    leave(0)
+}
+
+/// Behaviours of the held children of the lifecycle tests, selected by `CHILD_MODE`.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn held_child() {
+    let mode = variable("CHILD_MODE");
+    let closed = std::env::var("CHILD_CLOSED").unwrap_or_default();
+    match mode.as_str() {
+        "live" | "exit" => {
+            write_stdout(b"early").unwrap();
+            write_stderr(b"diag").unwrap();
+            if mode == "live" {
+                close_streams(&closed);
+                hold();
+                finish(&closed);
+            }
+            let port = variable("CHILD_PORT");
+            let variables = [
+                ("CHILD_PORT", port.as_str()),
+                ("CHILD_CLOSED", &closed),
+                ("CHILD_AFTER_EXIT", "1"),
+            ];
+            std::mem::forget(spawn_descendant(held_descendant, &variables));
+            leave(0)
+        }
+        "term" | "flood" => {
+            let (reader, writer) = std::os::unix::net::UnixStream::pair().unwrap();
+            signal_hook::low_level::pipe::register(signal_hook::consts::SIGTERM, writer).unwrap();
+            let _socket = ready();
+            (&reader).read_exact(&mut [0]).unwrap();
+            let body = if mode == "term" {
+                b"terminated".to_vec()
+            } else {
+                [vec![b'x'; 200_000], b"end".to_vec()].concat()
+            };
+            write_stdout(&body).unwrap();
+            leave(0)
+        }
+        _ => {
+            let port = variable("CHILD_PORT");
+            let descendant = command(held_descendant, &[("CHILD_PORT", port.as_str())])
+                .spawn()
+                .unwrap();
+            std::mem::forget(descendant);
+            hold();
+            leave(0)
+        }
+    }
+}
+
+/// A holder that outlives the direct child of [`held_child`]: with `CHILD_AFTER_EXIT` it
+/// waits for that child to end, closes the streams `CHILD_CLOSED` names, then holds.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn held_descendant() {
+    if std::env::var_os("CHILD_AFTER_EXIT").is_some() {
+        await_parent_exit();
+    }
+    let Ok(closed) = std::env::var("CHILD_CLOSED") else {
+        hold();
+        leave(0)
+    };
+    close_streams(&closed);
+    hold();
+    finish(&closed)
+}
+
+/// Checks its stream, directory and environment, then writes raw bytes to both streams.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn raw_stream_writer() {
+    assert!(read_input().is_empty());
+    let mut diagnostic = b"diag\0\xff".to_vec();
+    diagnostic.extend(vec![b'e'; 300_000]);
+    write_stderr(&diagnostic).unwrap();
+    let argument = std::env::args().next_back().unwrap();
+    let directory = std::env::current_dir().unwrap();
+    let mut head = format!("{argument}|{}|{}", directory.display(), variable("PROBE")).into_bytes();
+    head.extend_from_slice(b"\0\xe2");
+    write_stdout(&head).unwrap();
+    write_stdout(&[vec![b'o'; 300_000], b"\x82\xac\xff".to_vec()].concat()).unwrap();
+    leave(0)
+}
+
+/// Writes the combined bytes `CHILD_OUT` and `CHILD_ERR` name.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn sized_writer() {
+    let size = |name| variable(name).parse::<usize>().unwrap();
+    write_stdout(&vec![b'x'; size("CHILD_OUT")]).unwrap();
+    write_stderr(&vec![b'y'; size("CHILD_ERR")]).unwrap();
+    leave(0)
+}
+
+/// Overflows a bounded capture after it reported its pid and was released.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn overflowing_writer() {
+    let mut socket = connect();
+    announce(&mut socket, &std::process::id().to_string());
+    receive(&mut socket);
+    write_stdout(&vec![b'x'; 100_000]).unwrap();
+    receive(&mut socket);
+    leave(0)
+}
+
+/// Reports the fields the synchronous capture test expects.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn capture_probe() {
+    assert!(read_input().is_empty());
+    write_stderr(b"ignored").unwrap();
+    let arguments: Vec<String> = std::env::args().collect();
+    let flag = |null| if null { "True" } else { "False" };
+    let mut fields = arguments[arguments.len() - 3..].to_vec();
+    fields.extend([
+        variable("MAESTRO_CAPTURE"),
+        std::env::current_dir().unwrap().display().to_string(),
+        flag(is_null("/dev/stdin")).to_owned(),
+        flag(is_null("/dev/stderr")).to_owned(),
+    ]);
+    let mut body = fields.join("|").into_bytes();
+    body.extend_from_slice(b"\0\xff");
+    write_stdout(&body).unwrap();
+    leave(variable("CHILD_EXIT").parse().unwrap())
+}
+
+/// Ends through a termination signal it raises on itself.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn self_terminating() {
+    kill_self(rustix::process::Signal::TERM)
+}
+
+/// Prints its pid, session and process group.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn session_ids() {
+    let session = rustix::process::getsid(None).unwrap();
+    let group = rustix::process::getpgrp();
+    let ids = (session.as_raw_nonzero(), group.as_raw_nonzero());
+    write_stdout(format!("{} {} {}\n", std::process::id(), ids.0, ids.1).as_bytes()).unwrap();
+    leave(0)
+}
+
+/// Prints its session and process group.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn sync_session_ids() {
+    let session = rustix::process::getsid(None).unwrap();
+    let group = rustix::process::getpgrp();
+    write_stdout(format!("{} {}\n", session.as_raw_nonzero(), group.as_raw_nonzero()).as_bytes())
+        .unwrap();
+    leave(0)
+}
+
+/// Writes a prefix, then waits for a signal.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn prefix_then_wait() {
+    write_stdout(b"before-kill").unwrap();
+    loop {
+        std::thread::park();
+    }
+}
+
+/// Writes each `(descriptor, bytes)` pair of `CHILD_WRITES` once the parent saw the
+/// harness start bytes and acknowledged the previous write.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn acknowledged_writer() {
+    let mut socket = connect();
+    for (index, (stream, bytes)) in [(1, &b"a\0"[..]), (2, b"b"), (1, b"c")]
+        .into_iter()
+        .enumerate()
+    {
+        assert_eq!(receive(&mut socket), Some(b'g'), "write {index}");
+        match stream {
+            1 => write_stdout(bytes),
+            _ => write_stderr(bytes),
+        }
+        .unwrap();
+    }
+    assert_eq!(receive(&mut socket), Some(b'g'));
+    leave(0)
+}
+
+/// Writes `one` to standard output and `two` to standard error, each after a release.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn two_stream_writer() {
+    let mut socket = connect();
+    assert_eq!(receive(&mut socket), Some(b'g'));
+    write_stdout(b"one").unwrap();
+    assert_eq!(receive(&mut socket), Some(b'g'));
+    write_stderr(b"two").unwrap();
+    leave(0)
+}
+
+/// Prints readiness, reads one line, answers on both streams and ends with status 3.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn line_answerer() {
+    write_stdout(b"ready\n").unwrap();
+    let mut line = String::new();
+    std::io::stdin().read_line(&mut line).unwrap();
+    write_stderr(b"diag\xff").unwrap();
+    let arguments: Vec<String> = std::env::args().collect();
+    let mut fields = vec![line.trim().to_owned()];
+    fields.extend(arguments[arguments.len() - 2..].iter().cloned());
+    fields.extend([
+        std::env::current_dir().unwrap().display().to_string(),
+        variable("PROBE"),
+    ]);
+    write_stdout(fields.join("|").as_bytes()).unwrap();
+    leave(3)
+}
+
+/// Reports readiness and waits for its input to end, surviving a termination request when
+/// `CHILD_SURVIVES` is set.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn terminable() {
+    let survived = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    if std::env::var_os("CHILD_SURVIVES").is_some() {
+        signal_hook::flag::register(signal_hook::consts::SIGTERM, survived).unwrap();
+    }
+    write_stdout(b"ready\n").unwrap();
+    read_input();
+    leave(0)
+}
+
+/// Ends at once with no output of its own.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn immediate_exit() {
+    leave(0)
+}
+
+/// Writes raw bytes, closes its output while still running, then reports on its error
+/// stream around one byte of input and ends with status 7.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn closed_output_then_exit() {
+    write_stdout(b"prefix\0\xff").unwrap();
+    close_streams("1");
+    write_stderr(b"ready").unwrap();
+    std::io::stdin().read_exact(&mut [0]).unwrap();
+    write_stderr(b"last").unwrap();
+    leave(7)
+}
+
+/// Announces readiness, then echoes its input.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn ready_then_echo() {
+    write_stdout(b"ready").unwrap();
+    write_stdout(&read_input()).unwrap();
+    leave(0)
+}
+
+/// Blocks the signals the pseudo-terminal launch must reset, then replaces itself with
+/// the test executable and the arguments `CHILD_EXEC_ARGS` carries, so the blocked mask
+/// reaches the launch.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn blocked_signals_launcher() {
+    use nix::sys::signal::{SigSet, SigmaskHow, Signal, sigprocmask};
+    let mut blocked = SigSet::empty();
+    for signal in [
+        Signal::SIGHUP,
+        Signal::SIGINT,
+        Signal::SIGQUIT,
+        Signal::SIGALRM,
+        Signal::SIGTERM,
+        Signal::SIGCHLD,
+    ] {
+        blocked.add(signal);
+    }
+    sigprocmask(SigmaskHow::SIG_BLOCK, Some(&blocked), None).unwrap();
+    let program = std::ffi::CString::new(
+        std::env::current_exe()
+            .unwrap()
+            .into_os_string()
+            .into_encoded_bytes(),
+    )
+    .unwrap();
+    let mut arguments = vec![program.clone()];
+    for argument in variable("CHILD_EXEC_ARGS").split('\u{1f}') {
+        arguments.push(std::ffi::CString::new(argument).unwrap());
+    }
+    nix::unistd::execv(&program, &arguments).unwrap();
+}

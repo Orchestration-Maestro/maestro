@@ -1,6 +1,8 @@
 //! Raw byte resources retain the captured-child owner's exit and EOF phases.
 #![cfg(all(test, unix))]
+use crate::child_programs::{self, async_command, harness};
 use maestro_process::child_process::{RawChild, RawOutput};
+use maestro_test_process::HARNESS_START;
 use std::{
     process::Stdio,
     task::{Context, Waker},
@@ -14,12 +16,10 @@ fn run(action: impl Future<Output = ()>) {
         .unwrap();
     tokio::task::LocalSet::new().block_on(&runtime, action);
 }
-/// Starts a literal Python producer with its three descriptors piped.
-fn spawn(script: &str) -> (RawChild, impl Future<Output = ()> + 'static) {
-    let mut command = maestro_process::command("python3");
-    command.args(["-c", script]);
+/// Starts a controlled producer with its three descriptors piped.
+fn spawn(program: impl Fn()) -> (RawChild, impl Future<Output = ()> + 'static) {
     RawChild::spawn(
-        command,
+        async_command(program, &[]),
         [Stdio::piped(), Stdio::piped(), Stdio::piped()],
         false,
     )
@@ -37,11 +37,12 @@ async fn drain(output: &RawOutput) -> Vec<u8> {
 #[test]
 fn raw_child_output_close_is_independent_of_exit() {
     run(async {
-        let (child, collect) = spawn(
-            "import os; os.write(1,b'prefix\\x00\\xff'); os.close(1); os.write(2,b'ready'); os.read(0,1); os.write(2,b'last'); os._exit(7)",
-        );
+        let (child, collect) = spawn(child_programs::closed_output_then_exit);
         let collector = tokio::task::spawn_local(collect);
-        assert_eq!(drain(child.stdout.as_ref().unwrap()).await, b"prefix\0\xff");
+        assert_eq!(
+            drain(child.stdout.as_ref().unwrap()).await,
+            harness(b"prefix\0\xff")
+        );
         let mut waiting = std::pin::pin!(child.wait());
         assert!(
             waiting
@@ -60,18 +61,16 @@ fn raw_child_output_close_is_independent_of_exit() {
 #[test]
 fn raw_child_pipes_survive_control_drop_and_reap_once() {
     run(async {
-        let (child, collect) = spawn(
-            "import os,sys; os.write(1,b'ready'); data=sys.stdin.buffer.read(); os.write(1,data)",
-        );
+        let (child, collect) = spawn(child_programs::ready_then_echo);
         let pid = child.pid().unwrap();
         let input = child.stdin.as_ref().unwrap().clone();
         let output = child.stdout.as_ref().unwrap().clone();
         let collector = tokio::task::spawn_local(collect);
         let mut prefix = Vec::new();
-        while prefix.len() < 5 {
+        while prefix.len() < HARNESS_START.len() + 5 {
             prefix.extend(output.read().await.unwrap().unwrap());
         }
-        assert_eq!(prefix, b"ready");
+        assert_eq!(prefix, harness(b"ready"));
         drop(child);
         input.write(&[]).await.unwrap();
         input.write(&[0, 255, 1]).await.unwrap();

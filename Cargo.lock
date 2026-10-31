@@ -4361,6 +4361,7 @@ dependencies = [
  "maestro-test-directory",
  "maestro-test-process",
  "maestro-test-tracing",
+ "nix 0.31.3",
  "process-wrap",
  "rustix",
  "serde",

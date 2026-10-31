@@ -19,11 +19,10 @@ fn raw_read_failure_keeps_prefix_and_sibling_controls() {
         .build()
         .unwrap();
     tokio::task::LocalSet::new().block_on(&runtime, async {
-        let mut command = crate::command("python3");
-        command.args([
-            "-c",
-            "import os; os.write(1,b'prefix'); os.write(2,b'sibling'); os.read(0,1)",
-        ]);
+        let command = crate::child_process::tests::children::async_command(
+            crate::child_process::tests::children::prefix_and_sibling,
+            &[],
+        );
         let (child, work) = RawChild::spawn(
             command,
             [Stdio::piped(), Stdio::piped(), Stdio::piped()],
@@ -31,7 +30,11 @@ fn raw_read_failure_keeps_prefix_and_sibling_controls() {
         )
         .unwrap();
         let worker = tokio::task::spawn_local(work);
-        assert_eq!(prefix(child.stdout.as_ref().unwrap(), 6).await, b"prefix");
+        let expected = crate::child_process::tests::children::harness(b"prefix");
+        assert_eq!(
+            prefix(child.stdout.as_ref().unwrap(), expected.len()).await,
+            expected
+        );
         let mut producer = Capture {
             stdout: child.stdout.as_ref().map(|output| Rc::downgrade(&output.0)),
             stderr: child.stderr.as_ref().map(|output| Rc::downgrade(&output.0)),
