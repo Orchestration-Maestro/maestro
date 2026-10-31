@@ -133,19 +133,32 @@ are described in [Input](https://github.com/Orchestration-Maestro/maestro/blob/m
 order, except keyboard replies and the events of a drain, which are described below; a
 paste has its two markers put back. Malformed UTF-8 is never treated as a legacy
 alt-modified byte. At the end of input the decoder is flushed and reading stops, but the
-buffer's deadline, the keyboard decision and window-size tracking continue until `stop`.
+buffer's and held fragment's deadlines and window-size tracking continue until `stop`.
 A read error ends the input task, and with it that tracking; the first such error is kept
 and returned by the next `stop`.
 
 ## Keyboard protocols
 
-`start` asks the terminal for its enhanced keyboard flags. A reply is exactly `ESC [ ?`, one
-or more ASCII digits and `u`. The first reply enables the enhanced protocol (flags 7) and is
-not passed on; `kitty_protocol_active` becomes true and the toolkit's shared flag is set. A
-later reply while the protocol is active is ordinary input. If no reply arrives within
-150 ms of `start`, the modified-key reporting mode is enabled instead; a reply that arrives
-after that still enables the enhanced protocol, and both modes are then disabled at
-`stop`. Replies that do not match the form are ordinary input.
+`start` requests the enhanced keyboard flags (7), then asks the terminal which flags it runs
+and for its device attributes. Maestro waits for the answers; no timer chooses a mode. A reply
+is exactly `ESC [ ?`, one or more ASCII digits and `u` for the flags, or `ESC [ ?`, any ASCII
+digits and semicolons and `c` for the device attributes. Every reply is consumed and never
+reaches the input callback; other sequences are ordinary input.
+
+- Non-zero flags set `kitty_protocol_active` and the toolkit's shared flag, and switch the
+  modified-key reporting off if it is on.
+- Zero flags, or device attributes while the enhanced protocol is off, enable the modified-key
+  reporting. A terminal that does not know the enhanced protocol answers only the attributes,
+  so it gets the fallback as soon as that reply arrives.
+- A reply that arrives later still counts: a late flags reply turns the fallback off and the
+  enhanced protocol on.
+
+The framing may release the start of a reply (`ESC [` or `ESC [ ?` and digits) before the rest
+arrives. The terminal holds such a fragment for up to 150 ms and joins it with what follows. A
+fragment that never completes is then delivered as ordinary input, and a following sequence
+that cannot continue it delivers the fragment first. At `stop` the flags requested at `start`
+are popped, and the modified-key reporting is disabled if it was on. A terminal that is
+started again while it holds the flags asks again without requesting them a second time.
 
 ## Draining
 
@@ -161,8 +174,8 @@ is pending. It checks the elapsed quiet time and the maximum, then waits the sho
 of the idle time and the time left, so the idle exit is noticed on that cadence. Only complete decoded
 text counts as activity, not the bytes of an unfinished character. When the future ends, or
 is dropped, input delivery resumes with the original callback. A drain also closes keyboard
-negotiation for the current generation: no later reply and no pending fallback decision
-enables a mode, and a reply that arrives is consumed instead of delivered.
+negotiation for the current generation: no later reply changes a mode, a held reply fragment
+is dropped, and a reply that arrives is consumed instead of delivered.
 
 ## Window size
 

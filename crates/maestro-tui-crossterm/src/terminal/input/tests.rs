@@ -8,7 +8,6 @@ use std::time::Duration;
 
 use tokio::runtime::Builder;
 use tokio::task::LocalSet;
-use tokio::time::Instant;
 
 use super::{Input, Wake};
 use crate::terminal::ProcessTerminal;
@@ -22,14 +21,7 @@ fn input() -> (Input, Rc<RefCell<Vec<String>>>) {
         Box::new(move |text| record.borrow_mut().push(text.to_owned())),
         Box::new(|| {}),
     );
-    (
-        Input::new(
-            Rc::clone(&terminal.shared),
-            generation,
-            Instant::now() + Duration::from_millis(150),
-        ),
-        seen,
-    )
+    (Input::new(Rc::clone(&terminal.shared), generation), seen)
 }
 
 /// Delivers a raw read to the shared input state.

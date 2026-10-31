@@ -1,4 +1,4 @@
-//! The process terminal: raw standard input, streamed text input, the enhanced keyboard
+//! The process terminal: raw standard input, streamed text input, the reply-driven keyboard
 //! negotiation, bracketed paste, progress and the write log. The `unix` and `windows`
 //! modules own what each platform acquires, reads and writes; the rest is shared.
 
@@ -103,12 +103,15 @@ struct Shared {
     /// Receives window-size changes; absent while the terminal is stopped, and while one call
     /// to it runs.
     on_resize: RefCell<Option<ResizeCallback>>,
-    /// Whether the enhanced keyboard protocol is enabled, after the terminal reported support.
+    /// Whether the enhanced keyboard flags were requested and not yet popped.
+    pushed: Cell<bool>,
+    /// Whether the terminal reported the enhanced keyboard protocol on.
     enhanced: Cell<bool>,
-    /// Whether the modified-key reporting is enabled, because no support report arrived in time.
+    /// Whether the modified-key reporting is enabled, because the terminal reported no
+    /// enhanced keyboard protocol.
     fallback: Cell<bool>,
-    /// Whether a support reply read by the live generation may still enable the enhanced
-    /// keyboard modes; false once a drain has begun.
+    /// Whether a keyboard reply read by the live generation may still change the keyboard
+    /// modes; false once a drain has begun.
     negotiating: Cell<bool>,
     /// When decoded input last arrived, whether or not it was delivered.
     activity: Cell<Instant>,
@@ -226,6 +229,7 @@ impl ProcessTerminal {
                 generation: Cell::new(0),
                 on_input: RefCell::new(None),
                 on_resize: RefCell::new(None),
+                pushed: Cell::new(false),
                 enhanced: Cell::new(false),
                 fallback: Cell::new(false),
                 negotiating: Cell::new(false),
