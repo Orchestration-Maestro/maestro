@@ -33,7 +33,6 @@ fn result(id: &str) -> Entry {
         details: None,
         is_error: false,
         timestamp: 0.,
-        usage: None,
     })))
 }
 /// The original handle of a result entry.

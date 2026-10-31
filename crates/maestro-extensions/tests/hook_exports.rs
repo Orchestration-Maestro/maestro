@@ -5,19 +5,6 @@ use maestro_extensions::*;
 use maestro_session::Presence;
 use serde_json::json;
 
-/// A finished tool call event for `name` with no details or usage.
-fn result_event(name: &str) -> ToolResultEvent {
-    ToolResultEvent {
-        tool_call_id: "id".into(),
-        tool_name: name.into(),
-        input: json!({}),
-        content: vec![],
-        details: Presence::Missing,
-        is_error: false,
-        usage: Presence::Missing,
-    }
-}
-
 #[test]
 fn domain_exports_reuse_owned_types_and_toolkit_handles() {
     let _: Option<SlashCommandInfo> = None::<maestro_resources::SlashCommandInfo>;
@@ -61,7 +48,14 @@ fn domain_exports_reuse_owned_types_and_toolkit_handles() {
     ];
     let names = ["bash", "read", "edit", "write", "grep", "find", "ls"];
     for name in names.into_iter().chain(["custom", " Bash ", ""]) {
-        let event = result_event(name);
+        let event = ToolResultEvent {
+            tool_call_id: "id".into(),
+            tool_name: name.into(),
+            input: json!({}),
+            content: vec![],
+            details: Presence::Missing,
+            is_error: false,
+        };
         for (expected, predicate) in names.iter().zip(predicates) {
             assert_eq!(predicate(&event), *expected == name);
         }

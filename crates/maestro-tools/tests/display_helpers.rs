@@ -272,7 +272,6 @@ fn display_output_handles_absence_and_orders_content_by_kind() {
                     .unwrap(),
                 details: None,
                 terminate: None,
-                usage: None,
             });
         let output = get_text_output(
             result
@@ -295,7 +294,6 @@ fn display_output_handles_absence_and_orders_content_by_kind() {
         .unwrap(),
         details: None,
         terminate: None,
-        usage: None,
     };
     let output = get_text_output(
         Some(&maestro_tools::output::render_utils::ToolRenderResultLike::from(&distinct)),
@@ -313,7 +311,6 @@ fn borrowed_result_view_keeps_error_and_optional_details() {
         content: Vec::new(),
         details: Some(serde_json::Value::Null),
         terminate: None,
-        usage: None,
     };
     let mut view = ToolRenderResultLike::from(&source);
     assert!(std::ptr::eq(view.content, source.content.as_slice()));
@@ -329,7 +326,6 @@ fn borrowed_result_view_keeps_error_and_optional_details() {
         content: Vec::new(),
         details: None,
         terminate: None,
-        usage: None,
     };
     assert!(ToolRenderResultLike::from(&absent).details.is_none());
 }
@@ -342,7 +338,6 @@ fn borrowed_result_view_preserves_termination_hint() {
             content: Vec::new(),
             details: None,
             terminate,
-            usage: None,
         };
         assert_eq!(ToolRenderResultLike::from(&source).terminate, terminate);
     }

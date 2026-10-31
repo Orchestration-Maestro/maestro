@@ -68,7 +68,6 @@ context.messages.push(Message::ToolResult(ToolResultMessage {
     tool_name: "echo".into(),
     content: vec![UserBlock::Text(faux_text("package.json contents here"))],
     details: None,
-    usage: None,
     is_error: false,
     timestamp: 0.0,
 }));

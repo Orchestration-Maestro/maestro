@@ -36,7 +36,6 @@ pub fn calculate(expression: &str) -> Result<AgentToolResult<()>, String> {
         )))],
         details: None,
         terminate: None,
-        usage: None,
     })
 }
 

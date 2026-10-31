@@ -86,7 +86,6 @@ fn result(value: &Value) -> AgentToolResult<Value> {
         details: record.details.map(
             |details| json!({"diff":details.diff,"firstChangedLine":details.first_changed_line}),
         ),
-        usage: None,
     }
 }
 

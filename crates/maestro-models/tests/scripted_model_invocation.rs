@@ -1605,7 +1605,6 @@ mod tests {
                     details: Some(serde_json::json!({"ignored":true})),
                     is_error: false,
                     timestamp: 0.0,
-                    usage: None,
                 }),
             ],
             tools: Some(vec![Tool {
@@ -2139,7 +2138,6 @@ mod tests {
                 details: None,
                 is_error: false,
                 timestamp: 0.0,
-                usage: None,
             }));
         Ok(())
     }

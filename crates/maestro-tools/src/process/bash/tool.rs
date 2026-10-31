@@ -113,7 +113,7 @@ pub fn create_bash_tool_definition<C: 'static>(
                     Err(error) => return Box::pin(std::future::ready(Err(error))),
                 }
             } else { context };
-            if let Some(update) = &update { update(AgentToolResult { content: Vec::new(), details: None, terminate: None, usage: None, }); }
+            if let Some(update) = &update { update(AgentToolResult { content: Vec::new(), details: None, terminate: None }); }
             let operations = $ptr::clone(&operations);
             Box::pin($run(operations, context, input.timeout, signal, update))
         }),

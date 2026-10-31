@@ -127,8 +127,7 @@ bytes in place. Operations: `append_message`,
 Optional operands keep omission apart from null: `Presence::Missing` omits the
 member, `Presence::Null` writes null. `append_compaction` records its supplied
 cut identity without checking that it exists; `CompactionOptions::default()`
-omits its optional members: details, the extension flag and the usage of the requests
-that generated the summary. `BranchSummaryOptions` carries the same three operands. Custom messages are projected into model context by the
+omits both optional members. Custom messages are projected into model context by the
 rules under [Branch selection](#branch-selection) whether or not they are
 displayed; custom entries never are. Members are written in a fixed
 order, one compact LF-terminated line per record.
@@ -144,7 +143,7 @@ returns an invalid-data error; older names are not decoded.
 position before all entries, and the supplied summary is appended there with
 `fromId` set to the entry identity or the literal `root`. An unknown identity
 fails with `Entry {id} not found` before any change. The summary is supplied by
-the caller, with its `BranchSummaryOptions`; nothing is generated.
+the caller; nothing is generated.
 
 ## Read-only view
 

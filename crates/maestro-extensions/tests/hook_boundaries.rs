@@ -118,12 +118,6 @@ fn tool_call_failure_propagates_without_diagnostic_or_execution() {
     });
 }
 
-/// A stored usage record of nested model calls.
-fn nested_usage(input: f64, output: f64) -> serde_json::Value {
-    json!({"input": input, "output": output, "cacheRead": 0.0, "cacheWrite": 0.0,
-        "totalTokens": input + output,
-        "cost": {"input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0, "total": 0.5}})
-}
 fn tool_result() -> ToolResultEvent {
     ToolResultEvent {
         tool_call_id: "call".into(),
@@ -132,7 +126,6 @@ fn tool_result() -> ToolResultEvent {
         content: serde_json::from_value(json!([{ "type":"text","text":"original" }])).unwrap(),
         is_error: true,
         details: Presence::Present(json!({"original":true})),
-        usage: Presence::Missing,
     }
 }
 #[test]
@@ -168,7 +161,6 @@ fn tool_result_empty_patch_leaves_absence_and_original_top_level() {
                         content: Presence::Missing,
                         details: Presence::Missing,
                         is_error: Presence::Missing,
-                        usage: Presence::Missing,
                     }))))
                 }),
             )
@@ -200,7 +192,6 @@ async fn tool_result_patches_present_fields_and_preserves_prior_changes_case() {
         json!({"isError":false}),
         json!("failure"),
         json!({"details":{"final":true}}),
-        json!({"usage": nested_usage(1.0, 2.0)}),
     ] {
         install_tool_result_patch(&loaded, patch);
     }
@@ -208,8 +199,7 @@ async fn tool_result_patches_present_fields_and_preserves_prior_changes_case() {
     let result = runner.emit_tool_result(&original).await.unwrap().unwrap();
     assert_eq!(
         serde_json::to_value(result).unwrap(),
-        json!({"content":[],"details":{"final":true},"isError":false,
-            "usage": nested_usage(1.0, 2.0)})
+        json!({"content":[],"details":{"final":true},"isError":false})
     );
     bus.settle().await;
     combined_tool_result_patch().await;

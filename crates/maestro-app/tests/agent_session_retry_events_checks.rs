@@ -159,7 +159,6 @@ fn recorded_echo_tool(runs: Rc<RefCell<Vec<String>>>) -> ToolDefinitionHandle {
                 )],
                 details: Some(json!({"text": text})),
                 terminate: None,
-                usage: None,
             })
         })
     });

@@ -86,7 +86,6 @@ fn definition(name: &str, log: &Arc<Mutex<Vec<Seen>>>) -> ToolDefinition<u32, Ar
                     content: text("progress"),
                     details: Some(json!({"stage": 1})),
                     terminate: None,
-                    usage: None,
                 });
             }
             let details = (args.value != 6).then_some(Value::Null);
@@ -95,7 +94,6 @@ fn definition(name: &str, log: &Arc<Mutex<Vec<Seen>>>) -> ToolDefinition<u32, Ar
                     content: text("done"),
                     details,
                     terminate: None,
-                    usage: None,
                 })
             })
         }),
@@ -243,7 +241,6 @@ fn agent_tool(log: &Arc<Mutex<Vec<Call>>>, prepare: &PrepareArguments) -> AgentT
                 content: text("progress"),
                 details: Some(json!({"stage": 1})),
                 terminate: None,
-                usage: None,
             });
         }
         Box::pin(async {
@@ -251,7 +248,6 @@ fn agent_tool(log: &Arc<Mutex<Vec<Call>>>, prepare: &PrepareArguments) -> AgentT
                 content: text("done"),
                 details: Some(json!({"stage": 2})),
                 terminate: None,
-                usage: None,
             })
         })
     });
@@ -529,7 +525,6 @@ fn tool_definition_borrows_each_calls_arguments_and_keeps_row_state() {
         content: Vec::new(),
         details: None,
         terminate: None,
-        usage: None,
     };
     let invalidations = Rc::new(RefCell::new(0));
     for flipped in 0..6 {

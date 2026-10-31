@@ -680,7 +680,6 @@ fn native_details_without_bounds(view: &DomView) {
         details: Some(Opaque),
         is_error: false,
         timestamp: 0.,
-        usage: None,
     });
     let mut row = AssistantMessage::<Opaque>::default();
     assert!(row.mount(view).is_err());

@@ -291,7 +291,6 @@ fn build_message(
                 details: source.details.clone(),
                 is_error: source.is_error,
                 timestamp: source.timestamp,
-                usage: None,
             })
         }
     }
@@ -392,7 +391,6 @@ fn flush_missing(result: &mut Vec<Message>, projection: &Projection<'_>) {
             details: None,
             is_error: true,
             timestamp: timestamp_now(),
-            usage: None,
         }));
     }
 }

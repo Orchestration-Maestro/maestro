@@ -75,7 +75,7 @@ pub use maestro_models::{
 pub use maestro_resources::SourceInfo;
 pub use maestro_session::messages::CustomMessageInput;
 pub use maestro_session::session_manager::{
-    BranchSummaryOptions, CompactionOptions, ForkPosition, NavigateTreeOptions, NewSessionOptions,
+    CompactionOptions, ForkPosition, NavigateTreeOptions, NewSessionOptions,
     ReadonlySessionManager, SessionTreeNode,
 };
 pub use maestro_session::{CompactionResult, Presence, SessionManager};

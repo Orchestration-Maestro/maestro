@@ -45,7 +45,6 @@ fn reload_runtime_tool(api: ExtensionAPI) -> ToolDefinition {
                     ))],
                     details: Presence::Present(String::from("{}").into()),
                     terminate: Presence::Missing,
-                    usage: None,
                 })
             })
         }),

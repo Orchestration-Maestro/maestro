@@ -93,7 +93,6 @@ fn null_details_tool() -> AgentTool {
                     content: Vec::new(),
                     details: Some(Value::Null),
                     terminate: None,
-                    usage: None,
                 })
             })
         }),

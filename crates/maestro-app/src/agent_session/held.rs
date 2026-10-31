@@ -38,7 +38,6 @@ pub(super) fn heard_while_held(event: &SharedAgentEvent) -> Option<SharedAgentEv
                 content: Vec::new(),
                 details: None,
                 terminate: partial_result.terminate,
-                usage: None,
             },
         },
         _ => return Some(Arc::clone(event)),

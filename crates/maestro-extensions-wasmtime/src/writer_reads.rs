@@ -1,8 +1,8 @@
 //! Writable session requests retain the real setup capability on its local owner.
 use crate::local_resources::{Lease, Message};
 use maestro_extensions::{
-    BranchSummaryOptions, CompactionOptions, CompactionResult, CustomMessageInput,
-    NewSessionOptions, Presence, SessionManager,
+    CompactionOptions, CompactionResult, CustomMessageInput, NewSessionOptions, Presence,
+    SessionManager,
 };
 use serde::de::DeserializeOwned;
 use std::sync::{Arc, mpsc};
@@ -132,32 +132,16 @@ impl Request {
             Self::CustomMessage(value, reply) => {
                 send(&reply, append_custom_message(session, &value));
             }
-            Self::Summary(id, summary, metadata, reply) => {
-                send(
-                    &reply,
-                    append_summary(session, id.as_deref(), &summary, metadata),
-                );
-            }
+            Self::Summary(id, summary, (details, from_hook), reply) => send(
+                &reply,
+                json_presence(details.as_deref()).and_then(|details| {
+                    session
+                        .branch_with_summary(id.as_deref(), &summary, details, optional(from_hook))
+                        .map_err(|e| e.to_string())
+                }),
+            ),
         }
     }
-}
-
-/// Appends a branch summary whose details arrive as JSON text.
-fn append_summary(
-    session: &mut SessionManager,
-    id: Option<&str>,
-    summary: &str,
-    (details, from_hook): (Option<String>, Option<bool>),
-) -> Result<String, String> {
-    let details = json_presence(details.as_deref())?;
-    let options = BranchSummaryOptions {
-        details,
-        from_hook: optional(from_hook),
-        usage: Presence::Missing,
-    };
-    session
-        .branch_with_summary(id, summary, options)
-        .map_err(|e| e.to_string())
 }
 
 /// Encodes the domain-built context without a second projection.
@@ -192,7 +176,6 @@ fn append_compaction(
             CompactionOptions {
                 details: value.details,
                 from_hook: optional(from_hook),
-                usage: value.usage,
             },
         )
         .map_err(|e| e.to_string())

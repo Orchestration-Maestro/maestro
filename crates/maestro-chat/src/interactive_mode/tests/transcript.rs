@@ -1222,7 +1222,6 @@ pub(super) fn tool(name: &str) -> Definition {
                     content: Vec::new(),
                     details: None,
                     terminate: None,
-                    usage: None,
                 })
             })
         }),

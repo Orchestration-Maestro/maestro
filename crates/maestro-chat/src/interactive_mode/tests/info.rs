@@ -381,10 +381,6 @@ fn producer_case(world: &World, messages: Vec<Value>, stats: StatsRecord) {
             id: Some(stats.session_id.clone()),
             ..NewSessionOptions::default()
         });
-    for message in &messages {
-        let mut manager = session.session_manager().borrow_mut();
-        manager.append_message(message.clone()).unwrap();
-    }
     seed_messages(world, messages);
     world.mode.handle_session_command().unwrap();
     let produced = SessionStats {
@@ -414,8 +410,7 @@ fn session_info_keeps_counts_cache_cost_and_file_branches() {
                 world.mode.chat_container.clear();
                 match input {
                     SessionInput::Session { name, stats } => {
-                        let info =
-                            session_info(&theme, &stats.into(), name.as_deref(), &[]).unwrap();
+                        let info = session_info(&theme, &stats.into(), name.as_deref()).unwrap();
                         assert_eq!(info, text);
                         world.mode.add_text(info, 0);
                     }
@@ -446,10 +441,7 @@ async fn locale_texts(directory: &Path, selected: &str) {
         .collect();
     assert_eq!(recorded.len(), 6);
     for (stats, text) in recorded {
-        assert_eq!(
-            session_info(&theme, &stats.into(), None, &[]).unwrap(),
-            text
-        );
+        assert_eq!(session_info(&theme, &stats.into(), None).unwrap(), text);
     }
 }
 
@@ -463,49 +455,4 @@ fn session_info_uses_selected_locale_and_fixed_cost() {
             async |directory| (locale_texts(directory, selected)).await,
         );
     }
-}
-
-/// A cost bucket spending `cost` over `tokens`.
-fn bucket(key: &str, cost: f64, tokens: f64) -> maestro_app::UsageCostBreakdownEntry {
-    maestro_app::UsageCostBreakdownEntry {
-        key: key.into(),
-        cost,
-        tokens,
-    }
-}
-
-#[test]
-fn session_info_lists_cost_buckets_beside_the_total() {
-    isolated_case(
-        "session_info_lists_cost_buckets_beside_the_total",
-        "child",
-        &[("LC_ALL", "en_US.UTF-8")],
-        async |directory| {
-            let world = started(directory).await;
-            let theme = world.themes.theme().get().unwrap();
-            let stats = SessionStats {
-                session_file: None,
-                session_id: "id".into(),
-                user_messages: 0,
-                assistant_messages: 0,
-                tool_calls: 0,
-                tool_results: 0,
-                total_messages: 0,
-                tokens: SessionStatsTokens::default(),
-                cost: 1.1,
-                context_usage: None,
-            };
-            let buckets = [
-                bucket("Tools/summaries", 0.6, 90.0),
-                bucket("faux/plain", 0.5, 1500.0),
-            ];
-            let info = session_info(&theme, &stats, None, &buckets).unwrap();
-            assert!(info.contains("Tools/summaries:"), "{info}");
-            assert!(info.contains("0.6000 (90 tokens)"), "{info}");
-            assert!(info.contains("faux/plain:"), "{info}");
-            assert!(info.contains("0.5000 (1,500 tokens)"), "{info}");
-            let alone = session_info(&theme, &stats, None, &buckets[..1]).unwrap();
-            assert!(!alone.contains("Tools/summaries:"), "{alone}");
-        },
-    );
 }

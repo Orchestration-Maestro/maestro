@@ -134,7 +134,6 @@ fn agent_result_native_details_remain_typed() {
         content: vec![],
         details: Some(Details { answer: 42 }),
         terminate: Some(false),
-        usage: None,
     };
     assert_eq!(
         serde_json::to_value(typed).unwrap(),
@@ -152,7 +151,6 @@ fn agent_result_native_details_remain_typed() {
             content: vec![],
             details,
             terminate,
-            usage: None,
         };
         assert_eq!(serde_json::to_value(result).unwrap(), expected);
     }

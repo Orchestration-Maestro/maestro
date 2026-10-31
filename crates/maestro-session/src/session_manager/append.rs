@@ -1,8 +1,8 @@
 //! Entry append operations sharing one memory-before-publication path.
 use super::{
-    BranchSummaryEntry, BranchSummaryOptions, CompactionEntry, CompactionOptions, CustomEntry,
-    CustomMessageEntry, ModelChangeEntry, SessionEntryBase, SessionInfoEntry, SessionManager,
-    SessionMessageEntry, ThinkingLevelChangeEntry, context::ecma_whitespace, generate_id,
+    BranchSummaryEntry, CompactionEntry, CompactionOptions, CustomEntry, CustomMessageEntry,
+    ModelChangeEntry, SessionEntryBase, SessionInfoEntry, SessionManager, SessionMessageEntry,
+    ThinkingLevelChangeEntry, context::ecma_whitespace, generate_id,
 };
 use chrono::{SecondsFormat, Utc};
 use maestro_models::UserContent;
@@ -84,7 +84,6 @@ impl SessionManager {
             tokens_before,
             details: options.details,
             from_hook: options.from_hook,
-            usage: options.usage,
         })
     }
 
@@ -142,7 +141,8 @@ impl SessionManager {
         &mut self,
         branch_from_id: Option<&str>,
         summary: &str,
-        options: BranchSummaryOptions,
+        details: Presence<Value>,
+        from_hook: Presence<bool>,
     ) -> io::Result<String> {
         if let Some(id) = branch_from_id {
             self.require_entry(id)?;
@@ -152,9 +152,8 @@ impl SessionManager {
             base,
             from_id: branch_from_id.unwrap_or("root").to_owned(),
             summary: summary.to_owned(),
-            details: options.details,
-            from_hook: options.from_hook,
-            usage: options.usage,
+            details,
+            from_hook,
         })
     }
 }

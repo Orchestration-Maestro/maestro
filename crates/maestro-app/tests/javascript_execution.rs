@@ -918,7 +918,6 @@ fn static_tool() -> maestro_agent::AgentTool {
                     content: vec![],
                     details: None,
                     terminate: None,
-                    usage: None,
                 })
             })
         }),

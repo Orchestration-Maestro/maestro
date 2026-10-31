@@ -165,7 +165,6 @@ pub(crate) fn result(output: &str, is_error: bool) -> ToolResultMessage<Value> {
         content: vec![UserBlock::Text(TextContent::new(output.into()))],
         details: None,
         is_error,
-        usage: None,
     }
 }
 /// Page content showing fixed text in a paragraph.

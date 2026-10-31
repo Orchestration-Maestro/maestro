@@ -109,7 +109,6 @@ pub fn artifact(text: &str, terminate: bool) -> maestro_agent::AgentToolResult {
             maestro_models::TextContent::new(text.into()),
         )],
         details: Some(serde_json::json!({"output":text})),
-        usage: None,
         terminate: Some(terminate),
     }
 }

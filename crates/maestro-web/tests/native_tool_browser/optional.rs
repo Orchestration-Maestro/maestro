@@ -46,7 +46,6 @@ fn opaque(result: &ToolResultMessage) -> ToolResultMessage<Rc<Opaque>> {
         details: Some(Rc::new(Opaque)),
         is_error: result.is_error,
         timestamp: result.timestamp,
-        usage: None,
     }
 }
 /// Prepare a recorded command, calculation or current-time card for page content.
@@ -619,7 +618,6 @@ impl Panel {
             details: None,
             is_error: false,
             timestamp: 0.,
-            usage: None,
         }
     }
 }

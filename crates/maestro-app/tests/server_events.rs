@@ -22,14 +22,12 @@ fn progress_tool() -> ExtensionFactory<Local> {
                     content: text("halfway"),
                     details: Some(json!({"phase": "working"})),
                     terminate: None,
-                    usage: None,
                 });
             }
             Box::pin(std::future::ready(Ok(AgentToolResult {
                 content: text("finished"),
                 details: Some(json!({"phase": "done"})),
                 terminate: None,
-                usage: None,
             })))
         });
         Box::pin(std::future::ready(api.register_tool(tool)))

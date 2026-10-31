@@ -156,7 +156,6 @@ fn bash_elapsed_uses_one_decimal_seconds() {
                 content: vec![],
                 details: None,
                 terminate: None,
-                usage: None,
             }),
             maestro_tools::ToolRenderResultOptions {
                 expanded: false,
@@ -247,7 +246,6 @@ impl RecordedResult {
             content: self.content,
             details,
             terminate: None,
-            usage: None,
         }
     }
 }
@@ -283,7 +281,6 @@ fn empty() -> maestro_agent::AgentToolResult<maestro_tools::BashToolDetails> {
         content: vec![],
         details: None,
         terminate: None,
-        usage: None,
     }
 }
 /// Drive a complete result fixture, with clock setup through the call/result slots.

@@ -617,7 +617,7 @@ let factory: ExtensionFactory<Local> = Rc::new(|api| {
                 let context = ctx.ok_or_else(|| maestro_models::DiagnosticErrorInfo::error("missing context"))?;
                 let _cwd = context.cwd().map(str::to_owned)
                     .map_err(|error| maestro_models::DiagnosticErrorInfo::error(error.to_string()))?;
-                Ok(maestro_agent::AgentToolResult { content: vec![], details: Some(params), terminate: None, usage: None })
+                Ok(maestro_agent::AgentToolResult { content: vec![], details: Some(params), terminate: None })
             })), render_call: None, render_result: None,
         };
     let retained = Rc::new(RwLock::new(tool));

@@ -25,7 +25,6 @@ fn standard_message_projection_snapshots_known_variants() {
         details: None,
         is_error: true,
         timestamp: 9.0,
-        usage: None,
     };
     let history: Vec<AgentMessage<Foreign>> = vec![
         AgentMessage::User(Arc::new(RwLock::new(user.clone()))),

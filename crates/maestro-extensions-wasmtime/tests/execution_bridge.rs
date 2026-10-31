@@ -362,9 +362,7 @@ fn native_tree(
 
 /// Populates all opaque entry fields through their native writer, not a synthetic reader.
 fn seed_payloads(history: &mut maestro_session::SessionManager) {
-    use maestro_session::session_manager::{
-        BranchSummaryOptions, CompactionOptions, ReadonlySessionManager,
-    };
+    use maestro_session::session_manager::{CompactionOptions, ReadonlySessionManager};
     use serde_json::json;
     for payload in [
         Presence::Present(json!({"z": {"b": [false, null, "Ω"]}, "a": 1})),
@@ -391,14 +389,7 @@ fn seed_payloads(history: &mut maestro_session::SessionManager) {
             .unwrap();
         let parent = history.get_leaf_id().unwrap().to_owned();
         history
-            .branch_with_summary(
-                Some(&parent),
-                "summary",
-                BranchSummaryOptions {
-                    details: payload.clone(),
-                    ..Default::default()
-                },
-            )
+            .branch_with_summary(Some(&parent), "summary", payload.clone(), Presence::Missing)
             .unwrap();
         history
             .append_custom_message_entry(

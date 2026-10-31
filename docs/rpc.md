@@ -310,10 +310,9 @@ text and emits another update.
 
 The statistics example follows one shell command, one user prompt and one
 assistant answer. `totalMessages` includes application messages such as shell
-output. Saved sessions also include `sessionFile`. Message counts describe the
-current conversation. Token totals and `cost` cover every stored record: answers
-(also on other branches and before a compaction), usage that tools report, and the
-requests that generated compaction and branch summaries. `contextUsage` estimates the active context rather than lifetime usage;
+output. Saved sessions also include `sessionFile`. Token totals aggregate
+assistant usage in the current conversation; `cost` is the sum of reported
+costs. `contextUsage` estimates the active context rather than lifetime usage;
 it is absent without a context window. Its `tokens` and `percent` can be null
 after compaction until fresh assistant usage arrives.
 
@@ -347,8 +346,7 @@ events. See [shell execution](tools.md) for output and cancellation policy.
 Compaction calls the selected model and can incur charges. Its summary and entry
 ID depend on the conversation; `details` is optional JSON: built-in compaction
 records the files it read and modified, and an extension's compaction supplies its
-own data. `usage` reports the requests that generated the summary, and is absent when
-an extension supplied the summary without it; session totals count it.
+own data.
 Automatic compaction also emits these events with `reason` `threshold` or
 `overflow`. A cancelled compaction omits `result` and has `aborted:true`. A failed
 one omits `result` and has `aborted:false` and an `errorMessage`. An overflow recovery

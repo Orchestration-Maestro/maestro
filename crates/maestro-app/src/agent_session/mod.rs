@@ -28,7 +28,6 @@ pub use crate::skill_block::{ParsedSkillBlock, parse_skill_block};
 pub use selection::delivery_mode;
 pub(crate) use selection::{model_level, saved_level};
 pub(crate) use state::{agent_messages, content_text, thrown};
-pub use statistics::{UsageCostBreakdownEntry, UsageTotals, usage_cost_breakdown, usage_totals};
 pub use types::*;
 
 use crate::resources::resource_loader::{LoadPromptsResult, ResourceLoader};

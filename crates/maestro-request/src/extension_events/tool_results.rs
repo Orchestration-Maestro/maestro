@@ -1,6 +1,6 @@
 //! Tool handler answers and user shell-command data.
 use crate::presence::Presence;
-use crate::types::{Usage, UserBlock};
+use crate::types::UserBlock;
 use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -50,7 +50,4 @@ pub struct ToolResultEventResult<D> {
     #[serde(default, skip_serializing_if = "Presence::is_missing")]
     /// Is error.
     pub is_error: Presence<bool>,
-    #[serde(default, skip_serializing_if = "Presence::is_missing")]
-    /// Usage of model calls the tool made itself.
-    pub usage: Presence<Usage>,
 }

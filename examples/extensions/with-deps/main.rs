@@ -97,7 +97,6 @@ fn duration_tool() -> ExtensionResult<ToolDefinition> {
                     )))],
                     details: Presence::Present(json!({}).to_string().into()),
                     terminate: Presence::Missing,
-                    usage: None,
                 })
             })
         }),

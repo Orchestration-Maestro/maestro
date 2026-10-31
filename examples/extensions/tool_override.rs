@@ -71,7 +71,6 @@ fn result(text: String, details: &Value) -> AgentToolResult {
         content: vec![UserBlock::Text(TextContent::new(text))],
         details: Presence::Present(details.to_string().into()),
         terminate: Presence::Missing,
-        usage: None,
     }
 }
 

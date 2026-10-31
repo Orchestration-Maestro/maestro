@@ -156,7 +156,6 @@ pub(super) fn tool_result(fixture: &Value, details: &Details) -> Rc<ToolResultMe
         details: Some(details.clone()),
         is_error: recorded["isError"].as_bool().unwrap(),
         timestamp: recorded["timestamp"].as_f64().unwrap(),
-        usage: None,
     })
 }
 /// The row's ordinary card, if shown.
@@ -354,7 +353,6 @@ fn debug_result(content: &Value, details: Option<Value>) -> Rc<ToolResultMessage
         details,
         is_error: false,
         timestamp: 0.,
-        usage: None,
     })
 }
 /// Mount one debug view and compare every listing with its recorded code and painted text.

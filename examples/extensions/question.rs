@@ -54,7 +54,6 @@ fn result(params: &Params, text: String, answer: Option<&Selection>) -> AgentToo
         content: vec![UserBlock::Text(TextContent::new(text))],
         details: Presence::Present(details.to_string().into()),
         terminate: Presence::Missing,
-        usage: None,
     }
 }
 /// Opens the view only when the host has UI and at least one supplied option.

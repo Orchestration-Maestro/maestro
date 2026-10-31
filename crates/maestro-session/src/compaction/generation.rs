@@ -157,114 +157,11 @@ fn request(
     })
 }
 
-/// The summary requests a compaction starts: one for the history, or the early part of a
-/// split turn with a history request only when history remains.
-enum Requests {
-    /// The history request alone.
-    History(BoxFuture<Result<GeneratedSummary, DiagnosticErrorInfo>>),
-    /// The split-turn prefix request, with the history request that precedes it if any.
-    Split {
-        /// History preceding the split turn.
-        history: Option<BoxFuture<Result<GeneratedSummary, DiagnosticErrorInfo>>>,
-        /// The early part of the turn the cut falls in.
-        prefix: BoxFuture<Result<GeneratedSummary, DiagnosticErrorInfo>>,
-    },
-}
-
-/// Start the requests `preparation` needs, history first, before any is awaited.
-fn start_requests(
-    preparation: &super::CompactionPreparation,
-    model: &Model,
-    options: &SummaryOptions,
-) -> Requests {
-    let previous = preparation.previous_summary.present().map(String::as_str);
-    let reserve = preparation.settings.reserve_tokens;
-    let history = || {
-        generate_summary_with_usage(
-            &preparation.messages_to_summarize,
-            model,
-            reserve,
-            previous,
-            options,
-        )
-    };
-    if preparation.is_split_turn && !preparation.turn_prefix_messages.is_empty() {
-        let history = (!preparation.messages_to_summarize.is_empty()).then(history);
-        let prefix = generate_turn_prefix_summary(
-            &preparation.turn_prefix_messages,
-            model,
-            reserve,
-            options,
-        );
-        Requests::Split { history, prefix }
-    } else {
-        Requests::History(history())
-    }
-}
-
-/// Await the started requests, merging a split turn's two summaries and adding their usage.
-async fn settle(
-    requests: Requests,
-) -> Result<(String, maestro_models::Usage), DiagnosticErrorInfo> {
-    match requests {
-        Requests::History(history) => {
-            let history = history.await?;
-            Ok((history.text, history.usage))
-        }
-        Requests::Split { history, prefix } => {
-            let (history, prefix) = match history {
-                Some(history) => {
-                    let (history, prefix) = futures_util::future::try_join(history, prefix).await?;
-                    (Some(history), prefix)
-                }
-                None => (None, prefix.await?),
-            };
-            let text = history
-                .as_ref()
-                .map_or("No prior history.", |history| history.text.as_str());
-            let summary = format!(
-                "{text}\n\n---\n\n**Turn Context (split turn):**\n\n{}",
-                prefix.text
-            );
-            let usage = match history {
-                Some(history) => combine_usage(&history.usage, &prefix.usage),
-                None => prefix.usage,
-            };
-            Ok((summary, usage))
-        }
-    }
-}
-
-/// Add the counts and costs of two requests' usage.
-fn combine_usage(
-    first: &maestro_models::Usage,
-    second: &maestro_models::Usage,
-) -> maestro_models::Usage {
-    use maestro_request::presence::Presence;
-    let total =
-        |usage: &maestro_models::Usage| usage.total_tokens.present().copied().unwrap_or(0.0);
-    maestro_models::Usage {
-        input: first.input + second.input,
-        output: first.output + second.output,
-        cache_read: first.cache_read + second.cache_read,
-        cache_write: first.cache_write + second.cache_write,
-        total_tokens: Presence::Present(total(first) + total(second)),
-        cost: maestro_models::UsageCost {
-            input: first.cost.input + second.cost.input,
-            output: first.cost.output + second.cost.output,
-            cache_read: first.cost.cache_read + second.cost.cache_read,
-            cache_write: first.cost.cache_write + second.cost.cache_write,
-            total: first.cost.total + second.cost.total,
-        },
-    }
-}
-
 /// Start prepared compaction without writing or modifying history.
 ///
 /// Both split requests start eagerly when history and prefix are nonempty.
 /// Empty history with a nonempty prefix starts only the prefix request; an empty
 /// prefix starts only the history request. A first failure does not cancel its sibling.
-/// The result carries the requests' combined provider usage.
 /// Generation failures precede the empty retained-ID diagnostic.
 #[must_use]
 pub fn compact(
@@ -273,12 +170,36 @@ pub fn compact(
     options: &SummaryOptions,
 ) -> BoxFuture<Result<super::CompactionResult<super::CompactionDetails>, DiagnosticErrorInfo>> {
     use maestro_request::presence::Presence;
-    let requests = start_requests(preparation, model, options);
+    let previous = preparation.previous_summary.present().map(String::as_str);
+    let reserve = preparation.settings.reserve_tokens;
+    let history = if preparation.is_split_turn
+        && !preparation.turn_prefix_messages.is_empty()
+        && preparation.messages_to_summarize.is_empty()
+    {
+        Box::pin(async { Ok("No prior history.".to_owned()) }) as BoxFuture<_>
+    } else {
+        generate_summary(
+            &preparation.messages_to_summarize,
+            model,
+            reserve,
+            previous,
+            options,
+        )
+    };
+    let prefix =
+        (preparation.is_split_turn && !preparation.turn_prefix_messages.is_empty()).then(|| {
+            generate_turn_prefix_summary(&preparation.turn_prefix_messages, model, reserve, options)
+        });
     let details = utils::compute_file_lists(&preparation.file_ops);
     let id = preparation.first_kept_entry_id.clone();
     let tokens_before = preparation.tokens_before;
     Box::pin(async move {
-        let (mut summary, usage) = settle(requests).await?;
+        let mut summary = if let Some(prefix) = prefix {
+            let (history, prefix) = futures_util::future::try_join(history, prefix).await?;
+            format!("{history}\n\n---\n\n**Turn Context (split turn):**\n\n{prefix}")
+        } else {
+            history.await?
+        };
         summary.push_str(&utils::format_file_operations(
             &details.read_files,
             &details.modified_files,
@@ -293,7 +214,6 @@ pub fn compact(
             first_kept_entry_id: id,
             tokens_before,
             details: Presence::Present(details),
-            usage: Presence::Present(usage),
         })
     })
 }
@@ -320,18 +240,19 @@ fn generate_turn_prefix_summary(
     model: &Model,
     reserve: f64,
     options: &SummaryOptions,
-) -> BoxFuture<Result<GeneratedSummary, DiagnosticErrorInfo>> {
+) -> BoxFuture<Result<String, DiagnosticErrorInfo>> {
     let prompt = utils::serialize_raw_conversation(messages).map(|conversation| {
         format!(
             "<conversation>\n{conversation}\n</conversation>\n\n{}",
             prompts::TURN_PREFIX_SUMMARIZATION_PROMPT
         )
     });
-    request(
+    let summary = request(
         prompt,
         model,
         (0.5 * reserve).floor(),
         options,
         "Turn prefix summarization failed",
-    )
+    );
+    Box::pin(async move { Ok(summary.await?.text) })
 }

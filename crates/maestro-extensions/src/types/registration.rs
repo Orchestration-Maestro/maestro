@@ -336,7 +336,7 @@ impl<E: ExtensionExecution> Clone for RegisteredTool<E> {
 ///     execute: Arc::new(|_, params, _, _, context| Box::pin(async move {
 ///         assert!(context.is_some());
 ///         Ok(maestro_agent::AgentToolResult {
-///             content: vec![], details: Some(params), terminate: None, usage: None,
+///             content: vec![], details: Some(params), terminate: None,
 ///         })
 ///     })),
 ///     render_call: None, render_result: None,

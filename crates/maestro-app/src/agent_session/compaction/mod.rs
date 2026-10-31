@@ -24,7 +24,7 @@ enum BeforeCompaction {
     /// A handler supplied the summary.
     Supplied {
         /// The authored compaction.
-        result: Box<CompactionResult>,
+        result: CompactionResult,
     },
     /// No handler supplied content; generation reads the preparation handlers saw.
     Continue {
@@ -113,9 +113,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
             return Ok(BeforeCompaction::Cancelled);
         }
         Ok(match result.compaction {
-            Presence::Present(result) => BeforeCompaction::Supplied {
-                result: Box::new(result),
-            },
+            Presence::Present(result) => BeforeCompaction::Supplied { result },
             Presence::Missing | Presence::Null => BeforeCompaction::Continue {
                 preparation: Box::new(preparation),
             },
@@ -152,7 +150,6 @@ impl<E: ExtensionExecution> AgentSession<E> {
         let options = CompactionOptions {
             details: result.details.clone(),
             from_hook: Presence::Present(from_extension),
-            usage: result.usage.clone(),
         };
         let mut manager = self.session_manager.borrow_mut();
         let id = manager
@@ -218,7 +215,6 @@ fn stored_result(result: CompactionResult<maestro_session::CompactionDetails>) -
         first_kept_entry_id: result.first_kept_entry_id,
         tokens_before: result.tokens_before,
         details: generated_details(&result.details),
-        usage: result.usage,
     }
 }
 

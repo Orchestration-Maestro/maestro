@@ -41,10 +41,7 @@ pub struct ToolExecutionEndEvent<R> {
     pub is_error: bool,
 }
 
-use crate::{
-    presence::Presence,
-    types::{Usage, UserBlock},
-};
+use crate::{presence::Presence, types::UserBlock};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 /// Tool event payload.
@@ -74,9 +71,6 @@ pub struct ToolResultEvent<D, I> {
     #[serde(default, skip_serializing_if = "Presence::is_missing")]
     /// Details.
     pub details: Presence<D>,
-    #[serde(default, skip_serializing_if = "Presence::is_missing")]
-    /// Usage of model calls the tool made itself.
-    pub usage: Presence<Usage>,
 }
 /// Tool event payload.
 pub type CustomToolCallEvent<I> = ToolCallEvent<I>;

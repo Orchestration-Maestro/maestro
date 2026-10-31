@@ -239,7 +239,6 @@ fn result_document(
         content: result.content.to_vec(),
         details: result.details,
         terminate: result.terminate,
-        usage: None,
     };
     let mut document = serde_json::to_value(record)
         .map_err(|error| DiagnosticErrorInfo::error(error.to_string()))?;

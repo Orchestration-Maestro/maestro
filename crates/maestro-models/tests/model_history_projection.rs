@@ -75,7 +75,6 @@ mod tests {
             details: Some(json!({"retained":true})),
             is_error: false,
             timestamp: 7.0,
-            usage: None,
         })
     }
 

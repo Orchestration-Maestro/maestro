@@ -128,11 +128,11 @@
       "toolResults": 0,
       "totalMessages": 2,
       "tokens": {
-        "input": 102,
-        "output": 22,
+        "input": 100,
+        "output": 20,
         "cacheRead": 5,
         "cacheWrite": 3,
-        "total": 132
+        "total": 128
       },
       "cost": 0.25,
       "contextUsage": {
@@ -159,13 +159,13 @@
       "toolResults": 0,
       "totalMessages": 2,
       "tokens": {
-        "input": 130,
-        "output": 25,
+        "input": 100,
+        "output": 20,
         "cacheRead": 5,
         "cacheWrite": 3,
-        "total": 163
+        "total": 128
       },
-      "cost": 0.35,
+      "cost": 0.25,
       "contextUsage": {
         "tokens": 128,
         "contextWindow": 128000,

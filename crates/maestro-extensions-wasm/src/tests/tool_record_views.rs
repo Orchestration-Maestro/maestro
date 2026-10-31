@@ -12,7 +12,6 @@ fn guest_tool_aliases_use_shared_records() {
         content: vec![],
         details: Presence::Null,
         terminate: Presence::Present(false),
-        usage: None,
     };
     let module: crate::agent::AgentToolResult = result;
     assert!(matches!(module.details, Presence::Null));

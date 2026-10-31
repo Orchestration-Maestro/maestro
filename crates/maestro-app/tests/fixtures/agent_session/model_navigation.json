@@ -96,7 +96,7 @@
     }
   },
   "compaction_hides_stale_kept_usage": {
-    "input": 375000,
+    "input": 195000,
     "usage": {
       "tokens": null,
       "contextWindow": 200000,
@@ -104,7 +104,7 @@
     }
   },
   "fresh_usage_after_compaction_replaces_kept_usage": {
-    "input": 400000,
+    "input": 220000,
     "usage": {
       "tokens": 25000,
       "contextWindow": 200000,

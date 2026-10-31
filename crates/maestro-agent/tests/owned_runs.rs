@@ -790,7 +790,6 @@ async fn native_tool_progress(continuation: bool) {
                 )],
                 details: Some(serde_json::json!({"phase":"progress"})),
                 terminate: None,
-                usage: None,
             });
             support::ready(Ok(maestro_agent::AgentToolResult {
                 content: vec![maestro_models::UserBlock::Text(
@@ -798,7 +797,6 @@ async fn native_tool_progress(continuation: bool) {
                 )],
                 details: Some(serde_json::json!({"phase":"final"})),
                 terminate: Some(true),
-                usage: None,
             }))
         }));
         let listener: maestro_agent::AgentEventSink = Arc::new(move |event| {

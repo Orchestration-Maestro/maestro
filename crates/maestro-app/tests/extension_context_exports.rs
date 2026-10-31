@@ -326,7 +326,6 @@ fn sdk_registered_definition() -> maestro_app::ToolDefinition<
                     content: vec![],
                     details: Some(params),
                     terminate: None,
-                    usage: None,
                 })
             })
         }),

@@ -36,7 +36,6 @@ pub fn observe(mode: ToolExecutionMode) {
                     content: result.content.clone(),
                     details: result.details.clone(),
                     terminate: result.terminate,
-                    usage: None,
                 });
                 Ok(result)
             })

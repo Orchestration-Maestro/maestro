@@ -39,7 +39,7 @@ pub use crate::skill_block::{ParsedSkillBlock, parse_skill_block};
 pub use crate::agent_session::{
     AgentSession, AgentSessionConfig, AgentSessionEvent, AgentSessionEventListener,
     ExtensionBindings, ModelCycleResult, NavigateTreeResult, PromptOptions, SessionStats,
-    UsageCostBreakdownEntry, UsageTotals, delivery_mode, usage_cost_breakdown, usage_totals,
+    delivery_mode,
 };
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -83,6 +83,6 @@ pub use maestro_session::session_manager::{
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_extensions::runner::ExtensionRunnerSession;
 #[cfg(not(target_arch = "wasm32"))]
-pub use maestro_session::session_manager::ReadonlySessionManager;
+pub use maestro_session::session_manager::CompactionOptions;
 #[cfg(not(target_arch = "wasm32"))]
-pub use maestro_session::session_manager::{BranchSummaryOptions, CompactionOptions};
+pub use maestro_session::session_manager::ReadonlySessionManager;

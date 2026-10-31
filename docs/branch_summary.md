@@ -52,7 +52,7 @@ shared `compaction::SUMMARIZATION_SYSTEM_PROMPT`.
 | No prepared content; no invocation | `summary: "No content to summarize"` only |
 | Provider abort | `aborted: true` only |
 | Provider error | `error` only; absent/empty text becomes `Summarization failed` |
-| Success, including empty text | `summary`, `readFiles`, `modifiedFiles`, `usage` (the provider's report for the request) |
+| Success, including empty text | `summary`, `readFiles`, `modifiedFiles` |
 
 Successful text blocks join with newlines, receive the branch preamble and optional
 file sections. Nontext blocks are omitted. Projection errors fail before invocation;
@@ -116,7 +116,7 @@ drop(entries);
 drop(options);
 let result = pending.await;
 maestro_models::unregister_api_providers(api);
-let BranchSummaryResult::Summary { summary, read_files, modified_files, .. } = result?
+let BranchSummaryResult::Summary { summary, read_files, modified_files } = result?
     else { panic!("expected controlled success") };
 assert!(summary.ends_with("Continue work"));
 assert!(read_files.is_empty() && modified_files.is_empty());

@@ -115,7 +115,6 @@ impl BoardDetails {
                     .into(),
             ),
             terminate: Presence::Missing,
-            usage: None,
         })
     }
     /// Restates the board without revealing the human cursor.

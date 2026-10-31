@@ -540,7 +540,6 @@ fn keeps_content_details_and_error_from_tool_result_interception() {
                 ))]),
                 details: Presence::Present(json!({"replaced": true})),
                 is_error: Presence::Present(true),
-                usage: Presence::Missing,
             }))
         });
         let h = echo_session(vec![replacing], vec![echo_call(), Scripted::text("done")]).await;
@@ -746,14 +745,12 @@ fn inspecting_tools(
                     content: vec![UserBlock::Text(TextContent::new("progress".into()))],
                     details: Some(json!({"kept": true})),
                     terminate: None,
-                    usage: None,
                 });
             }
             Box::pin(std::future::ready(Ok(maestro_agent::AgentToolResult {
                 content: vec![UserBlock::Text(TextContent::new("finished".into()))],
                 details: Some(json!({"final": true})),
                 terminate: None,
-                usage: None,
             })))
         }),
     };

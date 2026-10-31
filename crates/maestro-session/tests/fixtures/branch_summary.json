@@ -1123,21 +1123,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -1236,21 +1222,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -1349,21 +1321,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -1462,21 +1420,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -1575,21 +1519,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -1688,21 +1618,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -1801,21 +1717,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -1917,21 +1819,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -2031,21 +1919,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -2144,21 +2018,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -2257,21 +2117,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -2371,21 +2217,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -2485,21 +2317,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -2599,21 +2417,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -2749,21 +2553,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -2851,21 +2641,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -3139,21 +2915,7 @@
           "readFiles": [
             "a"
           ],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -3244,21 +3006,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -3349,21 +3097,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -3498,21 +3232,7 @@
           "readFiles": [
             "x"
           ],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -3604,21 +3324,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -3709,21 +3415,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nfirst",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -3830,21 +3522,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nfirst\n\nlast",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -3926,21 +3604,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -4027,21 +3691,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -4128,21 +3778,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n\ufeff\u0085 \n\t",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -4229,21 +3865,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nfirst",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -4350,21 +3972,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nfirst\n\nlast",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -4446,21 +4054,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -4547,21 +4141,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -4648,21 +4228,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n\ufeff\u0085 \n\t",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -4749,21 +4315,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nfirst",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -4870,21 +4422,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nfirst\n\nlast",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -4966,21 +4504,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -5067,21 +4591,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -5168,21 +4678,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n\ufeff\u0085 \n\t",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -6214,21 +5710,7 @@
         "value": {
           "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\ndone",
           "readFiles": [],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -6342,21 +5824,7 @@
             "\ud83d\ude00",
             "\ue000"
           ],
-          "modifiedFiles": [],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          "modifiedFiles": []
         }
       },
       "calls": [
@@ -6466,21 +5934,7 @@
           "modifiedFiles": [
             "a",
             "z"
-          ],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          ]
         }
       },
       "calls": [
@@ -6628,21 +6082,7 @@
             "m",
             "same",
             "written"
-          ],
-          "usage": {
-            "input": 0.0,
-            "output": 0.0,
-            "cacheRead": 0.0,
-            "cacheWrite": 0.0,
-            "totalTokens": 0.0,
-            "cost": {
-              "input": 0.0,
-              "output": 0.0,
-              "cacheRead": 0.0,
-              "cacheWrite": 0.0,
-              "total": 0.0
-            }
-          }
+          ]
         }
       },
       "calls": [
@@ -6876,21 +6316,7 @@
     "result": {
       "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nafter release",
       "readFiles": [],
-      "modifiedFiles": [],
-      "usage": {
-        "input": 0.0,
-        "output": 0.0,
-        "cacheRead": 0.0,
-        "cacheWrite": 0.0,
-        "totalTokens": 0.0,
-        "cost": {
-          "input": 0.0,
-          "output": 0.0,
-          "cacheRead": 0.0,
-          "cacheWrite": 0.0,
-          "total": 0.0
-        }
-      }
+      "modifiedFiles": []
     }
   }
 }

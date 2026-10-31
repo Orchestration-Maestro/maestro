@@ -715,7 +715,6 @@ fn probing(runs: Rc<std::cell::Cell<usize>>) -> ExtensionFactory<Local> {
                 content: Vec::new(),
                 details: None,
                 terminate: None,
-                usage: None,
             })))
         });
         let registered = api.register_tool(tool).and_then(|()| {

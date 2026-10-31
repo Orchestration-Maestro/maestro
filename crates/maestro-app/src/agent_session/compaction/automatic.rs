@@ -170,7 +170,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
             .await?;
         let (result, from_extension) = match supplied {
             BeforeCompaction::Cancelled => return Ok(Outcome::Skipped { aborted: true }),
-            BeforeCompaction::Supplied { result } => (*result, true),
+            BeforeCompaction::Supplied { result } => (result, true),
             BeforeCompaction::Continue { preparation } => (
                 self.summarize(&preparation, auth, None, signal).await?,
                 false,

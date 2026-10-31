@@ -33,7 +33,6 @@ fn custom(name: &str) -> ToolDefinition<Value> {
                 content: vec![],
                 details: None,
                 terminate: None,
-                usage: None,
             })))
         }),
         render_call: None,
@@ -854,7 +853,6 @@ fn echo_definition(seen: Rc<RefCell<Vec<Value>>>, signal: Cancellation) -> ToolD
                     json!({"n":context.as_ref().map_or(-1, |c| c["n"].as_i64().unwrap())}),
                 ),
                 terminate: None,
-                usage: None,
             });
         }
         let n = args["n"].as_i64().unwrap();
@@ -862,7 +860,6 @@ fn echo_definition(seen: Rc<RefCell<Vec<Value>>>, signal: Cancellation) -> ToolD
             content: vec![text("done")],
             details: (n == 0).then_some(Value::Null),
             terminate: (n == 0).then_some(false),
-            usage: None,
         })))
     });
     definition
@@ -884,7 +881,6 @@ fn snapshot_observation() -> Value {
             content: vec![],
             details: Some(Value::Null),
             terminate: None,
-            usage: None,
         })))
     });
     let mut tool = wrap_tool_definition(definition, None);

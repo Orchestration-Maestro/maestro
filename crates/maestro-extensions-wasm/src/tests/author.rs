@@ -170,7 +170,6 @@ fn register_compaction(api: &ExtensionAPI) -> Result<(), String> {
                             first_kept_entry_id: compact.preparation.first_kept_entry_id.clone(),
                             tokens_before: compact.preparation.tokens_before,
                             details: Presence::Missing,
-                            usage: Presence::Missing,
                         }),
                     },
                 )))
@@ -886,7 +885,6 @@ fn summarize(event: &ExtensionEvent) -> ExtensionResult<ExtensionEventResult> {
                 first_kept_entry_id: event.preparation.first_kept_entry_id.clone(),
                 tokens_before: event.preparation.tokens_before,
                 details: Presence::Missing,
-                usage: Presence::Missing,
             }),
         },
     ))

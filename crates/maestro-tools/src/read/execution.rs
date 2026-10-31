@@ -57,7 +57,6 @@ fn image_result(
         content,
         details: None,
         terminate: None,
-        usage: None,
     }
 }
 

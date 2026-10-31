@@ -189,10 +189,6 @@ A result with `terminate` present and true asks to skip the next automatic model
 continuation. It takes effect only when every finalized result in the batch is
 terminating. It does not kill other calls in that batch, shut down Maestro or
 replace the explicit shutdown operation. Queued input can still require work.
-A tool that makes nested model calls returns their combined `Usage` as `usage`. Maestro
-stores it on the tool result and includes it in the footer, `/session` and RPC session
-totals, under a separate `Tools/summaries` cost bucket. `tool_result` handlers can read
-or replace it.
 See [tool callbacks](guest.md#tools) and [agent execution](../agent/api.md#tools-hooks-and-errors).
 
 ### Wrap a built-in instead of rewriting it

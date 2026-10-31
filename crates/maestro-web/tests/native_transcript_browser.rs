@@ -139,7 +139,6 @@ fn result(id: &str, details: Value) -> Arc<RwLock<ToolResultMessage>> {
         details: Some(details),
         is_error: false,
         timestamp: 0.,
-        usage: None,
     }))
 }
 /// An ordinary user entry.

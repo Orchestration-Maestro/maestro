@@ -61,16 +61,11 @@ impl<E: ExtensionExecution> ExtensionRunner<E> {
                 event.is_error = is_error;
                 modified = true;
             }
-            if !result.usage.is_missing() {
-                event.usage = result.usage;
-                modified = true;
-            }
         }
         Ok(modified.then_some(ToolResultEventResult {
             content: Presence::Present(event.content),
             details: event.details,
             is_error: Presence::Present(event.is_error),
-            usage: event.usage,
         }))
     }
 }

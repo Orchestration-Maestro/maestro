@@ -1,11 +1,12 @@
 //! The footer that shows the working directory, cumulative usage and the selected model.
 use super::{shorten_path_with_home, thinking_selector::thinking_text};
 use maestro_app::{
-    AgentSession, ExtensionExecution, Local, ReadonlyFooterDataProvider, ReadonlySessionManager,
-    ThinkingLevel, UsageTotals, is_whitespace_scalar, usage_totals,
+    AgentSession, DiagnosticErrorInfo, ExtensionExecution, Local, ReadonlyFooterDataProvider,
+    ReadonlySessionManager, ThinkingLevel, is_whitespace_scalar,
 };
 use maestro_theme::{Collator, LiveTheme, ThemeColor, paint};
 use maestro_tui::{Component, TruncateOptions, truncate_to_width, visible_width};
+use serde_json::Value;
 use std::{
     cell::{Cell, RefCell},
     error::Error,
@@ -28,6 +29,40 @@ struct Context {
     window: f64,
     /// Whether the session reports no usage at all, rather than unknown tokens.
     unstated: bool,
+}
+
+/// A stored record the footer cannot read.
+fn record_error(field: &str) -> DiagnosticErrorInfo {
+    DiagnosticErrorInfo::new(
+        Some("TypeError".to_owned()),
+        format!("the stored {field} is missing or not a number"),
+    )
+}
+
+/// The cumulative totals of every answer in the history.
+#[derive(Clone, Copy)]
+struct Totals {
+    /// Reported input tokens.
+    input: f64,
+    /// Reported output tokens.
+    output: f64,
+    /// Reported cache reads.
+    cache_read: f64,
+    /// Reported cache writes.
+    cache_write: f64,
+    /// Reported cost.
+    cost: f64,
+}
+
+impl Totals {
+    /// The totals before any answer contributed.
+    const EMPTY: Self = Self {
+        input: 0.0,
+        output: 0.0,
+        cache_read: 0.0,
+        cache_write: 0.0,
+        cost: 0.0,
+    };
 }
 
 /// The footer over a session, its read-only metadata, the published theme and the environment.
@@ -176,7 +211,7 @@ impl<E: ExtensionExecution> FooterComponent<E> {
     fn stats(
         &self,
         session: &AgentSession<E>,
-        totals: UsageTotals,
+        totals: Totals,
         context: Context,
         width: usize,
     ) -> Result<String, Box<dyn Error>> {
@@ -291,10 +326,32 @@ impl<E: ExtensionExecution + 'static> Component for FooterComponent<E> {
     fn invalidate(&self) {}
 }
 
-/// The cumulative totals of everything the retained history reported.
-fn totals<E: ExtensionExecution>(session: &AgentSession<E>) -> Result<UsageTotals, Box<dyn Error>> {
+/// The cumulative totals of every answer in the retained history.
+fn totals<E: ExtensionExecution>(session: &AgentSession<E>) -> Result<Totals, Box<dyn Error>> {
     let manager = session.session_manager().borrow();
-    Ok(usage_totals(&manager.get_entries())?)
+    let mut totals = Totals::EMPTY;
+    for entry in manager.get_entries() {
+        let message = entry.get("message").unwrap_or(&Value::Null);
+        if entry.get("type").and_then(Value::as_str) != Some("message")
+            || message.get("role").and_then(Value::as_str) != Some("assistant")
+        {
+            continue;
+        }
+        let usage = message
+            .get("usage")
+            .filter(|usage| usage.is_object())
+            .ok_or_else(|| record_error("usage"))?;
+        totals.input += reported(usage, "input");
+        totals.output += reported(usage, "output");
+        totals.cache_read += reported(usage, "cacheRead");
+        totals.cache_write += reported(usage, "cacheWrite");
+        let cost = usage
+            .get("cost")
+            .filter(|cost| cost.is_object())
+            .ok_or_else(|| record_error("usage.cost"))?;
+        totals.cost += reported(cost, "total");
+    }
+    Ok(totals)
 }
 
 /// The context window of the selected model.
@@ -341,6 +398,15 @@ fn layout(width: usize, left_width: usize, right: &str) -> String {
     let truncated_width = visible_width(&truncated);
     let padding = " ".repeat(width.saturating_sub(left_width + truncated_width));
     format!("{padding}{truncated}")
+}
+
+/// A stored numeric field: absent or non-numeric poisons the total, null contributes zero.
+fn reported(record: &Value, field: &str) -> f64 {
+    match record.get(field) {
+        Some(Value::Number(number)) => number.as_f64().unwrap_or(f64::NAN),
+        Some(Value::Null) => 0.0,
+        Some(_) | None => f64::NAN,
+    }
 }
 
 /// Whether a total is shown, which an unread total never is.

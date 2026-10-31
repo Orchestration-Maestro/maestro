@@ -605,7 +605,6 @@ fn tool_result(text: &str, details: Option<Value>) -> AgentToolResult {
     AgentToolResult {
         content: vec![UserBlock::Text(TextContent::new(text.into()))],
         details,
-        usage: None,
         terminate: None,
     }
 }

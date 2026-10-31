@@ -275,7 +275,6 @@ macro_rules! replay {
                                 details: Some(Value::Null),
                                 is_error: Some(false),
                                 terminate: Some(true),
-                                usage: None,
                             })),
                             _ => Ok(None),
                         };

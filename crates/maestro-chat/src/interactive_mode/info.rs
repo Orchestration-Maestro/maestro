@@ -1,8 +1,6 @@
 //! The session name and session information commands.
 use super::InteractiveMode;
-use maestro_app::{
-    LocaleNumberFormat, SessionStats, UsageCostBreakdownEntry, is_whitespace_scalar,
-};
+use maestro_app::{LocaleNumberFormat, SessionStats, is_whitespace_scalar};
 use maestro_theme::{Theme, ThemeColor};
 use std::{error::Error, fmt::Write as _};
 
@@ -39,17 +37,16 @@ impl InteractiveMode {
     pub fn handle_session_command(&self) -> Result<(), Box<dyn Error>> {
         let session = self.runtime_host.session();
         let stats = session.get_session_stats()?;
-        let buckets = session.get_usage_cost_breakdown()?;
         let name = session.session_name()?;
         let theme = self.themes.theme().get()?;
-        let info = session_info(&theme, &stats, name.as_deref(), &buckets)?;
+        let info = session_info(&theme, &stats, name.as_deref())?;
         self.add_text(info, 0);
         Ok(())
     }
 }
 
 /// The session information: bold headings, dim labels, token totals in the environment's
-/// locale and a positive cost with four decimals, split by cost bucket when there are several.
+/// locale and a positive cost with four decimals.
 ///
 /// # Errors
 /// Returns the failure to prepare the locale's number format or to format a total, or of
@@ -58,7 +55,6 @@ pub(super) fn session_info(
     theme: &Theme,
     stats: &SessionStats,
     name: Option<&str>,
-    buckets: &[UsageCostBreakdownEntry],
 ) -> Result<String, Box<dyn Error>> {
     let numbers = LocaleNumberFormat::new(&|key| std::env::var(key).ok())?;
     let label = |text| theme.fg(&ThemeColor::Dim, text);
@@ -97,17 +93,10 @@ pub(super) fn session_info(
         }
     }
     if stats.cost > 0.0 {
-        let fixed = |cost| ryu_js::Buffer::new().format_to_fixed(cost, 4).to_owned();
-        let cost = fixed(stats.cost);
+        let cost = ryu_js::Buffer::new()
+            .format_to_fixed(stats.cost, 4)
+            .to_owned();
         write!(info, "\n{}\n{} {cost}", heading("Cost"), label("Total:")?)?;
-        if buckets.len() > 1 {
-            for bucket in buckets {
-                let tokens = numbers.format(bucket.tokens)?;
-                let text = format!("{}:", bucket.key);
-                let key = theme.fg(&ThemeColor::Dim, &text)?;
-                write!(info, "\n  {key} {} ({tokens} tokens)", fixed(bucket.cost))?;
-            }
-        }
     }
     Ok(info)
 }
