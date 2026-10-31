@@ -227,7 +227,7 @@ impl<C: FnMut() -> u128> App<C> {
 
 /// Git's user-level configuration files for the process environment.
 fn git_config_environment() -> ConfigEnvironment {
-    let home = std::env::var_os("HOME").map(PathBuf::from);
+    let home = crate::paths::home_directory();
     let xdg = std::env::var_os("XDG_CONFIG_HOME")
         .filter(|value| !value.is_empty())
         .map(PathBuf::from);
