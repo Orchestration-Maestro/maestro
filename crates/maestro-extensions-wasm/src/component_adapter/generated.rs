@@ -184,8 +184,8 @@ impl Imports for Generated {
         registry_is_using_oauth(resource: &Self::Registry, model: &str) -> bool => is_using_oauth(model) via route::boolean;
     } }
     forward_resources! { routed value functions {
-        create_model_registry(auth: &Self::Credentials, path: Option<&str>) -> Self::Registry => host::create_model_registry via route::registry;
-        in_memory_model_registry(auth: &Self::Credentials) -> Self::Registry => host::in_memory_model_registry via route::registry;
+        create_model_registry(auth: &Self::Credentials, path: Option<&str>) -> Self::Registry => host::create_model_registry => route::registry;
+        in_memory_model_registry(auth: &Self::Credentials) -> Self::Registry => host::in_memory_model_registry => route::registry;
     } }
     forward_resources! { routed {
         credentials_reload(resource: &Self::Credentials) => reload();
