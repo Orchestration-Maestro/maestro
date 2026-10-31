@@ -272,3 +272,78 @@ fn unknown_modifier_word_is_rejected() {
         }
     }
 }
+
+#[test]
+fn ascii_capital_is_shifted_lowercase_in_both_frontends() {
+    let spellings: [Spelling; 3] = [
+        ("K", "K", (KeyCode::Char('k'), KeyModifiers::SHIFT)),
+        (
+            "ctrl+K",
+            "\x1b[107;6u",
+            (
+                KeyCode::Char('k'),
+                KeyModifiers::CONTROL | KeyModifiers::SHIFT,
+            ),
+        ),
+        (
+            " Alt + V ",
+            "\x1b[118;4u",
+            (KeyCode::Char('v'), KeyModifiers::ALT | KeyModifiers::SHIFT),
+        ),
+    ];
+    for (spelling, report, combo) in spellings {
+        assert_eq!(
+            parse_key_combo(spelling),
+            Some(combo),
+            "workspace {spelling}"
+        );
+        assert!(
+            maestro_tui::matches_key(report, spelling),
+            "chat {spelling}"
+        );
+    }
+    assert!(
+        !maestro_tui::matches_key("k", "K"),
+        "chat K against plain k"
+    );
+}
+
+#[test]
+fn non_ascii_capital_stays_as_typed_in_the_workspace() {
+    assert_eq!(
+        parse_key_combo("Ö"),
+        Some((KeyCode::Char('Ö'), KeyModifiers::NONE))
+    );
+    assert_eq!(
+        parse_key_combo("alt+É"),
+        Some((KeyCode::Char('É'), KeyModifiers::ALT))
+    );
+}
+
+#[test]
+fn function_key_numbers_parse_any_byte_in_both_frontends() {
+    for number in [0u8, 1, 12, 13, 35, 36, 255] {
+        let spelling = format!("ctrl+f{number}");
+        assert_eq!(
+            parse_key_combo(&spelling),
+            Some((KeyCode::F(number), KeyModifiers::CONTROL)),
+            "workspace {spelling}"
+        );
+        let chat = maestro_tui::keys::Identifier::parse(&spelling);
+        assert_eq!(
+            chat.map(|identifier| identifier.target),
+            Some(maestro_tui::keys::Target::Named(
+                maestro_tui::keys::Named::Function(number)
+            )),
+            "chat {spelling}"
+        );
+    }
+    for rejected in ["f256", "f-1", "f+1", "fx", "f1x"] {
+        assert_eq!(parse_key_combo(rejected), None, "workspace {rejected}");
+        assert_eq!(
+            maestro_tui::keys::Identifier::parse(rejected),
+            None,
+            "chat {rejected}"
+        );
+    }
+}
