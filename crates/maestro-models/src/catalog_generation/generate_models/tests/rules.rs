@@ -243,10 +243,11 @@ fn opencode_kimi_k2_6_uses_the_thinking_object_format() {
             "{provider}"
         );
     }
-    assert_eq!(
-        level(found(&catalog, "opencode-go", "kimi-k2.6"), &Level::Off),
-        Some(&Some("none".into()))
-    );
+    let go = found(&catalog, "opencode-go", "kimi-k2.6");
+    for hidden in [Level::Minimal, Level::Low, Level::Medium] {
+        assert_eq!(level(go, &hidden), Some(&None), "{hidden:?}");
+    }
+    assert_eq!(level(go, &Level::Off), None);
 }
 
 #[test]
