@@ -24,7 +24,8 @@ pub(super) struct State {
     pub(super) runtime_overrides: HashMap<String, String>,
     /// Lookup consulted after stored and environment keys.
     pub(super) fallback_resolver: Option<Arc<dyn FallbackResolver>>,
-    /// Whether the last load failed; writes are skipped until a reload or a locked refresh reread succeeds.
+    /// Whether the last load failed; writes are skipped until a reload, a locked refresh reread
+    /// or a read that adopts a changed document succeeds.
     pub(super) load_error: bool,
     /// Stored text the accepted records last matched. A read keeps the accepted records while
     /// the stored text is unchanged, so a change whose write failed stays visible; `None`
@@ -32,6 +33,15 @@ pub(super) struct State {
     pub(super) stored: Option<String>,
     /// Failures in recording order.
     pub(super) errors: Vec<AuthStorageError>,
+}
+
+impl State {
+    /// Accept a stored document and the text it was read from; the load no longer counts as failed.
+    pub(super) fn accept(&mut self, data: Map<String, Value>, text: String) {
+        self.data = data;
+        self.stored = Some(text);
+        self.load_error = false;
+    }
 }
 
 /// Accepted stored credentials over a raw-text backend.
@@ -92,7 +102,7 @@ impl AuthStorage {
     /// Reread the stored document, then lock the accepted state, so a read sees what another
     /// process wrote since the last load. A document that cannot be read or parsed leaves the
     /// accepted records as they are and records nothing.
-    fn latest(&self) -> MutexGuard<'_, State> {
+    pub(super) fn latest(&self) -> MutexGuard<'_, State> {
         let mut seen = String::new();
         let read = self.storage.with_lock(&mut |current| {
             current.unwrap_or_default().clone_into(&mut seen);
@@ -103,9 +113,7 @@ impl AuthStorage {
             && state.stored.as_deref() != Some(seen.as_str())
             && let Ok(data) = parse_storage_data(Some(&seen))
         {
-            state.data = data;
-            state.stored = Some(seen);
-            state.load_error = false;
+            state.accept(data, seen);
         }
         state
     }
@@ -141,11 +149,7 @@ impl AuthStorage {
         });
         let mut state = self.state();
         match outcome {
-            Ok(()) => {
-                state.data = loaded;
-                state.stored = Some(seen);
-                state.load_error = false;
-            }
+            Ok(()) => state.accept(loaded, seen),
             Err(error) => {
                 state.load_error = true;
                 state.errors.push(error);
@@ -168,10 +172,7 @@ impl AuthStorage {
         });
         let mut state = self.state();
         match (outcome, written) {
-            (Ok(()), Some((merged, text))) => {
-                state.data = merged;
-                state.stored = Some(text);
-            }
+            (Ok(()), Some((merged, text))) => state.accept(merged, text),
             (Err(error), _) => state.errors.push(error),
             (Ok(()), None) => {}
         }

@@ -79,9 +79,10 @@ impl AuthStorage {
     ) -> Result<Refreshed, AuthStorageError> {
         let record = {
             let mut state = self.state();
-            state.data = parse_storage_data(current.as_deref())?;
-            state.stored = Some(current.unwrap_or_default());
-            state.load_error = false;
+            state.accept(
+                parse_storage_data(current.as_deref())?,
+                current.unwrap_or_default(),
+            );
             state.data.get(provider_id).and_then(decode)
         };
         let Some(AuthCredential::OAuth(credentials)) = record else {

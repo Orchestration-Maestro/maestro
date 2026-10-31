@@ -15,15 +15,16 @@ source names; it is not the stored-file writer, which stays with `AuthStorage`.
 ## Stored credentials
 
 `AuthStorage` accepts the stored records when it is created, on `reload`, before each
-`get`, `get_all` and `list`, and when a locked refresh rereads the document,
-adopting a newer one, so a long-lived storage sees what another process wrote. A read
-whose document is unchanged keeps the accepted records, and one that cannot read or parse
-the document keeps them too, recording nothing; other reads and changes use that accepted
-snapshot. Missing or empty
-stored text is an empty store. Text that is not a JSON object, or cannot be read,
+`get`, `get_all`, `list`, `has_auth`, `get_auth_status` and `get_api_key`, and when a
+locked refresh rereads the document, adopting a newer one, so a long-lived storage sees
+what another process wrote and a request uses the key stored now. A read whose document
+is unchanged keeps the accepted records, and one that cannot read or parse the document
+keeps them too, recording nothing; `has` answers from that accepted snapshot. Missing or
+empty stored text is an empty store. Text that is not a JSON object, or cannot be read,
 locked or parsed, is a load failure: the accepted records are kept, the failure
 is recorded for `drain_errors` (oldest first), and `set`/`remove` change only
-accepted memory until a `reload` or a locked refresh reread succeeds. Construction never fails.
+accepted memory until a `reload`, a locked refresh reread or a read that adopts a changed
+document succeeds. Construction never fails.
 
 `set` and `remove` change accepted memory first, then reread the stored text under
 the backend's exclusion and change only that provider in it; records other writers
