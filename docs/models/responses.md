@@ -22,7 +22,9 @@ also fall back to `OPENAI_API_KEY` after explicit and provider keys.
 Cache retention follows the shared [options policy](../model-options.md#cache-retention). Long retention is sent only when the
 model compatibility permits it. Disabling `sendSessionIdHeader` leaves generated
 `x-client-request-id` enabled for a nonempty cache session. Cache none suppresses
-generated affinity and the prompt key, not explicitly supplied headers.
+generated affinity and the prompt key, not explicitly supplied headers. A prompt key built
+from a session ID keeps at most its first 64 Unicode characters, in Chat Completions, Responses,
+subscription-backed and Azure requests alike; the session headers keep the full ID.
 
 Reasoning options select effort and summary for reasoning models; requested
 reasoning includes encrypted content for replay. Summary alone selects literal
@@ -108,7 +110,7 @@ Later valid entries replace earlier ones, including a whitespace-only value that
 becomes empty. A deployment changes the initial payload's `model`, not the selected model's
 identity or rates.
 
-Before `on_payload`, the initial payload uses the supplied session ID as
+Before `on_payload`, the initial payload uses the supplied session ID, cut to 64 Unicode characters, as
 `prompt_cache_key`, including an empty string, independently of retention. It
 omits store, retention, service tier and metadata. Reasoning uses the shared
 effort mapping without the standard endpoint's account-provider exception;

@@ -15,6 +15,7 @@ use crate::providers::http::{
     send_with_status_error,
 };
 use crate::providers::json_text::compact_json;
+use crate::providers::openai_prompt_cache::prompt_cache_key;
 use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, Context, DiagnosticErrorInfo, Local, Model,
     ProviderExecution, ProviderInvocation, ProviderSpawner, SharedAssistantMessage,
@@ -364,7 +365,7 @@ fn build_params<E: ProviderExecution>(
             None,
         )?,
         stream: true,
-        prompt_cache_key: options.common.session_id.as_deref(),
+        prompt_cache_key: options.common.session_id.as_deref().map(prompt_cache_key),
         max_output_tokens: options
             .common
             .max_tokens
