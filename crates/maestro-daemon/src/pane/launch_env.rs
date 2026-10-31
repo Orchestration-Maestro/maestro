@@ -1,7 +1,10 @@
 //! Pane terminal identity and launch environment edits.
 
 use maestro_process::pty::{PtyCommand, PtyEnvironment};
-use std::{ffi::OsString, path::Path};
+use std::{
+    ffi::{OsStr, OsString},
+    path::Path,
+};
 
 /// Extra user environment pairs and the pane identity policy.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -61,6 +64,17 @@ impl PaneLaunchEnv {
 
     /// Apply pane identity after terminal defaults and explicit user pairs.
     pub fn apply(&self, command: &mut PtyCommand, socket: &Path, executable: Option<&Path>) {
+        self.apply_with(command, socket, executable, &process_variable);
+    }
+
+    /// Apply the pane policy, reading an inherited parent variable through `parent`.
+    fn apply_with(
+        &self,
+        command: &mut PtyCommand,
+        socket: &Path,
+        executable: Option<&Path>,
+        _parent: &dyn Fn(&OsStr) -> Option<OsString>,
+    ) {
         let mut edits = vec![
             ("TERM".into(), Some("xterm-256color".into())),
             ("COLORTERM".into(), Some("truecolor".into())),
@@ -99,6 +113,13 @@ impl PaneLaunchEnv {
         }
         apply_edits(&mut command.environment, edits);
     }
+}
+
+/// Read a variable of this process by its exact name, whatever the platform's casing rule.
+fn process_variable(name: &OsStr) -> Option<OsString> {
+    std::env::vars_os()
+        .find(|(key, _)| key == name)
+        .map(|(_, value)| value)
 }
 
 /// Preserve the caller's inheritance/replacement choice while applying ordered edits.
