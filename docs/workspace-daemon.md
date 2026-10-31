@@ -177,7 +177,7 @@ axes and resume provenance. Screen history is stored separately and can be
 removed by saving without history.
 
 Saving writes pretty JSON without a trailing newline through the shared
-[atomic replacement](locking.md#atomic-replacement) operation, following symbolic
+[recoverable in-place publication](locking.md#recoverable-byte-publication) operation, following symbolic
 links. Topology commits before history is saved or removed; failure on the second
 file does not undo the first. Snapshot saves ignore postcommit directory-sync
 advisories.
@@ -336,11 +336,18 @@ recovery follows its retained soft-wrap rows, but rejects an incomplete prompt w
 prefix has been discarded.
 
 `maestro_daemon::pane::launch_env::PaneLaunchEnv` applies terminal defaults
-(`TERM=xterm-256color`, `COLORTERM=truecolor`), removes an inherited agent thread
-id, and applies user environment pairs. User pairs can override terminal defaults.
-The daemon marker, supplied socket/binary paths and managed workspace/tab/pane
-identity then override user pairs. Callers may retain inherited identity or remove
-only the pane id. Existing replacement environments remain replacements.
+(`TERM=xterm-256color`, `COLORTERM=truecolor`) and names the terminal the child runs
+in: `TERM_PROGRAM=maestro` and `TERM_PROGRAM_VERSION` set to the product version,
+whatever the parent holds. It sets `fish_handle_reflow=0` unless the parent already
+holds that exact name; a differently cased name does not count. It removes an
+inherited agent thread id and the markers of the outer terminal or multiplexer
+(`ITERM_SESSION_ID`, `LC_TERMINAL`, `LC_TERMINAL_VERSION`, `WEZTERM_PANE`,
+`KITTY_WINDOW_ID`, `WT_SESSION`, `TMUX`, `TMUX_PANE`, `STY`, `ZELLIJ`,
+`ZELLIJ_SESSION_NAME`, `ZELLIJ_PANE_ID`), then applies user environment pairs.
+User pairs can override these defaults. The daemon marker, supplied socket/binary
+paths and managed workspace/tab/pane identity then override user pairs. Callers may
+retain inherited identity or remove only the pane id. Existing replacement
+environments remain replacements, and both environment modes give the same result.
 
 The native PTY adapter is currently available on Linux; shell policy branches for
 Windows and macOS are exercised with supplied target and environment observations.
@@ -463,7 +470,7 @@ client or background worker.
 
 The catalog resolves safe relative document paths against its own URL directory.
 Each agent updates independently: newer versions publish through the shared
-atomic replacement owner, identical equal-version bytes are left alone, and
+recoverable publication owner, identical equal-version bytes are left alone, and
 downgrades or changed bytes at the same version are rejected. `status.toml`
 records outcomes under the supplied catalog folder. `auto_update` reloads the
 supplied cache after a commit, before invoking the result callback. Daemon path

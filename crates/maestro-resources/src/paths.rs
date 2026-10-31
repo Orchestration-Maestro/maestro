@@ -75,12 +75,7 @@ pub(crate) fn resolve_explicit_path(path: &str, cwd: &str, home: &str) -> io::Re
 /// included, otherwise the account entry.
 #[must_use]
 pub fn native_home_directory() -> Option<PathBuf> {
-    maestro_path::homedir(
-        std::env::var_os("HOME")
-            .filter(|_| cfg!(unix))
-            .map(PathBuf::from),
-        std::env::home_dir,
-    )
+    maestro_path::native_homedir()
 }
 
 /// The home directory as text.

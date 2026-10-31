@@ -137,10 +137,11 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   layer, subject to the
   exclusions in the specification's [crate graph](docs/specs/maestro-port.md#crates-and-delivery-order).
   Shared path helpers take supplied directory observations
-  and add no global environment, filesystem service, directory cache, scheduler
-  or workspace dependency. Final-link traversal uses a supplied observation callback;
-  the utility owns relative-target joining and the forty-link bound, while callers
-  retain native link I/O and error interpretation.
+  and add no filesystem service, directory cache, scheduler or workspace dependency.
+  `native_homedir` alone reads the native home environment and account entry.
+  Final-link traversal uses a supplied observation callback; the utility owns
+  relative-target joining and the forty-link bound, while callers retain native
+  link I/O and error interpretation.
 - `maestro-text` and `maestro-json` are declared core leaves below layer 0 with
   no workspace dependencies. Text owns common text operations (whitespace,
   lexical comparison, markup escaping, CSS string serialization, locale construction, streaming UTF-8, terminal control cleaning, newline
@@ -161,14 +162,14 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   never supplies a required edge. The crate is exempt from member `serde_json`
   inheritance (lint inheritance and the workspace precision entry still apply).
   Never hand-edit its generated manifest section.
-- `maestro-watch` and `maestro-lock` are declared core leaves below layer 0.
-  Watch has no workspace dependencies; lock may use the optional path utility
-  without changing its leaf status. Only theme/application
+- `maestro-watch` is a core leaf below layer 0 without workspace dependencies.
+  `maestro-lock` depends only on `maestro-path` for `native_homedir` and uses the
+  existing external sha2 for canonical target identity. Only theme/application
   may depend on watch; only settings/credentials/workspace/detection/session/application may depend on lock. Follow the
   [shared filesystem effect contract](docs/specs/maestro-port.md#crates-and-delivery-order):
   watch owns creation/close helpers, injected watch/timer interfaces and native
-  notifications; lock owns bounded and waiting acquisition of caller-opened files and byte-oriented
-  atomic replacement. Workspace owns snapshot serialization and link-following policy.
+  notifications; lock owns bounded and waiting acquisition, canonical target identity and
+  recoverable in-place byte publication. Workspace owns snapshot serialization and link-following policy.
   Feature policies remain with their owners, including asynchronous credential
   acquisition. Add no common background runtime, scheduler or listener framework;
   existing theme paths may re-export moved types, not duplicate implementations.

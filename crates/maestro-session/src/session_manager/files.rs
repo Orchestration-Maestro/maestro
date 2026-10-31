@@ -60,13 +60,17 @@ pub fn load_entries_from_file(file_path: &str) -> io::Result<Vec<FileEntry>> {
     if !std::path::Path::new(file_path).exists() {
         return Ok(Vec::new());
     }
-    let bytes = fs::read(file_path)?;
-    let entries = parse_session_entries(&String::from_utf8_lossy(&bytes));
-    Ok(if entries.first().is_some_and(valid_header) {
+    Ok(entries_from_bytes(&fs::read(file_path)?))
+}
+
+/// Parses raw bytes with the same first-header admission as native loading.
+pub(super) fn entries_from_bytes(bytes: &[u8]) -> Vec<FileEntry> {
+    let entries = parse_session_entries(&String::from_utf8_lossy(bytes));
+    if entries.first().is_some_and(valid_header) {
         entries
     } else {
         Vec::new()
-    })
+    }
 }
 
 /// Whether the raw first record admits a session identity.

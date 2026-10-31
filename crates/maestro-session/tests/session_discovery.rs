@@ -257,6 +257,7 @@ fn directory_listing_filters_jsonl_and_keeps_stable_activity_ties() {
     write_session(&scratch, "old.jsonl", "old", &[("user", "x", 1000)]);
     write_session(&scratch, "UPPER.JSONL", "upper", &[("user", "x", 9000)]);
     write_session(&scratch, "note.jsonl.bak", "bak", &[("user", "x", 9000)]);
+    write_session(&scratch, "aa.jsonl.lock", "lock", &[("user", "x", 9000)]);
     write_session(&elsewhere, "target.jsonl", "linked", &[("user", "x", 4000)]);
     #[cfg(unix)]
     std::os::unix::fs::symlink(
@@ -416,6 +417,11 @@ fn all_projects_lists_real_directories_and_ignores_root_files() {
         &[("a", "a1", 1000), ("b", "b1", 3000), ("b", "b2", 2000)],
     );
     let sessions = Path::new(&agent).join("sessions");
+    std::fs::write(
+        sessions.join("b/b1.jsonl.lock"),
+        session_text("lock", &[("user", "x", 9000)]),
+    )
+    .unwrap();
     std::fs::write(
         sessions.join("root.jsonl"),
         session_text("root", &[("user", "x", 9000)]),
