@@ -34,6 +34,12 @@ sent with `send_custom_message` while a run is active is queued: steering unless
 follow-up is asked for. A response that was aborted leaves queued messages
 queued.
 
+A custom message sent with `trigger_turn` set to false while a run is active starts no turn
+and steers nothing. The session keeps it until the current turn ends and records it right
+after that turn's tool results, so it never lands between a tool call and its result; the
+history, the session and the message events show the same order. A message still kept when
+the run settles is recorded at the end of the history.
+
 A change to the active tools, the selected model or the thinking level during a run
 reaches the next request of the run; the request already sent keeps its payload. A system
 prompt the extensions set for the run, even an empty one, stays in force for every turn of the
