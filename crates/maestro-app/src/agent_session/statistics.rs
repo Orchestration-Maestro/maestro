@@ -50,7 +50,7 @@ pub struct UsageTotals {
 
 impl UsageTotals {
     /// The totals before any usage contributed.
-    pub const EMPTY: Self = Self {
+    const EMPTY: Self = Self {
         input: 0.0,
         output: 0.0,
         cache_read: 0.0,
@@ -62,7 +62,7 @@ impl UsageTotals {
     ///
     /// # Errors
     /// Returns a record that is not an object, or whose cost is not.
-    pub fn add(&mut self, usage: &Value) -> Result<(), DiagnosticErrorInfo> {
+    fn add(&mut self, usage: &Value) -> Result<(), DiagnosticErrorInfo> {
         if !usage.is_object() {
             return Err(record_error("usage"));
         }
@@ -80,7 +80,7 @@ impl UsageTotals {
 
     /// Input, output, cache-read and cache-write tokens together.
     #[must_use]
-    pub fn tokens(&self) -> f64 {
+    fn tokens(&self) -> f64 {
         self.input + self.output + self.cache_read + self.cache_write
     }
 }
