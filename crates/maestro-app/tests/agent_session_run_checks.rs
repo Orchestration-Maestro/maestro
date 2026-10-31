@@ -3,13 +3,12 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
     Harness, HarnessOptions, Scripted, custom_note, get_assistant_texts, harness, on_task_set,
-    start_prompt, summary_provider,
+    retry_started, start_prompt, summary_provider,
 };
 use maestro_app::AgentSessionEvent;
 use maestro_session::messages::SendMessageOptions;
 use serde_json::json;
 use std::{cell::RefCell, rc::Rc};
-use tokio::sync::Notify;
 
 /// A session whose context window is exhausted by a 1100-token answer, with a summary
 /// extension standing in for the provider's summary.
@@ -25,18 +24,6 @@ async fn compacting(responses: Vec<Scripted>, retry_delay_ms: u32) -> Harness {
         ..HarnessOptions::default()
     })
     .await
-}
-
-/// Notified once the session announces the start of a retry.
-fn retry_started(h: &Harness) -> Rc<Notify> {
-    let started = Rc::new(Notify::new());
-    let notify = Rc::clone(&started);
-    drop(h.session.subscribe(Rc::new(move |event| {
-        if matches!(event, AgentSessionEvent::AutoRetryStart { .. }) {
-            notify.notify_one();
-        }
-    })));
-    started
 }
 
 /// A custom message with `text`.
@@ -70,7 +57,7 @@ fn prompt_resolves_after_retry_and_compaction_while_streaming_throughout() {
                 .borrow_mut()
                 .push((kind.into(), session.is_streaming()));
         })));
-        let started = retry_started(&h);
+        let started = retry_started(&h.session);
         let running = start_prompt(&h, "two");
         started.notified().await;
         assert!(
@@ -155,7 +142,7 @@ fn prompt_continues_with_a_message_queued_during_compaction() {
 fn abort_returns_after_the_run_settles_its_shell_results() {
     on_task_set(|_| async {
         let h = compacting(vec![Scripted::failure("overloaded_error")], 60_000).await;
-        let started = retry_started(&h);
+        let started = retry_started(&h.session);
         let running = start_prompt(&h, "one");
         started.notified().await;
         let finished = maestro_tools::BashResult {
@@ -193,7 +180,7 @@ fn custom_message_during_a_triggered_run_is_steered() {
             60_000,
         )
         .await;
-        let started = retry_started(&h);
+        let started = retry_started(&h.session);
         let session = Rc::clone(&h.session);
         let first = tokio::task::spawn_local(async move {
             let options = SendMessageOptions {
@@ -227,7 +214,7 @@ fn custom_message_during_a_triggered_run_is_steered() {
 fn dispose_stops_a_waiting_retry_so_the_run_settles() {
     on_task_set(|_| async {
         let h = compacting(vec![Scripted::failure("overloaded_error")], 60_000).await;
-        let started = retry_started(&h);
+        let started = retry_started(&h.session);
         let running = start_prompt(&h, "one");
         started.notified().await;
         h.session.dispose();

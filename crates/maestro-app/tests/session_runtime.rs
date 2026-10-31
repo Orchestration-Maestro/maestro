@@ -4,7 +4,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::runtime_fixtures::{Recorded, runtime_for, stored_in};
 use crate::support::session_harness::{
-    Harness, answer, as_recorded, on_task_set, script_responses, substituting,
+    Harness, answer, as_recorded, on_task_set, retry_started, script_responses, substituting,
 };
 use maestro_app::{
     AgentSessionRuntime, AgentSessionRuntimeError, CreateAgentSessionRuntimeOptions, PromptOptions,
@@ -854,13 +854,7 @@ fn command_wait_for_idle_returns_after_the_run_settles() {
                 answer("recovered", None, None),
             ],
         );
-        let started = Rc::new(tokio::sync::Notify::new());
-        let notify = Rc::clone(&started);
-        drop(session.subscribe(Rc::new(move |event| {
-            if matches!(event, maestro_app::AgentSessionEvent::AutoRetryStart { .. }) {
-                notify.notify_one();
-            }
-        })));
+        let started = retry_started(&session);
         let prompted = Rc::clone(&session);
         let running = tokio::task::spawn_local(async move {
             prompted.prompt("question", PromptOptions::default()).await

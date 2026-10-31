@@ -2100,23 +2100,49 @@ pub fn waiting_tool(
     started: Rc<tokio::sync::Notify>,
     release: Rc<tokio::sync::Notify>,
 ) -> maestro_agent::SharedAgentTool<Local> {
+    text_tool("wait", "Wait for release", "Wait", "released", move || {
+        started.notify_one();
+        let release = Rc::clone(&release);
+        Box::pin(async move { release.notified().await })
+    })
+}
+
+/// An executable tool named `name` that calls `on_execute` and answers `ok`.
+pub fn callback_tool(
+    name: &str,
+    on_execute: impl Fn() + 'static,
+) -> maestro_agent::SharedAgentTool<Local> {
+    text_tool(name, "Run a callback", name, "ok", move || {
+        on_execute();
+        Box::pin(std::future::ready(()))
+    })
+}
+
+/// An executable tool with no parameters that awaits the work `run` starts, then answers
+/// `text`.
+fn text_tool(
+    name: &str,
+    description: &str,
+    label: &str,
+    text: &'static str,
+    run: impl Fn() -> std::pin::Pin<Box<dyn std::future::Future<Output = ()>>> + 'static,
+) -> maestro_agent::SharedAgentTool<Local> {
     let tool = maestro_agent::AgentToolRecord::<Local> {
         definition: Tool {
-            name: "wait".into(),
-            description: "Wait for release".into(),
+            name: name.into(),
+            description: description.into(),
             parameters: json!({"type": "object", "properties": {}}).into(),
         },
         description: None,
-        label: "Wait".into(),
+        label: label.into(),
         prepare_arguments: None,
         execute: Rc::new(move |_, _, _, _| {
-            started.notify_one();
-            let release = Rc::clone(&release);
+            let work = run();
             Box::pin(async move {
-                release.notified().await;
+                work.await;
                 Ok(maestro_agent::AgentToolResult {
                     content: vec![maestro_models::UserBlock::Text(
-                        maestro_models::TextContent::new("released".into()),
+                        maestro_models::TextContent::new(text.into()),
                     )],
                     details: Some(json!({})),
                     terminate: None,
@@ -2128,33 +2154,16 @@ pub fn waiting_tool(
     Rc::new(RwLock::new(tool))
 }
 
-/// An executable tool named `name` that calls `on_execute` and answers `ok`.
-pub fn callback_tool(
-    name: &str,
-    on_execute: impl Fn() + 'static,
-) -> maestro_agent::SharedAgentTool<Local> {
-    let tool = maestro_agent::AgentToolRecord::<Local> {
-        definition: Tool {
-            name: name.into(),
-            description: "Run a callback".into(),
-            parameters: json!({"type": "object", "properties": {}}).into(),
-        },
-        description: None,
-        label: name.into(),
-        prepare_arguments: None,
-        execute: Rc::new(move |_, _, _, _| {
-            on_execute();
-            Box::pin(std::future::ready(Ok(maestro_agent::AgentToolResult {
-                content: vec![maestro_models::UserBlock::Text(
-                    maestro_models::TextContent::new("ok".into()),
-                )],
-                details: Some(json!({})),
-                terminate: None,
-            })))
-        }),
-        execution_mode: None,
-    };
-    Rc::new(RwLock::new(tool))
+/// Notified once `session` announces the start of a retry.
+pub fn retry_started(session: &AgentSession<Local>) -> Rc<tokio::sync::Notify> {
+    let started = Rc::new(tokio::sync::Notify::new());
+    let notify = Rc::clone(&started);
+    drop(session.subscribe(Rc::new(move |event| {
+        if matches!(event, AgentSessionEvent::AutoRetryStart { .. }) {
+            notify.notify_one();
+        }
+    })));
+    started
 }
 
 /// The extension whose before-agent-start handler answers every prompt with the system
