@@ -1,11 +1,12 @@
 //! Stages the reusable test-setup files in one job and installs them in another.
 //!
 //! `prepare` runs the component-discovery example in a separate build and stages its component
-//! files, the code it compiled, the built example, this command and a content manifest.
+//! files, the code it compiled, the built example, the browser graph the browser author tests
+//! share, this command and a content manifest.
 //! `install` stages this command alone, for runs without a bundle. The staged command's
 //! `author-component` setup validates the bundle against the checkout, installs the example
 //! beside the extracted test executables and the compiled code in the user cache, and writes
-//! the component paths for nextest.
+//! the component paths for nextest. The `browser-author` setup installs the browser graph.
 
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::ffi::OsString;
@@ -21,6 +22,7 @@ use sha2::{Digest, Sha256};
 use super::argument;
 use super::example_files::{FIXED_VARIABLES, validate_variable};
 use super::member_graph::{closure, dependency_edges, member_roots, members};
+use super::nextest_setup::browser_graph;
 use compiled_code::CompiledCode;
 use user_cache::user_cache_home;
 
@@ -41,8 +43,9 @@ const EXPORTER: &str = "development";
 /// The bundle directory that holds the code the setup example compiled.
 const COMPILED: &str = "cache";
 /// The workspace packages whose code the preparation builds: the setup example and the example
-/// components belong to the first, the development tool that runs the preparation to the second.
-const BUILT: [&str; 2] = ["maestro-extensions-wasm", "maestro-tooling"];
+/// components belong to the first, the development tool that runs the preparation to the second
+/// and the browser library to the third.
+const BUILT: [&str; 3] = ["maestro-extensions-wasm", "maestro-tooling", "maestro-web"];
 /// What the components depend on besides the crates: locked dependencies, the toolchain, the
 /// example sources and the assets.
 const FIXED_INPUTS: [&str; 6] = [
@@ -128,6 +131,7 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
         copy(Path::new(source), &staged)?;
         components.insert(variable.to_owned(), digest(&std::fs::read(&staged)?));
     }
+    stage_browser_graph(cargo, checkout, output)?;
     if inputs(checkout, &crates)? != fingerprint {
         return Err(io::Error::other(format!(
             "inputs changed during preparation: {}",
@@ -146,6 +150,17 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
         compiled,
     };
     std::fs::write(output.join(MANIFEST), serde_json::to_vec(&manifest)?)
+}
+
+/// Build the browser graph in the checkout and stage it in `output`.
+///
+/// # Errors
+/// Returns the build commands that failed, so no shard has to build the graph again.
+fn stage_browser_graph(cargo: &Path, checkout: &Path, output: &Path) -> io::Result<()> {
+    let staged = output.join(browser_graph::STAGED);
+    remove_directory(&staged)?;
+    browser_graph::build(checkout, cargo.as_os_str())?;
+    browser_graph::stage(&checkout.join(browser_graph::TARGET), &staged)
 }
 
 /// Copy this command into `output`, where the nextest setup entries run it.
@@ -240,13 +255,7 @@ fn export(
     if output.to_string_lossy().contains(['\n', '\r']) {
         return Err(at(&output, "the path must stay on one line"));
     }
-    let manifest = output.join(MANIFEST);
-    let manifest: Manifest =
-        serde_json::from_slice(&std::fs::read(&manifest).map_err(|error| at(&manifest, &error))?)
-            .map_err(|error| at(&manifest, &error))?;
-    if manifest.inputs != inputs(checkout, &manifest.crates)? {
-        return Err(at(&output, "stale prepared component inputs"));
-    }
+    let manifest = read_manifest(checkout, &output)?;
     if FIXED_VARIABLES
         .iter()
         .any(|variable| !manifest.components.contains_key(*variable))
@@ -273,6 +282,32 @@ fn export(
         code.install(&compiled, user_cache, &installed)?;
     }
     std::fs::write(environment, lines.concat())
+}
+
+/// Install the browser graph of the bundle in `output` at `target`.
+///
+/// # Errors
+/// Returns a missing or stale bundle, or a failed copy.
+pub(crate) fn install_browser_graph(
+    checkout: &Path,
+    output: &Path,
+    target: &Path,
+) -> io::Result<()> {
+    read_manifest(checkout, output)?;
+    browser_graph::install(&output.join(browser_graph::STAGED), target)
+}
+
+/// Read the manifest of the bundle in `output` and check that the checkout still holds the files
+/// it was prepared from.
+fn read_manifest(checkout: &Path, output: &Path) -> io::Result<Manifest> {
+    let path = output.join(MANIFEST);
+    let manifest: Manifest =
+        serde_json::from_slice(&std::fs::read(&path).map_err(|error| at(&path, &error))?)
+            .map_err(|error| at(&path, &error))?;
+    if manifest.inputs != inputs(checkout, &manifest.crates)? {
+        return Err(at(output, "stale prepared component inputs"));
+    }
+    Ok(manifest)
 }
 
 /// The directories of the workspace crates the preparation builds and every crate they depend on.
@@ -399,7 +434,7 @@ fn remove(path: &Path) -> io::Result<()> {
 }
 
 /// Delete a directory tree that may not exist.
-fn remove_directory(path: &Path) -> io::Result<()> {
+pub(crate) fn remove_directory(path: &Path) -> io::Result<()> {
     match std::fs::remove_dir_all(path) {
         Err(error) if error.kind() != io::ErrorKind::NotFound => Err(error),
         _ => Ok(()),
