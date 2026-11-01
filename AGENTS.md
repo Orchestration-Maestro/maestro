@@ -42,8 +42,9 @@ hook runs the full conventions suite when a staged path is under
 `crates/maestro-test-conventions/`, and the browser smoke check only when the
 selection compiles the browser entry. Unformatted code is fixed, never rejected.
 It also rejects merge-conflict markers, invalid TOML or YAML, and a secret in the
-staged change. Commit messages follow the [Git discipline](#test-and-git-discipline)
-below. `just check` and shared CI stay the full workspace checks.
+staged change. The commit-msg hook enforces the message rule in
+[Git discipline](#test-and-git-discipline). `just check` and shared CI stay the full
+workspace checks.
 
 The conventions check requires `workspace.dependencies.serde_json` to name
 `serde_json` and explicitly enable `float_roundtrip`. Normal member dependencies,
@@ -490,7 +491,7 @@ Inspect `git status` and the staged diff before committing. Never use
 `git add .`, `git add -A`, `git reset --hard`, `git checkout .`, `git clean -fd`,
 blanket `git stash`, or `git commit --no-verify`. Take current main into your
 branch with a signed merge commit (`git merge -S origin/main`); never rebase or
-force-push. Keep main's behaviour and assertions, resolve conflicts only in files
+force-push. Keep main's behavior and assertions, resolve conflicts only in files
 you own, and stop and ask if an unrelated file conflicts. Ask for confirmation
 before an instruction overrides these safeguards.
 
