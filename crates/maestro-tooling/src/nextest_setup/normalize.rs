@@ -266,12 +266,14 @@ fn fingerprint_files(directory: &Path) -> io::Result<Fingerprints> {
             if path.extension().is_none_or(|extension| extension != "json") {
                 continue;
             }
-            if file_name(&path).starts_with("lib-") {
-                let hash = fingerprint_hash(&path.with_extension(""))?;
-                files.libraries.entry(hash).or_default().push(path);
-            } else {
+            if !file_name(&path).starts_with("lib-") {
                 files.executables.push(path);
+                continue;
             }
+            let Some(hash) = fingerprint_hash(&path.with_extension(""))? else {
+                continue;
+            };
+            files.libraries.entry(hash).or_default().push(path);
         }
     }
     Ok(files)
@@ -428,17 +430,21 @@ fn linked_libraries(
     Ok(Some(linked))
 }
 
-/// Decode the eight bytes Cargo writes as little-endian hexadecimal text.
-fn fingerprint_hash(path: &Path) -> io::Result<u64> {
+/// Decode Cargo's little-endian hexadecimal hash, or `None` for an invalidated build.
+fn fingerprint_hash(path: &Path) -> io::Result<Option<u64>> {
     let text = std::fs::read_to_string(path)?;
+    // Cargo truncates the hash before rebuilding and fills it only after success.
+    if text.is_empty() {
+        return Ok(None);
+    }
     if text.len() != 16 {
-        return Err(io::Error::other(format!(
-            "invalid Cargo fingerprint hash {}",
-            path.display()
-        )));
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            format!("invalid Cargo fingerprint hash {}", path.display()),
+        ));
     }
     u64::from_str_radix(&text, 16)
-        .map(u64::swap_bytes)
+        .map(|hash| Some(hash.swap_bytes()))
         .map_err(|error| {
             io::Error::new(
                 io::ErrorKind::InvalidData,

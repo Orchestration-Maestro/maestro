@@ -349,6 +349,26 @@ fn cache_normalization_keeps_binaries_with_newer_transitive_linked_builds() {
     assert_eq!(fs::metadata(anchor).unwrap().modified().unwrap(), at(200));
 }
 
+/// An invalidated library build leaves its consumer stale without blocking unrelated binaries.
+#[cfg(unix)]
+#[test]
+fn cache_normalization_skips_invalidated_library_builds() {
+    let scratch = Scratch::new().unwrap();
+    let profile = scratch.path().join("target/debug");
+    let deps = profile.join("deps");
+    output(&deps, "libalpha-1.rlib", false, 20);
+    let stale = binary(&deps, "integration-a1", &[("alpha", 20)], 50);
+    let current = binary(&deps, "integration-b1", &[], 100);
+    let anchor = binary(&deps, "integration-c1", &[], 150);
+    fs::write(profile.join(".fingerprint/alpha-1/lib-alpha"), b"").unwrap();
+
+    normalize(scratch.path());
+
+    assert_eq!(fs::metadata(stale).unwrap().modified().unwrap(), at(50));
+    assert_eq!(fs::metadata(current).unwrap().modified().unwrap(), at(150));
+    assert_eq!(fs::metadata(anchor).unwrap().modified().unwrap(), at(150));
+}
+
 /// Malformed Cargo records must fail rather than change executable times.
 #[cfg(unix)]
 #[test]
