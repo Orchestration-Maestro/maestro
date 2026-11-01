@@ -802,6 +802,9 @@ Cargo's `.fingerprint` records identify each direct and transitive library build
 by its fingerprint and metadata hash, independently of dependency aliases.
 A newer build of the same crate under another hash, including check-only metadata
 from Clippy, does not outdate it.
+A build script's run is a compilation input, not a linked build. Cargo names the
+script's crate after its file, so `build = "builder/main.rs"` gives
+`build_script_main`; normalization recognizes a run by its record kind instead.
 An uplifted executable uses the records of its hashed twin: normalization matches
 length and contents, so copied and hard-linked outputs work alike. Identical twins
 with different dependency records fail rather than select an uncertain build.
@@ -972,6 +975,11 @@ that the child's standard output begins with the one-test start prologue. A stal
 or misspelled name therefore fails instead of passing with zero tests. A checked
 outcome proves the test started, not that it passed: keep exit, signal and product
 assertions in the test.
+
+Every re-run writes the prologue, including a descendant that a child starts the
+same way. When several of them share one captured output, a byte count or capture
+limit allows one prologue per process. A limit sized for one prologue trips on the
+second, before the scenario's own output.
 
 Choose the route by stream use. `output` captures both streams and returns them
 unchanged. `spawn` reads only the prologue from a piped standard output and replays

@@ -8,8 +8,8 @@ use std::{
     path::Path,
 };
 
-/// Identity, optional-mode flag and mode preceding the intended target bytes.
-const HEADER_LENGTH: usize = 37;
+/// Optional-mode flag and mode preceding the intended target bytes.
+const HEADER_LENGTH: usize = 5;
 
 /// Publishes intended bytes before touching the original file's identity or contents.
 pub(crate) fn replace(
@@ -28,23 +28,33 @@ pub(crate) fn replace(
     Ok(crate::Committed { dir_sync: warning })
 }
 
+/// Persists recovery absence before appending bytes through the retained holder.
+pub(crate) fn append(guard: &WriteLock, bytes: &[u8]) -> io::Result<()> {
+    sync_root(recovery_root(guard)?)?;
+    #[cfg(test)]
+    crate::replace::tests::effect("target_append")?;
+    OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&guard.target)?
+        .write_all(bytes)
+}
+
 /// Completes a durable pending write before another writer may read or append.
 pub(crate) fn replay(guard: &WriteLock) -> io::Result<()> {
     let bytes = match fs::read(&guard.recovery) {
         Ok(bytes) => bytes,
-        Err(error) if error.kind() == io::ErrorKind::NotFound => {
-            return sync_root(recovery_root(guard)?);
-        }
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(()),
         Err(error) => return Err(error),
     };
-    if bytes.len() < HEADER_LENGTH || bytes[..32] != guard.digest || bytes[32] > 1 {
+    if bytes.len() < HEADER_LENGTH || bytes[0] > 1 {
         return Err(io::Error::new(
             io::ErrorKind::InvalidData,
-            "recovery target identity or header mismatch",
+            "invalid recovery header",
         ));
     }
     let mode =
-        (bytes[32] == 1).then(|| u32::from_le_bytes([bytes[33], bytes[34], bytes[35], bytes[36]]));
+        (bytes[0] == 1).then(|| u32::from_le_bytes([bytes[1], bytes[2], bytes[3], bytes[4]]));
     sync_root(recovery_root(guard)?)?;
     let intended = &bytes[HEADER_LENGTH..];
     if !finish_creation(&guard.target, intended, mode)? {
@@ -137,7 +147,7 @@ fn existing_target(path: &Path) -> io::Result<Option<File>> {
     }
 }
 
-/// Stages a private identity-prefixed copy, then durably publishes its recovery name.
+/// Stages a private copy, then durably publishes its recovery name.
 fn stage(guard: &WriteLock, bytes: &[u8], mode: Option<u32>) -> io::Result<()> {
     let root = recovery_root(guard)?;
     let temporary = crate::atomic::temporary_path(&guard.recovery, crate::Temporary::Unique);
@@ -148,7 +158,7 @@ fn stage(guard: &WriteLock, bytes: &[u8], mode: Option<u32>) -> io::Result<()> {
     #[cfg(unix)]
     open.mode(0o600);
     let file = open.open(&temporary)?;
-    let result = stage_bytes(file, guard, bytes, mode).and_then(|()| {
+    let result = stage_bytes(file, bytes, mode).and_then(|()| {
         #[cfg(test)]
         crate::replace::tests::closed();
         #[cfg(test)]
@@ -163,15 +173,9 @@ fn stage(guard: &WriteLock, bytes: &[u8], mode: Option<u32>) -> io::Result<()> {
 }
 
 /// Writes and syncs the complete recovery record before its handle closes.
-fn stage_bytes(
-    mut file: File,
-    guard: &WriteLock,
-    bytes: &[u8],
-    mode: Option<u32>,
-) -> io::Result<()> {
+fn stage_bytes(mut file: File, bytes: &[u8], mode: Option<u32>) -> io::Result<()> {
     #[cfg(test)]
     crate::replace::tests::effect("write_all")?;
-    file.write_all(&guard.digest)?;
     file.write_all(&[u8::from(mode.is_some())])?;
     file.write_all(&mode.unwrap_or_default().to_le_bytes())?;
     file.write_all(bytes)?;

@@ -151,9 +151,43 @@ fn component_crates_hold_only_what_the_wasm_build_uses() {
             "crates/maestro-json",
             "crates/maestro-listing",
             "crates/maestro-request",
+            "crates/maestro-subagents",
             "crates/maestro-tool"
         ]
     );
+}
+
+/// The shared bundle digest follows a fixed component's package, not unrelated workspace code.
+#[test]
+fn component_bundle_tracks_subagent_sources_but_not_unrelated_packages() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let metadata = crate::locked_metadata(Path::new(env!("CARGO")), &root).unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    assert!(
+        Command::new("git")
+            .args(["init", "-q"])
+            .current_dir(scratch.path())
+            .status()
+            .unwrap()
+            .success()
+    );
+    let source = scratch.path().join("crates/maestro-subagents/src/lib.rs");
+    let unrelated = scratch.path().join("crates/maestro-chat/src/lib.rs");
+    for file in [&source, &unrelated] {
+        std::fs::create_dir_all(file.parent().unwrap()).unwrap();
+        std::fs::write(file, "before").unwrap();
+    }
+    let inputs = Inputs::new(
+        scratch.path(),
+        plan(&metadata).unwrap().shared,
+        BTreeSet::new(),
+    )
+    .unwrap();
+
+    std::fs::write(&unrelated, "after").unwrap();
+    assert!(inputs.is_current(scratch.path()).unwrap());
+    std::fs::write(&source, "after").unwrap();
+    assert!(!inputs.is_current(scratch.path()).unwrap());
 }
 
 /// A lock file with a package `a` that builds on `b` and `c`, and a package `d` nothing needs.

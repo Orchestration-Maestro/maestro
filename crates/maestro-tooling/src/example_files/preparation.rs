@@ -6,7 +6,7 @@ use super::components;
 
 /// Build marked components and render their nextest environment entries.
 ///
-/// Variables are unique across all roots, including the fixed author and context exports.
+/// Variables are unique across all roots, including every fixed component export.
 ///
 /// # Errors
 /// Returns discovery, invalid or duplicate marker, source-reading or build failures.

@@ -109,6 +109,8 @@ agents' hook files, and runtime mechanics ([list](#runtime-mechanics-not-copied)
 - **Allowed dependencies.** A package crate may depend on `maestro-extensions-wasm`, other package crates,
   `maestro-request`, `maestro-entry`, `maestro-tool`, `maestro-json`, and approved libraries that build for
   `wasm32-wasip2`.
+- **Enforcement.** The conventions checker reads package classifications from the inventory, checks declared
+  and host-resolved dependencies, and checks component targets and export locations in member sources.
 - **One export per component.** The library is an `rlib` exposing `factory`. The component is the cdylib example
   target `component` at `src/component.rs`, which holds the one `export_extension!` line. A library never exports,
   because two export sets in one component fail to link. Conventions check both rules.

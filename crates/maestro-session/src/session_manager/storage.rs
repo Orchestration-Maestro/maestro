@@ -46,18 +46,33 @@ fn rewrite_unless_changed<T>(
     Ok(None)
 }
 
-/// Runs one file write under the canonical target's shared exclusion after recovery.
+/// Runs a read or append under exclusion when the directory accepts the lock file.
 pub(super) fn with_write_lock<T>(
     path: &str,
-    write: impl FnOnce(&Path) -> io::Result<T>,
+    operation: impl FnOnce(Option<maestro_lock::WriteLock>) -> io::Result<T>,
 ) -> io::Result<T> {
-    let holder = maestro_lock::acquire_write(Path::new(path), true)?;
-    write(holder.path())
+    match maestro_lock::acquire_write(Path::new(path), true) {
+        Ok(holder) => operation(Some(holder)),
+        Err(error)
+            if matches!(
+                error.kind(),
+                io::ErrorKind::NotFound
+                    | io::ErrorKind::PermissionDenied
+                    | io::ErrorKind::ReadOnlyFilesystem
+            ) =>
+        {
+            operation(None)
+        }
+        Err(error) => Err(error),
+    }
 }
 
 /// Replays and reads native history under exclusion before a writable owner loads it.
 pub(super) fn read(path: &str) -> io::Result<Snapshot> {
-    with_write_lock(path, snapshot_native)
+    with_write_lock(path, |holder| match holder {
+        Some(holder) => snapshot_native(holder.path()),
+        None => snapshot_native(Path::new(path)),
+    })
 }
 
 /// Reads the records of the selected target line by line; an absent target is empty.

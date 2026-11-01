@@ -534,14 +534,14 @@ fn each_setup_checks_only_the_artifact_it_installs() {
     assert_success(&browser_command(root, true).output().unwrap());
 }
 
-/// The fixture setup example for a base bundle: it exports four components, takes each one
+/// The fixture setup example for a base bundle: it exports five components, takes each one
 /// it is given from its environment and builds the others. Building records the variable, writes
 /// the component and writes the dependency file Cargo leaves beside it, naming the example
 /// sources it read: the two marked components share a helper module and one library file.
 const FOUR_COMPONENTS_EXAMPLE: &str = r#"#!/bin/sh
 examples="$PWD/crates/maestro-extensions-wasm/../../examples/extensions"
 library="$PWD/crates/maestro-extensions-wasm/src/lib.rs"
-for variable in MAESTRO_AUTHOR_COMPONENT MAESTRO_CONTEXT_COMPONENT MAESTRO_ALPHA_COMPONENT MAESTRO_BETA_COMPONENT; do
+for variable in MAESTRO_AUTHOR_COMPONENT MAESTRO_CONTEXT_COMPONENT MAESTRO_SUBAGENT_COMPONENT MAESTRO_ALPHA_COMPONENT MAESTRO_BETA_COMPONENT; do
     eval "value=\${$variable-}"
     if [ -z "$value" ]; then
         echo "$variable" >> "$PWD/built"
@@ -629,8 +629,8 @@ fn prepare_reports_reused_and_built_component_counts() {
     let base = root.join("target/test-setup");
 
     for (base, summary) in [
-        (base.as_path(), "components: 4 reused, 0 built"),
-        (Path::new(""), "components: 0 reused, 4 built"),
+        (base.as_path(), "components: 5 reused, 0 built"),
+        (Path::new(""), "components: 0 reused, 5 built"),
     ] {
         let output = prepare_as_child(
             "prepare_reports_reused_and_built_component_counts",
@@ -659,7 +659,7 @@ fn prepare_rejects_oversupplied_component_counts() {
         assert_eq!(error.kind(), std::io::ErrorKind::Other);
         assert_eq!(
             error.to_string(),
-            "base supplied 5 components but preparation staged only 4"
+            "base supplied 6 components but preparation staged only 5"
         );
         assert!(!root.join("target/test-setup/components.json").exists());
         return;
@@ -708,7 +708,7 @@ fn prepare_builds_only_the_components_a_base_cannot_supply() {
             .unwrap()
             .lines()
             .count(),
-        4
+        5
     );
 
     assert_eq!(
@@ -748,7 +748,7 @@ fn prepare_builds_only_the_components_a_base_cannot_supply() {
             &base
         )
         .len(),
-        4
+        5
     );
 }
 
@@ -904,9 +904,10 @@ fn prepare_reuses_a_base_in_its_own_output_directory() {
 /// also exports `MAESTRO_COMPONENT`, a name source discovery accepts.
 const EXAMPLE: &str = r#"#!/bin/sh
 echo "${MAESTRO_AUTHOR_COMPONENT-unset}" >> "$PWD/seen"
-printf 'MAESTRO_AUTHOR_COMPONENT=%s\nMAESTRO_CONTEXT_COMPONENT=%s\nMAESTRO_COMPONENT=%s\n' \
+printf 'MAESTRO_AUTHOR_COMPONENT=%s\nMAESTRO_CONTEXT_COMPONENT=%s\nMAESTRO_SUBAGENT_COMPONENT=%s\nMAESTRO_COMPONENT=%s\n' \
     "${MAESTRO_AUTHOR_COMPONENT:-$PWD/component.wasm}" \
     "${MAESTRO_CONTEXT_COMPONENT:-$PWD/component.wasm}" \
+    "${MAESTRO_SUBAGENT_COMPONENT:-$PWD/component.wasm}" \
     "${MAESTRO_COMPONENT:-$PWD/component.wasm}" > "$NEXTEST_ENV"
 if [ -n "${XDG_CACHE_HOME-}" ]; then
     seconds=$(stat -c %Y "$0" 2>/dev/null || stat -f %m "$0")
@@ -921,22 +922,22 @@ fi
 /// A setup example that compiles nothing into a user cache, as on a host whose cache the
 /// preparation cannot move.
 const PLAIN_EXAMPLE: &str = r#"#!/bin/sh
-printf 'MAESTRO_AUTHOR_COMPONENT=%s\nMAESTRO_CONTEXT_COMPONENT=%s\n' \
-    "$PWD/component.wasm" "$PWD/component.wasm" > "$NEXTEST_ENV"
+printf 'MAESTRO_AUTHOR_COMPONENT=%s\nMAESTRO_CONTEXT_COMPONENT=%s\nMAESTRO_SUBAGENT_COMPONENT=%s\n' \
+    "$PWD/component.wasm" "$PWD/component.wasm" "$PWD/component.wasm" > "$NEXTEST_ENV"
 "#;
 
 /// A setup example whose compiled code sits in a namespace that does not follow its own time.
 const MISPLACED_CACHE_EXAMPLE: &str = r#"#!/bin/sh
-printf 'MAESTRO_AUTHOR_COMPONENT=%s\nMAESTRO_CONTEXT_COMPONENT=%s\n' \
-    "$PWD/component.wasm" "$PWD/component.wasm" > "$NEXTEST_ENV"
+printf 'MAESTRO_AUTHOR_COMPONENT=%s\nMAESTRO_CONTEXT_COMPONENT=%s\nMAESTRO_SUBAGENT_COMPONENT=%s\n' \
+    "$PWD/component.wasm" "$PWD/component.wasm" "$PWD/component.wasm" > "$NEXTEST_ENV"
 mkdir -p "$XDG_CACHE_HOME/wasmtime/modules/wasmtime-fixture-1"
 echo x > "$XDG_CACHE_HOME/wasmtime/modules/wasmtime-fixture-1/key"
 "#;
 
 /// A setup example whose compiled code sits in two namespaces.
 const SPLIT_CACHE_EXAMPLE: &str = r#"#!/bin/sh
-printf 'MAESTRO_AUTHOR_COMPONENT=%s\nMAESTRO_CONTEXT_COMPONENT=%s\n' \
-    "$PWD/component.wasm" "$PWD/component.wasm" > "$NEXTEST_ENV"
+printf 'MAESTRO_AUTHOR_COMPONENT=%s\nMAESTRO_CONTEXT_COMPONENT=%s\nMAESTRO_SUBAGENT_COMPONENT=%s\n' \
+    "$PWD/component.wasm" "$PWD/component.wasm" "$PWD/component.wasm" > "$NEXTEST_ENV"
 seconds=$(stat -c %Y "$0" 2>/dev/null || stat -f %m "$0")
 mkdir -p "$XDG_CACHE_HOME/wasmtime/modules/wasmtime-fixture-${seconds}000" \
     "$XDG_CACHE_HOME/wasmtime/modules/wasmtime-other-${seconds}000"
@@ -1018,6 +1019,7 @@ fn workspace(root: &Path) {
     fs::write(
         root.join("Cargo.lock"),
         "version = 4\n\n[[package]]\nname = \"maestro-extensions-wasm\"\nversion = \"0.0.0\"\ndependencies = [\n \"shared\",\n]\n\n\
+         [[package]]\nname = \"maestro-subagents\"\nversion = \"0.0.0\"\n\n\
          [[package]]\nname = \"maestro-tooling\"\nversion = \"0.0.0\"\n\n\
          [[package]]\nname = \"maestro-web\"\nversion = \"0.0.0\"\n\n\
          [[package]]\nname = \"shared\"\nversion = \"0.0.0\"\n\n\
@@ -1029,6 +1031,7 @@ fn workspace(root: &Path) {
             "maestro-extensions-wasm",
             "\n[dependencies]\nshared = { path = \"../shared\" }\n",
         ),
+        ("maestro-subagents", ""),
         ("maestro-tooling", ""),
         ("maestro-web", ""),
         ("shared", ""),

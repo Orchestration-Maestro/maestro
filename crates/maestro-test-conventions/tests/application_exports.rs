@@ -191,6 +191,125 @@ fn application_exports_follow_root_external_prelude_aliases() {
 }
 
 #[test]
+fn application_exports_prefer_glob_bindings_over_external_aliases() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-app", "maestro-terminal"]);
+    source(
+        &workspace,
+        "maestro-terminal",
+        "src/lib.rs",
+        "pub mod detail {}",
+    );
+    source(
+        &workspace,
+        "maestro-app",
+        "src/lib.rs",
+        r"
+extern crate maestro_terminal as t;
+mod local { pub mod t { pub mod detail {} } }
+pub mod escaped {
+    use crate::local::*;
+    pub use t::detail;
+    pub use self::detail as local_detail;
+}
+",
+    );
+
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+}
+
+#[test]
+fn application_exports_ignore_invisible_glob_bindings() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-app", "maestro-daemon"]);
+    source(
+        &workspace,
+        "maestro-daemon",
+        "src/lib.rs",
+        "pub mod pane { pub struct Record; }",
+    );
+    for hidden in [
+        "use maestro_daemon as d; pub type View = d::pane::Record;",
+        "extern crate maestro_daemon as d; pub type View = d::pane::Record;",
+        "pub(self) use maestro_daemon as d; pub type View = d::pane::Record;",
+        "pub(in crate::hidden) use maestro_daemon as d; pub type View = d::pane::Record;",
+        "mod d { use maestro_daemon::pane; }",
+    ] {
+        source(
+            &workspace,
+            "maestro-app",
+            "src/lib.rs",
+            &format!(
+                "mod hidden {{ {hidden} }}\n\
+                 mod local {{ pub mod d {{ pub mod pane {{}} }} }}\n\
+                 pub use hidden::*;\n\
+                 pub use local::*;\n\
+                 pub use d::pane;"
+            ),
+        );
+
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()), "{hidden}");
+    }
+}
+
+#[test]
+fn application_exports_follow_glob_bindings_visible_to_descendants() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-app", "maestro-daemon"]);
+    source(
+        &workspace,
+        "maestro-daemon",
+        "src/lib.rs",
+        "pub mod pane { pub struct Record; }",
+    );
+    for visibility in ["", "pub(super)", "pub(in crate::imports)"] {
+        source(
+            &workspace,
+            "maestro-app",
+            "src/lib.rs",
+            &format!(
+                "mod imports {{\n\
+                    {visibility} use maestro_daemon as d;\n\
+                    pub mod relay {{ use super::*; pub use d::pane as p; }}\n\
+                 }}"
+            ),
+        );
+
+        let error = check_workspace(workspace.root.path()).unwrap_err();
+        assert!(error.contains("named application exports"), "{error}");
+    }
+}
+
+#[test]
+fn application_exports_preserve_glob_source_visibility() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-app", "maestro-daemon"]);
+    source(
+        &workspace,
+        "maestro-daemon",
+        "src/lib.rs",
+        "pub mod pane { pub struct Record; }",
+    );
+    source(
+        &workspace,
+        "maestro-app",
+        "src/lib.rs",
+        r"
+mod hidden {
+    use maestro_daemon as d;
+    pub mod relay { pub use super::*; }
+}
+mod local { pub mod d { pub mod pane {} } }
+pub use hidden::relay::*;
+pub use local::*;
+pub use d::pane;
+",
+    );
+
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+}
+
+#[test]
 fn application_exports_follow_aliases_across_source_files() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-app", "maestro-daemon"]);

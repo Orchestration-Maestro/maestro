@@ -150,3 +150,39 @@ fn stored_decisions_preserve_locked_values_and_raw_files() {
         Some(project)
     );
 }
+
+/// Recomputed lists retain the admitted key and scope instead of granting new edits.
+#[test]
+fn recomputed_prepared_list_preserves_key_and_scope() {
+    use maestro_settings::SettingsChange;
+    for (scope, path, accepted) in [
+        (SettingsScope::Global, "packages", true),
+        (SettingsScope::Project, "packages", false),
+        (SettingsScope::Global, "skills", false),
+    ] {
+        let mut manager = SettingsManager::from_storage(ControlledStorage::new());
+        let changes = vec![SettingsChange {
+            path: vec!["packages".into()],
+            value: Some(json!(["npm:new"])),
+        }];
+        let request = DecisionRequest::SettingsEdit {
+            scope: SettingsScope::Global,
+            changes: &changes,
+        };
+        let edit = manager
+            .prepare_operation(&request, SettingsScope::Global, changes.clone())
+            .unwrap();
+        let result =
+            edit.with_recomputed_list(scope, &[path], vec![json!("npm:late"), json!("npm:new")]);
+        assert_eq!(result.is_ok(), accepted);
+        if let Ok(edit) = result {
+            manager.apply_prepared_edit(edit);
+            assert_eq!(
+                manager.get_global_settings().0.get("packages"),
+                Some(&json!(["npm:late", "npm:new"]))
+            );
+        } else {
+            assert!(manager.get_global_settings().0.is_empty());
+        }
+    }
+}

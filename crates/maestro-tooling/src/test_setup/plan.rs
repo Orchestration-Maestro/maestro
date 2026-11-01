@@ -1,7 +1,7 @@
 //! The inputs each artifact of the test bundle is prepared from, read from the workspace.
 //!
-//! The components build for WebAssembly from one package and its examples, the setup example and
-//! the development tool for the host from two packages, and the browser graph from the web
+//! The components build for WebAssembly from the packages their entries name, the setup example
+//! and the development tool for the host from two packages, and the browser graph from the web
 //! package and the tooling. Each artifact hashes the closure of its own packages, so a change to
 //! another artifact's crates leaves it valid; each component also hashes the example files it
 //! read.
@@ -14,8 +14,8 @@ use cargo_metadata::{Dependency, DependencyKind, Metadata, Package};
 
 use super::inputs::{Inputs, locked_closure};
 use super::{
-    BROWSER_PACKAGES, COMPONENT_EXAMPLES, COMPONENT_PACKAGE, EXAMPLE_INPUTS, LOCKED_INPUTS,
-    SHARED_INPUTS, TOOL_PACKAGES, at,
+    BROWSER_PACKAGES, COMPONENT_EXAMPLES, EXAMPLE_INPUTS, EXAMPLE_PACKAGE, FIXED_COMPONENTS,
+    LOCKED_INPUTS, SHARED_INPUTS, TOOL_PACKAGES, at,
 };
 use crate::dep_info;
 use crate::member_graph::{closure, dependency_edges_where, member_roots, members};
@@ -153,7 +153,16 @@ fn crate_paths(
 
 /// What each artifact hashes, from the workspace metadata.
 pub(super) fn plan(metadata: &Metadata) -> io::Result<Plan> {
-    let components = closure_packages(metadata, &[COMPONENT_PACKAGE], used_by_wasm)?;
+    let packages: BTreeSet<&str> = FIXED_COMPONENTS
+        .iter()
+        .map(|(_, package, _)| *package)
+        .chain([EXAMPLE_PACKAGE])
+        .collect();
+    let components = closure_packages(
+        metadata,
+        &packages.into_iter().collect::<Vec<_>>(),
+        used_by_wasm,
+    )?;
     let dependencies = components
         .iter()
         .flat_map(|package| &package.dependencies)

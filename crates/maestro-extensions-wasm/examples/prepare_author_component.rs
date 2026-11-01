@@ -29,7 +29,10 @@ fn main() -> Result<(), String> {
         root.join("examples"),
         root.join("../../examples/extensions"),
     ];
-    let mut names = build::cargo::FIXED_EXAMPLES.map(str::to_owned).to_vec();
+    let mut names: Vec<String> = components::FIXED_COMPONENTS
+        .iter()
+        .map(|(name, _, _)| (*name).to_owned())
+        .collect();
     components::visit(&folders, |name, _| {
         names.push(name.to_owned());
         Ok(())
@@ -38,11 +41,11 @@ fn main() -> Result<(), String> {
     let targets: Vec<&str> = names.iter().map(String::as_str).collect();
     let built = build::cargo::example_components(root, &targets)?;
     // Source discovery visits the markers in the order that produced the names above.
-    let Some((fixed, marked)) = built.split_at_checked(components::FIXED_VARIABLES.len()) else {
+    let Some((fixed, marked)) = built.split_at_checked(components::FIXED_COMPONENTS.len()) else {
         return Err("the build returned fewer components than requested".to_owned());
     };
     let mut entries = String::new();
-    for (variable, path) in components::FIXED_VARIABLES.iter().zip(fixed) {
+    for ((_, _, variable), path) in components::FIXED_COMPONENTS.iter().zip(fixed) {
         writeln!(entries, "{variable}={}", path.display()).map_err(|error| error.to_string())?;
     }
     let mut marked = marked.iter();

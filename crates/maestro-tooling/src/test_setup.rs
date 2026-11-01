@@ -23,7 +23,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 use super::argument;
-use super::example_files::{FIXED_VARIABLES, validate_variable};
+use super::example_files::{EXAMPLE_PACKAGE, FIXED_COMPONENTS, validate_variable};
 use super::nextest_setup::browser_graph;
 use base::{Base, Supplied};
 use compiled_code::CompiledCode;
@@ -52,10 +52,8 @@ const EXPORTER: &str = "development";
 const COMPILED: &str = "cache";
 /// The environment variable that names an earlier bundle to reuse.
 const BASE: &str = "TEST_PREPARE_BASE";
-/// The package whose examples are the components.
-const COMPONENT_PACKAGE: &str = "maestro-extensions-wasm";
 /// The packages the setup example and the development tool that runs it are built from.
-const TOOL_PACKAGES: [&str; 2] = [COMPONENT_PACKAGE, "maestro-tooling"];
+const TOOL_PACKAGES: [&str; 2] = [EXAMPLE_PACKAGE, "maestro-tooling"];
 /// The packages the browser graph is built from.
 const BROWSER_PACKAGES: [&str; 2] = ["maestro-web", "maestro-tooling"];
 /// The directory of the package's examples, which each component hashes for itself.
@@ -349,11 +347,11 @@ fn export(
     let manifest = read_manifest(&output)?;
     manifest.shared.verify(checkout, &output)?;
     manifest.tool.verify(checkout, &output)?;
-    if FIXED_VARIABLES
+    if FIXED_COMPONENTS
         .iter()
-        .any(|variable| !manifest.components.contains_key(*variable))
+        .any(|(_, _, variable)| !manifest.components.contains_key(*variable))
     {
-        return Err(at(&output, "missing prepared author or context component"));
+        return Err(at(&output, "missing prepared fixed component"));
     }
     let mut lines = Vec::new();
     for (variable, expected) in &manifest.components {

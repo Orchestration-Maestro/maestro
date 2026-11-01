@@ -82,7 +82,7 @@ fn crate_list_requires_core_or_dedicated_layers() {
     workspace.list(&[("maestro-app", "unknown")]);
     assert_eq!(
         check_workspace(workspace.root.path()),
-        Err("invalid layer for maestro-app: expected core or dedicated".into())
+        Err("invalid layer for maestro-app: expected core, dedicated or package".into())
     );
     workspace.list(&[("maestro-app", "core")]);
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));

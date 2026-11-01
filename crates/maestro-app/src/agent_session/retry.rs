@@ -2,7 +2,9 @@
 use super::{AgentSession, AgentSessionEvent};
 use crate::utils::lock::read;
 use maestro_extensions::ExtensionExecution;
-use maestro_models::{AssistantMessage, Cancellation, StopReason, is_context_overflow};
+use maestro_models::{
+    AssistantMessage, Cancellation, DiagnosticErrorInfo, StopReason, is_context_overflow,
+};
 use std::sync::LazyLock;
 use std::time::Duration;
 
@@ -114,10 +116,13 @@ impl<E: ExtensionExecution> AgentSession<E> {
     }
 
     /// Enables or disables retrying failed responses.
-    pub fn set_auto_retry_enabled(&self, enabled: bool) {
-        self.settings_manager
-            .borrow_mut()
-            .set_retry_enabled(enabled);
+    ///
+    /// # Errors
+    /// Returns the publisher's refusal without changing preferences.
+    pub fn set_auto_retry_enabled(&self, enabled: bool) -> Result<(), DiagnosticErrorInfo> {
+        let edit = self.prepare_behaviour(&["retry", "enabled"], serde_json::json!(enabled))?;
+        self.settings_manager.borrow_mut().apply_prepared_edit(edit);
+        Ok(())
     }
 
     /// Ends a retry whose wait was aborted, clearing its attempts.

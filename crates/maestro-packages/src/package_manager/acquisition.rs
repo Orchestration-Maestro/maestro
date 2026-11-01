@@ -1,6 +1,7 @@
 //! Source dispatch for explicit install and removal, and settings edits after success.
 use super::{
     DefaultPackageManager, InstalledSourceScope, PackageOperations, ProgressAction,
+    decisions::SourceEdit,
     sources::{self, Source},
 };
 use maestro_resources::paths::package_home_directory;
@@ -21,23 +22,32 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         &self,
         source: &str,
         scope: Option<InstalledSourceScope>,
+        prepared: Option<maestro_settings::PreparedSettingsEdit>,
     ) -> io::Result<SourceAcquisition> {
         let scope = scope.unwrap_or(InstalledSourceScope::User);
+        if prepared.is_none() {
+            self.check_package_operation(source, Some(scope), false)?;
+        }
         let parsed = sources::parse(source);
         let message = format!("Installing {source}...");
-        self.with_progress(ProgressAction::Install, source, message, async {
-            match parsed {
-                Source::Npm { spec, .. } => self
-                    .install_npm(spec, scope.resource_scope())
-                    .await
-                    .map(|()| SourceAcquisition::Prepared),
-                Source::Git(git) => self.install_git(&git, scope.resource_scope()).await,
-                Source::Local(path) => self
-                    .require_local(path)
-                    .map(|()| SourceAcquisition::Prepared),
-            }
-        })
-        .await
+        let acquisition = self
+            .with_progress(ProgressAction::Install, source, message, async {
+                match parsed {
+                    Source::Npm { spec, .. } => self
+                        .install_npm(spec, scope.resource_scope())
+                        .await
+                        .map(|()| SourceAcquisition::Prepared),
+                    Source::Git(git) => self.install_git(&git, scope.resource_scope()).await,
+                    Source::Local(path) => self
+                        .require_local(path)
+                        .map(|()| SourceAcquisition::Prepared),
+                }
+            })
+            .await?;
+        if let Some(edit) = prepared {
+            self.publish_source_edit(source, scope, edit, SourceEdit::Add)?;
+        }
+        Ok(acquisition)
     }
     /// Fails unless the local path, resolved against the input base, exists.
     fn require_local(&self, path: &str) -> io::Result<()> {
@@ -56,8 +66,12 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         &self,
         source: &str,
         scope: Option<InstalledSourceScope>,
-    ) -> io::Result<()> {
+        prepared: Option<maestro_settings::PreparedSettingsEdit>,
+    ) -> io::Result<bool> {
         let scope = scope.unwrap_or(InstalledSourceScope::User);
+        if prepared.is_none() {
+            self.check_package_operation(source, Some(scope), true)?;
+        }
         let parsed = sources::parse(source);
         let message = format!("Removing {source}...");
         self.with_progress(ProgressAction::Remove, source, message, async {
@@ -67,7 +81,12 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
                 Source::Local(_) => Ok(()),
             }
         })
-        .await
+        .await?;
+        if let Some(edit) = prepared {
+            self.publish_source_edit(source, scope, edit, SourceEdit::Remove)
+        } else {
+            Ok(false)
+        }
     }
     /// Installs, then adds the source to the selected scope's settings.
     pub(super) async fn acquire_and_persist(
@@ -75,8 +94,14 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         source: &str,
         scope: Option<InstalledSourceScope>,
     ) -> io::Result<()> {
-        self.acquire(source, scope).await?;
-        self.record_source(source, scope).map(drop)
+        let prepared = self.prepare_source_edit(source, scope, false)?;
+        let admitted = prepared.is_some();
+        self.acquire(source, scope, prepared).await?;
+        if admitted {
+            Ok(())
+        } else {
+            self.record_source(source, scope).map(drop)
+        }
     }
     /// Removes the contents, then removes the source from settings.
     pub(super) async fn release_and_persist(
@@ -84,7 +109,13 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         source: &str,
         scope: Option<InstalledSourceScope>,
     ) -> io::Result<bool> {
-        self.release(source, scope).await?;
-        self.remove_source(source, scope)
+        let prepared = self.prepare_source_edit(source, scope, true)?;
+        let admitted = prepared.is_some();
+        let modified = self.release(source, scope, prepared).await?;
+        if admitted {
+            Ok(modified)
+        } else {
+            self.remove_source(source, scope)
+        }
     }
 }
