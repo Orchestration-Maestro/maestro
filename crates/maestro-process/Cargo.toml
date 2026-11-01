@@ -8,6 +8,7 @@ repository.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
+maestro-text.workspace = true
 tokio = { version = "=1.53.3", default-features = false, features = ["process", "io-util", "rt", "macros", "time", "sync"] }
 
 [target.'cfg(unix)'.dependencies]

@@ -110,6 +110,7 @@ mod shared_records;
 mod shell_callbacks;
 pub(crate) mod shell_host;
 mod signal_callbacks;
+mod ssh_operations;
 mod stream_events;
 pub(crate) mod theme_host;
 mod tool_callbacks;

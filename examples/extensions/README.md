@@ -169,6 +169,10 @@ resolving conflicts, then regenerate the table.
 | `space_invaders.rs` | Play Space Invaders in a custom terminal view with session-entry saves. |
 | `space_invaders/game.rs` | Retained game records and one deterministic simulation tick. |
 | `space_invaders/render.rs` | Original terminal sprites, colours, borders and status text. |
+| `ssh.md` | SSH |
+| `ssh.rs` | Opt-in SSH operations for the native coding tools. |
+| `ssh/operations.rs` | SSH observations supplied to the original native coding-tool owners. |
+| `ssh/transport.rs` | Raw child pipes for SSH file observations and writes. |
 | `status_line.md` | Status line |
 | `status_line.rs` | Shows themed turn progress as persistent footer status. |
 | `structured_output.md` | Structured output |
