@@ -36,9 +36,6 @@ mod support {
     pub mod generation;
     #[cfg(not(target_arch = "wasm32"))]
     pub mod native;
-    /// Scripted summary answers with usage.
-    #[cfg(not(target_arch = "wasm32"))]
-    pub mod scripted_summary;
     /// Context corpus consumer.
     pub mod session_context;
     pub mod session_files;
