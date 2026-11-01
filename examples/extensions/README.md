@@ -80,6 +80,13 @@ resolving conflicts, then regenerate the table.
 | `custom_footer.rs` | A command that toggles a footer showing history usage, the model and Git branch. |
 | `custom_header.md` | Custom header |
 | `custom_header.rs` | Replaces the startup header with a themed illustration and restores it on command. |
+| `custom_message_provider.md` | Custom message provider |
+| `custom_message_provider/main.rs` | Opt-in registration of a custom message-stream provider. |
+| `custom_message_provider/oauth.rs` | Subscription sign-in through the host's HTTP and interaction interfaces. |
+| `custom_message_provider/request.rs` | Conversation conversion and HTTP parameters for the custom message protocol. |
+| `custom_message_provider/response.rs` | Ordered provider events reduced into one shared assistant message. |
+| `custom_message_provider/sse.rs` | Byte-framed server-sent events, decoded only after each complete line. |
+| `custom_message_provider/stream.rs` | A custom message-stream implementation using the host's transport and event buffer. |
 | `dirty_repo_guard.md` | Dirty repo guard |
 | `dirty_repo_guard.rs` | Opt-in guard that asks before leaving or forking a repository with uncommitted changes. |
 | `dynamic_tools.md` | Dynamic tools |

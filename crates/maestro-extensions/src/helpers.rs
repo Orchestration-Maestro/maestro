@@ -3,6 +3,7 @@ use serde::{Serialize, de::DeserializeOwned};
 mod conversation;
 mod fuzzy;
 mod keys;
+mod oauth;
 mod paths;
 pub use paths::{guest_path, native_path};
 mod time;
@@ -15,6 +16,9 @@ mod tools;
 pub fn call(operation: &str, data: &str) -> Result<String, String> {
     if operation.starts_with("conversation.") {
         return conversation::call(operation, data);
+    }
+    if operation.starts_with("oauth.") {
+        return oauth::call(operation, data);
     }
     if operation.starts_with("paths.") {
         return paths::call(operation, data);

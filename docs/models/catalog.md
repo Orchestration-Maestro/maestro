@@ -11,7 +11,7 @@ including its ID, provider, headers or compatibility fields, never changes the
 embedded catalog or another caller's values. The original registry keys remain
 unchanged. Helpers also accept descriptors that do not belong to the catalog.
 
-`calculate_cost` updates the supplied usage's input, output, cache-read and
+`calculate_cost` re-exports the shared request owner's arithmetic. It updates the supplied usage's input, output, cache-read and
 cache-write costs: each category uses its own USD-per-million rate divided by
 1,000,000, multiplied by its reported count. Total cost is their left-to-right
 sum. It returns a mutable borrow of that cost record without changing any token

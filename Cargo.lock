@@ -4133,6 +4133,7 @@ dependencies = [
  "maestro-models",
  "maestro-request",
  "maestro-test-directory",
+ "maestro-text",
  "maestro-tool",
  "num-traits",
  "regex",

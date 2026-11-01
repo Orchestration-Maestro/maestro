@@ -67,6 +67,11 @@ path = "../../examples/extensions/custom_header.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "custom_message_provider"
+path = "../../examples/extensions/custom_message_provider/main.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "dirty_repo_guard"
 path = "../../examples/extensions/dirty_repo_guard.rs"
 crate-type = ["cdylib"]
@@ -373,6 +378,7 @@ crate-type = ["cdylib"]
 maestro-tool = { path = "../maestro-tool" }
 indexmap = { version = "=2.14.2", features = ["serde"] }
 maestro-json = { path = "../maestro-json" }
+maestro-text = { path = "../maestro-text" }
 maestro-entry = { path = "../maestro-entry" }
 maestro-request = { path = "../maestro-request" }
 wit-bindgen = { version = "=0.62.0", default-features = false, features = ["macros", "realloc", "async", "async-spawn", "std", "inter-task-wakeup"] }

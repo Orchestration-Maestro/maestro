@@ -6,37 +6,26 @@ use maestro_text::decode_utf8;
 /// A carriage return completes its line immediately; one following line feed is skipped.
 #[derive(Default)]
 pub(crate) struct LineDecoder {
-    /// Bytes not yet returned as a line.
-    buffer: Vec<u8>,
-    /// Whether the last consumed byte was a carriage return.
-    skip_line_feed: bool,
+    /// Shared raw-byte framing; UTF-8 and BOM handling stay with this adapter.
+    bytes: maestro_text::line_decoder::ByteLineDecoder,
 }
 
 impl LineDecoder {
     /// Add `chunk` and return the lines it completes, without their endings.
     pub(crate) fn decode(&mut self, chunk: &[u8]) -> Vec<String> {
-        let mut lines = Vec::new();
-        for &byte in chunk {
-            if std::mem::take(&mut self.skip_line_feed) && byte == b'\n' {
-                continue;
-            }
-            if matches!(byte, b'\r' | b'\n') {
-                lines.push(decode_utf8(&self.buffer).into_owned());
-                self.buffer.clear();
-                self.skip_line_feed = byte == b'\r';
-            } else {
-                self.buffer.push(byte);
-            }
-        }
-        lines
+        self.bytes
+            .decode(chunk)
+            .into_iter()
+            .map(|line| decode_utf8(&line).into_owned())
+            .collect()
     }
 
     /// End the input: the bytes still held form a last line.
     pub(crate) fn flush(&mut self) -> Vec<String> {
-        if self.buffer.is_empty() {
-            Vec::new()
-        } else {
-            self.decode(b"\n")
-        }
+        self.bytes
+            .flush()
+            .into_iter()
+            .map(|line| decode_utf8(&line).into_owned())
+            .collect()
     }
 }

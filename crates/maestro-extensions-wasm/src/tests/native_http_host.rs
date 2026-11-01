@@ -33,6 +33,8 @@ pub struct Response {
     pub headers: Vec<(String, String)>,
     /// Supplied consuming byte resource.
     pub body: Option<super::native_io_host::Reader>,
+    /// Supplied failure of a whole-body read.
+    pub read_error: Option<String>,
 }
 /// Supplied responses and exact request observations.
 pub struct Bank {
@@ -84,6 +86,7 @@ impl Bank {
             status_text: self.status_text.clone(),
             headers: self.headers.clone(),
             body,
+            read_error: self.read_error.clone(),
         })
     }
 }
@@ -100,7 +103,9 @@ impl Response {
             }
             body.close();
         }
-        Ok(self.text.clone())
+        self.read_error
+            .clone()
+            .map_or_else(|| Ok(self.text.clone()), Err)
     }
 }
 impl host::HostResponseWithStore<State> for Imports {
