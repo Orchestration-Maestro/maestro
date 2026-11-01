@@ -6312,7 +6312,7 @@
               "cacheWrite": 6.25
             },
             "contextWindow": 1000000,
-            "maxTokens": 128000
+            "maxTokens": 128000, "compat": {"forceAdaptiveThinking": true}
           },
           {
             "id": "claude-opus-4-7",
@@ -6335,7 +6335,7 @@
               "cacheWrite": 6.25
             },
             "contextWindow": 1000000,
-            "maxTokens": 128000
+            "maxTokens": 128000, "compat": {"forceAdaptiveThinking": true}
           },
           {
             "id": "claude-sonnet-4-0",
@@ -6435,7 +6435,7 @@
               "cacheWrite": 3.75
             },
             "contextWindow": 1000000,
-            "maxTokens": 64000
+            "maxTokens": 64000, "compat": {"forceAdaptiveThinking": true}
           },
           {
             "id": "custom-google",
@@ -6811,7 +6811,7 @@
               "cacheWrite": 6.25
             },
             "contextWindow": 1000000.0,
-            "maxTokens": 128000.0
+            "maxTokens": 128000.0, "compat": {"forceAdaptiveThinking": true}
           },
           {
             "id": "claude-opus-4-7",
@@ -6834,7 +6834,7 @@
               "cacheWrite": 6.25
             },
             "contextWindow": 1000000.0,
-            "maxTokens": 128000.0
+            "maxTokens": 128000.0, "compat": {"forceAdaptiveThinking": true}
           },
           {
             "id": "claude-sonnet-4-0",
@@ -6934,7 +6934,7 @@
               "cacheWrite": 3.75
             },
             "contextWindow": 1000000.0,
-            "maxTokens": 64000.0
+            "maxTokens": 64000.0, "compat": {"forceAdaptiveThinking": true}
           },
           {
             "id": "claude-custom",
@@ -7310,7 +7310,7 @@
               "cacheWrite": 6.25
             },
             "contextWindow": 1000000.0,
-            "maxTokens": 128000.0
+            "maxTokens": 128000.0, "compat": {"forceAdaptiveThinking": true}
           },
           {
             "id": "claude-opus-4-7",
@@ -7333,7 +7333,7 @@
               "cacheWrite": 6.25
             },
             "contextWindow": 1000000.0,
-            "maxTokens": 128000.0
+            "maxTokens": 128000.0, "compat": {"forceAdaptiveThinking": true}
           },
           {
             "id": "claude-sonnet-4-0",
@@ -7433,7 +7433,7 @@
               "cacheWrite": 3.75
             },
             "contextWindow": 1000000.0,
-            "maxTokens": 64000.0
+            "maxTokens": 64000.0, "compat": {"forceAdaptiveThinking": true}
           },
           {
             "id": "gemini-1.5-flash",

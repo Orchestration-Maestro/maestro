@@ -396,3 +396,54 @@ fn gateway_workers_models_are_derived_when_the_gateway_feed_drops_them() {
         Some(&Value::Bool(true))
     );
 }
+
+#[test]
+fn messages_adaptive_metadata_merges_only_matching_case_sensitive_families() {
+    let markers = [
+        "opus-4-6",
+        "opus-4.6",
+        "opus-4-7",
+        "opus-4.7",
+        "opus-4-8",
+        "opus-4.8",
+        "sonnet-4-6",
+        "sonnet-4.6",
+        "sonnet-5",
+        "sonnet.5",
+    ];
+    for marker in markers {
+        let id = format!("anthropic/claude-{marker}");
+        let mut input = model("vercel-ai-gateway", &id, "anthropic-messages");
+        input.compat = Some(crate::ModelCompat(
+            serde_json::from_value(json!({"supportsCacheControlOnTools": false})).unwrap(),
+        ));
+        let catalog = assembled(vec![input]);
+        let result = found(&catalog, "vercel-ai-gateway", &id);
+        assert_eq!(
+            compat(result, "forceAdaptiveThinking"),
+            Some(&json!(true)),
+            "{id}"
+        );
+        assert_eq!(
+            compat(result, "supportsCacheControlOnTools"),
+            Some(&json!(false))
+        );
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        super::super::emit::write_catalog(&catalog, scratch.path()).unwrap();
+        let source =
+            std::fs::read_to_string(scratch.path().join("provider_vercel-ai-gateway.rs")).unwrap();
+        assert!(source.contains("forceAdaptiveThinking"));
+    }
+    for (id, api) in [
+        ("claude-sonnet-4-5", "anthropic-messages"),
+        ("claude-SONNET-5", "anthropic-messages"),
+        ("claude-fable-5", "anthropic-messages"),
+        ("claude-sonnet-5", "openai-completions"),
+    ] {
+        let catalog = assembled(vec![model("other", id, api)]);
+        assert_eq!(
+            compat(found(&catalog, "other", id), "forceAdaptiveThinking"),
+            None
+        );
+    }
+}

@@ -185,18 +185,21 @@ impl<E: ExtensionExecution> AgentSession<E> {
         Ok(Outcome::Compacted { result })
     }
 
-    /// The key and headers automatic compaction uses, absent when none are configured.
-    async fn configured_auth(&self) -> Option<(String, Option<IndexMap<String, String>>)> {
+    /// The key, headers and endpoint automatic compaction uses, absent without a key.
+    async fn configured_auth(
+        &self,
+    ) -> Option<(String, Option<IndexMap<String, String>>, Option<String>)> {
         let model = self.model();
         let auth = self.model_registry.get_api_key_and_headers(&model).await;
         let maestro_catalog::ResolvedRequestAuth::Ok {
             api_key: Some(api_key),
             headers,
+            base_url,
         } = auth
         else {
             return None;
         };
-        (!api_key.is_empty()).then_some((api_key, headers))
+        (!api_key.is_empty()).then_some((api_key, headers, base_url))
     }
 
     /// The context tokens the finished response reports, or the last real usage's estimate when it

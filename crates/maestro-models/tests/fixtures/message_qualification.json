@@ -4166,7 +4166,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -4396,7 +4395,6 @@
           "url": "https://gateway.ai.cloudflare.com/v1/account-id/gateway-id/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "cf-aig-authorization": "Bearer test-key",
@@ -4626,7 +4624,6 @@
           "url": "https://api.fireworks.ai/inference/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -4865,7 +4862,7 @@
           "url": "https://api.individual.githubcopilot.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "fine-grained-tool-streaming-2025-05-14,interleaved-thinking-2025-05-14",
+            "anthropic-beta": "fine-grained-tool-streaming-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "authorization": "Bearer test-key",
@@ -5103,7 +5100,6 @@
           "url": "https://api.kimi.com/coding/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -5333,7 +5329,6 @@
           "url": "https://api.minimax.io/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -5562,7 +5557,6 @@
           "url": "https://api.minimaxi.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -5792,7 +5786,6 @@
           "url": "https://opencode.ai/zen/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -6022,7 +6015,6 @@
           "url": "https://ai-gateway.vercel.sh/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -6251,7 +6243,6 @@
           "url": "https://api.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -6480,7 +6471,6 @@
           "url": "https://token-plan-ams.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -6709,7 +6699,6 @@
           "url": "https://token-plan-cn.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -6938,7 +6927,6 @@
           "url": "https://token-plan-sgp.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -7176,7 +7164,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -7414,7 +7401,6 @@
           "url": "https://gateway.ai.cloudflare.com/v1/account-id/gateway-id/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "cf-aig-authorization": "Bearer test-key",
@@ -7652,7 +7638,6 @@
           "url": "https://api.fireworks.ai/inference/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -7777,7 +7762,8 @@
         "contextWindow": 1000000,
         "maxTokens": 32000,
         "compat": {
-          "supportsEagerToolInputStreaming": true
+          "supportsEagerToolInputStreaming": true,
+          "forceAdaptiveThinking": true
         }
       },
       "context": {
@@ -8142,7 +8128,6 @@
           "url": "https://api.kimi.com/coding/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -8380,7 +8365,6 @@
           "url": "https://api.minimax.io/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -8617,7 +8601,6 @@
           "url": "https://api.minimaxi.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -8855,7 +8838,6 @@
           "url": "https://opencode.ai/zen/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -9093,7 +9075,6 @@
           "url": "https://ai-gateway.vercel.sh/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -9330,7 +9311,6 @@
           "url": "https://api.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -9567,7 +9547,6 @@
           "url": "https://token-plan-ams.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -9804,7 +9783,6 @@
           "url": "https://token-plan-cn.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -10041,7 +10019,6 @@
           "url": "https://token-plan-sgp.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -10258,7 +10235,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -10451,7 +10427,6 @@
           "url": "https://gateway.ai.cloudflare.com/v1/account-id/gateway-id/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "cf-aig-authorization": "Bearer test-key",
@@ -10644,7 +10619,6 @@
           "url": "https://api.fireworks.ai/inference/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -10844,7 +10818,6 @@
           "url": "https://api.individual.githubcopilot.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "authorization": "Bearer test-key",
@@ -11046,7 +11019,6 @@
           "url": "https://api.kimi.com/coding/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -11239,7 +11211,6 @@
           "url": "https://api.minimax.io/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -11431,7 +11402,6 @@
           "url": "https://api.minimaxi.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -11624,7 +11594,6 @@
           "url": "https://opencode.ai/zen/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -11817,7 +11786,6 @@
           "url": "https://ai-gateway.vercel.sh/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -12009,7 +11977,6 @@
           "url": "https://api.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -12201,7 +12168,6 @@
           "url": "https://token-plan-ams.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -12393,7 +12359,6 @@
           "url": "https://token-plan-cn.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -12585,7 +12550,6 @@
           "url": "https://token-plan-sgp.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -15192,7 +15156,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -15412,7 +15379,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -15624,7 +15594,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -15846,7 +15819,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -17133,7 +17109,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -17326,7 +17301,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -17517,7 +17491,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -17821,7 +17794,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -18016,7 +17992,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -18208,7 +18187,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -18404,7 +18386,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -18601,7 +18586,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -18796,7 +18784,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -18988,7 +18979,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -19184,7 +19178,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -19381,7 +19378,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -19581,7 +19581,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -19781,7 +19784,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -19981,7 +19987,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -20181,7 +20190,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -20381,7 +20393,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -20581,7 +20596,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -20781,7 +20799,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -20981,7 +21002,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -21181,7 +21205,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -21381,7 +21408,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -21583,7 +21613,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -21785,7 +21818,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "systemPrompt": "You are a precise assistant. Follow the user's instructions exactly.",
@@ -22054,7 +22090,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "systemPrompt": "You are a precise assistant. Follow the user's instructions exactly.",
@@ -22323,7 +22362,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "systemPrompt": "You are a precise assistant. Follow the user's instructions exactly.",
@@ -22681,7 +22723,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -22889,7 +22930,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
@@ -23005,7 +23045,10 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -23259,7 +23302,10 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -23513,7 +23559,10 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -23767,7 +23816,10 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -24021,7 +24073,10 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -24275,7 +24330,10 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -24529,7 +24587,10 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -24783,7 +24844,10 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -25037,7 +25101,10 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -25291,7 +25358,10 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -25545,7 +25615,10 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -25799,7 +25872,10 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -26179,7 +26255,10 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -26464,7 +26543,10 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -26706,7 +26788,10 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -26948,7 +27033,10 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -27300,7 +27388,6 @@
           "url": "https://api.individual.githubcopilot.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "authorization": "Bearer tid_copilot_session_test_token",
@@ -27542,7 +27629,6 @@
           "url": "https://api.individual.githubcopilot.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "authorization": "Bearer tid_copilot_session_test_token",
@@ -27758,7 +27844,6 @@
           "url": "https://api.individual.githubcopilot.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "authorization": "Bearer tid_copilot_session_test_token",
@@ -27973,7 +28058,6 @@
           "url": "https://api.individual.githubcopilot.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "authorization": "Bearer tid_copilot_session_test_token",
@@ -28814,7 +28898,6 @@
           "url": "https://api.individual.githubcopilot.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": "interleaved-thinking-2025-05-14",
             "anthropic-dangerous-direct-browser-access": "true",
             "anthropic-version": "2023-06-01",
             "authorization": "Bearer tid_copilot_session_test_token",
@@ -29146,6 +29229,9 @@
           "Editor-Version": "vscode/1.107.0",
           "Editor-Plugin-Version": "copilot-chat/0.35.0",
           "Copilot-Integration-Id": "vscode-chat"
+        },
+        "compat": {
+          "forceAdaptiveThinking": true
         }
       },
       "context": {
@@ -29354,6 +29440,9 @@
           "Editor-Version": "vscode/1.107.0",
           "Editor-Plugin-Version": "copilot-chat/0.35.0",
           "Copilot-Integration-Id": "vscode-chat"
+        },
+        "compat": {
+          "forceAdaptiveThinking": true
         }
       },
       "context": {
@@ -29563,6 +29652,9 @@
           "Editor-Version": "vscode/1.107.0",
           "Editor-Plugin-Version": "copilot-chat/0.35.0",
           "Copilot-Integration-Id": "vscode-chat"
+        },
+        "compat": {
+          "forceAdaptiveThinking": true
         }
       },
       "context": {
@@ -29772,6 +29864,9 @@
           "Editor-Version": "vscode/1.107.0",
           "Editor-Plugin-Version": "copilot-chat/0.35.0",
           "Copilot-Integration-Id": "vscode-chat"
+        },
+        "compat": {
+          "forceAdaptiveThinking": true
         }
       },
       "context": {
@@ -29982,6 +30077,9 @@
           "Editor-Version": "vscode/1.107.0",
           "Editor-Plugin-Version": "copilot-chat/0.35.0",
           "Copilot-Integration-Id": "vscode-chat"
+        },
+        "compat": {
+          "forceAdaptiveThinking": true
         }
       },
       "context": {
@@ -30191,6 +30289,9 @@
           "Editor-Version": "vscode/1.107.0",
           "Editor-Plugin-Version": "copilot-chat/0.35.0",
           "Copilot-Integration-Id": "vscode-chat"
+        },
+        "compat": {
+          "forceAdaptiveThinking": true
         }
       },
       "context": {

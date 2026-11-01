@@ -109,8 +109,8 @@ pub struct AnthropicOptions<E: ProviderExecution = Threaded> {
     pub effort: Option<AnthropicEffort>,
     /// Enabled thinking defaults to summarized display.
     pub thinking_display: Option<AnthropicThinkingDisplay>,
-    /// Whether the interleaved-reasoning beta may be requested; absent means it may. It is never
-    /// requested for models whose reasoning is adaptive.
+    /// Whether explicitly enabled, non-adaptive reasoning may request the interleaved beta.
+    /// Absence permits it; disabled or unset thinking never requests it.
     pub interleaved_thinking: Option<bool>,
     /// Whether the model may call tools, must call one, or must call a named one.
     pub tool_choice: Option<ToolChoice>,
@@ -263,7 +263,7 @@ fn simple<E: Producer>(
     };
     let thinking = match options.reasoning {
         None => ThinkingInput::Raw,
-        Some(level) if request::supports_adaptive_thinking(&model.id) => {
+        Some(level) if request::supports_adaptive_thinking(&model) => {
             ThinkingInput::Effort(map_thinking_level_to_effort(&model, level))
         }
         Some(level) => {
@@ -416,7 +416,7 @@ async fn invoke<E: ProviderExecution>(
         let response = client(payload, settings).await.map_err(callback_failure)?;
         (response, Reading::Injected)
     } else {
-        let request = invocation.request(&payload)?;
+        let request = invocation.request(payload)?;
         let response = send_with_status_error(request, &options.common, envelope_failure).await?;
         (response, Reading::Transport)
     };

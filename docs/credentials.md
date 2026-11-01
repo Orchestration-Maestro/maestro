@@ -43,7 +43,11 @@ decode. Expiry times of typed credentials you supply are written without a fract
 whole; preserved stored records keep their numeric values, written in the JSON serializer's spelling (for example `1e3` becomes `1000.0`), not their original spelling.
 
 `has_auth` returns `Ok(true)` for a runtime override (even empty), a stored record, a usable
-provider environment value or a nonempty fallback key. `get_auth_status` reports
+provider environment value or a nonempty fallback key. For Cloudflare, an API-key
+source must be nonempty; stored OAuth credentials count when an OAuth handler is
+registered, without key extraction or refresh. The catalog also checks
+[required account values](providers.md#cloudflare) on the API-key path.
+`get_auth_status` reports
 the first of stored, runtime (`--api-key`), environment (first populated variable
 name) and fallback (`custom provider config`), without key values, stored helper
 resolution or refresh. Both operations return a `Result`: a consumed fallback

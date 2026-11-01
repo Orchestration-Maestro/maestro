@@ -1,6 +1,6 @@
 //! Request construction: endpoint, headers, cache policy and the typed payload.
 
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 use serde::Serialize;
 use serde_json::Value;
 use std::borrow::Cow;
@@ -8,6 +8,7 @@ use std::borrow::Cow;
 use super::messages::{CacheControl, ToolParam, WireMessage, convert, tools};
 use super::tool_names::Naming;
 use super::{AnthropicOptions, AnthropicThinkingDisplay, CallOptions, ThinkingInput};
+use crate::arguments::json_parse::whitespace;
 use crate::options::resolve_cache_retention;
 use crate::providers::chat::cloudflare::resolve_cloudflare_base_url;
 use crate::providers::chat::github_copilot_headers::{
@@ -44,6 +45,9 @@ struct Payload<'a> {
     max_tokens: f64,
     /// Always set: the response is streamed.
     stream: bool,
+    /// Beta features consumed by the client rather than the HTTP body.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    betas: Vec<String>,
     /// System prompt.
     #[serde(skip_serializing_if = "Option::is_none")]
     system: Option<Vec<SystemBlock<'a>>>,
@@ -270,6 +274,7 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
             ),
             max_tokens: self.max_tokens(),
             stream: true,
+            betas: self.betas(),
             system: self.system(cache),
             temperature: common
                 .temperature
@@ -319,7 +324,7 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
             .thinking_display
             .unwrap_or(AnthropicThinkingDisplay::Summarized)
             .as_str();
-        if supports_adaptive_thinking(&self.model.id) {
+        if supports_adaptive_thinking(self.model) {
             let effort = match self.thinking {
                 ThinkingInput::Effort(mapped) => Some(mapped.as_str()),
                 ThinkingInput::Raw | ThinkingInput::Budget(_) => {
@@ -350,19 +355,46 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
         }
     }
 
-    /// Optional betas: streamed tool arguments for a model without eager input
-    /// streaming when tools are declared, and interleaved reasoning unless the caller turns it
-    /// off or the model's reasoning is adaptive.
-    fn betas(&self) -> Vec<&'static str> {
-        let tools_declared = self.context.tools.as_deref().is_some_and(|t| !t.is_empty());
-        let mut betas = Vec::new();
-        if tools_declared && !self.compat.tools.eager_input_streaming {
-            betas.push(FINE_GRAINED_TOOL_STREAMING_BETA);
+    /// Select configured betas in layer order, otherwise the applicable protocol defaults.
+    fn betas(&self) -> Vec<String> {
+        let configured = self
+            .model
+            .headers
+            .iter()
+            .chain(self.options.common.headers.iter())
+            .flat_map(|headers| headers.iter())
+            .filter(|(name, _)| name.eq_ignore_ascii_case("anthropic-beta"))
+            .map(|(_, value)| value)
+            .next_back();
+        if let Some(configured) = configured {
+            return configured
+                .split(',')
+                .map(|part| part.trim_matches(whitespace))
+                .filter(|part| !part.is_empty())
+                .map(str::to_owned)
+                .collect::<IndexSet<_>>()
+                .into_iter()
+                .collect();
         }
-        if self.options.interleaved_thinking.unwrap_or(true)
-            && !supports_adaptive_thinking(&self.model.id)
+        let mut betas = Vec::new();
+        if matches!(self.naming, Naming::Subscription) {
+            betas.extend(["claude-code-20250219".into(), "oauth-2025-04-20".into()]);
+        }
+        if self
+            .context
+            .tools
+            .as_deref()
+            .is_some_and(|tools| !tools.is_empty())
+            && !self.compat.tools.eager_input_streaming
         {
-            betas.push(INTERLEAVED_THINKING_BETA);
+            betas.push(FINE_GRAINED_TOOL_STREAMING_BETA.into());
+        }
+        if self.model.reasoning
+            && self.options.thinking_enabled == Some(true)
+            && self.options.interleaved_thinking.unwrap_or(true)
+            && !supports_adaptive_thinking(self.model)
+        {
+            betas.push(INTERLEAVED_THINKING_BETA.into());
         }
         betas
     }
@@ -431,14 +463,9 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
         if !account && !subscription {
             self.add_session_affinity(&mut headers);
         }
-        let mut betas = self.betas();
         if subscription {
-            betas.splice(0..0, ["claude-code-20250219", "oauth-2025-04-20"]);
             headers.insert("user-agent".to_owned(), "claude-cli/2.1.75".to_owned());
             headers.insert("x-app".to_owned(), "cli".to_owned());
-        }
-        if !betas.is_empty() {
-            headers.insert("anthropic-beta".to_owned(), betas.join(","));
         }
         self.layer_model_headers(&mut headers);
         headers.insert("content-type".to_owned(), "application/json".to_owned());
@@ -503,13 +530,25 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
     /// # Errors
     /// Fails when the endpoint is not a URL, headers neither authenticate nor retain a gateway
     /// omission, or the payload cannot be written as JSON.
-    pub(super) fn request(&self, payload: &Value) -> Result<HttpRequest, RequestFailure> {
+    pub(super) fn request(&self, mut payload: Value) -> Result<HttpRequest, RequestFailure> {
         let base = match self.base_url.as_ref() {
             "" => DEFAULT_BASE_URL,
             supplied => supplied,
         };
-        let headers = self.headers()?;
-        let body = compact_json(payload).map_err(|error| RequestFailure::new(error.to_string()))?;
+        let mut headers = self.headers()?;
+        if let Some(betas) = payload
+            .as_object_mut()
+            .and_then(|body| body.shift_remove("betas"))
+        {
+            let betas: Vec<String> = serde_json::from_value(betas)
+                .map_err(|error| RequestFailure::new(error.to_string()))?;
+            layer(
+                &mut headers,
+                [("anthropic-beta".to_owned(), betas.join(","))],
+            );
+        }
+        let body =
+            compact_json(&payload).map_err(|error| RequestFailure::new(error.to_string()))?;
         Ok(HttpRequest {
             method: "POST".to_owned(),
             url: endpoint_url(base, ENDPOINT_PATH)?,
@@ -520,17 +559,11 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
     }
 }
 
-/// Report whether the model's reasoning is adaptive: Opus 4.6 and 4.7 and Sonnet 4.6, with
-/// either spelling of the version.
-pub(super) fn supports_adaptive_thinking(model_id: &str) -> bool {
-    [
-        "opus-4-6",
-        "opus-4.6",
-        "opus-4-7",
-        "opus-4.7",
-        "sonnet-4-6",
-        "sonnet-4.6",
-    ]
-    .iter()
-    .any(|marker| model_id.contains(marker))
+/// Report whether compatibility metadata explicitly selects adaptive thinking.
+pub(super) fn supports_adaptive_thinking(model: &Model) -> bool {
+    model
+        .compat
+        .as_ref()
+        .and_then(|compat| compat.0.get("forceAdaptiveThinking"))
+        == Some(&Value::Bool(true))
 }

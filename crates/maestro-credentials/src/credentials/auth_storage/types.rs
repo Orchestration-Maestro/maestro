@@ -33,6 +33,16 @@ pub(super) fn stored_record(credential: AuthCredential) -> Value {
         AuthCredential::ApiKey(api_key) => {
             record.insert("type".into(), "api_key".into());
             record.insert("key".into(), api_key.key.into());
+            if let Some(env) = api_key.env {
+                record.insert(
+                    "env".into(),
+                    Value::Object(
+                        env.into_iter()
+                            .map(|(name, value)| (name, Value::String(value)))
+                            .collect(),
+                    ),
+                );
+            }
         }
         AuthCredential::OAuth(oauth) => {
             record.insert("type".into(), "oauth".into());

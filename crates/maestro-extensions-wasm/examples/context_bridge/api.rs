@@ -28,7 +28,7 @@ pub(super) async fn observe(
     api.set_thinking_level(maestro_extensions_wasm::ThinkingLevel::High)?;
     let model = context.model()?.ok_or("missing API model")?;
     let auth = matches!(context.model_registry()?.get_api_key_and_headers(model.clone()).await?,
-        maestro_extensions_wasm::ResolvedRequestAuth::Ok { api_key: Some(key), headers: None } if key == "literal controlled key");
+        maestro_extensions_wasm::ResolvedRequestAuth::Ok { api_key: Some(key), headers: None, ..} if key == "literal controlled key");
     let selected = api.set_model(model).await?;
     messages(api)?;
     super::registrations::register(api)?;

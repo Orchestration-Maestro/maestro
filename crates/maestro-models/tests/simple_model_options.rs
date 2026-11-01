@@ -43,8 +43,9 @@ mod tests {
         });
         let fetch: Fetch = Arc::new(|_| Box::pin(async { Err(FetchError::Aborted) }));
         let signal = Cancellation::new();
-        let mut options = SimpleStreamOptions {
+        let options = SimpleStreamOptions {
             common: StreamOptions {
+                base_url: None,
                 temperature: Some(0.25),
                 max_tokens: Some(-7.0),
                 signal: Some(signal.clone()),
@@ -85,6 +86,11 @@ mod tests {
         ));
         assert_eq!(calls.load(Ordering::SeqCst), 2);
         assert_eq!(options.common.max_tokens, Some(-7.0));
+        assert_explicit_zero(options);
+    }
+
+    /// An explicit zero survives common-option construction.
+    fn assert_explicit_zero(mut options: SimpleStreamOptions) {
         options.common.max_tokens = Some(0.0);
         assert_eq!(
             build_base_options(&model(8.0), &empty_context(), Some(&options), None).max_tokens,

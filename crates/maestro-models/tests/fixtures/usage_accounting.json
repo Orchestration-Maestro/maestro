@@ -599,7 +599,7 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000, "compat": {"forceAdaptiveThinking": true}
       },
       "context": {
         "messages": [
@@ -2173,9 +2173,6 @@
           "url": "https://api.minimax.io/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -2380,9 +2377,6 @@
           "url": "https://api.kimi.com/coding/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "user-agent": "KimiCLI/1.5",
@@ -2585,9 +2579,6 @@
           "url": "https://ai-gateway.vercel.sh/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -2789,9 +2780,6 @@
           "url": "https://api.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -2993,9 +2981,6 @@
           "url": "https://token-plan-cn.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -3197,9 +3182,6 @@
           "url": "https://token-plan-ams.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -3401,9 +3383,6 @@
           "url": "https://token-plan-sgp.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -3509,7 +3488,7 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000, "compat": {"forceAdaptiveThinking": true}
       },
       "context": {
         "messages": [
@@ -3588,7 +3567,7 @@
             }
           ],
           "max_tokens": 64000,
-          "stream": true,
+          "stream": true, "betas": ["claude-code-20250219", "oauth-2025-04-20"],
           "system": [
             {
               "type": "text",
@@ -4008,9 +3987,6 @@
           "url": "https://api.individual.githubcopilot.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "authorization": "Bearer fixture-key",
             "content-type": "application/json",
@@ -4456,9 +4432,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -4709,9 +4682,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -4811,7 +4781,7 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000, "compat": {"forceAdaptiveThinking": true}
       },
       "context": {
         "systemPrompt": "You are a helpful assistant. Be concise in your responses.\n\nHere is some additional context that makes this system prompt long enough to trigger caching:\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nRemember: Always be helpful and concise.",
@@ -4913,7 +4883,7 @@
             }
           ],
           "max_tokens": 64000,
-          "stream": true,
+          "stream": true, "betas": ["claude-code-20250219", "oauth-2025-04-20"],
           "system": [
             {
               "type": "text",
@@ -5035,7 +5005,7 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000, "compat": {"forceAdaptiveThinking": true}
       },
       "context": {
         "systemPrompt": "You are a helpful assistant. Be concise in your responses.\n\nHere is some additional context that makes this system prompt long enough to trigger caching:\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\nRemember: Always be helpful and concise.",
@@ -5182,7 +5152,7 @@
             }
           ],
           "max_tokens": 64000,
-          "stream": true,
+          "stream": true, "betas": ["claude-code-20250219", "oauth-2025-04-20"],
           "system": [
             {
               "type": "text",
@@ -9922,9 +9892,6 @@
           "url": "https://api.minimax.io/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -10174,9 +10141,6 @@
           "url": "https://api.minimax.io/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -10395,9 +10359,6 @@
           "url": "https://api.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -10648,9 +10609,6 @@
           "url": "https://api.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -10869,9 +10827,6 @@
           "url": "https://token-plan-cn.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -11122,9 +11077,6 @@
           "url": "https://token-plan-cn.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -11343,9 +11295,6 @@
           "url": "https://token-plan-ams.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -11596,9 +11545,6 @@
           "url": "https://token-plan-ams.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -11817,9 +11763,6 @@
           "url": "https://token-plan-sgp.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -12070,9 +12013,6 @@
           "url": "https://token-plan-sgp.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -12293,9 +12233,6 @@
           "url": "https://api.kimi.com/coding/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "user-agent": "KimiCLI/1.5",
@@ -12549,9 +12486,6 @@
           "url": "https://api.kimi.com/coding/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "user-agent": "KimiCLI/1.5",
@@ -12771,9 +12705,6 @@
           "url": "https://ai-gateway.vercel.sh/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -13024,9 +12955,6 @@
           "url": "https://ai-gateway.vercel.sh/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -15576,9 +15504,6 @@
           "url": "https://api.individual.githubcopilot.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "authorization": "Bearer fixture-key",
             "content-type": "application/json",
@@ -15843,9 +15768,6 @@
           "url": "https://api.individual.githubcopilot.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "authorization": "Bearer fixture-key",
             "content-type": "application/json",
@@ -22845,7 +22767,7 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000, "compat": {"forceAdaptiveThinking": true}
       },
       "context": {
         "systemPrompt": "You are a helpful assistant.",
@@ -23046,7 +22968,7 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000, "compat": {"forceAdaptiveThinking": true}
       },
       "context": {
         "systemPrompt": "You are a helpful assistant.",
@@ -23250,7 +23172,7 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000, "compat": {"forceAdaptiveThinking": true}
       },
       "context": {
         "systemPrompt": "You are a helpful assistant.",
@@ -23454,7 +23376,7 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000, "compat": {"forceAdaptiveThinking": true}
       },
       "context": {
         "systemPrompt": "You are a helpful assistant.",
@@ -23987,7 +23909,7 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000, "compat": {"forceAdaptiveThinking": true}
       },
       "context": {
         "systemPrompt": "You are a helpful assistant.",
@@ -24188,7 +24110,7 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000, "compat": {"forceAdaptiveThinking": true}
       },
       "context": {
         "systemPrompt": "You are a helpful assistant.",
@@ -25423,9 +25345,6 @@
           "url": "https://api.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -25630,9 +25549,6 @@
           "url": "https://token-plan-cn.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -25837,9 +25753,6 @@
           "url": "https://token-plan-ams.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -26044,9 +25957,6 @@
           "url": "https://token-plan-sgp.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"

@@ -110,6 +110,7 @@ pub(super) fn backend(api: &ExtensionAPI) -> ExtensionResult<Value> {
         "other",
         maestro_extensions_wasm::AuthCredential::ApiKey(
             maestro_extensions_wasm::ApiKeyCredential {
+                env: None,
                 key: "second".into(),
             },
         ),

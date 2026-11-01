@@ -191,6 +191,7 @@ fn prepared_signals_share_the_callers_cancellation() -> TestResult {
     let raw_signal = Cancellation::new();
     let raw = GoogleOptions {
         common: StreamOptions {
+            base_url: None,
             signal: Some(raw_signal.clone()),
             ..StreamOptions::default()
         },
@@ -205,6 +206,7 @@ fn prepared_signals_share_the_callers_cancellation() -> TestResult {
     let simple_signal = Cancellation::new();
     let simple = SimpleStreamOptions {
         common: StreamOptions {
+            base_url: None,
             api_key: Some("key".into()),
             signal: Some(simple_signal.clone()),
             ..StreamOptions::default()
@@ -281,6 +283,7 @@ fn simple_options_keep_common_settings_and_hook_handles_without_invocation() -> 
     let metadata = json!({"user": "u"}).as_object().cloned();
     let simple = SimpleStreamOptions {
         common: StreamOptions {
+            base_url: None,
             temperature: Some(0.25),
             max_tokens: Some(77.0),
             signal: Some(Cancellation::new()),
