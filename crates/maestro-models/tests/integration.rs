@@ -147,6 +147,7 @@ mod model_thinking_levels;
 mod oauth_primitives;
 mod oauth_provider_registry;
 mod offline_model_catalog;
+mod output_budget;
 #[cfg(unix)]
 #[path = "support/profile_credentials.rs"]
 mod profile_credentials;

@@ -29,7 +29,7 @@
       "cwd_error": true
     },
     "expected": {
-      "value": "Run: npm --prefix /opt/tool install -g @old/agent"
+      "value": "Run: npm --prefix /opt/tool install -g --ignore-scripts @old/agent"
     },
     "trace": []
   },

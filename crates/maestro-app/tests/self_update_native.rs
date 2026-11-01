@@ -50,13 +50,12 @@ fn native_update_probes_capture_only_helper_output() {
         .unwrap()
         .unwrap();
     assert_eq!(selected.command, configured[0]);
-    assert_eq!(
-        selected.args,
-        [configured[1].as_str(), "install", "-g", "new-agent"]
-    );
+    let alias = configured[1].as_str();
+    let expect = |verb, package| [alias, verb, "-g", "--ignore-scripts", package];
+    assert_eq!(selected.args, expect("install", "new-agent"));
     assert_eq!(
         selected.steps.unwrap()[0].args,
-        [configured[1].as_str(), "uninstall", "-g", "agent"]
+        expect("uninstall", "agent")
     );
     let failed = vec![configured[0].clone(), "fail".into()];
     let error = get_self_update_command(&context, "agent", Some(&failed), None).unwrap_err();

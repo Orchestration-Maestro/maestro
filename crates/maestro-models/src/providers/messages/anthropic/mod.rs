@@ -10,7 +10,7 @@ mod wire;
 use std::borrow::Cow;
 use std::sync::{Arc, RwLock};
 
-use crate::options::{resolve_api_key, token_base};
+use crate::options::{fit_thinking, resolve_api_key};
 use crate::providers::assistant_output::{
     callback_failure, conclude, fail, initial_message, start_producer_for,
 };
@@ -21,8 +21,7 @@ use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, BoxFuture, Cancellation, Context,
     DiagnosticErrorInfo, Local, Model, ProviderExecution, ProviderInvocation, ProviderResponse,
     ProviderSpawner, SharedAssistantMessage, SimpleStreamOptions, StreamOptions,
-    StreamOptionsFamily, ThinkingLevel, Threaded, ToolChoice, adjust_max_tokens_for_thinking,
-    build_base_options_for,
+    StreamOptionsFamily, ThinkingLevel, Threaded, ToolChoice, build_base_options_for,
 };
 use events::Reducer;
 use request::Invocation;
@@ -258,7 +257,7 @@ fn simple<E: Producer>(
         DiagnosticErrorInfo::error(format!("No API key for provider: {}", model.provider))
     })?;
     let mut raw = AnthropicOptions {
-        common: build_base_options_for(&model, Some(&options), Some(&key)),
+        common: build_base_options_for(&model, &context, Some(&options), Some(&key)),
         thinking_enabled: Some(options.reasoning.is_some()),
         ..AnthropicOptions::default()
     };
@@ -268,9 +267,10 @@ fn simple<E: Producer>(
             ThinkingInput::Effort(map_thinking_level_to_effort(&model, level))
         }
         Some(level) => {
-            let adjusted = adjust_max_tokens_for_thinking(
-                token_base(raw.common.max_tokens),
-                model.max_tokens,
+            let adjusted = fit_thinking(
+                &model,
+                &context,
+                raw.common.max_tokens,
                 level,
                 options.thinking_budgets.as_ref(),
             );

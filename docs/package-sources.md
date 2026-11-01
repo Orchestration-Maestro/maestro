@@ -25,9 +25,10 @@ stored locals use their scope's base. Local storage uses `maestro-path` relative
 user agent directory or project `.maestro` directory; see the
 [shared path module](../crates/maestro-path/src/lib.rs) documentation for root handling. The manager trims local
 inputs and expands a leading `~` as [settings](settings.md#home-directory-in-paths)
-describes, with the home directory: on Unix `HOME` as set, an
-empty value included, otherwise the account directory; on Windows the account directory,
-so a set `HOME` is not honoured there. Expansion keeps a relative home as written.
+describes. A nonempty `HOME` supplies the package home on every platform, including
+Windows. Otherwise packages use the native home: on Unix this keeps an empty `HOME`
+as written and uses the account directory only when `HOME` is unset; on Windows it uses
+the account directory. Expansion keeps a relative home as written, and `~name` stays literal.
 Stored sources resolve a relative base or home against the process working directory,
 which the manager reads only when a path needs it.
 Lexical path operations belong to `maestro-path`;
@@ -78,18 +79,30 @@ sibling directory, then renamed to the installed path. Preparation or publicatio
 failure removes only that owned stage when cleanup succeeds; cleanup failure is
 reported. Dropping the staging guard attempts cleanup, not child cancellation.
 
-Existing checkouts with a changed explicit ref, and changed upstream updates,
-are prepared in place using their effective Git configuration. Before mutation,
-the manager records HEAD and its attached/detached selection. Probe failures
-propagate instead of being mistaken for an absent ref or detached HEAD. Native
-checkout alone selects supplied refs, including colliding branch/tag names and
-unique merge-base expressions. A checkout
-that selects the current commit restores the original selection without resetting
-files, installing dependencies or replacing settings. Failed checkout, reset,
-clean or dependency preparation restores the original selection before
-resetting its original commit, so another requested branch is not rewound and a
-retry still prepares dependencies. Failed recovery is reported and cannot
-promise restoration. Fetch and branch metadata are not transactional.
+Installing again over an existing checkout always contacts the remote. It
+fetches only the requested ref, or the upstream branch when no ref is requested,
+as a configured update does. When the fetched commit differs from HEAD, the
+checkout is reset to it, cleaned and prepared in place using its effective Git
+configuration. The branch the checkout has selected is the one that moves; no
+other branch is created or selected. A branch or tag that moved upstream
+therefore resolves to its new commit.
+
+Before mutation, the manager records HEAD and its attached/detached selection.
+Probe failures propagate instead of being mistaken for a detached HEAD. A fetched
+commit equal to HEAD leaves files, selection and settings untouched. Failed reset,
+clean or dependency preparation restores the original selection and resets to its
+original commit, so a retry still prepares dependencies. Failed recovery is
+reported and cannot promise restoration. Fetch metadata is not transactional.
+
+A requested ref must exist on the remote. These forms no longer reinstall:
+
+- a branch or tag that exists only in the local checkout;
+- a remote-tracking spelling such as `origin/main`;
+- a revision expression such as `a...b`.
+
+A ref already present locally is also fetched rather than trusted, and a branch
+and tag that share a name are resolved by Git's own ref matching, not by a
+preference for the branch.
 
 Live files change during dependency preparation; reset/clean discard dirty and
 untracked contents; failed dependencies may leave the previous revision's
@@ -98,6 +111,7 @@ provide crash recovery or concurrent-writer isolation.
 
 Corrected package defects:
 
+- A malformed resource list in a package manifest no longer fails the package; it is ignored and the other lists load (see [package-root manifests](packages.md#package-root-manifests)).
 - Failed fresh acquisition no longer leaves partial contents that a retry skips.
 - Explicit version changes no longer leave an old checkout or stale settings pin.
 - Failed changed updates restore their previous revision so the next attempt retries.

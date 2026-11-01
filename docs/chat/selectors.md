@@ -154,7 +154,8 @@ owning update. The [toolkit](../terminal/components.md) owns wrapping and cursor
 `SettingsSelectorComponent::new` takes a `SettingsConfig`, `SettingsCallbacks`,
 `LiveTheme` and a borrowed `maestro_tui::TerminalImage`. Boolean policies are
 grouped into `SessionSettings` (auto-compact, quiet startup and skill commands),
-`BehaviorSettings` (hidden thinking, collapsed changelog and install telemetry)
+`BehaviorSettings` (hidden thinking, collapsed changelog, install telemetry and the
+HTTP idle timeout in milliseconds)
 and `TerminalDisplaySettings` (hardware cursor, clear on shrink and terminal
 progress). Image display, auto-resize and blocking are direct boolean fields;
 image width, editor padding and autocomplete height are supplied `f64` fields.
@@ -168,18 +169,22 @@ This returns the same retained `SettingsList` handle, independently of the
 `Container` chrome. The searchable main view shows at most ten rows in this
 order: auto-compact, show images, image width, auto-resize images, block images,
 skill commands, hardware cursor, editor padding, autocomplete max items, clear
-on shrink, terminal progress, steering mode, follow-up mode, transport, hidden
-thinking, collapsed changelog, quiet startup, install telemetry, double-escape
-action, tree filter, warnings, thinking level and theme. Show images and image
-width appear only when the supplied terminal supports inline images, giving 23
-rows with image support and 21 without. Support is sampled once at construction;
+on shrink, terminal progress, steering mode, follow-up mode, transport, HTTP idle
+timeout, hidden thinking, collapsed changelog, quiet startup, install telemetry,
+double-escape action, tree filter, warnings, thinking level and theme. Show
+images and image width appear only when the supplied terminal supports inline
+images, giving 24 rows with image support and 22 without. Support is sampled once at construction;
 changing capabilities affects new panels, not retained ones. The toolkit owns
 [settings search and list rendering](../terminal/components.md).
 
 Numeric initial values keep their supplied value and shortest decimal spelling,
 including negative zero displayed as `0` and nonfinite values. Activation cycles
 image width through `60`, `80`, `120`, editor padding through `0`–`3`, and
-autocomplete height through `3`, `5`, `7`, `10`, `15`, `20`. An unmatched value
+autocomplete height through `3`, `5`, `7`, `10`, `15`, `20`, and the HTTP idle
+timeout through `30 sec`, `1 min`, `2 min`, `5 min` and `disabled` (reported as
+`30000`, `60000`, `120000`, `300000` and `0` milliseconds; an unmatched value
+displays as its seconds). Interactive mode saves the chosen limit and
+shows `HTTP idle timeout: <label>` in the transcript. An unmatched value
 advances to the first choice. These fixed decimal choices report `f64` values;
 boolean choices report `bool` values.
 

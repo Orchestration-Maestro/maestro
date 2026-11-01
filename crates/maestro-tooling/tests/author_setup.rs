@@ -616,6 +616,81 @@ fn prepare_with_base(test: &str, root: &Path, base: &Path) -> Vec<String> {
         .unwrap_or_default()
 }
 
+/// Preparation reports how many components its base supplied and how many it built.
+#[test]
+fn prepare_reports_reused_and_built_component_counts() {
+    if selection().is_child() {
+        return child_prepare();
+    }
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    marked_fixture(root);
+    prepare(root);
+    let base = root.join("target/test-setup");
+
+    for (base, summary) in [
+        (base.as_path(), "components: 4 reused, 0 built"),
+        (Path::new(""), "components: 0 reused, 4 built"),
+    ] {
+        let output = prepare_as_child(
+            "prepare_reports_reused_and_built_component_counts",
+            root,
+            base,
+        );
+        assert_success(&output);
+        let stdout = String::from_utf8(output.stdout).unwrap();
+        assert_eq!(
+            stdout
+                .lines()
+                .filter(|line| line.starts_with("components:"))
+                .collect::<Vec<_>>(),
+            [summary],
+            "{stdout}"
+        );
+    }
+}
+
+/// A base with more reusable components than the example exports returns an error, not a panic.
+#[test]
+fn prepare_rejects_oversupplied_component_counts() {
+    if selection().is_child() {
+        let root = PathBuf::from(std::env::var_os("MAESTRO_FIXTURE_ROOT").unwrap());
+        let error = run_prepare(&root).expect_err("oversupplied base must fail preparation");
+        assert_eq!(error.kind(), std::io::ErrorKind::Other);
+        assert_eq!(
+            error.to_string(),
+            "base supplied 5 components but preparation staged only 4"
+        );
+        assert!(!root.join("target/test-setup/components.json").exists());
+        return;
+    }
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    marked_fixture(root);
+    prepare(root);
+    let base = root.join("target/test-setup");
+    edit_manifest(&base, |components| {
+        components.insert(
+            "MAESTRO_UNUSED_COMPONENT".to_owned(),
+            components["MAESTRO_AUTHOR_COMPONENT"].clone(),
+        );
+    });
+    fs::copy(
+        base.join("MAESTRO_AUTHOR_COMPONENT.wasm"),
+        base.join("MAESTRO_UNUSED_COMPONENT.wasm"),
+    )
+    .unwrap();
+
+    let output = prepare_as_child("prepare_rejects_oversupplied_component_counts", root, &base);
+    assert_success(&output);
+    assert!(
+        !String::from_utf8(output.stdout)
+            .unwrap()
+            .lines()
+            .any(|line| line.starts_with("components:"))
+    );
+}
+
 /// A base prepared from the same inputs supplies every component; one edited example builds
 /// only itself; a base from another toolchain supplies nothing; no base builds everything.
 #[test]
@@ -674,6 +749,35 @@ fn prepare_builds_only_the_components_a_base_cannot_supply() {
         )
         .len(),
         4
+    );
+}
+
+/// `TEST_PREPARE_BASE` is a path list: the first bundle the preparation accepts supplies the
+/// components, so a bundle from another toolchain ahead of a matching one is skipped.
+#[test]
+fn prepare_uses_the_first_accepted_base_of_a_list() {
+    if selection().is_child() {
+        return child_prepare();
+    }
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    marked_fixture(root);
+    prepare(root);
+    let matching = root.join("target/matching-setup");
+    fs::rename(root.join("target/test-setup"), &matching).unwrap();
+    prepare(root);
+    let foreign = root.join("target/test-setup");
+    edit_manifest_value(&foreign, |manifest| {
+        manifest["shared"]["digest"] = "other toolchain".into();
+    });
+    let list = std::env::join_paths([&foreign, &matching]).unwrap();
+    assert_eq!(
+        prepare_with_base(
+            "prepare_uses_the_first_accepted_base_of_a_list",
+            root,
+            Path::new(&list)
+        ),
+        Vec::<String>::new()
     );
 }
 

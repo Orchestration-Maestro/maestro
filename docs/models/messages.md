@@ -86,10 +86,17 @@ model/caller headers can replace `anthropic-beta`. Before these overrides, `anth
 tools are declared and the model's compatibility turns eager input streaming off. With eager
 input streaming (the default) each tool carries `eager_input_streaming: true` instead.
 
+The model's compatibility record also shapes the request. `sendSessionAffinityHeaders`
+(off by default) sends a nonempty session ID as `x-session-affinity`, below the model and
+caller headers, unless caching is off or the request authenticates with an account or a
+subscription token. `supportsCacheControlOnTools`, when `false`, leaves the last tool
+without a cache marker. `allowEmptySignature` (off by default) replays unsigned reasoning
+as a thinking block with an empty signature instead of plain text.
+
 The payload holds `model`, `messages`, `max_tokens`, `stream`, then `system`, `temperature`,
 `tools`, `thinking`, `output_config`, `metadata` and `tool_choice` where they apply.
 `max_tokens` is the caller's value
-unless it is zero or not a number, otherwise a third of the model's, truncated toward zero. An
+unless it is zero or not a number, otherwise the model's output cap. An
 infinite limit, and a temperature that is infinite or not a number, are written as `null`;
 negative zero is written as `0`. `metadata` carries `user_id` only when the caller's metadata
 holds it as text. `ToolChoice::Auto` and `None` are sent as `auto` and `none`, `Required` as
@@ -136,7 +143,8 @@ kept whatever its text, but only when it comes from the same provider, API and m
 never receive it. Images are sent with their type and data when the model accepts images, and
 otherwise the projection replaces them with placeholder text. Reasoning with a nonblank signature,
 which only the same provider, API and model can carry, is replayed signed; other reasoning is
-replayed as plain text; redacted reasoning is replayed as its opaque payload. Consecutive tool
+replayed as plain text, or with an empty signature where the model's compatibility allows
+it; redacted reasoning is replayed as its opaque payload. Consecutive tool
 results become one user message, and blank text blocks in a result are kept. A tool result of text
 blocks only is their text joined by line feeds; one that holds an image is sent as blocks in order,
 led by `(see attached image)` when it has no text block.

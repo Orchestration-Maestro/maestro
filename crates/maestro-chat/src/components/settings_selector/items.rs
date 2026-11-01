@@ -209,7 +209,39 @@ fn session_rows(config: &SettingsConfig) -> Vec<SettingItem> {
             config.transport.as_str().into(),
             &["sse", "websocket", "websocket-cached", "auto"],
         ),
+        http_idle_timeout(config.behavior.http_idle_timeout_ms),
     ]
+}
+/// The HTTP idle timeout choices: their displayed label and milliseconds.
+const HTTP_IDLE_TIMEOUTS: [(&str, f64); 5] = [
+    ("30 sec", 30_000.0),
+    ("1 min", 60_000.0),
+    ("2 min", 120_000.0),
+    ("5 min", 300_000.0),
+    ("disabled", 0.0),
+];
+
+/// The HTTP idle timeout row.
+fn http_idle_timeout(milliseconds: f64) -> SettingItem {
+    row(
+        (
+            "http-idle-timeout",
+            "HTTP idle timeout",
+            "Maximum idle gap while waiting for HTTP headers or body chunks. Disable for local models that pause longer than five minutes.",
+        ),
+        http_idle_timeout_label(milliseconds),
+        &HTTP_IDLE_TIMEOUTS.map(|(label, _)| label),
+    )
+}
+/// The label of a timeout: its choice, otherwise its whole seconds.
+pub(crate) fn http_idle_timeout_label(milliseconds: f64) -> String {
+    HTTP_IDLE_TIMEOUTS
+        .iter()
+        .find(|(_, choice)| (*choice - milliseconds).abs() < 0.5)
+        .map_or_else(
+            || format!("{} sec", milliseconds / 1000.0),
+            |(label, _)| (*label).to_owned(),
+        )
 }
 /// Behavior preferences in their displayed order.
 fn behavior_rows(config: &SettingsConfig) -> Vec<SettingItem> {
@@ -423,6 +455,13 @@ pub(super) fn change(callbacks: &SettingsCallbacks, id: &str, value: &str) {
             "auto" => Transport::Auto,
             _ => Transport::Sse,
         }),
+        "http-idle-timeout" => {
+            if let Some((_, milliseconds)) =
+                HTTP_IDLE_TIMEOUTS.iter().find(|(label, _)| *label == value)
+            {
+                (callbacks.on_http_idle_timeout_ms_change)(*milliseconds);
+            }
+        }
         "hide-thinking" => (callbacks.on_hide_thinking_block_change)(value == "true"),
         "collapse-changelog" => (callbacks.on_collapse_changelog_change)(value == "true"),
         "quiet-startup" => (callbacks.on_quiet_startup_change)(value == "true"),

@@ -110,9 +110,9 @@ See [frontmatter](frontmatter.md) for the shared escape-decoding rule.
 
 Description validation precedes name validation. Missing or blank descriptions
 omit the skill after collecting name warnings. Other validation warnings retain
-it: overlong descriptions, parent-name mismatch, overlong names, invalid name
-characters, edge hyphens and consecutive hyphens. Lengths count complete Unicode
-characters. Missing, null or empty names use the containing directory basename,
+it: overlong descriptions, overlong names, invalid name characters, edge hyphens
+and consecutive hyphens. A name that differs from its directory is accepted
+without a warning. Lengths count complete Unicode characters. Missing, null or empty names use the containing directory basename,
 including the literal names `.` and `..` when they end the authored parent
 directory. The base directory retains that authored spelling.
 Non-null nonstring names/descriptions produce one path-bearing typed failure.

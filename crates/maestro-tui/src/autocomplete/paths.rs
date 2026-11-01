@@ -73,7 +73,7 @@ pub(super) fn expand_home<O: AutocompleteOperations>(
     operations: &O,
     raw: &str,
 ) -> io::Result<String> {
-    let mut expanded = maestro_path::expand_tilde_joined(raw, || operations.home_dir())?;
+    let mut expanded = maestro_path::join_home(raw, || operations.home_dir())?;
     if raw.ends_with('/') && !expanded.ends_with('/') {
         expanded.push('/');
     }
@@ -341,5 +341,13 @@ mod tests {
     #[test]
     fn other_forms_read_no_home_directory() {
         assert_eq!(expand_home(&Home(None), "a~/x").unwrap(), "a~/x");
+    }
+
+    /// Backslash home forms do not need a home directory for completion.
+    #[test]
+    fn completion_keeps_backslash_home_forms_literal() {
+        for written in [r"~\x", r"~\"] {
+            assert_eq!(expand_home(&Home(None), written).unwrap(), written);
+        }
     }
 }

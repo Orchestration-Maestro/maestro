@@ -118,6 +118,7 @@ pub fn config() -> SettingsConfig {
             hide_thinking_block: false,
             collapse_changelog: true,
             enable_install_telemetry: false,
+            http_idle_timeout_ms: 300_000.0,
         },
         show_images: false,
         image_width_cells: 80.0,
@@ -212,6 +213,7 @@ impl Events {
             on_hide_thinking_block_change: self.boolean("HideThinkingBlock"),
             on_collapse_changelog_change: self.boolean("CollapseChangelog"),
             on_enable_install_telemetry_change: self.boolean("EnableInstallTelemetry"),
+            on_http_idle_timeout_ms_change: self.numeric("HttpIdleTimeoutMs"),
             on_double_escape_action_change: Rc::new(move |value: DoubleEscapeAction| {
                 action.push("DoubleEscapeAction", value.as_str().into());
             }),
@@ -257,6 +259,7 @@ pub fn select_with_images(
         "steering-mode",
         "follow-up-mode",
         "transport",
+        "http-idle-timeout",
         "hide-thinking",
         "collapse-changelog",
         "quiet-startup",

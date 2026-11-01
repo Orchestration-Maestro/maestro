@@ -739,14 +739,22 @@ the shared, component and tool digests, and its `browser-author` setup checks th
 digest, so a change to the tooling or the application leaves the components valid. The variable
 names in the bundle follow component discovery's own rule and fixed author and context pair.
 
-When `TEST_PREPARE_BASE` names the directory of an earlier bundle, the preparation reads it
-first. A base prepared from the same shared digest, so the same toolchain, supplies every
-component whose example files are unchanged: the preparation hands those to the setup
-example through the component variables, and the example builds only the others in its one
-Cargo call. The base's compiled code seeds the build's cache, and is dropped again when the
-example writes another engine's namespace. A base that is missing, unreadable or prepared from
-other shared inputs is ignored and everything is built; the base directory may be the output
-directory.
+`TEST_PREPARE_BASE` names the directories of earlier bundles in the platform's path-list
+syntax (`:` on Unix, `;` on Windows). The preparation reads them in order and uses the first
+one it accepts; a single directory is a list of one. A base prepared from the same shared
+digest, so the same toolchain, supplies every component whose example files are unchanged: the
+preparation hands those to the setup example through the component variables, and the example
+builds only the others in its one Cargo call. The base's compiled code seeds the build's cache,
+and is dropped again when the example writes another engine's namespace. A base that is missing,
+unreadable or prepared from other shared inputs is skipped, and when none is accepted everything
+is built; the base directory may be the output directory.
+After a successful preparation, the command reports how many components came from the base
+and how many it built, for example:
+
+```text
+components: 74 reused, 0 built
+```
+
 File timestamps do not affect reuse, but the staged example finds component
 sources at the checkout path it was built in, so both jobs must use the same
 checkout path, as shared CI does.

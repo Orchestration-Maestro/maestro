@@ -18,6 +18,27 @@ fn replay_fixed(names: &[&str]) {
     replay(names, |_, _| {});
 }
 
+/// Empty values neither replace the header candidate nor stop later metadata reads.
+#[test]
+fn discovery_skips_empty_records_before_header_and_between_messages() {
+    let scratch = Scratch::new().unwrap();
+    let ordinary = session_text(
+        "empty",
+        &[("user", "before", 2000), ("assistant", "after", 3000)],
+    );
+    std::fs::write(scratch.path().join("case.jsonl"), &ordinary).unwrap();
+    let expected = list(&scratch);
+    for empty in ["null", "false", "0", "-0", "0.0", "\"\""] {
+        let content = format!(
+            "{empty}\n{}",
+            ordinary.replace('\n', &format!("\n{empty}\n"))
+        );
+        std::fs::write(scratch.path().join("case.jsonl"), content).unwrap();
+        let actual = list(&scratch);
+        assert_eq!(format!("{actual:?}"), format!("{expected:?}"), "{empty}");
+    }
+}
+
 #[test]
 fn discovery_framing_requires_only_the_first_header_type() {
     replay_fixed(&[
@@ -50,6 +71,46 @@ fn discovery_keeps_open_metadata_and_cwd_fallback() {
     ]);
 }
 
+/// Record dates accept scalar timestamps, bounded to the valid date range.
+#[test]
+fn discovery_activity_reads_record_timestamp_types() {
+    let scratch = Scratch::new().unwrap();
+    let fallback = 1_735_787_045_000.0;
+    for (timestamp, expected) in [
+        (Some(json!(5000)), 5000.0),
+        (Some(json!(true)), 1.0),
+        (Some(json!(false)), fallback),
+        (Some(Value::Null), fallback),
+        (Some(json!(0)), fallback),
+        (Some(json!(-5000)), fallback),
+        (Some(json!(5000.9)), 5000.0),
+        (Some(json!(8.64e15)), 8.64e15),
+        (Some(json!(8.64e15 + 1.0)), fallback),
+        (Some(json!(-8.64e15 - 1.0)), fallback),
+        (Some(json!("1970-01-01T00:00:05Z")), 5000.0),
+        (Some(json!("invalid")), fallback),
+        (Some(json!([5])), fallback),
+        (Some(json!({})), fallback),
+        (None, fallback),
+    ] {
+        for role in ["user", "assistant"] {
+            let mut record = json!({"type":"message","message":{"role":role,"content":"text"}});
+            if let Some(timestamp) = &timestamp {
+                record["timestamp"] = timestamp.clone();
+            }
+            std::fs::write(
+                scratch.path().join("case.jsonl"),
+                format!("{}\n{record}\n", session_header("activity")),
+            )
+            .unwrap();
+            let listed = list(&scratch);
+            assert_eq!(listed.len(), 1);
+            let expected: f64 = expected;
+            assert_eq!(listed[0].modified.to_bits(), expected.to_bits(), "{record}");
+        }
+    }
+}
+
 #[test]
 fn discovery_created_dates_preserve_invalid_observations() {
     replay_fixed(&[
@@ -57,6 +118,8 @@ fn discovery_created_dates_preserve_invalid_observations() {
         "invalid_created",
         "null_created",
         "numeric_created",
+        "boolean_created",
+        "out_of_range_created",
     ]);
 }
 
@@ -115,7 +178,10 @@ fn discovery_reached_malformed_fields_discard_only_the_file() {
     write_session(&scratch, "bad.jsonl", "bad", &[]);
     std::fs::write(
         scratch.path().join("bad.jsonl"),
-        format!("{}\nnull\n", session_header("bad")),
+        format!(
+            "{}\n{{\"type\":\"message\",\"message\":null}}\n",
+            session_header("bad")
+        ),
     )
     .unwrap();
     write_session(&scratch, "good.jsonl", "good", &[("user", "hi", 5000)]);

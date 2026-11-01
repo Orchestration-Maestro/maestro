@@ -124,8 +124,8 @@ mod tests {
         use maestro_request::types::*;
         let cases = [
             serde_json::json!({"supportsStore":false,"supportsDeveloperRole":true,"supportsReasoningEffort":false,"supportsUsageInStreaming":true,"maxTokensField":"max_tokens","requiresToolResultName":true,"requiresAssistantAfterToolResult":true,"requiresThinkingAsText":false,"requiresReasoningContentOnAssistantMessages":true,"thinkingFormat":"qwen-chat-template","openRouterRouting":{"allow_fallbacks":false,"require_parameters":true,"data_collection":"deny","zdr":true,"enforce_distillable_text":true,"order":["b","a","b"],"only":[],"ignore":["c"],"quantizations":["fp16"],"sort":{"by":"price","partition":null},"max_price":{"prompt":1.0,"completion":"2","image":3.0,"audio":"4","request":5.0},"preferred_min_throughput":{"p50":1.0,"p75":2.0,"p90":3.0,"p99":4.0},"preferred_max_latency":5.0},"vercelGatewayRouting":{"only":[],"order":["b","a","b"]},"zaiToolStream":false,"supportsStrictMode":false,"cacheControlFormat":"anthropic","sendSessionAffinityHeaders":true,"supportsLongCacheRetention":false}),
-            serde_json::json!({"sendSessionIdHeader":false,"supportsLongCacheRetention":true}),
-            serde_json::json!({"supportsEagerToolInputStreaming":false,"supportsLongCacheRetention":true}),
+            serde_json::json!({"supportsDeveloperRole":false,"sendSessionIdHeader":false,"supportsLongCacheRetention":true}),
+            serde_json::json!({"supportsEagerToolInputStreaming":false,"supportsLongCacheRetention":true,"sendSessionAffinityHeaders":true,"supportsCacheControlOnTools":false,"allowEmptySignature":true}),
         ];
         let converted: [ModelCompat; 3] = [
             serde_json::from_value::<OpenAICompletionsCompat>(cases[0].clone())
