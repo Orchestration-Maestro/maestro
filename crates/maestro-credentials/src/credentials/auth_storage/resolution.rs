@@ -25,13 +25,14 @@ impl AuthStorage {
     }
 
     /// Whether any authentication is configured, without resolving stored helpers or refreshing tokens;
-    /// the supplied fallback resolver is the caller's and runs as given.
+    /// the supplied fallback resolver is the caller's and runs as given. Rereads the stored
+    /// document first.
     ///
     /// # Errors
     /// Returns the original fallback resolver failure.
     pub fn has_auth(&self, provider: &str) -> Result<bool, OAuthError> {
         let configured = {
-            let state = self.state();
+            let state = self.latest();
             state.runtime_overrides.contains_key(provider) || state.data.contains_key(provider)
         };
         Ok(configured
@@ -42,13 +43,14 @@ impl AuthStorage {
     }
 
     /// Configured-authentication metadata without key values, stored helper resolution or refresh;
-    /// the supplied fallback resolver is the caller's and runs as given.
+    /// the supplied fallback resolver is the caller's and runs as given. Rereads the stored
+    /// document first.
     ///
     /// # Errors
     /// Returns the original fallback resolver failure.
     pub fn get_auth_status(&self, provider: &str) -> Result<AuthStatus, OAuthError> {
         let (stored, runtime) = {
-            let state = self.state();
+            let state = self.latest();
             (
                 state.data.contains_key(provider),
                 state.runtime_overrides.contains_key(provider),
@@ -91,7 +93,7 @@ impl AuthStorage {
         operations: &dyn ConfigValueOperations,
     ) -> Selection {
         let (known_kind, decoded) = {
-            let state = self.state();
+            let state = self.latest();
             if let Some(key) = state
                 .runtime_overrides
                 .get(provider_id)
@@ -177,6 +179,8 @@ impl AuthStorage {
     }
 
     /// Select a request key: runtime override, stored record, environment, then fallback.
+    ///
+    /// The stored document is reread first, so a key another process wrote is the one used.
     ///
     /// The returned future is `Send` on native targets and does not borrow `operations`:
     /// stored keys resolve before it is built. Stored records decide as follows.

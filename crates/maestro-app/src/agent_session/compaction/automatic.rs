@@ -199,7 +199,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
         (!api_key.is_empty()).then_some((api_key, headers))
     }
 
-    /// The context tokens the finished response reports, absent when nothing is known.
+    /// The context tokens the finished response reports, or the last real usage's estimate when it
+    /// failed or reported none; absent when nothing is known.
     fn context_tokens(
         &self,
         message: &AssistantMessage,
@@ -207,7 +208,10 @@ impl<E: ExtensionExecution> AgentSession<E> {
     ) -> Result<Option<f64>, DiagnosticErrorInfo> {
         if message.stop_reason != StopReason::Error {
             let usage = serde_json::to_value(&message.usage).map_err(thrown)?;
-            return calculate_context_tokens(&usage).map(Some).map_err(thrown);
+            let direct = calculate_context_tokens(&usage).map_err(thrown)?;
+            if direct > 0.0 {
+                return Ok(Some(direct));
+            }
         }
         let records = message_records(&read(&self.messages()))?;
         let estimate = estimate_context_tokens(&records).map_err(thrown)?;

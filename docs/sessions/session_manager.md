@@ -13,7 +13,9 @@ See also the [session format](https://github.com/Orchestration-Maestro/maestro/b
 `FileEntry` and `SessionEntry` are ordered JSON values, not validated schemas.
 `parse_session_entries` removes outer ECMAScript whitespace, splits at LF, skips
 blank or malformed lines and accepts native JSON values without requiring a
-header. Nonblank interior lines are parsed without extra trimming. Native JSON
+header, including `null`, `false`, zero numbers and empty strings. The native
+loader skips those four empty values before checking the header or building its
+index; listing skips them too. Nonblank interior lines are parsed without extra trimming. Native JSON
 numeric and nesting limits apply. Object members keep their first position with
 the last duplicate value; omitted and null properties remain distinct.
 
@@ -170,7 +172,7 @@ histories stay published: subsequent appends write one record. Append errors lea
 accepted memory and any partial bytes in place; failed switches retain the prior
 manager state. An empty file is initialised immediately at the selected path. A
 nonempty file without a valid session header is refused with `Session file is not a
-valid session: <path>` and keeps its bytes, so `open` and `set_session_file` never
+valid maestro session: <path>` and keeps its bytes, so `open` and `set_session_file` never
 erase a file that is not a session. A missing explicit file waits for first
 publication at that path.
 

@@ -7,7 +7,7 @@ use std::sync::LazyLock;
 use std::time::Duration;
 
 /// Error texts a retry can recover from; a context overflow is recovered by compaction.
-const RETRYABLE: &str = r"(?i)overloaded|provider.?returned.?error|rate.?limit|too many requests|429|500|502|503|504|service.?unavailable|server.?error|internal.?error|network.?error|connection.?error|connection.?refused|connection.?lost|websocket.?closed|websocket.?error|other side closed|fetch failed|upstream.?connect|reset before headers|socket hang up|ended without|http2 request did not get a response|timed? out|timeout|terminated|retry delay";
+const RETRYABLE: &str = r"(?i)overloaded|provider.?returned.?error|rate.?limit|too many requests|429|500|502|503|504|service.?unavailable|server.?error|internal.?error|network.?error|connection.?error|connection.?refused|connection.?lost|websocket.?closed|websocket.?error|other side closed|fetch failed|upstream.?connect|reset before headers|socket hang up|ended without|stream ended before message_stop|exceeded request buffer limit while retrying upstream|http2 request did not get a response|timed? out|timeout|terminated|retry delay";
 
 /// The compiled retryable classifier; absent only if the authored pattern is invalid,
 /// which the recorded classification table rules out.

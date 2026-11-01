@@ -16,7 +16,8 @@ collection. The result owns its optional `common_ancestor_id`, not its entries.
 
 `prepare_branch_entries(&entries, token_budget)` returns owned raw message snapshots,
 `file_ops` and `total_tokens`. It scans all built-in branch-summary file details first,
-then visits content newest to oldest. Tool results and metadata are excluded. Each
+then visits content newest to oldest. Tool results, metadata and an empty branch
+summary, which puts nothing in context, are excluded. Each
 visited assistant's file operations are extracted before its budget check. Omitted,
 zero and negative budgets are unlimited. At the first crossing, a compaction or branch
 summary is included only if the accumulated estimate is strictly below 90% of budget;

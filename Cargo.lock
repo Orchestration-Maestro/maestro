@@ -4361,6 +4361,7 @@ dependencies = [
  "maestro-test-directory",
  "maestro-test-process",
  "maestro-test-tracing",
+ "nix 0.31.3",
  "process-wrap",
  "rustix",
  "serde",
@@ -4522,6 +4523,7 @@ version = "0.1.0"
 dependencies = [
  "maestro-dependencies",
  "maestro-test-directory",
+ "rustix",
 ]
 
 [[package]]

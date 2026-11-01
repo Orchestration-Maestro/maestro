@@ -25,9 +25,10 @@ stored locals use their scope's base. Local storage uses `maestro-path` relative
 user agent directory or project `.maestro` directory; see the
 [shared path module](../crates/maestro-path/src/lib.rs) documentation for root handling. The manager trims local
 inputs and expands a leading `~` as [settings](settings.md#home-directory-in-paths)
-describes, with the home directory: on Unix `HOME` as set, an
-empty value included, otherwise the account directory; on Windows the account directory,
-so a set `HOME` is not honoured there. Expansion keeps a relative home as written.
+describes. A nonempty `HOME` supplies the package home on every platform, including
+Windows. Otherwise packages use the native home: on Unix this keeps an empty `HOME`
+as written and uses the account directory only when `HOME` is unset; on Windows it uses
+the account directory. Expansion keeps a relative home as written, and `~name` stays literal.
 Stored sources resolve a relative base or home against the process working directory,
 which the manager reads only when a path needs it.
 Lexical path operations belong to `maestro-path`;

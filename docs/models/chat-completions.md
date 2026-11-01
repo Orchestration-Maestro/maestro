@@ -85,8 +85,8 @@ token-limit field, the reasoning convention (`openai`, `openrouter`, `deepseek`,
 markers, session affinity and the one-hour cache lifetime. A zero or NaN token limit is
 omitted; a zero temperature is sent. A NaN or infinite temperature and an infinite token
 limit are sent as `null`, the way JSON text writes them. `OpenRouter` routing preferences are
-forwarded without field selection when the base URL contains `openrouter.ai` and the
-supplied value is truthy. Gateway routing selects only truthy `only` and `order`, in
+forwarded without field selection whenever the supplied value is truthy, whatever the base
+URL, so a proxy in front of the gateway still receives them. Gateway routing selects only truthy `only` and `order`, in
 that order, whatever the base URL; empty arrays are truthy.
 
 Reasoning follows the model's convention. A model that does not reason sends no

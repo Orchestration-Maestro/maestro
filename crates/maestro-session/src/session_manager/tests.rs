@@ -463,7 +463,7 @@ fn fork_preserves_write_and_returned_owner_failure_order() {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn fork_stops_at_a_null_record_before_writing_it_or_later_records() {
+fn fork_skips_a_null_record_and_writes_later_records() {
     let rig = ForkRig::new();
     let text = format!(
         "{}\n{}\nnull\n{}\n",
@@ -473,11 +473,12 @@ fn fork_stops_at_a_null_record_before_writing_it_or_later_records() {
     );
     std::fs::write(&rig.source, text).unwrap();
     let dir = rig.path("null-target");
-    let error = rig.fork(&dir, super::persistence::append).err().unwrap();
-    assert_eq!(error.kind(), std::io::ErrorKind::InvalidData);
+    let forked = rig.fork(&dir, super::persistence::append).unwrap();
     let written = ForkRig::only_file(&dir);
-    assert_eq!(written.lines().count(), 2);
-    assert!(written.ends_with(&format!("{}\n", rig.records[0])));
+    assert_eq!(written.lines().count(), 3);
+    assert_eq!(forked.get_entries().len(), 2);
+    assert_eq!(forked.get_entries()[1]["id"], "b");
+    assert!(written.ends_with(&format!("{}\n", rig.records[1])));
 }
 
 /// A later numeric identity fails the returned owner's index after every write.
@@ -562,11 +563,15 @@ fn records_are_handed_over_while_the_file_is_still_being_read() {
     let head = reader.head.len();
     let handed = std::rc::Rc::clone(&reader.handed);
     let (mut index, mut worst_lag) = (0, 0);
-    super::records::for_each_entry(std::io::BufReader::new(reader), |_| {
-        worst_lag = worst_lag.max(handed.get() - (head + index * line));
-        index += 1;
-        std::ops::ControlFlow::Continue(())
-    })
+    super::records::for_each_entry(
+        std::io::BufReader::new(reader),
+        super::records::Admission::Nonempty,
+        |_| {
+            worst_lag = worst_lag.max(handed.get() - (head + index * line));
+            index += 1;
+            std::ops::ControlFlow::Continue(())
+        },
+    )
     .unwrap();
     assert_eq!(index, 4001);
     assert!(worst_lag <= 16 * 1024, "read {worst_lag} bytes ahead");
@@ -588,7 +593,7 @@ fn records_split_across_reader_chunks_keep_their_multibyte_text() {
     let text = "{\"id\":\"é€\"}\n{\"id\":\"b\"}";
     let reader = std::io::BufReader::with_capacity(1, text.as_bytes());
     let mut ids = Vec::new();
-    super::records::for_each_entry(reader, |entry| {
+    super::records::for_each_entry(reader, super::records::Admission::Nonempty, |entry| {
         ids.push(entry["id"].as_str().unwrap().to_owned());
         std::ops::ControlFlow::Continue(())
     })
@@ -599,7 +604,7 @@ fn records_split_across_reader_chunks_keep_their_multibyte_text() {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn listing_stops_reading_at_a_malformed_record() {
-    let (reader, _) = Generated::session("null\n");
+    let (reader, _) = Generated::session("{\"type\":\"message\",\"message\":null}\n");
     let handed = std::rc::Rc::clone(&reader.handed);
     assert!(super::discovery::scan_reader(std::io::BufReader::new(reader)).is_none());
     assert!(handed.get() <= 64 * 1024, "read {} bytes", handed.get());

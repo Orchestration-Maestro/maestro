@@ -30,8 +30,8 @@ impl SessionManager {
     ///
     /// # Errors
     /// Fails with `Cannot fork: source session file is empty or invalid: {source_path}`
-    /// before creating anything; a null source record, later directory, write and reopen
-    /// errors are propagated and leave records already written in place.
+    /// before creating anything; later directory, write and reopen errors are propagated
+    /// and leave records already written in place. Empty JSON values are skipped.
     pub fn fork_from(
         source_path: &str,
         target_cwd: &str,
@@ -70,13 +70,8 @@ impl SessionManager {
         let (header, file) =
             session_header(&id, target_cwd, Presence::Present(source_path.to_owned()));
         let path = maestro_path::join(&[&dir, &file]);
-        let records = entries
-            .iter()
-            .filter(|entry| entry.is_null() || entry["type"] != "session");
+        let records = entries.iter().filter(|entry| entry["type"] != "session");
         for entry in std::iter::once(&header).chain(records) {
-            if entry.is_null() {
-                return Err(invalid("source session record is null"));
-            }
             write(&path, &encode(entry)?)?;
         }
         Self::open(&path, Some(&dir), Some(target_cwd))
@@ -95,7 +90,7 @@ impl SessionManager {
     ///
     /// # Errors
     /// Propagates required cwd, file, conversion and selected-field errors. A nonempty file
-    /// without a valid session header fails with `Session file is not a valid session: {path}`
+    /// without a valid session header fails with `Session file is not a valid maestro session: {path}`
     /// and is left unchanged; an empty file is initialised.
     pub fn open(
         path: &str,
