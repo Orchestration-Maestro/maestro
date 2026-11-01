@@ -21,7 +21,7 @@ fn cloudflare_resolved_endpoint_reaches_raw_and_simple_compatibility_calls() -> 
     };
     crate::runtime::run(async {
         for (api, path) in [
-            ("anthropic-messages", "/messages"),
+            ("anthropic-messages", "/v1/messages"),
             ("openai-completions", "/chat/completions"),
             ("openai-responses", "/responses"),
         ] {
