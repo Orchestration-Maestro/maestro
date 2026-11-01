@@ -68,6 +68,7 @@ let packages = DefaultPackageManager::new(
     NativePackageOperations::new(Rc::new(|| false), &local),
 );
 assert!(packages.add_source_to_settings("https://github.com/user/repository", None)?);
+assert!(packages.add_source_to_settings("ssh://git@github.com/user/repository", None)?);
 assert!(!packages.add_source_to_settings("ssh://git@github.com/user/repository", None)?);
 assert!(packages.remove_source_from_settings("https://github.com/user/repository", None)?);
 # Ok::<(), std::io::Error>(())
