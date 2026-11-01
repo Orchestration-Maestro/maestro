@@ -180,6 +180,7 @@ pub fn options(case: &Case) -> TestResult<AnthropicOptions> {
             api_key,
             max_tokens: spec["maxTokens"].as_f64(),
             temperature: spec["temperature"].as_f64(),
+            session_id: spec["sessionId"].as_str().map(str::to_owned),
             cache_retention: decode(spec, "cacheRetention")?,
             headers: decode(spec, "headers")?,
             metadata: decode(spec, "metadata")?,

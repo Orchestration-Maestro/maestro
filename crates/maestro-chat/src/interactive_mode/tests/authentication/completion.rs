@@ -229,8 +229,13 @@ fn authentication_completion_reports_default_selection_failure() {
 
 #[test]
 fn authentication_completion_selects_each_provider_default_and_updates_presentation() {
-    isolated(
+    super::isolated_case(
         "authentication_completion_selects_each_provider_default_and_updates_presentation",
+        "child",
+        &[
+            ("CLOUDFLARE_ACCOUNT_ID", "account"),
+            ("CLOUDFLARE_GATEWAY_ID", "gateway"),
+        ],
         async |directory| {
             let defaults: Vec<(String, String)> = DEFAULT_MODEL_PER_PROVIDER
                 .read()
@@ -238,7 +243,7 @@ fn authentication_completion_selects_each_provider_default_and_updates_presentat
                 .iter()
                 .map(|(provider, id)| (provider.clone(), id.clone()))
                 .collect();
-            assert_eq!(defaults.len(), 31, "every configured default is covered");
+            assert_eq!(defaults.len(), 32, "every configured default is covered");
             for (kind, label) in LABELS {
                 let world = started_with(directory, None).await;
                 let unknown = placeholder(&world).read().unwrap().clone();

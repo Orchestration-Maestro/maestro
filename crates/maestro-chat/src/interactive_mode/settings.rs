@@ -1,5 +1,6 @@
 //! Change settings live from the interactive mode.
 use super::InteractiveMode;
+use crate::components::settings_selector::http_idle_timeout_label;
 use crate::{
     AssistantMessageComponent, BehaviorSettings, SessionSettings, SettingsCallbacks,
     SettingsConfig, SettingsSelectorComponent, TerminalDisplaySettings, ToolExecutionComponent,
@@ -44,6 +45,7 @@ impl InteractiveMode {
                 hide_thinking_block: self.hide_thinking_block.get(),
                 collapse_changelog: settings.get_collapse_changelog(),
                 enable_install_telemetry: settings.get_enable_install_telemetry(),
+                http_idle_timeout_ms: settings.get_http_idle_timeout_ms(),
             },
             terminal: TerminalDisplaySettings {
                 show_hardware_cursor: settings.get_show_hardware_cursor(),
@@ -103,6 +105,8 @@ impl InteractiveMode {
                 .save_setting(SettingsManager::set_collapse_changelog),
             on_enable_install_telemetry_change: self
                 .save_setting(SettingsManager::set_enable_install_telemetry),
+            on_http_idle_timeout_ms_change: self
+                .fallible_setting_callback(Self::settings_http_idle_timeout),
             on_double_escape_action_change: self
                 .save_setting(SettingsManager::set_double_escape_action),
             on_tree_filter_mode_change: self.save_setting(SettingsManager::set_tree_filter_mode),
@@ -249,6 +253,20 @@ impl InteractiveMode {
             .map_err(|error| -> Box<dyn Error> { error })
     }
 
+    /// Saves the idle limit for HTTP waits and names it in the transcript.
+    fn settings_http_idle_timeout(&self, milliseconds: f64) -> Result<(), Box<dyn Error>> {
+        self.runtime_host
+            .session()
+            .settings_manager()
+            .borrow_mut()
+            .set_http_idle_timeout_ms(milliseconds);
+        self.show_status(&format!(
+            "HTTP idle timeout: {}",
+            http_idle_timeout_label(milliseconds)
+        ))?;
+        Ok(())
+    }
+
     /// Saves the transport before changing the next request's live preference.
     fn settings_transport(&self, transport: Transport) {
         let saved = match &transport {
@@ -342,12 +360,12 @@ impl InteractiveMode {
     }
 
     /// Saves the shrink policy and applies it to the terminal.
-    fn settings_clear_on_shrink(&self, enabled: bool) {
+    pub(super) fn settings_clear_on_shrink(&self, enabled: bool) {
         self.runtime_host
             .session()
             .settings_manager()
             .borrow_mut()
             .set_clear_on_shrink(enabled);
-        self.ui.set_clear_on_shrink(enabled);
+        self.apply_clear_on_shrink(enabled);
     }
 }

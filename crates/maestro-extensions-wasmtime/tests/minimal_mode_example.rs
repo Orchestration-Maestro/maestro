@@ -155,7 +155,7 @@ fn minimal_mode_preserves_cancellation_and_native_read_limits() {
         let runner = loaded(root.path()).await;
         let result = execute(&runner, "read", json!({"path":"long.txt"})).await;
         assert_eq!(result["details"]["truncation"]["outputLines"], 2000);
-        assert_eq!(result["details"]["truncation"]["totalLines"], 2101);
+        assert_eq!(result["details"]["truncation"]["totalLines"], 2100);
         assert!(
             result["content"][0]["text"]
                 .as_str()

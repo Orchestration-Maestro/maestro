@@ -26,7 +26,7 @@ fn message_rows(test: &str, count: usize) -> TestResult {
 
 #[test]
 fn maestro_responses_messages_select_system_role() -> TestResult {
-    message_rows("maestro_responses_messages_select_system_role", 12)
+    message_rows("maestro_responses_messages_select_system_role", 14)
 }
 
 #[test]
@@ -42,6 +42,11 @@ fn maestro_responses_messages_downgrade_unsupported_images() -> TestResult {
 #[test]
 fn maestro_responses_messages_keep_transformed_indices() -> TestResult {
     message_rows("maestro_responses_messages_keep_transformed_indices", 1)
+}
+
+#[test]
+fn maestro_responses_messages_number_unsigned_text() -> TestResult {
+    message_rows("maestro_responses_messages_number_unsigned_text", 2)
 }
 
 #[test]

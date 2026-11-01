@@ -38,11 +38,12 @@ pub(super) fn value(route: &host::ImportRoute) -> ExtensionResult<host::RouteVal
     }
 }
 
-/// Completes a host rendering, running each nested call it makes into this instance.
+/// Completes a native operation that returns a list of strings, running each nested call it
+/// makes into this instance.
 ///
 /// # Errors
-/// Returns the rendering's own error.
-pub(super) fn drive_render(route: &host::ImportRoute) -> ExtensionResult<Vec<String>> {
+/// Returns the operation's own error.
+pub(super) fn lines(route: &host::ImportRoute) -> ExtensionResult<Vec<String>> {
     match value(route)? {
         host::RouteValue::Lines(lines) => Ok(lines),
         _ => Err("extension route result kind mismatch".into()),
@@ -460,6 +461,30 @@ pub(super) fn boolean(route: &host::ImportRoute) -> ExtensionResult<bool> {
 pub(super) fn text(route: &host::ImportRoute) -> ExtensionResult<String> {
     match value(route)? {
         host::RouteValue::Text(value) => Ok(value),
+        _ => Err("extension route result kind mismatch".into()),
+    }
+}
+
+/// Preserves an encoded record that the original native owner may not have.
+pub(super) fn optional_text(route: &host::ImportRoute) -> ExtensionResult<Option<String>> {
+    match value(route)? {
+        host::RouteValue::OptionalText(value) => Ok(value),
+        _ => Err("extension route result kind mismatch".into()),
+    }
+}
+
+/// Preserves the credential owner a native constructor retained.
+pub(super) fn credentials(route: &host::ImportRoute) -> ExtensionResult<host::AuthStorage> {
+    match value(route)? {
+        host::RouteValue::Credentials(owner) => Ok(owner),
+        _ => Err("extension route result kind mismatch".into()),
+    }
+}
+
+/// Preserves the catalog a native constructor retained.
+pub(super) fn registry(route: &host::ImportRoute) -> ExtensionResult<host::ModelRegistry> {
+    match value(route)? {
+        host::RouteValue::Catalog(registry) => Ok(registry),
         _ => Err("extension route result kind mismatch".into()),
     }
 }

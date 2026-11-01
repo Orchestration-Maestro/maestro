@@ -89,6 +89,9 @@ struct CatalogState {
     next_provider: u64,
     /// Model request sources indexed by exact identity.
     model_headers: HashMap<(String, String), IndexMap<String, String>>,
+    /// Per-model overrides of the model files, by provider and exact identity, for models a
+    /// provider registration adds after the files load.
+    model_overrides: HashMap<String, HashMap<String, composition::ModelOverride>>,
 }
 
 impl ModelRegistry {
@@ -167,6 +170,7 @@ impl ModelRegistry {
                 registered_providers: IndexMap::new(),
                 next_provider: 0,
                 model_headers: HashMap::new(),
+                model_overrides: HashMap::new(),
             }),
         };
         registry.load_models()?;
@@ -233,6 +237,7 @@ impl ModelRegistry {
             state.load_error = None;
             state.provider_configs.clear();
             state.model_headers.clear();
+            state.model_overrides.clear();
         }
         maestro_models::reset_api_providers();
         maestro_models::reset_oauth_providers();
@@ -372,6 +377,8 @@ impl CatalogState {
                     auth_header: config.auth_header,
                 }),
             );
+            self.model_overrides
+                .insert(provider.clone(), config.model_overrides.clone());
             self.retain_model_headers(provider, &mut config.model_overrides);
         }
     }

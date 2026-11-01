@@ -83,6 +83,8 @@ and an optional replacement package name. It returns an owned `SelfUpdateCommand
 only for an evidenced global installation whose package directory and immediate
 parent pass write-access checks. A replacement contains removal then installation
 in `steps`; otherwise callers execute the top-level command and literal `args`.
+Every installation step passes `--ignore-scripts` before the package operand.
+Removal steps do not pass that flag.
 The display is human-readable text, not a POSIX shell command to execute.
 
 The selector reuses installation detection and caller-selected package roots.

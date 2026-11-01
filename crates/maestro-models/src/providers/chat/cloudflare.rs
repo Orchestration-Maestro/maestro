@@ -36,6 +36,17 @@ pub fn is_cloudflare_provider(provider: &str) -> bool {
 /// # Errors
 /// Names the first variable that is unset or empty.
 pub fn resolve_cloudflare_base_url(model: &Model) -> Result<String, DiagnosticErrorInfo> {
+    resolve_cloudflare_base_url_with(model, |name| std::env::var(name).ok())
+}
+
+/// Substitute endpoint placeholders using supplied provider account values.
+///
+/// # Errors
+/// Names the first variable that is unset or empty.
+pub fn resolve_cloudflare_base_url_with(
+    model: &Model,
+    value: impl Fn(&str) -> Option<String>,
+) -> Result<String, DiagnosticErrorInfo> {
     let url = &model.base_url;
     let Ok(placeholder) = PLACEHOLDER.as_ref() else {
         return Ok(url.clone());
@@ -44,8 +55,7 @@ pub fn resolve_cloudflare_base_url(model: &Model) -> Result<String, DiagnosticEr
     let mut copied = 0;
     for captures in placeholder.captures_iter(url) {
         let (whole, name) = (&captures[0], &captures[1]);
-        let value = std::env::var(name)
-            .ok()
+        let value = value(name)
             .filter(|value| !value.is_empty())
             .ok_or_else(|| missing_variable(name, &model.provider))?;
         let start = captures.get(0).map_or(copied, |found| found.start());

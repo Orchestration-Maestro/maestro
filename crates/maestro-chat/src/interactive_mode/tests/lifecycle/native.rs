@@ -24,8 +24,8 @@ impl LifecycleEffects for Native {
     fn now_ms(&self) -> i64 {
         self.inner.now_ms()
     }
-    fn register_signals(&self, term: Rc<dyn Fn()>, hup: Rc<dyn Fn()>) -> io::Result<Box<dyn Fn()>> {
-        let remove = self.inner.register_signals(term, hup)?;
+    fn register_signals(&self, shutdown: Rc<dyn Fn()>) -> io::Result<Box<dyn Fn()>> {
+        let remove = self.inner.register_signals(shutdown)?;
         self.events.borrow_mut().push("register".into());
         let events = Rc::clone(&self.events);
         let removed = Cell::new(false);
@@ -243,7 +243,7 @@ fn verify(output: &std::process::Output, directory: &Path, case: &str, second: O
             (None, Some(if second == "TERM" { 15 } else { 1 }))
         );
     } else {
-        let graceful = case == "term";
+        let graceful = matches!(case, "term" | "hup");
         assert_eq!(
             output.status.code(),
             Some(if graceful { 0 } else { 129 }),
@@ -254,7 +254,7 @@ fn verify(output: &std::process::Output, directory: &Path, case: &str, second: O
         assert_eq!(
             log,
             if graceful {
-                "register\nkill\nremove\ndrain\nstop\ndispose\nexit:0"
+                "register\nkill\nremove\ndispose\ndrain\nstop\nexit:0"
             } else {
                 "register\nremove\nkill\nexit:129"
             }

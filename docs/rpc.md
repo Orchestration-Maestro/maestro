@@ -654,7 +654,9 @@ remains available to extensions, but theme selection answers
 The connection ends when the input ends, when an extension requests shutdown, or on SIGTERM
 or SIGHUP. At the end of input the server stops streaming events, starts disposing the
 session and answers a final line without its LF; the process exits 0. A shutdown an
-extension requests takes effect after the next command's response. The first signal kills
+extension requests takes effect when the active run settles, including its retry
+waits and compaction, or after the next command's response. A command reply during
+an active run leaves the request waiting for settlement. The first signal kills
 the shell commands still running, disposes the session and exits with 143 or 129. Once
 shutdown has started, a second signal kills the process by that signal; once the session
 is disposing, the end of input exits 0 at once. A failed read, or a failed write of any

@@ -279,9 +279,7 @@ mod tests {
     use std::{
         cell::{Cell, RefCell},
         future::Future,
-        pin::Pin,
         rc::Rc,
-        task::{Context, Poll, Waker},
     };
 
     /// A failure whose name, message and code must all come back unchanged.
@@ -335,25 +333,6 @@ mod tests {
         value
     }
 
-    /// Polls `future` until it finishes, yielding so the delivery's receiver runs.
-    async fn settled<T>(future: &mut (impl Future<Output = T> + Unpin)) -> T {
-        for _ in 0..64 {
-            if let Some(value) = poll_once(future) {
-                return value;
-            }
-            tokio::task::yield_now().await;
-        }
-        panic!("the delivery settles");
-    }
-
-    /// Polls `future` once with a waker that observes nothing.
-    fn poll_once<F: Future + Unpin>(future: &mut F) -> Option<F::Output> {
-        match Pin::new(future).poll(&mut Context::from_waker(Waker::noop())) {
-            Poll::Ready(output) => Some(output),
-            Poll::Pending => None,
-        }
-    }
-
     #[test]
     fn presentation_failure_surfaces_at_settle() {
         let runtime = ManualRuntime::new();
@@ -368,9 +347,9 @@ mod tests {
         send(2);
         send(3);
         drop(send);
-        let mut settle = Box::pin(dispatch.settle());
-        let error = on_tasks(driving(&runtime, async { settled(&mut settle).await }))
-            .expect_err("the update failure is returned");
+        let settle = Box::pin(dispatch.settle());
+        let error =
+            on_tasks(driving(&runtime, settle)).expect_err("the update failure is returned");
         assert_eq!(error.message, "the dialog could not be shown");
     }
 
@@ -382,8 +361,8 @@ mod tests {
         let requester = dispatch.requester();
         send(1);
         send(2);
-        let mut settle = Box::pin(dispatch.settle());
-        let outcome = on_tasks(driving(&runtime, async { settled(&mut settle).await }));
+        let settle = Box::pin(dispatch.settle());
+        let outcome = on_tasks(driving(&runtime, settle));
         assert!(
             outcome.is_ok(),
             "explicit close must not wait for retained sender"
@@ -418,8 +397,8 @@ mod tests {
             Err(refusal()),
             "later calls see the failure"
         );
-        let mut settle = Box::pin(dispatch.settle());
-        let outcome = on_tasks(driving(&runtime, async { settled(&mut settle).await }));
+        let settle = Box::pin(dispatch.settle());
+        let outcome = on_tasks(driving(&runtime, settle));
         assert_eq!(outcome, Err(refusal()), "settle keeps the same failure");
         assert_eq!(applied.borrow().clone(), [1], "no later work is applied");
     }
@@ -477,8 +456,8 @@ mod tests {
             Err(refusal()),
             "a local task meets the same failure directly"
         );
-        let mut settle = Box::pin(dispatch.settle());
-        let outcome = on_tasks(driving(&runtime, async { settled(&mut settle).await }));
+        let settle = Box::pin(dispatch.settle());
+        let outcome = on_tasks(driving(&runtime, settle));
         assert_eq!(outcome, Err(refusal()));
     }
 
@@ -540,8 +519,8 @@ mod tests {
             "reentry needs no lookup borrow"
         );
         assert_eq!(held.upgrade().unwrap().borrow().clone(), [0, 1]);
-        let mut settling = Box::pin(async { (first.settle().await, second.settle().await) });
-        let outcomes = on_tasks(driving(&runtime, async { settled(&mut settling).await }));
+        let settling = Box::pin(async { (first.settle().await, second.settle().await) });
+        let outcomes = on_tasks(driving(&runtime, settling));
         assert_eq!(
             outcomes,
             (Ok(()), Err(refusal())),
@@ -566,8 +545,8 @@ mod tests {
         let mut send = dispatch.sender();
         send(7);
         drop(send);
-        let mut settle = Box::pin(dispatch.settle());
-        let outcome = on_tasks(driving(&runtime, async { settled(&mut settle).await }));
+        let settle = Box::pin(dispatch.settle());
+        let outcome = on_tasks(driving(&runtime, settle));
         assert!(outcome.is_ok());
         assert_eq!(applied.borrow().clone(), [7]);
     }

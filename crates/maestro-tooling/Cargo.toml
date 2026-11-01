@@ -13,15 +13,14 @@ maestro-path = { path = "../maestro-path" }
 maestro-resources = { path = "../maestro-resources" }
 serde = { version = "=1.0.229", features = ["derive"] }
 serde_json.workspace = true
+sha2 = { version = "=0.11.0", default-features = false }
+toml = "=1.1.6"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
 
 [lints]
 workspace = true
-
-[dev-dependencies]
-toml = "=1.1.6"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-test-directory.workspace = true

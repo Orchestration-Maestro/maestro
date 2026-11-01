@@ -278,6 +278,13 @@ the host invokes the tail separately. Releasing the listener does not release a 
 already announced. The callback emitter cannot be retained by that tail: capture an
 owned `EventBus` for later asynchronous emissions instead.
 
+A component has no task of its own that outlives a callback. `Background::new(api.events())`
+registers one listener that turns announced work into tails, and
+`background.spawn(work).await` announces `work` and returns its `BackgroundTask`. The host
+polls the work on that tail until the work ends; dropping the task stops it, dropping any
+pending wait, and settles the tail. A refused announcement fails the start, and the work
+never runs. A failure of the work goes to the host's event-bus reporter.
+
 ## Session readers
 
 Ordinary and command contexts expose `session_manager()`, which acquires the currently
@@ -337,7 +344,7 @@ differs from a result whose properties are all omitted.
 | `session_shutdown` | `SessionShutdownEvent` | `reason` (`quit`, `reload`, `new`, `resume`, `fork`), `targetSessionFile?` |
 | `before_provider_request` | `BeforeProviderRequestEvent` | `payload` |
 | `after_provider_response` | `AfterProviderResponseEvent` | `status`, `headers` |
-| `input` | `InputEvent` | `text`, `images?`, `source` (`interactive`, `rpc`, `extension`) |
+| `input` | `InputEvent` | `text`, `images?`, `source` (`interactive`, `rpc`, `extension`), `streamingBehavior?` (`steer`, `followUp`) |
 
 Before-compaction `preparation` holds `firstKeptEntryId`, `messagesToSummarize`,
 `turnPrefixMessages`, `isSplitTurn`, `tokensBefore`, `previousSummary?`, `fileOps` and
@@ -431,8 +438,8 @@ an acquisition or retained query is allowed remains the host's decision.
 sort or deduplicate the supplied lists. `get_api_key_and_headers` awaits the host
 operation for the supplied descriptor, without checking catalog membership.
 `ResolvedRequestAuth` is re-exported from the [shared request owner](../records.md#resolved-request-authentication),
-`maestro_request::model_registry`. `ResolvedRequestAuth::Ok` preserves optional keys and ordered headers, including
-present empty strings; `Error` carries a structured denial, distinct from an
+`maestro_request::model_registry`. `ResolvedRequestAuth::Ok` preserves optional keys,
+endpoints and ordered headers, including present empty strings; `Error` carries a structured denial, distinct from an
 outer host-call failure.
 
 `ModelRegistry` also forwards `refresh`, `get_error`, `has_configured_auth`,
@@ -445,7 +452,10 @@ before the call; `AuthStatus` and `AuthSource` are the
 `ModelRegistry::auth_storage()` returns the catalog's live credential owner, not
 copied credentials. Its `AuthStorage` handle can outlive the creating callback.
 Reads, runtime key overrides, stored credential changes, reload, logout and error
-draining reach that same owner. `get_api_key` uses its original credential-command
+draining reach that same owner. `get`, `list`, `get_all`, `has_auth`, `get_auth_status`
+and `get_api_key` first reread the stored document through the owner's backend, so
+they see what another process wrote, and an authored backend runs inside the read as it
+does inside `reload`. `get_api_key` uses its original credential-command
 effects; `GetApiKeyOptions::include_fallback` defaults to true. Persistence failures
 remain in `drain_errors` rather than rolling back accepted state.
 

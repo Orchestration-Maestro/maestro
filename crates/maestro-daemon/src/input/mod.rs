@@ -1,7 +1,7 @@
 //! Owned terminal input and supplied host geometry.
 
 mod model;
-mod parse;
+pub(crate) mod parse;
 /// Supplied host byte decoding for the multiplexer input loop.
 pub mod raw_input;
 

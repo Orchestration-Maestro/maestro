@@ -66,6 +66,8 @@ resolving conflicts, then regenerate the table.
 | `bash_spawn_hook.rs` | An opt-in bash override using the host's native shell factory. |
 | `bookmark.md` | Bookmark |
 | `bookmark.rs` | Entry bookmarks: commands that label session entries, so that the tree view can find the important points of a conversation again. |
+| `border_status_editor.md` | Border status editor |
+| `border_status_editor.rs` | Shows the model, thinking level, context use, working directory and Git branch on the editor's borders, in place of the footer and the working row. |
 | `built_in_tool_renderer.md` | Built-in tool renderer |
 | `built_in_tool_renderer.rs` | Compact displays for the original read, bash, edit and write tools. |
 | `commands.md` | Commands |
@@ -101,6 +103,8 @@ resolving conflicts, then regenerate the table.
 | `hello.rs` | A greeting tool registered by an extension factory. |
 | `hidden_thinking_label.md` | Hidden thinking label |
 | `hidden_thinking_label.rs` | An extension that sets the label shown when thinking blocks are hidden. |
+| `inline_bash.md` | Inline bash expansion |
+| `inline_bash.rs` | An opt-in input hook that expands `!{command}` with shell output before submission. |
 | `input_transform.md` | Input transform |
 | `input_transform.rs` | An opt-in input hook: `?quick <question>` requests a brief answer; `ping` and `time` show immediate feedback without a model call. Extension-injected input passes through. |
 | `interactive_shell.md` | Interactive shell |
@@ -117,6 +121,12 @@ resolving conflicts, then regenerate the table.
 | `model_status.rs` | A model-status extension that reports the model each selection chose. |
 | `notify.md` | Notify |
 | `notify.rs` | Sends an opt-in desktop notification when the agent is ready for input. |
+| `overlay_qa_tests.md` | Overlay QA tests |
+| `overlay_qa_tests.rs` | Overlay demonstrations covering animation, placement, stacking, overflow, visibility, passive overlays, focus and streaming input. |
+| `overlay_qa_tests/dialogs.rs` | Views that only react to keys: placement cycles, stacked layers, the edge and maximum-height notices and the side panel. |
+| `overlay_qa_tests/live.rs` | Views with periodic or external updates: the animation, streamed process output and the visibility toggle. |
+| `overlay_qa_tests/paint.rs` | Themed borders, fitted rows and key checks shared by every demonstration view. |
+| `overlay_qa_tests/panels.rs` | Non-capturing overlays shown from a view: the passive timer, focus cycling and the streaming input panels. |
 | `overlay_test.md` | Overlay test |
 | `overlay_test.rs` | A floating overlay for checking how the terminal composes one over the conversation. |
 | `permission_gate.md` | Permission gate |
@@ -149,6 +159,7 @@ resolving conflicts, then regenerate the table.
 | `rainbow_editor.rs` | Highlights `ultrathink` in the editor with an animated rainbow shine. |
 | `reload_runtime.md` | Reload runtime |
 | `reload_runtime.rs` | A command that reloads runtime resources and a tool that queues that command. |
+| `rpc_demo.rs` | A companion extension exercising the terminal client's RPC UI methods. |
 | `send_user_message.md` | Send user message |
 | `send_user_message.rs` | User-message delivery: commands that send ordinary, steering, follow-up and structured messages, so a user can reach the agent from an extension. |
 | `session_name.md` | Session name |
@@ -165,9 +176,12 @@ resolving conflicts, then regenerate the table.
 | `space_invaders/render.rs` | Original terminal sprites, colours, borders and status text. |
 | `status_line.md` | Status line |
 | `status_line.rs` | Shows themed turn progress as persistent footer status. |
+| `structured_output.md` | Structured output |
+| `structured_output.rs` | A final structured answer returned by a terminating tool. |
 | `summarize.md` | Summarize |
 | `summarize.rs` | An opt-in conversation summary shown in a custom Markdown view. |
 | `support/tail.rs` | Cancellable work handed to the host's independent event-tail executor. |
+| `support/trim.rs` | Example-local trimming through the host's shared whitespace classification. |
 | `system_prompt_header.md` | System prompt header |
 | `system_prompt_header.rs` | Reports the effective system prompt's length as extension status. |
 | `tic_tac_toe.md` | Tic-tac-toe |
@@ -195,6 +209,8 @@ resolving conflicts, then regenerate the table.
 | `widget_placement.rs` | A startup extension that places text widgets above and below the editor. |
 | `with-deps.md` | With deps |
 | `with-deps/main.rs` | A duration tool registered by an extension that declares its own parsing dependency. |
+| `working_indicator.md` | Working indicator |
+| `working_indicator.rs` | A command that selects static, animated, hidden or default working indicators. |
 | `working_message_test.md` | Working message test |
 | `working_message_test.rs` | A startup extension that requests a custom working text and indicator. |
 <!-- example-index:end -->

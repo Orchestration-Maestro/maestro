@@ -371,7 +371,7 @@ fn encoder_ascii_scroll_batches_changed_cells_per_row() {
 
 #[test]
 fn encoder_batched_ascii_diff_replays_to_the_frame() {
-    use maestro_app::terminal::{Terminal, render::RenderState};
+    use maestro_app::terminal::{RenderState, Terminal};
     let previous = make_frame(4, 3, vec![plain("A"); 12]);
     let current = make_frame(4, 3, vec![plain("B"); 12]);
     let mut terminal = Terminal::new(4, 3, 0).unwrap();

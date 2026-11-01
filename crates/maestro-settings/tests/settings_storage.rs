@@ -417,6 +417,46 @@ mod tests {
     }
 
     #[test]
+    fn saves_reach_a_hard_linked_file_in_place() {
+        let root = Scratch::new().unwrap();
+        let file = support::settings_file(root.path(), SettingsScope::Global);
+        let linked = file.with_file_name("linked.json");
+        fs::create_dir_all(file.parent().unwrap()).unwrap();
+        fs::write(&file, "{\"theme\": \"old\"}").unwrap();
+        fs::hard_link(&file, &linked).unwrap();
+
+        file_storage(root.path())
+            .with_write_lock(SettingsScope::Global, &mut |_| {
+                Ok(Some("{\"theme\": \"new\"}".into()))
+            })
+            .unwrap();
+
+        assert_eq!(fs::read_to_string(&file).unwrap(), "{\"theme\": \"new\"}");
+        assert_eq!(fs::read_to_string(&linked).unwrap(), "{\"theme\": \"new\"}");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn saves_refuse_a_read_only_file_and_leave_it_whole() {
+        let root = Scratch::new().unwrap();
+        let file = support::settings_file(root.path(), SettingsScope::Global);
+        fs::create_dir_all(file.parent().unwrap()).unwrap();
+        fs::write(&file, "{\"theme\": \"old\"}").unwrap();
+        let Some(_restored) = maestro_test_directory::deny(&file, 0o444).unwrap() else {
+            return;
+        };
+
+        let result = file_storage(root.path()).with_write_lock(SettingsScope::Global, &mut |_| {
+            Ok(Some("{\"theme\": \"new\"}".into()))
+        });
+
+        let error = result.unwrap_err();
+        let io = error.downcast_ref::<std::io::Error>().unwrap();
+        assert_eq!(io.kind(), std::io::ErrorKind::PermissionDenied);
+        assert_eq!(fs::read_to_string(&file).unwrap(), "{\"theme\": \"old\"}");
+    }
+
+    #[test]
     fn global_key_edit_merges_fresh_global_scope() {
         if support::run_lock_child() {
             return;

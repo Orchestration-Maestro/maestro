@@ -29,11 +29,11 @@ fn settings_rows_keep_text_order_and_initial_values() {
                 events: expected.events
             }
         );
-        assert_eq!(expected.items.len(), 21);
+        assert_eq!(expected.items.len(), 22);
         for (index, item) in expected.items.iter().enumerate() {
             assert_inventory_row(&selector, item);
             let list = selector.get_settings_list();
-            if index < 20 {
+            if index < 21 {
                 input(&**list, &["\x1b[B"]);
             }
         }
@@ -525,4 +525,57 @@ fn settings_callbacks_release_after_last_list_handle() {
     assert!(!list.render(80).is_empty());
     drop(list);
     assert!(released.upgrade().is_none());
+}
+
+#[test]
+fn http_idle_timeout_choices_report_their_milliseconds() {
+    let _guard = bindings_guard();
+    let (_, theme) = published::published(&colors(0));
+    let events = Events::default();
+    let selector = maestro_chat::SettingsSelectorComponent::new(
+        config(),
+        events.callbacks(true),
+        theme,
+        &no_images(),
+    );
+    select(&selector, "http-idle-timeout");
+    input(&**selector.get_settings_list(), &["\r"; 5]);
+    let reported: Vec<_> = events
+        .get()
+        .into_iter()
+        .map(|event| (event[0].clone(), event[1].clone()))
+        .collect();
+    let expected: Vec<_> = [0, 30_000, 60_000, 120_000, 300_000]
+        .map(|milliseconds| ("HttpIdleTimeoutMs".into(), milliseconds.into()))
+        .into();
+    assert_eq!(reported, expected);
+}
+
+#[test]
+fn http_idle_timeout_outside_the_choices_shows_its_seconds() {
+    let _guard = bindings_guard();
+    let (_, theme) = published::published(&colors(0));
+    for (milliseconds, shown) in [
+        (90_000.0, "90 sec"),
+        (1_500.0, "1.5 sec"),
+        (0.0, "disabled"),
+    ] {
+        let mut cfg = config();
+        cfg.behavior.http_idle_timeout_ms = milliseconds;
+        let selector = maestro_chat::SettingsSelectorComponent::new(
+            cfg,
+            Events::default().callbacks(true),
+            theme.clone(),
+            &no_images(),
+        );
+        select(&selector, "http-idle-timeout");
+        let selected = selector
+            .render(80)
+            .iter()
+            .map(|line| plain(line))
+            .find(|line| line.starts_with("→ "))
+            .unwrap();
+        assert!(selected.starts_with("→ HTTP idle timeout"), "{selected}");
+        assert!(selected.ends_with(shown), "{selected}");
+    }
 }

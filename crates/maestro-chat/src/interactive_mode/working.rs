@@ -2,6 +2,7 @@
 //! of the hidden-thinking label.
 
 use super::InteractiveMode;
+use super::status_indicator::StatusKind;
 use crate::{AssistantMessageComponent, AssistantMessageOptions};
 use maestro_app::WorkingIndicatorOptions;
 use maestro_theme::{ThemeColor, paint};
@@ -15,10 +16,8 @@ use std::{
 /// The working message shown when no extension set one.
 const DEFAULT_WORKING_MESSAGE: &str = "Working...";
 
-/// The working row and its extension-controlled presentation.
+/// The working row's extension-controlled presentation.
 pub(super) struct WorkingState {
-    /// The working row while a response runs.
-    pub(super) loading_animation: RefCell<Option<Loader>>,
     /// The extension's working message, the default one when absent.
     pub(super) working_message: RefCell<Option<String>>,
     /// Whether the working row is shown while a response runs.
@@ -32,7 +31,6 @@ pub(super) struct WorkingState {
 impl Default for WorkingState {
     fn default() -> Self {
         Self {
-            loading_animation: RefCell::default(),
             working_message: RefCell::default(),
             working_visible: Cell::new(true),
             working_indicator_options: RefCell::default(),
@@ -68,32 +66,22 @@ impl InteractiveMode {
         )
     }
 
-    /// Builds the working row and shows it in the status rows.
+    /// Builds the working row and shows it as the status indicator.
     pub(super) fn show_working_loader(&self) {
         let loader = self.create_working_loader();
-        self.status_container.add_child(Rc::new(loader.clone()));
-        drop(self.working.loading_animation.replace(Some(loader)));
+        self.show_status_indicator(StatusKind::Working, loader, None);
     }
 
-    /// Stops and releases the working row without changing the status rows.
-    pub(super) fn release_working_loader(&self) {
-        if let Some(loader) = self.working.loading_animation.take() {
-            loader.stop();
-        }
-    }
-
-    /// Stops and releases the working row, then empties the status rows.
-    pub(super) fn stop_working_loader(&self) {
-        self.release_working_loader();
-        self.status_container.clear();
+    /// The shown working row.
+    pub(super) fn working_loader(&self) -> Option<Loader> {
+        self.status_loader(StatusKind::Working)
     }
 
     /// Sets the working message, `None` restoring the default, and shows it in a running
     /// working row.
     pub(super) fn set_working_message(&self, message: Option<String>) {
         self.working.working_message.replace(message);
-        let loader = self.working.loading_animation.borrow().clone();
-        if let Some(loader) = loader {
+        if let Some(loader) = self.working_loader() {
             loader.set_message(self.get_working_loader_message());
         }
     }
@@ -103,11 +91,10 @@ impl InteractiveMode {
     pub(super) fn set_working_visible(&self, visible: bool) {
         self.working.working_visible.set(visible);
         if !visible {
-            self.stop_working_loader();
+            self.clear_status_indicator(Some(StatusKind::Working));
         } else if self.runtime_host.session().is_streaming()
-            && self.working.loading_animation.borrow().is_none()
+            && self.status_kind() != Some(StatusKind::Working)
         {
-            self.status_container.clear();
             self.show_working_loader();
         }
         self.ui.request_render(false);
@@ -119,8 +106,7 @@ impl InteractiveMode {
         self.working
             .working_indicator_options
             .replace(options.clone());
-        let loader = self.working.loading_animation.borrow().clone();
-        if let Some(loader) = loader {
+        if let Some(loader) = self.working_loader() {
             loader.set_indicator(options.map(loader_indicator));
         }
         self.ui.request_render(false);
@@ -133,8 +119,7 @@ impl InteractiveMode {
         drop(self.working.working_message.take());
         self.working.working_visible.set(true);
         self.set_working_indicator(None);
-        let loader = self.working.loading_animation.borrow().clone();
-        if let Some(loader) = loader {
+        if let Some(loader) = self.working_loader() {
             let interrupt = maestro_app::key_text("app.interrupt");
             loader.set_message(format!(
                 "{DEFAULT_WORKING_MESSAGE} ({interrupt} to interrupt)"
