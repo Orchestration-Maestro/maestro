@@ -166,15 +166,22 @@ impl InteractiveMode {
             .borrow_mut()
             .drain_input(Some(Duration::from_millis(1000)), None)
     }
-    /// Starts the requested graceful operation instead of scheduling a final frame.
-    pub(super) fn check_shutdown_requested(&self) -> bool {
-        if !self.shutdown_requested.get() {
-            return false;
+    /// Records an extension shutdown, deferring active runs until their settlement.
+    pub(super) fn request_shutdown(self: &Rc<Self>) {
+        self.shutdown_requested.set(true);
+        let session = self.runtime_host.session();
+        if session.is_idle() {
+            self.spawn_shutdown();
+            return;
         }
-        if let Some(mode) = self.this.upgrade() {
-            mode.spawn_shutdown();
-        }
-        true
+        let mode = Rc::clone(self);
+        self.tool_environment
+            .runtime
+            .spawn_local(Box::pin(async move {
+                session.wait_for_idle().await;
+                mode.spawn_shutdown();
+                Ok(())
+            }));
     }
     /// Exits without writing terminal restoration or running runtime disposal.
     fn emergency_terminal_exit(&self) {
