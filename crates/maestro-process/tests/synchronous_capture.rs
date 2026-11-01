@@ -174,6 +174,10 @@ fn bounded_capture_counts_combined_output() {
                 ("CHILD_ERR", &err.to_string()),
             ],
         );
+        // An overflowing child waits for the capture to stop it, so the stop never meets its exit.
+        if !succeeds {
+            command.env("CHILD_STOPPED", "1");
+        }
         let result = spawn_sync(
             &mut command,
             SpawnSyncOptions::Capture {
