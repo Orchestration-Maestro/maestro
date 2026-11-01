@@ -41,7 +41,6 @@ mod transcript;
 mod transfer;
 mod typed;
 
-use super::hotkeys::tests::platform_keys;
 use crate::components::thinking_selector::thinking_text;
 use crate::interactive_mode::bash::component_address;
 use crate::{BashExecutionComponent, InteractiveMode, InteractiveModeOptions};

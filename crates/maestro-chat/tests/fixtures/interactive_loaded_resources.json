@@ -1056,19 +1056,19 @@
     "expected": {
       "before": [
         "@mdHeading@[Extensions]\u001b[39m                                                                                                                                                                                                                                    ",
-        "@dim@  folder, user-other/folder\u001b[39m                                                                                                                                                                                                                     ",
+        "@dim@  ~-other/folder, folder\u001b[39m                                                                                                                                                                                                                        ",
         ""
       ],
       "expanded": [
         "@mdHeading@[Extensions]\u001b[39m                                                                                                                                                                                                                                    ",
         "  @accent@project\u001b[39m                                                                                                                                                                                                                                       ",
-        "@dim@    /home/user-other/folder\u001b[39m                                                                                                                                                                                                                     ",
+        "@dim@    ~-other/folder\u001b[39m                                                                                                                                                                                                                              ",
         "@dim@    ~/folder\u001b[39m                                                                                                                                                                                                                                    ",
         ""
       ],
       "collapsed": [
         "@mdHeading@[Extensions]\u001b[39m                                                                                                                                                                                                                                    ",
-        "@dim@  folder, user-other/folder\u001b[39m                                                                                                                                                                                                                     ",
+        "@dim@  ~-other/folder, folder\u001b[39m                                                                                                                                                                                                                        ",
         ""
       ],
       "children": 2,

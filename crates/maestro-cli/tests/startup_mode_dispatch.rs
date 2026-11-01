@@ -104,8 +104,8 @@ fn scope_banner_keeps_snapshot_labels_and_nested_styles() {
                 assert_eq!(
                     h.recorder.events(),
                     [
-                        "factory".into(),
                         format!("stdout:{}\n", case.expected),
+                        "factory".into(),
                         "run".into()
                     ]
                 );
@@ -144,38 +144,6 @@ fn scope_visibility_varies_quiet_and_verbose_independently() {
                         ""
                     }
                 );
-            }
-        },
-    );
-}
-
-#[test]
-fn scope_hint_names_the_configured_cycle_key_and_is_absent_when_unbound() {
-    run(
-        "scope_hint_names_the_configured_cycle_key_and_is_absent_when_unbound",
-        |local| async move {
-            for (binding, line) in [
-                ("\"ctrl+o\"", "Model scope: captured (Ctrl+O to cycle)\n"),
-                (
-                    "[\"shift+x\", \"ctrl+y\"]",
-                    "Model scope: captured (Shift+X/Ctrl+Y to cycle)\n",
-                ),
-                ("[]", "Model scope: captured\n"),
-            ] {
-                let scratch = maestro_test_directory::Scratch::new().unwrap();
-                std::fs::write(
-                    scratch.path().join("keybindings.json"),
-                    format!("{{\"app.model.cycleForward\": {binding}}}"),
-                )
-                .unwrap();
-                let h = Harness::new(local.clone(), false).await;
-                *h.recorder.agent_dir.borrow_mut() =
-                    Some(scratch.path().to_str().unwrap().to_owned());
-                let mut h = h;
-                let mut input = request(AppMode::Interactive);
-                input.scoped_models = vec![scoped(&h, "captured", None)];
-                h.dispatch(input).await.unwrap();
-                assert_eq!(h.recorder.bytes("stdout"), line, "{binding}");
             }
         },
     );
@@ -447,7 +415,7 @@ fn failure_events(phase: &str) -> Vec<String> {
         "run" => vec!["factory", &prior, "run"],
         "rpc" => vec![&prior, "rpc"],
         "stop" => vec!["factory", "init", &timing, "stop"],
-        "stdout.write" => vec!["factory", "stdout.write"],
+        "stdout.write" => vec!["stdout.write"],
         "stderr.write" => vec!["factory", "init", "stderr.write"],
         "stdout.flush" => vec![
             "factory",

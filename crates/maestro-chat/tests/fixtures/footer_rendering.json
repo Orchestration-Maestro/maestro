@@ -1264,11 +1264,11 @@
     },
     "expected": {
       "lines": [
-        "<dark:dim>/home/ab/project (main)\u001b[39m",
+        "<dark:dim>~b/project (main)\u001b[39m",
         "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                         test-model\u001b[39m"
       ],
       "widths": [
-        23,
+        17,
         100
       ]
     }

@@ -122,11 +122,7 @@ impl<E: ExtensionExecution> FooterComponent<E> {
     /// The working directory with its shortened home, its branch and the session name.
     fn path(&self, session: &AgentSession<E>) -> Result<String, Box<dyn Error>> {
         let cwd = session.session_manager().borrow().get_cwd().to_owned();
-        let mut pwd = shorten_path_with_home(
-            &cwd,
-            &*self.environment,
-            maestro_path::shorten_home_normalized,
-        );
+        let mut pwd = shorten_path_with_home(&cwd, &*self.environment);
         if let Some(branch) = self.footer_data.get_git_branch().filter(|b| !b.is_empty()) {
             pwd = format!("{pwd} ({branch})");
         }

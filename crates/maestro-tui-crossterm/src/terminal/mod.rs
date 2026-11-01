@@ -1,4 +1,4 @@
-//! The process terminal: raw standard input, streamed text input, the reply-driven keyboard
+//! The process terminal: raw standard input, streamed text input, the enhanced keyboard
 //! negotiation, bracketed paste, progress and the write log. The `unix` and `windows`
 //! modules own what each platform acquires, reads and writes; the rest is shared.
 
@@ -103,17 +103,12 @@ struct Shared {
     /// Receives window-size changes; absent while the terminal is stopped, and while one call
     /// to it runs.
     on_resize: RefCell<Option<ResizeCallback>>,
-    /// Whether the cursor was hidden through this terminal and not shown again.
-    hidden: Cell<bool>,
-    /// How many keyboard flag requests are not yet popped: one for each start.
-    pushes: Cell<usize>,
-    /// Whether the terminal reported the enhanced keyboard protocol on.
+    /// Whether the enhanced keyboard protocol is enabled, after the terminal reported support.
     enhanced: Cell<bool>,
-    /// Whether the modified-key reporting is enabled, because the terminal reported no
-    /// enhanced keyboard protocol.
+    /// Whether the modified-key reporting is enabled, because no support report arrived in time.
     fallback: Cell<bool>,
-    /// Whether a keyboard reply read by the live generation may still change the keyboard
-    /// modes; false once a drain has begun.
+    /// Whether a support reply read by the live generation may still enable the enhanced
+    /// keyboard modes; false once a drain has begun.
     negotiating: Cell<bool>,
     /// When decoded input last arrived, whether or not it was delivered.
     activity: Cell<Instant>,
@@ -231,8 +226,6 @@ impl ProcessTerminal {
                 generation: Cell::new(0),
                 on_input: RefCell::new(None),
                 on_resize: RefCell::new(None),
-                hidden: Cell::new(false),
-                pushes: Cell::new(0),
                 enhanced: Cell::new(false),
                 fallback: Cell::new(false),
                 negotiating: Cell::new(false),
@@ -294,15 +287,11 @@ impl Terminal for ProcessTerminal {
     }
 
     fn hide_cursor(&mut self) -> io::Result<()> {
-        self.shared.emit(CURSOR_HIDE)?;
-        self.shared.hidden.set(true);
-        Ok(())
+        self.shared.emit(CURSOR_HIDE)
     }
 
     fn show_cursor(&mut self) -> io::Result<()> {
-        self.shared.emit(CURSOR_SHOW)?;
-        self.shared.hidden.set(false);
-        Ok(())
+        self.shared.emit(CURSOR_SHOW)
     }
 
     fn clear_line(&mut self) -> io::Result<()> {
@@ -334,11 +323,8 @@ impl Drop for ProcessTerminal {
     fn drop(&mut self) {
         if self.running.is_some() {
             let _ = self.end();
-        } else {
-            let _ = self.shared.show_hidden_cursor();
-            if self.cancel_keepalive() {
-                let _ = self.shared.emit(PROGRESS_CLEAR);
-            }
+        } else if self.cancel_keepalive() {
+            let _ = self.shared.emit(PROGRESS_CLEAR);
         }
     }
 }

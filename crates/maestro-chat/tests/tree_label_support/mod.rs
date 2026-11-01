@@ -137,7 +137,7 @@ pub fn group(name: &str) {
     let _guard = registry::REGISTRY.lock().unwrap();
     let _restore = registry::Restore(maestro_tui::get_keybindings());
     let cases: Vec<Case> =
-        on_this_platform(include_str!("../fixtures/tree-folding-and-labels.json"));
+        serde_json::from_str(include_str!("../fixtures/tree-folding-and-labels.json")).unwrap();
     let tz = std::env::var("TZ").unwrap();
     let selected: Vec<_> = cases
         .iter()
@@ -145,43 +145,6 @@ pub fn group(name: &str) {
         .collect();
     for case in selected {
         replay::case(case);
-    }
-}
-
-/// One recorded fold-hint row and the row macOS renders in its place.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct PlatformRow {
-    recorded: String,
-    macos: String,
-}
-
-/// The recorded corpus as this platform renders it: macOS names the alt key `option`, so each
-/// recorded hint row, including those inside recorded writes, becomes the macOS row laid out
-/// for its width.
-fn on_this_platform<T: serde::de::DeserializeOwned>(recorded: &str) -> T {
-    let mut corpus: Value = serde_json::from_str(recorded).unwrap();
-    if cfg!(target_os = "macos") {
-        let rows: Vec<PlatformRow> =
-            serde_json::from_str(include_str!("../fixtures/tree-macos-rows.json")).unwrap();
-        replace_rows(&mut corpus, &rows);
-    }
-    serde_json::from_value(corpus).unwrap()
-}
-
-/// Replaces every recorded row within the strings of `value`.
-fn replace_rows(value: &mut Value, rows: &[PlatformRow]) {
-    match value {
-        Value::String(text) => {
-            for row in rows {
-                *text = text.replace(&row.recorded, &row.macos);
-            }
-        }
-        Value::Array(items) => items.iter_mut().for_each(|item| replace_rows(item, rows)),
-        Value::Object(fields) => fields
-            .values_mut()
-            .for_each(|item| replace_rows(item, rows)),
-        _ => {}
     }
 }
 

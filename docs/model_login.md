@@ -55,9 +55,3 @@ readable only by its owner on Unix. Errors keep the `Error:` line and exit statu
 
 This is not the session credential store: the command only reads and writes the
 standalone account file at that caller-relative path, and offers no path option.
-
-## Interactive sign-in
-
-The interactive mode signs in through `LoginDialogComponent`, described with the
-[selectors](chat/selectors.md#sign-in-dialog). A submitted prompt keeps its row,
-frozen as `> value`, and every later prompt starts with an empty input.

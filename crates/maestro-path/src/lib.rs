@@ -27,7 +27,6 @@ pub use path::{
 };
 pub use tilde::{
     Tilde, expand_tilde, expand_tilde_joined, expand_tilde_native, join_home, parse_tilde,
-    shorten_home, shorten_home_normalized,
 };
 
 #[cfg(not(windows))]

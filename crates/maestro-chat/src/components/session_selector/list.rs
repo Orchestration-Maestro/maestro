@@ -229,7 +229,7 @@ impl SessionList {
         display_text(&if path.is_empty() {
             String::new()
         } else {
-            maestro_path::shorten_home(path, &home)
+            super::super::shorten_home_path(path, Some(&home))
         })
     }
     /// Emits one record through the existing cell, style and clipping owners.

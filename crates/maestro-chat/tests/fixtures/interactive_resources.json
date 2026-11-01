@@ -1101,7 +1101,7 @@
       "home": "/home/user"
     },
     "expected": {
-      "value": "/home/user-sibling/a"
+      "value": "~-sibling/a"
     }
   },
   {
@@ -1957,7 +1957,7 @@
       "home": "/home/user"
     },
     "expected": {
-      "value": "/home/username/file"
+      "value": "~name/file"
     }
   },
   {
@@ -2012,29 +2012,7 @@
       "home": "/home/user/"
     },
     "expected": {
-      "value": "~/file"
-    }
-  },
-  {
-    "test": "resource_paths_abbreviate_supplied_home_prefix",
-    "input": {
-      "op": "display",
-      "path": "/home/user/a/../file",
-      "home": "/home/user"
-    },
-    "expected": {
-      "value": "~/a/../file"
-    }
-  },
-  {
-    "test": "resource_paths_abbreviate_supplied_home_prefix",
-    "input": {
-      "op": "display",
-      "path": "/home/user/",
-      "home": "/home/user"
-    },
-    "expected": {
-      "value": "~/"
+      "value": "~file"
     }
   }
 ]

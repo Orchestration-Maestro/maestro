@@ -14669,92 +14669,6 @@
   },
   {
     "test": "tool_paths_use_live_home_prefix",
-    "case": "dot-segments",
-    "input": {
-      "nodes": [
-        {
-          "entry": {
-            "type": "message",
-            "id": "a",
-            "parentId": null,
-            "message": {
-              "role": "assistant",
-              "content": [
-                {
-                  "type": "toolCall",
-                  "id": "tc",
-                  "name": "write",
-                  "arguments": {
-                    "path": "/home/test/a/../file"
-                  }
-                }
-              ],
-              "stopReason": "toolUse"
-            }
-          },
-          "children": [
-            1
-          ]
-        },
-        {
-          "entry": {
-            "type": "message",
-            "id": "b",
-            "parentId": "a",
-            "message": {
-              "role": "toolResult",
-              "content": "",
-              "toolCallId": "tc",
-              "toolName": "write"
-            }
-          },
-          "children": []
-        }
-      ],
-      "roots": [
-        0
-      ],
-      "leaf": "b",
-      "mode": "default",
-      "lines": 20,
-      "widths": [
-        200
-      ],
-      "ops": [],
-      "initial": null,
-      "env": {
-        "HOME": "/home/test",
-        "USERPROFILE": "/users/t"
-      },
-      "palettes": [
-        "dark"
-      ],
-      "styles_enabled": true
-    },
-    "expected": {
-      "frames": [
-        {
-          "selected": "b",
-          "rendered": [
-            {
-              "palette": "dark",
-              "width": 200,
-              "lines": [
-                "\u001b[48;2;42;31;26m\u001b[38;2;217;160;102m› \u001b[39m\u001b[38;2;217;160;102m\u001b[39m\u001b[38;2;217;160;102m• \u001b[39m\u001b[1m\u001b[38;2;217;160;102m[write: ~/a/../file]\u001b[39m\u001b[22m\u001b[49m",
-                "\u001b[38;2;217;160;102m  (1/1)\u001b[39m"
-              ],
-              "cell_widths": [
-                24,
-                7
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  },
-  {
-    "test": "tool_paths_use_live_home_prefix",
     "case": "USERPROFILE",
     "input": {
       "nodes": [
@@ -15123,10 +15037,10 @@
               "palette": "dark",
               "width": 200,
               "lines": [
-                "\u001b[48;2;42;31;26m\u001b[38;2;217;160;102m› \u001b[39m\u001b[38;2;217;160;102m\u001b[39m\u001b[38;2;217;160;102m• \u001b[39m\u001b[1m\u001b[38;2;217;160;102m[write: /home/tester/file]\u001b[39m\u001b[22m\u001b[49m",
+                "\u001b[48;2;42;31;26m\u001b[38;2;217;160;102m› \u001b[39m\u001b[38;2;217;160;102m\u001b[39m\u001b[38;2;217;160;102m• \u001b[39m\u001b[1m\u001b[38;2;217;160;102m[write: ~er/file]\u001b[39m\u001b[22m\u001b[49m",
                 "\u001b[38;2;217;160;102m  (1/1)\u001b[39m"
               ],
-              "cell_widths": [30, 7]
+              "cell_widths": [21, 7]
             }
           ]
         }

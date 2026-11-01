@@ -3,7 +3,7 @@
 use std::ops::Range;
 
 use super::is_whitespace_scalar;
-use super::measure::breaks_anywhere;
+use super::measure::TAB_CELLS;
 use super::parsed::{Grapheme, Parsed};
 use super::render::{Emission, trim_end};
 
@@ -221,7 +221,7 @@ impl<'p, 'a> Wrap<'p, 'a> {
 /// Wraps one literal line.
 fn wrap_line(parsed: &Parsed<'_>, span: Range<usize>, width: usize) -> Vec<String> {
     let events = parsed.events_in(&span);
-    let graphemes: Vec<Grapheme> = parsed.graphemes(span).collect();
+    let graphemes: Vec<Grapheme> = parsed.graphemes(span, TAB_CELLS).collect();
     let Some(first) = graphemes.first() else {
         return vec![metadata(parsed, events)];
     };
@@ -257,18 +257,16 @@ fn wrap_line(parsed: &Parsed<'_>, span: Range<usize>, width: usize) -> Vec<Strin
     }
 }
 
-/// Splits `graphemes` into runs at ASCII spaces, with each CJK grapheme a run of its own; the
-/// last run takes the escapes up to `events_end`.
+/// Splits `graphemes` into runs at ASCII spaces; the last run takes the escapes up to
+/// `events_end`.
 fn tokens(parsed: &Parsed<'_>, graphemes: &[Grapheme], events_end: usize) -> Vec<Token> {
     let mut tokens: Vec<Token> = Vec::new();
     let mut previous_space = false;
-    let mut previous_break = false;
     for (index, grapheme) in graphemes.iter().enumerate() {
         let space = parsed.text(grapheme) == " ";
-        let spans = !space && breaks_anywhere(parsed.text(grapheme));
         let whitespace = grapheme.events.is_empty() && is_whitespace(parsed, grapheme);
         match tokens.last_mut() {
-            Some(token) if space == previous_space && !spans && !previous_break => {
+            Some(token) if space == previous_space => {
                 token.graphemes.end = index + 1;
                 token.events_end = grapheme.events.end;
                 token.cells += grapheme.cells;
@@ -282,7 +280,6 @@ fn tokens(parsed: &Parsed<'_>, graphemes: &[Grapheme], events_end: usize) -> Vec
             }),
         }
         previous_space = space;
-        previous_break = spans;
     }
     if let Some(last) = tokens.last_mut() {
         last.whitespace &= last.events_end == events_end;
@@ -338,7 +335,7 @@ fn shows(row: &str) -> bool {
     let parsed = Parsed::parse(row);
     let end = parsed.events.last().map_or(0, |event| event.state);
     parsed
-        .graphemes(0..parsed.visible.len())
+        .graphemes(0..parsed.visible.len(), TAB_CELLS)
         .any(|grapheme| !is_whitespace(&parsed, &grapheme) || parsed.shows_blank(&grapheme))
         || parsed.states[end].paints_after_row()
 }

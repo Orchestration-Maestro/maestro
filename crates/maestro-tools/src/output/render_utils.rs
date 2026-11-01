@@ -120,7 +120,15 @@ pub fn shorten_path(path: Option<&str>) -> std::io::Result<String> {
         return Ok(String::new());
     };
     let home = crate::path_utils::expand_path("~")?;
-    Ok(maestro_path::shorten_home(path, &home))
+    if home.is_empty() || home == "/" {
+        return Ok(path.to_owned());
+    }
+    let below = path.strip_prefix(&home).filter(|rest| {
+        rest.is_empty()
+            || rest.starts_with(std::path::is_separator)
+            || home.ends_with(std::path::is_separator)
+    });
+    Ok(below.map_or_else(|| path.to_owned(), |rest| format!("~{rest}")))
 }
 
 /// Replace every TAB with three spaces.

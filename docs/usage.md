@@ -25,7 +25,7 @@ replace the editor until it closes.
 | Add a line without sending | Shift+Enter; terminal key forwarding must preserve it |
 | Find a project file | Type `@` and part of its path; select a completion |
 | Complete a path | Tab |
-| Recall a prompt | Up/Down browse history |
+| Recall a prompt | Up from an empty editor; Up/Down browse history |
 | Edit a large draft | Ctrl+G opens the command in `VISUAL`, falling back to `EDITOR` |
 | Attach a clipboard image | Ctrl+V (Alt+V on Windows); inserts a temporary image path |
 | Expand tool output and other collapsible rows | Ctrl+O |

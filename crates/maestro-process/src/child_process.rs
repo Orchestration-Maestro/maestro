@@ -642,22 +642,23 @@ async fn capture(
     Err(SpawnSyncError::Timeout)
 }
 
-/// Starts a caller-built command in a new Unix session, then transfers input and waits in an
-/// owned worker. The command leaves the caller's process group, so a stop signal sent to that
-/// group, such as a terminal suspend, does not reach it.
+/// Starts a caller-built command, then transfers input and waits in an owned worker.
 ///
 /// Stdout/stderr use the null device. Input errors are ignored; normal waiting
 /// reaps the direct child. Dropping the handle neither joins nor cancels the worker.
 ///
 /// # Errors
 /// Returns native startup or worker/runtime construction errors unchanged.
-pub fn spawn(command: Command, input: Option<Vec<u8>>) -> io::Result<std::thread::JoinHandle<()>> {
+pub fn spawn(
+    mut command: Command,
+    input: Option<Vec<u8>>,
+) -> io::Result<std::thread::JoinHandle<()>> {
     let (sender, receiver) = std::sync::mpsc::sync_channel(0);
     let worker = std::thread::Builder::new().spawn(move || {
         let started = runtime().and_then(|runtime| {
             let guard = runtime.enter();
-            let child = CapturedChild::spawn_with_stdio(
-                command,
+            let child = CapturedChild::spawn_with(
+                &mut command,
                 [
                     if input.is_some() {
                         Stdio::piped()
@@ -667,7 +668,6 @@ pub fn spawn(command: Command, input: Option<Vec<u8>>) -> io::Result<std::thread
                     Stdio::null(),
                     Stdio::null(),
                 ],
-                true,
             )?;
             drop(guard);
             Ok((runtime, child))

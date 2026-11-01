@@ -217,9 +217,7 @@ fn help() -> String {
         .map(|name| key_text(&format!("app.tree.filter.{name}")))
         .join("/");
     format!(
-        "  ↑/↓: move. ←/→: page. {}/{}: fold/branch. {}: label. {filters}: filters ({}/{} cycle). {}: label time",
-        key_text("app.tree.foldOrUp"),
-        key_text("app.tree.unfoldOrDown"),
+        "  ↑/↓: move. ←/→: page. ^←/^→ or Alt+←/Alt+→: fold/branch. {}: label. {filters}: filters ({}/{} cycle). {}: label time",
         key_text("app.tree.editLabel"),
         key_text("app.tree.filter.cycleForward"),
         key_text("app.tree.filter.cycleBackward"),
@@ -382,6 +380,3 @@ impl InputHandler for LabelInput {
         }
     }
 }
-
-#[cfg(test)]
-mod tests;

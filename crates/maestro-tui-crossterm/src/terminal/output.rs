@@ -73,17 +73,16 @@ pub(super) const PASTE_ON: &str = "\x1b[?2004h";
 /// Disables bracketed paste.
 pub(super) const PASTE_OFF: &str = "\x1b[?2004l";
 
-/// Requests enhanced keyboard flags 1, 2 and 4; the terminal keeps the ones it supports.
-pub(super) const KEYBOARD_PUSH: &str = "\x1b[>7u";
+/// Asks the terminal which enhanced keyboard flags it runs.
+pub(super) const KEYBOARD_QUERY: &str = "\x1b[?u";
 
-/// Asks which enhanced keyboard flags the terminal runs, then for its device attributes. Every
-/// terminal answers the second question, so that reply tells the first went unanswered.
-pub(super) const KEYBOARD_QUERY: &str = "\x1b[?u\x1b[c";
+/// Enables enhanced keyboard flags 1, 2 and 4.
+pub(super) const KEYBOARD_ON: &str = "\x1b[>7u";
 
-/// Pops the enhanced keyboard flags requested by [`KEYBOARD_PUSH`].
+/// Pops the enhanced keyboard flags pushed by [`KEYBOARD_ON`].
 pub(super) const KEYBOARD_POP: &str = "\x1b[<u";
 
-/// Enables modified-key reporting for terminals that run no enhanced keyboard flags.
+/// Enables modified-key reporting for terminals that do not answer the keyboard query.
 pub(super) const FALLBACK_ON: &str = "\x1b[>4;2m";
 
 /// Disables the modified-key reporting enabled by [`FALLBACK_ON`].

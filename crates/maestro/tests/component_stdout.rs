@@ -50,12 +50,14 @@ fn component_output_stays_between_complete_host_frames() {
 fn compose_frames() {
     use terminal_support::{Rig, START_BYTES, pipe_input, pipe_output, until};
     let rig = Rig::paused();
-    let _input = pipe_input();
+    let input = pipe_input();
     let output = pipe_output();
     rig.run(async {
         let mut terminal = ProcessTerminal::new(rig.local());
         terminal.start(Box::new(|_| {}), Box::new(|| {})).unwrap();
         output.written(START_BYTES).await;
+        input.send(b"\x1b[?1u");
+        output.written("\x1b[>7u").await;
         let first = format!("<frame-a>{}</frame-a>", "a".repeat(2 * 1024 * 1024));
         terminal.write(&first).unwrap();
         until(|| terminal.pending_output_bytes() < first.len()).await;

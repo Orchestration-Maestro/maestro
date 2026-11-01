@@ -223,14 +223,13 @@ one literal URL argument through the [shared process owner](../tools-process.md)
 Startup and exit failures are silent; the dialog never waits for browser exit.
 Browser embeddings provide their own launcher.
 
-`show_manual_input` and `show_prompt` append a row and an input that starts empty;
-`show_prompt` also optionally shows an example. Both install an owned
+`show_manual_input` appends and retains entered text. `show_prompt` appends,
+optionally shows an example and resets text. Both install an owned
 `LoginInputFuture` eagerly, before requesting rendering. Submission returns the
-exact text once and freezes the row: the input is replaced by a plain `> value` row, so
-earlier answers stay visible and unchanged while a later prompt is active. Dropping an observer does not cancel the dialog; replacing or
+exact text once. Dropping an observer does not cancel the dialog; replacing or
 dropping its sender settles the old observer as `LoginDialogError::Cancelled`.
 Information replaces visible rows, while waiting and progress append. None of
-these updates discards a pending input or the text typed into it.
+these updates discards a pending input or its retained text.
 
 Live cancel bindings win before child input dispatch. Cancellation aborts the
 shared signal, rejects pending input with `Login cancelled`, then reports

@@ -54,7 +54,7 @@ pub(super) fn replay() {
         vec![],
     ));
     let cases: Vec<Case> =
-        super::on_this_platform(include_str!("../fixtures/tree-writer-focus.json"));
+        serde_json::from_str(include_str!("../fixtures/tree-writer-focus.json")).unwrap();
     assert_eq!(cases.len(), 2);
     for case in cases {
         replay_case(&case);

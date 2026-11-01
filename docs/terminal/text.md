@@ -74,9 +74,7 @@ assert_eq!((found.code, found.length), ("\x1b[1;4m", 6));
 
 - Lines break at ASCII spaces and fill greedily. A word wider than `width` breaks
   between whole graphemes, and a non-whitespace grapheme wider than `width` is kept
-  whole. Han, Hiragana, Katakana, Hangul and Bopomofo graphemes are words of their
-  own, so a line breaks between them even when no space separates them from the text
-  around them.
+  whole.
 - Escapes stay where they were written. Inside a word wider than `width`, an escape
   written before the grapheme that starts a new row ends the row it follows, so a
   reset or a marker before that cut stays on the earlier row. An escape written
@@ -175,8 +173,7 @@ start in the columns `start_col..start_col + length` and the cells they occupy;
 `start_col` is left out, and one that crosses the right edge is kept, or left out
 when `strict` is set. A non-empty selection starts with the escapes written before
 its first grapheme, in their original order, and closes a hyperlink still open at
-its end. A tab takes three columns, as in `visible_width`, so a slice and an overlay
-composited at a column line up with the measured line. A length of zero,
+its end. A tab takes no columns here, unlike in `visible_width`. A length of zero,
 or a range that starts beyond the end of the line, selects nothing.
 
 `extract_segments(line, before_end, after_start, after_len, strict_after)` returns

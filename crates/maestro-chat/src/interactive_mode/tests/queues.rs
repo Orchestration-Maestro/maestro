@@ -804,10 +804,7 @@ struct Displayed {
 fn key_display_capitalizes_each_live_binding_without_reordering() {
     const TEST: &str = "key_display_capitalizes_each_live_binding_without_reordering";
     for (KeyName::CapitalizeKey { key }, expected) in cases::<KeyName, Displayed>(TEST) {
-        assert_eq!(
-            maestro_app::format_key_text(&key, true),
-            super::platform_keys::on_this_platform(&expected.result)
-        );
+        assert_eq!(InteractiveMode::capitalize_key(&key), expected.result);
     }
     isolated(TEST, async |directory| {
         // The mode publishes the application's key registry, which the display reads live.
@@ -822,10 +819,10 @@ fn key_display_capitalizes_each_live_binding_without_reordering() {
             )]);
             InteractiveMode::get_app_key_display("app.message.dequeue")
         };
-        assert_eq!(bind(None), super::platform_keys::on_this_platform("Alt+Up"));
+        assert_eq!(bind(None), "Alt+Up");
         assert_eq!(bind(Some(&["shift+x", "ctrl+q"])), "Shift+X/Ctrl+Q");
         assert_eq!(bind(Some(&["ctrl+q", "shift+x"])), "Ctrl+Q/Shift+X");
-        assert_eq!(bind(None), super::platform_keys::on_this_platform("Alt+Up"));
+        assert_eq!(bind(None), "Alt+Up");
     });
 }
 

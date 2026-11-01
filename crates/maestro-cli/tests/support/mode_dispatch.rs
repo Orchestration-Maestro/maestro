@@ -47,8 +47,6 @@ pub struct Recorder {
     pub options: RefCell<Option<InteractiveModeOptions>>,
     /// Runtime received by the selected presentation.
     pub runtime: RefCell<Option<Rc<AgentSessionRuntime>>>,
-    /// The agent directory whose keybindings the interactive constructor publishes.
-    pub agent_dir: RefCell<Option<String>>,
 }
 impl Recorder {
     /// Record a phase before optionally failing.
@@ -236,11 +234,6 @@ pub fn launchers(recorder: &Rc<Recorder>) -> ModeLaunchers {
     ModeLaunchers {
         interactive: Rc::new(move |runtime, options| {
             interactive.call("factory")?;
-            let dir = interactive.agent_dir.borrow().clone();
-            let keys = maestro_app::KeybindingsManager::create(Some(
-                dir.as_deref().unwrap_or("/nonexistent-agent-directory"),
-            ))?;
-            maestro_tui::set_keybindings((*keys).clone());
             *interactive.runtime.borrow_mut() = Some(runtime);
             *interactive.options.borrow_mut() = Some(options);
             Ok(interactive.clone())

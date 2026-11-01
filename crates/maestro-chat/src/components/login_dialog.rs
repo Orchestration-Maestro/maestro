@@ -4,7 +4,7 @@ use maestro_theme::{LiveTheme, Theme, ThemeColor, ThemeError};
 use maestro_tui::tui::InputHandler;
 use maestro_tui::{Cancellation, Component, Container, FocusFlag, Focusable, Input, Spacer, Text};
 use std::cell::{Cell, RefCell};
-use std::rc::{Rc, Weak};
+use std::rc::Rc;
 use tokio::sync::oneshot;
 
 /// Host observation used for click hints and native browser selection.
@@ -105,20 +105,6 @@ impl Settlement {
         }
     }
 }
-/// Replaces every row of `input` in `content` by the plain text of the value submitted there,
-/// unless either is gone.
-fn freeze_input(content: &Weak<Container>, input: &Weak<Input>, value: &str) {
-    let (Some(content), Some(input)) = (content.upgrade(), input.upgrade()) else {
-        return;
-    };
-    let input: Rc<dyn Component> = input;
-    let children = content.children();
-    for child in children.borrow_mut().iter_mut() {
-        if Rc::ptr_eq(child, &input) {
-            *child = Rc::new(Text::new(format!("> {value}"), 0, 0, None));
-        }
-    }
-}
 /// Sign-in panel with inherited child-array editing.
 pub struct LoginDialogComponent {
     /// Outer chrome and retained content slot.
@@ -179,19 +165,15 @@ impl LoginDialogComponent {
     pub fn signal(&self) -> &Cancellation {
         &self.settlement.signal
     }
-    /// Adds the retained input and help, installing settlement before requesting render. A
-    /// submitted value replaces the input row by its frozen text before the result is sent.
+    /// Adds the retained input and help, installing settlement before requesting render.
     fn input_result(&self, help: &str, accept_empty: bool) -> Result<LoginInputFuture, ThemeError> {
         let submit = self.settlement.clone();
-        let content = Rc::downgrade(&self.content);
-        let input = Rc::downgrade(&self.input);
         self.input.set_on_submit(Some(Rc::new(move |value| {
             if value.is_empty() && !accept_empty {
                 return;
             }
             let pending = submit.pending.borrow_mut().take();
             if let Some(sender) = pending {
-                freeze_input(&content, &input, value);
                 let _ = sender.send(Ok(value.to_owned()));
             }
         })));
@@ -209,14 +191,13 @@ impl LoginDialogComponent {
     fn cancel_hint(&self, description: &str) -> Result<String, ThemeError> {
         maestro_app::key_hint("tui.select.cancel", description, &self.options.theme)
     }
-    /// Appends manual entry with an empty input, keeping earlier rows.
+    /// Appends manual entry without clearing history or entered text.
     ///
     /// # Errors
     /// Returns theme errors unchanged.
     pub fn show_manual_input(&self, prompt: &str) -> Result<LoginInputFuture, ThemeError> {
         self.content.add_child(Rc::new(Spacer::new(1)));
         self.text(prompt, Some(ThemeColor::Dim))?;
-        self.input.set_value(String::new());
         self.input_result(&format!("({})", self.cancel_hint("to cancel")?), false)
     }
     /// Appends a prompt and clears the retained input before installing its result.

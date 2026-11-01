@@ -57,7 +57,7 @@ fn walk(
 ) -> (usize, Option<Range<usize>>) {
     let mut col = 0usize;
     let mut trailing = 0;
-    for grapheme in parsed.graphemes(0..parsed.visible.len()) {
+    for grapheme in parsed.graphemes(0..parsed.visible.len(), 0) {
         let next = col.saturating_add(grapheme.cells);
         trailing = grapheme.events.end;
         let stop = visit(col..next, grapheme);

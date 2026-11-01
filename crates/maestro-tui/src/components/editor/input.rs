@@ -158,7 +158,7 @@ impl Owner {
             let mut state = self.state.borrow_mut();
             state.snapshot();
             state.reset_action();
-            state.exit_history();
+            state.history_index = None;
             state.splice("\n");
         }
         self.notify();
@@ -202,7 +202,7 @@ impl Owner {
         {
             let mut state = self.state.borrow_mut();
             state.current = Buffer::default();
-            state.exit_history();
+            state.history_index = None;
             state.undo.clear();
             state.pastes.clear();
             state.reset_action();

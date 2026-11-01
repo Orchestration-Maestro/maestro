@@ -10,7 +10,6 @@ repository.workspace = true
 maestro-app = { path = "../maestro-app" }
 maestro-tui = { path = "../maestro-tui" }
 maestro-theme = { path = "../maestro-theme" }
-maestro-path = { path = "../maestro-path" }
 indexmap = "=2.14.2"
 serde_json.workspace = true
 ryu-js.workspace = true
@@ -23,6 +22,7 @@ serde.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
+maestro-path = { path = "../maestro-path" }
 tokio = { version = "=1.53.3", default-features = false, features = ["io-util", "macros", "process"] }
 uuid = { version = "=1.27.0", default-features = false, features = ["std", "v4"] }
 
