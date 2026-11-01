@@ -637,7 +637,7 @@ fn check_repin_case(layout: &str, kind: &str) {
         assert!(fixture.dependencies.borrow().is_empty());
         assert_eq!(
             fixture.settings.borrow().get_global_settings().0["packages"],
-            json!(["git:github.com/acme/tool"])
+            json!([source])
         );
         return;
     }
@@ -1384,14 +1384,7 @@ fn check_current_selection(
         User => fixture.settings.borrow().get_global_settings(),
         Project => fixture.settings.borrow().get_project_settings(),
     };
-    assert_eq!(
-        settings.0["packages"],
-        json!([if callback_edit == "replace" {
-            "git:github.com/acme/tool@callback"
-        } else {
-            &source
-        }])
-    );
+    assert_eq!(settings.0["packages"], json!([&source]));
     assert!(fixture.dependencies.borrow().is_empty());
     assert_eq!(
         git(
