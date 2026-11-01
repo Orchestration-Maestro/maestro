@@ -873,3 +873,21 @@ fn edit_path_capture_reads_ambient_state_only_when_needed() {
     }
     std::env::set_current_dir(std::env::temp_dir()).unwrap();
 }
+
+#[test]
+fn edit_read_cancellation_starts_no_write() {
+    let signal = Cancellation::new();
+    let ops = Arc::new(Operations::new(b"hello").at("read", Mode::AbortThenSucceed, Some(&signal)));
+
+    let error = run(start(
+        &tool(&ops, "/work"),
+        input("read-abort-file", "hello", "world"),
+        Some(signal),
+    ))
+    .err()
+    .unwrap();
+
+    assert_eq!(error.message, "Operation aborted");
+    assert_eq!(ops.script.names(), ["access", "read"]);
+    assert_eq!(*ops.bytes.lock().unwrap(), b"hello");
+}

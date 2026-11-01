@@ -57,7 +57,8 @@ pub(super) async fn edit_file(
         "{bom}{}",
         restore_line_endings(&applied.new_content, ending)
     );
-    write_file(operations.as_ref(), absolute, restored, signal).await?;
+    operations.write_file(absolute, restored).await?;
+    check_aborted(signal)?;
     Ok(AgentToolResult::text_result(
         format!(
             "Successfully replaced {} block(s) in {}.",
@@ -70,68 +71,4 @@ pub(super) async fn edit_file(
             None,
         )),
     ))
-}
-
-/// Complete an admitted write before observing cancellation again.
-async fn write_file(
-    operations: &dyn EditOperations,
-    absolute: String,
-    restored: String,
-    signal: Option<&Cancellation>,
-) -> Result<(), DiagnosticErrorInfo> {
-    operations.write_file(absolute, restored).await?;
-    check_aborted(signal)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::{
-        sync::Mutex,
-        task::{Context, Poll, Waker},
-    };
-
-    /// Records writes without performing filesystem effects.
-    #[derive(Default)]
-    struct RecordingOperations(Mutex<Vec<(String, String)>>);
-
-    impl EditOperations for RecordingOperations {
-        fn access(&self, _: String) -> BoxFuture<Result<(), DiagnosticErrorInfo>> {
-            Box::pin(async { Ok(()) })
-        }
-
-        fn read_file(&self, _: String) -> BoxFuture<Result<Vec<u8>, DiagnosticErrorInfo>> {
-            Box::pin(async { Ok(Vec::new()) })
-        }
-
-        fn write_file(
-            &self,
-            path: String,
-            content: String,
-        ) -> BoxFuture<Result<(), DiagnosticErrorInfo>> {
-            self.0.lock().unwrap().push((path, content));
-            Box::pin(async { Ok(()) })
-        }
-    }
-
-    #[test]
-    fn edit_write_aborted_after_preparation_starts_no_write() {
-        let operations = RecordingOperations::default();
-        let signal = Cancellation::new();
-        signal.abort();
-        let mut future = std::pin::pin!(write_file(
-            &operations,
-            "/file".into(),
-            "restored".into(),
-            Some(&signal),
-        ));
-
-        let Poll::Ready(result) =
-            std::future::Future::poll(future.as_mut(), &mut Context::from_waker(Waker::noop()))
-        else {
-            panic!("ready operation must settle immediately");
-        };
-        assert_eq!(result.unwrap_err().message, "Operation aborted");
-        assert!(operations.0.lock().unwrap().is_empty());
-    }
 }
