@@ -1077,7 +1077,7 @@
     }
   },
   {
-    "test": "manual_input_appends_and_retains_entered_text",
+    "test": "manual_input_appends_and_starts_empty",
     "input": {
       "ops": [
         {
@@ -1214,7 +1214,7 @@
     }
   },
   {
-    "test": "manual_input_appends_and_retains_entered_text",
+    "test": "manual_input_appends_and_starts_empty",
     "input": {
       "ops": [
         {
@@ -1290,7 +1290,7 @@
             " \u001b[38;5;35m\u001b]8;;https://auth.example.test\u001b\\Ctrl+click to open\u001b]8;;\u001b\\\u001b[39m                                                             ",
             "",
             " \u001b[38;5;35mPaste redirect URL:\u001b[39m                                                            ",
-            "> \u001b[7m \u001b[27mcode                                                                         ",
+            "> \u001b[7m \u001b[27m                                                                             ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel\u001b[39m)                                                      ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -1301,7 +1301,7 @@
           "events": [],
           "outcomes": [],
           "aborted": false,
-          "value": " code  "
+          "value": ""
         },
         {
           "lines": [
@@ -1312,7 +1312,7 @@
             " \u001b[38;5;35m\u001b]8;;https://auth.example.test\u001b\\Ctrl+click to open\u001b]8;;\u001b\\\u001b[39m                                                             ",
             "",
             " \u001b[38;5;35mPaste redirect URL:\u001b[39m                                                            ",
-            "> \u001b[7m \u001b[27mcode                                                                         ",
+            "> \u001b[7m \u001b[27m                                                                             ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel\u001b[39m)                                                      ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -1321,15 +1321,9 @@
             "https://auth.example.test"
           ],
           "events": [],
-          "outcomes": [
-            [
-              2,
-              "ok",
-              " code  "
-            ]
-          ],
+          "outcomes": [],
           "aborted": false,
-          "value": " code  "
+          "value": ""
         },
         {
           "lines": [
@@ -1340,7 +1334,7 @@
             " \u001b[38;5;35m\u001b]8;;https://auth.example.test\u001b\\Ctrl+click to open\u001b]8;;\u001b\\\u001b[39m                                                             ",
             "",
             " \u001b[38;5;35mPaste redirect URL:\u001b[39m                                                            ",
-            "> \u001b[7m \u001b[27mcode                                                                         ",
+            "> \u001b[7m \u001b[27m                                                                             ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel\u001b[39m)                                                      ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -1349,21 +1343,15 @@
             "https://auth.example.test"
           ],
           "events": [],
-          "outcomes": [
-            [
-              2,
-              "ok",
-              " code  "
-            ]
-          ],
+          "outcomes": [],
           "aborted": false,
-          "value": " code  "
+          "value": ""
         }
       ]
     }
   },
   {
-    "test": "manual_input_appends_and_retains_entered_text",
+    "test": "manual_input_appends_and_starts_empty",
     "input": {
       "ops": [
         {
@@ -1439,7 +1427,7 @@
             " \u001b[38;5;35m\u001b]8;;https://auth.example.test\u001b\\Ctrl+click to open\u001b]8;;\u001b\\\u001b[39m                                                             ",
             "",
             " \u001b[38;5;35mPaste redirect URL:\u001b[39m                                                            ",
-            "> \u001b[7mé\u001b[27m界👩‍💻                                                                         ",
+            "> \u001b[7m \u001b[27m                                                                             ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel\u001b[39m)                                                      ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -1450,7 +1438,7 @@
           "events": [],
           "outcomes": [],
           "aborted": false,
-          "value": "é界👩‍💻"
+          "value": ""
         },
         {
           "lines": [
@@ -1461,7 +1449,7 @@
             " \u001b[38;5;35m\u001b]8;;https://auth.example.test\u001b\\Ctrl+click to open\u001b]8;;\u001b\\\u001b[39m                                                             ",
             "",
             " \u001b[38;5;35mPaste redirect URL:\u001b[39m                                                            ",
-            "> \u001b[7mé\u001b[27m界👩‍💻                                                                         ",
+            "> \u001b[7m \u001b[27m                                                                             ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel\u001b[39m)                                                      ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -1470,15 +1458,9 @@
             "https://auth.example.test"
           ],
           "events": [],
-          "outcomes": [
-            [
-              2,
-              "ok",
-              "é界👩‍💻"
-            ]
-          ],
+          "outcomes": [],
           "aborted": false,
-          "value": "é界👩‍💻"
+          "value": ""
         },
         {
           "lines": [
@@ -1489,7 +1471,7 @@
             " \u001b[38;5;35m\u001b]8;;https://auth.example.test\u001b\\Ctrl+click to open\u001b]8;;\u001b\\\u001b[39m                                                             ",
             "",
             " \u001b[38;5;35mPaste redirect URL:\u001b[39m                                                            ",
-            "> \u001b[7mé\u001b[27m界👩‍💻                                                                         ",
+            "> \u001b[7m \u001b[27m                                                                             ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel\u001b[39m)                                                      ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -1498,21 +1480,15 @@
             "https://auth.example.test"
           ],
           "events": [],
-          "outcomes": [
-            [
-              2,
-              "ok",
-              "é界👩‍💻"
-            ]
-          ],
+          "outcomes": [],
           "aborted": false,
-          "value": "é界👩‍💻"
+          "value": ""
         }
       ]
     }
   },
   {
-    "test": "manual_input_appends_and_retains_entered_text",
+    "test": "manual_input_appends_and_starts_empty",
     "input": {
       "ops": [
         {
@@ -1588,7 +1564,7 @@
             " \u001b[38;5;35m\u001b]8;;https://auth.example.test\u001b\\Ctrl+click to open\u001b]8;;\u001b\\\u001b[39m                                                             ",
             "",
             " \u001b[38;5;35mPaste redirect URL:\u001b[39m                                                            ",
-            "> \u001b[7m﻿\u001b[27mkey                                                                           ",
+            "> \u001b[7m \u001b[27m                                                                             ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel\u001b[39m)                                                      ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -1599,7 +1575,7 @@
           "events": [],
           "outcomes": [],
           "aborted": false,
-          "value": "﻿key"
+          "value": ""
         },
         {
           "lines": [
@@ -1610,7 +1586,7 @@
             " \u001b[38;5;35m\u001b]8;;https://auth.example.test\u001b\\Ctrl+click to open\u001b]8;;\u001b\\\u001b[39m                                                             ",
             "",
             " \u001b[38;5;35mPaste redirect URL:\u001b[39m                                                            ",
-            "> \u001b[7m﻿\u001b[27mkey                                                                           ",
+            "> \u001b[7m \u001b[27m                                                                             ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel\u001b[39m)                                                      ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -1619,15 +1595,9 @@
             "https://auth.example.test"
           ],
           "events": [],
-          "outcomes": [
-            [
-              2,
-              "ok",
-              "﻿key"
-            ]
-          ],
+          "outcomes": [],
           "aborted": false,
-          "value": "﻿key"
+          "value": ""
         },
         {
           "lines": [
@@ -1638,7 +1608,7 @@
             " \u001b[38;5;35m\u001b]8;;https://auth.example.test\u001b\\Ctrl+click to open\u001b]8;;\u001b\\\u001b[39m                                                             ",
             "",
             " \u001b[38;5;35mPaste redirect URL:\u001b[39m                                                            ",
-            "> \u001b[7m﻿\u001b[27mkey                                                                           ",
+            "> \u001b[7m \u001b[27m                                                                             ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel\u001b[39m)                                                      ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -1647,21 +1617,15 @@
             "https://auth.example.test"
           ],
           "events": [],
-          "outcomes": [
-            [
-              2,
-              "ok",
-              "﻿key"
-            ]
-          ],
+          "outcomes": [],
           "aborted": false,
-          "value": "﻿key"
+          "value": ""
         }
       ]
     }
   },
   {
-    "test": "prompt_input_resets_and_submits_exact_text",
+    "test": "prompt_input_resets_freezes_and_submits_exact_text",
     "input": {
       "ops": [
         {
@@ -1779,7 +1743,7 @@
             " \u001b[38;5;35m\u001b]8;;https://auth.example.test\u001b\\Ctrl+click to open\u001b]8;;\u001b\\\u001b[39m                                                             ",
             "",
             " \u001b[38;5;33mEnter code:\u001b[39m                                                                    ",
-            "> \u001b[7m \u001b[27m                                                                             ",
+            ">                                                                               ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -1807,7 +1771,7 @@
             " \u001b[38;5;35m\u001b]8;;https://auth.example.test\u001b\\Ctrl+click to open\u001b]8;;\u001b\\\u001b[39m                                                             ",
             "",
             " \u001b[38;5;33mEnter code:\u001b[39m                                                                    ",
-            "> \u001b[7m \u001b[27m                                                                             ",
+            ">                                                                               ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -1830,7 +1794,7 @@
     }
   },
   {
-    "test": "prompt_input_resets_and_submits_exact_text",
+    "test": "prompt_input_resets_freezes_and_submits_exact_text",
     "input": {
       "ops": [
         {
@@ -1948,7 +1912,7 @@
             " \u001b[38;5;35m\u001b]8;;https://auth.example.test\u001b\\Ctrl+click to open\u001b]8;;\u001b\\\u001b[39m                                                             ",
             "",
             " \u001b[38;5;33mEnter code:\u001b[39m                                                                    ",
-            "> \u001b[7m \u001b[27mtext                                                                         ",
+            ">  text                                                                         ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -1976,7 +1940,7 @@
             " \u001b[38;5;35m\u001b]8;;https://auth.example.test\u001b\\Ctrl+click to open\u001b]8;;\u001b\\\u001b[39m                                                             ",
             "",
             " \u001b[38;5;33mEnter code:\u001b[39m                                                                    ",
-            "> \u001b[7m \u001b[27mtext                                                                         ",
+            ">  text                                                                         ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -1999,7 +1963,7 @@
     }
   },
   {
-    "test": "prompt_input_resets_and_submits_exact_text",
+    "test": "prompt_input_resets_freezes_and_submits_exact_text",
     "input": {
       "ops": [
         {
@@ -2117,7 +2081,7 @@
             " \u001b[38;5;35m\u001b]8;;https://auth.example.test\u001b\\Ctrl+click to open\u001b]8;;\u001b\\\u001b[39m                                                             ",
             "",
             " \u001b[38;5;33mEnter code:\u001b[39m                                                                    ",
-            "> \u001b[7m界\u001b[27mé👩‍💻                                                                         ",
+            "> 界é👩‍💻                                                                         ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -2145,7 +2109,7 @@
             " \u001b[38;5;35m\u001b]8;;https://auth.example.test\u001b\\Ctrl+click to open\u001b]8;;\u001b\\\u001b[39m                                                             ",
             "",
             " \u001b[38;5;33mEnter code:\u001b[39m                                                                    ",
-            "> \u001b[7m界\u001b[27mé👩‍💻                                                                         ",
+            "> 界é👩‍💻                                                                         ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -2168,7 +2132,7 @@
     }
   },
   {
-    "test": "prompt_input_resets_and_submits_exact_text",
+    "test": "prompt_input_resets_freezes_and_submits_exact_text",
     "input": {
       "ops": [
         {
@@ -2286,7 +2250,7 @@
             " \u001b[38;5;35m\u001b]8;;https://auth.example.test\u001b\\Ctrl+click to open\u001b]8;;\u001b\\\u001b[39m                                                             ",
             "",
             " \u001b[38;5;33mEnter code:\u001b[39m                                                                    ",
-            "> \u001b[7m﻿\u001b[27mcode                                                                          ",
+            "> ﻿code                                                                          ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -2314,7 +2278,7 @@
             " \u001b[38;5;35m\u001b]8;;https://auth.example.test\u001b\\Ctrl+click to open\u001b]8;;\u001b\\\u001b[39m                                                             ",
             "",
             " \u001b[38;5;33mEnter code:\u001b[39m                                                                    ",
-            "> \u001b[7m﻿\u001b[27mcode                                                                          ",
+            "> ﻿code                                                                          ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -2337,7 +2301,7 @@
     }
   },
   {
-    "test": "prompt_input_resets_and_submits_exact_text",
+    "test": "prompt_input_resets_freezes_and_submits_exact_text",
     "input": {
       "ops": [
         {
@@ -2456,7 +2420,7 @@
             " \u001b[38;5;35m\u001b]8;;https://auth.example.test\u001b\\Ctrl+click to open\u001b]8;;\u001b\\\u001b[39m                                                             ",
             "",
             " \u001b[38;5;33mEnter code:\u001b[39m                                                                    ",
-            "> \u001b[7m \u001b[27m                                                                             ",
+            ">                                                                               ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -2484,7 +2448,7 @@
             " \u001b[38;5;35m\u001b]8;;https://auth.example.test\u001b\\Ctrl+click to open\u001b]8;;\u001b\\\u001b[39m                                                             ",
             "",
             " \u001b[38;5;33mEnter code:\u001b[39m                                                                    ",
-            "> \u001b[7m \u001b[27m                                                                             ",
+            ">                                                                               ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -2507,7 +2471,7 @@
     }
   },
   {
-    "test": "prompt_input_resets_and_submits_exact_text",
+    "test": "prompt_input_resets_freezes_and_submits_exact_text",
     "input": {
       "ops": [
         {
@@ -2626,7 +2590,7 @@
             " \u001b[38;5;35m\u001b]8;;https://auth.example.test\u001b\\Ctrl+click to open\u001b]8;;\u001b\\\u001b[39m                                                             ",
             "",
             " \u001b[38;5;33mEnter code:\u001b[39m                                                                    ",
-            "> \u001b[7m \u001b[27mtext                                                                         ",
+            ">  text                                                                         ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -2654,7 +2618,7 @@
             " \u001b[38;5;35m\u001b]8;;https://auth.example.test\u001b\\Ctrl+click to open\u001b]8;;\u001b\\\u001b[39m                                                             ",
             "",
             " \u001b[38;5;33mEnter code:\u001b[39m                                                                    ",
-            "> \u001b[7m \u001b[27mtext                                                                         ",
+            ">  text                                                                         ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -2677,7 +2641,7 @@
     }
   },
   {
-    "test": "prompt_input_resets_and_submits_exact_text",
+    "test": "prompt_input_resets_freezes_and_submits_exact_text",
     "input": {
       "ops": [
         {
@@ -2796,7 +2760,7 @@
             " \u001b[38;5;35m\u001b]8;;https://auth.example.test\u001b\\Ctrl+click to open\u001b]8;;\u001b\\\u001b[39m                                                             ",
             "",
             " \u001b[38;5;33mEnter code:\u001b[39m                                                                    ",
-            "> \u001b[7m界\u001b[27mé👩‍💻                                                                         ",
+            "> 界é👩‍💻                                                                         ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -2824,7 +2788,7 @@
             " \u001b[38;5;35m\u001b]8;;https://auth.example.test\u001b\\Ctrl+click to open\u001b]8;;\u001b\\\u001b[39m                                                             ",
             "",
             " \u001b[38;5;33mEnter code:\u001b[39m                                                                    ",
-            "> \u001b[7m界\u001b[27mé👩‍💻                                                                         ",
+            "> 界é👩‍💻                                                                         ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -2847,7 +2811,7 @@
     }
   },
   {
-    "test": "prompt_input_resets_and_submits_exact_text",
+    "test": "prompt_input_resets_freezes_and_submits_exact_text",
     "input": {
       "ops": [
         {
@@ -2966,7 +2930,7 @@
             " \u001b[38;5;35m\u001b]8;;https://auth.example.test\u001b\\Ctrl+click to open\u001b]8;;\u001b\\\u001b[39m                                                             ",
             "",
             " \u001b[38;5;33mEnter code:\u001b[39m                                                                    ",
-            "> \u001b[7m﻿\u001b[27mcode                                                                          ",
+            "> ﻿code                                                                          ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -2994,7 +2958,7 @@
             " \u001b[38;5;35m\u001b]8;;https://auth.example.test\u001b\\Ctrl+click to open\u001b]8;;\u001b\\\u001b[39m                                                             ",
             "",
             " \u001b[38;5;33mEnter code:\u001b[39m                                                                    ",
-            "> \u001b[7m﻿\u001b[27mcode                                                                          ",
+            "> ﻿code                                                                          ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -3017,7 +2981,7 @@
     }
   },
   {
-    "test": "prompt_input_resets_and_submits_exact_text",
+    "test": "prompt_input_resets_freezes_and_submits_exact_text",
     "input": {
       "ops": [
         {
@@ -3139,7 +3103,7 @@
             "",
             " \u001b[38;5;33mEnter code:\u001b[39m                                                                    ",
             " \u001b[38;5;35me.g.,  \u001b[39m                                                                        ",
-            "> \u001b[7m \u001b[27m                                                                             ",
+            ">                                                                               ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -3168,7 +3132,7 @@
             "",
             " \u001b[38;5;33mEnter code:\u001b[39m                                                                    ",
             " \u001b[38;5;35me.g.,  \u001b[39m                                                                        ",
-            "> \u001b[7m \u001b[27m                                                                             ",
+            ">                                                                               ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -3191,7 +3155,7 @@
     }
   },
   {
-    "test": "prompt_input_resets_and_submits_exact_text",
+    "test": "prompt_input_resets_freezes_and_submits_exact_text",
     "input": {
       "ops": [
         {
@@ -3313,7 +3277,7 @@
             "",
             " \u001b[38;5;33mEnter code:\u001b[39m                                                                    ",
             " \u001b[38;5;35me.g.,  \u001b[39m                                                                        ",
-            "> \u001b[7m \u001b[27mtext                                                                         ",
+            ">  text                                                                         ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -3342,7 +3306,7 @@
             "",
             " \u001b[38;5;33mEnter code:\u001b[39m                                                                    ",
             " \u001b[38;5;35me.g.,  \u001b[39m                                                                        ",
-            "> \u001b[7m \u001b[27mtext                                                                         ",
+            ">  text                                                                         ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -3365,7 +3329,7 @@
     }
   },
   {
-    "test": "prompt_input_resets_and_submits_exact_text",
+    "test": "prompt_input_resets_freezes_and_submits_exact_text",
     "input": {
       "ops": [
         {
@@ -3487,7 +3451,7 @@
             "",
             " \u001b[38;5;33mEnter code:\u001b[39m                                                                    ",
             " \u001b[38;5;35me.g.,  \u001b[39m                                                                        ",
-            "> \u001b[7m界\u001b[27mé👩‍💻                                                                         ",
+            "> 界é👩‍💻                                                                         ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -3516,7 +3480,7 @@
             "",
             " \u001b[38;5;33mEnter code:\u001b[39m                                                                    ",
             " \u001b[38;5;35me.g.,  \u001b[39m                                                                        ",
-            "> \u001b[7m界\u001b[27mé👩‍💻                                                                         ",
+            "> 界é👩‍💻                                                                         ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -3539,7 +3503,7 @@
     }
   },
   {
-    "test": "prompt_input_resets_and_submits_exact_text",
+    "test": "prompt_input_resets_freezes_and_submits_exact_text",
     "input": {
       "ops": [
         {
@@ -3661,7 +3625,7 @@
             "",
             " \u001b[38;5;33mEnter code:\u001b[39m                                                                    ",
             " \u001b[38;5;35me.g.,  \u001b[39m                                                                        ",
-            "> \u001b[7m﻿\u001b[27mcode                                                                          ",
+            "> ﻿code                                                                          ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -3690,7 +3654,7 @@
             "",
             " \u001b[38;5;33mEnter code:\u001b[39m                                                                    ",
             " \u001b[38;5;35me.g.,  \u001b[39m                                                                        ",
-            "> \u001b[7m﻿\u001b[27mcode                                                                          ",
+            "> ﻿code                                                                          ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -3713,7 +3677,7 @@
     }
   },
   {
-    "test": "prompt_input_resets_and_submits_exact_text",
+    "test": "prompt_input_resets_freezes_and_submits_exact_text",
     "input": {
       "ops": [
         {
@@ -3835,7 +3799,7 @@
             "",
             " \u001b[38;5;33mEnter code:\u001b[39m                                                                    ",
             " \u001b[38;5;35me.g., example\u001b[39m                                                                  ",
-            "> \u001b[7m \u001b[27m                                                                             ",
+            ">                                                                               ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -3864,7 +3828,7 @@
             "",
             " \u001b[38;5;33mEnter code:\u001b[39m                                                                    ",
             " \u001b[38;5;35me.g., example\u001b[39m                                                                  ",
-            "> \u001b[7m \u001b[27m                                                                             ",
+            ">                                                                               ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -3887,7 +3851,7 @@
     }
   },
   {
-    "test": "prompt_input_resets_and_submits_exact_text",
+    "test": "prompt_input_resets_freezes_and_submits_exact_text",
     "input": {
       "ops": [
         {
@@ -4009,7 +3973,7 @@
             "",
             " \u001b[38;5;33mEnter code:\u001b[39m                                                                    ",
             " \u001b[38;5;35me.g., example\u001b[39m                                                                  ",
-            "> \u001b[7m \u001b[27mtext                                                                         ",
+            ">  text                                                                         ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -4038,7 +4002,7 @@
             "",
             " \u001b[38;5;33mEnter code:\u001b[39m                                                                    ",
             " \u001b[38;5;35me.g., example\u001b[39m                                                                  ",
-            "> \u001b[7m \u001b[27mtext                                                                         ",
+            ">  text                                                                         ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -4061,7 +4025,7 @@
     }
   },
   {
-    "test": "prompt_input_resets_and_submits_exact_text",
+    "test": "prompt_input_resets_freezes_and_submits_exact_text",
     "input": {
       "ops": [
         {
@@ -4183,7 +4147,7 @@
             "",
             " \u001b[38;5;33mEnter code:\u001b[39m                                                                    ",
             " \u001b[38;5;35me.g., example\u001b[39m                                                                  ",
-            "> \u001b[7m界\u001b[27mé👩‍💻                                                                         ",
+            "> 界é👩‍💻                                                                         ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -4212,7 +4176,7 @@
             "",
             " \u001b[38;5;33mEnter code:\u001b[39m                                                                    ",
             " \u001b[38;5;35me.g., example\u001b[39m                                                                  ",
-            "> \u001b[7m界\u001b[27mé👩‍💻                                                                         ",
+            "> 界é👩‍💻                                                                         ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -4235,7 +4199,7 @@
     }
   },
   {
-    "test": "prompt_input_resets_and_submits_exact_text",
+    "test": "prompt_input_resets_freezes_and_submits_exact_text",
     "input": {
       "ops": [
         {
@@ -4357,7 +4321,7 @@
             "",
             " \u001b[38;5;33mEnter code:\u001b[39m                                                                    ",
             " \u001b[38;5;35me.g., example\u001b[39m                                                                  ",
-            "> \u001b[7m﻿\u001b[27mcode                                                                          ",
+            "> ﻿code                                                                          ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -4386,7 +4350,7 @@
             "",
             " \u001b[38;5;33mEnter code:\u001b[39m                                                                    ",
             " \u001b[38;5;35me.g., example\u001b[39m                                                                  ",
-            "> \u001b[7m﻿\u001b[27mcode                                                                          ",
+            "> ﻿code                                                                          ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -4409,7 +4373,7 @@
     }
   },
   {
-    "test": "manual_input_appends_and_retains_entered_text",
+    "test": "manual_input_appends_and_starts_empty",
     "input": {
       "ops": [
         {
@@ -4474,7 +4438,7 @@
             " \u001b[38;5;32m\u001b[1mLogin to Provider Display\u001b[22m\u001b[39m                                                      ",
             "",
             "                                                                                ",
-            "> submitted\u001b[7m \u001b[27m                                                                    ",
+            "> submitted                                                                     ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel\u001b[39m)                                                      ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -4495,7 +4459,7 @@
     }
   },
   {
-    "test": "prompt_input_resets_and_submits_exact_text",
+    "test": "prompt_input_resets_freezes_and_submits_exact_text",
     "input": {
       "ops": [
         {
@@ -4576,7 +4540,7 @@
             " \u001b[38;5;32m\u001b[1mLogin to Provider Display\u001b[22m\u001b[39m                                                      ",
             "",
             "                                                                                ",
-            "> submitted\u001b[7m \u001b[27m                                                                    ",
+            "> submitted                                                                     ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -4597,7 +4561,7 @@
     }
   },
   {
-    "test": "manual_input_appends_and_retains_entered_text",
+    "test": "manual_input_appends_and_starts_empty",
     "input": {
       "ops": [
         {
@@ -4662,7 +4626,7 @@
             " \u001b[38;5;32m\u001b[1mLogin to Provider Display\u001b[22m\u001b[39m                                                      ",
             "",
             " \u001b[38;5;35m \u001b[39m                                                                              ",
-            "> submitted\u001b[7m \u001b[27m                                                                    ",
+            "> submitted                                                                     ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel\u001b[39m)                                                      ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -4683,7 +4647,7 @@
     }
   },
   {
-    "test": "prompt_input_resets_and_submits_exact_text",
+    "test": "prompt_input_resets_freezes_and_submits_exact_text",
     "input": {
       "ops": [
         {
@@ -4764,7 +4728,7 @@
             " \u001b[38;5;32m\u001b[1mLogin to Provider Display\u001b[22m\u001b[39m                                                      ",
             "",
             " \u001b[38;5;33m \u001b[39m                                                                              ",
-            "> submitted\u001b[7m \u001b[27m                                                                    ",
+            "> submitted                                                                     ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -4785,7 +4749,7 @@
     }
   },
   {
-    "test": "manual_input_appends_and_retains_entered_text",
+    "test": "manual_input_appends_and_starts_empty",
     "input": {
       "ops": [
         {
@@ -4850,7 +4814,7 @@
             " \u001b[38;5;32m\u001b[1mLogin to Provider Display\u001b[22m\u001b[39m                                                      ",
             "",
             " \u001b[38;5;35m﻿\u001b[39m                                                                               ",
-            "> submitted\u001b[7m \u001b[27m                                                                    ",
+            "> submitted                                                                     ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel\u001b[39m)                                                      ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -4871,7 +4835,7 @@
     }
   },
   {
-    "test": "prompt_input_resets_and_submits_exact_text",
+    "test": "prompt_input_resets_freezes_and_submits_exact_text",
     "input": {
       "ops": [
         {
@@ -4952,7 +4916,7 @@
             " \u001b[38;5;32m\u001b[1mLogin to Provider Display\u001b[22m\u001b[39m                                                      ",
             "",
             " \u001b[38;5;33m﻿\u001b[39m                                                                               ",
-            "> submitted\u001b[7m \u001b[27m                                                                    ",
+            "> submitted                                                                     ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -4973,7 +4937,7 @@
     }
   },
   {
-    "test": "manual_input_appends_and_retains_entered_text",
+    "test": "manual_input_appends_and_starts_empty",
     "input": {
       "ops": [
         {
@@ -5038,7 +5002,7 @@
             " \u001b[38;5;32m\u001b[1mLogin to Provider Display\u001b[22m\u001b[39m                                                      ",
             "",
             " \u001b[38;5;35m\u001b[39m                                                                               ",
-            "> submitted\u001b[7m \u001b[27m                                                                    ",
+            "> submitted                                                                     ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel\u001b[39m)                                                      ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -5059,7 +5023,7 @@
     }
   },
   {
-    "test": "prompt_input_resets_and_submits_exact_text",
+    "test": "prompt_input_resets_freezes_and_submits_exact_text",
     "input": {
       "ops": [
         {
@@ -5140,7 +5104,7 @@
             " \u001b[38;5;32m\u001b[1mLogin to Provider Display\u001b[22m\u001b[39m                                                      ",
             "",
             " \u001b[38;5;33m\u001b[39m                                                                               ",
-            "> submitted\u001b[7m \u001b[27m                                                                    ",
+            "> submitted                                                                     ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -5161,7 +5125,7 @@
     }
   },
   {
-    "test": "sequential_prompts_keep_history_and_shared_input",
+    "test": "sequential_prompts_freeze_submitted_rows_and_share_the_input",
     "input": {
       "ops": [
         {
@@ -5239,7 +5203,7 @@
             "",
             " \u001b[38;5;33mFirst\u001b[39m                                                                          ",
             " \u001b[38;5;35me.g., one\u001b[39m                                                                      ",
-            "> first\u001b[7m \u001b[27m                                                                        ",
+            "> first                                                                         ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -5263,11 +5227,11 @@
             "",
             " \u001b[38;5;33mFirst\u001b[39m                                                                          ",
             " \u001b[38;5;35me.g., one\u001b[39m                                                                      ",
-            "> first\u001b[7m \u001b[27m                                                                        ",
+            "> first                                                                         ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "",
             " \u001b[38;5;35mSecond\u001b[39m                                                                         ",
-            "> first\u001b[7m \u001b[27m                                                                        ",
+            "> \u001b[7m \u001b[27m                                                                             ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel\u001b[39m)                                                      ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -5277,76 +5241,6 @@
           "outcomes": [
             [
               0,
-              "ok",
-              "first"
-            ]
-          ],
-          "aborted": false,
-          "value": "first"
-        },
-        {
-          "lines": [
-            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
-            " \u001b[38;5;32m\u001b[1mLogin to Provider Display\u001b[22m\u001b[39m                                                      ",
-            "",
-            " \u001b[38;5;33mFirst\u001b[39m                                                                          ",
-            " \u001b[38;5;35me.g., one\u001b[39m                                                                      ",
-            "> first\u001b[7m \u001b[27m                                                                        ",
-            " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
-            "",
-            " \u001b[38;5;35mSecond\u001b[39m                                                                         ",
-            "> first\u001b[7m \u001b[27m                                                                        ",
-            " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel\u001b[39m)                                                      ",
-            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
-          ],
-          "renders": 2,
-          "launch_urls": [],
-          "events": [],
-          "outcomes": [
-            [
-              0,
-              "ok",
-              "first"
-            ],
-            [
-              3,
-              "ok",
-              "first"
-            ]
-          ],
-          "aborted": false,
-          "value": "first"
-        },
-        {
-          "lines": [
-            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
-            " \u001b[38;5;32m\u001b[1mLogin to Provider Display\u001b[22m\u001b[39m                                                      ",
-            "",
-            " \u001b[38;5;33mFirst\u001b[39m                                                                          ",
-            " \u001b[38;5;35me.g., one\u001b[39m                                                                      ",
-            "> \u001b[7m \u001b[27m                                                                             ",
-            " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
-            "",
-            " \u001b[38;5;35mSecond\u001b[39m                                                                         ",
-            "> \u001b[7m \u001b[27m                                                                             ",
-            " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel\u001b[39m)                                                      ",
-            "",
-            " \u001b[38;5;33mThird\u001b[39m                                                                          ",
-            "> \u001b[7m \u001b[27m                                                                             ",
-            " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
-            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
-          ],
-          "renders": 3,
-          "launch_urls": [],
-          "events": [],
-          "outcomes": [
-            [
-              0,
-              "ok",
-              "first"
-            ],
-            [
-              3,
               "ok",
               "first"
             ]
@@ -5361,7 +5255,72 @@
             "",
             " \u001b[38;5;33mFirst\u001b[39m                                                                          ",
             " \u001b[38;5;35me.g., one\u001b[39m                                                                      ",
-            "> third\u001b[7m \u001b[27m                                                                        ",
+            "> first                                                                         ",
+            " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
+            "",
+            " \u001b[38;5;35mSecond\u001b[39m                                                                         ",
+            "> \u001b[7m \u001b[27m                                                                             ",
+            " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel\u001b[39m)                                                      ",
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+          ],
+          "renders": 2,
+          "launch_urls": [],
+          "events": [],
+          "outcomes": [
+            [
+              0,
+              "ok",
+              "first"
+            ]
+          ],
+          "aborted": false,
+          "value": ""
+        },
+        {
+          "lines": [
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+            " \u001b[38;5;32m\u001b[1mLogin to Provider Display\u001b[22m\u001b[39m                                                      ",
+            "",
+            " \u001b[38;5;33mFirst\u001b[39m                                                                          ",
+            " \u001b[38;5;35me.g., one\u001b[39m                                                                      ",
+            "> first                                                                         ",
+            " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
+            "",
+            " \u001b[38;5;35mSecond\u001b[39m                                                                         ",
+            "> \u001b[7m \u001b[27m                                                                             ",
+            " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel\u001b[39m)                                                      ",
+            "",
+            " \u001b[38;5;33mThird\u001b[39m                                                                          ",
+            "> \u001b[7m \u001b[27m                                                                             ",
+            " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+          ],
+          "renders": 3,
+          "launch_urls": [],
+          "events": [],
+          "outcomes": [
+            [
+              0,
+              "ok",
+              "first"
+            ],
+            [
+              3,
+              "error",
+              "Login cancelled"
+            ]
+          ],
+          "aborted": false,
+          "value": ""
+        },
+        {
+          "lines": [
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+            " \u001b[38;5;32m\u001b[1mLogin to Provider Display\u001b[22m\u001b[39m                                                      ",
+            "",
+            " \u001b[38;5;33mFirst\u001b[39m                                                                          ",
+            " \u001b[38;5;35me.g., one\u001b[39m                                                                      ",
+            "> first                                                                         ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "",
             " \u001b[38;5;35mSecond\u001b[39m                                                                         ",
@@ -5384,8 +5343,8 @@
             ],
             [
               3,
-              "ok",
-              "first"
+              "error",
+              "Login cancelled"
             ]
           ],
           "aborted": false,
@@ -5398,15 +5357,15 @@
             "",
             " \u001b[38;5;33mFirst\u001b[39m                                                                          ",
             " \u001b[38;5;35me.g., one\u001b[39m                                                                      ",
-            "> third\u001b[7m \u001b[27m                                                                        ",
+            "> first                                                                         ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "",
             " \u001b[38;5;35mSecond\u001b[39m                                                                         ",
-            "> third\u001b[7m \u001b[27m                                                                        ",
+            "> third                                                                         ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel\u001b[39m)                                                      ",
             "",
             " \u001b[38;5;33mThird\u001b[39m                                                                          ",
-            "> third\u001b[7m \u001b[27m                                                                        ",
+            "> third                                                                         ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -5421,8 +5380,8 @@
             ],
             [
               3,
-              "ok",
-              "first"
+              "error",
+              "Login cancelled"
             ],
             [
               5,
@@ -7852,7 +7811,7 @@
             " \u001b[38;5;32m\u001b[1mLogin to Provider Display\u001b[22m\u001b[39m                                                      ",
             "",
             " \u001b[38;5;33mInput\u001b[39m                                                                          ",
-            "> q\u001b[7m \u001b[27m                                                                            ",
+            "> q                                                                             ",
             " (\u001b[38;5;35m\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                                  ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -8082,7 +8041,7 @@
             " \u001b[38;5;32m\u001b[1mLogin to Provider Display\u001b[22m\u001b[39m                                                      ",
             "",
             " \u001b[38;5;33mEnter:\u001b[39m                                                                         ",
-            "> direct\u001b[7m \u001b[27m                                                                       ",
+            "> direct                                                                        ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -8105,7 +8064,7 @@
             " \u001b[38;5;32m\u001b[1mLogin to Provider Display\u001b[22m\u001b[39m                                                      ",
             "",
             " \u001b[38;5;33mEnter:\u001b[39m                                                                         ",
-            "> direct\u001b[7m \u001b[27m                                                                       ",
+            "> direct                                                                        ",
             " (\u001b[38;5;35mescape/ctrl+c\u001b[39m\u001b[38;5;34m to cancel,\u001b[39m \u001b[38;5;35menter\u001b[39m\u001b[38;5;34m to submit\u001b[39m)                                     ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],

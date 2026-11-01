@@ -456,34 +456,38 @@ pub struct Identifier {
 impl Identifier {
     /// Parses an identifier.
     ///
-    /// The key is the text after the last `+`, except that `+` alone and an identifier
-    /// ending in `++` name the plus key. Surrounding whitespace is ignored around each word.
-    /// The words before the key are modifier names in any letter case: `shift`, `ctrl`
-    /// (`control`), `alt` (`option`, `meta`), `super` (`cmd`, `command`) and `hyper`. An
-    /// identifier with a word that is not a modifier name, with an empty word (as in `ctrl+`
-    /// or `ctrl++v`) or with no key names nothing, so a misspelled modifier never binds the
-    /// plain key. A key of one character is that character as typed, except that an ASCII
-    /// capital names its lowercase letter and sets `capital`; any other key is a named key
-    /// or symbol word in any letter case.
+    /// Modifier words may stand anywhere, joined by `+`; exactly one other word names
+    /// the key. The exceptions are `+` alone and an identifier ending in `++`, which name
+    /// the plus key. Surrounding whitespace is ignored around each word. Modifier names
+    /// accept any letter case: `shift`, `ctrl` (`control`), `alt` (`option`, `meta`), `super`
+    /// (`cmd`, `command`) and `hyper`. An unknown word, an empty word (as in `ctrl+` or
+    /// `ctrl++v`), a second key or no key makes the identifier name nothing, so a misspelled
+    /// modifier never binds the plain key. A key of one character is that character as
+    /// typed, except that an ASCII capital names its lowercase letter and sets `capital`;
+    /// any other key is a named key or symbol word in any letter case.
     #[must_use]
     pub fn parse(id: &str) -> Option<Self> {
         let id = id.trim();
-        let (words, key) = if id == "+" {
-            (None, "+")
+        let (words, mut key) = if id == "+" {
+            (None, Some("+"))
         } else if let Some(words) = id.strip_suffix("++") {
-            (Some(words), "+")
+            (Some(words), Some("+"))
         } else {
-            match id.rsplit_once('+') {
-                Some((words, key)) => (Some(words), key),
-                None => (None, id),
-            }
+            (Some(id), None)
         };
-        let modifier = words.map_or(Some(0), |words| {
-            words.split('+').try_fold(0, |bits, word| {
-                Some(bits | modifier_bit(&word.trim().to_lowercase())?)
-            })
-        })?;
-        let key = key.trim();
+        let mut modifier = 0;
+        for word in words.into_iter().flat_map(|words| words.split('+')) {
+            let word = word.trim();
+            if word.is_empty() {
+                return None;
+            }
+            if let Some(bit) = modifier_bit(&word.to_lowercase()) {
+                modifier |= bit;
+            } else if key.replace(word).is_some() {
+                return None;
+            }
+        }
+        let key = key?;
         let mut chars = key.chars();
         let (target, capital) = if let (Some(c), None) = (chars.next(), chars.next()) {
             (Target::Char(c.to_ascii_lowercase()), c.is_ascii_uppercase())

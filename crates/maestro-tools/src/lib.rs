@@ -78,7 +78,7 @@ pub use edit::{
 };
 #[cfg(not(target_arch = "wasm32"))]
 pub use file_mutation_queue::with_file_mutation_queue;
-pub use keybinding_hints::{key_hint, key_text, raw_key_hint};
+pub use keybinding_hints::{format_key_text, key_display_text, key_hint, key_text, raw_key_hint};
 #[cfg(not(target_arch = "wasm32"))]
 pub use output::render_parts::expand_hint;
 pub use output::truncate::{

@@ -274,19 +274,16 @@ fn list_window(selected: usize, total: usize, capacity: usize) -> std::ops::Rang
     start..start.saturating_add(capacity).min(total)
 }
 
-/// Replaces the first usable home variable's raw prefix for display.
-fn shorten_path_with_home(path: &str, environment: &dyn Fn(&str) -> Option<String>) -> String {
+/// Shows `path` below the first usable home variable as `~` for display, through `shorten`.
+fn shorten_path_with_home(
+    path: &str,
+    environment: &dyn Fn(&str) -> Option<String>,
+    shorten: fn(&str, &str) -> String,
+) -> String {
     let home = environment("HOME")
         .filter(|home| !home.is_empty())
         .or_else(|| environment("USERPROFILE").filter(|home| !home.is_empty()));
-    shorten_home_path(path, home.as_deref())
-}
-
-/// Replaces a supplied raw home prefix for display, unless that home abbreviates nothing.
-pub(crate) fn shorten_home_path(path: &str, home: Option<&str>) -> String {
-    home.filter(|home| !home.is_empty() && *home != "/")
-        .and_then(|home| path.strip_prefix(home))
-        .map_or_else(|| path.to_owned(), |rest| format!("~{rest}"))
+    home.map_or_else(|| path.to_owned(), |home| shorten(path, &home))
 }
 
 pub mod bash_execution;

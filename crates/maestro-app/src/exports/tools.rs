@@ -33,7 +33,10 @@ pub use maestro_tools::{
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_tools::process::exec::{ExecOptions, ExecResult, exec_command};
 
-pub use maestro_tools::{RenderDiffOptions, key_hint, key_text, raw_key_hint, render_diff};
+pub use maestro_tools::{
+    RenderDiffOptions, format_key_text, key_display_text, key_hint, key_text, raw_key_hint,
+    render_diff,
+};
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_tools::expand_hint;

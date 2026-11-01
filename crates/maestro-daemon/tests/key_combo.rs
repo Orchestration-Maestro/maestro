@@ -195,7 +195,25 @@ type Spelling = (&'static str, &'static str, (KeyCode, u8));
 
 #[test]
 fn one_key_grammar_for_both_frontends() {
-    let spellings: [Spelling; 5] = [
+    let spellings: [Spelling; 8] = [
+        (
+            "k+ctrl",
+            "\x0b",
+            (KeyCode::Char('k'), KeyModifiers::CONTROL),
+        ),
+        (
+            "tab+shift",
+            "\x1b[Z",
+            (KeyCode::BackTab, KeyModifiers::NONE),
+        ),
+        (
+            "ctrl+k+shift",
+            "\x1b[107;6u",
+            (
+                KeyCode::Char('k'),
+                KeyModifiers::CONTROL | KeyModifiers::SHIFT,
+            ),
+        ),
         (
             "ctrl++",
             "\x1b[43;5u",
@@ -226,7 +244,9 @@ fn one_key_grammar_for_both_frontends() {
         );
     }
 
-    for rejected in ["ctrl+", "ctrl+a+b"] {
+    for rejected in [
+        "ctlr+k", "a+k", "ctrl+a+b", "ctrl+", "ctrl++v", "+ctrl", "ctrl+k+", "shift", "ctrl+alt",
+    ] {
         assert_eq!(parse_key_combo(rejected), None, "workspace {rejected}");
         for report in ["\x01", "\x02", "\x1b[97;5u", "\x1b[98;5u", "a", "b"] {
             assert!(
