@@ -3,12 +3,15 @@
 #![cfg(unix)]
 
 use maestro_test_process::child::{
-    announce, connect, harness, is_null, leave, port, read_input, receive, variable,
-    without_harness, write_stderr, write_stdout,
+    Stream, UnknownStream, announce, close_streams, connect, harness, is_null, leave, port,
+    read_input, receive, variable, without_harness, write_stderr, write_stdout,
 };
 use maestro_test_process::{HARNESS_START, TestProcess};
+use std::env::VarError;
+use std::error::Error;
 use std::io::{Read, Write};
 use std::net::TcpListener;
+use std::num::ParseIntError;
 use std::process::Stdio;
 
 /// A child that uses every helper: it reads its input, reports over the socket the parent
@@ -73,8 +76,108 @@ fn harness_output_wraps_and_unwraps_every_start() {
 }
 
 #[test]
-fn port_rejects_a_missing_or_malformed_variable() {
-    assert!(port("MTP_SURELY_UNSET_PORT").is_err());
-    assert!(port("PATH").is_err());
-    assert!(variable("MTP_SURELY_UNSET_PORT").is_err());
+fn variable_error_names_the_variable_and_keeps_the_cause() {
+    let error = variable("MTP_SURELY_UNSET_PORT").unwrap_err();
+
+    assert!(error.to_string().contains("MTP_SURELY_UNSET_PORT"));
+    assert!(error.source().unwrap().is::<VarError>());
+}
+
+#[test]
+fn port_error_names_the_variable_and_keeps_the_cause() {
+    let missing = port("MTP_SURELY_UNSET_PORT").unwrap_err();
+    let malformed = port("PATH").unwrap_err();
+
+    assert!(missing.source().unwrap().is::<VarError>());
+    assert!(malformed.to_string().contains("PATH"));
+    assert!(malformed.source().unwrap().is::<ParseIntError>());
+}
+
+#[test]
+fn stream_lists_round_trip_through_their_text() {
+    let streams = [Stream::Input, Stream::Output, Stream::Error];
+
+    assert_eq!(
+        Stream::parse_list(&Stream::list_text(&streams)),
+        Ok(streams.to_vec())
+    );
+    assert_eq!(Stream::parse_list(""), Ok(vec![]));
+}
+
+#[test]
+fn stream_list_rejects_an_unknown_stream() {
+    let error = Stream::parse_list("stdout,bogus").unwrap_err();
+
+    assert_eq!(error, UnknownStream("bogus".to_owned()));
+    assert!(error.to_string().contains("bogus"));
+}
+
+/// A child that replaces two descriptors and reports which of its three are the null device.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+fn stream_closer() {
+    close_streams(&[Stream::Input, Stream::Error]).unwrap();
+    let kind = |path| {
+        if is_null(path).unwrap() {
+            "null"
+        } else {
+            "pipe"
+        }
+    };
+    write_stdout(
+        format!(
+            "in:{} out:{} err:{}",
+            kind("/dev/stdin"),
+            kind("/dev/stdout"),
+            kind("/dev/stderr")
+        )
+        .as_bytes(),
+    )
+    .unwrap();
+    leave(0)
+}
+
+#[test]
+fn close_streams_replaces_only_the_named_descriptors() {
+    let mut command = TestProcess::child(stream_closer)
+        .unwrap()
+        .command()
+        .unwrap();
+    command
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    let output = command.spawn().unwrap().wait_with_output().unwrap();
+
+    assert_eq!(output.stdout, harness(b"in:null out:pipe err:null"));
+}
+
+/// A child that leaves with output it never flushed.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+fn unflushed_leaver() {
+    read_input().unwrap();
+    std::io::stdout().write_all(b"unflushed").unwrap();
+    leave(0)
+}
+
+#[test]
+fn leave_fails_when_standard_output_cannot_be_flushed() {
+    let mut command = TestProcess::child(unflushed_leaver)
+        .unwrap()
+        .command()
+        .unwrap();
+    command
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    let mut child = command.spawn().unwrap();
+    let mut stdout = child.stdout.take().unwrap();
+    stdout.read_exact(&mut [0; HARNESS_START.len()]).unwrap();
+    drop(stdout);
+    drop(child.stdin.take());
+    let output = child.wait_with_output().unwrap();
+
+    assert_ne!(output.status.code(), Some(0));
+    assert!(String::from_utf8_lossy(&output.stderr).contains("flush"));
 }
