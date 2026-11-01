@@ -260,13 +260,8 @@ pub fn answering(text: &str, usage: &Value) -> (Arc<Adapter>, Model, SummaryOpti
     response["content"][0]["text"] = json!(text);
     response["usage"] = usage.clone();
     let state = adapter(json!({"history": response}));
-    let mut model = corpus().rows[0].calls[0]["model"].clone();
-    model["api"] = json!(state.api);
-    (
-        state,
-        serde_json::from_value(model).unwrap(),
-        options(&json!({})),
-    )
+    let model = model(&corpus().rows[0], &state.api);
+    (state, model, options(&json!({})))
 }
 /// Construct the exact supplied control operands.
 fn options(args: &Value) -> SummaryOptions {
