@@ -8,7 +8,7 @@ use crate::support::session_harness::{
 use maestro_session::session_manager::{CompactionOptions, ReadonlySessionManager};
 use maestro_session::{CompactionResult, SessionManager};
 use serde_json::{Value, json};
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
 /// Opens the literal synthetic branch through the existing session-file reader.
 fn literal_history_options() -> HarnessOptions {
@@ -57,7 +57,7 @@ fn assert_history_inventory(manager: &SessionManager) {
             expected
         );
     }
-    let calls: BTreeMap<_, _> = entries
+    let calls: HashMap<_, _> = entries
         .iter()
         .filter_map(|entry| entry["message"]["content"].as_array())
         .flatten()
