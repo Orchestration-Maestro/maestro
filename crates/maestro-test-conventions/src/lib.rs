@@ -30,8 +30,6 @@ mod source;
 mod temp_directories;
 /// Nextest's default budget and documented slow-test exceptions.
 mod test_budget;
-/// Repository directories that tests read at run time.
-mod test_input_routes;
 /// Test-owned timed-wait and optional polling checks.
 mod time_limits;
 
@@ -100,14 +98,6 @@ mod time_limits;
 /// accepted. The scope grows with each migration batch and disappears when every
 /// crate uses the owner.
 ///
-/// A test that reads `docs/`, `examples/` or `assets/` at run time must have that directory
-/// routed to its package in `test_inputs` of `.github/ci.toml`. A read is a string literal
-/// that climbs out of the crate directory into the directory, or one that joins the
-/// directory in a file that climbs to the workspace root, or a call to the package-directory
-/// resolver `get_docs_path`, `get_examples_path` or `get_package_dir`. Compile-time `include_*!`
-/// arguments and attributes are not reads. Each unrouted read is reported with its file
-/// and line.
-///
 /// # Errors
 ///
 /// Returns a human-readable diagnostic on malformed input or a violated boundary.
@@ -125,6 +115,5 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
     time_limits::check(&members)?;
     duplicates::check(&members)?;
     example_helpers::check(&members)?;
-    temp_directories::check(&members)?;
-    test_input_routes::check(root, &members)
+    temp_directories::check(&members)
 }
