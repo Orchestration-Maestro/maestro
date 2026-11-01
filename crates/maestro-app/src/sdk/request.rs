@@ -86,7 +86,9 @@ fn stream_fn(services: &Services, spawn: &AgentSpawner<Local>) -> maestro_agent:
         Box::pin(async move {
             let shared = Arc::new(RwLock::new(model.clone()));
             let (api_key, auth_headers) = match registry.get_api_key_and_headers(&shared).await {
-                ResolvedRequestAuth::Ok { api_key, headers } => (api_key, headers),
+                ResolvedRequestAuth::Ok {
+                    api_key, headers, ..
+                } => (api_key, headers),
                 ResolvedRequestAuth::Error { error } => {
                     return Err(DiagnosticErrorInfo::error(error));
                 }

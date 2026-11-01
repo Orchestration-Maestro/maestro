@@ -174,6 +174,7 @@ pub fn resolved(value: &Value) -> maestro_request::model_registry::ResolvedReque
                 .map(|p| (p[0].as_str().unwrap().into(), p[1].as_str().unwrap().into()))
                 .collect()
         }),
+        base_url: None,
     }
 }
 
@@ -350,12 +351,13 @@ impl host::HostModelRegistryWithStore<State> for Imports {
         accessor.with(|mut a| {
             let s = a.get();
             let answer = auth(s.table.get(&this)?, &model).map(|v| match resolved(&v) {
-                crate::ResolvedRequestAuth::Ok { api_key, headers } => {
-                    host::ResolvedRequestAuth::Ok(host::RequestAuth {
-                        api_key,
-                        headers: headers.map(|h| h.into_iter().collect()),
-                    })
-                }
+                crate::ResolvedRequestAuth::Ok {
+                    api_key, headers, ..
+                } => host::ResolvedRequestAuth::Ok(host::RequestAuth {
+                    base_url: None,
+                    api_key,
+                    headers: headers.map(|h| h.into_iter().collect()),
+                }),
                 crate::ResolvedRequestAuth::Error { error } => {
                     host::ResolvedRequestAuth::Error(error)
                 }

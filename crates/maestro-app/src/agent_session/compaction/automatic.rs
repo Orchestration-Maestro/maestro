@@ -192,6 +192,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
         let maestro_catalog::ResolvedRequestAuth::Ok {
             api_key: Some(api_key),
             headers,
+            ..
         } = auth
         else {
             return None;

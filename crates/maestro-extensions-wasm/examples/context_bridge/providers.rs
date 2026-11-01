@@ -45,7 +45,9 @@ pub(super) async fn observe(
     let status = catalog.get_provider_auth_status("author-provider")?;
     let oauth = catalog.is_using_oauth(model.clone())?;
     let auth = match catalog.get_api_key_and_headers(model).await? {
-        maestro_extensions_wasm::ResolvedRequestAuth::Ok { api_key, headers } => {
+        maestro_extensions_wasm::ResolvedRequestAuth::Ok {
+            api_key, headers, ..
+        } => {
             json!({"ok":true,"apiKey":api_key,"headers":headers})
         }
         maestro_extensions_wasm::ResolvedRequestAuth::Error { error } => {

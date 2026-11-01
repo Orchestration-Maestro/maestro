@@ -48,7 +48,11 @@ impl ModelRegistry {
     /// returning the winning error.
     pub async fn get_api_key_and_headers(&self, model: &Arc<RwLock<Model>>) -> ResolvedRequestAuth {
         match self.resolve_request(model).await {
-            Ok((api_key, headers)) => ResolvedRequestAuth::Ok { api_key, headers },
+            Ok((api_key, headers)) => ResolvedRequestAuth::Ok {
+                api_key,
+                headers,
+                base_url: None,
+            },
             Err(error) => ResolvedRequestAuth::Error { error },
         }
     }

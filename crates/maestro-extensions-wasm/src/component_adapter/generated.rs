@@ -474,6 +474,7 @@ impl Imports for Generated {
                 host::ResolvedRequestAuth::Ok(auth) => crate::ResolvedRequestAuth::Ok {
                     api_key: auth.api_key,
                     headers: auth.headers.map(|headers| headers.into_iter().collect()),
+                    base_url: auth.base_url,
                 },
                 host::ResolvedRequestAuth::Error(error) => {
                     crate::ResolvedRequestAuth::Error { error }

@@ -90,7 +90,10 @@ fn run_auth(assert_started: bool) {
 
 /// Checks the supplied result without exposing credential material in failure output.
 fn check_auth(resolved: maestro_catalog::ResolvedRequestAuth) {
-    let maestro_catalog::ResolvedRequestAuth::Ok { api_key, headers } = resolved else {
+    let maestro_catalog::ResolvedRequestAuth::Ok {
+        api_key, headers, ..
+    } = resolved
+    else {
         panic!("expected controlled credential success");
     };
     assert!(api_key.as_deref().eq(&Some("caller key")), "selected key");

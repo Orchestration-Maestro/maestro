@@ -414,6 +414,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
             ResolvedRequestAuth::Ok {
                 api_key: Some(api_key),
                 headers,
+                ..
             } if !api_key.is_empty() => Ok((api_key, headers)),
             ResolvedRequestAuth::Ok { .. } if self.model_registry.is_using_oauth(model) => {
                 Err(DiagnosticErrorInfo::error(format!(
