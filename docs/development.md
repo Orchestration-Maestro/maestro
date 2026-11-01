@@ -748,6 +748,13 @@ builds only the others in its one Cargo call. The base's compiled code seeds the
 and is dropped again when the example writes another engine's namespace. A base that is missing,
 unreadable or prepared from other shared inputs is skipped, and when none is accepted everything
 is built; the base directory may be the output directory.
+After a successful preparation, the command reports how many components came from the base
+and how many it built, for example:
+
+```text
+components: 74 reused, 0 built
+```
+
 File timestamps do not affect reuse, but the staged example finds component
 sources at the checkout path it was built in, so both jobs must use the same
 checkout path, as shared CI does.
