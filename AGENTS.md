@@ -42,9 +42,8 @@ hook runs the full conventions suite when a staged path is under
 `crates/maestro-test-conventions/`, and the browser smoke check only when the
 selection compiles the browser entry. Unformatted code is fixed, never rejected.
 It also rejects merge-conflict markers, invalid TOML or YAML, and a secret in the
-staged change. The commit-msg hook enforces the message rule in
-[Git discipline](#test-and-git-discipline). `just check` and shared CI stay the full
-workspace checks.
+staged change. Commit messages need a conventional header and every line must be
+at most 80 columns. `just check` and shared CI stay the full workspace checks.
 
 The conventions check requires `workspace.dependencies.serde_json` to name
 `serde_json` and explicitly enable `float_roundtrip`. Normal member dependencies,
@@ -105,10 +104,6 @@ string literals and test scopes are exempt.
 Every change has a clear conventional commit message (the squash commit)
 describing user-visible behavior. Pull requests never edit `CHANGELOG.md`.
 The changelog is generated from conventional commits at release time.
-
-Before committing, run the humanizer on every document a change adds or edits.
-Use Maestro's voice from the [identity guide](docs/identity.md) and
-[brand guide](docs/brand.md).
 
 Every crate root needs `//!` docs and every item, private included, needs
 `///` docs, enforced by Clippy.
@@ -481,19 +476,17 @@ aside, restoring it on exit. Name regression cases after behavior without leadin
 issue numbers.
 
 Analyze remote PR metadata before checking it out. Commit only when authorized.
-Use a feature branch, protected PRs and the merge queue; never directly push to
-the default branch or bypass hooks/protection. Sign every commit from a message
-file (`git commit -S -F <file>`), with a conventional header, a subject of at most
-71 characters and lines of at most 80 columns.
+Use a feature branch, signed `git commit -S`, protected PRs and the merge queue;
+never directly push to the default branch or bypass hooks/protection.
 
 Stage only your own session files with `git add <specific-file-paths>`.
 Inspect `git status` and the staged diff before committing. Never use
 `git add .`, `git add -A`, `git reset --hard`, `git checkout .`, `git clean -fd`,
-blanket `git stash`, or `git commit --no-verify`. Take current main into your
-branch with a signed merge commit (`git merge -S origin/main`); never rebase or
-force-push. Keep main's behavior and assertions, resolve conflicts only in files
-you own, and stop and ask if an unrelated file conflicts. Ask for confirmation
-before an instruction overrides these safeguards.
+blanket `git stash`, or `git commit --no-verify`. Rebase on current main;
+retain its behavior and assertions. Resolve conflicts only in owned files;
+abort and ask if an unrelated file conflicts. Force-push only with explicit
+standing approval and a fetched-hash lease. Ask for confirmation before an
+instruction overrides these safeguards.
 
 ## Provider contribution checklist
 
