@@ -773,6 +773,8 @@ pub(super) struct Case {
     input: serde_json::Value,
     /// The recorded observation.
     expected: serde_json::Value,
+    /// Complete macOS layout when its key names differ.
+    expected_macos: Option<serde_json::Value>,
 }
 
 /// The recorded operations.
@@ -873,7 +875,12 @@ pub(super) fn cases<I: DeserializeOwned, E: DeserializeOwned>(
         .map(|case| {
             (
                 serde_json::from_value(case.input).unwrap(),
-                serde_json::from_value(case.expected).unwrap(),
+                serde_json::from_value(if cfg!(target_os = "macos") {
+                    case.expected_macos.unwrap_or(case.expected)
+                } else {
+                    case.expected
+                })
+                .unwrap(),
             )
         })
         .collect();

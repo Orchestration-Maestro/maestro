@@ -120,6 +120,13 @@
       ],
       "width": 12
     },
+    "expected_macos": {
+      "painted": [
+        "",
+        " @dim@Steerin\u001b[0m...\u001b[0m ",
+        " @dim@↳ Optio\u001b[0m...\u001b[0m "
+      ]
+    },
     "expected": {
       "painted": [
         "",
@@ -136,6 +143,13 @@
         "s"
       ],
       "width": 80
+    },
+    "expected_macos": {
+      "painted": [
+        "",
+        " @dim@Steering: s\u001b[39m                                                                    ",
+        " @dim@↳ Option+Up to edit all queued messages\u001b[39m                                        "
+      ]
     },
     "expected": {
       "painted": [
@@ -171,6 +185,13 @@
       ],
       "width": 12
     },
+    "expected_macos": {
+      "painted": [
+        "",
+        " @dim@Follow-\u001b[0m...\u001b[0m ",
+        " @dim@↳ Optio\u001b[0m...\u001b[0m "
+      ]
+    },
     "expected": {
       "painted": [
         "",
@@ -187,6 +208,13 @@
         "f"
       ],
       "width": 80
+    },
+    "expected_macos": {
+      "painted": [
+        "",
+        " @dim@Follow-up: f\u001b[39m                                                                   ",
+        " @dim@↳ Option+Up to edit all queued messages\u001b[39m                                        "
+      ]
     },
     "expected": {
       "painted": [
@@ -254,6 +282,17 @@
       ],
       "width": 12
     },
+    "expected_macos": {
+      "painted": [
+        "",
+        " @dim@Steerin\u001b[0m...\u001b[0m ",
+        " @dim@Steerin\u001b[0m...\u001b[0m ",
+        " @dim@Steerin\u001b[0m...\u001b[0m ",
+        " @dim@Follow-\u001b[0m...\u001b[0m ",
+        " @dim@Follow-\u001b[0m...\u001b[0m ",
+        " @dim@↳ Optio\u001b[0m...\u001b[0m "
+      ]
+    },
     "expected": {
       "painted": [
         "",
@@ -288,6 +327,17 @@
         }
       ],
       "width": 80
+    },
+    "expected_macos": {
+      "painted": [
+        "",
+        " @dim@Steering: s\u001b[39m                                                                    ",
+        " @dim@Steering: s\u001b[39m                                                                    ",
+        " @dim@Steering: ls\u001b[39m                                                                   ",
+        " @dim@Follow-up: f\u001b[39m                                                                   ",
+        " @dim@Follow-up: lf\u001b[39m                                                                  ",
+        " @dim@↳ Option+Up to edit all queued messages\u001b[39m                                        "
+      ]
     },
     "expected": {
       "painted": [
@@ -327,6 +377,13 @@
           "shift+up"
         ]
       }
+    },
+    "expected_macos": {
+      "painted": [
+        "",
+        " @dim@Steering: a\t\u001b[7m \u001b[27m                                                                ",
+        " @dim@↳ Ctrl+Option+Q/Shift+Up to edit all queued messages\u001b[39m                           "
+      ]
     },
     "expected": {
       "painted": [
@@ -1153,6 +1210,36 @@
       "op": "enqueue",
       "mode": "steer"
     },
+    "expected_macos": {
+      "calls": [],
+      "local": [
+        {
+          "text": " queued ",
+          "mode": "steer"
+        }
+      ],
+      "session": {
+        "steering": [
+          " queued "
+        ],
+        "followUp": []
+      },
+      "text": "",
+      "history": [
+        " queued "
+      ],
+      "errors": [],
+      "aborts": 0,
+      "pending": [
+        "",
+        " @dim@Steering:  queued \u001b[39m                                                             ",
+        " @dim@↳ Option+Up to edit all queued messages\u001b[39m                                        "
+      ],
+      "chat": [
+        "",
+        " @dim@Queued message for after compaction\u001b[39m                                            "
+      ]
+    },
     "expected": {
       "calls": [],
       "local": [
@@ -1189,6 +1276,36 @@
     "input": {
       "op": "enqueue",
       "mode": "followUp"
+    },
+    "expected_macos": {
+      "calls": [],
+      "local": [
+        {
+          "text": " queued ",
+          "mode": "followUp"
+        }
+      ],
+      "session": {
+        "steering": [],
+        "followUp": [
+          " queued "
+        ]
+      },
+      "text": "",
+      "history": [
+        " queued "
+      ],
+      "errors": [],
+      "aborts": 0,
+      "pending": [
+        "",
+        " @dim@Follow-up:  queued \u001b[39m                                                            ",
+        " @dim@↳ Option+Up to edit all queued messages\u001b[39m                                        "
+      ],
+      "chat": [
+        "",
+        " @dim@Queued message for after compaction\u001b[39m                                            "
+      ]
     },
     "expected": {
       "calls": [],
@@ -1542,6 +1659,43 @@
       "text": "",
       "expanded": ""
     },
+    "expected_macos": {
+      "calls": [
+        [
+          "input",
+          ""
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "",
+      "history": [
+        ""
+      ],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": [
+        "",
+        " @dim@Queued message for after compaction\u001b[39m                                            ",
+        "",
+        "\u001b]133;A\u0007                                                                                ",
+        " @userMessageText@\u001b[39m                                                                               ",
+        "\u001b]133;B\u0007\u001b]133;C\u0007                                                                                "
+      ],
+      "pendingSample": {
+        "mode": "followUp",
+        "text": "",
+        "rows": [
+          "",
+          " @dim@Follow-up: \u001b[39m                                                                    ",
+          " @dim@↳ Option+Up to edit all queued messages\u001b[39m                                        "
+        ]
+      }
+    },
     "expected": {
       "calls": [
         [
@@ -1587,6 +1741,43 @@
       "state": "compact",
       "text": " selected ",
       "expanded": " selected "
+    },
+    "expected_macos": {
+      "calls": [
+        [
+          "input",
+          "selected"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "",
+      "history": [
+        "selected"
+      ],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": [
+        "",
+        " @dim@Queued message for after compaction\u001b[39m                                            ",
+        "",
+        "\u001b]133;A\u0007                                                                                ",
+        " @userMessageText@selected\u001b[39m                                                                       ",
+        "\u001b]133;B\u0007\u001b]133;C\u0007                                                                                "
+      ],
+      "pendingSample": {
+        "mode": "followUp",
+        "text": "selected",
+        "rows": [
+          "",
+          " @dim@Follow-up: selected\u001b[39m                                                            ",
+          " @dim@↳ Option+Up to edit all queued messages\u001b[39m                                        "
+        ]
+      }
     },
     "expected": {
       "calls": [
@@ -1664,6 +1855,43 @@
       "state": "compact",
       "text": "/unknown",
       "expanded": "/unknown"
+    },
+    "expected_macos": {
+      "calls": [
+        [
+          "input",
+          "/unknown"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "",
+      "history": [
+        "/unknown"
+      ],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": [
+        "",
+        " @dim@Queued message for after compaction\u001b[39m                                            ",
+        "",
+        "\u001b]133;A\u0007                                                                                ",
+        " @userMessageText@/unknown\u001b[39m                                                                       ",
+        "\u001b]133;B\u0007\u001b]133;C\u0007                                                                                "
+      ],
+      "pendingSample": {
+        "mode": "followUp",
+        "text": "/unknown",
+        "rows": [
+          "",
+          " @dim@Follow-up: /unknown\u001b[39m                                                            ",
+          " @dim@↳ Option+Up to edit all queued messages\u001b[39m                                        "
+        ]
+      }
     },
     "expected": {
       "calls": [
@@ -1776,6 +2004,43 @@
       "compacting": true,
       "streaming": true,
       "text": "plain"
+    },
+    "expected_macos": {
+      "calls": [
+        [
+          "input",
+          "plain"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "",
+      "history": [
+        "plain"
+      ],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": [
+        "",
+        " @dim@Queued message for after compaction\u001b[39m                                            ",
+        "",
+        "\u001b]133;A\u0007                                                                                ",
+        " @userMessageText@plain\u001b[39m                                                                          ",
+        "\u001b]133;B\u0007\u001b]133;C\u0007                                                                                "
+      ],
+      "pendingSample": {
+        "mode": "steer",
+        "text": "plain",
+        "rows": [
+          "",
+          " @dim@Steering: plain\u001b[39m                                                                ",
+          " @dim@↳ Option+Up to edit all queued messages\u001b[39m                                        "
+        ]
+      }
     },
     "expected": {
       "calls": [
@@ -1912,6 +2177,14 @@
     "test": "pending_rows_keep_labels_live_hint_styles_and_clear_empty",
     "input": {
       "op": "display-clear-sequence"
+    },
+    "expected_macos": {
+      "before": [
+        "",
+        " @dim@Steering: before\u001b[39m                                                               ",
+        " @dim@↳ Option+Up to edit all queued messages\u001b[39m                                        "
+      ],
+      "after": []
     },
     "expected": {
       "before": [

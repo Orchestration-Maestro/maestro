@@ -35,6 +35,8 @@ struct Case {
     name: String,
     input: Input,
     expected: Expected,
+    /// Complete macOS layout when its key names differ.
+    expected_macos: Option<Expected>,
 }
 /// Constructor and ordered public operations.
 #[derive(Deserialize)]
@@ -190,7 +192,10 @@ pub fn replay(name: &str) {
     }
 }
 /// Executes a case using the public component and controlled host.
-fn run(case: Case, palettes: &BTreeMap<String, Palette>) {
+fn run(mut case: Case, palettes: &BTreeMap<String, Palette>) {
+    if cfg!(target_os = "macos") {
+        case.expected = case.expected_macos.take().unwrap_or(case.expected);
+    }
     let input = case.input;
     let runtime_requested = case.expected.runtime.is_some();
     bindings(&input.bindings.unwrap_or_default());

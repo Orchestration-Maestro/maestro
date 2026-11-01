@@ -67,6 +67,12 @@ fn cases(test: &str) -> Vec<Case> {
         .cases
         .into_iter()
         .filter(|case| case.test == test)
+        .map(|mut case| {
+            if cfg!(target_os = "macos") {
+                case.expected = case.expected_macos.take().unwrap_or(case.expected);
+            }
+            case
+        })
         .collect();
     assert!(!selected.is_empty());
     selected
@@ -783,7 +789,14 @@ fn check_plain_fallback(row: &maestro_tui::tui::ComponentHandle, expected: &Valu
         .set_theme_instance(std::rc::Rc::new(display::bare_theme()))
         .unwrap();
     let fallback = row.render(80);
-    assert_eq!(fallback[1], "... (1 earlier lines, alt+x to expand)");
+    assert_eq!(
+        fallback[1],
+        if cfg!(target_os = "macos") {
+            "... (1 earlier lines, option+x to expand)"
+        } else {
+            "... (1 earlier lines, alt+x to expand)"
+        }
+    );
     assert_eq!(
         &fallback[2..],
         serde_json::from_value::<Vec<String>>(expected.clone()).unwrap()[2..].as_ref()

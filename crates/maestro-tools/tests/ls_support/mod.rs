@@ -79,6 +79,12 @@ pub fn cases(test: &str) -> Vec<Case> {
         .cases
         .into_iter()
         .filter(|case| case.test == test)
+        .map(|mut case| {
+            if cfg!(target_os = "macos") {
+                case.expected = case.expected_macos.take().unwrap_or(case.expected);
+            }
+            case
+        })
         .collect();
     assert!(!selected.is_empty(), "empty test group {test}");
     selected

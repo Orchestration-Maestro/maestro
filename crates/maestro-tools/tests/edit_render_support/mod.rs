@@ -20,6 +20,8 @@ pub struct Case {
     pub input: Value,
     /// Source-derived expected output.
     pub expected: Value,
+    /// Complete macOS layout when its key names differ.
+    pub expected_macos: Option<Value>,
 }
 /// The complete corpus and its palette.
 #[derive(Deserialize)]
@@ -71,6 +73,12 @@ pub fn cases(test: &str) -> Vec<Case> {
         .cases
         .into_iter()
         .filter(|case| case.test == test)
+        .map(|mut case| {
+            if cfg!(target_os = "macos") {
+                case.expected = case.expected_macos.take().unwrap_or(case.expected);
+            }
+            case
+        })
         .collect();
     assert!(!selected.is_empty());
     selected

@@ -18,6 +18,8 @@ pub struct Case {
     pub input: Value,
     /// Independently recorded expectation.
     pub expected: Value,
+    /// Complete macOS layout when its key names differ.
+    pub expected_macos: Option<Value>,
 }
 
 /// The committed search corpus of one tool family.
@@ -53,6 +55,12 @@ pub fn search_cases(source: &str, test: &str) -> Vec<Case> {
         .cases
         .into_iter()
         .filter(|case| case.test == test)
+        .map(|mut case| {
+            if cfg!(target_os = "macos") {
+                case.expected = case.expected_macos.take().unwrap_or(case.expected);
+            }
+            case
+        })
         .collect();
     assert!(!selected.is_empty(), "missing group {test}");
     selected
@@ -232,6 +240,12 @@ pub fn cases(test: &str) -> Vec<Case> {
         .cases
         .into_iter()
         .filter(|case| case.test == test)
+        .map(|mut case| {
+            if cfg!(target_os = "macos") {
+                case.expected = case.expected_macos.take().unwrap_or(case.expected);
+            }
+            case
+        })
         .collect();
     assert!(!selected.is_empty(), "empty test group {test}");
     selected

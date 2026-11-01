@@ -33,6 +33,8 @@ struct Case {
     input: Input,
     /// Recorded rows, frames or callback observations.
     expected: Expected,
+    /// Complete macOS layout when its key names differ.
+    expected_macos: Option<Expected>,
 }
 
 /// Recorded constructor and operation inputs.
@@ -244,7 +246,13 @@ fn cases() -> Vec<Case> {
     assert_eq!(inputs.len(), raw.len(), "recorded inputs are unique");
     let cases: Vec<Case> = raw
         .into_iter()
-        .map(|row| serde_json::from_value(row).expect("recorded case is strict"))
+        .map(|row| {
+            let mut case: Case = serde_json::from_value(row).expect("recorded case is strict");
+            if cfg!(target_os = "macos") {
+                case.expected = case.expected_macos.take().unwrap_or(case.expected);
+            }
+            case
+        })
         .collect();
     let groups: HashSet<&str> = cases.iter().map(|case| case.test.as_str()).collect();
     assert_eq!(cases.len(), 48);

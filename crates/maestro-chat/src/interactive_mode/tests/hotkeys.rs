@@ -437,7 +437,9 @@ async fn replacement(directory: &Path) {
     );
     assert!(!Rc::ptr_eq(&first, &world.host.session()));
     let markdown = world.mode.hotkeys_markdown();
-    assert!(markdown.contains("| `Alt+Y` | session B |"));
+    assert!(markdown.contains(&super::platform_keys::on_this_platform(
+        "| `Alt+Y` | session B |"
+    )));
     assert!(!markdown.contains("session A"));
     assert_eq!(
         world

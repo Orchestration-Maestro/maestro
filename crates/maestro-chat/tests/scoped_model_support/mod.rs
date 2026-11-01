@@ -135,6 +135,8 @@ struct Case {
     input: Query,
     /// Observations.
     expected: Expected,
+    /// Complete macOS layout when its key names differ.
+    expected_macos: Option<Expected>,
 }
 /// Exact role palette supplied by the recording host.
 fn colors(shift: u8) -> Rc<Theme> {
@@ -329,7 +331,10 @@ pub fn replay(name: &str) {
     );
     let selected: Vec<_> = cases.into_iter().filter(|case| case.test == name).collect();
     assert!(!selected.is_empty());
-    for case in selected {
+    for mut case in selected {
+        if cfg!(target_os = "macos") {
+            case.expected = case.expected_macos.take().unwrap_or(case.expected);
+        }
         assert_eq!(case.expected.branch, "success");
         let Query {
             ops, width, focus, ..

@@ -23,6 +23,8 @@ pub struct Row {
     pub input: Value,
     /// Complete expectation.
     pub expected: Value,
+    /// Complete macOS layout when its key names differ.
+    pub expected_macos: Option<Value>,
 }
 
 /// The committed corpus.
@@ -77,7 +79,18 @@ pub fn theme_keys() -> Vec<String> {
 
 /// The nonempty group of one test.
 pub fn rows(test: &str) -> Vec<Row> {
-    let rows = corpus().tests.remove(test).unwrap_or_default();
+    let rows = corpus()
+        .tests
+        .remove(test)
+        .unwrap_or_default()
+        .into_iter()
+        .map(|mut row| {
+            if cfg!(target_os = "macos") {
+                row.expected = row.expected_macos.take().unwrap_or(row.expected);
+            }
+            row
+        })
+        .collect::<Vec<_>>();
     assert!(
         GROUPS.contains(&test) && !rows.is_empty(),
         "empty group {test}"

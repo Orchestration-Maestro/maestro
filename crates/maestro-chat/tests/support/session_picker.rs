@@ -40,6 +40,8 @@ struct Case {
     test: String,
     input: Value,
     expected: Value,
+    /// Complete macOS layout when its key names differ.
+    expected_macos: Option<Value>,
 }
 /// Decodes all rows belonging to one witness, retaining strict typed payloads.
 fn cases<I: DeserializeOwned, E: DeserializeOwned>(name: &str) -> Vec<(I, E)> {
@@ -57,7 +59,12 @@ pub(crate) fn decode_cases<I: DeserializeOwned, E: DeserializeOwned>(
         .map(|c| {
             (
                 serde_json::from_value(c.input).unwrap(),
-                serde_json::from_value(c.expected).unwrap(),
+                serde_json::from_value(if cfg!(target_os = "macos") {
+                    c.expected_macos.unwrap_or(c.expected)
+                } else {
+                    c.expected
+                })
+                .unwrap(),
             )
         })
         .collect();

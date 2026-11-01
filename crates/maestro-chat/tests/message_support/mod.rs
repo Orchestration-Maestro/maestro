@@ -103,7 +103,11 @@ pub fn group(name: &str) {
         let raw: Vec<serde_json::Value> = serde_json::from_str(source).unwrap();
         for row in raw {
             assert!(queries.insert(serde_json::to_string(&row["input"]).unwrap()));
-            cases.push(serde_json::from_value(row).unwrap());
+            let mut case: Case = serde_json::from_value(row).unwrap();
+            if cfg!(target_os = "macos") {
+                case.expected = case.expected_macos.take().unwrap_or(case.expected);
+            }
+            cases.push(case);
         }
     }
     let identities: HashSet<_> = cases.iter().map(|case| (&case.test, &case.name)).collect();
