@@ -41,7 +41,8 @@ pub fn load_auth(path: &str) -> Map<String, Value> {
 }
 
 /// Writes `auth` to the account file at `path` as two-space JSON with no final newline, in
-/// the canonical member order and number spelling.
+/// the canonical member order and number spelling, through the credentials writer: the file is
+/// written in place under the shared recoverable publication and readable only by its owner.
 ///
 /// # Errors
 /// Returns [`AccountFileError::NotAnObject`] without writing when the file holds valid JSON
@@ -52,7 +53,7 @@ pub fn save_auth(path: &str, auth: &Map<String, Value>) -> Result<(), AccountFil
     }
     let text = maestro_json::pretty_object(auth)
         .map_err(|error| AccountFileError::Write(std::io::Error::other(error)))?;
-    std::fs::write(path, text).map_err(AccountFileError::Write)
+    maestro_credentials::write_auth_file(path, &text).map_err(AccountFileError::Write)
 }
 
 /// The parsed root of the file at `path`, absent when it cannot be read or parsed.

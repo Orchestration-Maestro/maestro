@@ -757,6 +757,9 @@ const DECLARATIONS: &[(&str, &str)] = &[
 /// Crates the specification excludes from the foundation utility.
 fn utility_excluded() -> Vec<&'static str> {
     specification_names("The guest authoring crate", "are excluded from this")
+        .into_iter()
+        .filter(|name| *name != "maestro-lock")
+        .collect()
 }
 
 /// Direct dependencies a crate must declare.
@@ -2064,8 +2067,10 @@ fn complete_permitted_graph_is_acyclic() {
     for (kind, extra) in DECLARATIONS {
         for &(from, targets) in support::policy::POLICY {
             let mut declarations = format!("[{kind}]\n");
-            let utility =
-                (from != "maestro-path" && !excluded.contains(&from)).then_some("maestro-path");
+            let utility = (from != "maestro-path"
+                && !excluded.contains(&from)
+                && !targets.contains(&"maestro-path"))
+            .then_some("maestro-path");
             for (index, target) in targets
                 .iter()
                 .copied()
@@ -2985,7 +2990,7 @@ impl PatternCalls {
             return;
         };
         match segment.ident.to_string().as_str() {
-            "expand_tilde_text" => self.expands = true,
+            "expand_tilde_joined" => self.expands = true,
             "is_absolute" => self.checks_absolute = true,
             "resolve" => self.resolves = true,
             _ => {}
@@ -3113,7 +3118,7 @@ fn tracked_rust_sources(root: &std::path::Path) -> Vec<(String, String)> {
 fn pattern_owners_in(sources: &[(String, String)]) -> Vec<PatternOwner> {
     let mut owners: Vec<PatternOwner> = sources
         .iter()
-        .filter(|(_, source)| source.contains("expand_tilde_text"))
+        .filter(|(_, source)| source.contains("expand_tilde_joined"))
         .flat_map(|(path, source)| pattern_owners(path, source))
         .collect();
     owners.sort();
@@ -3213,7 +3218,7 @@ fn assert_tracked_delegation(sources: &[(String, String)]) {
 const OWNER_BODY: &str = "\
 fn resolve_explicit_path(path: &str, cwd: &str, home: &str) -> std::io::Result<String> {
     let path = path.trim_matches(whitespace);
-    let normalized = expand_tilde_text(path, || Ok(home.to_owned()))?;
+    let normalized = expand_tilde_joined(path, || Ok(home.to_owned()))?;
     if is_absolute(&normalized) {
         Ok(normalized)
     } else {
@@ -3234,7 +3239,7 @@ const SKILL_BODY: &str = "\
 fn normalize_skill_path(path: &str, options: &Options<'_>) -> std::io::Result<String> {
     let path = path.trim_matches(whitespace);
     if path.starts_with('~') {
-        return expand_tilde_text(path, || Ok(options.home.to_owned()));
+        return expand_tilde_joined(path, || Ok(options.home.to_owned()));
     }
     if is_absolute(path) {
         return Ok(path.to_owned());
@@ -3247,7 +3252,7 @@ fn normalize_skill_path(path: &str, options: &Options<'_>) -> std::io::Result<St
 const PROMPT_BODY: &str = "\
 fn resolve_prompt_path(path: &str, options: Options<'_>) -> std::io::Result<String> {
     let path = path.trim_matches(whitespace);
-    let normalized = expand_tilde_text(path, || Ok(options.home.to_owned()))?;
+    let normalized = expand_tilde_joined(path, || Ok(options.home.to_owned()))?;
     if is_absolute(&normalized) {
         Ok(normalized)
     } else {
@@ -3303,7 +3308,7 @@ fn normalize_skill_path(path: &str, options: &Options<'_>) -> std::io::Result<St
 /// A sibling policy that expands in one function and always resolves in another.
 const RESOURCE_BODY: &str = "\
 fn expand_resource_path(path: &str, home: Home) -> std::io::Result<String> {
-    expand_tilde_text(path.trim_matches(whitespace), home)
+    expand_tilde_joined(path.trim_matches(whitespace), home)
 }
 fn resolve_resource_path(cwd: &str, path: &str, home: Home) -> std::io::Result<String> {
     let expanded = expand_resource_path(path, home)?;
@@ -3315,7 +3320,7 @@ fn resolve_resource_path(cwd: &str, path: &str, home: Home) -> std::io::Result<S
 const OWNER_AND_COPY: &str = "\
 fn resolve_explicit_path(path: &str, cwd: &str, home: &str) -> std::io::Result<String> {
     let path = path.trim_matches(whitespace);
-    let normalized = expand_tilde_text(path, || Ok(home.to_owned()))?;
+    let normalized = expand_tilde_joined(path, || Ok(home.to_owned()))?;
     if is_absolute(&normalized) {
         Ok(normalized)
     } else {
@@ -3324,7 +3329,7 @@ fn resolve_explicit_path(path: &str, cwd: &str, home: &str) -> std::io::Result<S
 }
 fn resolve_explicit_path_copy(path: &str, cwd: &str, home: &str) -> std::io::Result<String> {
     let path = path.trim_matches(whitespace);
-    let normalized = expand_tilde_text(path, || Ok(home.to_owned()))?;
+    let normalized = expand_tilde_joined(path, || Ok(home.to_owned()))?;
     if is_absolute(&normalized) {
         Ok(normalized)
     } else {
@@ -3501,6 +3506,39 @@ fn guest_schema_validation_edge_is_native_development_only() {
         caller_declares(&workspace, "maestro-request", &format!("[{NATIVE_DEV}]\n{declaration}")),
         Err("internal dev dependency requires declared dependency-free test support: maestro-request -> maestro-models".into())
     );
+}
+
+/// The guest's component tests share the product engine through one native development edge,
+/// never a product edge.
+#[test]
+fn guest_engine_edge_is_native_development_only() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-extensions-wasm", "maestro-extensions-wasmtime"]);
+    let declaration = "engine = { package = \"maestro-extensions-wasmtime\", path = \"../maestro-extensions-wasmtime\" }";
+    assert_eq!(
+        caller_declares(
+            &workspace,
+            "maestro-extensions-wasm",
+            &format!("[{NATIVE_DEV}]\n{declaration}")
+        ),
+        Ok(())
+    );
+    for table in [
+        "dependencies",
+        "build-dependencies",
+        "dev-dependencies",
+        "target.'cfg(target_arch = \"wasm32\")'.dev-dependencies",
+    ] {
+        assert!(
+            caller_declares(
+                &workspace,
+                "maestro-extensions-wasm",
+                &format!("[{table}]\n{declaration}")
+            )
+            .is_err(),
+            "{table}"
+        );
+    }
 }
 
 /// Native link traversal can be shared without adding an effect owner or a dependency cycle.

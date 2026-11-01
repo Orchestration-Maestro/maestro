@@ -371,7 +371,7 @@ fn start(world: &World) -> maestro_tui::tui::LocalFuture {
 
 /// The last transcript row of `world`, rendered wide.
 fn last_row(world: &World) -> String {
-    rows(world).last().cloned().unwrap_or_default()
+    notice_rows(world).last().cloned().unwrap_or_default()
 }
 
 /// Whether the transcript's last row holds `needle`.
@@ -379,12 +379,16 @@ fn last_row_holds(world: &World, needle: &str) -> bool {
     last_row(world).contains(needle)
 }
 
-/// The transcript rows of the latest notice, one per displayed line.
+/// The transcript rows of the latest notice, one per displayed line, without the blank row
+/// that follows an error notice.
 ///
 /// The padding is dropped without counting the text's characters, because a row is
 /// measured in display cells and a recorded notice may hold a scalar of no width.
 fn notice_rows(world: &World) -> Vec<String> {
-    let rendered = rows(world);
+    let mut rendered = rows(world);
+    if rendered.last().is_some_and(String::is_empty) {
+        rendered.pop();
+    }
     let start = rendered
         .iter()
         .rposition(|row| row.trim().is_empty())
@@ -416,6 +420,9 @@ fn assert_notice(world: &World, color: &ThemeColor, text: &str) {
         .collect();
     let observed = notice_rows(world).join("\n");
     assert_eq!(observed, format!("{}\u{1b}[39m", opened.join("\n")));
+    if *color == ThemeColor::Error {
+        assert_eq!(rows(world).last().map(String::as_str), Some(""));
+    }
 }
 
 /// The complete text of one recorded notice, with the presenter's own prefix.

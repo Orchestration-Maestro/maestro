@@ -9,12 +9,9 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
 
 use super::normalize::{self, Outcome, archive_signalled};
-use super::{cargo, nonempty};
+use super::{cargo, prepared_bundle};
 use crate::exit_code;
-use crate::test_setup::{self, EXAMPLE, MANIFEST};
-
-/// The bundle directory a run reads when it names none.
-const BUNDLE: &str = "target/test-setup";
+use crate::test_setup::{self, EXAMPLE};
 
 /// The sources the setup example is built from, beside the shared build and discovery
 /// directories listed below; the example is outdated once any of them is newer.
@@ -39,14 +36,7 @@ const SOURCE_DIRECTORIES: [&str; 2] = [
 /// a setup example that cannot start. A setup example that fails keeps its own status.
 pub(super) fn run(checkout: &Path) -> io::Result<ExitCode> {
     let directory = artifact_directory()?;
-    let named = nonempty("TEST_PREPARE_OUTPUT").map(PathBuf::from);
-    let archived = std::env::var_os("TEST_ARCHIVE").is_some_and(|value| value == "1");
-    let prepared = archived
-        || named
-            .as_ref()
-            .is_some_and(|output| checkout.join(output).join(MANIFEST).is_file());
-    if prepared {
-        let bundle = checkout.join(named.unwrap_or_else(|| BUNDLE.into()));
+    if let Some(bundle) = prepared_bundle(checkout) {
         return run_prepared(checkout, &bundle, &directory);
     }
     run_local(checkout, &directory)
@@ -58,7 +48,7 @@ pub(super) fn run(checkout: &Path) -> io::Result<ExitCode> {
 fn run_prepared(checkout: &Path, bundle: &Path, directory: &Path) -> io::Result<ExitCode> {
     let environment = environment_file()?;
     test_setup::install_bundle(checkout, bundle, directory, &environment)?;
-    if normalize::normalize(checkout, directory, archive_signalled())? == Outcome::ExampleOutdated {
+    if normalize::normalize(directory, archive_signalled())? == Outcome::ExampleOutdated {
         return Ok(ExitCode::from(3));
     }
     let example = directory.join("examples").join(EXAMPLE);
@@ -79,16 +69,15 @@ fn run_prepared(checkout: &Path, bundle: &Path, directory: &Path) -> io::Result<
 /// sources keeps a filtered build from running outdated preparation.
 fn run_local(checkout: &Path, directory: &Path) -> io::Result<ExitCode> {
     if let Some(example) = built_example(directory).filter(|example| fresh(checkout, example))
-        && normalize::normalize(checkout, directory, archive_signalled())? == Outcome::Normalized
+        && normalize::normalize(directory, archive_signalled())? == Outcome::Normalized
     {
         return start(checkout, &example);
     }
     build(checkout, directory)?;
     let example = built_example(directory)
         .ok_or_else(|| io::Error::other(format!("{EXAMPLE} was not built")))?;
-    // Cargo ignores some library outputs that normalization counts, such as the metadata a
-    // lint run writes, so the example can stay outdated. That only costs a cache miss.
-    if normalize::normalize(checkout, directory, archive_signalled())? == Outcome::ExampleOutdated {
+    // Cargo may retain an outdated example; running it still allows preparation to finish.
+    if normalize::normalize(directory, archive_signalled())? == Outcome::ExampleOutdated {
         eprintln!("Cargo kept the setup example; test binaries may compile components again.");
     }
     start(checkout, &example)

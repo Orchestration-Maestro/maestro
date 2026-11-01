@@ -1,18 +1,16 @@
 //! Gives the executables of an artifact directory one modification time.
 //!
 //! The pinned engine's cache namespace includes the modification time of the executable that
-//! consumes it, so the setup example and the test binaries must share a time.
+//! consumes it, so the setup example and the test binaries must share a time. The installed
+//! browser graph shares one time as well, so Cargo finds no output newer than what builds on it.
 
 use std::collections::{HashMap, HashSet};
-use std::io;
+use std::io::{self, Read};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::time::SystemTime;
 
-use serde::Deserialize;
-
 use super::nonempty;
-use crate::member_graph::closure;
 use crate::test_setup::EXAMPLE;
 
 /// The extensions of the library outputs that can outdate an executable.
@@ -21,32 +19,33 @@ const LIBRARY_EXTENSIONS: [&str; 6] = ["rlib", "rmeta", "a", "so", "dylib", "dll
 /// The exit status that reports an outdated setup example.
 const EXAMPLE_OUTDATED: u8 = 3;
 
-/// The package tables of `Cargo.lock`.
-#[derive(Deserialize)]
-struct Lock {
-    /// Every locked package.
-    #[serde(default)]
-    package: Vec<LockedPackage>,
-}
-
-/// One locked package.
-#[derive(Deserialize)]
-struct LockedPackage {
-    /// The package name.
-    name: String,
-    /// The registry or Git source; absent for a workspace crate.
-    source: Option<String>,
-    /// The packages it builds on, each as a name optionally followed by a version.
-    #[serde(default)]
-    dependencies: Vec<String>,
-}
-
 /// A library output in the artifact directory.
 struct Library {
     /// The file name.
     name: String,
     /// The time the file was last modified.
     modified: SystemTime,
+}
+
+/// Give every file under `directory` the modification time `time`, so that none outdates another
+/// and, for a time past the checkout's, none outdates a checkout file.
+///
+/// # Errors
+/// Returns a failed read or write.
+pub(super) fn set_tree_time(directory: &Path, time: SystemTime) -> io::Result<()> {
+    for entry in std::fs::read_dir(directory)? {
+        let entry = entry?;
+        let kind = entry.file_type()?;
+        if kind.is_dir() {
+            set_tree_time(&entry.path(), time)?;
+        } else if kind.is_file() {
+            std::fs::File::options()
+                .write(true)
+                .open(entry.path())?
+                .set_modified(time)?;
+        }
+    }
+    Ok(())
 }
 
 /// Whether nextest runs an archive, where nothing is rebuilt and every executable is current.
@@ -57,9 +56,9 @@ pub(super) fn archive_signalled() -> bool {
 /// Run the normalization the command line asks for, with the exit status it reports.
 ///
 /// # Errors
-/// Returns a directory without executables or a failed read or write.
-pub(super) fn run(checkout: &Path, directory: &Path, archived: bool) -> io::Result<ExitCode> {
-    Ok(match normalize(checkout, directory, archived)? {
+/// Returns a directory without executables, malformed Cargo records or a failed read or write.
+pub(super) fn run(directory: &Path, archived: bool) -> io::Result<ExitCode> {
+    Ok(match normalize(directory, archived)? {
         Outcome::Normalized => ExitCode::SUCCESS,
         Outcome::ExampleOutdated => ExitCode::from(EXAMPLE_OUTDATED),
     })
@@ -81,9 +80,13 @@ pub(super) enum Outcome {
 /// archived run has no outdated executable.
 ///
 /// # Errors
-/// Returns a directory without executables or a failed read or write.
-pub(super) fn normalize(checkout: &Path, directory: &Path, archived: bool) -> io::Result<Outcome> {
-    let crates = workspace_closures(checkout);
+/// Returns a directory without executables, malformed Cargo records or a failed read or write.
+pub(super) fn normalize(directory: &Path, archived: bool) -> io::Result<Outcome> {
+    let fingerprints = if archived {
+        Fingerprints::default()
+    } else {
+        fingerprint_files(directory)?
+    };
     let libraries = libraries(&directory.join("deps"))?;
     let newest_library = libraries.iter().map(|library| library.modified).max();
     let mut found = false;
@@ -92,8 +95,14 @@ pub(super) fn normalize(checkout: &Path, directory: &Path, archived: bool) -> io
     for artifact in executables(directory)? {
         found = true;
         let modified = std::fs::metadata(&artifact)?.modified()?;
-        let outdated =
-            !archived && outdated(&artifact, modified, &crates, &libraries, newest_library);
+        let outdated = !archived
+            && outdated(
+                &artifact,
+                modified,
+                &fingerprints,
+                &libraries,
+                newest_library,
+            )?;
         if outdated {
             stale |= is_example(&artifact);
         } else {
@@ -121,51 +130,6 @@ pub(super) fn normalize(checkout: &Path, directory: &Path, archived: bool) -> io
         return Ok(Outcome::ExampleOutdated);
     }
     Ok(Outcome::Normalized)
-}
-
-/// For each workspace crate, the underscored names of it and every workspace crate it builds
-/// on. Registry crates are left out: a change in one reaches its dependents through the
-/// fingerprint hash, so their output times do not matter. A lock file that cannot be read
-/// leaves every executable to the newest-library rule.
-fn workspace_closures(checkout: &Path) -> HashMap<String, Vec<String>> {
-    let Some(lock) = std::fs::read_to_string(checkout.join("Cargo.lock"))
-        .ok()
-        .and_then(|text| toml::from_str::<Lock>(&text).ok())
-    else {
-        return HashMap::new();
-    };
-    let members: Vec<&LockedPackage> = lock
-        .package
-        .iter()
-        .filter(|package| package.source.is_none())
-        .collect();
-    let index: HashMap<&str, usize> = members
-        .iter()
-        .enumerate()
-        .map(|(position, package)| (package.name.as_str(), position))
-        .collect();
-    let edges: Vec<Vec<usize>> = members
-        .iter()
-        .map(|package| {
-            package
-                .dependencies
-                .iter()
-                .filter_map(|entry| index.get(entry.split_whitespace().next()?).copied())
-                .collect()
-        })
-        .collect();
-    members
-        .iter()
-        .enumerate()
-        .map(|(position, package)| {
-            let mut built = closure(&edges, HashSet::from([position]))
-                .into_iter()
-                .map(|member| members[member].name.replace('-', "_"))
-                .collect::<Vec<_>>();
-            built.sort();
-            (package.name.clone(), built)
-        })
-        .collect()
 }
 
 /// The library outputs in `deps`.
@@ -248,48 +212,243 @@ fn is_example(artifact: &Path) -> bool {
         )
 }
 
-/// Whether a library output that `artifact` builds on is newer than it.
-///
-/// The libraries come from the crate named in the dependency information Cargo left beside
-/// the executable and the workspace crates the lock file lists for it. A library's own test
-/// binary is built from the crate and not on its output. Without that information, any newer
-/// library output outdates the executable.
+/// Whether an exact linked library build is newer than the executable.
 fn outdated(
     artifact: &Path,
     modified: SystemTime,
-    crates: &HashMap<String, Vec<String>>,
+    fingerprints: &Fingerprints,
     libraries: &[Library],
     newest_library: Option<SystemTime>,
-) -> bool {
-    let source = dependency_source(artifact);
-    let package = source
-        .strip_prefix("crates/")
-        .unwrap_or(&source)
-        .split('/')
-        .next()
-        .unwrap_or_default();
-    let Some(closure) = crates.get(package) else {
-        return newest_library.is_some_and(|newest| newest > modified);
+) -> io::Result<bool> {
+    let Some(record) = executable_fingerprint(artifact, fingerprints)? else {
+        return Ok(newest_library.is_some_and(|newest| newest > modified));
     };
-    let own = package.replace('-', "_");
-    let own_library = format!("crates/{package}/src/lib.rs");
-    closure
-        .iter()
-        .filter(|member| !(**member == own && source == own_library))
-        .any(|member| {
-            let prefix = format!("lib{member}-");
-            libraries
-                .iter()
-                .any(|library| library.name.starts_with(&prefix) && library.modified > modified)
-        })
+    let Some(linked) = linked_libraries(record, fingerprints)? else {
+        return Ok(true);
+    };
+    Ok(libraries.iter().any(|library| {
+        let stem = Path::new(&library.name)
+            .file_stem()
+            .and_then(|stem| stem.to_str())
+            .unwrap_or_default();
+        (linked.contains(stem) || linked.contains(stem.strip_prefix("lib").unwrap_or(stem)))
+            && library.modified > modified
+    }))
 }
 
-/// The first source file of the dependency information Cargo wrote beside `artifact`.
-fn dependency_source(artifact: &Path) -> String {
-    let mut information = artifact.as_os_str().to_owned();
-    information.push(".d");
-    let text = std::fs::read_to_string(information).unwrap_or_default();
-    let line = text.lines().next().unwrap_or_default();
-    let sources = line.split_once(": ").map_or("", |(_, sources)| sources);
-    sources.split(' ').next().unwrap_or_default().to_owned()
+/// Cargo's dependencies, including their compiled-build fingerprints.
+#[derive(Debug, serde::Deserialize, PartialEq, Eq)]
+struct Fingerprint {
+    /// Package identity, dependency alias, public marker and compiled-build fingerprint.
+    deps: Vec<(u64, String, bool, u64)>,
+}
+
+/// Cargo records indexed by compiled fingerprint, independent of dependency aliases.
+#[derive(Debug, Default)]
+struct Fingerprints {
+    /// Executable records whose parent directory names their metadata hash.
+    executables: Vec<PathBuf>,
+    /// Library records keyed by their compiled-build fingerprint.
+    libraries: HashMap<u64, Vec<PathBuf>>,
+}
+
+/// The fingerprint JSON files Cargo has written under one profile directory.
+fn fingerprint_files(directory: &Path) -> io::Result<Fingerprints> {
+    let entries = match std::fs::read_dir(directory.join(".fingerprint")) {
+        Ok(entries) => entries,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(Fingerprints::default()),
+        Err(error) => return Err(error),
+    };
+    let mut files = Fingerprints::default();
+    for entry in entries {
+        for file in std::fs::read_dir(entry?.path())? {
+            let path = file?.path();
+            if path.extension().is_none_or(|extension| extension != "json") {
+                continue;
+            }
+            if !file_name(&path).starts_with("lib-") {
+                files.executables.push(path);
+                continue;
+            }
+            let Some(hash) = fingerprint_hash(&path.with_extension(""))? else {
+                continue;
+            };
+            files.libraries.entry(hash).or_default().push(path);
+        }
+    }
+    Ok(files)
+}
+
+/// Read a Cargo dependency record, refusing malformed records instead of guessing its inputs.
+fn read_fingerprint(path: &Path) -> io::Result<Fingerprint> {
+    serde_json::from_slice(&std::fs::read(path)?).map_err(|error| {
+        io::Error::new(
+            io::ErrorKind::InvalidData,
+            format!("invalid Cargo fingerprint {}: {error}", path.display()),
+        )
+    })
+}
+
+/// The executable record whose directory has the artifact's metadata hash.
+fn hashed_fingerprint(
+    artifact: &Path,
+    fingerprints: &Fingerprints,
+) -> io::Result<Option<Fingerprint>> {
+    let name = artifact
+        .file_stem()
+        .and_then(|name| name.to_str())
+        .unwrap_or_default();
+    let Some((_, hash)) = name.rsplit_once('-') else {
+        return Ok(None);
+    };
+    let mut found = None;
+    for path in &fingerprints.executables {
+        let directory = path.parent().map(file_name).unwrap_or_default();
+        let record = file_name(path);
+        if directory
+            .rsplit_once('-')
+            .is_some_and(|(_, suffix)| suffix == hash)
+            && (record.starts_with("test-")
+                || record.starts_with("bin-")
+                || record.starts_with("example-"))
+        {
+            let next = read_fingerprint(path)?;
+            if found.as_ref().is_some_and(|previous| *previous != next) {
+                return Err(io::Error::other(format!(
+                    "ambiguous Cargo fingerprints for {}",
+                    artifact.display()
+                )));
+            }
+            found = Some(next);
+        }
+    }
+    Ok(found)
+}
+
+/// Resolve an uplifted executable through a byte-identical hashed artifact, on every platform.
+fn executable_fingerprint(
+    artifact: &Path,
+    fingerprints: &Fingerprints,
+) -> io::Result<Option<Fingerprint>> {
+    if let Some(record) = hashed_fingerprint(artifact, fingerprints)? {
+        return Ok(Some(record));
+    }
+    let parent = artifact
+        .parent()
+        .ok_or_else(|| io::Error::other("executable has no parent"))?;
+    let folder = if parent.ends_with("examples") || parent.ends_with("deps") {
+        parent.to_path_buf()
+    } else {
+        parent.join("deps")
+    };
+    let prefix = format!(
+        "{}-",
+        artifact
+            .file_stem()
+            .and_then(|name| name.to_str())
+            .unwrap_or_default()
+    );
+    let mut found = None;
+    let entries = match std::fs::read_dir(folder) {
+        Ok(entries) => entries,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
+        Err(error) => return Err(error),
+    };
+    for entry in entries {
+        let twin = entry?.path();
+        if !file_name(&twin).starts_with(&prefix)
+            || !is_executable(&twin)
+            || !same_contents(artifact, &twin)?
+        {
+            continue;
+        }
+        if let Some(next) = hashed_fingerprint(&twin, fingerprints)? {
+            if found.as_ref().is_some_and(|previous| *previous != next) {
+                return Err(io::Error::other(format!(
+                    "ambiguous hashed twins for {}",
+                    artifact.display()
+                )));
+            }
+            found = Some(next);
+        }
+    }
+    Ok(found)
+}
+
+/// Compare equal-sized artifacts without retaining their executable images in memory.
+fn same_contents(left: &Path, right: &Path) -> io::Result<bool> {
+    let mut left = std::fs::File::open(left)?;
+    let mut right = std::fs::File::open(right)?;
+    let mut remaining = left.metadata()?.len();
+    if remaining != right.metadata()?.len() {
+        return Ok(false);
+    }
+    let mut a = [0; 8192];
+    let mut b = [0; 8192];
+    while remaining > 0 {
+        let count = usize::try_from(remaining.min(8192)).map_err(io::Error::other)?;
+        left.read_exact(&mut a[..count])?;
+        right.read_exact(&mut b[..count])?;
+        if a[..count] != b[..count] {
+            return Ok(false);
+        }
+        remaining -= u64::try_from(count).map_err(io::Error::other)?;
+    }
+    Ok(true)
+}
+
+/// Resolve linked outputs, or return `None` when a recorded dependency build no longer exists.
+fn linked_libraries(
+    record: Fingerprint,
+    fingerprints: &Fingerprints,
+) -> io::Result<Option<HashSet<String>>> {
+    let mut linked = HashSet::new();
+    let mut pending = record.deps;
+    let mut seen = HashSet::new();
+    while let Some((_, alias, _, hash)) = pending.pop() {
+        // Build-script results influence compilation but are not linked library outputs.
+        if alias == "build_script_build" || !seen.insert(hash) {
+            continue;
+        }
+        let Some(records) = fingerprints.libraries.get(&hash) else {
+            return Ok(None);
+        };
+        for path in records {
+            let directory = path.parent().map(file_name).unwrap_or_default();
+            let (_, metadata) = directory.rsplit_once('-').ok_or_else(|| {
+                io::Error::other("Cargo fingerprint directory has no metadata hash")
+            })?;
+            let name = path
+                .file_stem()
+                .and_then(|name| name.to_str())
+                .and_then(|name| name.strip_prefix("lib-"))
+                .ok_or_else(|| io::Error::other("Cargo library record has no crate name"))?;
+            linked.insert(format!("{name}-{metadata}"));
+            pending.extend(read_fingerprint(path)?.deps);
+        }
+    }
+    Ok(Some(linked))
+}
+
+/// Decode Cargo's little-endian hexadecimal hash, or `None` for an invalidated build.
+fn fingerprint_hash(path: &Path) -> io::Result<Option<u64>> {
+    let text = std::fs::read_to_string(path)?;
+    // Cargo truncates the hash before rebuilding and fills it only after success.
+    if text.is_empty() {
+        return Ok(None);
+    }
+    if text.len() != 16 {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            format!("invalid Cargo fingerprint hash {}", path.display()),
+        ));
+    }
+    u64::from_str_radix(&text, 16)
+        .map(|hash| Some(hash.swap_bytes()))
+        .map_err(|error| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("invalid Cargo fingerprint hash {}: {error}", path.display()),
+            )
+        })
 }

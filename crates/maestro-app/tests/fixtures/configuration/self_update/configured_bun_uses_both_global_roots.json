@@ -20,9 +20,10 @@
         "args": [
           "install",
           "-g",
+          "--ignore-scripts",
           "@old/agent"
         ],
-        "display": "bun install -g @old/agent"
+        "display": "bun install -g --ignore-scripts @old/agent"
       }
     },
     "trace": [
@@ -74,9 +75,10 @@
         "args": [
           "install",
           "-g",
+          "--ignore-scripts",
           "@old/agent"
         ],
-        "display": "bun install -g @old/agent"
+        "display": "bun install -g --ignore-scripts @old/agent"
       }
     },
     "trace": [
@@ -169,9 +171,10 @@
         "args": [
           "install",
           "-g",
+          "--ignore-scripts",
           "@old/agent"
         ],
-        "display": "bun.exe install -g @old/agent"
+        "display": "bun.exe install -g --ignore-scripts @old/agent"
       }
     },
     "trace": [

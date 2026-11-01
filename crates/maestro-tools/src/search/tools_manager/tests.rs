@@ -670,6 +670,57 @@ fn windows_binary_directory_entries_carry_the_exe_suffix() {
     });
 }
 
+/// Fd stops at the last Intel macOS build; every other host asks for the latest release.
+#[test]
+fn fd_downloads_pin_to_the_last_intel_macos_build() {
+    const ASSET: &str = "https://github.com/sharkdp/fd/releases/download";
+    const LOOKUP: &str = "https://api.github.com/repos/sharkdp/fd/releases/latest";
+    let cases = [
+        (
+            "macos",
+            "x86_64",
+            vec![format!(
+                "{ASSET}/v10.3.0/fd-v10.3.0-x86_64-apple-darwin.tar.gz"
+            )],
+        ),
+        (
+            "macos",
+            "aarch64",
+            vec![
+                LOOKUP.to_owned(),
+                format!("{ASSET}/v11.0.0/fd-v11.0.0-aarch64-apple-darwin.tar.gz"),
+            ],
+        ),
+        (
+            "linux",
+            "x86_64",
+            vec![
+                LOOKUP.to_owned(),
+                format!("{ASSET}/v11.0.0/fd-v11.0.0-x86_64-unknown-linux-gnu.tar.gz"),
+            ],
+        ),
+    ];
+    for (os, arch, expected) in cases {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let bin = maestro_path::join(&[scratch.path().to_str().unwrap(), "bin"]);
+        let urls = Arc::new(Mutex::new(Vec::new()));
+        let seen = Arc::clone(&urls);
+        let fetch: Fetch = Arc::new(move |request| {
+            let answer = if request.url == LOOKUP {
+                response(200, br#"{"tag_name":"v11.0.0"}"#.to_vec())
+            } else {
+                response(404, Vec::new())
+            };
+            seen.lock().unwrap().push(request.url);
+            Box::pin(async { Ok(answer) })
+        });
+        let mut manager = ToolsManager::new(bin, Some(fetch));
+        manager.host = Host { os, arch };
+        assert_eq!(run(manager.install_missing(SearchTool::Fd, None)), None);
+        assert_eq!(*urls.lock().unwrap(), expected, "{os} {arch}");
+    }
+}
+
 #[test]
 fn lookup_and_download_deadlines_cover_the_whole_body() {
     if !online("lookup_and_download_deadlines_cover_the_whole_body") {

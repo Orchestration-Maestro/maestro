@@ -20,7 +20,7 @@ impl ModelFileOperations for Missing {
 fn memory_and_missing_files_use_complete_offline_catalog() {
     let auth = support::auth();
     let expected: Vec<_> = get_providers().iter().flat_map(|p| get_models(p)).collect();
-    assert_eq!(expected.len(), 970);
+    assert_eq!(expected.len(), 978);
     for registry in [
         ModelRegistry::in_memory(auth.clone(), crate::support::values()).unwrap(),
         ModelRegistry::with_operations(auth.clone(), "absent", Missing, crate::support::values())
@@ -161,7 +161,7 @@ fn native_and_controlled_reads_share_failure_boundaries() {
     fail.store(false, std::sync::atomic::Ordering::SeqCst);
     disappeared.refresh().unwrap();
     assert_eq!(disappeared.get_error(), None);
-    assert_eq!(disappeared.get_all().read().unwrap().len(), 970);
+    assert_eq!(disappeared.get_all().read().unwrap().len(), 978);
     std::fs::OpenOptions::new()
         .create_new(true)
         .write(true)
@@ -172,7 +172,7 @@ fn native_and_controlled_reads_share_failure_boundaries() {
     for registry in [&mut native, &mut controlled] {
         registry.refresh().unwrap();
         assert_eq!(registry.get_error(), None);
-        assert_eq!(registry.get_all().read().unwrap().len(), 970);
+        assert_eq!(registry.get_all().read().unwrap().len(), 978);
     }
     native_replacement_decodes_utf8();
 }
@@ -198,4 +198,68 @@ fn native_replacement_decodes_utf8() {
         ModelRegistry::create(support::auth(), lossy.path(), crate::support::values()).unwrap();
     assert!(registry.find("custom", "\u{fffd}").is_some());
     assert_eq!(registry.get_error(), None);
+}
+
+/// Count the object schemas that declare the compatibility flag `anchor` and the ones among
+/// them that also declare each flag of `flags` as a boolean.
+fn compat_schemas(schema: &serde_json::Value, anchor: &str, flags: &[&str], counts: &mut [usize]) {
+    let children: Vec<&serde_json::Value> = match schema {
+        serde_json::Value::Object(members) => {
+            let declared = members
+                .get("properties")
+                .filter(|properties| properties.get(anchor).is_some());
+            if let Some(properties) = declared {
+                counts[0] += 1;
+                for (count, flag) in counts[1..].iter_mut().zip(flags) {
+                    *count += usize::from(properties[*flag]["type"] == "boolean");
+                }
+            }
+            members.values().collect()
+        }
+        serde_json::Value::Array(items) => items.iter().collect(),
+        _ => Vec::new(),
+    };
+    for child in children {
+        compat_schemas(child, anchor, flags, counts);
+    }
+}
+
+#[test]
+fn response_compat_schema_accepts_the_developer_role_flag() {
+    let schema: serde_json::Value =
+        serde_json::from_str(include_str!("../assets/models.schema.json")).unwrap();
+    let mut counts = [0; 2];
+    compat_schemas(
+        &schema,
+        "sendSessionIdHeader",
+        &["supportsDeveloperRole"],
+        &mut counts,
+    );
+    assert_eq!(
+        counts,
+        [3, 3],
+        "provider, custom model and override schemas"
+    );
+}
+
+#[test]
+fn messages_compat_schema_accepts_the_affinity_cache_and_signature_flags() {
+    let schema: serde_json::Value =
+        serde_json::from_str(include_str!("../assets/models.schema.json")).unwrap();
+    let mut counts = [0; 4];
+    compat_schemas(
+        &schema,
+        "supportsEagerToolInputStreaming",
+        &[
+            "sendSessionAffinityHeaders",
+            "supportsCacheControlOnTools",
+            "allowEmptySignature",
+        ],
+        &mut counts,
+    );
+    assert_eq!(
+        counts,
+        [3, 3, 3, 3],
+        "provider, custom model and override schemas"
+    );
 }

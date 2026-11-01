@@ -1,7 +1,6 @@
 //! Request construction: endpoint, headers, cache policy and the typed payload.
 
-use indexmap::IndexMap;
-use maestro_json::is_truthy as enabled;
+use indexmap::{IndexMap, IndexSet};
 use serde::Serialize;
 use serde_json::Value;
 use std::borrow::Cow;
@@ -19,10 +18,9 @@ use crate::providers::http::{
     HttpRequest, RequestFailure, copied, edge_whitespace, endpoint_url, layer,
 };
 use crate::providers::json_text::compact_json;
+use crate::providers::model_compat::compat_flag;
 use crate::{CacheRetention, Context, Model, ToolChoice, get_env_api_key};
 
-/// Environment variable that supplies a bearer token next to the key.
-const AMBIENT_TOKEN_VARIABLE: &str = "ANTHROPIC_AUTH_TOKEN";
 /// Service endpoint used when the model names none.
 const DEFAULT_BASE_URL: &str = "https://api.anthropic.com";
 /// Endpoint appended to the base URL.
@@ -47,6 +45,9 @@ struct Payload<'a> {
     max_tokens: f64,
     /// Always set: the response is streamed.
     stream: bool,
+    /// Beta features consumed by the client rather than the HTTP body.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    betas: Vec<String>,
     /// System prompt.
     #[serde(skip_serializing_if = "Option::is_none")]
     system: Option<Vec<SystemBlock<'a>>>,
@@ -147,18 +148,48 @@ impl<'a> ToolSelection<'a> {
     }
 }
 
-/// The compatibility flags of a model that shape a request.
-struct Compat {
+/// The compatibility flags of a model that shape its tool definitions.
+struct ToolCompat {
     /// Whether the service streams tool arguments as they are written.
     eager_input_streaming: bool,
+    /// Whether the last tool may carry a cache marker.
+    cache_control: bool,
+}
+
+/// The compatibility flags of a model that shape a request, each read once with its default.
+struct Compat {
+    /// Flags of the tool definitions.
+    tools: ToolCompat,
     /// Whether the model supports the one-hour cache lifetime.
     long_cache_retention: bool,
+    /// Whether unsigned thinking is replayed with an empty signature.
+    allow_empty_signature: bool,
+    /// Whether the session identifier is sent as an affinity header.
+    session_affinity_headers: bool,
+}
+
+impl Compat {
+    /// Read the flags of `model`: tool streaming and both cache flags are on unless the model
+    /// turns them off, the other two off unless it turns them on.
+    fn of(model: &Model) -> Self {
+        Self {
+            tools: ToolCompat {
+                eager_input_streaming: compat_flag(model, "supportsEagerToolInputStreaming", true),
+                cache_control: compat_flag(model, "supportsCacheControlOnTools", true),
+            },
+            long_cache_retention: compat_flag(model, "supportsLongCacheRetention", true),
+            allow_empty_signature: compat_flag(model, "allowEmptySignature", false),
+            session_affinity_headers: compat_flag(model, "sendSessionAffinityHeaders", false),
+        }
+    }
 }
 
 /// One invocation's inputs with the cache policy resolved from them.
 pub(super) struct Invocation<'a, E: crate::ProviderExecution> {
     /// Target model.
     model: &'a Model,
+    /// Compatibility flags of the model.
+    compat: Compat,
     /// Conversation to send.
     context: &'a Context,
     /// Caller options.
@@ -189,6 +220,7 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
         let retention = resolve_cache_retention(options.common.cache_retention);
         let mut invocation = Self {
             model,
+            compat: Compat::of(model),
             context,
             options,
             retention,
@@ -204,40 +236,23 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
         Ok(invocation)
     }
 
-    /// The compatibility flags of the model, each on unless the model turns it off.
-    fn compat(&self) -> Compat {
-        let flag = |name| {
-            self.model
-                .compat
-                .as_ref()
-                .and_then(|compat| compat.0.get(name))
-                .filter(|value| !value.is_null())
-                .is_none_or(enabled)
-        };
-        Compat {
-            eager_input_streaming: flag("supportsEagerToolInputStreaming"),
-            long_cache_retention: flag("supportsLongCacheRetention"),
-        }
-    }
-
     /// The marker the retention asks for: none for `none`, a one-hour lifetime for `long` on a
     /// model that supports it, otherwise the default lifetime.
     fn cache_control(&self) -> Option<CacheControl> {
         match self.retention {
             CacheRetention::None => None,
-            CacheRetention::Long if self.compat().long_cache_retention => Some(CacheControl::LONG),
+            CacheRetention::Long if self.compat.long_cache_retention => Some(CacheControl::LONG),
             CacheRetention::Short | CacheRetention::Long => Some(CacheControl::SHORT),
         }
     }
 
-    /// The output limit: the caller's unless it is zero or not a number, otherwise a third of
-    /// the model's, truncated.
+    /// The output limit: the caller's unless it is zero or not a number, otherwise the model's.
     fn max_tokens(&self) -> f64 {
         self.options
             .common
             .max_tokens
             .filter(|tokens| *tokens != 0.0 && !tokens.is_nan())
-            .unwrap_or_else(|| (self.model.max_tokens / 3.0).trunc())
+            .unwrap_or(self.model.max_tokens)
     }
 
     /// Build the request payload as JSON.
@@ -250,9 +265,16 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
         let (thinking, output_config) = self.thinking_fields();
         let payload = Payload {
             model: &self.model.id,
-            messages: convert(self.model, self.context, cache, self.naming),
+            messages: convert(
+                self.model,
+                self.context,
+                cache,
+                self.naming,
+                self.compat.allow_empty_signature,
+            ),
             max_tokens: self.max_tokens(),
             stream: true,
+            betas: self.betas(),
             system: self.system(cache),
             temperature: common
                 .temperature
@@ -265,8 +287,8 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
                 .map(|declared| {
                     tools(
                         declared,
-                        self.compat().eager_input_streaming,
-                        cache,
+                        self.compat.tools.eager_input_streaming,
+                        cache.filter(|_| self.compat.tools.cache_control),
                         self.naming,
                     )
                 }),
@@ -302,7 +324,7 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
             .thinking_display
             .unwrap_or(AnthropicThinkingDisplay::Summarized)
             .as_str();
-        if supports_adaptive_thinking(&self.model.id) {
+        if supports_adaptive_thinking(self.model) {
             let effort = match self.thinking {
                 ThinkingInput::Effort(mapped) => Some(mapped.as_str()),
                 ThinkingInput::Raw | ThinkingInput::Budget(_) => {
@@ -333,19 +355,46 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
         }
     }
 
-    /// Optional betas: streamed tool arguments for a model without eager input
-    /// streaming when tools are declared, and interleaved reasoning unless the caller turns it
-    /// off or the model's reasoning is adaptive.
-    fn betas(&self) -> Vec<&'static str> {
-        let tools_declared = self.context.tools.as_deref().is_some_and(|t| !t.is_empty());
-        let mut betas = Vec::new();
-        if tools_declared && !self.compat().eager_input_streaming {
-            betas.push(FINE_GRAINED_TOOL_STREAMING_BETA);
+    /// Select configured betas in layer order, otherwise the applicable protocol defaults.
+    fn betas(&self) -> Vec<String> {
+        let configured = self
+            .model
+            .headers
+            .iter()
+            .chain(self.options.common.headers.iter())
+            .flat_map(|headers| headers.iter())
+            .filter(|(name, _)| name.eq_ignore_ascii_case("anthropic-beta"))
+            .map(|(_, value)| value)
+            .next_back();
+        if let Some(configured) = configured {
+            return configured
+                .split(',')
+                .map(|part| part.trim_matches(whitespace))
+                .filter(|part| !part.is_empty())
+                .map(str::to_owned)
+                .collect::<IndexSet<_>>()
+                .into_iter()
+                .collect();
         }
-        if self.options.interleaved_thinking.unwrap_or(true)
-            && !supports_adaptive_thinking(&self.model.id)
+        let mut betas = Vec::new();
+        if matches!(self.naming, Naming::Subscription) {
+            betas.extend(["claude-code-20250219".into(), "oauth-2025-04-20".into()]);
+        }
+        if self
+            .context
+            .tools
+            .as_deref()
+            .is_some_and(|tools| !tools.is_empty())
+            && !self.compat.tools.eager_input_streaming
         {
-            betas.push(INTERLEAVED_THINKING_BETA);
+            betas.push(FINE_GRAINED_TOOL_STREAMING_BETA.into());
+        }
+        if self.model.reasoning
+            && self.options.thinking_enabled == Some(true)
+            && self.options.interleaved_thinking.unwrap_or(true)
+            && !supports_adaptive_thinking(self.model)
+        {
+            betas.push(INTERLEAVED_THINKING_BETA.into());
         }
         betas
     }
@@ -410,23 +459,34 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
             headers.insert("authorization".to_owned(), format!("Bearer {key}"));
         } else {
             headers.insert("x-api-key".to_owned(), key.to_owned());
-            if let Some(token) = ambient_token() {
-                headers.insert("authorization".to_owned(), format!("Bearer {token}"));
-            }
         }
-        let mut betas = self.betas();
+        if !account && !subscription {
+            self.add_session_affinity(&mut headers);
+        }
         if subscription {
-            betas.splice(0..0, ["claude-code-20250219", "oauth-2025-04-20"]);
             headers.insert("user-agent".to_owned(), "claude-cli/2.1.75".to_owned());
             headers.insert("x-app".to_owned(), "cli".to_owned());
-        }
-        if !betas.is_empty() {
-            headers.insert("anthropic-beta".to_owned(), betas.join(","));
         }
         self.layer_model_headers(&mut headers);
         headers.insert("content-type".to_owned(), "application/json".to_owned());
         self.headers = headers;
         Ok(())
+    }
+
+    /// Send the session identifier as an affinity header when the model's compatibility turns it
+    /// on and caching is not off.
+    fn add_session_affinity(&self, headers: &mut IndexMap<String, String>) {
+        if self.retention != CacheRetention::None
+            && self.compat.session_affinity_headers
+            && let Some(session) = self
+                .options
+                .common
+                .session_id
+                .as_deref()
+                .filter(|id| !id.is_empty())
+        {
+            headers.insert("x-session-affinity".to_owned(), session.to_owned());
+        }
     }
 
     /// Apply model, account-history and caller layers in that order.
@@ -470,13 +530,25 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
     /// # Errors
     /// Fails when the endpoint is not a URL, headers neither authenticate nor retain a gateway
     /// omission, or the payload cannot be written as JSON.
-    pub(super) fn request(&self, payload: &Value) -> Result<HttpRequest, RequestFailure> {
+    pub(super) fn request(&self, mut payload: Value) -> Result<HttpRequest, RequestFailure> {
         let base = match self.base_url.as_ref() {
             "" => DEFAULT_BASE_URL,
             supplied => supplied,
         };
-        let headers = self.headers()?;
-        let body = compact_json(payload).map_err(|error| RequestFailure::new(error.to_string()))?;
+        let mut headers = self.headers()?;
+        if let Some(betas) = payload
+            .as_object_mut()
+            .and_then(|body| body.shift_remove("betas"))
+        {
+            let betas: Vec<String> = serde_json::from_value(betas)
+                .map_err(|error| RequestFailure::new(error.to_string()))?;
+            layer(
+                &mut headers,
+                [("anthropic-beta".to_owned(), betas.join(","))],
+            );
+        }
+        let body =
+            compact_json(&payload).map_err(|error| RequestFailure::new(error.to_string()))?;
         Ok(HttpRequest {
             method: "POST".to_owned(),
             url: endpoint_url(base, ENDPOINT_PATH)?,
@@ -487,25 +559,11 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
     }
 }
 
-/// The bearer token the environment supplies, without surrounding script whitespace; an empty
-/// token is no token.
-fn ambient_token() -> Option<String> {
-    let token = std::env::var(AMBIENT_TOKEN_VARIABLE).ok()?;
-    let token = token.trim_matches(whitespace);
-    (!token.is_empty()).then(|| token.to_owned())
-}
-
-/// Report whether the model's reasoning is adaptive: Opus 4.6 and 4.7 and Sonnet 4.6, with
-/// either spelling of the version.
-pub(super) fn supports_adaptive_thinking(model_id: &str) -> bool {
-    [
-        "opus-4-6",
-        "opus-4.6",
-        "opus-4-7",
-        "opus-4.7",
-        "sonnet-4-6",
-        "sonnet-4.6",
-    ]
-    .iter()
-    .any(|marker| model_id.contains(marker))
+/// Report whether compatibility metadata explicitly selects adaptive thinking.
+pub(super) fn supports_adaptive_thinking(model: &Model) -> bool {
+    model
+        .compat
+        .as_ref()
+        .and_then(|compat| compat.0.get("forceAdaptiveThinking"))
+        == Some(&Value::Bool(true))
 }

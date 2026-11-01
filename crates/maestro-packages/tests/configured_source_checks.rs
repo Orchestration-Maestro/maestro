@@ -1,6 +1,8 @@
 //! Configured sources through the supplied-operation manager.
+#[cfg(not(target_arch = "wasm32"))]
+use crate::resolution_support::case_in_child;
 #[cfg(unix)]
-use crate::resolution_support::{case_in_child, case_in_removed_cwd};
+use crate::resolution_support::case_in_removed_cwd;
 #[cfg(unix)]
 use crate::scratch;
 use crate::support;
@@ -63,6 +65,22 @@ fn source_classification_preserves_npm_and_local_precedence() {
         );
     }
     assert_eq!(visited.len(), 26);
+}
+#[test]
+#[cfg(unix)]
+fn package_home_matches_the_resources_rule() {
+    let empty_home = |_: &str| vec![("HOME", Some(String::new()))];
+    let Some(root) = case_in_child("empty home", empty_home) else {
+        return;
+    };
+    assert_eq!(maestro_resources::paths::home_directory().unwrap(), "");
+    let (manager, _, _) = support::manager_below(&root, &json!({}), &json!([]), None);
+    assert_eq!(
+        manager
+            .get_installed_path("~", maestro_packages::InstalledSourceScope::Project)
+            .unwrap(),
+        None
+    );
 }
 #[test]
 #[cfg(unix)]
@@ -419,7 +437,7 @@ fn workflow(
     assert!(manager.add_source_to_settings("./local", None)?);
     assert!(manager.add_source_to_settings("npm:@scope/pkg", None)?);
     assert!(manager.add_source_to_settings("https://github.com/u/r", Some(Project))?);
-    assert!(!manager.add_source_to_settings("ssh://git@github.com/u/r", Some(Project))?);
+    assert!(manager.add_source_to_settings("ssh://git@github.com/u/r", Some(Project))?);
     let rows = manager.list_configured_packages()?;
     assert_eq!(
         rows.iter()
@@ -428,7 +446,7 @@ fn workflow(
         vec![
             ("../project/local", User),
             ("npm:@scope/pkg", User),
-            ("https://github.com/u/r", Project)
+            ("ssh://git@github.com/u/r", Project)
         ]
     );
     assert_eq!(
@@ -579,7 +597,7 @@ fn configuration_writes_publish_before_flush_without_rewriting_noops() {
     let first = storage.writes.load(Ordering::SeqCst);
     assert_eq!(first, 1);
     assert!(
-        !manager
+        manager
             .add_source_to_settings("npm:pkg@latest", None)
             .unwrap()
     );
@@ -589,7 +607,7 @@ fn configuration_writes_publish_before_flush_without_rewriting_noops() {
             .unwrap()
     );
     runtime.block_on(settings.borrow().flush());
-    assert_eq!(storage.writes.load(Ordering::SeqCst), first);
+    assert_eq!(storage.writes.load(Ordering::SeqCst), first + 1);
     assert!(
         manager
             .remove_source_from_settings("npm:pkg", None)
@@ -600,7 +618,7 @@ fn configuration_writes_publish_before_flush_without_rewriting_noops() {
         json!([])
     );
     runtime.block_on(settings.borrow().flush());
-    assert_eq!(storage.writes.load(Ordering::SeqCst), first + 1);
+    assert_eq!(storage.writes.load(Ordering::SeqCst), first + 2);
     let mut text = None;
     storage
         .with_lock(SettingsScope::Global, &mut |current| {
@@ -786,7 +804,7 @@ fn numeric_scp_namespace_matches_git_transport_in_settings() {
         settings.borrow().get_global_settings().0["packages"],
         json!([scp])
     );
-    assert!(!manager.add_source_to_settings(https, None).unwrap());
+    assert!(manager.add_source_to_settings(https, None).unwrap());
     assert!(manager.remove_source_from_settings(https, None).unwrap());
     assert_eq!(
         settings.borrow().get_global_settings().0["packages"],
@@ -800,14 +818,87 @@ fn queried_hosted_shortcut_matches_https_for_add_and_remove() {
     let shortcut = "git:github:octocat/Hello-World?tab=readme";
     let https = "https://github.com/octocat/Hello-World";
     assert!(manager.add_source_to_settings(shortcut, None).unwrap());
-    assert!(!manager.add_source_to_settings(https, None).unwrap());
+    assert!(manager.add_source_to_settings(https, None).unwrap());
     assert_eq!(
         settings.borrow().get_global_settings().0["packages"],
-        json!([shortcut])
+        json!([https])
     );
     assert!(manager.remove_source_from_settings(https, None).unwrap());
     assert_eq!(
         settings.borrow().get_global_settings().0["packages"],
         json!([])
     );
+}
+
+/// Matching entries replace their spelling while retaining object fields and exact no-ops.
+#[test]
+fn source_spelling_replacement_preserves_filters_and_exact_noops() {
+    for entry in [
+        json!("git:example.test/team/repo@old"),
+        json!({"source":"git:example.test/team/repo", "skills":[], "unknown":7}),
+    ] {
+        let (manager, settings, _) = support::manager(&json!({"packages":[entry]}));
+        let source = "https://example.test/team/repo";
+        assert!(manager.add_source_to_settings(source, None).unwrap());
+        let expected = if entry.is_object() {
+            json!({"source":source, "skills":[], "unknown":7})
+        } else {
+            json!(source)
+        };
+        assert_eq!(
+            settings.borrow().get_global_settings().0["packages"],
+            json!([expected])
+        );
+        assert!(!manager.add_source_to_settings(source, None).unwrap());
+    }
+}
+
+/// Package sources select a nonempty HOME on every platform, retaining literal user names.
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn package_sources_honor_nonempty_home_on_every_platform() {
+    let Some(root) = case_in_child("nonempty home", |base| {
+        vec![(
+            "HOME",
+            Some(support::below(std::path::Path::new(base), "/home")),
+        )]
+    }) else {
+        return;
+    };
+    let (manager, _) = crate::resolution_support::manager(root.to_str().unwrap());
+    for (source, relative) in [
+        ("~", "/home"),
+        ("~/name", "/home/name"),
+        ("~name", "/.maestro/~name"),
+    ] {
+        let expected = support::below(&root, relative);
+        std::fs::create_dir_all(&expected).unwrap();
+        assert_eq!(
+            manager
+                .get_installed_path(source, maestro_packages::InstalledSourceScope::Project)
+                .unwrap(),
+            Some(expected)
+        );
+    }
+}
+
+/// An absent or empty Windows HOME leaves package sources at the native account directory.
+#[cfg(windows)]
+#[test]
+fn windows_packages_fall_back_when_home_is_empty_or_unset() {
+    for value in [None, Some("")] {
+        let Some(root) = case_in_child(if value.is_some() { "empty" } else { "unset" }, |_| {
+            vec![("HOME", value.map(str::to_owned))]
+        }) else {
+            continue;
+        };
+        let (manager, _) = crate::resolution_support::manager(root.to_str().unwrap());
+        let home = maestro_resources::paths::home_directory().unwrap();
+        assert_eq!(
+            manager
+                .get_installed_path("~", maestro_packages::InstalledSourceScope::Project)
+                .unwrap(),
+            Some(home)
+        );
+    }
 }

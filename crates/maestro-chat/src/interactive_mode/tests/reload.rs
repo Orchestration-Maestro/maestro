@@ -6,12 +6,12 @@ use super::extension_widgets::{with_configured_factories, with_factories};
 use super::navigation::{append_user, resume::saved};
 use super::{Setup, World, admitted, isolated, isolated_output, start, started, submit};
 use maestro_app::{
-    ComponentFactory, ContextFile, DiagnosticErrorInfo, ExtensionAPI, ExtensionCommandContext,
-    ExtensionComponent, ExtensionFactory, ExtensionUIFuture, ForkOptions, ForkPosition, Local,
-    NavigateTreeOptions, NewSessionCommandOptions, Presence, ReadonlySessionManager,
-    SessionBeforeForkEvent, SessionBeforeForkResult, SessionBeforeSwitchEvent,
-    SessionBeforeSwitchResult, SessionBeforeTreeEvent, SessionBeforeTreeResult, SettingsManager,
-    SwitchSessionOptions, WidgetContent,
+    AgentSessionEvent, ComponentFactory, ContextFile, DiagnosticErrorInfo, ExtensionAPI,
+    ExtensionCommandContext, ExtensionComponent, ExtensionFactory, ExtensionUIFuture, ForkOptions,
+    ForkPosition, Local, NavigateTreeOptions, NewSessionCommandOptions, Presence, PromptOptions,
+    ReadonlySessionManager, SessionBeforeForkEvent, SessionBeforeForkResult,
+    SessionBeforeSwitchEvent, SessionBeforeSwitchResult, SessionBeforeTreeEvent,
+    SessionBeforeTreeResult, SettingsManager, StopReason, SwitchSessionOptions, WidgetContent,
 };
 use maestro_tui::{Cancellation, Component, EditorComponent, Focusable, Text};
 use serde_json::json;
@@ -844,6 +844,50 @@ fn command_actions_use_live_idle_resume_and_reload_owners() {
     );
 }
 
+/// The extension command context's idle wait covers the retry wait of a failed response:
+/// it stays pending after the agent's own run has ended and returns once the run settles.
+#[test]
+fn command_wait_for_idle_covers_a_retry_wait() {
+    isolated(
+        "command_wait_for_idle_covers_a_retry_wait",
+        async |directory| {
+            let world = started(directory).await;
+            let session = world.mode.runtime_host.session();
+            let receiver = super::held_response(&world);
+            let waiting = Rc::new(tokio::sync::Notify::new());
+            let notify = Rc::clone(&waiting);
+            drop(session.subscribe(Rc::new(move |event| {
+                if matches!(event, AgentSessionEvent::AutoRetryStart { .. }) {
+                    notify.notify_one();
+                }
+            })));
+            let prompted = Rc::clone(&session);
+            let run = tokio::task::spawn_local(async move {
+                prompted.prompt("run", PromptOptions::default()).await
+            });
+            let held = receiver.await.unwrap();
+            let failure = super::answer();
+            {
+                let mut message = failure.write().unwrap();
+                message.stop_reason = StopReason::Error;
+                message.error_message = Some("overloaded_error".to_owned());
+            }
+            held.stream.end(Some(failure));
+            waiting.notified().await;
+            let mut idle = context(&world).wait_for_idle();
+            assert!(
+                idle.as_mut()
+                    .poll(&mut Context::from_waker(Waker::noop()))
+                    .is_pending(),
+                "the retry wait belongs to the run the context waits for"
+            );
+            session.abort_retry();
+            run.await.unwrap().unwrap();
+            idle.await.unwrap();
+        },
+    );
+}
+
 /// Session switching uses the existing resume presenter and missing-directory dialog.
 async fn bound_resume(world: &World, directory: &std::path::Path) {
     for missing in [false, true] {
@@ -1018,7 +1062,7 @@ async fn new_and_fork_outcomes(directory: &std::path::Path, cancel: bool) {
             if fork && !cancel { "first" } else { "draft" }
         );
         if !fork {
-            assert!(world.mode.working.loading_animation.borrow().is_none());
+            assert!(world.mode.working_loader().is_none());
             assert!(world.mode.status_container.render(120).is_empty());
             assert!(!shows(&world.mode.chat_container, "New session started"));
         }

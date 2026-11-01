@@ -3,6 +3,9 @@
 The [foundation specification](specs/maestro-port.md#crates-and-delivery-order)
 owns the crate graph. `maestro-test-conventions` checks that graph through
 `check_workspace(root)`; it does not execute product capabilities.
+Its crate dependency table lives in `src/graph/policy/table.rs` within the
+conventions crate. `src/graph/policy.rs` keeps the rule logic and re-exports
+`POLICY` for its existing callers.
 
 ## Application export layout
 
@@ -128,18 +131,13 @@ The cancellation leaf has no internal dependencies; only models and the toolkit
 may depend directly on it.
 
 The [shared filesystem effect contract](specs/maestro-port.md#crates-and-delivery-order)
-declares `maestro-watch` and `maestro-lock` as core leaves below layer 0, including
-when their implementations are absent. Watch has no workspace dependency; lock
-may use the optional `maestro-path` utility without changing its leaf status.
-Only theme/application may consume watch; only
-settings/credentials/workspace may consume lock. Watch creation/close, injected watch/timer
-interfaces and native notifications belong to watch; bounded synchronous
-contention acquisition of caller-opened files and atomic byte replacement belong
-to lock. Workspace owns snapshot serialization and link-following policy. Feature owners
-retain reload, refresh, retry, polling, lock-file creation, permissions, in-place persistence,
-unlocking and asynchronous credential acquisition policy. This changes ownership,
-not public capabilities or feature-specific timing, process, subscription and
-teardown semantics; it introduces no generic executor or scheduling policy.
+declares watch below layer 0 without workspace dependencies. Lock depends only
+on path for the single native home reader, using the existing SHA-256 dependency
+for canonical target identity. Only theme/application may consume watch; only
+settings/credentials/workspace/detection/session may consume lock. The lock owner
+provides bounded and waiting acquisition plus recoverable in-place byte
+publication. See [file locking](locking.md) for the durable copy and replay order.
+Feature owners retain serialization, symbolic-link policy and scheduling.
 
 The process leaf `maestro-process` is declared core below layer 0 with no workspace
 dependencies, including path and cancellation. Only tools, packages, credentials,
@@ -209,9 +207,9 @@ leaf and exact-set rules, alongside the native feature unifier. Any crate in the
 specification table may declare it as a normal or build dependency (optional and target-specific forms included)
 without changing its layer, subject to the exclusions in the specification's
 [crate graph](specs/maestro-port.md#crates-and-delivery-order).
-Shared path helpers take supplied directory observations and
-add no global environment, filesystem service, directory cache, scheduler or workspace
-dependency. The edge is ignored when checking a crate's complete
+Shared path helpers take supplied directory observations; `native_homedir` alone
+reads the native home environment and account entry. They add no filesystem
+service, directory cache, scheduler or workspace dependency. The edge is ignored when checking a crate's complete
 direct set or leaf
 status. The
 [architecture conventions test](../crates/maestro-test-conventions/tests/architecture.rs)

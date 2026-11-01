@@ -1,8 +1,9 @@
 //! Compile-time callback affinity for owned agent execution.
 use super::{
-    AfterToolCallContext, AfterToolCallResult, AgentEvent, AgentLoopConfigRecord, AgentMessage,
-    AgentToolResult, AgentToolUpdateCallback, BeforeToolCallContext, BeforeToolCallResult,
-    ConvertToLlm, CustomAgentMessages, ExecuteTool, ShouldStopAfterTurnContext,
+    AfterToolCallContext, AfterToolCallResult, AgentEvent, AgentLoopConfigRecord,
+    AgentLoopTurnUpdate, AgentMessage, AgentToolResult, AgentToolUpdateCallback,
+    BeforeToolCallContext, BeforeToolCallResult, ConvertToLlm, CustomAgentMessages, ExecuteTool,
+    PrepareNextTurnContext, ShouldStopAfterTurnContext,
 };
 use maestro_models::{
     AssistantMessageEventStream, Cancellation, Context, DiagnosticErrorInfo, Message, Model,
@@ -65,6 +66,12 @@ pub trait AgentExecution: maestro_models::ProviderExecution {
         + ?Sized;
     /// The borrowed turn-stopping callable.
     type Stop<C: CustomAgentMessages>: for<'a> Fn(ShouldStopAfterTurnContext<'a, C, Self>) -> CallbackFuture<'a, Self, bool>
+        + ?Sized;
+    /// The borrowed next-turn preparation callable.
+    type PrepareNextTurn<C: CustomAgentMessages>: for<'a> Fn(
+            PrepareNextTurnContext<'a, C, Self>,
+            Option<Cancellation>,
+        ) -> CallbackFuture<'a, Self, Option<AgentLoopTurnUpdate<C, Self>>>
         + ?Sized;
     /// The queued-input polling callable.
     type Poll<C: CustomAgentMessages>: Fn() -> CallbackFuture<'static, Self, Vec<AgentMessage<C>>>
@@ -145,6 +152,11 @@ impl AgentExecution for $mode {
         ) -> CallbackFuture<'a, Self, Option<AfterToolCallResult>>
         $($bound)*;
     type Stop<C: CustomAgentMessages> = dyn for<'a> Fn(ShouldStopAfterTurnContext<'a, C, Self>) -> CallbackFuture<'a, Self, bool>
+        $($bound)*;
+    type PrepareNextTurn<C: CustomAgentMessages> = dyn for<'a> Fn(
+            PrepareNextTurnContext<'a, C, Self>,
+            Option<Cancellation>,
+        ) -> CallbackFuture<'a, Self, Option<AgentLoopTurnUpdate<C, Self>>>
         $($bound)*;
     type Poll<C: CustomAgentMessages> =
         dyn Fn() -> CallbackFuture<'static, Self, Vec<AgentMessage<C>>> $($bound)*;

@@ -205,3 +205,76 @@ fn size_formatting_rounds_positive_half_ties_up() -> Result<(), Box<dyn std::err
 fn size_formatting_retains_number_spelling() -> Result<(), Box<dyn std::error::Error>> {
     check("size_formatting_retains_number_spelling")
 }
+
+#[test]
+fn tail_keeps_whole_scalars_of_an_oversized_line_ending_in_a_newline() {
+    let text = format!("ab{}\n", "€".repeat(10));
+    let result = truncate_tail(
+        &text,
+        TruncationOptions {
+            max_lines: None,
+            max_bytes: Some(11),
+        },
+    );
+    assert_eq!(result.content, "€€€");
+    assert_eq!((result.total_bytes, result.total_lines), (33, 1));
+    assert_eq!((result.output_bytes, result.output_lines), (9, 1));
+    assert!(result.truncated && result.last_line_partial);
+    assert!(matches!(
+        result.truncated_by,
+        Some(maestro_tools::TruncationBy::Bytes)
+    ));
+    assert_eq!(result.max_bytes, 11);
+}
+
+#[test]
+fn tail_terminated_oversized_line_uses_full_byte_budget() {
+    let text = format!("{}\n", "X".repeat(300_000));
+    let tail = truncate_tail(
+        &text,
+        TruncationOptions {
+            max_bytes: Some(1024),
+            ..Default::default()
+        },
+    );
+    assert_eq!(tail.content, "X".repeat(1024));
+    assert_eq!((tail.total_lines, tail.output_lines), (1, 1));
+    assert!(tail.last_line_partial);
+}
+
+#[test]
+fn tail_omitted_final_newline_reports_bytes_not_lines() {
+    let tail = truncate_tail(
+        "abc\n",
+        TruncationOptions {
+            max_bytes: Some(3),
+            ..Default::default()
+        },
+    );
+    assert_eq!(tail.content, "abc");
+    assert_eq!((tail.total_lines, tail.output_lines), (1, 1));
+    assert_eq!(tail.truncated_by, Some(maestro_tools::TruncationBy::Bytes));
+    assert!(!tail.last_line_partial);
+}
+
+#[test]
+fn head_omitted_final_newline_reports_bytes_not_lines() {
+    for bytes in [3, maestro_tools::DEFAULT_MAX_BYTES] {
+        let text = format!("{}\n", "a".repeat(bytes));
+        let result = truncate_head(
+            &text,
+            TruncationOptions {
+                max_bytes: Some(bytes),
+                ..TruncationOptions::default()
+            },
+        );
+        assert_eq!(
+            result.truncated_by,
+            Some(maestro_tools::TruncationBy::Bytes)
+        );
+        assert!(result.truncated);
+        assert_eq!(result.content, "a".repeat(bytes));
+        assert_eq!(result.output_lines, result.total_lines);
+        assert_eq!(result.output_bytes, bytes);
+    }
+}

@@ -200,6 +200,7 @@ fn oauth_discrimination_uses_stored_kind_not_current_key() {
     registry.auth_storage().set(
         "p",
         AuthCredential::ApiKey(ApiKeyCredential {
+            env: None,
             key: "stored".into(),
         }),
     );
@@ -340,6 +341,7 @@ fn lower_layer_status(registry: &ModelRegistry) {
     registry.auth_storage().set(
         "p",
         AuthCredential::ApiKey(ApiKeyCredential {
+            env: None,
             key: "!stored-helper".into(),
         }),
     );

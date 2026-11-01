@@ -431,6 +431,7 @@ fn brand_panel(live: maestro_theme::LiveTheme) -> OAuthSelectorComponent {
     storage.set(
         "key",
         maestro_app::AuthCredential::ApiKey(maestro_app::ApiKeyCredential {
+            env: None,
             key: "controlled-key".into(),
         }),
     );
