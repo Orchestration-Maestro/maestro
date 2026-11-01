@@ -539,13 +539,13 @@ fn daemon_unchanged_git_status_drain_has_no_render_impact() {
 fn git_config_home_uses_only_home_variable() {
     let cases = [
         (None, None, ""),
-        (None, Some(""), "git/config"),
+        (None, Some(""), ""),
         (None, Some("x"), "x/git/config"),
-        (Some(""), None, ".config/git/config\n.gitconfig"),
-        (Some(""), Some(""), "git/config\n.gitconfig"),
-        (Some(""), Some("x"), "x/git/config\n.gitconfig"),
+        (Some(""), None, "/.config/git/config\n/.gitconfig"),
+        (Some(""), Some(""), "/.config/git/config\n/.gitconfig"),
+        (Some(""), Some("x"), "x/git/config\n/.gitconfig"),
         (Some("h"), None, "h/.config/git/config\nh/.gitconfig"),
-        (Some("h"), Some(""), "git/config\nh/.gitconfig"),
+        (Some("h"), Some(""), "h/.config/git/config\nh/.gitconfig"),
         (Some("h"), Some("x"), "x/git/config\nh/.gitconfig"),
     ];
     let Some(cases) = maestro_test_process::run_per_environment(
