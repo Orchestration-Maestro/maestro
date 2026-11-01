@@ -1,0 +1,518 @@
+//! Effect-free workspace command discovery.
+#![cfg(not(target_arch = "wasm32"))]
+#![cfg(test)]
+
+use maestro_cli::workspace_commands::spec::command;
+
+#[test]
+fn workspace_metadata_unifies_daemon_verbs() {
+    let mut root = command();
+    root.build();
+    root.clone().debug_assert();
+    for noun in [
+        "attach",
+        "daemon",
+        "status",
+        "api",
+        "completion",
+        "settings",
+        "workspace",
+        "worktree",
+        "tab",
+        "pane",
+        "agent",
+        "terminal",
+        "notification",
+        "integration",
+        "action",
+    ] {
+        assert!(root.find_subcommand(noun).is_some(), "missing {noun}");
+    }
+    for removed in ["server", "session", "channel"] {
+        assert!(root.find_subcommand(removed).is_none());
+    }
+    let daemon = root.find_subcommand("daemon").unwrap();
+    let verbs: Vec<_> = daemon
+        .get_subcommands()
+        .map(clap::Command::get_name)
+        .collect();
+    assert_eq!(
+        verbs,
+        [
+            "stop",
+            "reload",
+            "manifests",
+            "update-manifests",
+            "live-handoff",
+            "list",
+            "delete",
+            "attach"
+        ]
+    );
+    let parsed = root
+        .try_get_matches_from(["maestro", "daemon", "delete", "--daemon", "build", "--json"])
+        .unwrap();
+    let delete = parsed
+        .subcommand_matches("daemon")
+        .unwrap()
+        .subcommand_matches("delete")
+        .unwrap();
+    assert_eq!(
+        delete.get_one::<String>("daemon").map(String::as_str),
+        Some("build")
+    );
+    assert!(delete.get_flag("json"));
+}
+
+const VALID_COMMANDS: &[&[&str]] = &[
+    &["action", "link", "/actions", "--disabled"],
+    &["action", "remove", "build"],
+    &["action", "enable", "build"],
+    &["action", "disable", "build"],
+    &[
+        "action",
+        "manifests",
+        "--action-manifest",
+        "build",
+        "--json",
+    ],
+    &["action", "list", "--action-manifest", "build"],
+    &[
+        "action",
+        "invoke",
+        "build.test",
+        "--action-manifest",
+        "build",
+    ],
+    &["action", "log", "list", "--action-manifest", "build"],
+    &[
+        "attach",
+        "--remote",
+        "host",
+        "--remote-keybindings",
+        "server",
+    ],
+    &[
+        "workspace",
+        "report-metadata",
+        "w1",
+        "--source",
+        "status",
+        "--token",
+        "branch=main",
+    ],
+    &[
+        "tab",
+        "create",
+        "--workspace",
+        "w1",
+        "--env",
+        "A=1",
+        "--env",
+        "B=2",
+        "--no-focus",
+    ],
+    &[
+        "pane",
+        "split",
+        "--current",
+        "--direction",
+        "right",
+        "--cwd",
+        "/work",
+        "--no-focus",
+    ],
+    &[
+        "pane",
+        "wait-output",
+        "w1:p1",
+        "--regex",
+        "ready",
+        "--timeout",
+        "500",
+    ],
+    &[
+        "agent", "prompt", "reviewer", "check", "--wait", "--until", "blocked",
+    ],
+    &["agent", "rename", "reviewer", "--clear"],
+    &[
+        "agent",
+        "start",
+        "reviewer",
+        "--kind",
+        "pi",
+        "--pane",
+        "w1:p1",
+        "--",
+        "--offline",
+    ],
+    &["worktree", "open", "--branch", "main"],
+    &["terminal", "session", "observe", "w1:p1", "--rows", "24"],
+    &[
+        "action",
+        "pane",
+        "open",
+        "--action-manifest",
+        "build",
+        "--placement",
+        "zoomed",
+    ],
+    &["notification", "show", "Ready", "--position", "top-right"],
+    &["integration", "status", "--outdated-only"],
+    &["api", "schema", "--output", "schema.json"],
+    &["attach", "--daemon", "build", "--handoff"],
+    &["status", "--json"],
+    &["settings", "defaults"],
+    &["install", "./actions", "-l"],
+];
+
+const INVALID_COMMANDS: &[&[&str]] = &[
+    &["daemon", "delete"],
+    &["agent", "prompt", "reviewer", "check", "--until", "idle"],
+    &["agent", "rename", "reviewer"],
+    &["agent", "rename", "reviewer", "worker", "--clear"],
+    &["pane", "wait-output", "w1:p1"],
+    &[
+        "pane",
+        "wait-output",
+        "w1:p1",
+        "--match",
+        "x",
+        "--regex",
+        "x",
+    ],
+    &["pane", "focus", "--current"],
+    &["workspace", "report-metadata", "w1"],
+];
+
+#[test]
+fn command_metadata_describes_workspace_targets_and_safety_constraints() {
+    for args in VALID_COMMANDS {
+        assert!(
+            command()
+                .try_get_matches_from(std::iter::once("maestro").chain(args.iter().copied()))
+                .is_ok(),
+            "{args:?}"
+        );
+    }
+    for args in INVALID_COMMANDS {
+        assert!(
+            command()
+                .try_get_matches_from(std::iter::once("maestro").chain(args.iter().copied()))
+                .is_err(),
+            "{args:?}"
+        );
+    }
+    command().debug_assert();
+}
+
+#[test]
+fn command_metadata_reuses_agent_and_integration_vocabularies() {
+    let root = command();
+    let start = root
+        .find_subcommand("agent")
+        .unwrap()
+        .find_subcommand("start")
+        .unwrap();
+    let kind = start
+        .get_arguments()
+        .find(|arg| arg.get_long() == Some("kind"))
+        .unwrap();
+    let values: Vec<_> = kind
+        .get_value_parser()
+        .possible_values()
+        .unwrap()
+        .map(|value| value.get_name().to_owned())
+        .collect();
+    assert_eq!(
+        values,
+        maestro_app::daemon::Agent::ALL.map(maestro_app::daemon::agent_label)
+    );
+    let install = root
+        .find_subcommand("integration")
+        .unwrap()
+        .find_subcommand("install")
+        .unwrap();
+    let target = install
+        .get_arguments()
+        .find(|arg| arg.get_id() == "target")
+        .unwrap();
+    let values: Vec<_> = target
+        .get_value_parser()
+        .possible_values()
+        .unwrap()
+        .map(|value| value.get_name().to_owned())
+        .collect();
+    let expected: Vec<_> = maestro_app::rpc_types::workspace_schema::IntegrationTarget::ALL
+        .into_iter()
+        .map(|target| {
+            serde_json::to_value(target)
+                .unwrap()
+                .as_str()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert_eq!(values, expected);
+}
+
+/// Collect every command path, including the root, through the metadata boundary.
+fn command_paths(command: &clap::Command, path: &[String], paths: &mut Vec<Vec<String>>) {
+    assert!(
+        command.get_about().is_some(),
+        "missing description for {path:?}"
+    );
+    paths.push(path.to_vec());
+    for child in command.get_subcommands() {
+        let mut path = path.to_vec();
+        path.push(child.get_name().to_owned());
+        command_paths(child, &path, paths);
+    }
+}
+
+#[test]
+fn help_renders_every_command_path_without_startup() {
+    let root = command();
+    let mut paths = Vec::new();
+    command_paths(&root, &[], &mut paths);
+    for path in paths {
+        for flag in ["--help", "-h"] {
+            let mut args = path.clone();
+            args.push(flag.to_owned());
+            let mut bytes = Vec::new();
+            assert!(
+                maestro_cli::workspace_commands::spec::write_requested_help(
+                    &args,
+                    "/package/docs/skills/workspace/SKILL.md",
+                    &mut bytes
+                )
+                .unwrap(),
+                "{args:?}"
+            );
+            let help = String::from_utf8(bytes).unwrap();
+            assert!(
+                help.contains(&format!("Usage: maestro {}", path.join(" "))),
+                "{args:?}: {help}"
+            );
+            let mut selected = &root;
+            for name in &path {
+                selected = selected.find_subcommand(name).unwrap();
+            }
+            assert_eq!(
+                help.contains("Workspace skill: /package/docs/skills/workspace/SKILL.md"),
+                path.is_empty() || selected.has_subcommands(),
+                "{args:?}: {help}"
+            );
+            if path.is_empty() {
+                assert!(help.contains("--session <PATH|ID>"));
+                assert!(help.contains("--skill <VALUE>"));
+            }
+        }
+    }
+}
+
+/// An output stream that refuses every write with the original pipe error.
+struct BrokenOutput;
+impl std::io::Write for BrokenOutput {
+    fn write(&mut self, _: &[u8]) -> std::io::Result<usize> {
+        Err(std::io::ErrorKind::BrokenPipe.into())
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+#[test]
+fn help_ignores_non_help_tokens_and_propagates_output_failures() {
+    for args in [
+        vec![],
+        vec!["pane"],
+        vec!["pane", "unknown", "--help"],
+        vec!["pane", "--", "--help"],
+        vec!["pane", "read", "w1:p1", "--help"],
+        vec!["pane", "--help", "read"],
+    ] {
+        let mut output = Vec::new();
+        assert!(
+            !maestro_cli::workspace_commands::spec::write_requested_help(
+                &args.into_iter().map(str::to_owned).collect::<Vec<_>>(),
+                "/skill",
+                &mut output
+            )
+            .unwrap()
+        );
+        assert!(output.is_empty());
+    }
+    let error = maestro_cli::workspace_commands::spec::write_requested_help(
+        &["--help".into()],
+        "/skill",
+        &mut BrokenOutput,
+    )
+    .unwrap_err();
+    assert_eq!(error.kind(), std::io::ErrorKind::BrokenPipe);
+}
+
+#[test]
+fn five_shell_completions_include_chat_and_nested_workspace_commands() {
+    for shell in ["bash", "elvish", "fish", "powershell", "zsh"] {
+        let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
+        assert_eq!(
+            maestro_cli::completion::run_completion(&[shell.into()], &mut stdout, &mut stderr)
+                .unwrap(),
+            0
+        );
+        assert!(stderr.is_empty(), "{shell}");
+        let script = String::from_utf8(stdout).unwrap();
+        for word in [
+            "maestro",
+            "workspace",
+            "wait-output",
+            "live-handoff",
+            "action-manifest",
+        ] {
+            assert!(script.contains(word), "{shell} missing {word}");
+        }
+        let options = if shell == "fish" {
+            ["-l skill", "-l session"]
+        } else {
+            ["--skill", "--session"]
+        };
+        for option in options {
+            assert!(script.contains(option), "{shell} missing {option}");
+        }
+        if shell == "zsh" {
+            assert!(script.contains("'--cwd["));
+            assert!(!script.contains("--cwd=["));
+            assert!(!script.contains("--direction=["));
+        }
+    }
+}
+
+#[test]
+fn completion_validates_usage_and_propagates_output_failures() {
+    for args in [
+        vec![],
+        vec!["tcsh"],
+        vec!["bash", "extra"],
+        vec!["--help", "extra"],
+    ] {
+        let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
+        assert_eq!(
+            maestro_cli::completion::run_completion(
+                &args.into_iter().map(str::to_owned).collect::<Vec<_>>(),
+                &mut stdout,
+                &mut stderr
+            )
+            .unwrap(),
+            2
+        );
+        assert!(stdout.is_empty());
+        let usage = String::from_utf8(stderr).unwrap();
+        assert!(usage.contains("bash|elvish|fish|powershell|zsh"));
+    }
+    for help in ["help", "--help", "-h"] {
+        let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
+        assert_eq!(
+            maestro_cli::completion::run_completion(&[help.into()], &mut stdout, &mut stderr)
+                .unwrap(),
+            0
+        );
+        assert!(stdout.is_empty());
+        assert!(!stderr.is_empty());
+    }
+    for shell in ["bash", "elvish", "fish", "powershell", "zsh"] {
+        let error = maestro_cli::completion::run_completion(
+            &[shell.into()],
+            &mut BrokenOutput,
+            &mut Vec::new(),
+        )
+        .unwrap_err();
+        assert_eq!(error.kind(), std::io::ErrorKind::BrokenPipe, "{shell}");
+    }
+}
+
+#[test]
+fn settings_defaults_prints_the_owned_jsonc_without_loading_settings() {
+    let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
+    assert_eq!(
+        maestro_cli::workspace_commands::settings::run_defaults(&[], &mut stdout, &mut stderr)
+            .unwrap(),
+        0
+    );
+    assert!(stderr.is_empty());
+    let text = String::from_utf8(stdout).unwrap();
+    assert_eq!(text, maestro_app::daemon::settings::DEFAULTS_TEXT);
+    assert!(text.contains("// Workspace preferences belong in the global settings.json"));
+    assert!(text.contains("\"scrollbackLimitBytes\": 10000000"));
+    assert!(
+        serde_json::from_str::<serde_json::Value>(&text).is_err(),
+        "the reading guide remains annotated JSONC"
+    );
+}
+
+#[test]
+fn settings_defaults_rejects_extra_arguments_and_preserves_output_errors() {
+    let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
+    assert_eq!(
+        maestro_cli::workspace_commands::settings::run_defaults(
+            &["extra".into()],
+            &mut stdout,
+            &mut stderr
+        )
+        .unwrap(),
+        2
+    );
+    assert!(stdout.is_empty());
+    assert_eq!(
+        String::from_utf8(stderr).unwrap(),
+        "usage: maestro settings defaults\n"
+    );
+    let error = maestro_cli::workspace_commands::settings::run_defaults(
+        &[],
+        &mut BrokenOutput,
+        &mut Vec::new(),
+    )
+    .unwrap_err();
+    assert_eq!(error.kind(), std::io::ErrorKind::BrokenPipe);
+}
+
+#[test]
+fn chat_metadata_retains_existing_option_meanings() {
+    let mut bytes = Vec::new();
+    maestro_cli::input::args::print_help(&[], &mut bytes, false).unwrap();
+    let document = String::from_utf8(bytes)
+        .unwrap()
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ");
+    let mut root = command();
+    for arg in root.get_arguments().filter(|arg| arg.get_long().is_some()) {
+        let help = arg.get_help().unwrap().to_string();
+        assert!(
+            document.contains(help.split(" (-").next().unwrap()),
+            "{}: {help}",
+            arg.get_id()
+        );
+    }
+    let help = root.render_long_help().to_string();
+    assert!(help.contains("Append text or file contents to the system prompt"));
+    assert!(help.contains("explicit -e paths still work"));
+}
+
+#[test]
+fn package_metadata_retains_existing_descriptions() {
+    let root = command();
+    for (name, description) in [
+        ("install", "Install a package and add it to settings."),
+        ("remove", "Remove a package and its source from settings."),
+        ("update", "Update maestro and installed packages."),
+        (
+            "list",
+            "List installed packages from user and project settings.",
+        ),
+        ("config", "Open TUI to enable/disable package resources"),
+    ] {
+        let command = root.find_subcommand(name).unwrap();
+        assert_eq!(command.get_about().unwrap().to_string(), description);
+    }
+}

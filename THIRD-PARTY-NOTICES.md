@@ -753,6 +753,13 @@ configuration reset command under the same license. It validates the JSON
 object, preserves non-multiplexer actions and uses the shared atomic publisher
 instead of rewriting the source file in place.
 
+Command metadata and completion normalization in
+`crates/maestro-cli/src/workspace_commands/spec/` and
+`crates/maestro-cli/src/completion.rs`, and the shipped workspace skill in
+`docs/skills/workspace/SKILL.md`, derive from the command-line and skill modules
+under the same license. Command grammar uses Maestro's chat inputs and unified
+daemon noun; completion output is buffered before writing to the caller.
+
 The daemon protocol records, schema and tests in `crates/maestro-protocol/` and
 `docs/daemon-protocol.schema.json`, the socket transport and path selection in
 `crates/maestro-ipc/`, and the topology in `crates/maestro-workspace/` derive from
@@ -1337,3 +1344,9 @@ lockfree-object-pool 0.1.6 retains its
 [Boost Software License 1.0 notice](docs/licenses/author-tools/lockfree-object-pool.txt).
 Versions and licence choices are recorded in the
 [repository-tooling library guide](docs/libraries/repository-tooling.md#external-browser-author-tools).
+
+## Command discovery libraries
+
+Command metadata and shell completions use clap 4.6.7 and clap_complete 4.6.5,
+licensed under MIT OR Apache-2.0. Their clap_builder, clap_lex and anstyle
+runtime dependencies use MIT OR Apache-2.0 as well.

@@ -25,7 +25,7 @@ fn install(styles: bool) -> String {
         "{}
   {}
 
-Install a package and add it to settings.
+{description}
 
 Options:
   -l, --local    Install project-locally ({CONFIG_DIR_NAME}/settings.json)
@@ -39,7 +39,8 @@ Examples:
   {APP_NAME} install ./local/path
 ",
         Theme::bold("Usage:", styles),
-        usage(PackageCommand::Install)
+        usage(PackageCommand::Install),
+        description = description(PackageCommand::Install)
     )
 }
 
@@ -49,7 +50,7 @@ fn remove(styles: bool) -> String {
         "{}
   {}
 
-Remove a package and its source from settings.
+{description}
 Alias: {APP_NAME} uninstall <source> [-l]
 
 Options:
@@ -60,7 +61,8 @@ Examples:
   {APP_NAME} uninstall npm:@foo/bar
 ",
         Theme::bold("Usage:", styles),
-        usage(PackageCommand::Remove)
+        usage(PackageCommand::Remove),
+        description = description(PackageCommand::Remove)
     )
 }
 
@@ -70,7 +72,7 @@ fn update(styles: bool) -> String {
         "{}
   {}
 
-Update {APP_NAME} and installed packages.
+{description}
 
 Options:
   --self                  Update {APP_NAME} only
@@ -84,7 +86,8 @@ Short forms:
   {APP_NAME} update maestro        Update {APP_NAME} only (self works as alias to maestro)
 ",
         Theme::bold("Usage:", styles),
-        usage(PackageCommand::Update)
+        usage(PackageCommand::Update),
+        description = description(PackageCommand::Update)
     )
 }
 
@@ -94,10 +97,11 @@ fn list(styles: bool) -> String {
         "{}
   {}
 
-List installed packages from user and project settings.
+{description}
 ",
         Theme::bold("Usage:", styles),
-        usage(PackageCommand::List)
+        usage(PackageCommand::List),
+        description = description(PackageCommand::List)
     )
 }
 
@@ -114,3 +118,28 @@ pub(super) fn print_help(
     };
     writeln!(context.stdout.borrow_mut(), "{document}")
 }
+
+/// Describe a package command for both help presentation adapters.
+pub(crate) fn description(command: PackageCommand) -> String {
+    match command {
+        PackageCommand::Install => "Install a package and add it to settings.".to_owned(),
+        PackageCommand::Remove => "Remove a package and its source from settings.".to_owned(),
+        PackageCommand::Update => format!("Update {APP_NAME} and installed packages."),
+        PackageCommand::List => {
+            "List installed packages from user and project settings.".to_owned()
+        }
+    }
+}
+
+/// The config selector description shared with command discovery.
+pub(crate) const CONFIG_DESCRIPTION: &str = "Open TUI to enable/disable package resources";
+
+/// Compact command descriptions in the complete chat help document.
+pub(crate) const COMMAND_SUMMARIES: &[(&str, &str)] = &[
+    ("install", "Install extension source and add to settings"),
+    ("remove", "Remove extension source from settings"),
+    ("uninstall", "Alias for remove"),
+    ("update", "Update %APP% and installed extensions"),
+    ("list", "List installed extensions from settings"),
+    ("config", CONFIG_DESCRIPTION),
+];
