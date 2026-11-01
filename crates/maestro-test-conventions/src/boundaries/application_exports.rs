@@ -68,6 +68,8 @@ struct Import {
     binding: Option<String>,
     /// Logical module containing the import.
     module: Vec<String>,
+    /// Whether this binding comes from an external-crate declaration.
+    external: bool,
     /// Whether the import has unrestricted public visibility.
     public: bool,
     /// One-based source line.
@@ -104,6 +106,7 @@ impl<'ast> Visit<'ast> for Uses {
                 path,
                 binding: import.binding.map(|name| name.unraw().to_string()),
                 module: self.module.clone(),
+                external: false,
                 public: matches!(item.vis, syn::Visibility::Public(_)),
                 line: item.use_token.span.start().line,
             });
@@ -116,38 +119,72 @@ impl<'ast> Visit<'ast> for Uses {
             path: vec![item.ident.unraw().to_string()],
             binding: Some(binding.unraw().to_string()),
             module: self.module.clone(),
+            external: true,
             public: matches!(item.vis, syn::Visibility::Public(_)),
             line: item.extern_token.span.start().line,
         });
     }
 }
 
-/// Index module-qualified aliases across source files, including glob-imported modules.
-fn aliases(
-    imports: &[&Import],
-    modules: &BTreeSet<Vec<String>>,
-) -> BTreeMap<Vec<String>, Vec<String>> {
-    let mut aliases = BTreeMap::new();
+/// Scoped bindings and the root external-crate names available in every module.
+#[derive(Default)]
+struct Aliases {
+    /// Qualified binding keys and their qualified targets.
+    paths: BTreeMap<Vec<String>, Vec<String>>,
+    /// Root external-crate bindings, distinct from ordinary use aliases.
+    external: BTreeSet<String>,
+}
+
+/// Index module-qualified aliases across source files, including glob-imported bindings.
+fn aliases(imports: &[&Import], modules: &BTreeSet<Vec<String>>) -> Aliases {
+    let mut aliases = Aliases {
+        paths: modules
+            .iter()
+            .filter(|module| !module.is_empty() && !domain(module))
+            .map(|module| (module.clone(), module.clone()))
+            .collect(),
+        ..Aliases::default()
+    };
     for import in imports {
         if let Some(binding) = &import.binding {
             let mut key = import.module.clone();
             key.push(binding.clone());
-            aliases.insert(key, qualify(&import.path, &import.module));
-        }
-    }
-    for _ in 0..imports.len() {
-        let before = aliases.len();
-        for import in imports.iter().filter(|import| import.binding.is_none()) {
-            let path = resolve(&import.path, &import.module, &aliases);
-            for module in modules.iter().filter(|module| {
-                domain(&path) && module.len() == path.len() + 1 && module.starts_with(&path)
-            }) {
-                let mut key = import.module.clone();
-                key.extend_from_slice(&module[path.len()..]);
-                aliases.entry(key).or_insert_with(|| module.clone());
+            aliases.paths.insert(key, import.path.clone());
+            if import.external && import.module.is_empty() {
+                aliases.external.insert(binding.clone());
             }
         }
-        if aliases.len() == before {
+    }
+    let paths: Vec<_> = imports
+        .iter()
+        .filter_map(|import| {
+            let binding = import.binding.as_ref()?;
+            let mut key = import.module.clone();
+            key.push(binding.clone());
+            Some((key, qualify(&import.path, &import.module, &aliases)))
+        })
+        .collect();
+    aliases.paths.extend(paths);
+    for _ in 0..imports.len() {
+        let before = aliases.paths.len();
+        for import in imports.iter().filter(|import| import.binding.is_none()) {
+            let path = resolve(&import.path, &import.module, &aliases);
+            let bindings: Vec<_> = modules
+                .iter()
+                .map(|module| (module, module))
+                .chain(aliases.paths.iter())
+                .filter(|(key, _)| key.len() == path.len() + 1 && key.starts_with(&path))
+                .map(|(key, target)| {
+                    let mut binding = import.module.clone();
+                    binding.extend_from_slice(&key[path.len()..]);
+                    (binding, target.clone())
+                })
+                .collect();
+            for (key, target) in bindings {
+                aliases.paths.entry(key).or_insert(target);
+            }
+        }
+        if aliases.paths.len() == before {
             break;
         }
     }
@@ -155,21 +192,19 @@ fn aliases(
 }
 
 /// Replace module-qualified alias prefixes without following a cycle indefinitely.
-fn resolve(
-    path: &[String],
-    module: &[String],
-    aliases: &BTreeMap<Vec<String>, Vec<String>>,
-) -> Vec<String> {
-    let mut path = qualify(path, module);
+fn resolve(path: &[String], module: &[String], aliases: &Aliases) -> Vec<String> {
+    let mut path = qualify(path, module, aliases);
     let mut seen = BTreeSet::new();
-    for _ in 0..aliases.len() {
+    for _ in 0..aliases.paths.len() {
         if domain(&path) {
             break;
         }
-        let Some((length, prefix)) = (1..=path.len())
-            .rev()
-            .find_map(|length| aliases.get(&path[..length]).map(|prefix| (length, prefix)))
-        else {
+        let Some((length, prefix)) = (1..=path.len()).rev().find_map(|length| {
+            aliases
+                .paths
+                .get(&path[..length])
+                .map(|prefix| (length, prefix))
+        }) else {
             break;
         };
         if !seen.insert(path[..length].to_vec()) {
@@ -181,8 +216,15 @@ fn resolve(
 }
 
 /// Anchor relative import prefixes in their logical module, retaining external domain roots.
-fn qualify(path: &[String], module: &[String]) -> Vec<String> {
-    if domain(path) {
+fn qualify(path: &[String], module: &[String], aliases: &Aliases) -> Vec<String> {
+    let mut binding = module.to_vec();
+    binding.extend(path.first().cloned());
+    if domain(path)
+        || (path
+            .first()
+            .is_some_and(|name| aliases.external.contains(name))
+            && !aliases.paths.contains_key(&binding))
+    {
         return path.to_vec();
     }
     let mut qualified = module.to_vec();
@@ -218,15 +260,18 @@ fn module_path(relative: &Path) -> Vec<String> {
     path
 }
 
-/// Discover domain module paths from source layout and inline declarations.
+/// Discover domain and application module paths from source layout and inline declarations.
 fn modules(members: &[Member]) -> BTreeSet<Vec<String>> {
     let mut modules = BTreeSet::new();
     for member in members
         .iter()
-        .filter(|member| DOMAINS.contains(&member.name.as_str()))
+        .filter(|member| member.name == "maestro-app" || DOMAINS.contains(&member.name.as_str()))
     {
-        let root = member.name.replace('-', "_");
-        modules.insert(vec![root.clone()]);
+        let root: Vec<_> = (member.name != "maestro-app")
+            .then(|| member.name.replace('-', "_"))
+            .into_iter()
+            .collect();
+        modules.insert(root.clone());
         for source in &member.sources {
             let Ok(relative) = source.path.strip_prefix(member.directory.join("src")) else {
                 continue;
@@ -234,7 +279,7 @@ fn modules(members: &[Member]) -> BTreeSet<Vec<String>> {
             let Some(syntax) = &source.syntax else {
                 continue;
             };
-            let mut path = vec![root.clone()];
+            let mut path = root.clone();
             path.extend(module_path(relative));
             module_items(&syntax.items, &mut path, &mut modules);
         }
