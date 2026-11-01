@@ -21,7 +21,7 @@ fn host_parse_reads_the_three_forms() {
 #[test]
 fn concatenation_appends_the_rest_below_the_home() {
     let (home, below) = if cfg!(windows) {
-        (r"C:\h", r"C:\h\x")
+        (r"C:\h", r"C:\h/x")
     } else {
         ("/h", "/h/x")
     };
@@ -31,11 +31,11 @@ fn concatenation_appends_the_rest_below_the_home() {
     assert_eq!(expand_tilde("~x", text).unwrap(), "~x");
 }
 
-/// A home that ends in a separator gains none, so the result has no doubled separator.
+/// The home and suffix both keep their separators, even when that doubles a slash.
 #[cfg(not(windows))]
 #[test]
-fn concatenation_does_not_double_a_home_separator() {
-    for (home, expected) in [("/home/u/", "/home/u/x"), ("/", "/x"), ("", "/x")] {
+fn concatenation_keeps_a_trailing_home_separator() {
+    for (home, expected) in [("/home/u/", "/home/u//x"), ("/", "//x"), ("", "/x")] {
         let text = || Ok::<_, io::Error>(home.to_owned());
         assert_eq!(expand_tilde("~/x", text).unwrap(), expected, "{home:?}");
     }

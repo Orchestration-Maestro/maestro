@@ -3,6 +3,7 @@
 use crate::DiagnosticErrorInfo;
 use crate::providers::base64_text::FORGIVING;
 use crate::providers::json_text::{member, raw_json};
+use crate::providers::openai_prompt_cache::prompt_cache_key;
 use base64::Engine as _;
 
 /// Read the account claim without signature verification.
@@ -166,7 +167,7 @@ fn build_request_body<E: crate::ProviderExecution>(
                 .unwrap_or(OpenAICodexTextVerbosity::Low),
         },
         include: ["reasoning.encrypted_content"],
-        prompt_cache_key: options.common.session_id.as_deref(),
+        prompt_cache_key: options.common.session_id.as_deref().map(prompt_cache_key),
         tool_choice: "auto",
         parallel_tool_calls: true,
         temperature: options.common.temperature,

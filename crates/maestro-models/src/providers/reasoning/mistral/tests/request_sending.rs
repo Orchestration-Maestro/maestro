@@ -29,6 +29,7 @@ pub(super) async fn check(input: &Value, expected: &Value) {
     if input["simple"].as_bool() == Some(true) {
         options = request::simple_options(
             &model,
+            &serde_json::from_value(serde_json::json!({"messages":[]})).unwrap(),
             &crate::SimpleStreamOptions {
                 common: options.common,
                 ..Default::default()

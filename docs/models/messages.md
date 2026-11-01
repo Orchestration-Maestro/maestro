@@ -10,7 +10,7 @@ including a missing key, ends that stream with an error update instead of failin
 `stream_simple_anthropic(model, context, options)` takes `SimpleStreamOptions`. The function in
 this module returns an immediate error (the root export of the same name settles it as an error
 stream, see the [linkage guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/module-linkage.md)), `No API key for provider: {provider}`, when neither a nonempty explicit key
-nor the provider's environment key can be selected; an ambient bearer alone is not a simple key.
+nor the provider's environment key can be selected.
 Other detected failures end the returned stream as on the raw entry. The simple entry reuses
 [common option and budget helpers](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/model-options.md)
 and does not forward its `tool_choice`.
@@ -32,10 +32,9 @@ Browser targets use local futures.
 ## Key and client
 
 The request is authenticated with the explicit `api_key`, including an explicitly empty one,
-otherwise `get_env_api_key(provider)`, otherwise the empty string. In ordinary key mode the
-environment variable `ANTHROPIC_AUTH_TOKEN`, trimmed of script whitespace (the byte-order
-mark counts, U+0085 does
-not), adds an `authorization: Bearer` header when it is not empty.
+otherwise `get_env_api_key(provider)`, otherwise the empty string. In ordinary key mode the request
+sends `x-api-key` alone: the environment variable `ANTHROPIC_AUTH_TOKEN` is never read, on the
+default endpoint or on a compatible one.
 
 Without an injected client, authorization is selected before `on_payload`: gateway provider
 first, account provider second, then subscription when the key contains the case-sensitive
@@ -96,7 +95,7 @@ as a thinking block with an empty signature instead of plain text.
 The payload holds `model`, `messages`, `max_tokens`, `stream`, then `system`, `temperature`,
 `tools`, `thinking`, `output_config`, `metadata` and `tool_choice` where they apply.
 `max_tokens` is the caller's value
-unless it is zero or not a number, otherwise a third of the model's, truncated toward zero. An
+unless it is zero or not a number, otherwise the model's output cap. An
 infinite limit, and a temperature that is infinite or not a number, are written as `null`;
 negative zero is written as `0`. `metadata` carries `user_id` only when the caller's metadata
 holds it as text. `ToolChoice::Auto` and `None` are sent as `auto` and `none`, `Required` as

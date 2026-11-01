@@ -1,6 +1,6 @@
 //! A pane exposes its child's final cursor to the host terminal.
 
-use maestro_app::daemon::pane::terminal::PaneTerminal;
+use maestro_app::daemon::PaneTerminal;
 use maestro_app::terminal::Terminal;
 use maestro_multiplexer::render::pane::render;
 use ratatui::{Terminal as Frames, backend::TestBackend, layout::Rect};

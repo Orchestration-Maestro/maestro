@@ -4,7 +4,7 @@ use super::{
     SessionInfo, SessionManager,
     context::{ecma_whitespace, observation, property},
     files::{get_default_session_dir, jsonl_path, modified_millis},
-    records::for_each_entry,
+    records::{Admission, for_each_entry},
 };
 use crate::messages::{millis_number, timestamp_millis};
 use futures_util::{StreamExt, stream};
@@ -19,6 +19,9 @@ use std::{
 
 /// The most session files whose metadata loads at the same time.
 const MAX_CONCURRENT_LOADS: usize = 10;
+
+/// Largest absolute epoch millisecond value accepted as a header or record date.
+const MAX_DATE_MILLIS: f64 = 8.64e15;
 
 /// Progress callback receiving completed and total candidate counts; an error stops the listing.
 pub type SessionListProgress<'a> = dyn FnMut(usize, usize) -> io::Result<()> + 'a;
@@ -139,11 +142,12 @@ fn read_session_info(path: &str) -> Option<SessionInfo> {
 
 /// The session header and the facts of every later record, or `None` when the first record is
 /// not a session header or a reached record is malformed; reading stops at that record.
+/// Null, false, zero and empty-string records are skipped before either check.
 pub(super) fn scan_reader(reader: impl BufRead) -> Option<(Value, Scan)> {
     let mut header: Option<Value> = None;
     let mut scan = Scan::default();
     let mut admitted = true;
-    for_each_entry(reader, |entry| {
+    for_each_entry(reader, Admission::Nonempty, |entry| {
         admitted = match &header {
             None => is_session_header(&entry),
             Some(_) => scan_entry(&entry, &mut scan).is_ok(),
@@ -179,7 +183,7 @@ pub(super) struct Scan {
     activity: f64,
 }
 
-/// Fold one entry into the scan; a reached null record or malformed selected field fails the file.
+/// Fold one admitted entry into the scan; a malformed selected field fails the file.
 fn scan_entry(entry: &Value, scan: &mut Scan) -> Result<(), serde_json::Error> {
     match property(Some(entry), "type")?.and_then(Value::as_str) {
         Some("session_info") => scan.name = session_name(entry)?,
@@ -203,7 +207,7 @@ fn session_name(entry: &Value) -> Result<Option<String>, serde_json::Error> {
     }
 }
 
-/// Index a user or assistant message that has content and track its activity time.
+/// Index a user or assistant message with content, reading scalar record dates as activity.
 fn scan_message(entry: &Value, scan: &mut Scan) -> Result<(), serde_json::Error> {
     let message = entry.get("message");
     let Some(role) = property(message, "role")?.and_then(Value::as_str) else {
@@ -215,14 +219,12 @@ fn scan_message(entry: &Value, scan: &mut Scan) -> Result<(), serde_json::Error>
     if role != "user" && role != "assistant" {
         return Ok(());
     }
-    let activity = match message.and_then(|message| message.get("timestamp")) {
-        Some(Value::Number(time)) => time.as_f64(),
-        _ => entry
-            .get("timestamp")
-            .and_then(Value::as_str)
-            .map(timestamp_millis)
-            .filter(|time| !time.is_nan()),
-    };
+    let activity =
+        if let Some(Value::Number(time)) = message.and_then(|message| message.get("timestamp")) {
+            time.as_f64()
+        } else {
+            Some(created_millis(entry.get("timestamp"))).filter(|time| !time.is_nan())
+        };
     scan.activity = scan.activity.max(activity.unwrap_or(0.0));
     let text = message_text(content)?;
     if !text.is_empty() {
@@ -256,13 +258,19 @@ fn message_text(content: &Value) -> Result<String, serde_json::Error> {
     }
 }
 
-/// Header creation time: strings parse, numbers truncate, null is the epoch, the rest is invalid.
+/// Scalar date in bounded epoch milliseconds; missing values and nonscalars are invalid.
 fn created_millis(timestamp: Option<&Value>) -> f64 {
-    match timestamp {
+    let time = match timestamp {
         Some(Value::String(text)) => timestamp_millis(text),
-        Some(Value::Number(number)) => number.as_f64().map_or(f64::NAN, f64::trunc),
+        Some(Value::Number(number)) => number.as_f64().unwrap_or(f64::NAN),
+        Some(Value::Bool(value)) => f64::from(u8::from(*value)),
         Some(Value::Null) => 0.0,
         _ => f64::NAN,
+    };
+    if time.abs() <= MAX_DATE_MILLIS {
+        time.trunc()
+    } else {
+        f64::NAN
     }
 }
 

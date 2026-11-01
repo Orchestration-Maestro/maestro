@@ -69,11 +69,17 @@ pub trait AuthStorageBackend: ThreadBound {
     ) -> AuthStorageFuture<'a, Result<(), AuthStorageError>>;
 }
 
-/// Text held in memory; `update` runs on an owned copy with nothing locked.
+/// Text held in memory.
+///
+/// A synchronous `update` runs on an owned copy with nothing locked, so it may reenter the
+/// backend. Awaited callbacks take turns: each reads a copy of the text after the previous one
+/// stored its replacement, so an awaited callback must not reenter `with_lock_async`.
 #[derive(Debug, Default)]
 pub struct InMemoryAuthStorageBackend {
     /// Current text; `None` until first stored.
     value: Mutex<Option<String>>,
+    /// Held across one awaited callback, so awaited read-modify-write steps cannot overlap.
+    turn: tokio::sync::Mutex<()>,
 }
 
 impl InMemoryAuthStorageBackend {
@@ -81,6 +87,7 @@ impl InMemoryAuthStorageBackend {
     pub(super) fn seeded(text: String) -> Self {
         Self {
             value: Mutex::new(Some(text)),
+            turn: tokio::sync::Mutex::default(),
         }
     }
 }
@@ -106,6 +113,7 @@ impl AuthStorageBackend for InMemoryAuthStorageBackend {
         update: AsyncLockUpdate<'a>,
     ) -> AuthStorageFuture<'a, Result<(), AuthStorageError>> {
         Box::pin(async move {
+            let _turn = self.turn.lock().await;
             let current = self
                 .value
                 .lock()

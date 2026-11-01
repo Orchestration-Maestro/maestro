@@ -5460,8 +5460,8 @@
       }
     },
     "expected": {
-      "payload": "{\"model\":\"mistral-small-2603\",\"stream\":true,\"messages\":[],\"maxTokens\":32000,\"reasoningEffort\":\"high\"}",
-      "wire": "{\"model\":\"mistral-small-2603\",\"max_tokens\":32000,\"stream\":true,\"messages\":[],\"reasoning_effort\":\"high\"}"
+      "payload": "{\"model\":\"mistral-small-2603\",\"stream\":true,\"messages\":[],\"maxTokens\":123904,\"reasoningEffort\":\"high\"}",
+      "wire": "{\"model\":\"mistral-small-2603\",\"max_tokens\":123904,\"stream\":true,\"messages\":[],\"reasoning_effort\":\"high\"}"
     }
   },
   {
@@ -5483,8 +5483,8 @@
       "options": {}
     },
     "expected": {
-      "payload": "{\"model\":\"mistral-small-2603\",\"stream\":true,\"messages\":[],\"maxTokens\":32000}",
-      "wire": "{\"model\":\"mistral-small-2603\",\"max_tokens\":32000,\"stream\":true,\"messages\":[]}"
+      "payload": "{\"model\":\"mistral-small-2603\",\"stream\":true,\"messages\":[],\"maxTokens\":123904}",
+      "wire": "{\"model\":\"mistral-small-2603\",\"max_tokens\":123904,\"stream\":true,\"messages\":[]}"
     }
   },
   {
@@ -5532,8 +5532,8 @@
       }
     },
     "expected": {
-      "payload": "{\"model\":\"mistral-medium-3.5\",\"stream\":true,\"messages\":[],\"maxTokens\":32000,\"reasoningEffort\":\"high\"}",
-      "wire": "{\"model\":\"mistral-medium-3.5\",\"max_tokens\":32000,\"stream\":true,\"messages\":[],\"reasoning_effort\":\"high\"}"
+      "payload": "{\"model\":\"mistral-medium-3.5\",\"stream\":true,\"messages\":[],\"maxTokens\":123904,\"reasoningEffort\":\"high\"}",
+      "wire": "{\"model\":\"mistral-medium-3.5\",\"max_tokens\":123904,\"stream\":true,\"messages\":[],\"reasoning_effort\":\"high\"}"
     }
   },
   {
@@ -5555,8 +5555,8 @@
       "options": {}
     },
     "expected": {
-      "payload": "{\"model\":\"mistral-medium-3.5\",\"stream\":true,\"messages\":[],\"maxTokens\":32000}",
-      "wire": "{\"model\":\"mistral-medium-3.5\",\"max_tokens\":32000,\"stream\":true,\"messages\":[]}"
+      "payload": "{\"model\":\"mistral-medium-3.5\",\"stream\":true,\"messages\":[],\"maxTokens\":123904}",
+      "wire": "{\"model\":\"mistral-medium-3.5\",\"max_tokens\":123904,\"stream\":true,\"messages\":[]}"
     }
   },
   {
@@ -5898,8 +5898,8 @@
       }
     },
     "expected": {
-      "payload": "{\"model\":\"magistral-medium-latest\",\"stream\":true,\"messages\":[],\"maxTokens\":32000,\"promptMode\":\"reasoning\"}",
-      "wire": "{\"model\":\"magistral-medium-latest\",\"max_tokens\":32000,\"stream\":true,\"messages\":[],\"prompt_mode\":\"reasoning\"}"
+      "payload": "{\"model\":\"magistral-medium-latest\",\"stream\":true,\"messages\":[],\"maxTokens\":32001,\"promptMode\":\"reasoning\"}",
+      "wire": "{\"model\":\"magistral-medium-latest\",\"max_tokens\":32001,\"stream\":true,\"messages\":[],\"prompt_mode\":\"reasoning\"}"
     }
   },
   {

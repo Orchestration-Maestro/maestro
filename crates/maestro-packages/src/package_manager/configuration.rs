@@ -3,7 +3,7 @@ use super::{
     DefaultPackageManager, InstalledSourceScope, PackageOperations,
     sources::{self, Source},
 };
-use maestro_resources::paths::home_directory;
+use maestro_resources::paths::package_home_directory;
 use maestro_settings::{PackageSource, Settings};
 use serde_json::Value;
 use std::io;
@@ -210,9 +210,11 @@ fn package_rows(snapshot: &Settings) -> io::Result<&[Value]> {
 /// Keeps the source kind separate from its identity string.
 pub(super) fn identity<'a>(source: &'a str, base: &str) -> io::Result<Identity<'a>> {
     Ok(match sources::parse(source) {
-        Source::Local(path) => {
-            Identity::Local(super::paths::resolve_local(path, base, home_directory)?)
-        }
+        Source::Local(path) => Identity::Local(super::paths::resolve_local(
+            path,
+            base,
+            package_home_directory,
+        )?),
         Source::Git(git) => Identity::Git(git.host, git.path),
         Source::Npm { name, .. } => Identity::Npm(name),
     })

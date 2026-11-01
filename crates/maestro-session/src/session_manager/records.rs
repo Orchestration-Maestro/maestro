@@ -6,14 +6,25 @@ use std::{
     ops::ControlFlow,
 };
 
+/// Which parsed JSON values a reader admits as records.
+#[derive(Clone, Copy, Debug)]
+pub(super) enum Admission {
+    /// Keep every JSON value for whole-text parsing.
+    All,
+    /// Skip null, false, zero and empty strings in stored histories.
+    Nonempty,
+}
+
 /// Hand each record of `reader` to `on_entry` until it breaks or the input ends.
 ///
 /// Lines come from the shared JSONL splitter, so only the current line and the last
-/// nonblank one are held. Blank and malformed lines are skipped. The outer ECMAScript
+/// nonblank one are held. Blank and malformed lines are skipped; `admission` selects
+/// whether empty JSON values are kept. The outer ECMAScript
 /// whitespace of the first and last nonblank lines is dropped, as whole-text parsing
 /// drops it.
 pub(super) fn for_each_entry(
     mut reader: impl BufRead,
+    admission: Admission,
     mut on_entry: impl FnMut(FileEntry) -> ControlFlow<()>,
 ) -> io::Result<()> {
     let mut splitter = JsonlLineSplitter::default();
@@ -31,7 +42,7 @@ pub(super) fn for_each_entry(
         first = false;
         held.replace(line)
             .map_or(ControlFlow::Continue(()), |previous| {
-                parse_line(&previous, &mut on_entry)
+                parse_line(&previous, admission, &mut on_entry)
             })
     };
     loop {
@@ -58,15 +69,26 @@ pub(super) fn for_each_entry(
     }
     if let Some(last) = held {
         // Nothing follows the last record, so its break has nothing left to stop.
-        let _ = parse_line(last.trim_end_matches(ecma_whitespace), &mut on_entry);
+        let _ = parse_line(
+            last.trim_end_matches(ecma_whitespace),
+            admission,
+            &mut on_entry,
+        );
     }
     Ok(())
 }
 
-/// Hand the record on `line` to `on_entry`; a malformed line is skipped.
+/// Hand an admitted record on `line` to `on_entry`; malformed lines are skipped.
 fn parse_line(
     line: &str,
+    admission: Admission,
     on_entry: &mut impl FnMut(FileEntry) -> ControlFlow<()>,
 ) -> ControlFlow<()> {
-    serde_json::from_str(line).map_or(ControlFlow::Continue(()), on_entry)
+    let Ok(entry) = serde_json::from_str(line) else {
+        return ControlFlow::Continue(());
+    };
+    if matches!(admission, Admission::Nonempty) && !maestro_json::is_truthy(&entry) {
+        return ControlFlow::Continue(());
+    }
+    on_entry(entry)
 }

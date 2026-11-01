@@ -6,7 +6,7 @@ use super::{
     resource_discovery::{ResourceType, collect_auto_files},
 };
 use maestro_path::{dirname, join};
-use maestro_resources::paths::home_directory;
+use maestro_resources::paths::package_home_directory;
 use maestro_resources::{PathMetadata, SourceOrigin};
 use maestro_settings::Settings;
 use std::{io, path::Path};
@@ -18,7 +18,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         project: &Settings,
         result: &mut Accumulator,
     ) -> io::Result<()> {
-        let home = join(&[&home_directory()?, ".agents", "skills"]);
+        let home = join(&[&package_home_directory()?, ".agents", "skills"]);
         let resolved_home = maestro_resources::paths::resolve(&[&home])?;
         let mut current = maestro_resources::paths::resolve(&[&self.options.cwd])?;
         let mut ancestors = Vec::new();
