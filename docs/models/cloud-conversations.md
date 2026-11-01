@@ -52,6 +52,12 @@ endpoint and profile region do not determine that display decision.
 fixed-budget Claude token limits and the selected budget slot, then calls `stream_bedrock`.
 Adaptive Claude and other models do not receive that adjustment.
 
+The catalog generator also marks Messages models whose case-sensitive IDs contain
+`opus-4-6`, `opus-4.6`, `opus-4-7`, `opus-4.7`, `opus-4-8`, `opus-4.8`, `sonnet-4-6`,
+`sonnet-4.6`, `sonnet-5` or `sonnet.5` with `forceAdaptiveThinking: true`, retaining their
+other compatibility settings. The [Messages adapter](messages.md#thinking) sends adaptive
+thinking and mapped effort for these models without a thinking budget or interleaved-thinking beta.
+
 Text, thinking and tool-call updates reduce into the shared assistant message. Generic
 `stream`, `stream_simple`, `complete` and `complete_simple` dispatch through the bundled
 registration; [module linkage](module-linkage.md) describes callback replacement and raw extras.

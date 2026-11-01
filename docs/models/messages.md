@@ -115,8 +115,9 @@ hook error ends the stream with the error's message as it is.
 ## Thinking
 
 Thinking fields require model reasoning support. Raw `thinking_enabled` absent omits thinking;
-`false` sends disabled thinking; `true` selects adaptive thinking for the case-sensitive ID
-substrings listed above, otherwise budget-based thinking. True enablement suppresses temperature
+`false` sends disabled thinking; `true` selects adaptive thinking when compatibility sets
+`forceAdaptiveThinking: true` or the ID contains one of the case-sensitive substrings listed
+above, otherwise budget-based thinking. True enablement suppresses temperature
 even on a nonreasoning model. Enabled thinking defaults to summarized display;
 `AnthropicThinkingDisplay::Omitted` selects omitted display.
 

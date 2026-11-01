@@ -322,7 +322,7 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
             .thinking_display
             .unwrap_or(AnthropicThinkingDisplay::Summarized)
             .as_str();
-        if supports_adaptive_thinking(&self.model.id) {
+        if supports_adaptive_thinking(self.model) {
             let effort = match self.thinking {
                 ThinkingInput::Effort(mapped) => Some(mapped.as_str()),
                 ThinkingInput::Raw | ThinkingInput::Budget(_) => {
@@ -363,7 +363,7 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
             betas.push(FINE_GRAINED_TOOL_STREAMING_BETA);
         }
         if self.options.interleaved_thinking.unwrap_or(true)
-            && !supports_adaptive_thinking(&self.model.id)
+            && !supports_adaptive_thinking(self.model)
         {
             betas.push(INTERLEAVED_THINKING_BETA);
         }
@@ -534,9 +534,16 @@ fn ambient_token() -> Option<String> {
     (!token.is_empty()).then(|| token.to_owned())
 }
 
-/// Report whether the model's reasoning is adaptive: Opus 4.6 and 4.7 and Sonnet 4.6, with
-/// either spelling of the version.
-pub(super) fn supports_adaptive_thinking(model_id: &str) -> bool {
+/// Report whether compatibility metadata or a recognized identifier selects adaptive thinking.
+pub(super) fn supports_adaptive_thinking(model: &Model) -> bool {
+    if model
+        .compat
+        .as_ref()
+        .and_then(|compat| compat.0.get("forceAdaptiveThinking"))
+        == Some(&Value::Bool(true))
+    {
+        return true;
+    }
     [
         "opus-4-6",
         "opus-4.6",
@@ -546,5 +553,5 @@ pub(super) fn supports_adaptive_thinking(model_id: &str) -> bool {
         "sonnet-4.6",
     ]
     .iter()
-    .any(|marker| model_id.contains(marker))
+    .any(|marker| model.id.contains(marker))
 }

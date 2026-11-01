@@ -263,7 +263,7 @@ fn simple<E: Producer>(
     };
     let thinking = match options.reasoning {
         None => ThinkingInput::Raw,
-        Some(level) if request::supports_adaptive_thinking(&model.id) => {
+        Some(level) if request::supports_adaptive_thinking(&model) => {
             ThinkingInput::Effort(map_thinking_level_to_effort(&model, level))
         }
         Some(level) => {
