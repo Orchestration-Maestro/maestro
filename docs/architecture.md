@@ -25,7 +25,7 @@ imports only bindings visible from the importing module and cannot widen their
 visibility through a public relay. Local glob bindings shadow root external-crate
 aliases, including when a later export refers to an earlier alias through `self`.
 
-For example, `pub use maestro_terminal::render::Dirty;` selects one record.
+For example, `pub use maestro_terminal::render::Dirty;` selects one item.
 `pub use maestro_terminal::render;` exposes a whole module and is rejected.
 Application-owned modules may group named records and operations.
 
