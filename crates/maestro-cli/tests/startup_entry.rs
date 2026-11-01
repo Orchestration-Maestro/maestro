@@ -1268,9 +1268,9 @@ mod entry {
     }
 
     #[test]
-    fn runtime_timing_follows_auth_capture() {
+    fn runtime_timing_runs_once_and_credential_reads_follow_the_file() {
         cases(
-            "entry::runtime_timing_follows_auth_capture",
+            "entry::runtime_timing_runs_once_and_credential_reads_follow_the_file",
             &[("capture", &[("MAESTRO_TIMING", "1")])],
             |local, _| async move {
                 let mut e = Entry::new();
@@ -1292,6 +1292,8 @@ mod entry {
                     .auth_storage
                     .has_auth("timing-probe")
                     .unwrap();
+                // The runtime rereads credentials when it reads them, so the file cleared at
+                // the sample is what the accepted records hold afterwards.
                 let observations = e
                     .commands
                     .state
@@ -1300,7 +1302,7 @@ mod entry {
                     .iter()
                     .filter(|step| **step == "agent")
                     .count();
-                assert_eq!((captured, observations), (true, 1));
+                assert_eq!((captured, observations), (false, 1));
             },
         );
     }

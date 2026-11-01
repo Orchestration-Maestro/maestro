@@ -678,10 +678,27 @@ struct AttributionCase {
     base_url: String,
     /// Explicit install telemetry preference.
     telemetry_enabled: bool,
+    /// Session identifier the request carries, when the case names one.
+    session_id: Option<String>,
     /// Resolved credential headers.
     credential_headers: Option<AttributionHeaders>,
     /// Headers supplied by this invocation.
     request_headers: Option<AttributionHeaders>,
+}
+
+/// The invocation options a case sends: its session and the caller's headers.
+fn attribution_request(
+    session_id: Option<String>,
+    headers: Option<AttributionHeaders>,
+) -> maestro_models::SimpleStreamOptions<Local> {
+    maestro_models::SimpleStreamOptions {
+        common: StreamOptions {
+            session_id,
+            headers,
+            ..StreamOptions::default()
+        },
+        ..maestro_models::SimpleStreamOptions::default()
+    }
 }
 
 /// The complete header map the provider receives for `case`'s one request, sent through the
@@ -716,13 +733,7 @@ async fn capture_attribution_headers(case: AttributionCase) -> Option<Attributio
     });
     let agent = created.session.agent();
     let stream = Rc::clone(agent.stream_fn.read().unwrap().as_ref().unwrap());
-    let request = maestro_models::SimpleStreamOptions {
-        common: StreamOptions {
-            headers: case.request_headers,
-            ..StreamOptions::default()
-        },
-        ..maestro_models::SimpleStreamOptions::default()
-    };
+    let request = attribution_request(case.session_id, case.request_headers);
     let selected = model.read().unwrap().clone();
     let context = maestro_models::Context {
         system_prompt: None,
@@ -747,6 +758,31 @@ async fn capture_attribution_headers(case: AttributionCase) -> Option<Attributio
     captured.pop().unwrap()
 }
 
+/// The case `row` records, checked to hold only the fields the case reads.
+fn attribution_case(id: &str, row: &Value) -> AttributionCase {
+    let input = AttributionCase {
+        provider: row["model"]["provider"].as_str().unwrap().to_owned(),
+        base_url: row["model"]["baseUrl"].as_str().unwrap().to_owned(),
+        telemetry_enabled: row["settings"]["enableInstallTelemetry"].as_bool().unwrap(),
+        session_id: row["sessionId"].as_str().map(str::to_owned),
+        credential_headers: serde_json::from_value(row["credentialHeaders"].clone()).unwrap(),
+        request_headers: serde_json::from_value(row["requestHeaders"].clone()).unwrap(),
+    };
+    let mut read = json!({
+        "name": id,
+        "model": {"provider": input.provider, "baseUrl": input.base_url},
+        "settings": {"enableInstallTelemetry": input.telemetry_enabled},
+        "credentialHeaders": input.credential_headers,
+        "requestHeaders": input.request_headers,
+        "expected": row["expected"],
+    });
+    if let Some(session) = &input.session_id {
+        read["sessionId"] = json!(session);
+    }
+    assert_eq!(&read, row, "{id} holds only the fields the case reads");
+    input
+}
+
 /// Sends each recorded attribution case `ids` names from a child without the telemetry
 /// variable and compares the presence and the whole map of the provider's headers.
 fn check_attribution_cases(ids: &[&str]) {
@@ -758,29 +794,7 @@ fn check_attribution_cases(ids: &[&str]) {
             on_task_set(|_| async {
                 for id in ids {
                     let row = crate::support::session_harness::case("attribution", id);
-                    let input = AttributionCase {
-                        provider: row["model"]["provider"].as_str().unwrap().to_owned(),
-                        base_url: row["model"]["baseUrl"].as_str().unwrap().to_owned(),
-                        telemetry_enabled: row["settings"]["enableInstallTelemetry"]
-                            .as_bool()
-                            .unwrap(),
-                        credential_headers: serde_json::from_value(
-                            row["credentialHeaders"].clone(),
-                        )
-                        .unwrap(),
-                        request_headers: serde_json::from_value(row["requestHeaders"].clone())
-                            .unwrap(),
-                    };
-                    let read = json!({
-                        "name": id,
-                        "model": {"provider": input.provider, "baseUrl": input.base_url},
-                        "settings": {"enableInstallTelemetry": input.telemetry_enabled},
-                        "credentialHeaders": input.credential_headers,
-                        "requestHeaders": input.request_headers,
-                        "expected": row["expected"],
-                    });
-                    assert_eq!(read, row, "{id} holds only the fields the case reads");
-                    let actual = capture_attribution_headers(input).await;
+                    let actual = capture_attribution_headers(attribution_case(id, &row)).await;
                     assert_eq!(
                         json!({"present": actual.is_some(), "headers": actual}),
                         row["expected"],
@@ -823,12 +837,28 @@ fn merges_attribution_auth_and_caller_headers() {
 
 #[test]
 fn attributes_cloudflare_api_url_for_unrelated_providers() {
-    check_attribution_cases(&["cloudflare_api_url", "cloudflare_url_substring"]);
+    check_attribution_cases(&["cloudflare_api_url", "host_comparison_ignores_case"]);
 }
 
 #[test]
 fn attributes_cloudflare_gateway_url_for_unrelated_providers() {
-    check_attribution_cases(&["cloudflare_gateway_url", "gateway_url_substring"]);
+    check_attribution_cases(&["cloudflare_gateway_url"]);
+}
+
+#[test]
+fn attributes_nvidia_by_provider_or_host() {
+    check_attribution_cases(&["nvidia_host", "nvidia_provider"]);
+}
+
+#[test]
+fn sends_opencode_session_headers_by_provider_or_host() {
+    check_attribution_cases(&[
+        "opencode_host_session",
+        "opencode_provider_session",
+        "opencode_without_session",
+        "opencode_session_ignores_telemetry_setting",
+        "caller_overrides_session_headers",
+    ]);
 }
 
 #[test]
@@ -836,8 +866,11 @@ fn leaves_unmatched_requests_without_attribution() {
     check_attribution_cases(&[
         "unmatched_preserves_headers",
         "provider_comparison_is_exact",
-        "url_comparison_is_case_sensitive",
         "empty_unmatched_url",
+        "cloudflare_path_is_not_the_host",
+        "gateway_path_is_not_the_host",
+        "nvidia_path_is_not_the_host",
+        "opencode_path_is_not_the_host",
     ]);
 }
 

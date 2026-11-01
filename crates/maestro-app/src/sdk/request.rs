@@ -23,6 +23,7 @@ use std::{
     rc::Rc,
     sync::{Arc, RwLock},
 };
+use url::Url;
 
 /// The agent over `model` at `thinking_level`, converting messages with images withheld when
 /// the settings block them, requesting through the catalog's credentials and the provider
@@ -96,7 +97,11 @@ fn stream_fn(services: &Services, spawn: &AgentSpawner<Local>) -> maestro_agent:
                 (
                     settings.get_provider_retry_settings(),
                     request_timeout(&settings),
-                    get_attribution_headers(&model, &settings),
+                    get_attribution_headers(
+                        &model,
+                        &settings,
+                        options.common.session_id.as_deref(),
+                    ),
                 )
             };
             let common = &mut options.common;
@@ -137,26 +142,42 @@ fn merge_headers<const N: usize>(
     })
 }
 
-/// The attribution headers `OpenRouter` and Cloudflare requests carry while install
-/// telemetry is on.
+/// Report whether `base_url` parses to the host `host`; a path or query that merely names it
+/// does not match.
+fn has_host(base_url: &str, host: &str) -> bool {
+    Url::parse(base_url).is_ok_and(|url| url.host_str() == Some(host))
+}
+
+/// The session headers `OpenCode` requests carry, and the attribution headers `OpenRouter`,
+/// NVIDIA and Cloudflare requests carry while install telemetry is on, matched by provider
+/// or by the base URL's host.
 fn get_attribution_headers(
     model: &Model,
     settings: &SettingsManager,
+    session_id: Option<&str>,
 ) -> Option<IndexMap<String, String>> {
     let telemetry = std::env::var("MAESTRO_TELEMETRY").ok();
-    if !is_install_telemetry_enabled(settings, telemetry.as_deref()) {
-        return None;
-    }
-    let headers = |pairs: &[(&str, &str)]| {
-        Some(
-            pairs
-                .iter()
-                .map(|&(name, value)| (name.to_owned(), value.to_owned()))
-                .collect(),
-        )
-    };
-    if model.provider == "openrouter" || model.base_url.contains("openrouter.ai") {
-        return headers(&[
+    let attribution = is_install_telemetry_enabled(settings, telemetry.as_deref())
+        .then(|| attribution_pairs(model))
+        .flatten()
+        .unwrap_or_default();
+    let opencode = matches!(model.provider.as_str(), "opencode" | "opencode-go")
+        || has_host(&model.base_url, "opencode.ai");
+    let session = session_id
+        .filter(|_| opencode)
+        .into_iter()
+        .flat_map(|id| [("x-opencode-session", id), ("x-opencode-client", "maestro")]);
+    let headers: IndexMap<String, String> = session
+        .chain(attribution.iter().copied())
+        .map(|(name, value)| (name.to_owned(), value.to_owned()))
+        .collect();
+    (!headers.is_empty()).then_some(headers)
+}
+
+/// The telemetry attribution headers of `model`'s provider or host, when it has any.
+fn attribution_pairs(model: &Model) -> Option<&'static [(&'static str, &'static str)]> {
+    if model.provider == "openrouter" || has_host(&model.base_url, "openrouter.ai") {
+        return Some(&[
             (
                 "HTTP-Referer",
                 "https://github.com/Orchestration-Maestro/maestro",
@@ -165,15 +186,15 @@ fn get_attribution_headers(
             ("X-OpenRouter-Categories", "cli-agent"),
         ]);
     }
+    if model.provider == "nvidia" || has_host(&model.base_url, "integrate.api.nvidia.com") {
+        return Some(&[("X-BILLING-INVOKE-ORIGIN", "maestro")]);
+    }
     let cloudflare = matches!(
         model.provider.as_str(),
         "cloudflare-workers-ai" | "cloudflare-ai-gateway"
-    ) || model.base_url.contains("api.cloudflare.com")
-        || model.base_url.contains("gateway.ai.cloudflare.com");
-    if cloudflare {
-        return headers(&[("User-Agent", "maestro-coding-agent")]);
-    }
-    None
+    ) || has_host(&model.base_url, "api.cloudflare.com")
+        || has_host(&model.base_url, "gateway.ai.cloudflare.com");
+    cloudflare.then_some(&[("User-Agent", "maestro-coding-agent")])
 }
 
 /// The current runner, when it handles `event_type`.
