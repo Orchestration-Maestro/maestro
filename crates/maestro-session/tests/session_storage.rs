@@ -116,22 +116,15 @@ fn writable_loaders_replay_interrupted_history_before_selecting_parent() {
 fn stage_interrupted_history(path: &std::path::Path, bytes: &[u8]) -> std::path::PathBuf {
     use std::io::Write;
     let holder = maestro_lock::acquire_write(path, true).unwrap();
-    let digest = Sha256::digest(holder.path().as_os_str().as_encoded_bytes());
-    let mut name = String::new();
-    for byte in digest {
-        use std::fmt::Write;
-        write!(name, "{byte:02x}").unwrap();
-    }
-    name.push_str(".recovery");
-    let root = maestro_path::native_homedir()
-        .unwrap()
-        .join(".maestro/state/file-locks");
-    let mut record = fs::File::create(root.join(&name)).unwrap();
-    record.write_all(&digest).unwrap();
+    let mut name = holder.path().as_os_str().to_owned();
+    name.push(".recovery");
+    let recovery = std::path::PathBuf::from(name);
+    let root = recovery.parent().unwrap();
+    let mut record = fs::File::create(&recovery).unwrap();
     record.write_all(&[0; 5]).unwrap();
     record.write_all(bytes).unwrap();
     record.sync_all().unwrap();
-    let sync = fs::File::open(&root).and_then(|file| file.sync_all());
+    let sync = fs::File::open(root).and_then(|file| file.sync_all());
     #[cfg(windows)]
     let sync = sync.or_else(|error| match error.kind() {
         std::io::ErrorKind::Unsupported
@@ -140,7 +133,7 @@ fn stage_interrupted_history(path: &std::path::Path, bytes: &[u8]) -> std::path:
         _ => Err(error),
     });
     sync.unwrap();
-    root.join(name)
+    recovery
 }
 
 #[test]
@@ -178,4 +171,30 @@ fn nonpersisting_selection_leaves_target_and_recovery_unchanged() {
     assert_eq!(fs::read(&path).unwrap(), prefix);
     assert_eq!(fs::read(&recovery).unwrap(), record);
     drop(maestro_lock::acquire_write(&path, true).unwrap());
+}
+
+#[cfg(unix)]
+#[test]
+fn forking_from_a_read_only_directory_reads_the_source() {
+    use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let source = root.path().join("source");
+    let destination = root.path().join("destination");
+    fs::create_dir(&source).unwrap();
+    let path = source.join("session.jsonl");
+    let bytes = b"{\"type\":\"session\",\"id\":\"kept\",\"version\":3,\"cwd\":\"/work\"}\n{\"type\":\"message\",\"id\":\"last\",\"parentId\":null,\"timestamp\":\"2026-01-01T00:00:00Z\",\"message\":{\"role\":\"assistant\",\"content\":\"kept\"}}\n";
+    fs::write(&path, bytes).unwrap();
+    let Some(_restore) = maestro_test_directory::deny(&source, 0o555).unwrap() else {
+        return;
+    };
+    let manager = SessionManager::fork_from(
+        path.to_str().unwrap(),
+        "/work",
+        destination.to_str(),
+        "unused",
+    )
+    .unwrap();
+    assert_eq!(manager.get_leaf_id(), Some("last"));
+    assert_eq!(fs::read(path).unwrap(), bytes);
+    assert_eq!(fs::read_dir(source).unwrap().count(), 1);
 }

@@ -242,17 +242,14 @@ fn clearing_interrupted_history_prevents_later_recovery_from_resurrecting_it() {
     let parent = dir.path().join("saved");
     fs::create_dir(&parent).unwrap();
     let history_path = parent.join("history.json");
-    let Some(restore) = maestro_test_directory::deny(&parent, 0o555).unwrap() else {
-        return;
-    };
-    let error = maestro_lock::replace(
-        &history_path,
-        b"private interrupted history",
-        maestro_lock::Replace::default(),
+    let recovery = parent.join("history.json.recovery");
+    fs::write(
+        &recovery,
+        [[0; 5].as_slice(), b"private interrupted history"].concat(),
     )
-    .unwrap_err();
-    assert_eq!(error.kind(), std::io::ErrorKind::PermissionDenied);
-    drop(restore);
+    .unwrap();
+    fs::File::open(&recovery).unwrap().sync_all().unwrap();
+    fs::File::open(&parent).unwrap().sync_all().unwrap();
     assert!(!history_path.exists());
     clear_path(&history_path).unwrap();
     save_to_paths(&parent.join("session.json"), &history_path, &empty(), None).unwrap();

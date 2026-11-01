@@ -1,20 +1,10 @@
-//! Canonical native write targets and per-user exclusion identities.
-use crate::{WriteLock, acquire_waiting};
-use sha2::{Digest, Sha256};
-#[cfg(unix)]
-use std::os::unix::fs::{DirBuilderExt, OpenOptionsExt};
+//! Canonical native write targets with beside-target exclusion.
+use crate::{WriteLock, names::beside};
 use std::{
-    fmt::Write,
-    fs, io,
+    fs::{self, File, OpenOptions, TryLockError},
+    io,
     path::{Path, PathBuf},
 };
-
-#[cfg(not(test))]
-use std::sync::Mutex;
-
-/// Whether this process has persisted the bounded private state ancestry.
-#[cfg(not(test))]
-static ROOT_SYNCED: Mutex<bool> = Mutex::new(false);
 
 /// Acquires canonical file-write exclusion and completes any interrupted publication.
 ///
@@ -24,71 +14,222 @@ static ROOT_SYNCED: Mutex<bool> = Mutex::new(false);
 /// # Errors
 /// Returns native resolution, lock or recovery errors before admitting the writer.
 pub fn acquire_write(path: &Path, through_symlinks: bool) -> io::Result<WriteLock> {
-    let target = canonical_target(path, through_symlinks)?;
-    let digest: [u8; 32] = Sha256::digest(target.as_os_str().as_encoded_bytes()).into();
-    let mut name = String::with_capacity(64);
-    for byte in digest {
-        write!(name, "{byte:02x}").map_err(io::Error::other)?;
-    }
-    let root = lock_root()?;
-    let mut open = fs::OpenOptions::new();
-    open.read(true).write(true).create(true).truncate(false);
-    #[cfg(unix)]
-    open.mode(0o600);
-    let file = acquire_waiting(open.open(root.join(format!("{name}.lock")))?)?;
-    let guard = WriteLock {
-        target,
-        recovery: root.join(format!("{name}.recovery")),
-        digest,
-        _file: file,
-    };
-    crate::recovery::replay(&guard)?;
-    Ok(guard)
+    acquire_with(
+        path,
+        through_symlinks,
+        |file| file.lock().map_err(TryLockError::Error),
+        Waiting::UntilFree,
+    )
+    .map_err(io::Error::from)
 }
 
-/// Creates a private state directory independent of configuration-root overrides.
-fn lock_root() -> io::Result<PathBuf> {
-    #[cfg(test)]
-    let root = crate::replace::tests::root();
-    #[cfg(not(test))]
-    let root = maestro_path::native_homedir()
-        .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "home directory is unknown"))?
-        .join(".maestro/state/file-locks");
-    let mut builder = fs::DirBuilder::new();
-    builder.recursive(true);
-    #[cfg(unix)]
-    builder.mode(0o700);
-    builder.create(&root)?;
-    #[cfg(test)]
-    crate::replace::tests::with_ancestry_sync(|synced| sync_ancestry(&root, synced))?;
-    #[cfg(not(test))]
-    {
-        let mut synced = ROOT_SYNCED
-            .lock()
-            .map_err(|error| io::Error::other(error.to_string()))?;
-        sync_ancestry(&root, &mut synced)?;
-    }
-    Ok(root)
+/// Makes at most ten attempts, waiting 20 ms only between contended attempts.
+///
+/// # Errors
+/// Returns `TryLockError::WouldBlock` after ten contended attempts, or a native error unchanged.
+pub fn acquire_write_bounded(
+    path: &Path,
+    through_symlinks: bool,
+) -> Result<WriteLock, TryLockError> {
+    crate::retry_contended(
+        || try_acquire_write(path, through_symlinks),
+        std::thread::sleep,
+    )
 }
 
-/// Persists the private directory chain once for the selected process namespace.
-fn sync_ancestry(root: &Path, synced: &mut bool) -> io::Result<()> {
-    if !*synced {
+/// Attempts canonical file-write exclusion once, replaying recovery before returning.
+///
+/// # Errors
+/// Returns `TryLockError::WouldBlock` on contention, or a native resolution, lock or recovery error.
+pub fn try_acquire_write(path: &Path, through_symlinks: bool) -> Result<WriteLock, TryLockError> {
+    acquire_with(path, through_symlinks, File::try_lock, Waiting::Once)
+}
+
+/// Whether a refused native open should wait for another holder to close.
+#[derive(Clone, Copy)]
+enum Waiting {
+    /// Wait without a contention budget.
+    UntilFree,
+    /// Return contention to the caller's retry owner.
+    Once,
+}
+
+/// Opens, locks and verifies a live name, reopening retired files without spending an attempt.
+fn acquire_with(
+    path: &Path,
+    follow: bool,
+    mut lock: impl FnMut(&File) -> Result<(), TryLockError>,
+    waiting: Waiting,
+) -> Result<WriteLock, TryLockError> {
+    let target = canonical_target(path, follow).map_err(TryLockError::Error)?;
+    let sidecar = beside(&target, "", ".lock");
+    loop {
+        // Reopening a retired file repeats the link check, including a link introduced during open.
+        reject_link(&sidecar).map_err(TryLockError::Error)?;
+        let file = open_lock(&sidecar, waiting)?;
         #[cfg(test)]
-        crate::replace::tests::effect("ancestry_sync")?;
-        for directory in root.ancestors().take(4) {
-            #[cfg(test)]
-            crate::replace::tests::ancestry_directory(directory);
-            #[cfg(windows)]
-            crate::replace::sync_directory(directory)?;
-            #[cfg(not(windows))]
-            fs::File::open(directory)?.sync_all()?;
+        crate::replace::tests::acquisition("opened");
+        lock(&file)?;
+        #[cfg(test)]
+        crate::replace::tests::acquisition("locked");
+        if !still_named(&file, &sidecar).map_err(TryLockError::Error)? {
+            continue;
         }
-        *synced = true;
+        let guard = WriteLock {
+            recovery: beside(&target, "", ".recovery"),
+            target,
+            sidecar,
+            _file: file,
+        };
+        crate::recovery::replay(&guard).map_err(TryLockError::Error)?;
+        return Ok(guard);
     }
+}
+
+/// Refuses a lock pathname that redirects native ownership onto another file.
+fn reject_link(path: &Path) -> io::Result<()> {
+    if fs::symlink_metadata(path).is_ok_and(|meta| meta.file_type().is_symlink()) {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "lock path is a symbolic link",
+        ));
+    }
+    // Native open owns failures, including Windows delete-pending metadata denials.
     Ok(())
 }
 
+/// Native read, write and delete sharing keeps existing waiters valid until they close.
+#[cfg(windows)]
+const SHARE_ALL: u32 = 1 | 2 | 4;
+/// Native deletion disposition applied when the final sharing handle closes.
+#[cfg(windows)]
+const DELETE_ON_CLOSE: u32 = 0x0400_0000;
+
+/// Opens the lock name with platform-specific release semantics.
+fn options() -> OpenOptions {
+    let mut open = OpenOptions::new();
+    open.read(true).write(true).create(true).truncate(false);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        open.mode(0o600);
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::OpenOptionsExt;
+        open.share_mode(SHARE_ALL).custom_flags(DELETE_ON_CLOSE);
+    }
+    open
+}
+
+/// Opens once on Unix, where contention is reported by the native file lock.
+#[cfg(not(windows))]
+fn open_lock(path: &Path, waiting: Waiting) -> Result<File, TryLockError> {
+    let _ = waiting;
+    options().open(path).map_err(TryLockError::Error)
+}
+
+/// Retries delete-pending names, bounding access denials even for a waiting writer.
+#[cfg(windows)]
+fn open_lock(path: &Path, waiting: Waiting) -> Result<File, TryLockError> {
+    let mut denials = 0;
+    let mut missing_denial = false;
+    loop {
+        let error = match options().open(path) {
+            Ok(file) => return Ok(file),
+            Err(error) => error,
+        };
+        denials = if error.raw_os_error() == Some(5) {
+            denials + 1
+        } else {
+            0
+        };
+        let failure = match error.raw_os_error() {
+            Some(5) => denied_name(path, &mut missing_denial),
+            Some(32) => OpenFailure::Contended,
+            _ => OpenFailure::Refuse,
+        };
+        match failure {
+            OpenFailure::Reopen => continue,
+            OpenFailure::Refuse => return Err(TryLockError::Error(error)),
+            OpenFailure::Contended => (),
+        }
+        if matches!(waiting, Waiting::Once) {
+            return Err(TryLockError::WouldBlock);
+        }
+        if denials >= 10 {
+            return Err(TryLockError::Error(error));
+        }
+        std::thread::sleep(std::time::Duration::from_millis(20));
+    }
+}
+
+/// Whether a refused Windows open belongs to a live holder or an inaccessible entry.
+#[cfg(windows)]
+enum OpenFailure {
+    /// Spend a contended attempt or wait for a sharing handle to close.
+    Contended,
+    /// Retry an absent entry once without spending a contended attempt.
+    Reopen,
+    /// Preserve the native failure immediately.
+    Refuse,
+}
+
+/// Distinguishes delete-pending names from directories and repeated missing-name denials.
+#[cfg(windows)]
+fn denied_name(path: &Path, missing: &mut bool) -> OpenFailure {
+    match fs::symlink_metadata(path) {
+        Ok(meta) if meta.is_dir() => OpenFailure::Refuse,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => {
+            if std::mem::replace(missing, true) {
+                OpenFailure::Refuse
+            } else {
+                OpenFailure::Reopen
+            }
+        }
+        _ => OpenFailure::Contended,
+    }
+}
+
+/// Rejects an unlinked inode after a previous holder removed its lock name.
+#[cfg(unix)]
+fn still_named(file: &File, path: &Path) -> io::Result<bool> {
+    use std::os::unix::fs::MetadataExt;
+    let held = file.metadata()?;
+    match fs::symlink_metadata(path) {
+        Ok(named) => Ok(held.dev() == named.dev() && held.ino() == named.ino()),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(false),
+        Err(error) => Err(error),
+    }
+}
+
+/// A delete-pending file cannot be reopened even through an already-locked handle.
+#[cfg(windows)]
+fn still_named(_file: &File, path: &Path) -> io::Result<bool> {
+    use std::os::windows::fs::OpenOptionsExt;
+    reject_link(path)?;
+    match OpenOptions::new()
+        .read(true)
+        .write(true)
+        .share_mode(SHARE_ALL)
+        .open(path)
+    {
+        Ok(_) => Ok(true),
+        Err(error)
+            if matches!(error.raw_os_error(), Some(5 | 32))
+                || error.kind() == io::ErrorKind::NotFound =>
+        {
+            Ok(false)
+        }
+        Err(error) => Err(error),
+    }
+}
+
+/// Other platforms retain their native locking behaviour.
+#[cfg(not(any(unix, windows)))]
+fn still_named(_file: &File, _path: &Path) -> io::Result<bool> {
+    Ok(true)
+}
 /// Canonicalizes the selected entry, retaining any missing suffix.
 fn canonical_target(path: &Path, follow: bool) -> io::Result<PathBuf> {
     let target = if follow {
