@@ -20,6 +20,10 @@ fn within_start(starts: &mut Vec<u8>, bytes: &[u8], socket: &mut std::net::TcpSt
         socket.write_all(b"g").unwrap();
     }
     starts.extend_from_slice(bytes);
+    assert!(
+        HARNESS_START.starts_with(starts),
+        "invalid harness start: {starts:?}"
+    );
     true
 }
 
