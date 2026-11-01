@@ -1,11 +1,11 @@
 //! Captured native children observed through the public lifecycle interface.
 #![cfg(test)]
 #![cfg(unix)]
-use crate::child_programs::{self, async_command};
+use crate::child_programs::{self, HeldMode, async_command};
 use maestro_process::child_process::{
     CapturedChild, OutputMode, Termination, WaitOptions, wait_for_child_process,
 };
-use maestro_test_process::child::{harness, without_harness};
+use maestro_test_process::child::{Stream, harness, without_harness};
 use std::cell::Cell;
 use std::future::Future;
 use std::os::unix::process::ExitStatusExt;
@@ -26,15 +26,15 @@ fn runtime() -> tokio::runtime::Runtime {
 }
 
 /// A readiness listener and the child command that connects back to it.
-async fn fixture(mode: &str, closed: &str) -> (TcpListener, tokio::process::Command) {
+async fn fixture(mode: HeldMode, closed: &[Stream]) -> (TcpListener, tokio::process::Command) {
     let listener = TcpListener::bind(("127.0.0.1", 0)).await.unwrap();
     let port = listener.local_addr().unwrap().port().to_string();
     let command = async_command(
         child_programs::held_child,
         &[
-            ("CHILD_MODE", mode),
+            ("CHILD_MODE", mode.name()),
             ("CHILD_PORT", &port),
-            ("CHILD_CLOSED", closed),
+            ("CHILD_CLOSED", &Stream::list_text(closed)),
         ],
     );
     (listener, command)
@@ -89,12 +89,12 @@ impl<F> Drop for Observed<F> {
 /// output, the held sockets, the child and whether the stop future was dropped.
 async fn request(requested: Termination) -> (Output, Vec<TcpStream>, CapturedChild, bool) {
     let mode = if requested == Termination::Kill {
-        "kill"
+        HeldMode::Kill
     } else {
-        "term"
+        HeldMode::Term
     };
     let holders = if requested == Termination::Kill { 2 } else { 1 };
-    let (listener, mut command) = fixture(mode, "").await;
+    let (listener, mut command) = fixture(mode, &[]).await;
     let mut child = CapturedChild::spawn(&mut command).unwrap();
     let (stop, request) = tokio::sync::oneshot::channel();
     let dropped = Rc::new(Cell::new(false));
@@ -162,15 +162,15 @@ fn captured_process_keeps_native_command_and_raw_streams() {
 fn exit_and_pipe_completion_orders_keep_output() {
     runtime().block_on(async {
         for (mode, closed, stdout, stderr) in [
-            ("live", "", &b"earlytail"[..], &b"diagtail"[..]),
-            ("live", "1", b"early", b"diagtail"),
-            ("live", "2", b"earlytail", b"diag"),
-            ("live", "12", b"early", b"diag"),
-            ("exit", "", b"earlytail", b"diagtail"),
-            ("exit", "1", b"early", b"diagtail"),
-            ("exit", "2", b"earlytail", b"diag"),
+            (HeldMode::Live, &[][..], &b"earlytail"[..], &b"diagtail"[..]),
+            (HeldMode::Live, &[Stream::Output][..], b"early", b"diagtail"),
+            (HeldMode::Live, &[Stream::Error][..], b"earlytail", b"diag"),
+            (HeldMode::Live, &Stream::OUTPUTS[..], b"early", b"diag"),
+            (HeldMode::Exit, &[][..], b"earlytail", b"diagtail"),
+            (HeldMode::Exit, &[Stream::Output][..], b"early", b"diagtail"),
+            (HeldMode::Exit, &[Stream::Error][..], b"earlytail", b"diag"),
         ] {
-            let case = format!("{mode} closing {closed:?}");
+            let case = format!("{mode:?} closing {closed:?}");
             let (listener, mut command) = fixture(mode, closed).await;
             let mut child = CapturedChild::spawn(&mut command).unwrap();
             let run = wait_for_child_process(&mut child, WaitOptions::default(), never(), None);
@@ -284,8 +284,8 @@ fn capture_driver_releases_completed_stop_future() {
 /// Runs a held child with `options`, sends `requested` once its holder is ready and
 /// returns the output with the still-held socket.
 async fn run_held(
-    mode: &str,
-    closed: &str,
+    mode: HeldMode,
+    closed: &[Stream],
     options: WaitOptions,
     requested: Termination,
 ) -> (Output, TcpStream) {
@@ -306,12 +306,12 @@ async fn run_held(
 fn grace_preserves_prefixes_from_unfinished_streams() {
     runtime().block_on(async {
         for (closed, grace) in [
-            ("", Duration::from_millis(100)),
-            ("1", Duration::from_millis(100)),
-            ("", Duration::ZERO),
+            (&[][..], Duration::from_millis(100)),
+            (&[Stream::Output][..], Duration::from_millis(100)),
+            (&[][..], Duration::ZERO),
         ] {
             let case = format!("closing {closed:?} with grace {grace:?}");
-            let (listener, mut command) = fixture("exit", closed).await;
+            let (listener, mut command) = fixture(HeldMode::Exit, closed).await;
             let mut child = CapturedChild::spawn(&mut command).unwrap();
             let options = WaitOptions {
                 post_exit_grace: Some(grace),
@@ -339,7 +339,8 @@ fn termination_escalation_keeps_draining_until_exit() {
         let escalate = Termination::TerminateThenKill {
             after: Duration::from_secs(3600),
         };
-        let (output, socket) = run_held("flood", "", WaitOptions::default(), escalate).await;
+        let (output, socket) =
+            run_held(HeldMode::Flood, &[], WaitOptions::default(), escalate).await;
         assert!(output.status.success());
         assert_eq!(without_harness(&output.stdout).len(), 200_003);
         assert!(output.stdout.ends_with(b"xxend"));
@@ -350,8 +351,13 @@ fn termination_escalation_keeps_draining_until_exit() {
 #[test]
 fn forced_kill_retains_only_completed_streams() {
     runtime().block_on(async {
-        let (output, socket) =
-            run_held("live", "1", WaitOptions::default(), Termination::Kill).await;
+        let (output, socket) = run_held(
+            HeldMode::Live,
+            &[Stream::Output],
+            WaitOptions::default(),
+            Termination::Kill,
+        )
+        .await;
         assert_eq!(output.status.signal(), Some(9));
         assert_eq!(
             (without_harness(&output.stdout), output.stderr),

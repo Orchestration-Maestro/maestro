@@ -5,7 +5,8 @@
 //! output. The harness writes the start bytes to standard output before the program runs.
 use maestro_test_process::TestProcess;
 use maestro_test_process::child::{
-    announce, connect, leave, port, read_input, receive, variable, write_stderr, write_stdout,
+    Stream, announce, close_streams, connect, leave, port, read_input, receive, variable,
+    write_stderr, write_stdout,
 };
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
@@ -33,11 +34,11 @@ fn connect_to(name: &str) -> TcpStream {
     connect(port(name).unwrap()).unwrap()
 }
 
-/// Starts `program` as a descendant that keeps this process's three descriptors, and
-/// returns the link that closes when this process ends.
+/// Starts `program` as a descendant that keeps this process's three descriptors, linked to
+/// this process by a connection this process holds until it ends.
 ///
-/// The descendant waits on [`await_parent_exit`] for that closure.
-fn spawn_linked(program: impl Fn(), variables: &[(&str, &str)]) -> TcpStream {
+/// The descendant waits on [`await_parent_exit`] for that connection to close.
+fn spawn_linked(program: impl Fn(), variables: &[(&str, &str)]) {
     let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
     let port = listener.local_addr().unwrap().port().to_string();
     let mut command = command(program, variables);
@@ -45,7 +46,7 @@ fn spawn_linked(program: impl Fn(), variables: &[(&str, &str)]) -> TcpStream {
         .env("CHILD_LINK_PORT", &port)
         .stdin(Stdio::inherit());
     std::mem::forget(command.spawn().unwrap());
-    listener.accept().unwrap().0
+    std::mem::forget(listener.accept().unwrap().0);
 }
 
 /// The link to the process that started this descendant.
@@ -60,19 +61,6 @@ fn await_parent_exit() {
 
 /// An operation that writes bytes to one output stream.
 type Writer = fn(&[u8]) -> std::io::Result<()>;
-
-/// Replaces each standard descriptor named in `streams` with the null device, so the
-/// parent observes the end of the pipe it held.
-fn close_streams(streams: &str) {
-    let null = std::fs::File::open("/dev/null").unwrap();
-    for stream in streams.chars() {
-        match stream {
-            '1' => rustix::stdio::dup2_stdout(&null),
-            _ => rustix::stdio::dup2_stderr(&null),
-        }
-        .unwrap();
-    }
-}
 
 /// Reports readiness, answers each termination signal with `T` while surviving it, and
 /// ends on the first byte the parent sends; `CHILD_AFTER` set to `echo` then echoes its
@@ -172,7 +160,7 @@ pub(in crate::child_process) fn input_hold_descendant() {
         .unwrap_or_default()
         .is_empty()
     {
-        close_streams("12");
+        close_streams(&Stream::OUTPUTS).unwrap();
     }
     hold_input(&variable("PARENT_PID").unwrap());
 }
@@ -180,14 +168,14 @@ pub(in crate::child_process) fn input_hold_descendant() {
 /// Reports `pid`, waits for release, and with `CHILD_OVERFLOW` overflows and finishes.
 fn hold_input(pid: &str) -> ! {
     let mut socket = connect_to("CHILD_PORT");
-    socket.write_all(format!("{pid}\n").as_bytes()).unwrap();
+    announce(&mut socket, pid).unwrap();
     receive(&mut socket).unwrap();
     if !std::env::var("CHILD_OVERFLOW")
         .unwrap_or_default()
         .is_empty()
     {
         write_stdout(b"overflow").unwrap();
-        close_streams("12");
+        close_streams(&Stream::OUTPUTS).unwrap();
         receive(&mut socket).unwrap();
         socket.write_all(b"done").unwrap();
     }

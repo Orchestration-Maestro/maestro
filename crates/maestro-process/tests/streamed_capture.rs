@@ -9,16 +9,17 @@ use maestro_test_process::HARNESS_START;
 use maestro_test_process::child::{harness, without_harness};
 use std::io::Write as _;
 
-/// Collects the harness start bytes from the first chunks and releases the child once they
-/// all arrived; reports whether `bytes` belonged to them.
+/// Collects the harness start bytes from the first chunks and releases the child with the
+/// first chunk, so a short start fails the caller's comparison instead of holding the child
+/// forever; reports whether `bytes` belonged to the start.
 fn within_start(starts: &mut Vec<u8>, bytes: &[u8], socket: &mut std::net::TcpStream) -> bool {
     if starts.len() >= HARNESS_START.len() {
         return false;
     }
-    starts.extend_from_slice(bytes);
-    if starts.len() == HARNESS_START.len() {
+    if starts.is_empty() {
         socket.write_all(b"g").unwrap();
     }
+    starts.extend_from_slice(bytes);
     true
 }
 
@@ -204,20 +205,14 @@ fn streamed_wait_tags_streams_without_reordering() {
             let mut child = CapturedChild::spawn(&mut command).unwrap();
             let (mut socket, _) = listener.accept().unwrap();
             let mut transcript = Vec::new();
-            let mut acknowledged = 0;
             let mut starts = Vec::new();
             let mut sink = |stream, bytes: &[u8]| {
                 if within_start(&mut starts, bytes, &mut socket) {
                     return;
                 }
                 transcript.extend(bytes.iter().map(|byte| (stream, *byte)));
-                if [2, 3, 4]
-                    .get(acknowledged)
-                    .is_some_and(|boundary| transcript.len() >= *boundary)
-                {
-                    socket.write_all(b"g").unwrap();
-                    acknowledged += 1;
-                }
+                // Each write of the child arrives as one chunk and releases the next.
+                socket.write_all(b"g").unwrap();
             };
             let output = wait_for_child_process(
                 &mut child,

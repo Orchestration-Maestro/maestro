@@ -8,8 +8,8 @@
 #![cfg(unix)]
 use maestro_test_process::TestProcess;
 use maestro_test_process::child::{
-    announce, connect, is_null, leave, port, read_input, receive, variable, write_stderr,
-    write_stdout,
+    Stream, announce, close_streams, connect, is_null, leave, port, read_input, receive, variable,
+    write_stderr, write_stdout,
 };
 use std::io::{Read, Write};
 use std::net::TcpStream;
@@ -37,18 +37,47 @@ fn parent() -> TcpStream {
 /// An operation that writes bytes to one output stream.
 type Writer = fn(&[u8]) -> std::io::Result<()>;
 
-/// Replaces each standard descriptor named in `streams` with the null device, so the
-/// parent observes the end of the pipe it held.
-fn close_streams(streams: &str) {
-    let null = std::fs::File::open("/dev/null").unwrap();
-    for stream in streams.chars() {
-        match stream {
-            '0' => rustix::stdio::dup2_stdin(&null),
-            '1' => rustix::stdio::dup2_stdout(&null),
-            _ => rustix::stdio::dup2_stderr(&null),
+/// How [`held_child`] holds its output and ends, named by `CHILD_MODE`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HeldMode {
+    /// Closes the streams named in `CHILD_CLOSED` while still running, holds, then writes the tail.
+    Live,
+    /// Ends at once and leaves a descendant that closes those streams and holds.
+    Exit,
+    /// Waits for a termination request, then writes `terminated`.
+    Term,
+    /// Waits for a termination request, then floods standard output.
+    Flood,
+    /// Leaves a holder and waits for a kill.
+    Kill,
+}
+
+impl HeldMode {
+    /// The text a parent passes in `CHILD_MODE`.
+    pub const fn name(self) -> &'static str {
+        match self {
+            Self::Live => "live",
+            Self::Exit => "exit",
+            Self::Term => "term",
+            Self::Flood => "flood",
+            Self::Kill => "kill",
         }
-        .unwrap();
     }
+
+    /// The mode `CHILD_MODE` names.
+    fn from_variable() -> Self {
+        let name = variable("CHILD_MODE").unwrap();
+        [Self::Live, Self::Exit, Self::Term, Self::Flood, Self::Kill]
+            .into_iter()
+            .find(|mode| mode.name() == name)
+            .unwrap_or_else(|| panic!("unknown held mode `{name}`"))
+    }
+}
+
+/// The streams `CHILD_CLOSED` names, none when it is unset.
+fn closed_streams() -> Vec<Stream> {
+    let text = std::env::var("CHILD_CLOSED").unwrap_or_default();
+    Stream::parse_list(&text).unwrap()
 }
 
 /// Raises `signal` on this process and waits for it to take effect.
@@ -85,10 +114,13 @@ fn hold() {
 }
 
 /// Writes `tail` to each standard descriptor not named in `closed` and ends.
-fn finish(closed: &str) -> ! {
-    let writers: [(char, Writer); 2] = [('1', write_stdout), ('2', write_stderr)];
+fn finish(closed: &[Stream]) -> ! {
+    let writers: [(Stream, Writer); 2] = [
+        (Stream::Output, write_stdout),
+        (Stream::Error, write_stderr),
+    ];
     for (stream, write) in writers {
-        if !closed.contains(stream) {
+        if !closed.contains(&stream) {
             write(b"tail").unwrap();
         }
     }
@@ -136,7 +168,7 @@ pub fn socket_consumer() {
 #[test]
 #[ignore = "runs only inside a controlled child"]
 pub fn closed_input_effect() {
-    close_streams("0");
+    close_streams(&[Stream::Input]).unwrap();
     let mut socket = parent();
     announce(&mut socket, &std::process::id().to_string()).unwrap();
     assert_eq!(receive(&mut socket).unwrap(), Some(b'!'));
@@ -148,7 +180,7 @@ pub fn closed_input_effect() {
 #[test]
 #[ignore = "runs only inside a controlled child"]
 pub fn closed_input_report() {
-    close_streams("0");
+    close_streams(&[Stream::Input]).unwrap();
     announce(&mut parent(), &std::process::id().to_string()).unwrap();
     leave(0)
 }
@@ -209,32 +241,33 @@ pub fn discarded_output_descendant() {
 #[test]
 #[ignore = "runs only inside a controlled child"]
 pub fn held_child() {
-    let mode = variable("CHILD_MODE").unwrap();
-    let closed = std::env::var("CHILD_CLOSED").unwrap_or_default();
-    match mode.as_str() {
-        "live" | "exit" => {
+    let mode = HeldMode::from_variable();
+    match mode {
+        HeldMode::Live | HeldMode::Exit => {
+            let closed = closed_streams();
             write_stdout(b"early").unwrap();
             write_stderr(b"diag").unwrap();
-            if mode == "live" {
-                close_streams(&closed);
+            if mode == HeldMode::Live {
+                close_streams(&closed).unwrap();
                 hold();
                 finish(&closed);
             }
             let port = variable("CHILD_PORT").unwrap();
+            let closed_text = Stream::list_text(&closed);
             let variables = [
                 ("CHILD_PORT", port.as_str()),
-                ("CHILD_CLOSED", &closed),
+                ("CHILD_CLOSED", &closed_text),
                 ("CHILD_AFTER_EXIT", "1"),
             ];
             std::mem::forget(spawn_descendant(held_descendant, &variables));
             leave(0)
         }
-        "term" | "flood" => {
+        HeldMode::Term | HeldMode::Flood => {
             let (reader, writer) = std::os::unix::net::UnixStream::pair().unwrap();
             signal_hook::low_level::pipe::register(signal_hook::consts::SIGTERM, writer).unwrap();
             let _socket = ready();
             (&reader).read_exact(&mut [0]).unwrap();
-            let body = if mode == "term" {
+            let body = if mode == HeldMode::Term {
                 b"terminated".to_vec()
             } else {
                 [vec![b'x'; 200_000], b"end".to_vec()].concat()
@@ -242,7 +275,7 @@ pub fn held_child() {
             write_stdout(&body).unwrap();
             leave(0)
         }
-        _ => {
+        HeldMode::Kill => {
             let port = variable("CHILD_PORT").unwrap();
             let descendant = command(held_descendant, &[("CHILD_PORT", port.as_str())])
                 .spawn()
@@ -262,11 +295,12 @@ pub fn held_descendant() {
     if std::env::var_os("CHILD_AFTER_EXIT").is_some() {
         await_parent_exit();
     }
-    let Ok(closed) = std::env::var("CHILD_CLOSED") else {
+    if std::env::var_os("CHILD_CLOSED").is_none() {
         hold();
         leave(0)
-    };
-    close_streams(&closed);
+    }
+    let closed = closed_streams();
+    close_streams(&closed).unwrap();
     hold();
     finish(&closed)
 }
@@ -381,14 +415,16 @@ pub fn prefix_then_wait() {
 #[ignore = "runs only inside a controlled child"]
 pub fn acknowledged_writer() {
     let mut socket = parent();
-    for (index, (stream, bytes)) in [(1, &b"a\0"[..]), (2, b"b"), (1, b"c")]
-        .into_iter()
-        .enumerate()
-    {
+    let writes = [
+        (Stream::Output, &b"a\0"[..]),
+        (Stream::Error, b"b"),
+        (Stream::Output, b"c"),
+    ];
+    for (index, (stream, bytes)) in writes.into_iter().enumerate() {
         assert_eq!(receive(&mut socket).unwrap(), Some(b'g'), "write {index}");
         match stream {
-            1 => write_stdout(bytes),
-            _ => write_stderr(bytes),
+            Stream::Error => write_stderr(bytes),
+            _ => write_stdout(bytes),
         }
         .unwrap();
     }
@@ -454,7 +490,7 @@ pub fn immediate_exit() {
 #[ignore = "runs only inside a controlled child"]
 pub fn closed_output_then_exit() {
     write_stdout(b"prefix\0\xff").unwrap();
-    close_streams("1");
+    close_streams(&[Stream::Output]).unwrap();
     write_stderr(b"ready").unwrap();
     std::io::stdin().read_exact(&mut [0]).unwrap();
     write_stderr(b"last").unwrap();

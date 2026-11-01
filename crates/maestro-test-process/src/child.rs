@@ -124,6 +124,9 @@ impl fmt::Display for UnknownStream {
 impl Error for UnknownStream {}
 
 impl Stream {
+    /// Standard output and standard error.
+    pub const OUTPUTS: [Self; 2] = [Self::Output, Self::Error];
+
     /// The name a variable's text uses for this descriptor.
     const fn name(self) -> &'static str {
         match self {
