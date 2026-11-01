@@ -695,7 +695,9 @@ home directory; the reader itself reads no environment variable. The daemon supp
 directory or the Windows workspace-home variables. With `HOME` unset, it supplies no home
 and reads only the user file under `XDG_CONFIG_HOME`, when that variable is set. Otherwise,
 the default user files are `$HOME/.config/git/config` and `$HOME/.gitconfig`.
-`XDG_CONFIG_HOME`, including an empty value, replaces the first file's directory.
+A nonempty `XDG_CONFIG_HOME` replaces the first file's directory; an empty value is ignored.
+An empty `HOME` keeps the leading separator, selecting `/.config/git/config` and
+`/.gitconfig` rather than files relative to the daemon's current directory.
 
 Includes apply where they appear. A file already being read is not entered again inside
 itself, so a cycle ends at the repeated file. The `includeIf` conditions are `gitdir`,
