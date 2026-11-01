@@ -9,8 +9,7 @@ use serde_json::{Value, json};
 use std::fs::{self, File};
 use std::io::{BufReader, Read, Write};
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Barrier};
+use std::sync::Arc;
 
 fn exclusion_is_held(file: &Path) -> bool {
     let mut name = file.as_os_str().to_owned();
@@ -54,14 +53,12 @@ fn global_first_callback_owns_exclusion() {
 fn project_first_callback_owns_exclusion() {
     root_exclusion(SettingsScope::Project);
 }
-// A missing callback waits only when its real sidecar is not held. This
-// reproduces today's race but never barriers a correctly excluded callback.
+// A callback that writes over a missing file must own its real sidecar, so an
+// unexcluded first write fails here instead of racing the other writer.
 struct Observed {
     native: FileSettingsStorage,
     file: PathBuf,
     scope: SettingsScope,
-    active: AtomicBool,
-    arrivals: Barrier,
 }
 impl SettingsStorage for Observed {
     fn with_lock(
@@ -89,13 +86,11 @@ impl Observed {
         update: &mut dyn FnMut(Option<&str>) -> SettingsUpdate,
     ) -> SettingsUpdate {
         let next = update(current)?;
-        if self.active.load(Ordering::SeqCst)
-            && scope == self.scope
-            && next.is_some()
-            && current.is_none()
-            && !exclusion_is_held(&self.file)
-        {
-            self.arrivals.wait();
+        if scope == self.scope && next.is_some() && current.is_none() {
+            assert!(
+                exclusion_is_held(&self.file),
+                "a first write ran without exclusion"
+            );
         }
         Ok(next)
     }
@@ -106,8 +101,6 @@ fn observed(tree: &Scratch, scope: SettingsScope) -> Arc<Observed> {
         native: file_storage(tree.path()),
         file: support::settings_file(tree.path(), scope),
         scope,
-        active: AtomicBool::new(false),
-        arrivals: Barrier::new(2),
     })
 }
 fn read(file: &Path) -> Value {
@@ -116,33 +109,29 @@ fn read(file: &Path) -> Value {
 fn manager_edits(scope: SettingsScope) {
     let tree = Scratch::new().unwrap();
     let storage = observed(&tree, scope);
-    let first = SettingsManager::from_storage(storage.clone());
-    let second = SettingsManager::from_storage(storage.clone());
-    storage.active.store(true, Ordering::SeqCst);
-    std::thread::scope(|threads| {
-        let first = threads.spawn(move || {
-            let mut manager = first;
-            match scope {
-                SettingsScope::Global => manager.set_theme("first".into()),
-                SettingsScope::Project => manager
-                    .set_project_extension_paths(vec![SettingsListEntry::String("first".into())]),
-            }
-            block_on(manager.flush());
-            assert!(manager.drain_errors().is_empty());
-        });
-        let second = threads.spawn(move || {
-            let mut manager = second;
-            match scope {
-                SettingsScope::Global => manager.set_default_model("second".into()),
-                SettingsScope::Project => manager
-                    .set_project_skill_paths(vec![SettingsListEntry::String("second".into())]),
-            }
-            block_on(manager.flush());
-            assert!(manager.drain_errors().is_empty());
-        });
-        first.join().unwrap();
-        second.join().unwrap();
-    });
+    let mut first = SettingsManager::from_storage(storage.clone());
+    let mut second = SettingsManager::from_storage(storage);
+    // Both managers loaded absence. The second writes once the first has
+    // completed: a contended writer gives up after its bounded attempts,
+    // however long the holder's durable write takes.
+    match scope {
+        SettingsScope::Global => first.set_theme("first".into()),
+        SettingsScope::Project => {
+            first.set_project_extension_paths(vec![SettingsListEntry::String("first".into())]);
+        }
+    }
+    block_on(first.flush());
+    match scope {
+        SettingsScope::Global => second.set_default_model("second".into()),
+        SettingsScope::Project => {
+            second.set_project_skill_paths(vec![SettingsListEntry::String("second".into())]);
+        }
+    }
+    block_on(second.flush());
+    for manager in [&mut first, &mut second] {
+        let errors = manager.drain_errors();
+        assert!(errors.is_empty(), "{errors:?}");
+    }
     let saved = read(&support::settings_file(tree.path(), scope));
     let expected = match scope {
         SettingsScope::Global => json!({"theme":"first","defaultModel":"second"}),
@@ -186,7 +175,7 @@ impl SettingsStorage for ProcessObserver {
             assert!(calls == 1, "callback replayed");
             update(current)
         });
-        assert_eq!(calls, 1);
+        assert_eq!(calls, 1, "{result:?}");
         result
     }
 }
@@ -231,7 +220,8 @@ fn write_child(kind: &str) {
             }
         }
         support::block_on(manager.flush());
-        assert!(manager.drain_errors().is_empty());
+        let errors = manager.drain_errors();
+        assert!(errors.is_empty(), "{errors:?}");
     }
     println!("DONE");
 }
@@ -269,10 +259,11 @@ fn two_processes(test: &str, scope: SettingsScope, kind: &str) {
         !support::settings_file(root.path(), scope).exists(),
         "both writers start from absence"
     );
-    for (child, _) in &mut children {
-        child.stdin.as_mut().unwrap().write_all(b"x").unwrap();
-    }
+    // Each writer starts once the previous one has completed: a contended
+    // writer gives up after its bounded attempts, however long the holder's
+    // durable write takes.
     for (mut child, mut output) in children {
+        child.stdin.as_mut().unwrap().write_all(b"x").unwrap();
         support::read_marker(&mut output, "DONE");
         assert!(child.wait().unwrap().success());
     }
