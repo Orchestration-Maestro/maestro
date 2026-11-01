@@ -120,3 +120,68 @@ test = true
 [[example]]
 name = "rpc_client_demo"
 path = "examples/rpc_client_demo/main.rs"
+
+[[example]]
+name = "api_keys_and_oauth"
+path = "examples/sdk/api_keys_and_oauth.rs"
+test = true
+
+[[example]]
+name = "context_files"
+path = "examples/sdk/context_files.rs"
+test = true
+
+[[example]]
+name = "custom_model"
+path = "examples/sdk/custom_model.rs"
+test = true
+
+[[example]]
+name = "custom_prompt"
+path = "examples/sdk/custom_prompt.rs"
+test = true
+
+[[example]]
+name = "extensions"
+path = "examples/sdk/extensions.rs"
+test = true
+
+[[example]]
+name = "full_control"
+path = "examples/sdk/full_control.rs"
+test = true
+
+[[example]]
+name = "minimal"
+path = "examples/sdk/minimal.rs"
+test = true
+
+[[example]]
+name = "prompt_templates"
+path = "examples/sdk/prompt_templates.rs"
+test = true
+
+[[example]]
+name = "session_runtime"
+path = "examples/sdk/session_runtime.rs"
+test = true
+
+[[example]]
+name = "sessions"
+path = "examples/sdk/sessions.rs"
+test = true
+
+[[example]]
+name = "settings"
+path = "examples/sdk/settings.rs"
+test = true
+
+[[example]]
+name = "skills"
+path = "examples/sdk/skills.rs"
+test = true
+
+[[example]]
+name = "tools"
+path = "examples/sdk/tools.rs"
+test = true
