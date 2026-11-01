@@ -124,6 +124,10 @@ fn rpc_selection_refusals_preserve_history_and_return_the_message() {
             json!({"type":"cycle_model"}),
             json!({"type":"set_thinking_level","level":"high"}),
             json!({"type":"cycle_thinking_level"}),
+            json!({"type":"set_steering_mode", "mode":"all"}),
+            json!({"type":"set_follow_up_mode", "mode":"all"}),
+            json!({"type":"set_auto_compaction", "enabled": false}),
+            json!({"type":"set_auto_retry", "enabled": false}),
         ] {
             let reply = client.ask(&command.to_string()).await;
             assert_eq!(reply["success"], false);
@@ -311,5 +315,99 @@ fn extension_selection_propagates_listener_failure_named_configuration_refusal()
             model_view(&h.model("think"))
         );
         assert_ne!(history(&h.session), before);
+    });
+}
+
+/// Behaviour admission precedes both live queue mode and preference publication.
+#[test]
+fn refused_queue_modes_preserve_agent_and_preferences() {
+    on_task_set(|_| async {
+        let h = harness(HarnessOptions::default()).await;
+        let settings = h.session.settings_manager();
+        settings
+            .borrow_mut()
+            .register_decider(Arc::new(Refuse::default()))
+            .unwrap();
+        let modes = (h.session.steering_mode(), h.session.follow_up_mode());
+        let preferences = settings.borrow().get_global_settings();
+        let next = |mode| {
+            if mode == maestro_app::QueueMode::All {
+                maestro_app::QueueMode::OneAtATime
+            } else {
+                maestro_app::QueueMode::All
+            }
+        };
+        h.session.set_steering_mode(next(modes.0)).unwrap_err();
+        h.session.set_follow_up_mode(next(modes.1)).unwrap_err();
+        assert_eq!(
+            (h.session.steering_mode(), h.session.follow_up_mode()),
+            modes
+        );
+        assert_eq!(settings.borrow().get_global_settings(), preferences);
+        assert_eq!(settings.borrow_mut().drain_errors().len(), 2);
+        assert!(h.events.borrow().is_empty());
+    });
+}
+
+/// Explicit tool activation refuses before either the active tools or prompt changes.
+#[test]
+fn refused_tool_activation_preserves_tools_prompt_and_history() {
+    on_task_set(|_| async {
+        let h = harness(HarnessOptions::default()).await;
+        h.session
+            .settings_manager()
+            .borrow_mut()
+            .register_decider(Arc::new(Refuse::default()))
+            .unwrap();
+        let tools = h.session.get_active_tool_names();
+        let prompt = h.session.system_prompt();
+        let entries = history(&h.session);
+        assert_refused(h.session.set_active_tools_by_name(&["bash".into()]));
+        assert_eq!(h.session.get_active_tool_names(), tools);
+        assert_eq!(h.session.system_prompt(), prompt);
+        assert_eq!(history(&h.session), entries);
+        assert!(h.events.borrow().is_empty());
+    });
+}
+
+/// A publisher keeping the shell tool outside the active ceiling.
+struct NoShell;
+impl SettingsDecider for NoShell {
+    fn decide(&self, request: &DecisionRequest<'_>) -> Result<(), String> {
+        if let DecisionRequest::Tools(names) = request
+            && names.iter().any(|name| name == "bash")
+        {
+            return Err("release forbids the shell tool".into());
+        }
+        Ok(())
+    }
+}
+
+/// Automatic refresh retains forbidden definitions but never activates them.
+#[test]
+fn tool_refresh_keeps_forbidden_tools_registered_and_inactive() {
+    on_task_set(|_| async {
+        let h = harness(HarnessOptions::default()).await;
+        h.session
+            .settings_manager()
+            .borrow_mut()
+            .register_decider(Arc::new(NoShell))
+            .unwrap();
+        h.session.reload().await.unwrap();
+        assert!(h.session.get_tool_definition("bash").is_some());
+        assert!(
+            !h.session
+                .get_active_tool_names()
+                .iter()
+                .any(|name| name == "bash")
+        );
+        let errors = h.session.settings_manager().borrow_mut().drain_errors();
+        assert_eq!(
+            errors
+                .iter()
+                .filter(|error| error.error.to_string() == "release forbids the shell tool")
+                .count(),
+            1
+        );
     });
 }

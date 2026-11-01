@@ -45,6 +45,44 @@ fn preference(field: &str, value: serde_json::Value) -> SettingsChange {
 }
 
 impl<E: ExtensionExecution> AgentSession<E> {
+    /// Admits an active-tool set without publishing state or prompt changes.
+    pub(super) fn admit_tools(&self, names: &[String]) -> Result<(), DiagnosticErrorInfo> {
+        let settings = self.settings_manager.borrow();
+        settings
+            .decide(&DecisionRequest::Tools(names))
+            .map_err(|message| {
+                settings.report_refusal(SettingsScope::Global, message.clone());
+                refusal(message)
+            })
+    }
+
+    /// Admits one behaviour preference before its live agent effect.
+    pub(super) fn prepare_behaviour(
+        &self,
+        path: &[&str],
+        value: serde_json::Value,
+    ) -> Result<PreparedSettingsEdit, DiagnosticErrorInfo> {
+        let settings = self.settings_manager.borrow();
+        let changes = vec![SettingsChange {
+            path: path.iter().map(|part| (*part).into()).collect(),
+            value: Some(value),
+        }];
+        let scope = SettingsScope::Global;
+        settings
+            .prepare_operation(
+                &DecisionRequest::SettingsEdit {
+                    scope,
+                    changes: &changes,
+                },
+                scope,
+                changes.clone(),
+            )
+            .map_err(|message| {
+                settings.report_refusal(scope, message.clone());
+                refusal(message)
+            })
+    }
+
     /// Admits a model and its derived saves before the first active-state change.
     pub(super) fn prepare_model_selection(
         &self,

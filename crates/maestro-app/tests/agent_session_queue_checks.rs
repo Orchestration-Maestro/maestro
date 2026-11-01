@@ -200,8 +200,12 @@ async fn steering_run(order: &[&str]) -> Value {
     let held = Held::begin(h, started, release).await;
     held.harness()
         .session
-        .set_steering_mode(QueueMode::OneAtATime);
-    held.harness().session.set_follow_up_mode(QueueMode::All);
+        .set_steering_mode(QueueMode::OneAtATime)
+        .unwrap();
+    held.harness()
+        .session
+        .set_follow_up_mode(QueueMode::All)
+        .unwrap();
     for text in order {
         assert!(held.harness().session.steer(text, &[]).is_ok());
     }
@@ -242,8 +246,12 @@ fn follow_up_one_at_a_time_keeps_fifo() {
         let held = Held::begin(h, started, release).await;
         held.harness()
             .session
-            .set_follow_up_mode(QueueMode::OneAtATime);
-        held.harness().session.set_steering_mode(QueueMode::All);
+            .set_follow_up_mode(QueueMode::OneAtATime)
+            .unwrap();
+        held.harness()
+            .session
+            .set_steering_mode(QueueMode::All)
+            .unwrap();
         assert!(held.harness().session.follow_up("follow-up 1", &[]).is_ok());
         assert!(held.harness().session.follow_up("follow-up 2", &[]).is_ok());
         assert_eq!(held.finish().await, expected);
@@ -266,10 +274,14 @@ fn steering_all_keeps_one_batch() {
         })
         .await;
         let held = Held::begin(h, started, release).await;
-        held.harness().session.set_steering_mode(QueueMode::All);
         held.harness()
             .session
-            .set_follow_up_mode(QueueMode::OneAtATime);
+            .set_steering_mode(QueueMode::All)
+            .unwrap();
+        held.harness()
+            .session
+            .set_follow_up_mode(QueueMode::OneAtATime)
+            .unwrap();
         assert!(held.harness().session.steer("steer 1", &[]).is_ok());
         assert!(held.harness().session.steer("steer 2", &[]).is_ok());
         assert_eq!(held.finish().await, expected);
@@ -293,10 +305,14 @@ fn follow_up_all_keeps_one_batch() {
         })
         .await;
         let held = Held::begin(h, started, release).await;
-        held.harness().session.set_follow_up_mode(QueueMode::All);
         held.harness()
             .session
-            .set_steering_mode(QueueMode::OneAtATime);
+            .set_follow_up_mode(QueueMode::All)
+            .unwrap();
+        held.harness()
+            .session
+            .set_steering_mode(QueueMode::OneAtATime)
+            .unwrap();
         assert!(held.harness().session.follow_up("follow-up 1", &[]).is_ok());
         assert!(held.harness().session.follow_up("follow-up 2", &[]).is_ok());
         assert_eq!(held.finish().await, expected);

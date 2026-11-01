@@ -162,12 +162,28 @@ prints no package-command error line.
 
 ## Persistence
 
-`install_and_persist` records the source after successful acquisition, replacing a
-changed pin in the first identity match while preserving raw object fields.
-Unchanged Git acquisition preserves existing registrations; absent ones are added.
-See [Git preparation and recovery](package-sources.md#git-preparation-and-recovery). `remove_and_persist` removes it after a successful removal
-and returns whether any entry changed. Neither flushes settings nor undoes
-installed contents when the settings edit fails.
+`install_and_persist` records the normalized source after successful acquisition.
+If the first matching package has a different stored spelling, only its source is
+replaced; its other fields and list position stay intact. An identical spelling
+changes nothing. An absent source is appended. The same rules apply when a pin or
+Git checkout is unchanged. See [Git preparation and recovery](package-sources.md#git-preparation-and-recovery).
+`remove_and_persist` removes the source after a successful removal and returns
+whether any entry changed. Neither operation flushes settings nor undoes installed
+contents when the settings edit fails.
+
+Before progress, child processes or file changes, explicit install and remove
+operations ask the registered decider and check the persisted base layer for
+their scope. Global operations use the global layer only; project operations use
+the project layer when present, otherwise the global layer. A packages lock
+refuses installation. Removal refuses an identity listed in that layer's package
+entries, even when the requested pin differs. Refusals name the release and its
+recorded time.
+
+When a decider or base layer is present, persisting operations also prepare their
+exact preference edit before acquisition. After contents and progress effects
+succeed, the package list is recomputed from current settings and applied within
+the admitted key and scope, without a second decision. Without either, preference
+validation and reads occur after acquisition.
 
 ## Children
 
