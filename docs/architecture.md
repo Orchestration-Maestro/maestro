@@ -3,6 +3,9 @@
 The [foundation specification](specs/maestro-port.md#crates-and-delivery-order)
 owns the crate graph. `maestro-test-conventions` checks that graph through
 `check_workspace(root)`; it does not execute product capabilities.
+Its crate dependency table lives in `src/graph/policy/table.rs` within the
+conventions crate. `src/graph/policy.rs` keeps the rule logic and re-exports
+`POLICY` for its existing callers.
 
 ## Application export layout
 
