@@ -94,6 +94,17 @@ fn port_error_names_the_variable_and_keeps_the_cause() {
 }
 
 #[test]
+fn socket_helpers_work_over_any_reader_and_writer() {
+    let mut line = Vec::new();
+
+    announce(&mut line, "ready").unwrap();
+
+    assert_eq!(line, b"ready\n");
+    assert_eq!(receive(&mut &b"x"[..]).unwrap(), Some(b'x'));
+    assert_eq!(receive(&mut &b""[..]).unwrap(), None);
+}
+
+#[test]
 fn stream_lists_round_trip_through_their_text() {
     let streams = [Stream::Input, Stream::Output, Stream::Error];
 

@@ -62,9 +62,12 @@ impl fmt::Display for VariableError {
 }
 
 impl Error for VariableError {
-    /// The stub keeps no cause.
+    /// The environment or parse error behind the failure.
     fn source(&self) -> Option<&(dyn Error + 'static)> {
-        None
+        match self {
+            Self::Unreadable { source, .. } => Some(source),
+            Self::NotPort { source, .. } => Some(source),
+        }
     }
 }
 
@@ -119,11 +122,23 @@ impl fmt::Display for UnknownStream {
 impl Error for UnknownStream {}
 
 impl Stream {
+    /// The name a variable's text uses for this descriptor.
+    const fn name(self) -> &'static str {
+        match self {
+            Self::Input => "stdin",
+            Self::Output => "stdout",
+            Self::Error => "stderr",
+        }
+    }
+
     /// The list as the text a parent passes in a variable.
     #[must_use]
     pub fn list_text(streams: &[Self]) -> String {
-        let _ = streams;
-        String::new()
+        streams
+            .iter()
+            .map(|stream| stream.name())
+            .collect::<Vec<_>>()
+            .join(",")
     }
 
     /// The list a variable's text names.
@@ -132,8 +147,15 @@ impl Stream {
     ///
     /// Fails on a name that is not a standard descriptor.
     pub fn parse_list(text: &str) -> Result<Vec<Self>, UnknownStream> {
-        let _ = text;
-        Ok(Vec::new())
+        text.split(',')
+            .filter(|name| !name.is_empty())
+            .map(|name| {
+                [Self::Input, Self::Output, Self::Error]
+                    .into_iter()
+                    .find(|stream| stream.name() == name)
+                    .ok_or_else(|| UnknownStream(name.to_owned()))
+            })
+            .collect()
     }
 }
 
@@ -145,7 +167,14 @@ impl Stream {
 /// Returns the failure to open the null device or to replace a descriptor.
 #[cfg(unix)]
 pub fn close_streams(streams: &[Stream]) -> io::Result<()> {
-    let _ = streams;
+    let null = std::fs::File::open("/dev/null")?;
+    for stream in streams {
+        match stream {
+            Stream::Input => rustix::stdio::dup2_stdin(&null),
+            Stream::Output => rustix::stdio::dup2_stdout(&null),
+            Stream::Error => rustix::stdio::dup2_stderr(&null),
+        }?;
+    }
     Ok(())
 }
 
@@ -168,10 +197,20 @@ pub fn write_stderr(bytes: &[u8]) -> io::Result<()> {
     io::stderr().write_all(bytes)
 }
 
+/// The status a child ends with when standard output cannot be flushed.
+const FLUSH_FAILED: i32 = 74;
+
 /// Ends the process with `code` after flushing standard output, so no harness epilogue
 /// follows the child's output.
+///
+/// A failed flush ends the process with a nonzero status and a note on standard error, so
+/// the parent never sees success for output that did not arrive.
 pub fn leave(code: i32) -> ! {
-    let _ = io::stdout().flush();
+    if let Err(error) = io::stdout().flush() {
+        // Standard error is the only channel left; if it also fails the status still reports it.
+        let _ = write_stderr(format!("cannot flush standard output: {error}\n").as_bytes());
+        std::process::exit(FLUSH_FAILED)
+    }
     std::process::exit(code)
 }
 
@@ -191,7 +230,7 @@ pub fn read_input() -> io::Result<Vec<u8>> {
 /// # Errors
 ///
 /// Returns the read failure.
-pub fn receive(socket: &mut TcpStream) -> io::Result<Option<u8>> {
+pub fn receive(socket: &mut impl Read) -> io::Result<Option<u8>> {
     let mut byte = [0];
     Ok((socket.read(&mut byte)? == 1).then_some(byte[0]))
 }
@@ -210,7 +249,7 @@ pub fn connect(port: u16) -> io::Result<TcpStream> {
 /// # Errors
 ///
 /// Returns the write failure.
-pub fn announce(socket: &mut TcpStream, text: &str) -> io::Result<()> {
+pub fn announce(socket: &mut impl Write, text: &str) -> io::Result<()> {
     socket.write_all(format!("{text}\n").as_bytes())
 }
 
