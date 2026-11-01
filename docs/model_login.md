@@ -17,6 +17,10 @@ that identifier, so replacing or withdrawing a provider implementation between
 the question and the login is visible. Implementation:
 `crates/maestro-cli/src/model_login/cli.rs`.
 
+An Anthropic login listens for the browser's redirect on local port 53692. When
+another program holds that port, the login uses a free local port and names it in the
+redirect address, so sign-in still finishes; see the [account flows](models/oauth.md).
+
 The help examples name `maestro-model-account`. The standalone executable and
 the terminal console it runs on belong to the command-line startup frontend.
 
