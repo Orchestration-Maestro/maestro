@@ -340,8 +340,9 @@ fn maestro_registration_keeps_custom_order() {
         bundled::conversation().unwrap(),
         None,
     );
-    assert!(
-        restored.is_ok(),
+    assert_eq!(
+        restored.err().map(|error| error.message).as_deref(),
+        Some("No API key for provider: fixture"),
         "the built-in replaced the custom callback"
     );
     assert!(replaced.is_some_and(|handle| {

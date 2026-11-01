@@ -169,7 +169,7 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000, "compat": {"forceAdaptiveThinking": true}
       },
       "context": {
         "systemPrompt": "You are a helpful assistant.",
