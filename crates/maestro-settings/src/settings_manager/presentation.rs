@@ -1,6 +1,6 @@
 //! Terminal, image, editor and session-directory preferences.
 
-use maestro_path::expand_tilde_joined;
+use maestro_path::join_home;
 use maestro_resources::paths::native_home_directory;
 use serde_json::Value;
 use std::io;
@@ -33,7 +33,7 @@ fn expand_session_dir(configured: &str) -> String {
 /// Expand the two supported home forms through `home`, keeping every other spelling as
 /// written and returning the configured text when the home lookup fails.
 fn expand_session_dir_with(configured: &str, home: impl FnOnce() -> io::Result<String>) -> String {
-    expand_tilde_joined(configured, home).unwrap_or_else(|_| configured.to_owned())
+    join_home(configured, home).unwrap_or_else(|_| configured.to_owned())
 }
 
 impl SettingsManager {
@@ -291,5 +291,19 @@ mod tests {
     fn unknown_home_keeps_the_configured_spelling() {
         let unknown = || Err(std::io::Error::other("unknown home"));
         assert_eq!(expand_session_dir_with("~/x", unknown), "~/x");
+    }
+
+    /// A backslash after the tilde stays literal and never consults the home lookup.
+    #[test]
+    fn session_directories_keep_backslash_home_forms_literal() {
+        for written in [r"~\x", r"~\"] {
+            let called = std::cell::Cell::new(false);
+            let expanded = expand_session_dir_with(written, || {
+                called.set(true);
+                Ok(r"C:\h".to_owned())
+            });
+            assert_eq!(expanded, written);
+            assert!(!called.get());
+        }
     }
 }
