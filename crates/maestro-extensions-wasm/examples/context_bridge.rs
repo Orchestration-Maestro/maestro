@@ -70,6 +70,9 @@ mod builtin_write;
 #[path = "context_bridge/commands.rs"]
 mod commands;
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/context_matrix.rs"]
+mod context_matrix;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/credentials.rs"]
 mod credentials;
 #[cfg(target_arch = "wasm32")]
@@ -394,6 +397,10 @@ async fn context_result(
     args: &str,
     context: &maestro_extensions_wasm::ExtensionCommandContext,
 ) -> Result<(), String> {
+    if let Some(request) = args.strip_prefix("context matrix ") {
+        let result = context_matrix::observe(context, request).await;
+        return Err(serde_json::to_string(&result).map_err(|error| error.to_string())?);
+    }
     if args == "trap" || args == "pending" {
         context.get_system_prompt()?;
         context.wait_for_idle().await?;
@@ -440,9 +447,12 @@ fn session_start(
     context: maestro_extensions_wasm::ExtensionContext,
 ) -> ExtensionFuture<'_, Option<maestro_extensions_wasm::ExtensionEventResult>> {
     Box::pin(async move {
-        let ExtensionEvent::Session(SessionEvent::Start(_)) = event else {
+        let ExtensionEvent::Session(SessionEvent::Start(start)) = event else {
             return Err("session-start callback received another event".into());
         };
+        if let Some(result) = context_matrix::start(&context, &start.previous_session_file) {
+            return Err(serde_json::to_string(&result).map_err(|error| error.to_string())?);
+        }
         if context.get_system_prompt()? == "canonical imports" {
             return Err(reads::observe(&context)?.to_string());
         }
