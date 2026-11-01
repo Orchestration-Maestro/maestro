@@ -53,8 +53,7 @@ fn global_first_callback_owns_exclusion() {
 fn project_first_callback_owns_exclusion() {
     root_exclusion(SettingsScope::Project);
 }
-// A callback that writes over a missing file must own its real sidecar, so an
-// unexcluded first write fails here instead of racing the other writer.
+// A callback that writes over a missing file must own its real sidecar.
 struct Observed {
     native: FileSettingsStorage,
     file: PathBuf,
@@ -140,11 +139,11 @@ fn manager_edits(scope: SettingsScope) {
     assert_eq!(saved, expected, "an accepted manager edit was lost");
 }
 #[test]
-fn concurrent_first_global_manager_edits_survive() {
+fn stale_first_global_manager_edits_merge() {
     manager_edits(SettingsScope::Global);
 }
 #[test]
-fn concurrent_first_project_manager_edits_survive() {
+fn stale_first_project_manager_edits_merge() {
     manager_edits(SettingsScope::Project);
 }
 
