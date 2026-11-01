@@ -3,7 +3,7 @@
 `maestro-models` exports pure helpers without catalog lookup, environment
 credential resolution, provider invocation or hook execution.
 
-- `build_base_options` copies the 14 common invocation fields, retaining callback
+- `build_base_options` copies the common invocation fields, retaining callback
   and cancellation handles. A missing token limit uses the positive model limit;
   nonpositive model limits leave it absent. Every limit, supplied or defaulted, is
   then fitted to the room the model's context window leaves: the window less the
@@ -14,7 +14,9 @@ credential resolution, provider invocation or hook execution.
   keys fall back without trimming. Reasoning settings and thinking budgets are not common output fields.
   `build_base_options_for` performs the same preparation for an explicit execution
   family, sharing its original payload and response hooks without invoking them.
-  `build_base_options` keeps the default thread-safe SDK signature.
+  `build_base_options` keeps the default thread-safe SDK signature. It also copies
+  `base_url`: shared raw/simple entry points apply that endpoint to the request
+  descriptor without changing its catalog entry.
 - `reasoning_from_thinking_level` borrows an already-selected model thinking level:
   Off becomes absent; minimal through extra-high retain their level. Model support
   clamping remains with the caller.

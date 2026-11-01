@@ -1028,7 +1028,7 @@ interface host {
         /// Resolves to the edited text, or none on dismissal.
         editor: async func(title: string, prefill: option<string>) -> result<option<string>, string>;
     }
-    /// Resolved credentials, retaining key and header presence.
+    /// Resolved credentials, retaining key, endpoint and header presence.
     record request-auth {
         api-key: option<string>,
         base-url: option<string>,

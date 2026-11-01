@@ -248,8 +248,10 @@ and your IAM permissions before sending a prompt.
 ### Cloudflare
 
 Create a token with access to the intended account/service. Both providers use
-`CLOUDFLARE_API_KEY`; scope identifiers are environment variables even when you
-save the key through `/login`:
+`CLOUDFLARE_API_KEY`. The `/login` key dialog also asks for the account ID and,
+for AI Gateway, the gateway ID. It saves all values together after the final
+prompt; cancelling or entering an empty value keeps the previous credential.
+Alternatively, supply the values through the environment:
 
 ```sh
 export CLOUDFLARE_API_KEY='example-cloudflare-token'
@@ -273,8 +275,21 @@ upstream `Authorization` header through a model/provider override, not a second
 value in `CLOUDFLARE_API_KEY`. See [catalog request headers](catalog.md#request-authentication).
 Workers AI chat requests with a nonempty session ID send `x-session-affinity`
 for [prefix caching](https://developers.cloudflare.com/workers-ai/features/prompt-caching/).
-An unset placeholder variable fails at request preparation; model listing does
-not check account IDs or gateway existence.
+Stored credentials keep account IDs under `env.CLOUDFLARE_ACCOUNT_ID` and gateway
+IDs under `env.CLOUDFLARE_GATEWAY_ID`. Each absent or empty stored ID falls back
+to its environment variable independently. API-key availability checks require a
+key source and all required IDs without executing a secret helper. An extension's
+registered OAuth handler keeps stored OAuth credentials available on presence
+alone, without looking up IDs, extracting keys or refreshing tokens. Request
+authentication still checks the IDs. These checks do not contact Cloudflare or
+verify that the gateway exists.
+
+Request authentication resolves the key and expands both placeholders in the
+selected descriptor's base URL, including custom descriptors. An unresolved
+placeholder fails before HTTP is sent. SDK callers pass the resolved
+`base_url` from `get_api_key_and_headers` into `StreamOptions::base_url`;
+shared raw/simple dispatch applies it to the invocation's owned descriptor,
+without changing the catalog. The application also carries it into summaries.
 
 ### Google Vertex AI
 

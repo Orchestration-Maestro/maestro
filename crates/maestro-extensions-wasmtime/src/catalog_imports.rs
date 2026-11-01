@@ -57,7 +57,7 @@ pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
     Ok(())
 }
 
-/// Canonical successful authentication retains optional empty key and header values.
+/// Canonical authentication retains optional key, endpoint and header values.
 #[derive(ComponentType, Lower)]
 #[component(record)]
 struct RequestAuth {

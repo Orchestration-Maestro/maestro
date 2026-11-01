@@ -16,6 +16,9 @@ API; request processing and payload hooks still receive the original descriptor.
 
 ## Conversation input
 
+Message roles and content kinds are closed typed records. JSON model invocations
+reject an unknown role or content block during decoding, before provider conversion.
+
 History first passes through the [shared projection](../conversation-projection.md). User content keeps
 its text and block order. Blank user and tool-result text is dropped, and a turn or result left
 without content holds the placeholder `<empty>`. Blank assistant text and thinking are skipped;

@@ -5,6 +5,7 @@ use super::types::{AuthCredential, AuthSource, AuthStatus, decode};
 use crate::{ConfigValueOperations, resolve_config_value};
 use maestro_models::{
     OAuthError, OAuthProviderHandle, find_env_keys, get_env_api_key, get_oauth_provider,
+    providers::chat::cloudflare::is_cloudflare_provider,
 };
 
 /// How the synchronous prefix of a key request ended.
@@ -26,13 +27,28 @@ impl AuthStorage {
 
     /// Whether any authentication is configured, without resolving stored helpers or refreshing tokens;
     /// the supplied fallback resolver is the caller's and runs as given.
+    /// Cloudflare requires a nonempty API-key source or stored OAuth with a registered handler.
     ///
     /// # Errors
     /// Returns the original fallback resolver failure.
     pub fn has_auth(&self, provider: &str) -> Result<bool, OAuthError> {
+        let cloudflare = is_cloudflare_provider(provider);
+        // Release handler handles before taking the credential lock.
+        let oauth = cloudflare && get_oauth_provider(provider).is_some();
         let configured = {
             let state = self.state();
-            state.runtime_overrides.contains_key(provider) || state.data.contains_key(provider)
+            let runtime = state.runtime_overrides.get(provider);
+            let stored = state.data.get(provider);
+            if cloudflare {
+                let stored = match stored.and_then(decode) {
+                    Some(AuthCredential::ApiKey(key)) => !key.key.is_empty(),
+                    Some(AuthCredential::OAuth(_)) => oauth,
+                    None => false,
+                };
+                runtime.is_some_and(|key| !key.is_empty()) || stored
+            } else {
+                runtime.is_some() || stored.is_some()
+            }
         };
         Ok(configured
             || get_env_api_key(provider).is_some()

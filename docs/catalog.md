@@ -196,6 +196,11 @@ and model-header sources at their later consuming phases.
 ## Authentication metadata
 
 `has_configured_auth` checks credential presence then configured key presence.
+Cloudflare API-key sources also require an account ID and, for AI Gateway, a
+gateway ID; missing or empty stored IDs fall back independently to the environment.
+Stored OAuth credentials with a registered OAuth handler remain available on
+presence alone, without account lookup, key extraction or refresh. Account
+configuration is still checked at request time.
 `get_available` returns a separate list of shared descriptors, preserving selected
 slot order and duplicates. `get_provider_auth_status` prefers credential metadata,
 otherwise describes a nonempty configured command, environment variable or literal key.

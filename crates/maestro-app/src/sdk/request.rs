@@ -72,7 +72,7 @@ pub(super) fn build_agent(
     }))
 }
 
-/// The provider request: the catalog's key and headers, the provider retry settings and then
+/// The provider request: the catalog's key, endpoint and headers, the provider retry settings and then
 /// the HTTP idle timeout where the request sets none, and the attribution, credential and
 /// request headers merged in that order.
 fn stream_fn(services: &Services, spawn: &AgentSpawner<Local>) -> maestro_agent::StreamFn<Local> {
@@ -85,14 +85,17 @@ fn stream_fn(services: &Services, spawn: &AgentSpawner<Local>) -> maestro_agent:
         let submission = submission.clone();
         Box::pin(async move {
             let shared = Arc::new(RwLock::new(model.clone()));
-            let (api_key, auth_headers) = match registry.get_api_key_and_headers(&shared).await {
-                ResolvedRequestAuth::Ok {
-                    api_key, headers, ..
-                } => (api_key, headers),
-                ResolvedRequestAuth::Error { error } => {
-                    return Err(DiagnosticErrorInfo::error(error));
-                }
-            };
+            let (api_key, auth_headers, base_url) =
+                match registry.get_api_key_and_headers(&shared).await {
+                    ResolvedRequestAuth::Ok {
+                        api_key,
+                        headers,
+                        base_url,
+                    } => (api_key, headers, base_url),
+                    ResolvedRequestAuth::Error { error } => {
+                        return Err(DiagnosticErrorInfo::error(error));
+                    }
+                };
             let (retry, idle_timeout, attribution) = {
                 let settings = settings.borrow();
                 (
@@ -103,6 +106,7 @@ fn stream_fn(services: &Services, spawn: &AgentSpawner<Local>) -> maestro_agent:
             };
             let common = &mut options.common;
             common.api_key = api_key;
+            common.base_url = base_url;
             common.timeout_ms = common
                 .timeout_ms
                 .or(retry.timeout_ms)
