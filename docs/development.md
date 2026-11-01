@@ -993,10 +993,11 @@ status checks.
 A child that a signal stops, from the test or from the code under test, waits for
 that signal and never ends on its own. A coverage run writes each process's profile
 as the process exits. A stop that arrives during that write cuts the profile, and
-the coverage merge then refuses the whole shard. The process tests' children wait
-through one helper. A child that ends normally in other cases waits only when a
-variable asks for it: the bounded capture child does so for the rows that overflow,
-so the capture stops a waiting child, never an exiting one.
+the coverage merge then refuses the whole shard. The process tests' children use
+`wait_for_signal` in `crates/maestro-process/tests/child_programs.rs`. A child that
+ends normally in other cases waits only when a variable asks for it: the bounded
+capture child does so for the rows that overflow, so the capture stops a waiting
+child, never an exiting one.
 
 Cases that read process variables go through `run_per_environment(test, cases,
 environment)`. It groups the cases by the variables `environment` returns and
