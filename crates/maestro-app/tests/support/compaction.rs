@@ -5,7 +5,9 @@ use maestro_session::CompactionResult;
 use maestro_session::session_manager::ReadonlySessionManager;
 use serde_json::{Value, json};
 
-/// Builds two completed turns, retaining one token's worth of recent history.
+/// Builds two completed turns, replacing supplied settings and the context window.
+///
+/// Keeps one token's worth of recent history in a 200,000-token window with retries disabled.
 pub async fn seeded(mut options: HarnessOptions) -> Harness {
     options.context_window = Some(200_000.0);
     options.settings = json!({"compaction": {"keepRecentTokens": 1}, "retry": {"enabled": false}});
@@ -56,6 +58,27 @@ pub fn assert_result(h: &Harness, result: &CompactionResult, expected: &Value) {
         .position(|entry| entry["id"] == result.first_kept_entry_id)
         .unwrap();
     assert_eq!(json!(index), expected["first_kept_index"]);
+}
+
+/// Checks recorded compaction phases and any supplied result expectations.
+pub fn assert_events(h: &Harness, actual: &[Value], expected: &Value) {
+    let expected = expected.as_array().unwrap();
+    assert_eq!(actual.len(), expected.len());
+    for (actual, expected) in actual.iter().zip(expected) {
+        assert_eq!(actual["type"], expected["type"]);
+        assert_eq!(actual["reason"], expected["reason"]);
+        if expected["type"] == "compaction_end" {
+            assert_eq!(actual["aborted"], expected["aborted"]);
+            assert_eq!(actual["willRetry"], expected["will_retry"]);
+        }
+        if let Some(result) = expected.get("result") {
+            assert_result(
+                h,
+                &serde_json::from_value(actual["result"].clone()).unwrap(),
+                result,
+            );
+        }
+    }
 }
 
 /// The live messages in their stored interchange form.

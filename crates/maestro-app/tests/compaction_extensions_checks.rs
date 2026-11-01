@@ -129,14 +129,14 @@ fn supplied(details: Presence<Value>) -> ExtensionFactory<Local> {
 }
 
 /// Refuses its before event with an attributed extension error.
-fn throwing() -> ExtensionFactory<Local> {
+fn failing() -> ExtensionFactory<Local> {
     Rc::new(|api| {
         drop(
             api.on::<SessionBeforeCompactEvent, SessionBeforeCompactResult>(
                 "session_before_compact".into(),
                 Rc::new(|_, _| {
                     Box::pin(std::future::ready(Err(
-                        "Extension intentionally throws".into()
+                        "extension intentionally fails".into()
                     )))
                 }),
             ),
@@ -197,12 +197,12 @@ fn compaction_handlers_keep_registration_order() {
 }
 
 #[test]
-fn throwing_compaction_hook_falls_back_to_the_summarizer() {
+fn failing_compaction_hook_falls_back_to_the_summarizer() {
     on_task_set(|_| async {
         let observed = Rc::new(RefCell::new(Observations::default()));
         let h = seeded(HarnessOptions {
             factories: vec![observing(false, Rc::clone(&observed))],
-            labelled_factories: vec![("throwing-extension", throwing())],
+            labelled_factories: vec![("failing-extension", failing())],
             ..HarnessOptions::default()
         })
         .await;
@@ -228,8 +228,8 @@ fn throwing_compaction_hook_falls_back_to_the_summarizer() {
         let errors = errors.borrow();
         assert_eq!(errors.len(), 1);
         assert_eq!(errors[0].event, "session_before_compact");
-        assert_eq!(errors[0].error, "Extension intentionally throws");
-        assert_eq!(errors[0].extension_path, "throwing-extension");
+        assert_eq!(errors[0].error, "extension intentionally fails");
+        assert_eq!(errors[0].extension_path, "failing-extension");
     });
 }
 
@@ -307,42 +307,55 @@ fn extension_compaction_keeps_returned_values() {
 #[test]
 fn compaction_hooks_observe_preparation_then_saved_entry() {
     on_task_set(|_| async {
-        for cancel in [false, true] {
-            let observed = Rc::new(RefCell::new(Observations::default()));
-            let h = seeded(HarnessOptions {
-                factories: vec![observing(cancel, Rc::clone(&observed))],
-                ..HarnessOptions::default()
-            })
-            .await;
-            let before = messages(&h);
-            let requested = script_responses(
-                &h,
-                vec![answer("## Goal\nControlled summary", None, None); 2],
-            );
+        let observed = Rc::new(RefCell::new(Observations::default()));
+        let h = seeded(HarnessOptions {
+            factories: vec![observing(false, Rc::clone(&observed))],
+            ..HarnessOptions::default()
+        })
+        .await;
+        let before = messages(&h);
+        let requested = script_responses(
+            &h,
+            vec![answer("## Goal\nControlled summary", None, None); 2],
+        );
 
-            let result = h.session.compact(None).await;
+        let result = h.session.compact(None).await.unwrap();
 
-            let observed = observed.borrow();
-            assert_preparation(&observed, &before);
-            if cancel {
-                assert_eq!(result.unwrap_err().message, "Compaction cancelled");
-                assert!(requested.lock().unwrap().is_empty());
-                assert_eq!(messages(&h), before);
-                assert_eq!(observed.order, ["before"]);
-                assert!(observed.after.is_empty());
-                assert_eq!(h.session.session_manager().borrow().get_entries().len(), 4);
-            } else {
-                let result = result.unwrap();
-                assert_eq!(requested.lock().unwrap().len(), 2);
-                assert_eq!(observed.order, ["before", "after"]);
-                assert_eq!(observed.after.len(), 1);
-                assert!(!observed.after[0].from_extension);
-                assert_eq!(observed.after[0].compaction_entry.summary, result.summary);
-                assert_eq!(
-                    json!(observed.after[0].compaction_entry.details),
-                    json!({"readFiles": [], "modifiedFiles": []})
-                );
-            }
-        }
+        let observed = observed.borrow();
+        assert_preparation(&observed, &before);
+        assert_eq!(requested.lock().unwrap().len(), 2);
+        assert_eq!(observed.order, ["before", "after"]);
+        assert_eq!(observed.after.len(), 1);
+        assert!(!observed.after[0].from_extension);
+        assert_eq!(observed.after[0].compaction_entry.summary, result.summary);
+        assert_eq!(
+            json!(observed.after[0].compaction_entry.details),
+            json!({"readFiles": [], "modifiedFiles": []})
+        );
+    });
+}
+
+#[test]
+fn cancelled_compaction_leaves_history_and_summary_requests_unchanged() {
+    on_task_set(|_| async {
+        let observed = Rc::new(RefCell::new(Observations::default()));
+        let h = seeded(HarnessOptions {
+            factories: vec![observing(true, Rc::clone(&observed))],
+            ..HarnessOptions::default()
+        })
+        .await;
+        let before = messages(&h);
+        let requested = script_responses(&h, vec![answer("must not be requested", None, None)]);
+
+        let result = h.session.compact(None).await;
+
+        let observed = observed.borrow();
+        assert_preparation(&observed, &before);
+        assert_eq!(result.unwrap_err().message, "Compaction cancelled");
+        assert!(requested.lock().unwrap().is_empty());
+        assert_eq!(messages(&h), before);
+        assert_eq!(observed.order, ["before"]);
+        assert!(observed.after.is_empty());
+        assert_eq!(h.session.session_manager().borrow().get_entries().len(), 4);
     });
 }

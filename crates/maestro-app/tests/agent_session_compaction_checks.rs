@@ -1,9 +1,9 @@
 //! Manual compaction preserves the saved branch, live context and delivered events.
 #![cfg(not(target_arch = "wasm32"))]
-use crate::support::compaction::{assert_prompts, assert_result, messages, seeded};
+use crate::support::compaction::{assert_events, assert_prompts, assert_result, messages, seeded};
 use crate::support::session_harness::{
-    Harness, HarnessOptions, answer, corpus, delivered_events, harness, load_history, message_text,
-    of_kinds, on_task_set, recorded, script_responses, start_prompt,
+    Harness, HarnessOptions, answer, corpus, delivered_events, harness, history_view, load_history,
+    message_text, of_kinds, on_task_set, recorded, script_responses, start_prompt,
 };
 use maestro_session::session_manager::{CompactionOptions, ReadonlySessionManager};
 use maestro_session::{CompactionResult, SessionManager};
@@ -11,14 +11,18 @@ use serde_json::{Value, json};
 use std::collections::HashMap;
 
 /// Opens the literal synthetic branch through the existing session-file reader.
-fn literal_history_options() -> HarnessOptions {
+fn literal_history_options(expected: &Value) -> HarnessOptions {
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let path = scratch.path().join("history.jsonl");
     let input = include_str!("fixtures/before-compaction.jsonl");
-    assert_eq!(input.lines().count(), 1003);
+    assert_eq!(json!(input.lines().count()), expected["input"]["rows"]);
     std::fs::write(&path, input).unwrap();
     let manager = SessionManager::open(path.to_str().unwrap(), None, None).unwrap();
-    assert_history_inventory(&manager);
+    assert_history_inventory(&manager, &expected["input"]);
+    assert_eq!(
+        json!(manager.get_branch(None).unwrap().len()),
+        expected["branch_count"]
+    );
     HarnessOptions {
         session_manager: Some(manager),
         scratch: Some(scratch),
@@ -29,32 +33,33 @@ fn literal_history_options() -> HarnessOptions {
 }
 
 /// Checks message, model and thinking records plus tool-call links.
-fn assert_history_inventory(manager: &SessionManager) {
+fn assert_history_inventory(manager: &SessionManager, expected: &Value) {
     let entries = manager.get_entries();
-    assert_eq!(entries.len(), 1002);
-    for (kind, expected) in [
-        ("message", 990),
-        ("model_change", 5),
-        ("thinking_level_change", 5),
-        ("compaction", 2),
-    ] {
+    assert_eq!(json!(entries.len()), expected["entries"]);
+    for kind in ["model_change", "thinking_level_change", "compaction"] {
         assert_eq!(
-            entries.iter().filter(|entry| entry["type"] == kind).count(),
-            expected
+            json!(entries.iter().filter(|entry| entry["type"] == kind).count()),
+            expected["types"][kind]
         );
     }
-    for (role, expected) in [
-        ("user", 55),
-        ("assistant", 484),
-        ("toolResult", 448),
-        ("bashExecution", 3),
-    ] {
-        assert_eq!(
+    assert_eq!(
+        json!(
             entries
                 .iter()
-                .filter(|entry| entry["message"]["role"] == role)
-                .count(),
-            expected
+                .filter(|entry| entry["type"] == "message")
+                .count()
+        ),
+        expected["messages"]
+    );
+    for (role, count) in expected["roles"].as_object().unwrap() {
+        assert_eq!(
+            json!(
+                entries
+                    .iter()
+                    .filter(|entry| entry["message"]["role"] == *role)
+                    .count()
+            ),
+            *count
         );
     }
     let calls: HashMap<_, _> = entries
@@ -77,10 +82,11 @@ fn assert_history_inventory(manager: &SessionManager) {
 }
 
 /// Rebuilds with the adjacent valid boundary to show the exact-tail check rejects it.
-fn assert_changed_cut(h: &Harness, result: &CompactionResult, after: &[Value]) {
+fn assert_changed_cut(h: &Harness, result: &CompactionResult, expected: &Value) {
     let manager = h.session.session_manager();
     let mut manager = manager.borrow_mut();
-    let adjacent = manager.get_entries()[778]["id"]
+    let index = usize::try_from(expected["first_kept_index"].as_u64().unwrap()).unwrap();
+    let adjacent = manager.get_entries()[index + 1]["id"]
         .as_str()
         .unwrap()
         .to_owned();
@@ -93,19 +99,26 @@ fn assert_changed_cut(h: &Harness, result: &CompactionResult, after: &[Value]) {
         )
         .unwrap();
     let wrong = manager.build_session_context().unwrap().messages;
-    assert_eq!(wrong.len(), 224);
-    assert_ne!(wrong.len(), after.len());
-    assert_ne!(&wrong[1..], &after[1..]);
+    assert_eq!(json!(wrong.len()), expected["retained_count"]);
 }
 
 #[test]
 fn literal_histories_keep_the_exact_retained_tail() {
-    let options = literal_history_options();
+    let expected = corpus("compaction_long_histories");
+    let mut expected = expected
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|row| row["name"] == "before" && row["changed_cut"] == false)
+        .unwrap()
+        .clone();
+    let options = literal_history_options(&expected);
+    expected["result"]["first_kept_index"] = expected["first_kept_index"].clone();
     on_task_set(|_| async {
         let h = harness(options).await;
         load_history(&h);
         let before = messages(&h);
-        assert_eq!(before.len(), 446);
+        assert_eq!(json!(before.len()), expected["before_count"]);
         let requested = script_responses(
             &h,
             vec![answer("## Goal\nControlled summary", None, None); 2],
@@ -113,16 +126,19 @@ fn literal_histories_keep_the_exact_retained_tail() {
 
         let result = h.session.compact(None).await.unwrap();
 
-        let expected = corpus("compaction_long_histories");
-        let mut expected = expected[0].clone();
-        expected["result"]["first_kept_index"] = expected["first_kept_index"].clone();
         assert_result(&h, &result, &expected["result"]);
         assert_prompts(&requested.lock().unwrap(), &expected);
         let after = messages(&h);
-        assert_eq!(after.len(), 225);
+        assert_eq!(json!(after.len()), expected["after_count"]);
         assert_eq!(after[0]["role"], "compactionSummary");
         assert_eq!(after[0]["summary"], result.summary);
-        assert_eq!(after[1..], before[before.len() - 224..]);
+        let retained = usize::try_from(expected["retained_count"].as_u64().unwrap()).unwrap();
+        assert_eq!(after[1..], before[before.len() - retained..]);
+        assert_events(
+            &h,
+            &of_kinds(&h.events.borrow(), &["compaction_start", "compaction_end"]),
+            &expected["events"],
+        );
         assert_eq!(
             h.session
                 .session_manager()
@@ -131,9 +147,10 @@ fn literal_histories_keep_the_exact_retained_tail() {
                 .iter()
                 .filter(|entry| entry["type"] == "compaction")
                 .count(),
-            3
+            usize::try_from(expected["input"]["types"]["compaction"].as_u64().unwrap()).unwrap()
+                + 1
         );
-        assert_changed_cut(&h, &result, &after);
+        assert_changed_cut(&h, &result, &expected);
     });
 }
 
@@ -157,6 +174,17 @@ fn manual_compaction_records_exact_summary_and_events() {
         assert_eq!(after[0]["role"], "compactionSummary");
         assert_eq!(after[0]["summary"], result.summary);
         assert_eq!(after[1..], before[3..]);
+        let expected_messages: Vec<_> = expected["messages"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|message| json!({"role": message["role"], "text": message["text"]}))
+            .collect();
+        assert_eq!(history_view(&h), expected_messages);
+        assert_eq!(
+            after[1]["stopReason"],
+            expected["messages"][1]["stopReason"]
+        );
         let manager = h.session.session_manager();
         let manager = manager.borrow();
         assert!(manager.get_session_file().is_none());
@@ -166,18 +194,13 @@ fn manual_compaction_records_exact_summary_and_events() {
                 .iter()
                 .filter(|entry| entry["type"] == "compaction")
                 .count(),
-            1
+            usize::try_from(expected["stored_count"].as_u64().unwrap()).unwrap()
         );
         assert_eq!(entries.last().unwrap()["fromHook"], false);
-        assert_eq!(
-            of_kinds(&events.borrow(), &["compaction_start", "compaction_end"]),
-            [
-                json!({"type": "compaction_start", "reason": "manual"}),
-                json!({"type": "compaction_end", "reason": "manual", "aborted": false,
-                "willRetry": false, "result": {"summary": result.summary,
-                    "firstKeptEntryId": result.first_kept_entry_id,
-                    "tokensBefore": 150, "details": {"readFiles": [], "modifiedFiles": []}}}),
-            ]
+        assert_events(
+            &h,
+            &of_kinds(&events.borrow(), &["compaction_start", "compaction_end"]),
+            &expected["events"],
         );
     });
 }

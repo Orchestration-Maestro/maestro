@@ -52,8 +52,14 @@ fn assert_queue_drained(h: &Harness, expected: &Value) {
     let live = messages(h);
     assert_eq!(live[1]["stopReason"], "stop");
     assert_eq!(live[3]["stopReason"], "stop");
-    assert_eq!(h.session.pending_message_count(), 0);
-    assert!(!h.session.agent().has_queued_messages());
+    assert_eq!(
+        json!(h.session.pending_message_count()),
+        expected["pending"]
+    );
+    assert_eq!(
+        json!(h.session.agent().has_queued_messages()),
+        expected["queued"]
+    );
     assert!(h.session.get_steering_messages().is_empty());
     assert!(h.session.get_follow_up_messages().is_empty());
 }

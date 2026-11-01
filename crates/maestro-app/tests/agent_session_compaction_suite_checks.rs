@@ -2,8 +2,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::compaction::seeded;
 use crate::support::session_harness::{
-    Harness, HarnessOptions, Scripted, of_kinds, on_task_set, session_run_ended, start_prompt,
-    summary_provider,
+    Harness, HarnessOptions, Scripted, of_kinds, on_task_set, prompt_to_end, summary_provider,
 };
 use maestro_session::session_manager::ReadonlySessionManager;
 use serde_json::json;
@@ -15,15 +14,17 @@ fn assert_threshold(h: &Harness, expected: usize) {
     let ends = of_kinds(&events, &["compaction_end"]);
     assert_eq!(starts.len(), expected);
     assert_eq!(ends.len(), expected);
-    if expected == 1 {
+    for start in starts {
         assert_eq!(
-            starts[0],
+            start,
             json!({"type": "compaction_start", "reason": "threshold"})
         );
-        assert_eq!(ends[0]["reason"], "threshold");
-        assert_eq!(ends[0]["aborted"], false);
-        assert_eq!(ends[0]["willRetry"], false);
-        assert_eq!(ends[0]["result"]["summary"], "public auto summary");
+    }
+    for end in ends {
+        assert_eq!(end["reason"], "threshold");
+        assert_eq!(end["aborted"], false);
+        assert_eq!(end["willRetry"], false);
+        assert_eq!(end["result"]["summary"], "public auto summary");
     }
     assert_eq!(
         h.session
@@ -60,16 +61,15 @@ async fn threshold_case(tokens: u32, enabled: bool, expected: usize) {
         }))
         .unwrap(),
     );
-    let ended = session_run_ended(&h);
 
-    start_prompt(&h, "trigger threshold")
-        .await
-        .unwrap()
-        .unwrap();
-    h.session.agent().wait_for_idle().await;
-    ended.notified().await;
+    prompt_to_end(
+        &h,
+        "trigger threshold",
+        maestro_app::PromptOptions::default(),
+    )
+    .await;
 
-    assert_threshold(&h, if enabled { expected } else { 0 });
+    assert_threshold(&h, expected);
 }
 
 #[test]
@@ -83,7 +83,7 @@ fn public_compaction_obeys_the_threshold_boundary_and_switch() {
                 (199_001, 1),
                 (200_000, 1),
             ] {
-                threshold_case(tokens, enabled, count).await;
+                threshold_case(tokens, enabled, usize::from(enabled) * count).await;
             }
         }
     });

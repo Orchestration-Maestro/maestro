@@ -2,10 +2,16 @@
 
 ## Quick start
 
-Call `AgentSession::compact(None)` to summarize older conversation while keeping
-recent messages. Pass `Some("focus on the remaining work")` to guide the summary.
-The result contains the summary, the first retained entry ID and the context token
-count before compaction.
+Call `AgentSession::compact(None)` on an existing session to summarize older
+conversation while keeping recent messages:
+
+```rust
+let result = session.compact(None).await?;
+println!("{}", result.summary);
+```
+
+The result also contains the first retained entry ID and the context token count
+before compaction. Pass custom instructions to guide the summary.
 
 ## Using compaction
 
@@ -54,9 +60,9 @@ values. Missing details remain absent; explicit null remains null.
 
 ### Automatic compaction
 
-Automatic compaction starts when reported context use is strictly greater than
-`contextWindow - reserveTokens`. Equality does not trigger compaction. Disabling
-automatic compaction suppresses these checks without disabling manual compaction.
+The [session guide](../sessions/compaction.md#compaction-lifecycle) describes the
+automatic threshold. Disabling automatic compaction suppresses these checks
+without disabling manual compaction.
 
 After threshold compaction, the same prompt continues any queued messages. This
 includes follow-ups queued directly on the agent when the application's pending
@@ -75,20 +81,21 @@ the branch cannot be compacted, an operation fails or compaction is cancelled.
 `abort_compaction()` cancels a running compaction. `is_compacting()` reports
 whether compaction or branch summarization is running.
 
-The saved compaction settings are:
-
-| Setting | Default | Meaning |
-| --- | --- | --- |
-| `enabled` | `true` | Run automatic checks |
-| `reserveTokens` | `16384` | Leave room for the model's response |
-| `keepRecentTokens` | `20000` | Budget for recent retained messages |
+See the [session guide's settings reference](../sessions/compaction.md#settings)
+for compaction settings and their defaults.
 
 See [compaction and retries](recovery.md) for recovery and cancellation details,
 and [summary generation](../compaction.md) for the lower-level summary API.
 
 ## Examples
 
-To focus a summary on unresolved work, call
-`session.compact(Some("keep the open questions and changed files")).await`.
-Use the returned `first_kept_entry_id` to identify the retained boundary rather
-than guessing it from a message count.
+Focus a summary on unresolved work and read its retained boundary:
+
+```rust
+let result = session
+    .compact(Some("keep the open questions and changed files"))
+    .await?;
+println!("First retained entry: {}", result.first_kept_entry_id);
+```
+
+Use `first_kept_entry_id` rather than guessing the boundary from a message count.
