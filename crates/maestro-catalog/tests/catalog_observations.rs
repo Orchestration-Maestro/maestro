@@ -100,7 +100,7 @@ fn retained_catalog_handles_track_edits_and_survive_reload() {
     );
     old.write().unwrap().reverse();
     assert!(Arc::ptr_eq(
-        &registry.get_all().read().unwrap()[973],
+        &registry.get_all().read().unwrap()[977],
         &first
     ));
     let mut inserted = get_model(&provider, &id).unwrap();
