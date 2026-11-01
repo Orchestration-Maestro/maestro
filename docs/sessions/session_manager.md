@@ -15,7 +15,9 @@ See also the [session format](https://github.com/Orchestration-Maestro/maestro/b
 blank or malformed lines and accepts native JSON values without requiring a
 header, including `null`, `false`, zero numbers and empty strings. The native
 loader skips those four empty values before checking the header or building its
-index; listing skips them too. Nonblank interior lines are parsed without extra trimming. Native JSON
+index; listing skips them too. File loading and listing are unavailable on
+`wasm32`; `parse_session_entries` keeps those values on every target.
+Nonblank interior lines are parsed without extra trimming. Native JSON
 numeric and nesting limits apply. Object members keep their first position with
 the last duplicate value; omitted and null properties remain distinct.
 
