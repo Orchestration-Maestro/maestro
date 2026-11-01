@@ -521,7 +521,10 @@ pub fn assert_inventory_row(selector: &maestro_chat::SettingsSelectorComponent, 
     let selected = rows.iter().find(|line| line.starts_with("→ ")).unwrap();
     assert!(selected.starts_with(&format!("→ {}", item.label)));
     assert!(selected.ends_with(&item.current_value));
-    assert!(rows.contains(&format!("  {}", item.description)));
+    assert!(rows.contains(&format!(
+        "  {}",
+        crate::platform_keys::on_this_platform(&item.description)
+    )));
     let before = list.render(240);
     input(&**list, &["\r"]);
     if item.submenu {

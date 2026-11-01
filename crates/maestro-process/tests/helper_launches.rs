@@ -153,6 +153,23 @@ fn detached_launch_returns_before_input_consumption_and_reaps() {
 }
 
 #[test]
+fn detached_launch_runs_in_its_own_session_outside_the_callers_process_group() {
+    use std::io::{Read, Write};
+    let (command, listener) = controlled(child_programs::process_groups);
+    let worker = maestro_process::spawn(command, None).unwrap();
+    let (mut socket, pid) = ready(&listener);
+    socket.write_all(b"!").unwrap();
+    let mut groups = String::new();
+    socket.read_to_string(&mut groups).unwrap();
+    worker.join().unwrap();
+    let (own, parent) = groups.split_once(' ').unwrap();
+    let (own, parent): (i32, i32) = (own.parse().unwrap(), parent.parse().unwrap());
+    assert_eq!(own, pid.as_raw_nonzero().get());
+    assert_ne!(own, parent);
+    reaped(pid);
+}
+
+#[test]
 fn detached_input_closure_does_not_prevent_reaping() {
     let (command, listener) = controlled(child_programs::closed_input_report);
     let worker = maestro_process::spawn(command, Some(vec![b'x'; 4_194_304])).unwrap();

@@ -185,6 +185,22 @@ pub fn closed_input_report() {
     leave(0)
 }
 
+/// Reports its pid, waits for release, then reports its own process group and its parent's.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn process_groups() {
+    use rustix::process::{getpgid, getppid};
+    let mut socket = parent();
+    announce(&mut socket, &std::process::id().to_string()).unwrap();
+    assert_eq!(receive(&mut socket).unwrap(), Some(b'!'));
+    let own = getpgid(None).unwrap().as_raw_nonzero();
+    let parent = getpgid(getppid()).unwrap().as_raw_nonzero();
+    socket
+        .write_all(format!("{own} {parent}").as_bytes())
+        .unwrap();
+    leave(0)
+}
+
 /// Checks the launch it inherited and ends through the status `CHILD_EXIT` names.
 #[test]
 #[ignore = "runs only inside a controlled child"]
