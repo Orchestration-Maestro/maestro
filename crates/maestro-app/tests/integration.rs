@@ -58,6 +58,7 @@ mod clipboard_status;
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "support/command_operations.rs"]
 mod command_operations;
+mod compaction_extensions_checks;
 mod configuration_paths;
 mod context_discovery;
 mod context_usage_estimates;

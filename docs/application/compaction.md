@@ -24,6 +24,26 @@ Manual compaction announces one `compaction_start` and one `compaction_end`, bot
 with reason `manual`. A successful end carries the result with `aborted: false`
 and `willRetry: false`.
 
+### Persistence
+
+File-backed sessions append compaction to their JSONL history. Reopening that
+file restores the summary and the same retained messages. Compaction does not
+replace the session: the next prompt uses the rebuilt context and saves its
+response in the existing history.
+
+### Extension events
+
+`session_before_compact` supplies the ordered branch entries, messages to
+summarize, split-turn prefix, token estimate, settings and cancellation signal.
+The callback context exposes the current model, model registry and session
+manager. A handler can return `cancel: true` to refuse compaction before the
+summarizer runs.
+
+`session_compact` runs after the entry is saved. Its `compaction_entry` is already
+readable through the callback's session manager, and `from_extension` reports
+whether an extension supplied the result. A cancelled compaction stores no entry
+and sends no `session_compact` event.
+
 ## Reference
 
 `compact(custom_instructions)` returns an error when credentials are unavailable,
