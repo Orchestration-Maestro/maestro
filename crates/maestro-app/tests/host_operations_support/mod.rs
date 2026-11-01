@@ -3,10 +3,11 @@
 mod commands;
 pub use commands::git;
 
-/// Creates two commits with a pin at the first, without a remote or network access.
+/// Creates two commits with a pin at the first and a local-only origin.
 pub fn pinned_repository(path: &std::path::Path) -> String {
     std::fs::create_dir_all(path).unwrap();
     git(path, &["init", "-b", "main"]);
+    git(path, &["remote", "add", "origin", "."]);
     std::fs::write(path.join("content"), "pinned").unwrap();
     std::fs::write(path.join("retained"), "retained").unwrap();
     git(path, &["add", "content", "retained"]);
