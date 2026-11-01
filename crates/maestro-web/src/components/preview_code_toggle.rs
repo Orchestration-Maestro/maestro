@@ -1,9 +1,14 @@
 //! Retained selection between a document preview and its original source.
+/// Native control group and its page element.
+#[cfg(target_arch = "wasm32")]
+pub mod dom;
+
 use crate::components::copy_button::LocalizedControlError;
 use crate::{
     I18n,
     browser::attachment_content::{self},
 };
+use std::{cell::Cell, rc::Rc};
 /// The two supported artifact presentations.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum ViewMode {
@@ -15,10 +20,10 @@ pub enum ViewMode {
 }
 /// An independently retained pair of preview/source controls.
 pub struct PreviewCodeToggle {
-    /// Current selected presentation.
-    pub mode: ViewMode,
-    /// Per-instance toolkit identity.
-    id: egui::Id,
+    /// Current selected presentation, shared with a mounted native group.
+    selection: Rc<Cell<ViewMode>>,
+    /// Per-instance toolkit identity, allocated by the first retained render.
+    id: Option<egui::Id>,
 }
 impl Default for PreviewCodeToggle {
     fn default() -> Self {
@@ -30,9 +35,26 @@ impl PreviewCodeToggle {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            mode: ViewMode::Preview,
-            id: attachment_content::identity(),
+            selection: Rc::new(Cell::new(ViewMode::Preview)),
+            id: None,
         }
+    }
+    /// Retain this selection without sharing a retained drawing identity.
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) fn shared(&self) -> Self {
+        Self {
+            selection: Rc::clone(&self.selection),
+            id: None,
+        }
+    }
+    /// The current selected presentation.
+    #[must_use]
+    pub fn mode(&self) -> ViewMode {
+        self.selection.get()
+    }
+    /// Select a presentation without publishing it; a later render or update shows it.
+    pub fn set_mode(&self, mode: ViewMode) {
+        self.selection.set(mode);
     }
     /// Draw both controls, returning only a changed user selection.
     /// # Errors
@@ -46,7 +68,8 @@ impl PreviewCodeToggle {
         use attachment_content::{color, points};
         attachment_content::style(ui, presentation).map_err(LocalizedControlError::Presentation)?;
         let radius = egui::CornerRadius::from(points(presentation.radii["control"]));
-        ui.push_id(self.id, |ui| {
+        let id = *self.id.get_or_insert_with(attachment_content::identity);
+        ui.push_id(id, |ui| {
             egui::Frame::new()
                 .fill(
                     color(presentation, "panel")
@@ -69,7 +92,7 @@ impl PreviewCodeToggle {
     }
     /// Draw the two adjacent controls inside their shared group.
     fn controls<F: ?Sized>(
-        &mut self,
+        &self,
         ui: &mut egui::Ui,
         i18n: &I18n<F>,
         presentation: &maestro_theme::BrandPresentation<'_>,
@@ -79,7 +102,7 @@ impl PreviewCodeToggle {
             (ViewMode::Preview, "Preview", "Eye"),
             (ViewMode::Code, "Code", "Code"),
         ] {
-            let selected = self.mode == mode;
+            let selected = self.mode() == mode;
             if selected {
                 ui.painter().rect_filled(
                     egui::Rect::from_min_size(ui.next_widget_position(), egui::vec2(32., 26.)),
@@ -116,7 +139,7 @@ impl PreviewCodeToggle {
                 )
             });
             if response.clicked() && !selected {
-                self.mode = mode;
+                self.set_mode(mode);
                 transition = Some(mode);
             }
         }

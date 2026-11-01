@@ -144,7 +144,7 @@ pub fn tool(name: &str, execute: maestro_agent::ExecuteTool) -> maestro_agent::S
         definition: maestro_models::Tool {
             name: name.into(),
             description: name.into(),
-            parameters: serde_json::json!({"type":"object"}),
+            parameters: serde_json::json!({"type":"object"}).into(),
         },
         label: name.into(),
         prepare_arguments: None,

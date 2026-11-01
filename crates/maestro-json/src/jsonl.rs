@@ -7,7 +7,26 @@ use serde_json::Value;
 /// # Errors
 /// Returns a failure from the shared compact writer.
 pub fn serialize_json_line(value: &Value) -> Result<String, serde_json::Error> {
-    let mut line = crate::compact_json(value)?;
+    serialize_line(value, false)
+}
+
+/// Serialize one JSON value with exact integers and one terminating LF.
+///
+/// Keys and floating-point values follow the compact canonical writer.
+///
+/// # Errors
+/// Returns a failure from the shared compact writer.
+pub fn serialize_native_json_line(value: &Value) -> Result<String, serde_json::Error> {
+    serialize_line(value, true)
+}
+
+/// Frame the selected numeric representation with one terminating LF.
+fn serialize_line(value: &Value, preserve_integers: bool) -> Result<String, serde_json::Error> {
+    let mut line = if preserve_integers {
+        crate::json_text::compact_native_json(value)?
+    } else {
+        crate::compact_json(value)?
+    };
     line.push('\n');
     Ok(line)
 }

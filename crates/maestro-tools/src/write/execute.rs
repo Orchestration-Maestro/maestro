@@ -1,7 +1,7 @@
 //! Ordered, cancellable execution of one write.
 
 use super::{WriteOperations, WriteToolInput};
-use crate::utils::diagnostics::{diagnostic, guarded};
+use crate::utils::diagnostics::{blocking, check_aborted};
 use maestro_agent::AgentToolResult;
 use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo};
 use std::sync::Arc;
@@ -15,19 +15,11 @@ impl WriteOperations for NativeWriteOperations {
         absolute_path: String,
         content: String,
     ) -> BoxFuture<Result<(), DiagnosticErrorInfo>> {
-        Box::pin(async move {
-            tokio::fs::write(absolute_path, content)
-                .await
-                .map_err(|error| diagnostic(&error))
-        })
+        Box::pin(blocking(move || std::fs::write(absolute_path, content)))
     }
 
     fn mkdir(&self, dir: String) -> BoxFuture<Result<(), DiagnosticErrorInfo>> {
-        Box::pin(async move {
-            tokio::fs::create_dir_all(dir)
-                .await
-                .map_err(|error| diagnostic(&error))
-        })
+        Box::pin(blocking(move || std::fs::create_dir_all(dir)))
     }
 }
 
@@ -43,12 +35,12 @@ pub(super) async fn write_file(
 ) -> Result<AgentToolResult<()>, DiagnosticErrorInfo> {
     let (absolute_path, dir) = paths;
     let signal = signal.as_ref();
-    guarded(signal, || operations.mkdir(dir)).await?;
+    check_aborted(signal)?;
+    operations.mkdir(dir).await?;
+    check_aborted(signal)?;
     let bytes = input.content.len();
-    guarded(signal, || {
-        operations.write_file(absolute_path, input.content)
-    })
-    .await?;
+    operations.write_file(absolute_path, input.content).await?;
+    check_aborted(signal)?;
     Ok(AgentToolResult::text_result(
         format!("Successfully wrote {bytes} bytes to {}", input.path),
         None,

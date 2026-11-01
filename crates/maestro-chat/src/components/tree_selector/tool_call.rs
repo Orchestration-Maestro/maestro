@@ -52,12 +52,6 @@ impl TreeState {
 }
 /// Summarize only the fields used by the selected tool kind.
 fn format_call(name: &str, args: &Value, runtime: &dyn TuiRuntime) -> io::Result<String> {
-    if args.is_null() {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidData,
-            "missing tool arguments receiver",
-        ));
-    }
     match name {
         "bash" => {
             let raw = argument(args, "command", "")?;
@@ -113,12 +107,25 @@ fn format_call(name: &str, args: &Value, runtime: &dyn TuiRuntime) -> io::Result
     }
 }
 /// Display truthy arguments, otherwise the tool's own default.
+///
+/// A named tool reads its fields from an arguments value, so a null receiver has none;
+/// a generic tool prints the whole value, which includes a null root.
 fn argument<'a>(args: &'a Value, key: &str, default: &'a str) -> io::Result<Cow<'a, str>> {
+    if args.is_null() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "missing tool arguments receiver",
+        ));
+    }
     maestro_app::display_truthy(args.get(key))
         .map(|text| text.unwrap_or(Cow::Borrowed(default)))
         .map_err(io::Error::other)
 }
 /// Bind the live nonempty home observation only when formatting a path.
 fn shorten_path(path: &str, runtime: &dyn TuiRuntime) -> String {
-    super::super::shorten_path_with_home(path, &|variable| runtime.environment(variable))
+    super::super::shorten_path_with_home(
+        path,
+        &|variable| runtime.environment(variable),
+        maestro_path::shorten_home,
+    )
 }

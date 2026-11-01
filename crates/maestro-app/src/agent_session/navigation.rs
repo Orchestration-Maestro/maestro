@@ -12,7 +12,7 @@ use maestro_extensions::{
     ExtensionExecution, SessionBeforeTreeEvent, SessionBeforeTreeResult, SessionTreeEvent,
     TreePreparation,
 };
-use maestro_models::{Cancellation, DiagnosticErrorInfo, Model};
+use maestro_models::{Cancellation, DiagnosticErrorInfo, Local, Model};
 use maestro_session::{
     BranchSummaryResult, GenerateBranchSummaryOptions, Presence,
     collect_entries_for_branch_summary, generate_branch_summary,
@@ -105,27 +105,27 @@ impl<E: ExtensionExecution> AgentSession<E> {
         Ok(())
     }
 
-    /// Moves to `target_id` in the same session, optionally summarizing the branch left. Once
-    /// started, the move belongs to the session: dropping the returned future leaves it
-    /// running, and `abort_branch_summary` stops its summary.
+    /// Starts moving to `target_id` when called, optionally summarizing the branch left.
+    /// The move belongs to the session: dropping even the never-polled result future leaves
+    /// it running, and `abort_branch_summary` stops its summary.
     ///
     /// # Errors
     /// Returns `Entry <id> not found`, an authentication, summary, recording or extension
     /// failure, or the failure when the navigation's task ended before it did.
-    pub async fn navigate_tree(
+    pub fn navigate_tree(
         self: &Rc<Self>,
         target_id: &str,
         options: NavigateTreeOptions,
-    ) -> Result<NavigateTreeResult, DiagnosticErrorInfo> {
+    ) -> impl std::future::Future<Output = Result<NavigateTreeResult, DiagnosticErrorInfo>> + use<E>
+    {
         let session = Rc::clone(self);
         let target_id = target_id.to_owned();
-        self.start_operation(async move {
+        let result = self.start_operation(async move {
             let navigated = session.navigate(&target_id, options).await;
             session.state.borrow_mut().branch_summary_signal = None;
             navigated
-        })
-        .await
-        .map_err(thrown)?
+        });
+        async move { result.await.map_err(thrown)? }
     }
 
     /// The navigation the session runs, before its summary signal is cleared.
@@ -260,20 +260,25 @@ impl<E: ExtensionExecution> AgentSession<E> {
         signal: Cancellation,
     ) -> Result<Option<BranchSummary>, DiagnosticErrorInfo> {
         let model = self.model();
-        let (api_key, headers) = self.get_required_request_auth(&model).await?;
+        let (api_key, headers, base_url) = self.get_required_request_auth(&model).await?;
+        let mut model = read(&model).clone();
+        if let Some(base_url) = base_url {
+            model.base_url = base_url;
+        }
         let reserve_tokens = self
             .settings_manager
             .borrow()
             .get_branch_summary_settings()
             .reserve_tokens;
-        let options = GenerateBranchSummaryOptions {
-            model: read(&model).clone(),
+        let options = GenerateBranchSummaryOptions::<Local> {
+            model,
             api_key,
             headers,
             signal,
             custom_instructions: choices.custom_instructions.clone(),
             replace_instructions: choices.replace_instructions,
             reserve_tokens: Some(reserve_tokens),
+            stream_fn: read(&self.agent.stream_fn).clone(),
         };
         let (text, read_files, modified_files) =
             match generate_branch_summary(entries, &options).await? {
@@ -392,11 +397,12 @@ impl<E: ExtensionExecution> AgentSession<E> {
             .collect()
     }
 
-    /// The key and headers a summary request for `model` uses.
+    /// The key, headers and optional endpoint a summary request for `model` uses.
     pub(super) async fn get_required_request_auth(
         &self,
         model: &Arc<RwLock<Model>>,
-    ) -> Result<(String, Option<IndexMap<String, String>>), DiagnosticErrorInfo> {
+    ) -> Result<(String, Option<IndexMap<String, String>>, Option<String>), DiagnosticErrorInfo>
+    {
         let provider = read(model).provider.clone();
         let no_key = || match get_docs_path() {
             Ok(docs) => {
@@ -413,7 +419,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
             ResolvedRequestAuth::Ok {
                 api_key: Some(api_key),
                 headers,
-            } if !api_key.is_empty() => Ok((api_key, headers)),
+                base_url,
+            } if !api_key.is_empty() => Ok((api_key, headers, base_url)),
             ResolvedRequestAuth::Ok { .. } if self.model_registry.is_using_oauth(model) => {
                 Err(DiagnosticErrorInfo::error(format!(
                     "Authentication failed for \"{provider}\". Credentials may have expired or network is unavailable. Run '/login {provider}' to re-authenticate."

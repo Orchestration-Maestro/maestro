@@ -9,8 +9,12 @@ pub struct Bank {
     pub value: Value,
     /// Optional raw wire record.
     pub raw: Option<String>,
+    /// Exact helper operands mapped to supplied replies.
+    pub helpers: std::collections::HashMap<String, Value>,
     /// Rejection before action effects.
     pub error: Option<String>,
+    /// Rejects the next session entry before recording it.
+    pub entry_error: Option<String>,
 }
 impl Bank {
     /// Replace host state through an acknowledged entry.
@@ -20,6 +24,34 @@ impl Bank {
     /// Return a recoverable host decision before logging effects.
     pub fn check(&self) -> Result<(), String> {
         self.error.clone().map_or(Ok(()), Err)
+    }
+    /// Selects an operation's canned reply without implementing that helper.
+    pub fn record_for(&self, operation: &str) -> Result<String, String> {
+        self.check()?;
+        Ok(self
+            .raw
+            .clone()
+            .unwrap_or_else(|| self.value.get(operation).unwrap_or(&self.value).to_string()))
+    }
+    /// Supplies an exact helper reply before falling back to operation replies.
+    pub fn helper(&self, operation: &str, data: &str) -> Result<String, String> {
+        self.check()?;
+        let key = format!("{operation} {data}");
+        if let Some(value) = self.helpers.get(&key) {
+            Ok(value.to_string())
+        } else if self.value.get(&key).is_some() {
+            self.record_for(&key)
+        } else {
+            self.record_for(operation)
+        }
+    }
+    /// Reads a supplied boolean while preserving literal host refusal messages.
+    pub fn boolean(&self, operation: &str) -> Result<bool, String> {
+        self.check()?;
+        let value = self.value.get(operation).unwrap_or(&self.value);
+        value
+            .as_bool()
+            .ok_or_else(|| value.as_str().unwrap_or("missing boolean reply").to_owned())
     }
     /// Supply raw selected record input without changing decoder policy.
     pub fn record(&self) -> Result<String, String> {
@@ -50,11 +82,12 @@ pub fn compact(
     instructions: Option<&str>,
     complete: Option<u32>,
     error: Option<u32>,
+    present: bool,
 ) -> Result<(), String> {
     observed.actions.check()?;
     let request = observed.compactions;
     observed.compactions += 1;
-    observed.log(format!("compact admission {}",json!({"instructions":instructions.map_or(json!({"present":false}),|v|json!({"present":true,"value":v})),"complete":complete.is_some(),"error":error.is_some()})));
+    observed.log(format!("compact admission {}",json!({"present":present,"instructions":instructions.map_or(json!({"present":false}),|v|json!({"present":true,"value":v})),"complete":complete.is_some(),"error":error.is_some()})));
     if let Some(id) = complete {
         observed.register(format!("compact {request} complete"), id);
     }

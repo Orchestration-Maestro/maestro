@@ -1,5 +1,8 @@
 //! Explicit source resolution with resource provenance.
-use maestro_resources::{PathMetadata, paths::CONFIG_DIR_NAME};
+use maestro_resources::{
+    PathMetadata,
+    paths::{CONFIG_DIR_NAME, package_home_directory},
+};
 /// One discovered resource with its original path and provenance.
 pub struct ResolvedResource {
     /// The authored resource path.
@@ -9,9 +12,23 @@ pub struct ResolvedResource {
     /// The retained source owner after resource precedence selection.
     pub metadata: PathMetadata,
 }
+/// One selected package, even when none of its resources are enabled.
+#[derive(Debug, PartialEq, Eq)]
+pub struct ResolvedPackage {
+    /// Original source spelling, including its pin.
+    pub source: String,
+    /// Kind-prefixed identity independent of the pin.
+    pub identity: String,
+    /// Scope used to resolve the contents.
+    pub scope: SourceScope,
+    /// Existing package contents.
+    pub installed_path: String,
+}
 /// Resources separated by their discovery kind.
 #[derive(Default)]
 pub struct ResolvedPaths {
+    /// Selected packages in resolution order, independent of resource filters.
+    pub packages: Vec<ResolvedPackage>,
     /// Extension entries.
     pub extensions: Vec<ResolvedResource>,
     /// Skill entries.
@@ -92,7 +109,10 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
                 SourceScope::Project => join(&[&self.options.cwd, CONFIG_DIR_NAME]).into(),
                 SourceScope::Temporary => self.options.cwd.as_str().into(),
             };
-            let path = super::paths::resolve_local(path, &base, super::operations::home_dir)?;
+            let path = super::paths::resolve_local(path, &base, package_home_directory)?;
+            if Path::new(&path).exists() {
+                result.package(source, scope, &path, &base)?;
+            }
             Self::collect_local(path, &mut metadata, filter, result);
             return Ok(());
         }
@@ -114,10 +134,11 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         } else if let Source::Git(git) = &parsed
             && scope == SourceScope::Temporary
             && git.r#ref.is_none()
-            && !super::update::offline()
+            && !self.offline()
         {
             self.refresh_temporary_git(git, source).await;
         }
+        result.package(source, scope, &path, "")?;
         metadata.base_dir = Some(path.clone());
         Self::collect_package(&path, &metadata, filter, result)?;
         Ok(())
@@ -128,7 +149,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         source: &str,
         on_missing: Option<&'a super::MissingCallback<'a>>,
     ) -> io::Result<bool> {
-        if super::update::offline() {
+        if self.offline() {
             return Ok(false);
         }
         let action = match on_missing {
@@ -175,7 +196,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         result: &mut Accumulator,
     ) -> io::Result<()> {
         for kind in ResourceType::ALL {
-            let entries = manifest.entries(kind.name())?;
+            let entries = manifest.entries(kind.name()).unwrap_or_default();
             let files = super::manifest::collect_manifest_entries(&entries, path, kind)?;
             let enabled = super::resource_patterns::apply_patterns(&files, &entries, path)?;
             for file in files.iter().filter(|file| enabled.contains(file.as_str())) {
@@ -232,6 +253,22 @@ pub(super) struct Accumulator {
     seen: [HashMap<String, usize>; 5],
 }
 impl Accumulator {
+    /// Records an admitted package without deriving it from resource files.
+    fn package(
+        &mut self,
+        source: &str,
+        scope: SourceScope,
+        path: &str,
+        base: &str,
+    ) -> io::Result<()> {
+        self.paths.packages.push(ResolvedPackage {
+            source: source.to_owned(),
+            identity: super::configuration::identity_text(source, base)?,
+            scope,
+            installed_path: path.to_owned(),
+        });
+        Ok(())
+    }
     /// Stably ranks resources before retaining the first canonical identity.
     pub(super) fn finish(mut self) -> ResolvedPaths {
         for kind in ResourceType::ALL {

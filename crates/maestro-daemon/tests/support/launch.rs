@@ -5,6 +5,7 @@ use maestro_daemon::{
     terminal_theme::TerminalTheme,
 };
 use maestro_process::pty::{PtySetupEntry, foreground::ProcessDetectionMode};
+use maestro_test_directory::temporary_root;
 use std::{ffi::OsString, sync::Arc};
 use tokio::sync::{Notify, mpsc};
 
@@ -21,7 +22,7 @@ pub fn launch_inputs(
                 executable: std::env::current_exe().unwrap(),
                 args: args.iter().map(OsString::from).collect(),
             },
-            socket: std::env::temp_dir().join("maestro-context-test.sock"),
+            socket: temporary_root().join("maestro-context-test.sock"),
             executable: None,
             manifests,
             events,

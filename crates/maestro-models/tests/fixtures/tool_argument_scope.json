@@ -1,0 +1,624 @@
+[
+  {
+    "case": "checker-scope",
+    "group": "candidate checking",
+    "schema": {
+      "type": "object",
+      "required": [
+        "value"
+      ],
+      "properties": {
+        "value": {
+          "$defs": {
+            "S": {
+              "type": "string",
+              "$id": "S"
+            },
+            "U": {
+              "anyOf": [
+                {
+                  "$ref": "S"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "$id": "U"
+            }
+          },
+          "$ref": "U"
+        }
+      }
+    },
+    "kinds": {
+      "": "Object",
+      "/properties/value": "Cyclic",
+      "/properties/value/$defs/S": "String",
+      "/properties/value/$defs/U": "Union",
+      "/properties/value/$defs/U/anyOf/0": "Ref",
+      "/properties/value/$defs/U/anyOf/1": "Number"
+    },
+    "arguments": {
+      "value": null
+    },
+    "expected": {
+      "Ok": {
+        "value": "null"
+      }
+    }
+  },
+  {
+    "case": "checker-scope-control",
+    "group": "candidate checking",
+    "schema": {
+      "type": "object",
+      "required": [
+        "value"
+      ],
+      "properties": {
+        "value": {
+          "$defs": {
+            "S": {
+              "type": "string",
+              "$id": "S"
+            },
+            "U": {
+              "anyOf": [
+                {
+                  "$ref": "S"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "$id": "U"
+            }
+          },
+          "$ref": "U"
+        }
+      }
+    },
+    "kinds": {
+      "": "Object",
+      "/properties/value": "Cyclic",
+      "/properties/value/$defs/S": "String",
+      "/properties/value/$defs/U": "Union",
+      "/properties/value/$defs/U/anyOf/0": "Ref",
+      "/properties/value/$defs/U/anyOf/1": "Number"
+    },
+    "arguments": {
+      "value": 5
+    },
+    "expected": {
+      "Ok": {
+        "value": 5
+      }
+    }
+  },
+  {
+    "case": "sibling-shadow",
+    "group": "definition scope",
+    "schema": {
+      "type": "object",
+      "required": [
+        "value"
+      ],
+      "properties": {
+        "value": {
+          "$defs": {
+            "T": {
+              "type": "string",
+              "$id": "T"
+            },
+            "O": {
+              "type": "object",
+              "required": [
+                "a",
+                "b"
+              ],
+              "properties": {
+                "a": {
+                  "$defs": {
+                    "T": {
+                      "type": "number",
+                      "$id": "T"
+                    },
+                    "X": {
+                      "$ref": "T",
+                      "$id": "X"
+                    }
+                  },
+                  "$ref": "X"
+                },
+                "b": {
+                  "$defs": {
+                    "Y": {
+                      "$ref": "T",
+                      "$id": "Y"
+                    }
+                  },
+                  "$ref": "Y"
+                }
+              },
+              "$id": "O"
+            }
+          },
+          "$ref": "O"
+        }
+      }
+    },
+    "kinds": {
+      "": "Object",
+      "/properties/value": "Cyclic",
+      "/properties/value/$defs/T": "String",
+      "/properties/value/$defs/O": "Object",
+      "/properties/value/$defs/O/properties/a": "Cyclic",
+      "/properties/value/$defs/O/properties/a/$defs/T": "Number",
+      "/properties/value/$defs/O/properties/a/$defs/X": "Ref",
+      "/properties/value/$defs/O/properties/b": "Cyclic",
+      "/properties/value/$defs/O/properties/b/$defs/Y": "Ref"
+    },
+    "arguments": {
+      "value": {
+        "a": null,
+        "b": null
+      }
+    },
+    "expected": {
+      "Err": "Validation failed for tool \"echo\":\n  - value.b: must be number\n\nReceived arguments:\n{\n  \"value\": {\n    \"a\": null,\n    \"b\": null\n  }\n}"
+    }
+  },
+  {
+    "case": "nested-shadow-control",
+    "group": "definition scope",
+    "schema": {
+      "type": "object",
+      "required": [
+        "value"
+      ],
+      "properties": {
+        "value": {
+          "$defs": {
+            "T": {
+              "type": "string",
+              "$id": "T"
+            },
+            "O": {
+              "type": "object",
+              "required": [
+                "a"
+              ],
+              "properties": {
+                "a": {
+                  "$defs": {
+                    "T": {
+                      "type": "number",
+                      "$id": "T"
+                    },
+                    "X": {
+                      "$ref": "T",
+                      "$id": "X"
+                    }
+                  },
+                  "$ref": "X"
+                }
+              },
+              "$id": "O"
+            }
+          },
+          "$ref": "O"
+        }
+      }
+    },
+    "kinds": {
+      "": "Object",
+      "/properties/value": "Cyclic",
+      "/properties/value/$defs/T": "String",
+      "/properties/value/$defs/O": "Object",
+      "/properties/value/$defs/O/properties/a": "Cyclic",
+      "/properties/value/$defs/O/properties/a/$defs/T": "Number",
+      "/properties/value/$defs/O/properties/a/$defs/X": "Ref"
+    },
+    "arguments": {
+      "value": {
+        "a": null
+      }
+    },
+    "expected": {
+      "Ok": {
+        "value": {
+          "a": 0
+        }
+      }
+    }
+  },
+  {
+    "case": "dynamic-scope",
+    "group": "definition scope",
+    "schema": {
+      "type": "object",
+      "required": [
+        "value"
+      ],
+      "properties": {
+        "value": {
+          "$defs": {
+            "T": {
+              "type": "string",
+              "$id": "T"
+            },
+            "D": {
+              "$ref": "T",
+              "$id": "D"
+            },
+            "A": {
+              "$defs": {
+                "T": {
+                  "type": "number",
+                  "$id": "T"
+                },
+                "E": {
+                  "$ref": "D",
+                  "$id": "E"
+                }
+              },
+              "$ref": "E",
+              "$id": "A"
+            }
+          },
+          "$ref": "A"
+        }
+      }
+    },
+    "kinds": {
+      "": "Object",
+      "/properties/value": "Cyclic",
+      "/properties/value/$defs/T": "String",
+      "/properties/value/$defs/D": "Ref",
+      "/properties/value/$defs/A": "Cyclic",
+      "/properties/value/$defs/A/$defs/T": "Number",
+      "/properties/value/$defs/A/$defs/E": "Ref"
+    },
+    "arguments": {
+      "value": null
+    },
+    "expected": {
+      "Ok": {
+        "value": 0
+      }
+    }
+  },
+  {
+    "case": "optional-member",
+    "group": "composed candidates",
+    "schema": {
+      "type": "object",
+      "required": [
+        "value"
+      ],
+      "properties": {
+        "value": {
+          "allOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "a"
+                  ],
+                  "properties": {
+                    "a": {
+                      "type": "string"
+                    },
+                    "b": {
+                      "type": "string"
+                    }
+                  }
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            {}
+          ]
+        }
+      }
+    },
+    "kinds": {
+      "": "Object",
+      "/properties/value": "Intersect",
+      "/properties/value/allOf/0": "Union",
+      "/properties/value/allOf/0/anyOf/0": "Object",
+      "/properties/value/allOf/0/anyOf/0/properties/a": "String",
+      "/properties/value/allOf/0/anyOf/0/properties/b": "String",
+      "/properties/value/allOf/0/anyOf/1": "Number",
+      "/properties/value/allOf/1": "Unknown"
+    },
+    "arguments": {
+      "value": {
+        "a": null
+      }
+    },
+    "expected": {
+      "Ok": {
+        "value": {
+          "a": "null"
+        }
+      }
+    }
+  },
+  {
+    "case": "optional-member-control",
+    "group": "composed candidates",
+    "schema": {
+      "type": "object",
+      "required": [
+        "value"
+      ],
+      "properties": {
+        "value": {
+          "allOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "a",
+                    "b"
+                  ],
+                  "properties": {
+                    "a": {
+                      "type": "string"
+                    },
+                    "b": {
+                      "type": "string"
+                    }
+                  }
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            {}
+          ]
+        }
+      }
+    },
+    "kinds": {
+      "": "Object",
+      "/properties/value": "Intersect",
+      "/properties/value/allOf/0": "Union",
+      "/properties/value/allOf/0/anyOf/0": "Object",
+      "/properties/value/allOf/0/anyOf/0/properties/a": "String",
+      "/properties/value/allOf/0/anyOf/0/properties/b": "String",
+      "/properties/value/allOf/0/anyOf/1": "Number",
+      "/properties/value/allOf/1": "Unknown"
+    },
+    "arguments": {
+      "value": {
+        "a": null,
+        "b": null
+      }
+    },
+    "expected": {
+      "Ok": {
+        "value": {
+          "a": "null",
+          "b": "null"
+        }
+      }
+    }
+  },
+  {
+    "case": "array-options",
+    "group": "composed candidates",
+    "schema": {
+      "type": "object",
+      "required": [
+        "value"
+      ],
+      "properties": {
+        "value": {
+          "allOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 1
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            {}
+          ]
+        }
+      }
+    },
+    "kinds": {
+      "": "Object",
+      "/properties/value": "Intersect",
+      "/properties/value/allOf/0": "Union",
+      "/properties/value/allOf/0/anyOf/0": "Array",
+      "/properties/value/allOf/0/anyOf/0/items": "String",
+      "/properties/value/allOf/0/anyOf/1": "Number",
+      "/properties/value/allOf/1": "Unknown"
+    },
+    "arguments": {
+      "value": [
+        null,
+        null
+      ]
+    },
+    "expected": {
+      "Err": "Validation failed for tool \"echo\":\n  - value.0: must be string\n  - value.1: must be string\n  - value: must not have more than 1 items\n  - value: must be number\n  - value: must match a schema in anyOf\n\nReceived arguments:\n{\n  \"value\": [\n    null,\n    null\n  ]\n}"
+    }
+  },
+  {
+    "case": "array-options-control",
+    "group": "composed candidates",
+    "schema": {
+      "type": "object",
+      "required": [
+        "value"
+      ],
+      "properties": {
+        "value": {
+          "allOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 2
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            {}
+          ]
+        }
+      }
+    },
+    "kinds": {
+      "": "Object",
+      "/properties/value": "Intersect",
+      "/properties/value/allOf/0": "Union",
+      "/properties/value/allOf/0/anyOf/0": "Array",
+      "/properties/value/allOf/0/anyOf/0/items": "String",
+      "/properties/value/allOf/0/anyOf/1": "Number",
+      "/properties/value/allOf/1": "Unknown"
+    },
+    "arguments": {
+      "value": [
+        null,
+        null
+      ]
+    },
+    "expected": {
+      "Ok": {
+        "value": [
+          "null",
+          "null"
+        ]
+      }
+    }
+  },
+  {
+    "case": "tuple-constraints",
+    "group": "composed candidates",
+    "schema": {
+      "type": "object",
+      "required": [
+        "value"
+      ],
+      "properties": {
+        "value": {
+          "allOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "additionalItems": false,
+                  "items": [
+                    {
+                      "type": "string"
+                    }
+                  ],
+                  "minItems": 1
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            {}
+          ]
+        }
+      }
+    },
+    "kinds": {
+      "": "Object",
+      "/properties/value": "Intersect",
+      "/properties/value/allOf/0": "Union",
+      "/properties/value/allOf/0/anyOf/0": "Tuple",
+      "/properties/value/allOf/0/anyOf/0/items/0": "String",
+      "/properties/value/allOf/0/anyOf/1": "Number",
+      "/properties/value/allOf/1": "Unknown"
+    },
+    "arguments": {
+      "value": [
+        null,
+        1
+      ]
+    },
+    "expected": {
+      "Err": "Validation failed for tool \"echo\":\n  - value.1: schema is false\n  - value.0: must be string\n  - value: must be number\n  - value: must match a schema in anyOf\n\nReceived arguments:\n{\n  \"value\": [\n    null,\n    1\n  ]\n}"
+    }
+  },
+  {
+    "case": "tuple-constraints-control",
+    "group": "composed candidates",
+    "schema": {
+      "type": "object",
+      "required": [
+        "value"
+      ],
+      "properties": {
+        "value": {
+          "allOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "additionalItems": false,
+                  "items": [
+                    {
+                      "type": "string"
+                    }
+                  ],
+                  "minItems": 1
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            {}
+          ]
+        }
+      }
+    },
+    "kinds": {
+      "": "Object",
+      "/properties/value": "Intersect",
+      "/properties/value/allOf/0": "Union",
+      "/properties/value/allOf/0/anyOf/0": "Tuple",
+      "/properties/value/allOf/0/anyOf/0/items/0": "String",
+      "/properties/value/allOf/0/anyOf/1": "Number",
+      "/properties/value/allOf/1": "Unknown"
+    },
+    "arguments": {
+      "value": [
+        null
+      ]
+    },
+    "expected": {
+      "Ok": {
+        "value": [
+          "null"
+        ]
+      }
+    }
+  }
+]

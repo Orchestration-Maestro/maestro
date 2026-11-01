@@ -3,7 +3,7 @@
 use crate::presentation;
 use maestro_theme::BrandMode;
 use maestro_web::browser::attachment_content::AttachmentHost;
-use std::{cell::RefCell, rc::Rc};
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
 use crate::panel_browser_support;
@@ -316,9 +316,9 @@ pub fn artifact_panel_browser_disconnect_keeps_selection_and_scroll() {
     check("!b.isConnected");
 }
 
-/// Actual attachment close releases its native content while panel-retained roots survive.
+/// Ordinary modal children release on close while panel-retained roots survive.
 #[wasm_bindgen]
-pub fn artifact_panel_browser_attachment_modal_still_releases_children() {
+pub fn artifact_panel_browser_modal_children_release_while_panel_roots_survive() {
     use maestro_web::browser::attachment_content::ReadingPhase::{Measure, Publish};
     let view = Panel::new();
     view.create("a.zip", "AAEC");
@@ -328,24 +328,6 @@ pub fn artifact_panel_browser_attachment_modal_still_releases_children() {
     let unrelated = egui::Id::new("unrelated");
     ordinary(&view, unrelated);
     js("globalThis.unrelated=document.querySelector('pre').parentElement;");
-    let attachment = Rc::new(RefCell::new(maestro_web::Attachment {
-        id: "original".into(),
-        r#type: maestro_app::browser::utils::attachment_utils::AttachmentType::Document,
-        file_name: "note.txt".into(),
-        mime_type: "text/plain".into(),
-        size: 3,
-        content: "QUJD".into(),
-        extracted_text: Some("modal text".into()),
-        preview: None,
-    }));
-    let mut overlay = maestro_web::AttachmentOverlay::open(attachment, None, view.host.clone());
-    draw_attachment(&view, &mut overlay, vec![]);
-    js(
-        "globalThis.attachment=[...document.querySelectorAll('pre')].find(node=>node.textContent==='modal text').parentElement;",
-    );
-    check(
-        "a.isConnected && getComputedStyle(a.parentElement).visibility==='hidden' && attachment.isConnected",
-    );
     // Ordinary modal-child ownership stays distinct from a retained panel policy.
     let nested = egui::Id::new("nested-ordinary-modal");
     let child = egui::Id::new("nested-child");
@@ -358,48 +340,13 @@ pub fn artifact_panel_browser_attachment_modal_still_releases_children() {
     check(
         "document.querySelector('.modal-child')===null && a.isConnected && unrelated.isConnected",
     );
-    let event = egui::Event::Key {
-        key: egui::Key::Escape,
-        physical_key: None,
-        pressed: true,
-        repeat: false,
-        modifiers: egui::Modifiers::NONE,
-    };
-    draw_attachment(&view, &mut overlay, vec![event]);
-    check(
-        "!attachment.isConnected && a.isConnected && unrelated.isConnected && getComputedStyle(a.parentElement).visibility==='visible'",
-    );
     view.panel.disconnected_callback().unwrap();
     view.panel.connected_callback(&view.caller).unwrap();
     view.draw(vec![]);
     check("a===document.querySelector('.maestro-generic-artifact')");
     view.host.remove(unrelated);
-    drop(overlay);
     drop(view);
     check("!a.isConnected && !unrelated.isConnected");
-}
-
-/// Drive the existing attachment's real Escape/close path in the shared context.
-fn draw_attachment(
-    view: &Panel,
-    overlay: &mut maestro_web::AttachmentOverlay,
-    events: Vec<egui::Event>,
-) {
-    let presentation = view.pack.presentation(BrandMode::Dark).unwrap();
-    let mut output = view.context.run_ui(
-        egui::RawInput {
-            screen_rect: Some(egui::Rect::from_min_size(
-                egui::Pos2::ZERO,
-                egui::vec2(400., 300.),
-            )),
-            events,
-            ..Default::default()
-        },
-        |ui| {
-            overlay.render(ui.ctx(), &view.i18n, &presentation).unwrap();
-        },
-    );
-    output.textures_delta.clear();
 }
 
 /// Opaque native content cannot cover either canvas shell divider.

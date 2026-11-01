@@ -131,9 +131,9 @@ pub type BeforeProviderRequestEvent =
 /// Shared event schema specialized for native operands.
 pub type BeforeProviderRequestEventResult =
     maestro_models::extension_events::events::BeforeProviderRequestEventResult<Payload>;
-/// Shared event schema specialized for native operands.
-pub type AfterProviderResponseEvent =
-    maestro_models::extension_events::events::AfterProviderResponseEvent<Headers>;
+/// Shared event schema whose header collection `H` defaults to a native name-ordered map.
+pub type AfterProviderResponseEvent<H = Headers> =
+    maestro_models::extension_events::events::AfterProviderResponseEvent<H>;
 /// Shared event schema specialized for native operands.
 pub type SessionBeforeCompactEventData =
     maestro_models::extension_events::events::SessionBeforeCompactEventData<

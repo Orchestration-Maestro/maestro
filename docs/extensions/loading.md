@@ -9,8 +9,12 @@ builds keep `load_extension_from_factory` and have no file loading.
 Turning a resolved path into a factory is the only step that depends on the
 module format, so the caller supplies it as a `ModuleLoader<E>`. It returns
 `Ok(Some(factory))` for a module that exports one, `Ok(None)` for a module that
-exports none, and `Err` when the module cannot be loaded. The component runtime
-supplies the real loader and the executable wires it in. Like
+exports none, and `Err` when the module cannot be loaded. For built components,
+a loader that returns `artifact_factory(path, widgets, installation)` from
+`maestro-extensions-wasmtime` loads each component through the path, discovery and registration rules below
+(see [native component execution](native-execution.md)). The executable supplies
+its host widgets and `Installation { version, agent_dir }` from application
+configuration. Like
 `ExtensionFactory<E>`, the loader is a shared pointer whose callable carries the
 execution family's bounds, so the default family keeps it `Send + Sync`.
 
@@ -22,8 +26,9 @@ loaded extensions share that runtime.
 
 Each path is resolved before its module loads:
 
-1. Every leading `~`, `~name` included, is replaced by the home directory,
-   and the rest is joined to it lexically. A `~` anywhere else is literal.
+1. A leading `~` reads as
+   [settings](../settings.md#home-directory-in-paths) describes, so `~name` stays a
+   relative path. A `~` anywhere else is literal.
 2. An absolute result is kept as written and reads no working directory. A
    relative result is resolved lexically against `cwd`.
 3. The path is resolved through
@@ -33,9 +38,13 @@ Each path is resolved before its module loads:
 So a file whose real name holds a no-break space loads under that name, and a
 typed name whose Unicode spaces stand for plain spaces still finds its file.
 
+The module loader receives the selected path normalized lexically to an absolute
+path: `/a/../b` becomes `/b`, and `/a/./b` becomes `/a/b`. This does not
+canonicalize the filesystem path, so directory-symlink spelling is preserved.
+
 A loaded extension keeps the supplied spelling as its path, and the resolved
-path as its resolved path. Its source is `local` and its base directory is the
-parent of the resolved path.
+path as its resolved path, without this final normalization. Its source is
+`local` and its base directory is the parent of the resolved path.
 
 The result records a failed path with its supplied spelling, and loading
 continues with the next path. The error is one of two messages:

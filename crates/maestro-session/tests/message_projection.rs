@@ -1,5 +1,6 @@
 //! Recorded message transformation cases.
 #![cfg(test)]
+use chrono::{TimeZone, Timelike};
 use maestro_session::messages::*;
 use serde::Deserialize;
 use serde_json::Value;
@@ -91,6 +92,9 @@ fn in_timezone(name: &str, timezone: &str) -> bool {
         && maestro_test_process::selection().runs_case(name)
     {
         return true;
+    }
+    if !maestro_test_process::local_zone_follows_tz() {
+        return false;
     }
     let output = maestro_test_process::TestProcess::current(name)
         .unwrap()
@@ -409,6 +413,9 @@ fn parse_timestamp_millis_preserves_native_date_forms() {
         millis: Option<i64>,
     }
     if !maestro_test_process::selection().is_child() {
+        if !maestro_test_process::local_zone_follows_tz() {
+            return;
+        }
         for tz in ["UTC", "America/New_York", "Asia/Kathmandu"] {
             crate::subprocess::run_child(
                 maestro_test_process::TestProcess::current(
@@ -437,4 +444,71 @@ fn parse_timestamp_millis_preserves_native_date_forms() {
         count += 1;
     }
     assert!(count > 0);
+}
+
+/// One recorded local-time reading and its resolved instant.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct LocalCase {
+    /// Zone the case runs in.
+    zone: String,
+    /// Local wall time without an offset.
+    wall: String,
+    /// Resolved epoch milliseconds.
+    millis: i64,
+    /// Local date the resolved instant falls on.
+    local_date: String,
+    /// Local hour the resolved instant falls on.
+    local_hour: u32,
+}
+
+#[test]
+fn local_timestamps_keep_gap_overlap_and_calendar_boundaries() {
+    if !maestro_test_process::selection().is_child() {
+        if !maestro_test_process::local_zone_follows_tz() {
+            return;
+        }
+        for tz in [
+            "America/New_York",
+            "America/Santiago",
+            "America/Havana",
+            "Pacific/Apia",
+            "America/Montreal",
+            "Europe/Berlin",
+        ] {
+            crate::subprocess::run_child(
+                maestro_test_process::TestProcess::current(
+                    "local_timestamps_keep_gap_overlap_and_calendar_boundaries",
+                )
+                .unwrap()
+                .case("*"),
+                &[("TZ", Some(tz))],
+            );
+        }
+        return;
+    }
+    let tz = std::env::var("TZ").unwrap();
+    let cases: Vec<LocalCase> =
+        serde_json::from_str(include_str!("fixtures/local-timestamps.json")).unwrap();
+    let mut checked = 0;
+    for case in cases.iter().filter(|case| case.zone == tz) {
+        let wall = chrono::NaiveDateTime::parse_from_str(&case.wall, "%Y-%m-%dT%H:%M:%S")
+            .expect("the recorded wall time parses");
+        let millis = local_timestamp_millis(wall).expect("the local reading resolves");
+        assert_eq!(millis, case.millis, "{}", case.wall);
+        assert_eq!(
+            parse_timestamp_millis(&case.wall),
+            Some(case.millis),
+            "the timestamp parser agrees on {}",
+            case.wall
+        );
+        let local = chrono::Local
+            .timestamp_millis_opt(millis)
+            .single()
+            .expect("the resolved instant has one local reading");
+        assert_eq!(local.format("%Y-%m-%d").to_string(), case.local_date);
+        assert_eq!(local.hour(), case.local_hour);
+        checked += 1;
+    }
+    assert!(checked > 0, "the zone has recorded cases");
 }

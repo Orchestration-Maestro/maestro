@@ -12,6 +12,8 @@ macro_rules! component_children {
 
 pub mod dynamic_border;
 
+pub mod extension_widgets;
+
 pub mod countdown_timer;
 
 pub mod bordered_loader;
@@ -102,7 +104,19 @@ impl MessageRendering {
         color: Option<ThemeColor>,
         thinking: bool,
     ) -> Rc<dyn Component> {
-        let style = color.map(|key| {
+        self.markdown_with(
+            text,
+            MarkdownOptions {
+                padding_x: padding,
+                padding_y: 0,
+                default_text_style: self.text_style(color, thinking),
+                clean_content: self.clean_content,
+            },
+        )
+    }
+    /// The base style painting text in `color`, italic for thinking; none without a colour.
+    fn text_style(&self, color: Option<ThemeColor>, thinking: bool) -> Option<DefaultTextStyle> {
+        color.map(|key| {
             let theme = self.theme.clone();
             DefaultTextStyle {
                 color: Some(Box::new(move |text| {
@@ -115,15 +129,13 @@ impl MessageRendering {
                 },
                 ..Default::default()
             }
-        });
+        })
+    }
+    /// Builds Markdown with the caller's layout and the shared callbacks and terminal.
+    fn markdown_with(&self, text: String, options: MarkdownOptions) -> Rc<dyn Component> {
         Rc::new(Markdown::new(
             text,
-            MarkdownOptions {
-                padding_x: padding,
-                padding_y: 0,
-                default_text_style: style,
-                clean_content: self.clean_content,
-            },
+            options,
             self.markdown.clone(),
             self.terminal.clone(),
         ))
@@ -262,19 +274,16 @@ fn list_window(selected: usize, total: usize, capacity: usize) -> std::ops::Rang
     start..start.saturating_add(capacity).min(total)
 }
 
-/// Replaces the first nonempty home variable's raw prefix for display.
-fn shorten_path_with_home(path: &str, environment: &dyn Fn(&str) -> Option<String>) -> String {
+/// Shows `path` below the first usable home variable as `~` for display, through `shorten`.
+fn shorten_path_with_home(
+    path: &str,
+    environment: &dyn Fn(&str) -> Option<String>,
+    shorten: fn(&str, &str) -> String,
+) -> String {
     let home = environment("HOME")
         .filter(|home| !home.is_empty())
         .or_else(|| environment("USERPROFILE").filter(|home| !home.is_empty()));
-    shorten_home_path(path, home.as_deref())
-}
-
-/// Replaces a nonempty supplied raw home prefix for display.
-fn shorten_home_path(path: &str, home: Option<&str>) -> String {
-    home.filter(|home| !home.is_empty())
-        .and_then(|home| path.strip_prefix(home))
-        .map_or_else(|| path.to_owned(), |rest| format!("~{rest}"))
+    home.map_or_else(|| path.to_owned(), |home| shorten(path, &home))
 }
 
 pub mod bash_execution;

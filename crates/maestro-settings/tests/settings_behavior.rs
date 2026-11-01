@@ -187,6 +187,32 @@ mod tests {
     }
 
     #[test]
+    fn http_idle_timeout_reads_numbers_and_disabled() {
+        support::assert_number(manager().0.get_http_idle_timeout_ms(), 300_000.0);
+        for (stored, expected) in [
+            (json!(120_000), 120_000.0),
+            (json!(0), 0.0),
+            (json!("disabled"), 0.0),
+            (json!(" 45000 "), 45_000.0),
+            (json!(1500.7), 1500.0),
+            (json!(-1), 300_000.0),
+            (json!("soon"), 300_000.0),
+            (json!(true), 300_000.0),
+        ] {
+            let settings = manager_with(json!({ "httpIdleTimeoutMs": stored })).0;
+            support::assert_number(settings.get_http_idle_timeout_ms(), expected);
+        }
+    }
+
+    #[test]
+    fn http_idle_timeout_saves_whole_milliseconds() {
+        for (value, saved) in [(60_000.0, 60_000), (0.0, 0), (2500.9, 2500)] {
+            let document = saved_after(|settings| settings.set_http_idle_timeout_ms(value));
+            assert_eq!(document, json!({ "httpIdleTimeoutMs": saved }));
+        }
+    }
+
+    #[test]
     fn image_members_read_independently() {
         let (settings, _) =
             manager_with(json!({"images": {"autoResize": false, "blockImages": true}}));
@@ -326,6 +352,12 @@ mod tests {
                 None,
                 M::get_show_hardware_cursor,
                 M::set_show_hardware_cursor,
+            ),
+            Toggle::new(
+                &["holdUncheckedText"],
+                Some(false),
+                M::get_hold_unchecked_text,
+                M::set_hold_unchecked_text,
             ),
         ]
     }
@@ -1287,6 +1319,7 @@ mod tests {
         ("prompts", Kind::List, &[]),
         ("themes", Kind::List, &[]),
         ("enableSkillCommands", Kind::Flag, &[]),
+        ("holdUncheckedText", Kind::Flag, &[]),
         (
             "terminal",
             Kind::Record,
@@ -1368,7 +1401,8 @@ mod tests {
                 settings.get_quiet_startup(), settings.get_collapse_changelog(),
                 settings.get_enable_install_telemetry(), settings.get_enable_skill_commands(),
                 settings.get_show_images(), settings.get_show_terminal_progress(),
-                settings.get_image_auto_resize(), settings.get_block_images()],
+                settings.get_image_auto_resize(), settings.get_block_images(),
+                settings.get_hold_unchecked_text()],
             "numbers": [settings.get_compaction_reserve_tokens(), settings.get_compaction_keep_recent_tokens(),
                 settings.get_image_width_cells(), settings.get_editor_padding_x(),
                 settings.get_autocomplete_max_visible()],

@@ -1,5 +1,5 @@
 //! Command output cards.
-use super::card_content::{Body, Caption, CardContent, field, state};
+use super::card_content::{Body, Caption, CardContent, CardOutput, field, state};
 use crate::tools::{
     renderer_registry::{ToolHeaderState, get_text_output},
     types::{ToolRenderResult, ToolRenderer, ToolResultMessageView, ToolUiError},
@@ -7,13 +7,13 @@ use crate::tools::{
 use maestro_app::JsonObject;
 /// Stateless command renderer.
 pub struct BashRenderer;
-impl<D> ToolRenderer<JsonObject, D> for BashRenderer {
+impl<D, C: CardOutput> ToolRenderer<JsonObject, D, C> for BashRenderer {
     fn render(
         &self,
         params: Option<&JsonObject>,
         result: Option<ToolResultMessageView<'_, D>>,
         _is_streaming: bool,
-    ) -> Result<ToolRenderResult, ToolUiError> {
+    ) -> Result<ToolRenderResult<C>, ToolUiError> {
         use crate::components::console_block::ConsoleVariant;
         let state = state(result.as_ref());
         let command = field(params, "command")?;

@@ -6,11 +6,13 @@ use serde::Deserialize;
 
 /// Cargo metadata acquisition and identity validation.
 pub(crate) mod metadata;
+/// Package dependency and component-export boundaries.
+pub(crate) mod packages;
 /// Scoped crate ownership and direct-dependency rules.
 mod policy;
 use metadata::{canonical, check_kind, members};
+use policy::{TEST_FIXTURES, UTILITY, rule, test_support_callers, uses_utility};
 pub(crate) use policy::{TEST_TRACING, UNIFIER};
-use policy::{UTILITY, rule, test_support_callers, uses_utility};
 
 #[derive(Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -20,6 +22,8 @@ enum CrateClass {
     Core,
     /// A binary, checker, harness or repository-tooling crate.
     Dedicated,
+    /// A separately built extension component with a reusable guest library.
+    Package,
 }
 #[derive(Deserialize)]
 #[serde(untagged)]
@@ -36,8 +40,9 @@ impl Class {
         match self {
             Self::Known(CrateClass::Core) => Ok("core"),
             Self::Known(CrateClass::Dedicated) => Ok("dedicated"),
+            Self::Known(CrateClass::Package) => Ok("package"),
             Self::Invalid(_) => Err(format!(
-                "invalid layer for {name}: expected core or dedicated"
+                "invalid layer for {name}: expected core, dedicated or package"
             )),
         }
     }
@@ -47,22 +52,22 @@ impl Class {
 const NATIVE: &str = "cfg(not(target_arch = \"wasm32\"))";
 
 /// Validate declared and host-resolved workspace graphs.
-pub(crate) fn check(root: &Path) -> Result<Metadata, String> {
+pub(crate) fn check(root: &Path) -> Result<(Metadata, BTreeSet<String>), String> {
     let declared = metadata::load(root, None)?;
     metadata::identities(&declared)?;
-    inventory(root, &declared)?;
+    let packages = inventory(root, &declared)?;
     let mut edges = declared_edges(&declared)?;
-    validate(&declared, &edges)?;
+    validate(&declared, &edges, &packages)?;
     let host = metadata::compiler_host()?;
     let resolved = metadata::load(root, Some(&host))?;
     edges.extend(metadata::resolved(&resolved, &declared)?);
-    validate(&declared, &edges)?;
+    validate(&declared, &edges, &packages)?;
     complete(&declared, &edges, &resolved)?;
-    Ok(declared)
+    Ok((declared, packages))
 }
 
 /// Require every Cargo member to match the named crate inventory.
-fn inventory(root: &Path, metadata: &Metadata) -> Result<(), String> {
+fn inventory(root: &Path, metadata: &Metadata) -> Result<BTreeSet<String>, String> {
     let path = root.join("workspace-crates.json");
     let contents = std::fs::read(&path).map_err(|error| format!("{}: {error}", path.display()))?;
     let list: BTreeMap<String, Class> = serde_json::from_slice(&contents).map_err(|_| {
@@ -71,6 +76,7 @@ fn inventory(root: &Path, metadata: &Metadata) -> Result<(), String> {
     for (name, class) in &list {
         class.name(name)?;
     }
+    let mut packages = BTreeSet::new();
     for package in members(metadata) {
         let name = package.name.as_str();
         if !valid_name(name) {
@@ -79,6 +85,10 @@ fn inventory(root: &Path, metadata: &Metadata) -> Result<(), String> {
         let class = list.get(name).ok_or_else(|| {
             format!("workspace crate is not listed in workspace-crates.json: {name}")
         })?;
+        if class.name(name)? == "package" && rule(name).is_none() {
+            packages.insert(name.to_owned());
+            continue;
+        }
         let policy = rule(name)
             .ok_or_else(|| format!("workspace crate is outside scoped policy: {name}"))?;
         if class.name(name)? != policy.class {
@@ -88,7 +98,7 @@ fn inventory(root: &Path, metadata: &Metadata) -> Result<(), String> {
             ));
         }
     }
-    Ok(())
+    Ok(packages)
 }
 
 /// Recognize the composition root or an accepted Maestro crate name.
@@ -194,19 +204,22 @@ fn check_native_declaration(
             "{owner}: {UNIFIER} must be a native, normal, non-optional dependency"
         ));
     }
-    if let Some(member) = member.filter(|name| test_support_callers(name).is_some())
+    if let Some(member) =
+        member.filter(|name| *name != TEST_FIXTURES && test_support_callers(name).is_some())
         && !native_declared(dependency, kind, &Kind::Development)
     {
         return Err(format!(
             "{owner}: {member} must be a native, non-optional development dependency"
         ));
     }
-    if owner == "maestro-detection"
-        && member == Some("maestro-text")
-        && *kind == Kind::Development
+    if *kind == Kind::Development
+        && let Some(member) =
+            member.filter(|member| policy::NATIVE_DEVELOPMENT.contains(&(owner, member)))
         && !native_declared(dependency, kind, &Kind::Development)
     {
-        return Err("maestro-detection: maestro-text test support must be a native, non-optional development dependency".into());
+        return Err(format!(
+            "{owner}: {member} test support must be a native, non-optional development dependency"
+        ));
     }
     Ok(())
 }
@@ -224,7 +237,11 @@ fn native_declared(dependency: &cargo_metadata::Dependency, kind: &Kind, wanted:
 }
 
 /// Check graph identities, cycles and each dependency's ownership policy.
-fn validate(metadata: &Metadata, edges: &BTreeSet<Edge>) -> Result<(), String> {
+fn validate(
+    metadata: &Metadata,
+    edges: &BTreeSet<Edge>,
+    packages: &BTreeSet<String>,
+) -> Result<(), String> {
     let mut production: BTreeMap<_, BTreeSet<String>> = members(metadata)
         .map(|package| (package.name.to_string(), BTreeSet::new()))
         .collect();
@@ -253,13 +270,16 @@ fn validate(metadata: &Metadata, edges: &BTreeSet<Edge>) -> Result<(), String> {
         }
     }
     for edge in edges {
-        validate_edge(edge)?;
+        validate_edge(edge, packages)?;
     }
     Ok(())
 }
 
 /// Require a direct edge to obey its source and target crate rules.
-fn validate_edge(edge: &Edge) -> Result<(), String> {
+fn validate_edge(edge: &Edge, packages: &BTreeSet<String>) -> Result<(), String> {
+    if let Some(result) = packages::dependency(edge, packages) {
+        return result;
+    }
     let from = rule(&edge.from).ok_or("unknown scoped source")?;
     let to = rule(&edge.to).ok_or("unknown scoped target")?;
     if edge.to == UNIFIER {
@@ -270,8 +290,15 @@ fn validate_edge(edge: &Edge) -> Result<(), String> {
             Ok(())
         } else {
             Err(format!(
-                "{} is reachable only as a native development dependency of its declared callers: {} -> {}",
-                edge.to, edge.from, edge.to
+                "{} is reachable only as a {}development dependency of its declared callers: {} -> {}",
+                edge.to,
+                if edge.to == TEST_FIXTURES {
+                    ""
+                } else {
+                    "native "
+                },
+                edge.from,
+                edge.to
             ))
         };
     }
@@ -291,7 +318,7 @@ fn validate_edge(edge: &Edge) -> Result<(), String> {
         ));
     }
     if edge.kind == Kind::Development {
-        if policy::DEVELOPMENT.contains(&(edge.from.as_str(), edge.to.as_str())) {
+        if policy::permitted_development(&edge.from, &edge.to) {
             return Ok(());
         }
         return Err(format!(

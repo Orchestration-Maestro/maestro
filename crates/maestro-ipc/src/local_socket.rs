@@ -1,14 +1,20 @@
 //! Filesystem local sockets with caller-owned names and cleanup identity.
 
+use rustix::io::Errno;
+use rustix::net::{SocketAddrUnix, connect};
+use socket2::{Domain, Socket, Type};
 use std::fs;
 use std::io;
 use std::os::unix::fs::{FileTypeExt, MetadataExt, PermissionsExt};
 use std::path::Path;
+use std::time::{Duration, Instant};
 
 /// The owned listener returned by the local-socket library.
 pub type LocalListener = interprocess::local_socket::Listener;
 /// The owned duplex stream returned by the local-socket library.
 pub type LocalStream = interprocess::local_socket::Stream;
+/// The library's stream operations, including its native send and receive timeouts.
+pub use interprocess::local_socket::traits::Stream as LocalStreamExt;
 
 /// The observed device and inode of a socket file.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -28,6 +34,40 @@ pub fn connect_local_stream(path: &Path) -> io::Result<LocalStream> {
     LocalStream::connect(path.to_fs_name::<GenericFilePath>()?)
 }
 
+/// Connect a Unix filesystem socket before the deadline, returning a blocking stream.
+///
+/// An expired deadline still permits one nonblocking attempt, so probes can distinguish
+/// an absent endpoint from a full accept queue without extending the caller's budget.
+///
+/// # Errors
+/// Returns path or connection errors, or timed-out while the accept queue stays full.
+pub fn connect_local_stream_until(path: &Path, deadline: Instant) -> io::Result<LocalStream> {
+    let address = SocketAddrUnix::new(path)?;
+    let fd = nonblocking_local_socket()?;
+    loop {
+        match connect(&fd, &address) {
+            Ok(()) | Err(Errno::ISCONN) => break,
+            Err(Errno::AGAIN | Errno::INPROGRESS | Errno::ALREADY | Errno::INTR) => {}
+            Err(error) => return Err(error.into()),
+        }
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            return Err(io::ErrorKind::TimedOut.into());
+        }
+        std::thread::sleep(remaining.min(Duration::from_millis(1)));
+    }
+    let stream = std::os::unix::net::UnixStream::from(fd);
+    stream.set_nonblocking(false)?;
+    Ok(LocalStream::UdSocket(stream.into()))
+}
+
+/// Create a nonblocking Unix stream descriptor protected from exec inheritance.
+fn nonblocking_local_socket() -> io::Result<std::os::fd::OwnedFd> {
+    let socket = Socket::new(Domain::UNIX, Type::STREAM, None)?;
+    socket.set_nonblocking(true)?;
+    Ok(socket.into())
+}
+
 /// Bind without unlinking a name when the listener is dropped.
 ///
 /// # Errors
@@ -44,7 +84,9 @@ pub fn bind_local_listener(path: &Path) -> io::Result<LocalListener> {
 ///
 /// # Errors
 /// Returns address-in-use with caller text, already-exists for a non-socket entry
-/// reached after a stale connection failure, or the underlying filesystem/socket error.
+/// reached after a stale connection failure or a native not-a-socket failure, the
+/// native connection failure for a real socket that failed otherwise, or the
+/// underlying filesystem/socket error.
 pub fn prepare_socket_path(
     path: &Path,
     busy_message: impl FnOnce(&Path) -> String,
@@ -55,10 +97,13 @@ pub fn prepare_socket_path(
     if !path.exists() && !path.is_symlink() {
         return Ok(());
     }
-    match connect_local_stream(path) {
-        Ok(_) => return Err(io::Error::new(io::ErrorKind::AddrInUse, busy_message(path))),
-        Err(error) if stale_socket_connect_error(error.kind()) => {}
-        Err(error) => return Err(error),
+    let Err(connection_error) = connect_local_stream(path) else {
+        return Err(io::Error::new(io::ErrorKind::AddrInUse, busy_message(path)));
+    };
+    let stale = stale_socket_connect_error(connection_error.kind());
+    let not_a_socket = connection_error.raw_os_error() == Some(Errno::NOTSOCK.raw_os_error());
+    if !stale && !not_a_socket {
+        return Err(connection_error);
     }
     let entry = match fs::symlink_metadata(path) {
         Ok(entry) => entry,
@@ -67,6 +112,9 @@ pub fn prepare_socket_path(
     };
     if !entry.file_type().is_socket() {
         return Err(io::ErrorKind::AlreadyExists.into());
+    }
+    if !stale {
+        return Err(connection_error);
     }
     match fs::remove_file(path) {
         Ok(()) => Ok(()),

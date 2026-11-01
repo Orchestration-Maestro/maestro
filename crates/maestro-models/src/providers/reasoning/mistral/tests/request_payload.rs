@@ -32,6 +32,11 @@ fn request_history_preserves_projection_and_content() {
 }
 
 #[test]
+fn request_history_keeps_argument_root_defaults() {
+    super::request_corpus::corpus("request_history_keeps_argument_root_defaults", 3);
+}
+
+#[test]
 fn request_tool_result_notices_match_content() {
     super::request_corpus::corpus("request_tool_result_notices_match_content", 38);
 }

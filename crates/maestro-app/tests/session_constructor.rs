@@ -1,11 +1,11 @@
 //! The session's extension runtime: tool hooks installed at construction, the definition
 //! registry and its allowlist, partial bindings, the start event, discovered resources and
-//! their sources, every bound capability, provider refreshes and the reload, compared with
-//! the recorded binding and registry cases.
+//! their sources, every bound capability, owned and borrowed UI hosts, provider refreshes
+//! and the reload, compared with the recorded binding and registry cases.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Harness, HarnessOptions, Scripted, echo_tools, harness, on_task_set, sdk_definition,
-    tool_definition,
+    Harness, HarnessOptions, Scripted, answer, assistant, echo_tools, harness, load_history,
+    on_task_set, script_responses, sdk_definition, tool_definition, user,
 };
 use maestro_app::agent_session::{ExtensionBindings, PromptOptions};
 use maestro_extensions::types::{ExtensionFlagOptions, FlagValue, RegisteredCommandOptions};
@@ -377,9 +377,9 @@ fn binds_partial_ui_bindings_without_clearing_others() {
         };
         h.session.bind_extensions(errors).await.unwrap();
         let commands = ExtensionBindings {
-            command_context_actions: Some(
-                maestro_extensions::ExtensionCommandContextActions::default(),
-            ),
+            command_context_actions: Some(maestro_extensions::ExtensionCommandContextActions::new(
+                crate::command_operations::silent(),
+            )),
             ..ExtensionBindings::default()
         };
         h.session.bind_extensions(commands).await.unwrap();
@@ -475,6 +475,159 @@ fn keeps_captured_contexts_usable_across_a_direct_reload() {
             api.get_active_tools().unwrap(),
             h.session.get_active_tool_names()
         );
+    });
+}
+
+/// A UI host whose editor text tells it apart from the headless fallback.
+#[derive(Default)]
+struct Editor(RefCell<String>);
+impl maestro_extensions::types::ExtensionUIContextPort for Editor {
+    fn set_editor_text(&self, text: String) -> Result<(), maestro_extensions::EventError> {
+        *self.0.borrow_mut() = text;
+        Ok(())
+    }
+    fn get_editor_text(&self) -> Result<String, maestro_extensions::EventError> {
+        Ok(self.0.borrow().clone())
+    }
+    fn theme(&self) -> maestro_theme::LiveTheme {
+        maestro_theme::LiveTheme::default()
+    }
+}
+
+#[test]
+fn session_ui_bindings_keep_owned_hosts_and_reapply_borrowed_hosts() {
+    on_task_set(|_| async {
+        let (h, _api) = kept_session().await;
+        let owned = Rc::new(Editor::default());
+        let released = Rc::downgrade(&owned);
+        let ui_context = Some(maestro_app::ExtensionUIContext::new(owned).into());
+        let sdk = ExtensionBindings {
+            ui_context,
+            ..ExtensionBindings::default()
+        };
+        h.session.bind_extensions(sdk).await.unwrap();
+        let context = h.runner().create_context();
+        context
+            .ui()
+            .unwrap()
+            .set_editor_text("owned".into())
+            .unwrap();
+        let host = released.upgrade().expect("the session owns an SDK host");
+        assert_eq!(*host.0.borrow(), "owned");
+        drop(host);
+        let borrowed = Rc::new(Editor::default());
+        let installed = maestro_app::ExtensionUIContext::new(borrowed.clone());
+        let native = ExtensionBindings {
+            ui_context: Some(maestro_app::ExtensionUIContextBinding::borrowed(&installed)),
+            ..ExtensionBindings::default()
+        };
+        drop(installed);
+        h.session.bind_extensions(native).await.unwrap();
+        assert!(
+            released.upgrade().is_none(),
+            "rebinding released the owned host"
+        );
+        h.session
+            .bind_extensions(ExtensionBindings::default())
+            .await
+            .unwrap();
+        h.session.reload().await.unwrap();
+        let reloaded = h.runner().create_context();
+        assert!(reloaded.has_ui().unwrap());
+        reloaded
+            .ui()
+            .unwrap()
+            .set_editor_text("borrowed".into())
+            .unwrap();
+        assert_eq!(*borrowed.0.borrow(), "borrowed");
+        assert_eq!(context.ui().unwrap().get_editor_text().unwrap(), "borrowed");
+        drop(borrowed);
+        assert!(!reloaded.has_ui().unwrap());
+        assert!(!h.runner().has_ui());
+        assert_eq!(reloaded.ui().unwrap().get_editor_text().unwrap(), "");
+    });
+}
+
+/// Stores two turns and queues both possible summary requests.
+fn prepare_compaction_history(h: &Harness) {
+    for record in [
+        user(&json!("first"), 1),
+        assistant("answer", 2, &json!({})),
+        user(&json!("second"), 3),
+        assistant("last", 4, &json!({})),
+    ] {
+        h.session
+            .session_manager()
+            .borrow_mut()
+            .append_message(record)
+            .unwrap();
+    }
+    load_history(h);
+    script_responses(
+        h,
+        vec![answer("summary", None, None), answer("summary", None, None)],
+    );
+}
+
+#[test]
+fn compaction_completion_failure_reaches_the_error_callback_unchanged() {
+    on_task_set(|_| async {
+        let tasks = Rc::new(RefCell::new(Vec::new()));
+        let spawned = Rc::clone(&tasks);
+        let h = harness(HarnessOptions {
+            settings: json!({"compaction": {"keepRecentTokens": 1}}),
+            spawn: Some(Rc::new(move |task| {
+                spawned.borrow_mut().push(tokio::task::spawn_local(task));
+            })),
+            ..HarnessOptions::default()
+        })
+        .await;
+        prepare_compaction_history(&h);
+        let failure = RefCell::new(Some(
+            Box::new(std::io::Error::from_raw_os_error(13)) as maestro_extensions::EventError
+        ));
+        let identity = std::ptr::from_ref(failure.borrow().as_ref().unwrap().as_ref()).cast::<()>();
+        let trace = Rc::new(RefCell::new(Vec::new()));
+        let completed = Rc::clone(&trace);
+        let failed = Rc::clone(&trace);
+        h.runner()
+            .create_context()
+            .compact(Some(maestro_app::CompactOptions {
+                on_complete: Some(Rc::new(move |result| {
+                    assert!(result.summary.contains("summary"));
+                    completed.borrow_mut().push("complete");
+                    Err(failure.borrow_mut().take().unwrap())
+                })),
+                on_error: Some(Rc::new(move |error| {
+                    assert_eq!(
+                        *failed.borrow(),
+                        ["complete"],
+                        "unexpected compaction failure: {error}"
+                    );
+                    assert_eq!(std::ptr::from_ref(error.as_ref()).cast::<()>(), identity);
+                    assert_eq!(
+                        error
+                            .downcast_ref::<std::io::Error>()
+                            .unwrap()
+                            .raw_os_error(),
+                        Some(13)
+                    );
+                    failed.borrow_mut().push("error");
+                    Ok(())
+                })),
+                ..maestro_app::CompactOptions::default()
+            }))
+            .unwrap();
+        loop {
+            let pending = std::mem::take(&mut *tasks.borrow_mut());
+            if pending.is_empty() {
+                break;
+            }
+            for task in pending {
+                task.await.unwrap();
+            }
+        }
+        assert_eq!(*trace.borrow(), ["complete", "error"]);
     });
 }
 
@@ -592,6 +745,7 @@ fn reload_keeps_extension_flag_values() {
                 settings_manager: Some(Rc::new(RefCell::new(settings))),
                 session_start_event: None,
                 theme: maestro_theme::LiveTheme::default(),
+                offline: None,
             })
             .await
             .unwrap();
@@ -652,5 +806,49 @@ fn resolves_tool_descriptions_with_no_guard_held() {
         *slot.borrow_mut() = Rc::downgrade(&h.session);
         h.session.reload().await.unwrap();
         assert_eq!(*changes.borrow(), [(true, None), (true, Some(true))]);
+    });
+}
+
+#[test]
+fn extension_session_name_reaches_the_retained_session_and_listener() {
+    on_task_set(|_| async {
+        let (h, api) = kept_session().await;
+        api.set_session_name("from extension".into()).unwrap();
+        assert_eq!(
+            h.session.session_name().unwrap().as_deref(),
+            Some("from extension")
+        );
+        let names: Vec<Value> = h
+            .events
+            .borrow()
+            .iter()
+            .filter(|event| event["type"] == "session_info_changed")
+            .map(|event| event["name"].clone())
+            .collect();
+        assert_eq!(names, [json!("from extension")]);
+    });
+}
+
+/// An abort handler alone is not a host binding for reload notifications or resources.
+#[test]
+fn reload_with_only_abort_binding_skips_start_and_discovery() {
+    on_task_set(|_| async {
+        let seen = Seen::default();
+        let h = alpha_session(&seen, None).await;
+        h.session
+            .bind_extensions(ExtensionBindings {
+                abort_handler: Some(Rc::new(|| {})),
+                ..ExtensionBindings::default()
+            })
+            .await
+            .unwrap();
+        seen.borrow_mut().clear();
+        let extended = h.extended.borrow().len();
+        h.session.reload().await.unwrap();
+        assert_eq!(
+            *seen.borrow(),
+            [json!({"event": "session_shutdown", "reason": "reload"})]
+        );
+        assert_eq!(h.extended.borrow().len(), extended);
     });
 }

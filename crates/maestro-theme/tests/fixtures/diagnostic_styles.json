@@ -1,0 +1,202 @@
+[
+  {
+    "operation": "diagnostic_styles",
+    "case": "diagnostic_styles-161",
+    "input": {
+      "kind": "red",
+      "text": "",
+      "enabled": true
+    },
+    "expected": ""
+  },
+  {
+    "operation": "diagnostic_styles",
+    "case": "diagnostic_styles-162",
+    "input": {
+      "kind": "red",
+      "text": "a",
+      "enabled": true
+    },
+    "expected": "\u001b[31ma\u001b[39m"
+  },
+  {
+    "operation": "diagnostic_styles",
+    "case": "diagnostic_styles-163",
+    "input": {
+      "kind": "red",
+      "text": "a\nq",
+      "enabled": true
+    },
+    "expected": "\u001b[31ma\u001b[39m\n\u001b[31mq\u001b[39m"
+  },
+  {
+    "operation": "diagnostic_styles",
+    "case": "diagnostic_styles-164",
+    "input": {
+      "kind": "red",
+      "text": "a\r\nq",
+      "enabled": true
+    },
+    "expected": "\u001b[31ma\u001b[39m\r\n\u001b[31mq\u001b[39m"
+  },
+  {
+    "operation": "diagnostic_styles",
+    "case": "diagnostic_styles-165",
+    "input": {
+      "kind": "red",
+      "text": "a\u001b[39mq",
+      "enabled": true
+    },
+    "expected": "\u001b[31ma\u001b[39m\u001b[31mq\u001b[39m"
+  },
+  {
+    "operation": "diagnostic_styles",
+    "case": "diagnostic_styles-166",
+    "input": {
+      "kind": "yellow",
+      "text": "",
+      "enabled": true
+    },
+    "expected": ""
+  },
+  {
+    "operation": "diagnostic_styles",
+    "case": "diagnostic_styles-167",
+    "input": {
+      "kind": "yellow",
+      "text": "a",
+      "enabled": true
+    },
+    "expected": "\u001b[33ma\u001b[39m"
+  },
+  {
+    "operation": "diagnostic_styles",
+    "case": "diagnostic_styles-168",
+    "input": {
+      "kind": "yellow",
+      "text": "a\nq",
+      "enabled": true
+    },
+    "expected": "\u001b[33ma\u001b[39m\n\u001b[33mq\u001b[39m"
+  },
+  {
+    "operation": "diagnostic_styles",
+    "case": "diagnostic_styles-169",
+    "input": {
+      "kind": "yellow",
+      "text": "a\r\nq",
+      "enabled": true
+    },
+    "expected": "\u001b[33ma\u001b[39m\r\n\u001b[33mq\u001b[39m"
+  },
+  {
+    "operation": "diagnostic_styles",
+    "case": "diagnostic_styles-170",
+    "input": {
+      "kind": "yellow",
+      "text": "a\u001b[39mq",
+      "enabled": true
+    },
+    "expected": "\u001b[33ma\u001b[39m\u001b[33mq\u001b[39m"
+  },
+  {
+    "operation": "diagnostic_styles",
+    "case": "diagnostic_styles-171",
+    "input": {
+      "kind": "red",
+      "text": "",
+      "enabled": false
+    },
+    "expected": ""
+  },
+  {
+    "operation": "diagnostic_styles",
+    "case": "diagnostic_styles-172",
+    "input": {
+      "kind": "red",
+      "text": "a",
+      "enabled": false
+    },
+    "expected": "a"
+  },
+  {
+    "operation": "diagnostic_styles",
+    "case": "diagnostic_styles-173",
+    "input": {
+      "kind": "red",
+      "text": "a\nq",
+      "enabled": false
+    },
+    "expected": "a\nq"
+  },
+  {
+    "operation": "diagnostic_styles",
+    "case": "diagnostic_styles-174",
+    "input": {
+      "kind": "red",
+      "text": "a\r\nq",
+      "enabled": false
+    },
+    "expected": "a\r\nq"
+  },
+  {
+    "operation": "diagnostic_styles",
+    "case": "diagnostic_styles-175",
+    "input": {
+      "kind": "red",
+      "text": "a\u001b[39mq",
+      "enabled": false
+    },
+    "expected": "a\u001b[39mq"
+  },
+  {
+    "operation": "diagnostic_styles",
+    "case": "diagnostic_styles-176",
+    "input": {
+      "kind": "yellow",
+      "text": "",
+      "enabled": false
+    },
+    "expected": ""
+  },
+  {
+    "operation": "diagnostic_styles",
+    "case": "diagnostic_styles-177",
+    "input": {
+      "kind": "yellow",
+      "text": "a",
+      "enabled": false
+    },
+    "expected": "a"
+  },
+  {
+    "operation": "diagnostic_styles",
+    "case": "diagnostic_styles-178",
+    "input": {
+      "kind": "yellow",
+      "text": "a\nq",
+      "enabled": false
+    },
+    "expected": "a\nq"
+  },
+  {
+    "operation": "diagnostic_styles",
+    "case": "diagnostic_styles-179",
+    "input": {
+      "kind": "yellow",
+      "text": "a\r\nq",
+      "enabled": false
+    },
+    "expected": "a\r\nq"
+  },
+  {
+    "operation": "diagnostic_styles",
+    "case": "diagnostic_styles-180",
+    "input": {
+      "kind": "yellow",
+      "text": "a\u001b[39mq",
+      "enabled": false
+    },
+    "expected": "a\u001b[39mq"
+  }
+]

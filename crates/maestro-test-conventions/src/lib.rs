@@ -8,20 +8,32 @@ mod boundaries;
 mod child_tests;
 /// Rust comment content checks.
 mod comments;
+/// Shell scripts in the runner configuration directory.
+mod config_scripts;
 /// Exact production function-body ownership.
 mod duplicates;
+/// Shared-helper ownership in the extension example tests.
+mod example_helpers;
 /// Binding manifest lint exceptions and generated extension source checks.
 mod generated;
 /// Workspace membership and dependency graph checks.
 mod graph;
 /// Single-target integration-test packaging checks.
 mod integration_tests;
+/// Native platform viewer ownership.
+mod platform_opener;
 /// Source-size and protected-lint checks.
 mod quality;
 /// Repeated documentation and test source layout checks.
 mod repetition;
 /// Workspace Rust source loading and lexical helpers.
 mod source;
+/// Test-owned temporary directory checks.
+mod temp_directories;
+/// Nextest's default budget and documented slow-test exceptions.
+mod test_budget;
+/// Repository directories that tests read at run time.
+mod test_input_routes;
 /// Test-owned timed-wait and optional polling checks.
 mod time_limits;
 
@@ -41,10 +53,19 @@ mod time_limits;
 /// allowed. This scan does not expand macros, infer receiver types, resolve
 /// arbitrary re-exports/function values or evaluate compound configurations.
 ///
-/// Members whose manifest sets `autotests = false` or declares an `integration`
-/// test target have their integration-test roots checked structurally for one
-/// runnable target and unconditional out-of-line declarations of top-level test
-/// files.
+/// Every member with top-level integration-test sources needs `autotests = false`
+/// and one runnable `integration` target at `tests/integration.rs`, whose root
+/// declares each other top-level test file as an unconditional out-of-line module.
+/// Each failing member is reported.
+///
+/// The default nextest profile must flag a test as slow every 30 seconds and
+/// terminate it after four periods, a 120-second hang limit that no profile may
+/// raise and no profile may flag at another period. A per-test override is
+/// accepted only for a test that needs more than that limit: it keeps the 30-second period and requires adjacent comments naming
+/// measured seconds over 120, the cause and a removal issue, and its
+/// `terminate-after` must be the fewest whole periods that cover those seconds.
+/// Issue references are checked offline; reviewers verify that each issue is open.
+/// Periods use positive whole seconds (`"Ns"`).
 ///
 /// Reads workspace manifests and Rust files, invoking Cargo and the compiler
 /// for metadata. Emits no output. Legal included fragments are counted without
@@ -67,18 +88,51 @@ mod time_limits;
 /// generated catalog/binding sources are excluded. Macros are not expanded and
 /// unparsed fragments add no candidates; no suppression or baseline is supported.
 ///
+/// The shipped extension example tests decode a document member and release every
+/// registration through the example support module, whose release also asserts the
+/// names the caller expects and that nothing stays lent. A per-example test that
+/// writes the decode or the release walk inline is reported with its file and
+/// line, wherever the copy sits.
+///
+/// Test code in the crates the temporary-directory migration has reached may not
+/// name the platform temporary directory itself: not as a call, a value or a macro
+/// argument inside test-owned code, and not as an import anywhere in the crate,
+/// whatever the alias. Diagnostics name `TEST_DIRECTORY_CALLERS`; the owner's
+/// `temporary_root` accessor, the owner parent and an uncreated socket path remain
+/// accepted. The scope grows with each migration batch and disappears when every
+/// crate uses the owner.
+///
+/// A test that reads `docs/`, `examples/` or `assets/` at run time must have that directory
+/// routed to its package in `test_inputs` of `.github/ci.toml`. A read is a string literal
+/// that climbs out of the crate directory into the directory, or one that joins the
+/// directory in a file that climbs to the workspace root, or a call to the package-directory
+/// resolver `get_docs_path`, `get_examples_path` or `get_package_dir`. Compile-time `include_*!`
+/// arguments and attributes are not reads. Each unrouted read is reported with its file
+/// and line.
+///
+/// Native viewer executable literals and the shell-start combination belong only to
+/// the application's platform opener. The whole-file token check includes fragments
+/// and nested groups; editor and clipboard process policies stay with their callers.
+///
 /// # Errors
 ///
 /// Returns a human-readable diagnostic on malformed input or a violated boundary.
 pub fn check_workspace(root: &Path) -> Result<(), String> {
-    let metadata = graph::check(root)?;
+    test_budget::check(root)?;
+    config_scripts::check(root)?;
+    let (metadata, packages) = graph::check(root)?;
     let members = source::load(&metadata)?;
+    graph::packages::check(&metadata, &members, &packages)?;
     child_tests::check(&members)?;
     integration_tests::check(&members)?;
     boundaries::check(&members)?;
+    platform_opener::check(&members)?;
     comments::check(&members)?;
     repetition::check(&members)?;
     quality::check(root, &members)?;
     time_limits::check(&members)?;
-    duplicates::check(&members)
+    duplicates::check(&members)?;
+    example_helpers::check(&members)?;
+    temp_directories::check(&members)?;
+    test_input_routes::check(root, &members)
 }

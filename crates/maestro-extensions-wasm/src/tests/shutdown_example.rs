@@ -3,10 +3,11 @@ use serde_json::{Value, json};
 
 use super::controlled::Controlled;
 use super::example_support::{
-    invoke_command_on_component, invoke_tool_on_component, result_value, start,
+    invoke_command_on_component, invoke_tool_on_component, registered_metadata, release_all,
+    result_value, start,
 };
 use super::host_family::guest::ToolCapabilities as ComponentCapabilities;
-use crate::component_adapter::{Exports, ToolCapabilities, release};
+use crate::component_adapter::{Exports, ToolCapabilities};
 use crate::{Extension, ExtensionAPI, ExtensionFuture};
 
 #[path = "../../../../examples/extensions/shutdown_command.rs"]
@@ -21,16 +22,16 @@ impl Extension for Shutdown {
     }
 }
 
+/// The registrations the example makes, in the order the host received them.
+const REGISTERED: [&str; 3] = [
+    "command quit",
+    "tool finish_and_exit",
+    "tool deploy_and_exit",
+];
+
 /// Recorded metadata, arguments and results these tests consume.
 fn corpus() -> Value {
     serde_json::from_str(include_str!("shutdown_expected.json")).unwrap()
-}
-
-/// Decode the parameter schema a registration carries as text.
-fn schema_decoded(metadata: &str) -> Value {
-    let mut value: Value = serde_json::from_str(metadata).unwrap();
-    value["parameters"] = serde_json::from_str(value["parameters"].as_str().unwrap()).unwrap();
-    value
 }
 
 /// One controlled tool invocation with its arguments and optional progress and cancellation.
@@ -41,6 +42,8 @@ struct Invocation {
     progress: bool,
     /// Whether the host's cancellation flag is raised before the call.
     aborted: bool,
+    /// The flag the host raises on the first progress update, when supplied.
+    cancel_on_progress: Option<super::controlled::Flag>,
     /// The arguments document.
     params: Value,
 }
@@ -51,10 +54,16 @@ async fn run(
     exports: &Exports<Controlled>,
     invocation: Invocation,
 ) -> Result<String, String> {
-    let flag = super::controlled::Flag::default();
+    let flag = invocation.cancel_on_progress.clone().unwrap_or_default();
     if invocation.aborted {
         flag.abort();
     }
+    let update = invocation
+        .progress
+        .then(|| match &invocation.cancel_on_progress {
+            Some(_) => host.aborting_update(&flag),
+            None => host.update(),
+        });
     exports
         .invoke_tool(
             invocation.key,
@@ -65,23 +74,10 @@ async fn run(
             ToolCapabilities {
                 ctx: host.context("/work"),
                 signal: Some(host.signal(&flag)),
-                update: invocation.progress.then(|| host.update()),
+                update,
             },
         )
         .await
-}
-
-/// Releases every registration in order and asserts the host holds nothing else.
-fn released(host: &Controlled) -> Vec<String> {
-    let mut order = Vec::new();
-    loop {
-        let next = host.observe().next_to_release();
-        let Some((name, key)) = next else { break };
-        order.push(name);
-        release(key);
-    }
-    assert_eq!(host.observed().live, 0, "the host lent nothing it kept");
-    order
 }
 
 /// Register once and assert the declared command, tool metadata and schemas in order.
@@ -102,19 +98,13 @@ fn shutdown_example_registers_command_and_tool_contracts() -> Result<(), String>
             .observed()
             .tools
             .iter()
-            .map(|metadata| schema_decoded(metadata))
+            .map(String::as_str)
+            .map(registered_metadata)
             .collect();
         assert_eq!(json!(tools), expected["tools"]);
         assert!(host.observed().callback("prepare finish_and_exit").is_err());
         assert!(host.observed().callback("prepare deploy_and_exit").is_err());
-        assert_eq!(
-            released(&host),
-            [
-                "command quit",
-                "tool finish_and_exit",
-                "tool deploy_and_exit"
-            ]
-        );
+        release_all(&host, &REGISTERED);
         Ok(())
     })
 }
@@ -137,14 +127,7 @@ fn quit_command_requests_shutdown() -> Result<(), String> {
             assert_eq!(host.observed().transcript[start..], ["context shutdown"]);
         }
         assert!(host.observed().updates.is_empty());
-        assert_eq!(
-            released(&host),
-            [
-                "command quit",
-                "tool finish_and_exit",
-                "tool deploy_and_exit"
-            ]
-        );
+        release_all(&host, &REGISTERED);
         Ok(())
     })
 }
@@ -164,6 +147,7 @@ fn finish_tool_returns_after_request() -> Result<(), String> {
                     key: finish,
                     progress: row["update"].as_bool().unwrap(),
                     aborted: row["aborted"].as_bool().unwrap(),
+                    cancel_on_progress: None,
                     params: row["params"].clone(),
                 },
             )
@@ -172,7 +156,7 @@ fn finish_tool_returns_after_request() -> Result<(), String> {
             assert_eq!(host.observed().transcript[start..], ["context shutdown"]);
             assert!(host.observed().updates.is_empty());
         }
-        released(&host);
+        release_all(&host, &REGISTERED);
         Ok(())
     })
 }
@@ -194,6 +178,7 @@ fn deployment_progress_keeps_environment_and_order() -> Result<(), String> {
                     key: deploy,
                     progress: true,
                     aborted: true,
+                    cancel_on_progress: None,
                     params: json!({"environment": environment.clone()}),
                 },
             )
@@ -222,7 +207,7 @@ fn deployment_progress_keeps_environment_and_order() -> Result<(), String> {
                 })
             );
         }
-        released(&host);
+        release_all(&host, &REGISTERED);
         Ok(())
     })
 }
@@ -241,6 +226,7 @@ fn deployment_without_progress_keeps_result() -> Result<(), String> {
                 key: deploy,
                 progress: false,
                 aborted: true,
+                cancel_on_progress: None,
                 params: expected["withoutProgress"]["params"].clone(),
             },
         )
@@ -251,7 +237,97 @@ fn deployment_without_progress_keeps_result() -> Result<(), String> {
             result_value(&encoded),
             expected["withoutProgress"]["result"]
         );
-        released(&host);
+        release_all(&host, &REGISTERED);
+        Ok(())
+    })
+}
+
+/// A cancellation raised while progress runs keeps both updates and the result.
+#[test]
+fn deployment_survives_cancellation_during_progress() -> Result<(), String> {
+    super::block_on(async {
+        let (host, _, deploy, exports) = started().await?;
+        let expected = corpus();
+        let flag = super::controlled::Flag::default();
+        let updates = host.observed().updates.len();
+        let start = host.observed().transcript.len();
+        let encoded = run(
+            &host,
+            &exports,
+            Invocation {
+                key: deploy,
+                progress: true,
+                aborted: false,
+                cancel_on_progress: Some(flag.clone()),
+                params: json!({"environment": "staging"}),
+            },
+        )
+        .await?;
+        assert!(
+            flag.shared().load(std::sync::atomic::Ordering::SeqCst),
+            "the host raised the flag during progress"
+        );
+        let delivered: Vec<Value> = host.observed().updates[updates..]
+            .iter()
+            .map(|update| result_value(update))
+            .collect();
+        assert_eq!(delivered.len(), 2, "both updates still arrive");
+        assert_eq!(
+            delivered[1]["content"][0]["text"],
+            expected["deploymentComplete"]
+        );
+        assert_eq!(host.observed().transcript[start..], ["context shutdown"]);
+        assert_eq!(
+            result_value(&encoded),
+            json!({
+                "content": [{
+                    "type": "text",
+                    "text": expected["deploymentResult"]
+                }],
+                "details": {"environment": "staging"}
+            })
+        );
+        release_all(&host, &REGISTERED);
+        Ok(())
+    })
+}
+
+/// Argument edits reach the deployment's own member checks: a mutated member, an added
+/// member, a replaced document and a deleted member.
+#[test]
+fn deployment_arguments_edits_keep_the_member_checks() -> Result<(), String> {
+    super::block_on(async {
+        let (host, _, deploy, exports) = started().await?;
+        let expected = corpus();
+        let invocation = |params: Value| Invocation {
+            key: deploy,
+            progress: true,
+            aborted: true,
+            cancel_on_progress: None,
+            params,
+        };
+        let mutated = expected["deployments"][0]["environment"].clone();
+        let encoded = run(&host, &exports, invocation(json!({"environment": mutated}))).await?;
+        assert_eq!(
+            result_value(&encoded)["details"],
+            json!({"environment": mutated})
+        );
+        let added = run(
+            &host,
+            &exports,
+            invocation(expected["withoutProgress"]["params"].clone()),
+        )
+        .await?;
+        assert_eq!(result_value(&added), expected["withoutProgress"]["result"]);
+        for (edited, needle) in [(json!(5), "invalid type"), (json!({}), "missing field")] {
+            let updates = host.observed().updates.len();
+            let start = host.observed().transcript.len();
+            let error = run(&host, &exports, invocation(edited)).await.unwrap_err();
+            assert!(error.contains(needle), "{error}");
+            assert_eq!(host.observed().updates.len(), updates, "{error}");
+            assert!(host.observed().transcript[start..].is_empty(), "{error}");
+        }
+        release_all(&host, &REGISTERED);
         Ok(())
     })
 }
@@ -266,10 +342,7 @@ async fn started() -> Result<(Controlled, u32, u32, Exports<Controlled>), String
 
 /// The built component of the shipped example.
 fn component_harness() -> Result<super::host::Harness, String> {
-    let path = super::build::example_component("shutdown_command")?;
-    let (engine, component) = super::build::compile(&path).map_err(|error| error.to_string())?;
-    super::block_on(super::host::Harness::from_compiled(&engine, &component))
-        .map_err(|error| error.to_string())
+    super::host::Harness::example("shutdown_command")
 }
 
 /// Runs the built component's quit command and asserts one shutdown request.
@@ -278,7 +351,7 @@ fn component_quit(harness: &mut super::host::Harness) -> Result<(), String> {
         .callback("command quit")
         .map_err(|error| error.to_string())?;
     let start = harness.observed().transcript.len();
-    invoke_command_on_component(harness, key, "ignored Ω")?;
+    invoke_command_on_component(harness, key, "ignored Ω", false)?;
     assert_eq!(harness.observed().transcript[start..], ["context shutdown"]);
     Ok(())
 }
@@ -344,6 +417,44 @@ fn component_deploy(harness: &mut super::host::Harness, expected: &Value) -> Res
     Ok(())
 }
 
+/// Runs the built component's deployment tool without a progress handle.
+fn component_deploy_without_progress(
+    harness: &mut super::host::Harness,
+    expected: &Value,
+) -> Result<(), String> {
+    let key = harness
+        .callback("tool deploy_and_exit")
+        .map_err(|error| error.to_string())?;
+    let resources = ComponentCapabilities {
+        ctx: harness
+            .ordinary("/work")
+            .map_err(|error| error.to_string())?,
+        signal: Some(wasmtime::component::Resource::new_own(
+            harness.flag(true).map_err(|error| error.to_string())?,
+        )),
+        update: None,
+    };
+    let updates = harness.observed().updates.len();
+    let start = harness.observed().transcript.len();
+    let encoded = invoke_tool_on_component(
+        harness,
+        key,
+        &expected["withoutProgress"]["params"],
+        resources,
+    )?;
+    assert_eq!(
+        harness.observed().updates.len(),
+        updates,
+        "no handle, no updates"
+    );
+    assert_eq!(harness.observed().transcript[start..], ["context shutdown"]);
+    assert_eq!(
+        result_value(&encoded),
+        expected["withoutProgress"]["result"]
+    );
+    Ok(())
+}
+
 /// The built example runs the command and both tools through the component interface.
 #[test]
 fn shutdown_component_runs_every_registration() -> Result<(), String> {
@@ -353,10 +464,12 @@ fn shutdown_component_runs_every_registration() -> Result<(), String> {
     component_quit(&mut harness)?;
     component_finish(&mut harness, &expected)?;
     component_deploy(&mut harness, &expected)?;
+    component_deploy_without_progress(&mut harness, &expected)?;
     assert_eq!(
         harness.observed().transcript,
         [
             "register command quit",
+            "context shutdown",
             "context shutdown",
             "context shutdown",
             "context shutdown"
@@ -387,7 +500,7 @@ fn refused_command(shutdown: &str) -> Result<(), String> {
             Err(shutdown.to_owned())
         );
         assert!(host.observed().transcript[start..].is_empty());
-        released(&host);
+        release_all(&host, &REGISTERED);
         Ok(())
     })
 }
@@ -408,6 +521,7 @@ fn refused_tools(shutdown: &str) -> Result<(), String> {
                     key: finish,
                     progress: true,
                     aborted: false,
+                    cancel_on_progress: None,
                     params: json!({}),
                 },
             )
@@ -425,6 +539,7 @@ fn refused_tools(shutdown: &str) -> Result<(), String> {
                     key: deploy,
                     progress: true,
                     aborted: false,
+                    cancel_on_progress: None,
                     params: json!({"environment": "staging"}),
                 },
             )
@@ -433,7 +548,7 @@ fn refused_tools(shutdown: &str) -> Result<(), String> {
         );
         assert_eq!(host.observed().updates.len(), 2);
         assert!(host.observed().transcript[start..].is_empty());
-        released(&host);
+        release_all(&host, &REGISTERED);
         Ok(())
     })
 }
@@ -452,6 +567,7 @@ fn refused_progress(position: usize, message: &str) -> Result<(), String> {
                     key: deploy,
                     progress: true,
                     aborted: false,
+                    cancel_on_progress: None,
                     params: json!({"environment": "staging"}),
                 },
             )
@@ -467,7 +583,7 @@ fn refused_progress(position: usize, message: &str) -> Result<(), String> {
             host.observed().transcript[start..].is_empty(),
             "no shutdown is requested"
         );
-        released(&host);
+        release_all(&host, &REGISTERED);
         Ok(())
     })
 }
@@ -509,7 +625,13 @@ fn shutdown_example_stops_on_registration_error() -> Result<(), String> {
                 "the registration at position {} is refused",
                 row["refused"]
             );
-            assert_eq!(json!(released(&host)), row["admitted"]);
+            let admitted: Vec<&str> = row["admitted"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|name| name.as_str().unwrap())
+                .collect();
+            release_all(&host, &admitted);
         }
         Ok(())
     })

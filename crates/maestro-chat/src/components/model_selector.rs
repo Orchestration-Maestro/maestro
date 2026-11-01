@@ -1,4 +1,6 @@
 //! Searchable available-model selection with supplied scoped ordering.
+#[cfg(test)]
+mod tests;
 use super::dynamic_border::DynamicBorder;
 use maestro_app::{
     CatalogError, Model, ModelRegistry, ScopedModel, SettingsManager, key_hint,
@@ -56,8 +58,11 @@ impl ModelItem {
             model,
         })
     }
-    /// Compares current identities using their shared owner operation.
+    /// Recognizes shared handles before reading independent descriptors' live identities.
     fn is_current(&self, current: Option<&Arc<RwLock<Model>>>) -> bool {
+        if current.is_some_and(|current| Arc::ptr_eq(current, &self.model)) {
+            return true;
+        }
         let current = current.map(|m| m.read().unwrap_or_else(PoisonError::into_inner));
         let model = self.model.read().unwrap_or_else(PoisonError::into_inner);
         models_are_equal(current.as_deref(), Some(&model))

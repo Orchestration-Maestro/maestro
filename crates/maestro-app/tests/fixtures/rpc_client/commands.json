@@ -1,0 +1,944 @@
+{
+  "answers": {
+    "new_session": {
+      "cancelled": false
+    },
+    "get_state": {
+      "model": {
+        "provider": "fixture",
+        "id": "m",
+        "contextWindow": 4096,
+        "reasoning": true,
+        "name": "Retained",
+        "api": "openai-completions",
+        "baseUrl": "https://fixture.invalid",
+        "input": [
+          "text",
+          "image"
+        ],
+        "maxTokens": 512,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "thinkingLevel": "off",
+      "isStreaming": false,
+      "isCompacting": false,
+      "steeringMode": "one-at-a-time",
+      "followUpMode": "all",
+      "sessionId": "session",
+      "autoCompactionEnabled": true,
+      "messageCount": 0,
+      "pendingMessageCount": 0
+    },
+    "set_model": {
+      "provider": "fixture",
+      "id": "m",
+      "contextWindow": 4096,
+      "reasoning": true,
+      "name": "Retained",
+      "api": "openai-completions",
+      "baseUrl": "https://fixture.invalid",
+      "input": [
+        "text",
+        "image"
+      ],
+      "maxTokens": 512,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "cycle_model": null,
+    "get_available_models": {
+      "models": [
+        {
+          "provider": "fixture",
+          "id": "m",
+          "contextWindow": 4096,
+          "reasoning": true,
+          "name": "Retained",
+          "api": "openai-completions",
+          "baseUrl": "https://fixture.invalid",
+          "input": [
+            "text",
+            "image"
+          ],
+          "maxTokens": 512,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          }
+        }
+      ]
+    },
+    "cycle_thinking_level": {
+      "level": "high"
+    },
+    "compact": {
+      "summary": "summary",
+      "firstKeptEntryId": "e",
+      "tokensBefore": 123
+    },
+    "bash": {
+      "output": "hello\n",
+      "exitCode": 0,
+      "cancelled": false,
+      "truncated": false
+    },
+    "get_session_stats": {
+      "sessionId": "session",
+      "userMessages": 1,
+      "assistantMessages": 1,
+      "toolCalls": 0,
+      "toolResults": 0,
+      "totalMessages": 2,
+      "tokens": {
+        "input": 1,
+        "output": 2,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "total": 3
+      },
+      "cost": 0
+    },
+    "export_html": {
+      "path": "session.html"
+    },
+    "switch_session": {
+      "cancelled": true
+    },
+    "fork": {
+      "text": "message",
+      "cancelled": false
+    },
+    "clone": {
+      "cancelled": false
+    },
+    "get_fork_messages": {
+      "messages": [
+        {
+          "entryId": "e",
+          "text": "message"
+        }
+      ]
+    },
+    "get_last_assistant_text": {},
+    "get_messages": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "retained",
+          "timestamp": 1
+        }
+      ]
+    },
+    "get_commands": {
+      "commands": [
+        {
+          "name": "cmd",
+          "source": "extension",
+          "sourceInfo": {
+            "path": "fixture.rs",
+            "source": "local",
+            "scope": "project",
+            "origin": "top-level"
+          }
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "method": "prompt",
+      "args": [
+        "hello world 🙂",
+        [
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      ],
+      "wire": "{\"type\":\"prompt\",\"message\":\"hello world 🙂\",\"images\":[{\"type\":\"image\",\"data\":\"AA==\",\"mimeType\":\"image/png\"}],\"id\":\"req_1\"}\n",
+      "result": {
+        "present": false
+      }
+    },
+    {
+      "method": "steer",
+      "args": [
+        "steer",
+        [
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      ],
+      "wire": "{\"type\":\"steer\",\"message\":\"steer\",\"images\":[{\"type\":\"image\",\"data\":\"AA==\",\"mimeType\":\"image/png\"}],\"id\":\"req_2\"}\n",
+      "result": {
+        "present": false
+      }
+    },
+    {
+      "method": "follow_up",
+      "args": [
+        "follow",
+        [
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      ],
+      "wire": "{\"type\":\"follow_up\",\"message\":\"follow\",\"images\":[{\"type\":\"image\",\"data\":\"AA==\",\"mimeType\":\"image/png\"}],\"id\":\"req_3\"}\n",
+      "result": {
+        "present": false
+      }
+    },
+    {
+      "method": "abort",
+      "args": [],
+      "wire": "{\"type\":\"abort\",\"id\":\"req_4\"}\n",
+      "result": {
+        "present": false
+      }
+    },
+    {
+      "method": "new_session",
+      "args": [],
+      "wire": "{\"type\":\"new_session\",\"id\":\"req_5\"}\n",
+      "result": {
+        "present": true,
+        "value": {
+          "cancelled": false
+        }
+      }
+    },
+    {
+      "method": "new_session",
+      "args": [
+        "parent/session.jsonl"
+      ],
+      "wire": "{\"type\":\"new_session\",\"parentSession\":\"parent/session.jsonl\",\"id\":\"req_6\"}\n",
+      "result": {
+        "present": true,
+        "value": {
+          "cancelled": false
+        }
+      }
+    },
+    {
+      "method": "get_state",
+      "args": [],
+      "wire": "{\"type\":\"get_state\",\"id\":\"req_7\"}\n",
+      "result": {
+        "present": true,
+        "value": {
+          "model": {
+            "provider": "fixture",
+            "id": "m",
+            "contextWindow": 4096,
+            "reasoning": true,
+            "name": "Retained",
+            "api": "openai-completions",
+            "baseUrl": "https://fixture.invalid",
+            "input": [
+              "text",
+              "image"
+            ],
+            "maxTokens": 512,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            }
+          },
+          "thinkingLevel": "off",
+          "isStreaming": false,
+          "isCompacting": false,
+          "steeringMode": "one-at-a-time",
+          "followUpMode": "all",
+          "sessionId": "session",
+          "autoCompactionEnabled": true,
+          "messageCount": 0,
+          "pendingMessageCount": 0
+        }
+      }
+    },
+    {
+      "method": "set_model",
+      "args": [
+        "fixture",
+        "m"
+      ],
+      "wire": "{\"type\":\"set_model\",\"provider\":\"fixture\",\"modelId\":\"m\",\"id\":\"req_8\"}\n",
+      "result": {
+        "present": true,
+        "value": {
+          "provider": "fixture",
+          "id": "m",
+          "contextWindow": 4096,
+          "reasoning": true,
+          "name": "Retained",
+          "api": "openai-completions",
+          "baseUrl": "https://fixture.invalid",
+          "input": [
+            "text",
+            "image"
+          ],
+          "maxTokens": 512,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          }
+        }
+      }
+    },
+    {
+      "method": "cycle_model",
+      "args": [],
+      "wire": "{\"type\":\"cycle_model\",\"id\":\"req_9\"}\n",
+      "result": {
+        "present": true,
+        "value": null
+      }
+    },
+    {
+      "method": "get_available_models",
+      "args": [],
+      "wire": "{\"type\":\"get_available_models\",\"id\":\"req_10\"}\n",
+      "result": {
+        "present": true,
+        "value": [
+          {
+            "provider": "fixture",
+            "id": "m",
+            "contextWindow": 4096,
+            "reasoning": true,
+            "name": "Retained",
+            "api": "openai-completions",
+            "baseUrl": "https://fixture.invalid",
+            "input": [
+              "text",
+              "image"
+            ],
+            "maxTokens": 512,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "method": "set_thinking_level",
+      "args": [
+        "high"
+      ],
+      "wire": "{\"type\":\"set_thinking_level\",\"level\":\"high\",\"id\":\"req_11\"}\n",
+      "result": {
+        "present": false
+      }
+    },
+    {
+      "method": "cycle_thinking_level",
+      "args": [],
+      "wire": "{\"type\":\"cycle_thinking_level\",\"id\":\"req_12\"}\n",
+      "result": {
+        "present": true,
+        "value": {
+          "level": "high"
+        }
+      }
+    },
+    {
+      "method": "set_steering_mode",
+      "args": [
+        "all"
+      ],
+      "wire": "{\"type\":\"set_steering_mode\",\"mode\":\"all\",\"id\":\"req_13\"}\n",
+      "result": {
+        "present": false
+      }
+    },
+    {
+      "method": "set_steering_mode",
+      "args": [
+        "one-at-a-time"
+      ],
+      "wire": "{\"type\":\"set_steering_mode\",\"mode\":\"one-at-a-time\",\"id\":\"req_14\"}\n",
+      "result": {
+        "present": false
+      }
+    },
+    {
+      "method": "set_follow_up_mode",
+      "args": [
+        "all"
+      ],
+      "wire": "{\"type\":\"set_follow_up_mode\",\"mode\":\"all\",\"id\":\"req_15\"}\n",
+      "result": {
+        "present": false
+      }
+    },
+    {
+      "method": "set_follow_up_mode",
+      "args": [
+        "one-at-a-time"
+      ],
+      "wire": "{\"type\":\"set_follow_up_mode\",\"mode\":\"one-at-a-time\",\"id\":\"req_16\"}\n",
+      "result": {
+        "present": false
+      }
+    },
+    {
+      "method": "compact",
+      "args": [],
+      "wire": "{\"type\":\"compact\",\"id\":\"req_17\"}\n",
+      "result": {
+        "present": true,
+        "value": {
+          "summary": "summary",
+          "firstKeptEntryId": "e",
+          "tokensBefore": 123
+        }
+      }
+    },
+    {
+      "method": "compact",
+      "args": [
+        "retain files"
+      ],
+      "wire": "{\"type\":\"compact\",\"customInstructions\":\"retain files\",\"id\":\"req_18\"}\n",
+      "result": {
+        "present": true,
+        "value": {
+          "summary": "summary",
+          "firstKeptEntryId": "e",
+          "tokensBefore": 123
+        }
+      }
+    },
+    {
+      "method": "set_auto_compaction",
+      "args": [
+        false
+      ],
+      "wire": "{\"type\":\"set_auto_compaction\",\"enabled\":false,\"id\":\"req_19\"}\n",
+      "result": {
+        "present": false
+      }
+    },
+    {
+      "method": "set_auto_compaction",
+      "args": [
+        true
+      ],
+      "wire": "{\"type\":\"set_auto_compaction\",\"enabled\":true,\"id\":\"req_20\"}\n",
+      "result": {
+        "present": false
+      }
+    },
+    {
+      "method": "set_auto_retry",
+      "args": [
+        false
+      ],
+      "wire": "{\"type\":\"set_auto_retry\",\"enabled\":false,\"id\":\"req_21\"}\n",
+      "result": {
+        "present": false
+      }
+    },
+    {
+      "method": "set_auto_retry",
+      "args": [
+        true
+      ],
+      "wire": "{\"type\":\"set_auto_retry\",\"enabled\":true,\"id\":\"req_22\"}\n",
+      "result": {
+        "present": false
+      }
+    },
+    {
+      "method": "abort_retry",
+      "args": [],
+      "wire": "{\"type\":\"abort_retry\",\"id\":\"req_23\"}\n",
+      "result": {
+        "present": false
+      }
+    },
+    {
+      "method": "bash",
+      "args": [
+        "printf hello"
+      ],
+      "wire": "{\"type\":\"bash\",\"command\":\"printf hello\",\"id\":\"req_24\"}\n",
+      "result": {
+        "present": true,
+        "value": {
+          "output": "hello\n",
+          "exitCode": 0,
+          "cancelled": false,
+          "truncated": false
+        }
+      }
+    },
+    {
+      "method": "abort_bash",
+      "args": [],
+      "wire": "{\"type\":\"abort_bash\",\"id\":\"req_25\"}\n",
+      "result": {
+        "present": false
+      }
+    },
+    {
+      "method": "get_session_stats",
+      "args": [],
+      "wire": "{\"type\":\"get_session_stats\",\"id\":\"req_26\"}\n",
+      "result": {
+        "present": true,
+        "value": {
+          "sessionId": "session",
+          "userMessages": 1,
+          "assistantMessages": 1,
+          "toolCalls": 0,
+          "toolResults": 0,
+          "totalMessages": 2,
+          "tokens": {
+            "input": 1,
+            "output": 2,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 3
+          },
+          "cost": 0
+        }
+      }
+    },
+    {
+      "method": "export_html",
+      "args": [],
+      "wire": "{\"type\":\"export_html\",\"id\":\"req_27\"}\n",
+      "result": {
+        "present": true,
+        "value": {
+          "path": "session.html"
+        }
+      }
+    },
+    {
+      "method": "export_html",
+      "args": [
+        "out/session.html"
+      ],
+      "wire": "{\"type\":\"export_html\",\"outputPath\":\"out/session.html\",\"id\":\"req_28\"}\n",
+      "result": {
+        "present": true,
+        "value": {
+          "path": "session.html"
+        }
+      }
+    },
+    {
+      "method": "switch_session",
+      "args": [
+        "another.jsonl"
+      ],
+      "wire": "{\"type\":\"switch_session\",\"sessionPath\":\"another.jsonl\",\"id\":\"req_29\"}\n",
+      "result": {
+        "present": true,
+        "value": {
+          "cancelled": true
+        }
+      }
+    },
+    {
+      "method": "fork",
+      "args": [
+        "entry"
+      ],
+      "wire": "{\"type\":\"fork\",\"entryId\":\"entry\",\"id\":\"req_30\"}\n",
+      "result": {
+        "present": true,
+        "value": {
+          "text": "message",
+          "cancelled": false
+        }
+      }
+    },
+    {
+      "method": "clone",
+      "args": [],
+      "wire": "{\"type\":\"clone\",\"id\":\"req_31\"}\n",
+      "result": {
+        "present": true,
+        "value": {
+          "cancelled": false
+        }
+      }
+    },
+    {
+      "method": "get_fork_messages",
+      "args": [],
+      "wire": "{\"type\":\"get_fork_messages\",\"id\":\"req_32\"}\n",
+      "result": {
+        "present": true,
+        "value": [
+          {
+            "entryId": "e",
+            "text": "message"
+          }
+        ]
+      }
+    },
+    {
+      "method": "get_last_assistant_text",
+      "args": [],
+      "wire": "{\"type\":\"get_last_assistant_text\",\"id\":\"req_33\"}\n",
+      "result": {
+        "present": false
+      }
+    },
+    {
+      "method": "set_session_name",
+      "args": [
+        " display name "
+      ],
+      "wire": "{\"type\":\"set_session_name\",\"name\":\" display name \",\"id\":\"req_34\"}\n",
+      "result": {
+        "present": false
+      }
+    },
+    {
+      "method": "get_messages",
+      "args": [],
+      "wire": "{\"type\":\"get_messages\",\"id\":\"req_35\"}\n",
+      "result": {
+        "present": true,
+        "value": [
+          {
+            "role": "user",
+            "content": "retained",
+            "timestamp": 1
+          }
+        ]
+      }
+    },
+    {
+      "method": "get_commands",
+      "args": [],
+      "wire": "{\"type\":\"get_commands\",\"id\":\"req_36\"}\n",
+      "result": {
+        "present": true,
+        "value": [
+          {
+            "name": "cmd",
+            "source": "extension",
+            "sourceInfo": {
+              "path": "fixture.rs",
+              "source": "local",
+              "scope": "project",
+              "origin": "top-level"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "method": "prompt",
+      "args": [
+        "no images"
+      ],
+      "wire": "{\"type\":\"prompt\",\"message\":\"no images\",\"id\":\"req_37\"}\n",
+      "result": {
+        "present": false
+      }
+    },
+    {
+      "method": "steer",
+      "args": [
+        "empty images",
+        []
+      ],
+      "wire": "{\"type\":\"steer\",\"message\":\"empty images\",\"images\":[],\"id\":\"req_38\"}\n",
+      "result": {
+        "present": false
+      }
+    },
+    {
+      "method": "follow_up",
+      "args": [
+        "empty images",
+        []
+      ],
+      "wire": "{\"type\":\"follow_up\",\"message\":\"empty images\",\"images\":[],\"id\":\"req_39\"}\n",
+      "result": {
+        "present": false
+      }
+    },
+    {
+      "method": "prompt",
+      "args": [
+        "raw\n  🙂"
+      ],
+      "wire": "{\"type\":\"prompt\",\"message\":\"raw\\n  🙂\",\"id\":\"req_40\"}\n",
+      "result": {
+        "present": false
+      }
+    },
+    {
+      "method": "prompt",
+      "args": [
+        "raw\n  🙂",
+        []
+      ],
+      "wire": "{\"type\":\"prompt\",\"message\":\"raw\\n  🙂\",\"images\":[],\"id\":\"req_41\"}\n",
+      "result": {
+        "present": false
+      }
+    },
+    {
+      "method": "prompt",
+      "args": [
+        "raw\n  🙂",
+        [
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      ],
+      "wire": "{\"type\":\"prompt\",\"message\":\"raw\\n  🙂\",\"images\":[{\"type\":\"image\",\"data\":\"AA==\",\"mimeType\":\"image/png\"}],\"id\":\"req_42\"}\n",
+      "result": {
+        "present": false
+      }
+    },
+    {
+      "method": "steer",
+      "args": [
+        "raw\n  🙂"
+      ],
+      "wire": "{\"type\":\"steer\",\"message\":\"raw\\n  🙂\",\"id\":\"req_43\"}\n",
+      "result": {
+        "present": false
+      }
+    },
+    {
+      "method": "steer",
+      "args": [
+        "raw\n  🙂",
+        []
+      ],
+      "wire": "{\"type\":\"steer\",\"message\":\"raw\\n  🙂\",\"images\":[],\"id\":\"req_44\"}\n",
+      "result": {
+        "present": false
+      }
+    },
+    {
+      "method": "steer",
+      "args": [
+        "raw\n  🙂",
+        [
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      ],
+      "wire": "{\"type\":\"steer\",\"message\":\"raw\\n  🙂\",\"images\":[{\"type\":\"image\",\"data\":\"AA==\",\"mimeType\":\"image/png\"}],\"id\":\"req_45\"}\n",
+      "result": {
+        "present": false
+      }
+    },
+    {
+      "method": "follow_up",
+      "args": [
+        "raw\n  🙂"
+      ],
+      "wire": "{\"type\":\"follow_up\",\"message\":\"raw\\n  🙂\",\"id\":\"req_46\"}\n",
+      "result": {
+        "present": false
+      }
+    },
+    {
+      "method": "follow_up",
+      "args": [
+        "raw\n  🙂",
+        []
+      ],
+      "wire": "{\"type\":\"follow_up\",\"message\":\"raw\\n  🙂\",\"images\":[],\"id\":\"req_47\"}\n",
+      "result": {
+        "present": false
+      }
+    },
+    {
+      "method": "follow_up",
+      "args": [
+        "raw\n  🙂",
+        [
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      ],
+      "wire": "{\"type\":\"follow_up\",\"message\":\"raw\\n  🙂\",\"images\":[{\"type\":\"image\",\"data\":\"AA==\",\"mimeType\":\"image/png\"}],\"id\":\"req_48\"}\n",
+      "result": {
+        "present": false
+      }
+    },
+    {
+      "method": "new_session",
+      "args": [
+        ""
+      ],
+      "wire": "{\"type\":\"new_session\",\"parentSession\":\"\",\"id\":\"req_49\"}\n",
+      "result": {
+        "present": true,
+        "value": {
+          "cancelled": false
+        }
+      }
+    },
+    {
+      "method": "new_session",
+      "args": [
+        "literal path"
+      ],
+      "wire": "{\"type\":\"new_session\",\"parentSession\":\"literal path\",\"id\":\"req_50\"}\n",
+      "result": {
+        "present": true,
+        "value": {
+          "cancelled": false
+        }
+      }
+    },
+    {
+      "method": "compact",
+      "args": [
+        ""
+      ],
+      "wire": "{\"type\":\"compact\",\"customInstructions\":\"\",\"id\":\"req_51\"}\n",
+      "result": {
+        "present": true,
+        "value": {
+          "summary": "summary",
+          "firstKeptEntryId": "e",
+          "tokensBefore": 123
+        }
+      }
+    },
+    {
+      "method": "compact",
+      "args": [
+        "literal path"
+      ],
+      "wire": "{\"type\":\"compact\",\"customInstructions\":\"literal path\",\"id\":\"req_52\"}\n",
+      "result": {
+        "present": true,
+        "value": {
+          "summary": "summary",
+          "firstKeptEntryId": "e",
+          "tokensBefore": 123
+        }
+      }
+    },
+    {
+      "method": "export_html",
+      "args": [
+        ""
+      ],
+      "wire": "{\"type\":\"export_html\",\"outputPath\":\"\",\"id\":\"req_53\"}\n",
+      "result": {
+        "present": true,
+        "value": {
+          "path": "session.html"
+        }
+      }
+    },
+    {
+      "method": "export_html",
+      "args": [
+        "literal path"
+      ],
+      "wire": "{\"type\":\"export_html\",\"outputPath\":\"literal path\",\"id\":\"req_54\"}\n",
+      "result": {
+        "present": true,
+        "value": {
+          "path": "session.html"
+        }
+      }
+    },
+    {
+      "method": "set_thinking_level",
+      "args": [
+        "off"
+      ],
+      "wire": "{\"type\":\"set_thinking_level\",\"level\":\"off\",\"id\":\"req_55\"}\n",
+      "result": {
+        "present": false
+      }
+    },
+    {
+      "method": "set_thinking_level",
+      "args": [
+        "minimal"
+      ],
+      "wire": "{\"type\":\"set_thinking_level\",\"level\":\"minimal\",\"id\":\"req_56\"}\n",
+      "result": {
+        "present": false
+      }
+    },
+    {
+      "method": "set_thinking_level",
+      "args": [
+        "low"
+      ],
+      "wire": "{\"type\":\"set_thinking_level\",\"level\":\"low\",\"id\":\"req_57\"}\n",
+      "result": {
+        "present": false
+      }
+    },
+    {
+      "method": "set_thinking_level",
+      "args": [
+        "medium"
+      ],
+      "wire": "{\"type\":\"set_thinking_level\",\"level\":\"medium\",\"id\":\"req_58\"}\n",
+      "result": {
+        "present": false
+      }
+    },
+    {
+      "method": "set_thinking_level",
+      "args": [
+        "xhigh"
+      ],
+      "wire": "{\"type\":\"set_thinking_level\",\"level\":\"xhigh\",\"id\":\"req_59\"}\n",
+      "result": {
+        "present": false
+      }
+    }
+  ]
+}

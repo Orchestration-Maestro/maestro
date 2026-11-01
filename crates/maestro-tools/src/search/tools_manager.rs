@@ -11,7 +11,6 @@ use std::{
     path::{Path, PathBuf},
     time::Duration,
 };
-use tokio::process::Command;
 
 /// Deadline of the release lookup, response body included.
 const NETWORK_TIMEOUT: Duration = Duration::from_millis(10_000);
@@ -98,12 +97,15 @@ impl SearchTool {
         }
     }
 
+    /// The version fixed for `host` because later releases carry no build for it.
+    fn pinned_version(self, host: Host) -> Option<&'static str> {
+        (self == Self::Fd && host.os == "macos" && host.asset_arch() == "x86_64")
+            .then_some("10.3.0")
+    }
+
     /// The release asset for `host`, or `None` on an unsupported platform.
     fn asset(self, version: &str, host: Host) -> Option<Asset> {
-        let arch = match host.arch {
-            "aarch64" => "aarch64",
-            _ => "x86_64",
-        };
+        let arch = host.asset_arch();
         let (target, archive) = match (host.os, self) {
             ("macos", _) => ("apple-darwin", Archive::TarGz),
             ("linux", Self::Rg) if arch == "x86_64" => ("unknown-linux-musl", Archive::TarGz),
@@ -129,6 +131,16 @@ struct Host {
     os: &'static str,
     /// `std::env::consts::ARCH` value.
     arch: &'static str,
+}
+
+impl Host {
+    /// Architecture spelling used in release asset names.
+    fn asset_arch(self) -> &'static str {
+        match self.arch {
+            "aarch64" => "aarch64",
+            _ => "x86_64",
+        }
+    }
 }
 
 /// The host this build runs on.
@@ -173,6 +185,8 @@ pub struct ToolsManager {
     fetch: Fetch,
     /// Platform selecting assets and program names.
     host: Host,
+    /// A caller's offline selection, or the ambient flag when absent.
+    offline: Option<bool>,
 }
 
 impl ToolsManager {
@@ -183,7 +197,17 @@ impl ToolsManager {
             bin_dir,
             fetch: fetch.unwrap_or_else(default_fetch),
             host: NATIVE_HOST,
+            offline: None,
         }
+    }
+
+    /// Selects offline mode from the caller instead of the ambient environment.
+    ///
+    /// An absent selection keeps reading `MAESTRO_OFFLINE` when a download is considered.
+    #[must_use]
+    pub fn with_offline(mut self, offline: Option<bool>) -> Self {
+        self.offline = offline;
+        self
     }
 
     /// The program's path in the binary directory when it exists, else the first `PATH`
@@ -221,7 +245,7 @@ impl ToolsManager {
         mut output: Option<ToolsManagerOutput<'_>>,
     ) -> Option<String> {
         let name = tool.config().name;
-        if is_offline_mode_enabled() {
+        if self.offline_mode_enabled() {
             let line = format!("{name} not found. Offline mode enabled, skipping download.");
             say(&mut output, Tone::Yellow, &line);
             return None;
@@ -247,6 +271,11 @@ impl ToolsManager {
         }
     }
 
+    /// Whether this manager refuses to download a missing program.
+    fn offline_mode_enabled(&self) -> bool {
+        maestro_text::is_offline_selected(self.offline)
+    }
+
     /// File name of the program on this platform.
     fn binary_file_name(&self, config: &ToolConfig) -> String {
         let extension = match self.host.os {
@@ -261,12 +290,15 @@ impl ToolsManager {
         maestro_path::join(&[&self.bin_dir, &self.binary_file_name(config)])
     }
 
-    /// Download, unpack and publish the latest release of `tool`.
+    /// Download, unpack and publish the latest release of `tool`, or its pinned version.
     ///
     /// Zip extraction and post-extraction steps do not yield; a dropped tar is killed.
     async fn download_tool(&self, tool: SearchTool) -> io::Result<String> {
         let config = tool.config();
-        let version = self.get_latest_version(config.repo).await?;
+        let version = match tool.pinned_version(self.host) {
+            Some(pinned) => pinned.to_owned(),
+            None => self.get_latest_version(config.repo).await?,
+        };
         let asset = tool.asset(&version, self.host).ok_or_else(|| {
             io::Error::other(format!(
                 "Unsupported platform: {}/{}",
@@ -355,7 +387,7 @@ fn get(url: String, headers: &[(&str, &str)]) -> HttpRequest {
 
 /// Whether `name --version` starts, whatever its exit status.
 async fn command_exists(name: &str) -> bool {
-    let mut command = Command::new(name);
+    let mut command = maestro_process::command(name);
     command.arg("--version").kill_on_drop(true);
     let Ok(mut child) = CapturedChild::spawn(&mut command) else {
         return false;
@@ -368,11 +400,6 @@ async fn command_exists(name: &str) -> bool {
     )
     .await
     .is_ok()
-}
-
-/// Whether `MAESTRO_OFFLINE` disables downloads.
-fn is_offline_mode_enabled() -> bool {
-    maestro_text::is_truthy_env_flag(std::env::var("MAESTRO_OFFLINE").ok().as_deref())
 }
 
 /// Invocation-owned archive directory whose removal is attempted when dropped.
@@ -433,7 +460,7 @@ async fn extract_tar(asset: &str, archive: &str, dir: &str) -> io::Result<()> {
             source,
         })
     };
-    let mut command = Command::new("tar");
+    let mut command = maestro_process::command("tar");
     command.args(["xzf", archive, "-C", dir]).kill_on_drop(true);
     let mut child = CapturedChild::spawn(&mut command).map_err(context)?;
     let output = wait_for_child_process(

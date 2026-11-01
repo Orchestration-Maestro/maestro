@@ -1,0 +1,3463 @@
+{
+  "palette": {
+    "foreground": {
+      "accent": 1,
+      "border": 2,
+      "borderAccent": 3,
+      "borderMuted": 4,
+      "success": 5,
+      "error": 6,
+      "warning": 7,
+      "muted": 8,
+      "dim": 9,
+      "text": 10,
+      "thinkingText": 11,
+      "userMessageText": 12,
+      "customMessageText": 13,
+      "customMessageLabel": 14,
+      "toolTitle": 15,
+      "toolOutput": 16,
+      "mdHeading": 17,
+      "mdLink": 18,
+      "mdLinkUrl": 19,
+      "mdCode": 20,
+      "mdCodeBlock": 21,
+      "mdCodeBlockBorder": 22,
+      "mdQuote": 23,
+      "mdQuoteBorder": 24,
+      "mdHr": 25,
+      "mdListBullet": 26,
+      "toolDiffAdded": 27,
+      "toolDiffRemoved": 28,
+      "toolDiffContext": 29,
+      "syntaxComment": 30,
+      "syntaxKeyword": 31,
+      "syntaxFunction": 32,
+      "syntaxVariable": 33,
+      "syntaxString": 34,
+      "syntaxNumber": 35,
+      "syntaxType": 36,
+      "syntaxOperator": 37,
+      "syntaxPunctuation": 38,
+      "thinkingOff": 39,
+      "thinkingMinimal": 40,
+      "thinkingLow": 41,
+      "thinkingMedium": 42,
+      "thinkingHigh": 43,
+      "thinkingXhigh": 44,
+      "bashMode": 45
+    },
+    "background": {
+      "selectedBg": 70,
+      "userMessageBg": 71,
+      "customMessageBg": 72,
+      "toolPendingBg": 73,
+      "toolSuccessBg": 74,
+      "toolErrorBg": 75
+    }
+  },
+  "cases": [
+    {
+      "test": "transcript_user_text_keeps_order_whitespace_and_history",
+      "input": {
+        "op": "user",
+        "content": "",
+        "history": false
+      },
+      "expected": {
+        "rows": [],
+        "pending": [],
+        "history": [],
+        "renders": 0
+      }
+    },
+    {
+      "test": "transcript_user_text_keeps_order_whitespace_and_history",
+      "input": {
+        "op": "user",
+        "content": "",
+        "history": true
+      },
+      "expected": {
+        "rows": [],
+        "pending": [],
+        "history": [],
+        "renders": 0
+      }
+    },
+    {
+      "test": "transcript_user_text_keeps_order_whitespace_and_history",
+      "input": {
+        "op": "user",
+        "content": " ",
+        "history": false
+      },
+      "expected": {
+        "rows": [],
+        "pending": [],
+        "history": [],
+        "renders": 0
+      }
+    },
+    {
+      "test": "transcript_user_text_keeps_order_whitespace_and_history",
+      "input": {
+        "op": "user",
+        "content": " ",
+        "history": true
+      },
+      "expected": {
+        "rows": [],
+        "pending": [],
+        "history": [
+          " "
+        ],
+        "renders": 0
+      }
+    },
+    {
+      "test": "transcript_user_text_keeps_order_whitespace_and_history",
+      "input": {
+        "op": "user",
+        "content": "\ufeff",
+        "history": false
+      },
+      "expected": {
+        "rows": [],
+        "pending": [],
+        "history": [],
+        "renders": 0
+      }
+    },
+    {
+      "test": "transcript_user_text_keeps_order_whitespace_and_history",
+      "input": {
+        "op": "user",
+        "content": "\ufeff",
+        "history": true
+      },
+      "expected": {
+        "rows": [],
+        "pending": [],
+        "history": [
+          "\ufeff"
+        ],
+        "renders": 0
+      }
+    },
+    {
+      "test": "transcript_user_text_keeps_order_whitespace_and_history",
+      "input": {
+        "op": "user",
+        "content": "\u0085",
+        "history": false
+      },
+      "expected": {
+        "rows": [
+          "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "\u001b[48;5;71m \u001b[38;5;12m\u0085\u001b[39m                                                                                                   \u001b[49m",
+          "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 0
+      }
+    },
+    {
+      "test": "transcript_user_text_keeps_order_whitespace_and_history",
+      "input": {
+        "op": "user",
+        "content": "\u0085",
+        "history": true
+      },
+      "expected": {
+        "rows": [
+          "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "\u001b[48;5;71m \u001b[38;5;12m\u0085\u001b[39m                                                                                                   \u001b[49m",
+          "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [
+          "\u0085"
+        ],
+        "renders": 0
+      }
+    },
+    {
+      "test": "transcript_user_text_keeps_order_whitespace_and_history",
+      "input": {
+        "op": "user",
+        "content": "\t",
+        "history": false
+      },
+      "expected": {
+        "rows": [],
+        "pending": [],
+        "history": [],
+        "renders": 0
+      }
+    },
+    {
+      "test": "transcript_user_text_keeps_order_whitespace_and_history",
+      "input": {
+        "op": "user",
+        "content": "\t",
+        "history": true
+      },
+      "expected": {
+        "rows": [],
+        "pending": [],
+        "history": [
+          "\t"
+        ],
+        "renders": 0
+      }
+    },
+    {
+      "test": "transcript_user_text_keeps_order_whitespace_and_history",
+      "input": {
+        "op": "user",
+        "content": "\u001b[7m \u001b[27m",
+        "history": false
+      },
+      "expected": {
+        "rows": [
+          "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "\u001b[48;5;71m \u001b[38;5;12m\u001b[7m \u001b[27m\u001b[39m                                                                                                  \u001b[49m",
+          "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 0
+      }
+    },
+    {
+      "test": "transcript_user_text_keeps_order_whitespace_and_history",
+      "input": {
+        "op": "user",
+        "content": "\u001b[7m \u001b[27m",
+        "history": true
+      },
+      "expected": {
+        "rows": [
+          "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "\u001b[48;5;71m \u001b[38;5;12m\u001b[7m \u001b[27m\u001b[39m                                                                                                  \u001b[49m",
+          "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [
+          "\u001b[7m \u001b[27m"
+        ],
+        "renders": 0
+      }
+    },
+    {
+      "test": "transcript_user_text_keeps_order_whitespace_and_history",
+      "input": {
+        "op": "user",
+        "content": "one\n\ntwo",
+        "history": false
+      },
+      "expected": {
+        "rows": [
+          "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "\u001b[48;5;71m \u001b[38;5;12mone\u001b[39m                                                                                                \u001b[49m",
+          "\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "\u001b[48;5;71m \u001b[38;5;12mtwo\u001b[39m                                                                                                \u001b[49m",
+          "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 0
+      }
+    },
+    {
+      "test": "transcript_user_text_keeps_order_whitespace_and_history",
+      "input": {
+        "op": "user",
+        "content": "one\n\ntwo",
+        "history": true
+      },
+      "expected": {
+        "rows": [
+          "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "\u001b[48;5;71m \u001b[38;5;12mone\u001b[39m                                                                                                \u001b[49m",
+          "\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "\u001b[48;5;71m \u001b[38;5;12mtwo\u001b[39m                                                                                                \u001b[49m",
+          "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [
+          "one\n\ntwo"
+        ],
+        "renders": 0
+      }
+    },
+    {
+      "test": "transcript_user_text_keeps_order_whitespace_and_history",
+      "input": {
+        "op": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "x",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "a"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "history": false
+      },
+      "expected": {
+        "rows": [
+          "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "\u001b[48;5;71m \u001b[38;5;12mzaz\u001b[39m                                                                                                \u001b[49m",
+          "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 0
+      }
+    },
+    {
+      "test": "transcript_user_text_keeps_order_whitespace_and_history",
+      "input": {
+        "op": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "x",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "a"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "history": true
+      },
+      "expected": {
+        "rows": [
+          "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "\u001b[48;5;71m \u001b[38;5;12mzaz\u001b[39m                                                                                                \u001b[49m",
+          "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [
+          "zaz"
+        ],
+        "renders": 0
+      }
+    },
+    {
+      "test": "transcript_user_text_keeps_order_whitespace_and_history",
+      "input": {
+        "op": "user",
+        "content": [
+          {
+            "type": "image",
+            "data": "x",
+            "mimeType": "image/png"
+          }
+        ],
+        "history": false
+      },
+      "expected": {
+        "rows": [],
+        "pending": [],
+        "history": [],
+        "renders": 0
+      }
+    },
+    {
+      "test": "transcript_user_text_keeps_order_whitespace_and_history",
+      "input": {
+        "op": "user",
+        "content": [
+          {
+            "type": "image",
+            "data": "x",
+            "mimeType": "image/png"
+          }
+        ],
+        "history": true
+      },
+      "expected": {
+        "rows": [],
+        "pending": [],
+        "history": [],
+        "renders": 0
+      }
+    },
+    {
+      "test": "transcript_skill_block_and_trailing_user_keep_distinct_rows",
+      "input": {
+        "op": "skill",
+        "tail": "",
+        "expanded": false
+      },
+      "expected": {
+        "rows": [
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "\u001b[48;5;72m \u001b[38;5;14m\u001b[1m[skill]\u001b[22m \u001b[39m\u001b[38;5;13mbuild\u001b[39m\u001b[38;5;9m (ctrl+o to expand)\u001b[39m                                                                   \u001b[49m",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [
+          "<skill name=\"build\" location=\"/skills/build/SKILL.md\">\nDo **work**.\n</skill>"
+        ],
+        "renders": 0
+      }
+    },
+    {
+      "test": "transcript_skill_block_and_trailing_user_keep_distinct_rows",
+      "input": {
+        "op": "skill",
+        "tail": "",
+        "expanded": true
+      },
+      "expected": {
+        "rows": [
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "\u001b[48;5;72m \u001b[38;5;14m\u001b[1m[skill]\u001b[22m\u001b[39m                                                                                            \u001b[49m",
+          "\u001b[48;5;72m \u001b[1m\u001b[38;5;13mbuild\u001b[39m\u001b[22m                                                                                              \u001b[49m",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "\u001b[48;5;72m \u001b[38;5;13mDo \u001b[39m\u001b[1m\u001b[38;5;13mwork\u001b[39m\u001b[22m\u001b[38;5;13m\u001b[38;5;13m.\u001b[39m                                                                                           \u001b[49m",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [
+          "<skill name=\"build\" location=\"/skills/build/SKILL.md\">\nDo **work**.\n</skill>"
+        ],
+        "renders": 0
+      }
+    },
+    {
+      "test": "transcript_skill_block_and_trailing_user_keep_distinct_rows",
+      "input": {
+        "op": "skill",
+        "tail": "\n\nFollow this",
+        "expanded": false
+      },
+      "expected": {
+        "rows": [
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "\u001b[48;5;72m \u001b[38;5;14m\u001b[1m[skill]\u001b[22m \u001b[39m\u001b[38;5;13mbuild\u001b[39m\u001b[38;5;9m (ctrl+o to expand)\u001b[39m                                                                   \u001b[49m",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "\u001b[48;5;71m \u001b[38;5;12mFollow this\u001b[39m                                                                                        \u001b[49m",
+          "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [
+          "<skill name=\"build\" location=\"/skills/build/SKILL.md\">\nDo **work**.\n</skill>\n\nFollow this"
+        ],
+        "renders": 0
+      }
+    },
+    {
+      "test": "transcript_skill_block_and_trailing_user_keep_distinct_rows",
+      "input": {
+        "op": "skill",
+        "tail": "\n\nFollow this",
+        "expanded": true
+      },
+      "expected": {
+        "rows": [
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "\u001b[48;5;72m \u001b[38;5;14m\u001b[1m[skill]\u001b[22m\u001b[39m                                                                                            \u001b[49m",
+          "\u001b[48;5;72m \u001b[1m\u001b[38;5;13mbuild\u001b[39m\u001b[22m                                                                                              \u001b[49m",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "\u001b[48;5;72m \u001b[38;5;13mDo \u001b[39m\u001b[1m\u001b[38;5;13mwork\u001b[39m\u001b[22m\u001b[38;5;13m\u001b[38;5;13m.\u001b[39m                                                                                           \u001b[49m",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "\u001b[48;5;71m \u001b[38;5;12mFollow this\u001b[39m                                                                                        \u001b[49m",
+          "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [
+          "<skill name=\"build\" location=\"/skills/build/SKILL.md\">\nDo **work**.\n</skill>\n\nFollow this"
+        ],
+        "renders": 0
+      }
+    },
+    {
+      "test": "transcript_message_roles_use_existing_components",
+      "input": {
+        "op": "role",
+        "role": "custom",
+        "expanded": false
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "\u001b[48;5;72m \u001b[38;5;14m\u001b[1m[note]\u001b[22m\u001b[39m                                                                                             \u001b[49m",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "\u001b[48;5;72m \u001b[38;5;13mCUSTOM_BODY\u001b[39m                                                                                        \u001b[49m",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 0
+      }
+    },
+    {
+      "test": "transcript_message_roles_use_existing_components",
+      "input": {
+        "op": "role",
+        "role": "custom",
+        "expanded": true
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "\u001b[48;5;72m \u001b[38;5;14m\u001b[1m[note]\u001b[22m\u001b[39m                                                                                             \u001b[49m",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "\u001b[48;5;72m \u001b[38;5;13mCUSTOM_BODY\u001b[39m                                                                                        \u001b[49m",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 0
+      }
+    },
+    {
+      "test": "transcript_message_roles_use_existing_components",
+      "input": {
+        "op": "role",
+        "role": "branchSummary",
+        "expanded": false
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "\u001b[48;5;72m \u001b[38;5;14m\u001b[1m[branch]\u001b[22m\u001b[39m                                                                                           \u001b[49m",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "\u001b[48;5;72m \u001b[38;5;13mBranch summary (\u001b[39m\u001b[38;5;9mctrl+o\u001b[39m\u001b[38;5;13m to expand)\u001b[39m                                                                  \u001b[49m",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 0
+      }
+    },
+    {
+      "test": "transcript_message_roles_use_existing_components",
+      "input": {
+        "op": "role",
+        "role": "branchSummary",
+        "expanded": true
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "\u001b[48;5;72m \u001b[38;5;14m\u001b[1m[branch]\u001b[22m\u001b[39m                                                                                           \u001b[49m",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "\u001b[48;5;72m \u001b[1m\u001b[38;5;13mBranch Summary\u001b[39m\u001b[22m                                                                                     \u001b[49m",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "\u001b[48;5;72m \u001b[38;5;13mBRANCH_BODY\u001b[39m                                                                                        \u001b[49m",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 0
+      }
+    },
+    {
+      "test": "transcript_message_roles_use_existing_components",
+      "input": {
+        "op": "role",
+        "role": "compactionSummary",
+        "expanded": false
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "\u001b[48;5;72m \u001b[38;5;14m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "\u001b[48;5;72m \u001b[38;5;13mCompacted from 1,234 tokens (\u001b[39m\u001b[38;5;9mctrl+o\u001b[39m\u001b[38;5;13m to expand)\u001b[39m                                                     \u001b[49m",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 0
+      }
+    },
+    {
+      "test": "transcript_message_roles_use_existing_components",
+      "input": {
+        "op": "role",
+        "role": "compactionSummary",
+        "expanded": true
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "\u001b[48;5;72m \u001b[38;5;14m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "\u001b[48;5;72m \u001b[1m\u001b[38;5;13mCompacted from 1,234 tokens\u001b[39m\u001b[22m                                                                        \u001b[49m",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "\u001b[48;5;72m \u001b[38;5;13mCOMPACTION_BODY\u001b[39m                                                                                    \u001b[49m",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 0
+      }
+    },
+    {
+      "test": "transcript_message_roles_use_existing_components",
+      "input": {
+        "op": "role",
+        "role": "bashExecution",
+        "expanded": false
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[38;5;45m\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+          " \u001b[38;5;45m\u001b[1m$ echo controlled\u001b[22m\u001b[39m                                                                                  ",
+          "                                                                                                    ",
+          " \u001b[38;5;8mOUTPUT\u001b[39m                                                                                             ",
+          "\u001b[38;5;45m\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_message_roles_use_existing_components",
+      "input": {
+        "op": "role",
+        "role": "bashExecution",
+        "expanded": true
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[38;5;45m\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m",
+          " \u001b[38;5;45m\u001b[1m$ echo controlled\u001b[22m\u001b[39m                                                                                  ",
+          "                                                                                                    ",
+          " \u001b[38;5;8mOUTPUT\u001b[39m                                                                                             ",
+          "\u001b[38;5;45m\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u001b[39m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_message_roles_use_existing_components",
+      "input": {
+        "op": "role",
+        "role": "assistant",
+        "expanded": false
+      },
+      "expected": {
+        "rows": [
+          "\u001b]133;A\u0007",
+          " \u001b[3m\u001b[38;5;11mREASON\u001b[39m\u001b[23m                                                                                             ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 ANSWER                                                                                             "
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 0
+      }
+    },
+    {
+      "test": "transcript_message_roles_use_existing_components",
+      "input": {
+        "op": "role",
+        "role": "assistant",
+        "expanded": true
+      },
+      "expected": {
+        "rows": [
+          "\u001b]133;A\u0007",
+          " \u001b[3m\u001b[38;5;11mREASON\u001b[39m\u001b[23m                                                                                             ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 ANSWER                                                                                             "
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 0
+      }
+    },
+    {
+      "test": "transcript_message_roles_use_existing_components",
+      "input": {
+        "op": "role",
+        "role": "toolResult",
+        "expanded": false
+      },
+      "expected": {
+        "rows": [],
+        "pending": [],
+        "history": [],
+        "renders": 0
+      }
+    },
+    {
+      "test": "transcript_message_roles_use_existing_components",
+      "input": {
+        "op": "role",
+        "role": "toolResult",
+        "expanded": true
+      },
+      "expected": {
+        "rows": [],
+        "pending": [],
+        "history": [],
+        "renders": 0
+      }
+    },
+    {
+      "test": "transcript_custom_display_filters_before_renderer_lookup",
+      "input": {
+        "op": "custom",
+        "display": false,
+        "renderer": "none"
+      },
+      "expected": {
+        "rows": [],
+        "pending": [],
+        "history": [],
+        "renders": 0,
+        "calls": 0
+      }
+    },
+    {
+      "test": "transcript_custom_display_filters_before_renderer_lookup",
+      "input": {
+        "op": "custom",
+        "display": false,
+        "renderer": "component"
+      },
+      "expected": {
+        "rows": [],
+        "pending": [],
+        "history": [],
+        "renders": 0,
+        "calls": 0
+      }
+    },
+    {
+      "test": "transcript_custom_display_filters_before_renderer_lookup",
+      "input": {
+        "op": "custom",
+        "display": false,
+        "renderer": "undefined"
+      },
+      "expected": {
+        "rows": [],
+        "pending": [],
+        "history": [],
+        "renders": 0,
+        "calls": 0
+      }
+    },
+    {
+      "test": "transcript_custom_display_filters_before_renderer_lookup",
+      "input": {
+        "op": "custom",
+        "display": false,
+        "renderer": "throw"
+      },
+      "expected": {
+        "rows": [],
+        "pending": [],
+        "history": [],
+        "renders": 0,
+        "calls": 0
+      }
+    },
+    {
+      "test": "transcript_custom_display_filters_before_renderer_lookup",
+      "input": {
+        "op": "custom",
+        "display": true,
+        "renderer": "none"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "\u001b[48;5;72m \u001b[38;5;14m\u001b[1m[note]\u001b[22m\u001b[39m                                                                                             \u001b[49m",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "\u001b[48;5;72m \u001b[38;5;13mFALLBACK\u001b[39m                                                                                           \u001b[49m",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 0,
+        "calls": 0
+      }
+    },
+    {
+      "test": "transcript_custom_display_filters_before_renderer_lookup",
+      "input": {
+        "op": "custom",
+        "display": true,
+        "renderer": "component"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "RENDERED_CUSTOM                                                                                     "
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 0,
+        "calls": 1
+      }
+    },
+    {
+      "test": "transcript_custom_display_filters_before_renderer_lookup",
+      "input": {
+        "op": "custom",
+        "display": true,
+        "renderer": "undefined"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "\u001b[48;5;72m \u001b[38;5;14m\u001b[1m[note]\u001b[22m\u001b[39m                                                                                             \u001b[49m",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "\u001b[48;5;72m \u001b[38;5;13mFALLBACK\u001b[39m                                                                                           \u001b[49m",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 0,
+        "calls": 1
+      }
+    },
+    {
+      "test": "transcript_custom_display_filters_before_renderer_lookup",
+      "input": {
+        "op": "custom",
+        "display": true,
+        "renderer": "throw"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "\u001b[48;5;72m \u001b[38;5;14m\u001b[1m[note]\u001b[22m\u001b[39m                                                                                             \u001b[49m",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "\u001b[48;5;72m \u001b[38;5;13mFALLBACK\u001b[39m                                                                                           \u001b[49m",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 0,
+        "calls": 1
+      }
+    },
+    {
+      "test": "transcript_status_reuses_only_the_adjacent_owned_pair",
+      "input": {
+        "op": "status",
+        "separator": false
+      },
+      "expected": {
+        "rows": [
+          "",
+          " \u001b[38;5;9mSTATUS_TWO\u001b[39m                                                                                         "
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 2
+      }
+    },
+    {
+      "test": "transcript_status_reuses_only_the_adjacent_owned_pair",
+      "input": {
+        "op": "status",
+        "separator": true
+      },
+      "expected": {
+        "rows": [
+          "",
+          " \u001b[38;5;9mSTATUS_ONE\u001b[39m                                                                                         ",
+          "",
+          "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "\u001b[48;5;71m \u001b[38;5;12mINTERVENING\u001b[39m                                                                                        \u001b[49m",
+          "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "",
+          " \u001b[38;5;9mSTATUS_TWO\u001b[39m                                                                                         "
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 2
+      }
+    },
+    {
+      "test": "transcript_status_reuses_only_the_adjacent_owned_pair",
+      "input": {
+        "op": "status",
+        "cleared": true
+      },
+      "expected": {
+        "rows": [
+          "",
+          " \u001b[38;5;9mFRESH\u001b[39m                                                                                              "
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 2
+      }
+    },
+    {
+      "test": "transcript_failed_tool_calls_finish_with_the_exact_notice",
+      "input": {
+        "op": "stop",
+        "stop": "stop",
+        "retry": 0,
+        "error": null
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;73m   \"z\": 1,                                                                                          \u001b[49m",
+          "\u001b[48;5;73m   \"a\": 2                                                                                           \u001b[49m",
+          "\u001b[48;5;73m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m"
+        ],
+        "pending": [
+          "call"
+        ],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_failed_tool_calls_finish_with_the_exact_notice",
+      "input": {
+        "op": "stop",
+        "stop": "toolUse",
+        "retry": 0,
+        "error": null
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;73m   \"z\": 1,                                                                                          \u001b[49m",
+          "\u001b[48;5;73m   \"a\": 2                                                                                           \u001b[49m",
+          "\u001b[48;5;73m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m"
+        ],
+        "pending": [
+          "call"
+        ],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_failed_tool_calls_finish_with_the_exact_notice",
+      "input": {
+        "op": "stop",
+        "stop": "length",
+        "retry": 0,
+        "error": null
+      },
+      "expected": {
+        "rows": [
+          "",
+          " \u001b[38;5;6mError: Model stopped because it reached the maximum output token limit. The response may be        ",
+          " \u001b[38;5;6mincomplete.\u001b[39m                                                                                        ",
+          "",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;73m   \"z\": 1,                                                                                          \u001b[49m",
+          "\u001b[48;5;73m   \"a\": 2                                                                                           \u001b[49m",
+          "\u001b[48;5;73m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m"
+        ],
+        "pending": [
+          "call"
+        ],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_failed_tool_calls_finish_with_the_exact_notice",
+      "input": {
+        "op": "stop",
+        "stop": "aborted",
+        "retry": 0,
+        "error": null
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;75m                                                                                                    \u001b[49m",
+          "\u001b[48;5;75m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;75m                                                                                                    \u001b[49m",
+          "\u001b[48;5;75m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;75m   \"z\": 1,                                                                                          \u001b[49m",
+          "\u001b[48;5;75m   \"a\": 2                                                                                           \u001b[49m",
+          "\u001b[48;5;75m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;75m Operation aborted                                                                                  \u001b[49m",
+          "\u001b[48;5;75m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_failed_tool_calls_finish_with_the_exact_notice",
+      "input": {
+        "op": "stop",
+        "stop": "aborted",
+        "retry": 1,
+        "error": null
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;75m                                                                                                    \u001b[49m",
+          "\u001b[48;5;75m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;75m                                                                                                    \u001b[49m",
+          "\u001b[48;5;75m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;75m   \"z\": 1,                                                                                          \u001b[49m",
+          "\u001b[48;5;75m   \"a\": 2                                                                                           \u001b[49m",
+          "\u001b[48;5;75m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;75m Aborted after 1 retry attempt                                                                      \u001b[49m",
+          "\u001b[48;5;75m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_failed_tool_calls_finish_with_the_exact_notice",
+      "input": {
+        "op": "stop",
+        "stop": "aborted",
+        "retry": 2,
+        "error": null
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;75m                                                                                                    \u001b[49m",
+          "\u001b[48;5;75m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;75m                                                                                                    \u001b[49m",
+          "\u001b[48;5;75m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;75m   \"z\": 1,                                                                                          \u001b[49m",
+          "\u001b[48;5;75m   \"a\": 2                                                                                           \u001b[49m",
+          "\u001b[48;5;75m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;75m Aborted after 2 retry attempts                                                                     \u001b[49m",
+          "\u001b[48;5;75m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_failed_tool_calls_finish_with_the_exact_notice",
+      "input": {
+        "op": "stop",
+        "stop": "error",
+        "retry": 0,
+        "error": null
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;75m                                                                                                    \u001b[49m",
+          "\u001b[48;5;75m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;75m                                                                                                    \u001b[49m",
+          "\u001b[48;5;75m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;75m   \"z\": 1,                                                                                          \u001b[49m",
+          "\u001b[48;5;75m   \"a\": 2                                                                                           \u001b[49m",
+          "\u001b[48;5;75m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;75m Error                                                                                              \u001b[49m",
+          "\u001b[48;5;75m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_failed_tool_calls_finish_with_the_exact_notice",
+      "input": {
+        "op": "stop",
+        "stop": "error",
+        "retry": 0,
+        "error": ""
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;75m                                                                                                    \u001b[49m",
+          "\u001b[48;5;75m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;75m                                                                                                    \u001b[49m",
+          "\u001b[48;5;75m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;75m   \"z\": 1,                                                                                          \u001b[49m",
+          "\u001b[48;5;75m   \"a\": 2                                                                                           \u001b[49m",
+          "\u001b[48;5;75m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;75m Error                                                                                              \u001b[49m",
+          "\u001b[48;5;75m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_failed_tool_calls_finish_with_the_exact_notice",
+      "input": {
+        "op": "stop",
+        "stop": "error",
+        "retry": 0,
+        "error": "PROVIDER_FAILURE"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;75m                                                                                                    \u001b[49m",
+          "\u001b[48;5;75m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;75m                                                                                                    \u001b[49m",
+          "\u001b[48;5;75m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;75m   \"z\": 1,                                                                                          \u001b[49m",
+          "\u001b[48;5;75m   \"a\": 2                                                                                           \u001b[49m",
+          "\u001b[48;5;75m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;75m PROVIDER_FAILURE                                                                                   \u001b[49m",
+          "\u001b[48;5;75m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_replay_pairs_results_and_retains_only_unresolved_rows",
+      "input": {
+        "op": "pair",
+        "kind": "pending"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;73m   \"z\": 1,                                                                                          \u001b[49m",
+          "\u001b[48;5;73m   \"a\": 2                                                                                           \u001b[49m",
+          "\u001b[48;5;73m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;73m   \"z\": 1,                                                                                          \u001b[49m",
+          "\u001b[48;5;73m   \"a\": 2                                                                                           \u001b[49m",
+          "\u001b[48;5;73m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m"
+        ],
+        "pending": [
+          "z",
+          "a"
+        ],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_replay_pairs_results_and_retains_only_unresolved_rows",
+      "input": {
+        "op": "pair",
+        "kind": "completed"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;74m   \"z\": 1,                                                                                          \u001b[49m",
+          "\u001b[48;5;74m   \"a\": 2                                                                                           \u001b[49m",
+          "\u001b[48;5;74m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;74m HISTORICAL_RESULT                                                                                  \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;74m   \"z\": 1,                                                                                          \u001b[49m",
+          "\u001b[48;5;74m   \"a\": 2                                                                                           \u001b[49m",
+          "\u001b[48;5;74m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;74m HISTORICAL_RESULT                                                                                  \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_replay_pairs_results_and_retains_only_unresolved_rows",
+      "input": {
+        "op": "pair",
+        "kind": "orphan"
+      },
+      "expected": {
+        "rows": [],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_replay_pairs_results_and_retains_only_unresolved_rows",
+      "input": {
+        "op": "pair",
+        "kind": "mixed"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;74m   \"z\": 1,                                                                                          \u001b[49m",
+          "\u001b[48;5;74m   \"a\": 2                                                                                           \u001b[49m",
+          "\u001b[48;5;74m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;74m HISTORICAL_RESULT                                                                                  \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;73m   \"z\": 1,                                                                                          \u001b[49m",
+          "\u001b[48;5;73m   \"a\": 2                                                                                           \u001b[49m",
+          "\u001b[48;5;73m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m"
+        ],
+        "pending": [
+          "a"
+        ],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_replay_pairs_results_and_retains_only_unresolved_rows",
+      "input": {
+        "op": "pair",
+        "kind": "out_of_order"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;73m   \"z\": 1,                                                                                          \u001b[49m",
+          "\u001b[48;5;73m   \"a\": 2                                                                                           \u001b[49m",
+          "\u001b[48;5;73m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;73m   \"z\": 1,                                                                                          \u001b[49m",
+          "\u001b[48;5;73m   \"a\": 2                                                                                           \u001b[49m",
+          "\u001b[48;5;73m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m"
+        ],
+        "pending": [
+          "z",
+          "a"
+        ],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_replay_pairs_results_and_retains_only_unresolved_rows",
+      "input": {
+        "op": "pair",
+        "kind": "duplicate_id"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;73m   \"z\": 1,                                                                                          \u001b[49m",
+          "\u001b[48;5;73m   \"a\": 2                                                                                           \u001b[49m",
+          "\u001b[48;5;73m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;74m   \"z\": 1,                                                                                          \u001b[49m",
+          "\u001b[48;5;74m   \"a\": 2                                                                                           \u001b[49m",
+          "\u001b[48;5;74m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;74m HISTORICAL_RESULT                                                                                  \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_initial_replay_updates_footer_history_and_compaction_notice",
+      "input": {
+        "op": "initial",
+        "count": 0
+      },
+      "expected": {
+        "rows": [
+          "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "\u001b[48;5;71m \u001b[38;5;12mHISTORY\u001b[39m                                                                                            \u001b[49m",
+          "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;74m   \"z\": 1,                                                                                          \u001b[49m",
+          "\u001b[48;5;74m   \"a\": 2                                                                                           \u001b[49m",
+          "\u001b[48;5;74m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;74m HISTORICAL_RESULT                                                                                  \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [
+          "HISTORY"
+        ],
+        "renders": 2
+      }
+    },
+    {
+      "test": "transcript_initial_replay_updates_footer_history_and_compaction_notice",
+      "input": {
+        "op": "initial",
+        "count": 1
+      },
+      "expected": {
+        "rows": [
+          "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "\u001b[48;5;71m \u001b[38;5;12mHISTORY\u001b[39m                                                                                            \u001b[49m",
+          "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;74m   \"z\": 1,                                                                                          \u001b[49m",
+          "\u001b[48;5;74m   \"a\": 2                                                                                           \u001b[49m",
+          "\u001b[48;5;74m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;74m HISTORICAL_RESULT                                                                                  \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "",
+          " \u001b[38;5;9mSession compacted 1 time\u001b[39m                                                                           "
+        ],
+        "pending": [],
+        "history": [
+          "HISTORY"
+        ],
+        "renders": 3
+      }
+    },
+    {
+      "test": "transcript_initial_replay_updates_footer_history_and_compaction_notice",
+      "input": {
+        "op": "initial",
+        "count": 2
+      },
+      "expected": {
+        "rows": [
+          "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "\u001b[48;5;71m \u001b[38;5;12mHISTORY\u001b[39m                                                                                            \u001b[49m",
+          "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;74m   \"z\": 1,                                                                                          \u001b[49m",
+          "\u001b[48;5;74m   \"a\": 2                                                                                           \u001b[49m",
+          "\u001b[48;5;74m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;74m HISTORICAL_RESULT                                                                                  \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "",
+          " \u001b[38;5;9mSession compacted 2 times\u001b[39m                                                                          "
+        ],
+        "pending": [],
+        "history": [
+          "HISTORY"
+        ],
+        "renders": 3
+      }
+    },
+    {
+      "test": "transcript_thinking_toggle_rebuilds_pending_rows_and_keeps_streaming_tail",
+      "input": {
+        "op": "thinking",
+        "initial": false,
+        "streaming": false
+      },
+      "expected": {
+        "rows": [
+          "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "\u001b[48;5;71m \u001b[38;5;12mHISTORY\u001b[39m                                                                                            \u001b[49m",
+          "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "",
+          " \u001b[3m\u001b[38;5;11mThinking...\u001b[39m\u001b[23m                                                                                        ",
+          "",
+          " ANSWER                                                                                             ",
+          "",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;73m   \"z\": 1,                                                                                          \u001b[49m",
+          "\u001b[48;5;73m   \"a\": 2                                                                                           \u001b[49m",
+          "\u001b[48;5;73m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "",
+          " \u001b[38;5;9mThinking blocks: hidden\u001b[39m                                                                            "
+        ],
+        "pending": [
+          "call"
+        ],
+        "history": [],
+        "renders": 3,
+        "hidden": true
+      }
+    },
+    {
+      "test": "transcript_thinking_toggle_rebuilds_pending_rows_and_keeps_streaming_tail",
+      "input": {
+        "op": "thinking",
+        "initial": true,
+        "streaming": false
+      },
+      "expected": {
+        "rows": [
+          "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "\u001b[48;5;71m \u001b[38;5;12mHISTORY\u001b[39m                                                                                            \u001b[49m",
+          "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "",
+          " \u001b[3m\u001b[38;5;11mREASON\u001b[39m\u001b[23m                                                                                             ",
+          "",
+          " ANSWER                                                                                             ",
+          "",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;73m   \"z\": 1,                                                                                          \u001b[49m",
+          "\u001b[48;5;73m   \"a\": 2                                                                                           \u001b[49m",
+          "\u001b[48;5;73m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "",
+          " \u001b[38;5;9mThinking blocks: visible\u001b[39m                                                                           "
+        ],
+        "pending": [
+          "call"
+        ],
+        "history": [],
+        "renders": 3,
+        "hidden": false
+      }
+    },
+    {
+      "test": "transcript_expansion_reaches_active_header_and_expandable_rows",
+      "input": {
+        "op": "expand",
+        "custom": false,
+        "expanded": false
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "\u001b[48;5;72m \u001b[38;5;14m\u001b[1m[branch]\u001b[22m\u001b[39m                                                                                           \u001b[49m",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "\u001b[48;5;72m \u001b[38;5;13mBranch summary (\u001b[39m\u001b[38;5;9mctrl+o\u001b[39m\u001b[38;5;13m to expand)\u001b[39m                                                                  \u001b[49m",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "PLAIN                                                                                               "
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1,
+        "header": [
+          "HEADER_SHORT                                                                                        "
+        ]
+      }
+    },
+    {
+      "test": "transcript_expansion_reaches_active_header_and_expandable_rows",
+      "input": {
+        "op": "expand",
+        "custom": false,
+        "expanded": true
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "\u001b[48;5;72m \u001b[38;5;14m\u001b[1m[branch]\u001b[22m\u001b[39m                                                                                           \u001b[49m",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "\u001b[48;5;72m \u001b[1m\u001b[38;5;13mBranch Summary\u001b[39m\u001b[22m                                                                                     \u001b[49m",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "\u001b[48;5;72m \u001b[38;5;13mBRANCH_BODY\u001b[39m                                                                                        \u001b[49m",
+          "\u001b[48;5;72m                                                                                                    \u001b[49m",
+          "PLAIN                                                                                               "
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1,
+        "header": [
+          "HEADER_FULL                                                                                         "
+        ]
+      }
+    },
+    {
+      "test": "transcript_footer_refresh_selects_the_current_mode_border",
+      "input": {
+        "op": "border",
+        "bash": false,
+        "level": "off"
+      },
+      "expected": {
+        "rows": [
+          "\u001b[38;5;39mBORDER\u001b[39m"
+        ],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_footer_refresh_selects_the_current_mode_border",
+      "input": {
+        "op": "border",
+        "bash": false,
+        "level": "minimal"
+      },
+      "expected": {
+        "rows": [
+          "\u001b[38;5;40mBORDER\u001b[39m"
+        ],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_footer_refresh_selects_the_current_mode_border",
+      "input": {
+        "op": "border",
+        "bash": false,
+        "level": "low"
+      },
+      "expected": {
+        "rows": [
+          "\u001b[38;5;41mBORDER\u001b[39m"
+        ],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_footer_refresh_selects_the_current_mode_border",
+      "input": {
+        "op": "border",
+        "bash": false,
+        "level": "medium"
+      },
+      "expected": {
+        "rows": [
+          "\u001b[38;5;42mBORDER\u001b[39m"
+        ],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_footer_refresh_selects_the_current_mode_border",
+      "input": {
+        "op": "border",
+        "bash": false,
+        "level": "high"
+      },
+      "expected": {
+        "rows": [
+          "\u001b[38;5;43mBORDER\u001b[39m"
+        ],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_footer_refresh_selects_the_current_mode_border",
+      "input": {
+        "op": "border",
+        "bash": false,
+        "level": "xhigh"
+      },
+      "expected": {
+        "rows": [
+          "\u001b[38;5;44mBORDER\u001b[39m"
+        ],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_footer_refresh_selects_the_current_mode_border",
+      "input": {
+        "op": "border",
+        "bash": true,
+        "level": "off"
+      },
+      "expected": {
+        "rows": [
+          "\u001b[38;5;45mBORDER\u001b[39m"
+        ],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_footer_refresh_selects_the_current_mode_border",
+      "input": {
+        "op": "border",
+        "bash": true,
+        "level": "minimal"
+      },
+      "expected": {
+        "rows": [
+          "\u001b[38;5;45mBORDER\u001b[39m"
+        ],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_footer_refresh_selects_the_current_mode_border",
+      "input": {
+        "op": "border",
+        "bash": true,
+        "level": "low"
+      },
+      "expected": {
+        "rows": [
+          "\u001b[38;5;45mBORDER\u001b[39m"
+        ],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_footer_refresh_selects_the_current_mode_border",
+      "input": {
+        "op": "border",
+        "bash": true,
+        "level": "medium"
+      },
+      "expected": {
+        "rows": [
+          "\u001b[38;5;45mBORDER\u001b[39m"
+        ],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_footer_refresh_selects_the_current_mode_border",
+      "input": {
+        "op": "border",
+        "bash": true,
+        "level": "high"
+      },
+      "expected": {
+        "rows": [
+          "\u001b[38;5;45mBORDER\u001b[39m"
+        ],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_footer_refresh_selects_the_current_mode_border",
+      "input": {
+        "op": "border",
+        "bash": true,
+        "level": "xhigh"
+      },
+      "expected": {
+        "rows": [
+          "\u001b[38;5;45mBORDER\u001b[39m"
+        ],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_replay_options_do_not_repopulate_history_on_rebuild",
+      "input": {
+        "op": "options",
+        "updateFooter": false,
+        "populateHistory": false
+      },
+      "expected": {
+        "rows": [
+          "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "\u001b[48;5;71m \u001b[38;5;12mHISTORY\u001b[39m                                                                                            \u001b[49m",
+          "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;73m   \"z\": 1,                                                                                          \u001b[49m",
+          "\u001b[48;5;73m   \"a\": 2                                                                                           \u001b[49m",
+          "\u001b[48;5;73m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m"
+        ],
+        "pending": [
+          "new"
+        ],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_replay_options_do_not_repopulate_history_on_rebuild",
+      "input": {
+        "op": "options",
+        "updateFooter": false,
+        "populateHistory": true
+      },
+      "expected": {
+        "rows": [
+          "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "\u001b[48;5;71m \u001b[38;5;12mHISTORY\u001b[39m                                                                                            \u001b[49m",
+          "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;73m   \"z\": 1,                                                                                          \u001b[49m",
+          "\u001b[48;5;73m   \"a\": 2                                                                                           \u001b[49m",
+          "\u001b[48;5;73m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m"
+        ],
+        "pending": [
+          "new"
+        ],
+        "history": [
+          "HISTORY"
+        ],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_replay_options_do_not_repopulate_history_on_rebuild",
+      "input": {
+        "op": "options",
+        "updateFooter": true,
+        "populateHistory": false
+      },
+      "expected": {
+        "rows": [
+          "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "\u001b[48;5;71m \u001b[38;5;12mHISTORY\u001b[39m                                                                                            \u001b[49m",
+          "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;73m   \"z\": 1,                                                                                          \u001b[49m",
+          "\u001b[48;5;73m   \"a\": 2                                                                                           \u001b[49m",
+          "\u001b[48;5;73m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m"
+        ],
+        "pending": [
+          "new"
+        ],
+        "history": [],
+        "renders": 2
+      }
+    },
+    {
+      "test": "transcript_replay_options_do_not_repopulate_history_on_rebuild",
+      "input": {
+        "op": "options",
+        "updateFooter": true,
+        "populateHistory": true
+      },
+      "expected": {
+        "rows": [
+          "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "\u001b[48;5;71m \u001b[38;5;12mHISTORY\u001b[39m                                                                                            \u001b[49m",
+          "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;73m   \"z\": 1,                                                                                          \u001b[49m",
+          "\u001b[48;5;73m   \"a\": 2                                                                                           \u001b[49m",
+          "\u001b[48;5;73m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m"
+        ],
+        "pending": [
+          "new"
+        ],
+        "history": [
+          "HISTORY"
+        ],
+        "renders": 2
+      }
+    },
+    {
+      "test": "transcript_tool_settings_reach_renderers_independently",
+      "input": {
+        "op": "settings",
+        "showImages": false,
+        "indent": ""
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m REGISTERED                                                                                         \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "",
+          "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "\u001b[48;5;71m \u001b[38;5;22m```unknown\u001b[39m                                                                                         \u001b[49m",
+          "\u001b[48;5;71m \u001b[38;5;21mCODE\u001b[39m                                                                                               \u001b[49m",
+          "\u001b[48;5;71m \u001b[38;5;22m```\u001b[39m                                                                                                \u001b[49m",
+          "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m"
+        ],
+        "pending": [
+          "call"
+        ],
+        "history": [],
+        "renders": 1,
+        "events": [
+          {
+            "showImages": false,
+            "cwd": "/work",
+            "id": "call"
+          },
+          {
+            "showImages": false,
+            "cwd": "/work",
+            "id": "call"
+          }
+        ]
+      }
+    },
+    {
+      "test": "transcript_tool_settings_reach_renderers_independently",
+      "input": {
+        "op": "settings",
+        "showImages": false,
+        "indent": "    "
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m REGISTERED                                                                                         \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "",
+          "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "\u001b[48;5;71m \u001b[38;5;22m```unknown\u001b[39m                                                                                         \u001b[49m",
+          "\u001b[48;5;71m     \u001b[38;5;21mCODE\u001b[39m                                                                                           \u001b[49m",
+          "\u001b[48;5;71m \u001b[38;5;22m```\u001b[39m                                                                                                \u001b[49m",
+          "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m"
+        ],
+        "pending": [
+          "call"
+        ],
+        "history": [],
+        "renders": 1,
+        "events": [
+          {
+            "showImages": false,
+            "cwd": "/work",
+            "id": "call"
+          },
+          {
+            "showImages": false,
+            "cwd": "/work",
+            "id": "call"
+          }
+        ]
+      }
+    },
+    {
+      "test": "transcript_tool_settings_reach_renderers_independently",
+      "input": {
+        "op": "settings",
+        "showImages": true,
+        "indent": ""
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m REGISTERED                                                                                         \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "",
+          "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "\u001b[48;5;71m \u001b[38;5;22m```unknown\u001b[39m                                                                                         \u001b[49m",
+          "\u001b[48;5;71m \u001b[38;5;21mCODE\u001b[39m                                                                                               \u001b[49m",
+          "\u001b[48;5;71m \u001b[38;5;22m```\u001b[39m                                                                                                \u001b[49m",
+          "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m"
+        ],
+        "pending": [
+          "call"
+        ],
+        "history": [],
+        "renders": 1,
+        "events": [
+          {
+            "showImages": true,
+            "cwd": "/work",
+            "id": "call"
+          },
+          {
+            "showImages": true,
+            "cwd": "/work",
+            "id": "call"
+          }
+        ]
+      }
+    },
+    {
+      "test": "transcript_tool_settings_reach_renderers_independently",
+      "input": {
+        "op": "settings",
+        "showImages": true,
+        "indent": "    "
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m REGISTERED                                                                                         \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "",
+          "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+          "\u001b[48;5;71m \u001b[38;5;22m```unknown\u001b[39m                                                                                         \u001b[49m",
+          "\u001b[48;5;71m     \u001b[38;5;21mCODE\u001b[39m                                                                                           \u001b[49m",
+          "\u001b[48;5;71m \u001b[38;5;22m```\u001b[39m                                                                                                \u001b[49m",
+          "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m"
+        ],
+        "pending": [
+          "call"
+        ],
+        "history": [],
+        "renders": 1,
+        "events": [
+          {
+            "showImages": true,
+            "cwd": "/work",
+            "id": "call"
+          },
+          {
+            "showImages": true,
+            "cwd": "/work",
+            "id": "call"
+          }
+        ]
+      }
+    },
+    {
+      "test": "transcript_registered_tool_and_builtin_fallbacks_keep_one_lookup",
+      "input": {
+        "op": "lookup",
+        "name": "read",
+        "override": "none"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;1mcontrolled.txt\u001b[39m                                                                                \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;16mHISTORICAL_RESULT\u001b[39m                                                                                  \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_registered_tool_and_builtin_fallbacks_keep_one_lookup",
+      "input": {
+        "op": "lookup",
+        "name": "read",
+        "override": "call"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m CUSTOM_CALL                                                                                        \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;16mHISTORICAL_RESULT\u001b[39m                                                                                  \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_registered_tool_and_builtin_fallbacks_keep_one_lookup",
+      "input": {
+        "op": "lookup",
+        "name": "read",
+        "override": "result"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;1mcontrolled.txt\u001b[39m                                                                                \u001b[49m",
+          "\u001b[48;5;74m CUSTOM_RESULT                                                                                      \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_registered_tool_and_builtin_fallbacks_keep_one_lookup",
+      "input": {
+        "op": "lookup",
+        "name": "bash",
+        "override": "none"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1m$ echo value\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;16mHISTORICAL_RESULT\u001b[39m                                                                                  \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_registered_tool_and_builtin_fallbacks_keep_one_lookup",
+      "input": {
+        "op": "lookup",
+        "name": "bash",
+        "override": "call"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m CUSTOM_CALL                                                                                        \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;16mHISTORICAL_RESULT\u001b[39m                                                                                  \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_registered_tool_and_builtin_fallbacks_keep_one_lookup",
+      "input": {
+        "op": "lookup",
+        "name": "bash",
+        "override": "result"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1m$ echo value\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;74m CUSTOM_RESULT                                                                                      \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_registered_tool_and_builtin_fallbacks_keep_one_lookup",
+      "input": {
+        "op": "lookup",
+        "name": "edit",
+        "override": "none"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m \u001b[38;5;15m\u001b[1medit\u001b[22m\u001b[39m \u001b[38;5;1mcontrolled.txt\u001b[39m                                                                                \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_registered_tool_and_builtin_fallbacks_keep_one_lookup",
+      "input": {
+        "op": "lookup",
+        "name": "edit",
+        "override": "call"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "CUSTOM_CALL                                                                                         "
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_registered_tool_and_builtin_fallbacks_keep_one_lookup",
+      "input": {
+        "op": "lookup",
+        "name": "edit",
+        "override": "result"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "\u001b[48;5;73m \u001b[38;5;15m\u001b[1medit\u001b[22m\u001b[39m \u001b[38;5;1mcontrolled.txt\u001b[39m                                                                                \u001b[49m",
+          "\u001b[48;5;73m                                                                                                    \u001b[49m",
+          "CUSTOM_RESULT                                                                                       "
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_registered_tool_and_builtin_fallbacks_keep_one_lookup",
+      "input": {
+        "op": "lookup",
+        "name": "write",
+        "override": "none"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;1mcontrolled.txt\u001b[39m                                                                               \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_registered_tool_and_builtin_fallbacks_keep_one_lookup",
+      "input": {
+        "op": "lookup",
+        "name": "write",
+        "override": "call"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m CUSTOM_CALL                                                                                        \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_registered_tool_and_builtin_fallbacks_keep_one_lookup",
+      "input": {
+        "op": "lookup",
+        "name": "write",
+        "override": "result"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;1mcontrolled.txt\u001b[39m                                                                               \u001b[49m",
+          "\u001b[48;5;74m CUSTOM_RESULT                                                                                      \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_registered_tool_and_builtin_fallbacks_keep_one_lookup",
+      "input": {
+        "op": "lookup",
+        "name": "grep",
+        "override": "none"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1mgrep\u001b[22m\u001b[39m \u001b[38;5;1m/needle/\u001b[39m\u001b[38;5;16m in controlled.txt\u001b[39m                                                                    \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;16mHISTORICAL_RESULT\u001b[39m                                                                                  \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_registered_tool_and_builtin_fallbacks_keep_one_lookup",
+      "input": {
+        "op": "lookup",
+        "name": "grep",
+        "override": "call"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m CUSTOM_CALL                                                                                        \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;16mHISTORICAL_RESULT\u001b[39m                                                                                  \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_registered_tool_and_builtin_fallbacks_keep_one_lookup",
+      "input": {
+        "op": "lookup",
+        "name": "grep",
+        "override": "result"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1mgrep\u001b[22m\u001b[39m \u001b[38;5;1m/needle/\u001b[39m\u001b[38;5;16m in controlled.txt\u001b[39m                                                                    \u001b[49m",
+          "\u001b[48;5;74m CUSTOM_RESULT                                                                                      \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_registered_tool_and_builtin_fallbacks_keep_one_lookup",
+      "input": {
+        "op": "lookup",
+        "name": "find",
+        "override": "none"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1mfind\u001b[22m\u001b[39m \u001b[38;5;1mneedle\u001b[39m\u001b[38;5;16m in controlled.txt\u001b[39m                                                                      \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;16mHISTORICAL_RESULT\u001b[39m                                                                                  \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_registered_tool_and_builtin_fallbacks_keep_one_lookup",
+      "input": {
+        "op": "lookup",
+        "name": "find",
+        "override": "call"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m CUSTOM_CALL                                                                                        \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;16mHISTORICAL_RESULT\u001b[39m                                                                                  \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_registered_tool_and_builtin_fallbacks_keep_one_lookup",
+      "input": {
+        "op": "lookup",
+        "name": "find",
+        "override": "result"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1mfind\u001b[22m\u001b[39m \u001b[38;5;1mneedle\u001b[39m\u001b[38;5;16m in controlled.txt\u001b[39m                                                                      \u001b[49m",
+          "\u001b[48;5;74m CUSTOM_RESULT                                                                                      \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_registered_tool_and_builtin_fallbacks_keep_one_lookup",
+      "input": {
+        "op": "lookup",
+        "name": "ls",
+        "override": "none"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1mls\u001b[22m\u001b[39m \u001b[38;5;1mcontrolled.txt\u001b[39m                                                                                  \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;16mHISTORICAL_RESULT\u001b[39m                                                                                  \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_registered_tool_and_builtin_fallbacks_keep_one_lookup",
+      "input": {
+        "op": "lookup",
+        "name": "ls",
+        "override": "call"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m CUSTOM_CALL                                                                                        \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;16mHISTORICAL_RESULT\u001b[39m                                                                                  \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_registered_tool_and_builtin_fallbacks_keep_one_lookup",
+      "input": {
+        "op": "lookup",
+        "name": "ls",
+        "override": "result"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1mls\u001b[22m\u001b[39m \u001b[38;5;1mcontrolled.txt\u001b[39m                                                                                  \u001b[49m",
+          "\u001b[48;5;74m CUSTOM_RESULT                                                                                      \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_registered_tool_and_builtin_fallbacks_keep_one_lookup",
+      "input": {
+        "op": "lookup",
+        "name": "unknown_tool",
+        "override": "none"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;74m   \"path\": \"controlled.txt\",                                                                        \u001b[49m",
+          "\u001b[48;5;74m   \"command\": \"echo value\",                                                                         \u001b[49m",
+          "\u001b[48;5;74m   \"pattern\": \"needle\"                                                                              \u001b[49m",
+          "\u001b[48;5;74m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;74m HISTORICAL_RESULT                                                                                  \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_registered_tool_and_builtin_fallbacks_keep_one_lookup",
+      "input": {
+        "op": "lookup",
+        "name": "unknown_tool",
+        "override": "call"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m CUSTOM_CALL                                                                                        \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;16mHISTORICAL_RESULT\u001b[39m                                                                                  \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_registered_tool_and_builtin_fallbacks_keep_one_lookup",
+      "input": {
+        "op": "lookup",
+        "name": "unknown_tool",
+        "override": "result"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;74m CUSTOM_RESULT                                                                                      \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_expansion_keeps_the_captured_child_array_live",
+      "input": {
+        "op": "walk",
+        "edit": "append"
+      },
+      "expected": {
+        "seen": [
+          "first",
+          "second",
+          "extra"
+        ],
+        "children": [
+          "first",
+          "second",
+          "extra"
+        ],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_expansion_keeps_the_captured_child_array_live",
+      "input": {
+        "op": "walk",
+        "edit": "remove_next"
+      },
+      "expected": {
+        "seen": [
+          "first"
+        ],
+        "children": [
+          "first"
+        ],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_expansion_keeps_the_captured_child_array_live",
+      "input": {
+        "op": "walk",
+        "edit": "replace_array"
+      },
+      "expected": {
+        "seen": [
+          "first",
+          "second"
+        ],
+        "children": [
+          "extra"
+        ],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_expansion_keeps_the_captured_child_array_live",
+      "input": {
+        "op": "walk",
+        "edit": "clear"
+      },
+      "expected": {
+        "seen": [
+          "first",
+          "second"
+        ],
+        "children": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_message_field_domains_use_the_existing_boundary",
+      "input": {
+        "op": "details",
+        "kind": "missing"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;74m RESULT                                                                                             \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1,
+        "events": [
+          {
+            "hasDetails": true,
+            "detailsUndefined": true,
+            "details": null
+          }
+        ]
+      }
+    },
+    {
+      "test": "transcript_message_field_domains_use_the_existing_boundary",
+      "input": {
+        "op": "details",
+        "kind": "null"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;74m RESULT                                                                                             \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1,
+        "events": [
+          {
+            "hasDetails": true,
+            "detailsUndefined": false,
+            "details": null
+          }
+        ]
+      }
+    },
+    {
+      "test": "transcript_message_field_domains_use_the_existing_boundary",
+      "input": {
+        "op": "details",
+        "kind": "string"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;74m RESULT                                                                                             \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1,
+        "events": [
+          {
+            "hasDetails": true,
+            "detailsUndefined": false,
+            "details": "detail"
+          }
+        ]
+      }
+    },
+    {
+      "test": "transcript_message_field_domains_use_the_existing_boundary",
+      "input": {
+        "op": "details",
+        "kind": "number"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;74m RESULT                                                                                             \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1,
+        "events": [
+          {
+            "hasDetails": true,
+            "detailsUndefined": false,
+            "details": 0
+          }
+        ]
+      }
+    },
+    {
+      "test": "transcript_message_field_domains_use_the_existing_boundary",
+      "input": {
+        "op": "details",
+        "kind": "boolean"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;74m RESULT                                                                                             \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1,
+        "events": [
+          {
+            "hasDetails": true,
+            "detailsUndefined": false,
+            "details": false
+          }
+        ]
+      }
+    },
+    {
+      "test": "transcript_message_field_domains_use_the_existing_boundary",
+      "input": {
+        "op": "details",
+        "kind": "object"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;74m RESULT                                                                                             \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1,
+        "events": [
+          {
+            "hasDetails": true,
+            "detailsUndefined": false,
+            "details": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "test": "transcript_message_field_domains_use_the_existing_boundary",
+      "input": {
+        "op": "details",
+        "kind": "array"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;74m RESULT                                                                                             \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1,
+        "events": [
+          {
+            "hasDetails": true,
+            "detailsUndefined": false,
+            "details": [
+              1,
+              2
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "test": "transcript_tool_settings_reach_renderers_independently",
+      "input": {
+        "op": "image_settings",
+        "showImages": false,
+        "width": 7
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;74m   \"z\": 1,                                                                                          \u001b[49m",
+          "\u001b[48;5;74m   \"a\": 2                                                                                           \u001b[49m",
+          "\u001b[48;5;74m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;74m [Image: [image/png] 1x1]                                                                           \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_tool_settings_reach_renderers_independently",
+      "input": {
+        "op": "image_settings",
+        "showImages": false,
+        "width": 19
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;74m   \"z\": 1,                                                                                          \u001b[49m",
+          "\u001b[48;5;74m   \"a\": 2                                                                                           \u001b[49m",
+          "\u001b[48;5;74m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;74m [Image: [image/png] 1x1]                                                                           \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_tool_settings_reach_renderers_independently",
+      "input": {
+        "op": "image_settings",
+        "showImages": true,
+        "width": 7
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;74m   \"z\": 1,                                                                                          \u001b[49m",
+          "\u001b[48;5;74m   \"a\": 2                                                                                           \u001b[49m",
+          "\u001b[48;5;74m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "",
+          "",
+          "",
+          "",
+          "\u001b[3A\u001b]1337;File=inline=1;width=7;height=auto:iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAEElEQVR4AQEFAPr/AAAAAAAABQABZHiVOAAAAABJRU5ErkJggg==\u0007"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_tool_settings_reach_renderers_independently",
+      "input": {
+        "op": "image_settings",
+        "showImages": true,
+        "width": 19
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;74m   \"z\": 1,                                                                                          \u001b[49m",
+          "\u001b[48;5;74m   \"a\": 2                                                                                           \u001b[49m",
+          "\u001b[48;5;74m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "\u001b[9A\u001b]1337;File=inline=1;width=19;height=auto:iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAEElEQVR4AQEFAPr/AAAAAAAABQABZHiVOAAAAABJRU5ErkJggg==\u0007"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_tool_argument_domains_reach_the_existing_renderer",
+      "input": {
+        "op": "argument_domain",
+        "kind": "null"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m null                                                                                               \u001b[49m",
+          "\u001b[48;5;74m HISTORICAL_RESULT                                                                                  \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_tool_argument_domains_reach_the_existing_renderer",
+      "input": {
+        "op": "argument_domain",
+        "kind": "string"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \"args\"                                                                                             \u001b[49m",
+          "\u001b[48;5;74m HISTORICAL_RESULT                                                                                  \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_tool_argument_domains_reach_the_existing_renderer",
+      "input": {
+        "op": "argument_domain",
+        "kind": "number"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m 0                                                                                                  \u001b[49m",
+          "\u001b[48;5;74m HISTORICAL_RESULT                                                                                  \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_tool_argument_domains_reach_the_existing_renderer",
+      "input": {
+        "op": "argument_domain",
+        "kind": "boolean"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m false                                                                                              \u001b[49m",
+          "\u001b[48;5;74m HISTORICAL_RESULT                                                                                  \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_tool_argument_domains_reach_the_existing_renderer",
+      "input": {
+        "op": "argument_domain",
+        "kind": "object"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m {                                                                                                  \u001b[49m",
+          "\u001b[48;5;74m   \"z\": 1,                                                                                          \u001b[49m",
+          "\u001b[48;5;74m   \"a\": 2                                                                                           \u001b[49m",
+          "\u001b[48;5;74m }                                                                                                  \u001b[49m",
+          "\u001b[48;5;74m HISTORICAL_RESULT                                                                                  \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_tool_argument_domains_reach_the_existing_renderer",
+      "input": {
+        "op": "argument_domain",
+        "kind": "array"
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m",
+          "\u001b[48;5;74m [                                                                                                  \u001b[49m",
+          "\u001b[48;5;74m   1,                                                                                               \u001b[49m",
+          "\u001b[48;5;74m   2                                                                                                \u001b[49m",
+          "\u001b[48;5;74m ]                                                                                                  \u001b[49m",
+          "\u001b[48;5;74m HISTORICAL_RESULT                                                                                  \u001b[49m",
+          "\u001b[48;5;74m                                                                                                    \u001b[49m"
+        ],
+        "pending": [],
+        "history": [],
+        "renders": 1
+      }
+    },
+    {
+      "test": "transcript_recorded_assistant_keeps_the_existing_paint_owner",
+      "input": {
+        "op": "assistant_source",
+        "hide": false,
+        "kind": "mixed"
+      },
+      "expected": {
+        "before": [
+          "\u001b]133;A\u0007",
+          " \u001b[3m\u001b[38;5;11mREASON\u001b[39m\u001b[23m                                                                                             ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 ANSWER                                                                                             "
+        ],
+        "toggled": [
+          "\u001b]133;A\u0007",
+          " \u001b[3m\u001b[38;5;11mThinking...\u001b[39m\u001b[23m                                                                                        ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 ANSWER                                                                                             "
+        ],
+        "labelled": [
+          "\u001b]133;A\u0007",
+          " \u001b[3m\u001b[38;5;11mHIDDEN_LABEL\u001b[39m\u001b[23m                                                                                       ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 ANSWER                                                                                             "
+        ],
+        "updated": [
+          "\u001b]133;A\u0007",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 NEXT                                                                                               "
+        ]
+      }
+    },
+    {
+      "test": "transcript_recorded_assistant_keeps_the_existing_paint_owner",
+      "input": {
+        "op": "assistant_source",
+        "hide": false,
+        "kind": "aborted"
+      },
+      "expected": {
+        "before": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mOperation aborted\u001b[39m                                                                                  "
+        ],
+        "toggled": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mOperation aborted\u001b[39m                                                                                  "
+        ],
+        "labelled": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mOperation aborted\u001b[39m                                                                                  "
+        ],
+        "updated": [
+          "\u001b]133;A\u0007",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 NEXT                                                                                               "
+        ]
+      }
+    },
+    {
+      "test": "transcript_recorded_assistant_keeps_the_existing_paint_owner",
+      "input": {
+        "op": "assistant_source",
+        "hide": false,
+        "kind": "error"
+      },
+      "expected": {
+        "before": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mError: DETAIL\u001b[39m                                                                                      "
+        ],
+        "toggled": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mError: DETAIL\u001b[39m                                                                                      "
+        ],
+        "labelled": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mError: DETAIL\u001b[39m                                                                                      "
+        ],
+        "updated": [
+          "\u001b]133;A\u0007",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 NEXT                                                                                               "
+        ]
+      }
+    },
+    {
+      "test": "transcript_recorded_assistant_keeps_the_existing_paint_owner",
+      "input": {
+        "op": "assistant_source",
+        "hide": false,
+        "kind": "error_empty"
+      },
+      "expected": {
+        "before": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mError: Unknown error\u001b[39m                                                                               "
+        ],
+        "toggled": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mError: Unknown error\u001b[39m                                                                               "
+        ],
+        "labelled": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mError: Unknown error\u001b[39m                                                                               "
+        ],
+        "updated": [
+          "\u001b]133;A\u0007",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 NEXT                                                                                               "
+        ]
+      }
+    },
+    {
+      "test": "transcript_recorded_assistant_keeps_the_existing_paint_owner",
+      "input": {
+        "op": "assistant_source",
+        "hide": false,
+        "kind": "error_missing"
+      },
+      "expected": {
+        "before": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mError: Unknown error\u001b[39m                                                                               "
+        ],
+        "toggled": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mError: Unknown error\u001b[39m                                                                               "
+        ],
+        "labelled": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mError: Unknown error\u001b[39m                                                                               "
+        ],
+        "updated": [
+          "\u001b]133;A\u0007",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 NEXT                                                                                               "
+        ]
+      }
+    },
+    {
+      "test": "transcript_recorded_assistant_keeps_the_existing_paint_owner",
+      "input": {
+        "op": "assistant_source",
+        "hide": false,
+        "kind": "abort_custom"
+      },
+      "expected": {
+        "before": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mABORT_DETAIL\u001b[39m                                                                                       "
+        ],
+        "toggled": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mABORT_DETAIL\u001b[39m                                                                                       "
+        ],
+        "labelled": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mABORT_DETAIL\u001b[39m                                                                                       "
+        ],
+        "updated": [
+          "\u001b]133;A\u0007",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 NEXT                                                                                               "
+        ]
+      }
+    },
+    {
+      "test": "transcript_recorded_assistant_keeps_the_existing_paint_owner",
+      "input": {
+        "op": "assistant_source",
+        "hide": false,
+        "kind": "abort_sentinel"
+      },
+      "expected": {
+        "before": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mOperation aborted\u001b[39m                                                                                  "
+        ],
+        "toggled": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mOperation aborted\u001b[39m                                                                                  "
+        ],
+        "labelled": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mOperation aborted\u001b[39m                                                                                  "
+        ],
+        "updated": [
+          "\u001b]133;A\u0007",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 NEXT                                                                                               "
+        ]
+      }
+    },
+    {
+      "test": "transcript_recorded_assistant_keeps_the_existing_paint_owner",
+      "input": {
+        "op": "assistant_source",
+        "hide": true,
+        "kind": "mixed"
+      },
+      "expected": {
+        "before": [
+          "\u001b]133;A\u0007",
+          " \u001b[3m\u001b[38;5;11mThinking...\u001b[39m\u001b[23m                                                                                        ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 ANSWER                                                                                             "
+        ],
+        "toggled": [
+          "\u001b]133;A\u0007",
+          " \u001b[3m\u001b[38;5;11mREASON\u001b[39m\u001b[23m                                                                                             ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 ANSWER                                                                                             "
+        ],
+        "labelled": [
+          "\u001b]133;A\u0007",
+          " \u001b[3m\u001b[38;5;11mREASON\u001b[39m\u001b[23m                                                                                             ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 ANSWER                                                                                             "
+        ],
+        "updated": [
+          "\u001b]133;A\u0007",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 NEXT                                                                                               "
+        ]
+      }
+    },
+    {
+      "test": "transcript_recorded_assistant_keeps_the_existing_paint_owner",
+      "input": {
+        "op": "assistant_source",
+        "hide": true,
+        "kind": "aborted"
+      },
+      "expected": {
+        "before": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mOperation aborted\u001b[39m                                                                                  "
+        ],
+        "toggled": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mOperation aborted\u001b[39m                                                                                  "
+        ],
+        "labelled": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mOperation aborted\u001b[39m                                                                                  "
+        ],
+        "updated": [
+          "\u001b]133;A\u0007",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 NEXT                                                                                               "
+        ]
+      }
+    },
+    {
+      "test": "transcript_recorded_assistant_keeps_the_existing_paint_owner",
+      "input": {
+        "op": "assistant_source",
+        "hide": true,
+        "kind": "error"
+      },
+      "expected": {
+        "before": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mError: DETAIL\u001b[39m                                                                                      "
+        ],
+        "toggled": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mError: DETAIL\u001b[39m                                                                                      "
+        ],
+        "labelled": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mError: DETAIL\u001b[39m                                                                                      "
+        ],
+        "updated": [
+          "\u001b]133;A\u0007",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 NEXT                                                                                               "
+        ]
+      }
+    },
+    {
+      "test": "transcript_recorded_assistant_keeps_the_existing_paint_owner",
+      "input": {
+        "op": "assistant_source",
+        "hide": true,
+        "kind": "error_empty"
+      },
+      "expected": {
+        "before": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mError: Unknown error\u001b[39m                                                                               "
+        ],
+        "toggled": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mError: Unknown error\u001b[39m                                                                               "
+        ],
+        "labelled": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mError: Unknown error\u001b[39m                                                                               "
+        ],
+        "updated": [
+          "\u001b]133;A\u0007",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 NEXT                                                                                               "
+        ]
+      }
+    },
+    {
+      "test": "transcript_recorded_assistant_keeps_the_existing_paint_owner",
+      "input": {
+        "op": "assistant_source",
+        "hide": true,
+        "kind": "error_missing"
+      },
+      "expected": {
+        "before": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mError: Unknown error\u001b[39m                                                                               "
+        ],
+        "toggled": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mError: Unknown error\u001b[39m                                                                               "
+        ],
+        "labelled": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mError: Unknown error\u001b[39m                                                                               "
+        ],
+        "updated": [
+          "\u001b]133;A\u0007",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 NEXT                                                                                               "
+        ]
+      }
+    },
+    {
+      "test": "transcript_recorded_assistant_keeps_the_existing_paint_owner",
+      "input": {
+        "op": "assistant_source",
+        "hide": true,
+        "kind": "abort_custom"
+      },
+      "expected": {
+        "before": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mABORT_DETAIL\u001b[39m                                                                                       "
+        ],
+        "toggled": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mABORT_DETAIL\u001b[39m                                                                                       "
+        ],
+        "labelled": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mABORT_DETAIL\u001b[39m                                                                                       "
+        ],
+        "updated": [
+          "\u001b]133;A\u0007",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 NEXT                                                                                               "
+        ]
+      }
+    },
+    {
+      "test": "transcript_recorded_assistant_keeps_the_existing_paint_owner",
+      "input": {
+        "op": "assistant_source",
+        "hide": true,
+        "kind": "abort_sentinel"
+      },
+      "expected": {
+        "before": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mOperation aborted\u001b[39m                                                                                  "
+        ],
+        "toggled": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mOperation aborted\u001b[39m                                                                                  "
+        ],
+        "labelled": [
+          "\u001b]133;A\u0007",
+          " PARTIAL                                                                                            ",
+          "",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;5;6mOperation aborted\u001b[39m                                                                                  "
+        ],
+        "updated": [
+          "\u001b]133;A\u0007",
+          "\u001b]133;B\u0007\u001b]133;C\u0007 NEXT                                                                                               "
+        ]
+      }
+    }
+  ]
+}

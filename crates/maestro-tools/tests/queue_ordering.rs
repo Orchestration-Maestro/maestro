@@ -128,6 +128,10 @@ fn mutation_queue_raw_names_preserve_literal_path_identity() {
         std::os::unix::fs::symlink(&target, dir.path().join("alias.txt")).unwrap();
         std::fs::hard_link(&target, dir.path().join("hard.txt")).unwrap();
         let [first, second] = serde_json::from_value::<Input>(row.input).unwrap().pair;
+        if cfg!(not(unix)) && (first == "alias.txt" || second == "alias.txt") {
+            // Only Unix fixtures create the symbolic link this pair names.
+            continue;
+        }
         let spell = |name: &str| {
             if IN_DIRECTORY.contains(&name) {
                 format!("{}/{name}", dir.text())
@@ -223,4 +227,59 @@ fn mutation_queue_dropped_middle_waiter_preserves_active_head() {
             .all(|event| !event.starts_with(['b', 'e', 'f']))
     );
     assert_eq!(&events[4..], ["d:start", "d:end", "g:start", "g:end"]);
+}
+
+#[cfg(unix)]
+#[test]
+fn mutation_queue_returns_canonicalization_errors_other_than_not_found() {
+    let dir = Scratch::new().unwrap();
+    let loop_path = format!("{}/loop", dir.text());
+    std::os::unix::fs::symlink("loop", &loop_path).unwrap();
+    let journal = Journal::default();
+    let mut queued = queue(&loop_path, tracked(&journal, "a", None));
+    let error = ready(&mut queued).unwrap_err();
+    assert_eq!(
+        error.code,
+        Some(maestro_models::DiagnosticCode::Number(
+            if cfg!(target_os = "macos") {
+                62.0
+            } else {
+                40.0
+            }
+        ))
+    );
+    assert!(journal.entries().is_empty());
+}
+
+#[test]
+fn mutation_queue_runs_below_a_regular_file() {
+    let dir = Scratch::new().unwrap();
+    let file = dir.file("file.txt", b"x");
+    let journal = Journal::default();
+    let mut call = queue(&format!("{file}/child"), tracked(&journal, "a", None));
+    ready(&mut call).unwrap();
+    assert_eq!(journal.entries(), ["a:start", "a:end"]);
+}
+
+#[cfg(unix)]
+#[test]
+fn edit_below_a_regular_file_reports_access_failure() {
+    let dir = Scratch::new().unwrap();
+    let file = dir.file("file.txt", b"x");
+    let path = format!("{file}/child");
+    let tool: crate::edit_support::Tool = maestro_tools::create_edit_tool_definition(
+        dir.text(),
+        maestro_tools::EditToolOptions::default(),
+    );
+    let error = crate::runtime::run(crate::edit_support::start(
+        &tool,
+        crate::edit_support::input(&path, "x", "y"),
+        None,
+    ))
+    .err()
+    .unwrap();
+    assert_eq!(
+        error.message,
+        format!("Could not edit file: {path}. Error code: 20.")
+    );
 }

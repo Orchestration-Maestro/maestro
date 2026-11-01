@@ -1085,7 +1085,7 @@ fn mutable_lower_definition()
         definition: Tool {
             name: "lower".into(),
             description: String::new(),
-            parameters: json!({}),
+            parameters: json!({}).into(),
         },
         label: "lower".into(),
         prompt_snippet: None,

@@ -55,10 +55,12 @@ pub struct OutputAccumulator {
     tail: String,
     /// Complete decoded byte count.
     decoded_bytes: usize,
-    /// Complete newline-entry count.
+    /// Completed lines plus a nonempty open line.
     lines: usize,
     /// Current decoded line's byte count.
     last_line_bytes: usize,
+    /// Byte count of the most recent newline-terminated line.
+    ended_line_bytes: usize,
     /// Artifact path once opened.
     path: Option<String>,
     /// Owned buffered artifact writer.
@@ -89,8 +91,9 @@ impl OutputAccumulator {
             raw_bytes: 0,
             tail: String::new(),
             decoded_bytes: 0,
-            lines: 1,
+            lines: 0,
             last_line_bytes: 0,
+            ended_line_bytes: 0,
             path: None,
             writer: None,
         }
@@ -180,6 +183,12 @@ impl OutputAccumulator {
         self.last_line_bytes
     }
 
+    /// Return the byte count of the most recent newline-terminated line.
+    #[must_use]
+    pub(crate) fn ended_line_bytes(&self) -> usize {
+        self.ended_line_bytes
+    }
+
     /// Decode complete scalars, retaining only an incomplete suffix.
     fn decode(&mut self, data: &[u8]) {
         let text = self.decoder.push(data);
@@ -203,10 +212,18 @@ impl OutputAccumulator {
             self.trim_tail();
         }
         let newlines = text.bytes().filter(|&byte| byte == b'\n').count();
-        self.lines += newlines;
-        self.last_line_bytes = text
-            .rfind('\n')
-            .map_or(self.last_line_bytes + text.len(), |i| text.len() - i - 1);
+        self.lines = self.lines - usize::from(self.last_line_bytes > 0) + newlines;
+        if let Some(last_newline) = text.rfind('\n') {
+            self.ended_line_bytes = text[..last_newline]
+                .rfind('\n')
+                .map_or(self.last_line_bytes + last_newline, |i| {
+                    last_newline - i - 1
+                });
+            self.last_line_bytes = text.len() - last_newline - 1;
+        } else {
+            self.last_line_bytes += text.len();
+        }
+        self.lines += usize::from(self.last_line_bytes > 0);
     }
     /// Evict old text only beyond the hysteresis threshold.
     fn trim_tail(&mut self) {
@@ -219,13 +236,15 @@ impl OutputAccumulator {
         }
         self.tail = self.tail[start..].to_owned();
     }
-    /// Exclude a leading fragment only when its terminating newline is retained.
+    /// Exclude a leading fragment only when its terminating newline is retained and more text
+    /// follows; a fragment that is the whole tail stays, as the end of an oversized line.
     fn snapshot_text(&self) -> &str {
         if self.line_boundary {
             &self.tail
         } else {
             self.tail
                 .find('\n')
+                .filter(|&i| i + 1 < self.tail.len())
                 .map_or(&self.tail, |i| &self.tail[i + 1..])
         }
     }
@@ -266,6 +285,43 @@ pub(crate) fn open_artifact(prefix: &str) -> io::Result<(String, File)> {
         .create_new(true)
         .open(&path)?;
     Ok((path, file))
+}
+
+/// Creates a distinct private directory under the native temporary root.
+///
+/// `prefix` is a nonempty leaf name. Unix directories are created with mode `0700`;
+/// other hosts use their default directory access controls. The caller owns cleanup.
+///
+/// # Errors
+/// Returns invalid-prefix, random-source, non-UTF-8 path or directory-creation errors.
+pub fn make_temp_dir(prefix: &str) -> io::Result<String> {
+    if prefix.is_empty() || prefix.contains(['/', '\\', '\0', ':']) || matches!(prefix, "." | "..")
+    {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "temporary prefix must be a leaf name",
+        ));
+    }
+    let builder = &mut std::fs::DirBuilder::new();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::DirBuilderExt;
+        builder.mode(0o700);
+    }
+    loop {
+        let path = std::env::temp_dir().join(format!("{prefix}{}", random_id()?));
+        let path = path.into_os_string().into_string().map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                "temporary path is not valid UTF-8",
+            )
+        })?;
+        match builder.create(&path) {
+            Ok(()) => return Ok(path),
+            Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {}
+            Err(error) => return Err(error),
+        }
+    }
 }
 
 /// Generate eight random bytes as sixteen lowercase hexadecimal digits.

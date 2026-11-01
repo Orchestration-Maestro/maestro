@@ -1,0 +1,222 @@
+{
+  "metadata": {
+    "order": [
+      {
+        "operation": "registerCommand",
+        "name": "reload-runtime"
+      },
+      {
+        "operation": "registerTool",
+        "name": "reload_runtime"
+      }
+    ],
+    "command": {
+      "name": "reload-runtime",
+      "description": "Reload extensions, skills, prompts, and themes",
+      "completions": false
+    },
+    "tool": {
+      "name": "reload_runtime",
+      "label": "Reload Runtime",
+      "description": "Reload extensions, skills, prompts, and themes",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  },
+  "commands": [
+    {
+      "name": "command-empty",
+      "input": {
+        "args": ""
+      },
+      "expected": {
+        "calls": [
+          {
+            "operation": "reload"
+          }
+        ],
+        "outcome": "fulfilled"
+      }
+    },
+    {
+      "name": "command-extra",
+      "input": {
+        "args": "ignored Ω / other"
+      },
+      "expected": {
+        "calls": [
+          {
+            "operation": "reload"
+          }
+        ],
+        "outcome": "fulfilled"
+      }
+    },
+    {
+      "name": "command-pending",
+      "input": {
+        "args": "",
+        "hold": true
+      },
+      "expected": {
+        "calls": [
+          {
+            "operation": "reload"
+          }
+        ],
+        "pendingBeforeRelease": true,
+        "outcome": "fulfilled"
+      }
+    },
+    {
+      "name": "command-rejected",
+      "input": {
+        "args": "ignored",
+        "error": "reload denied: Ω"
+      },
+      "expected": {
+        "calls": [
+          {
+            "operation": "reload"
+          }
+        ],
+        "outcome": "rejected",
+        "error": "reload denied: Ω"
+      }
+    }
+  ],
+  "tools": [
+    {
+      "name": "tool-empty",
+      "input": {
+        "params": {},
+        "aborted": false,
+        "repetitions": 1
+      },
+      "expected": {
+        "calls": [
+          {
+            "operation": "sendUserMessage",
+            "content": "/reload-runtime",
+            "options": {
+              "deliverAs": "followUp"
+            }
+          }
+        ],
+        "outcome": "fulfilled",
+        "results": [
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "Queued /reload-runtime as a follow-up command."
+              }
+            ],
+            "details": {}
+          }
+        ]
+      }
+    },
+    {
+      "name": "tool-unused-handles",
+      "input": {
+        "params": {
+          "unused": [
+            "Ω",
+            1,
+            false,
+            null
+          ]
+        },
+        "aborted": true,
+        "repetitions": 1
+      },
+      "expected": {
+        "calls": [
+          {
+            "operation": "sendUserMessage",
+            "content": "/reload-runtime",
+            "options": {
+              "deliverAs": "followUp"
+            }
+          }
+        ],
+        "outcome": "fulfilled",
+        "results": [
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "Queued /reload-runtime as a follow-up command."
+              }
+            ],
+            "details": {}
+          }
+        ]
+      }
+    },
+    {
+      "name": "tool-repeat",
+      "input": {
+        "params": {},
+        "aborted": false,
+        "repetitions": 2
+      },
+      "expected": {
+        "calls": [
+          {
+            "operation": "sendUserMessage",
+            "content": "/reload-runtime",
+            "options": {
+              "deliverAs": "followUp"
+            }
+          },
+          {
+            "operation": "sendUserMessage",
+            "content": "/reload-runtime",
+            "options": {
+              "deliverAs": "followUp"
+            }
+          }
+        ],
+        "outcome": "fulfilled",
+        "results": [
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "Queued /reload-runtime as a follow-up command."
+              }
+            ],
+            "details": {}
+          },
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "Queued /reload-runtime as a follow-up command."
+              }
+            ],
+            "details": {}
+          }
+        ]
+      }
+    },
+    {
+      "name": "tool-rejected",
+      "input": {
+        "params": {},
+        "aborted": false,
+        "repetitions": 1,
+        "error": "send denied: Ω"
+      },
+      "expected": {
+        "calls": [],
+        "outcome": "rejected",
+        "error": "send denied: Ω"
+      }
+    }
+  ]
+}

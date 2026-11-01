@@ -123,7 +123,7 @@ fn path(record: PathRecord) -> Option<PathBuf> {
 }
 /// Build native arguments, keeping user options before the metadata exclusion.
 fn command(program: &str, root: &str, input: &GrepToolInput) -> Command {
-    let mut command = Command::new(program);
+    let mut command = maestro_process::command(program);
     command.args(["--json", "--line-number", "--color=never", "--hidden"]);
     if input.ignore_case == Some(true) {
         command.arg("--ignore-case");

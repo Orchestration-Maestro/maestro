@@ -12,6 +12,7 @@ mod footer_support;
 #[path = "support/keybindings.rs"]
 mod keybindings;
 mod login_dialog;
+mod login_provider_admission;
 mod message_rendering;
 mod model_selection;
 mod model_selector_support;
@@ -19,15 +20,11 @@ mod model_selector_support;
 mod occurrences;
 #[path = "message_support/palette.rs"]
 mod palette;
+#[path = "support/platform_keys.rs"]
+mod platform_keys;
 mod provider_auth_selection;
 #[path = "support/recorded_keys/registry.rs"]
 mod recorded_registry;
-#[allow(
-    dead_code,
-    reason = "Shared terminal support exposes controls used by other crates."
-)]
-#[path = "../../maestro-test-terminal/tests/support/recording_terminal.rs"]
-mod recording_terminal;
 mod resource_configuration;
 #[path = "support/runtime_spy.rs"]
 mod runtime_spy;
@@ -47,7 +44,7 @@ mod session_picker_support;
 mod theme_document;
 // The session picker's helpers are compiled once, here and in the library tests that include it.
 use registry::input_support;
-use session_picker_support::{bindings, manual_runtime, published, registry};
+use session_picker_support::{bindings, manual_runtime, published, recording_terminal, registry};
 mod session_rename_and_delete;
 mod session_search;
 mod settings_display;

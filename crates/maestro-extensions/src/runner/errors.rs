@@ -4,7 +4,8 @@ use crate::{
     ExtensionExecution,
     types::{ExtensionError, ExtensionErrorListener},
 };
-use maestro_models::records::listeners::Listeners;
+use maestro_listeners::Listeners;
+use std::{cell::RefCell, rc::Rc};
 impl<E: ExtensionExecution> ExtensionRunner<E> {
     /// Adds a failure listener; the returned operation removes it.
     pub fn on_error(&self, listener: ExtensionErrorListener) -> impl Fn() + use<E> {
@@ -14,8 +15,21 @@ impl<E: ExtensionExecution> ExtensionRunner<E> {
     /// # Errors
     /// Returns the first listener failure.
     pub fn emit_error(&self, error: &ExtensionError) -> Result<(), crate::EventError> {
-        Listeners::try_for_each_live(&self.error_listeners, |listener| listener(error))
+        deliver(&self.error_listeners, error)
     }
+    /// Shares this runner's existing listener owner with retained UI capabilities.
+    pub(super) fn ui_error_reporter(&self) -> ExtensionErrorListener {
+        let listeners = Rc::clone(&self.error_listeners);
+        Rc::new(move |error| deliver(&listeners, error))
+    }
+}
+
+/// Delivers through the one live listener collection, outside collection borrows.
+fn deliver(
+    listeners: &RefCell<Listeners<ExtensionErrorListener>>,
+    error: &ExtensionError,
+) -> Result<(), crate::EventError> {
+    Listeners::try_for_each_live(listeners, |listener| listener(error))
 }
 
 /// Copies authored diagnostic fields without synthesizing engine stack text.
@@ -42,7 +56,7 @@ pub fn retained_diagnostic<'a>(
 }
 
 /// Projects callback diagnostics while preserving authored stack fields.
-pub(super) fn event_error(
+pub(crate) fn event_error(
     extension_path: String,
     event: &str,
     error: &crate::EventError,

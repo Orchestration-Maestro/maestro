@@ -1,8 +1,9 @@
 use super::{FauxAssistantContent, FauxAssistantMessageOptions, FauxToolCallOptions};
 use crate::{
-    AssistantContent, AssistantMessage, JsonObject, StopReason, TextContent, ThinkingContent,
-    ToolCall, Usage, records::diagnostics::timestamp_now,
+    AssistantContent, AssistantMessage, StopReason, TextContent, ThinkingContent, ToolCall, Usage,
+    records::diagnostics::timestamp_now,
 };
+use serde_json::Value;
 
 /// Generate an independent clock-prefixed opaque identity.
 pub(super) fn random_id(prefix: &str) -> String {
@@ -27,7 +28,7 @@ pub fn faux_thinking(thinking: impl Into<String>) -> ThinkingContent {
 /// Construct a tool call with supplied arguments and an optional identity.
 pub fn faux_tool_call(
     name: impl Into<String>,
-    arguments: JsonObject,
+    arguments: Value,
     options: FauxToolCallOptions,
 ) -> ToolCall {
     ToolCall {

@@ -3,7 +3,9 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
-mod thread_bound {
+use super::BaseSettingsLayer;
+
+pub(super) mod thread_bound {
     //! Marks storage adapters that the queue worker may own.
 
     /// Native adapters must be shareable with the queue worker thread.
@@ -34,6 +36,17 @@ pub enum SettingsScope {
     Project,
 }
 
+impl SettingsScope {
+    /// The scope's name as messages spell it.
+    #[must_use]
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Global => "global",
+            Self::Project => "project",
+        }
+    }
+}
+
 /// The cause carried by a storage failure.
 pub type SettingsStorageError = Box<dyn std::error::Error + Send + Sync>;
 
@@ -41,9 +54,20 @@ pub type SettingsStorageError = Box<dyn std::error::Error + Send + Sync>;
 /// stored text alone, or a failure.
 pub type SettingsUpdate = Result<Option<String>, SettingsStorageError>;
 
-/// A failure attributed to the scope whose load or save produced it.
+/// Distinguishes settings failures from accepted stored-value resolutions.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SettingsErrorKind {
+    /// A read, parse, write or explicit edit failure.
+    Failure,
+    /// A stored preference was resolved by a base lock or the registered decider.
+    StoredValueIgnored,
+}
+
+/// A failure or diagnostic attributed to its settings scope.
 #[derive(Debug)]
 pub struct SettingsError {
+    /// Whether this reports a failure or a resolved stored conflict.
+    pub kind: SettingsErrorKind,
     /// The scope whose operation failed.
     pub scope: SettingsScope,
     /// The underlying parser, I/O or adapter failure.
@@ -67,6 +91,33 @@ pub(super) fn share(storage: impl SettingsStorage + 'static) -> SettingsStorageH
 
 /// Raw-text storage for one scope at a time.
 pub trait SettingsStorage: thread_bound::StorageThreadBound {
+    /// Reads the last published base layer for this scope.
+    /// Adapters without base-layer persistence return no layer by default.
+    ///
+    /// # Errors
+    ///
+    /// Returns a storage or decoding failure without changing preferences.
+    fn read_base_layer(
+        &self,
+        _scope: SettingsScope,
+    ) -> Result<Option<BaseSettingsLayer>, SettingsStorageError> {
+        Ok(None)
+    }
+
+    /// Replaces or clears the persisted base record without editing raw preferences.
+    /// The default retains no record; adapters can opt into persistence.
+    ///
+    /// # Errors
+    ///
+    /// Returns an acquire, encoding or write failure.
+    fn write_base_layer(
+        &self,
+        _scope: SettingsScope,
+        _layer: Option<&BaseSettingsLayer>,
+    ) -> Result<(), SettingsStorageError> {
+        Ok(())
+    }
+
     /// Runs `update` exactly once, synchronously, with the current raw text
     /// (`None` when the scope has never been written), unless the adapter fails
     /// to acquire its exclusion or to read first; it then returns that failure
@@ -94,11 +145,12 @@ pub trait SettingsStorage: thread_bound::StorageThreadBound {
     /// The default delegates once to [`Self::with_lock`], preserving the supplied
     /// adapter's callback, exclusion and re-entry policy. Native decorators must
     /// forward this operation to retain the file adapter's write exclusion.
-    /// The file adapter creates the parent as needed and acquires its stable
-    /// sidecar before reading and invoking `update` exactly once. It releases
-    /// exclusion on every outcome; acquire/read failures skip the callback.
-    /// `Ok(None)` and callback failure leave settings bytes untouched but may
-    /// leave a newly created parent and sidecar, never a new settings file.
+    /// The file adapter creates the parent as needed and acquires the lock file
+    /// beside the settings file before reading and invoking `update` exactly once.
+    /// It releases exclusion and removes the lock file on every outcome;
+    /// acquire/read failures skip the callback. `Ok(None)` and callback failure
+    /// leave settings bytes untouched but may leave a newly created parent,
+    /// never a new settings file.
     ///
     /// # Errors
     ///

@@ -91,7 +91,7 @@ fn draw_tabs(
         let visible = full.intersect(rect).intersect(ui.clip_rect());
         let mut child = ui.new_child(egui::UiBuilder::new().id_salt(id).max_rect(*full));
         child.set_clip_rect(visible);
-        let selected = index == excel.selected;
+        let selected = index == excel.selected.get();
         let response = child.put(*full, button(label, selected));
         #[cfg(target_arch = "wasm32")]
         if response.gained_focus() {
@@ -112,12 +112,12 @@ fn draw_tabs(
             slots.push((index, visible, response.layer_id));
         }
         if response.clicked() && !response.clicked_by(egui::PointerButton::Primary) {
-            excel.selected = index;
+            excel.selected.set(index);
         }
     }
     let events = ui.input(|input| input.events.clone());
     for index in pointer_actions(&events, &mut excel.pressed, &slots, ui.ctx()) {
-        excel.selected = index;
+        excel.selected.set(index);
     }
     Ok(())
 }
@@ -151,7 +151,10 @@ fn sizes(excel: &Excel, ui: &mut egui::Ui, id: egui::Id) -> Vec<(egui::Id, egui:
             );
             (
                 id.with(index),
-                child.add(button(name, index == excel.selected)).rect.size(),
+                child
+                    .add(button(name, index == excel.selected.get()))
+                    .rect
+                    .size(),
             )
         })
         .collect()

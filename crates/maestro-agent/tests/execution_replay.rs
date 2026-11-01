@@ -185,7 +185,7 @@ macro_rules! replay {
                     maestro_models::Tool {
                         name: "echo".into(),
                         description: "Echo".into(),
-                        parameters: json!({"type":"object","properties":{"value":{"type":"number"}},"required":["value"]}),
+                        parameters: json!({"type":"object","properties":{"value":{"type":"number"}},"required":["value"]}).into(),
                     },
                     "Echo".into(),
                     Owner::new(move |id, args: Value, seen_signal, update| {
@@ -364,7 +364,7 @@ macro_rules! replay {
                     maestro_models::Tool {
                         name: "echo".into(),
                         description: "Echo".into(),
-                        parameters: json!({"type":"object","properties":{"value":{"type":"number"}},"required":["value"]}),
+                        parameters: json!({"type":"object","properties":{"value":{"type":"number"}},"required":["value"]}).into(),
                     },
                     "Echo".into(),
                     Owner::new(move |id, args, _, update| {
@@ -903,6 +903,7 @@ macro_rules! replay {
                         observations.lock().unwrap().push(json!({"call":"stop-after","sameContext":std::ptr::eq(context.context,&*before),"newRoles":context.new_messages.iter().map(|m|message(m)["role"].clone()).collect::<Vec<_>>(),"results":context.tool_results.iter().map(|m|m.tool_call_id.clone()).collect::<Vec<_>>()}));
                         Box::pin(std::future::ready(Ok(stop)))
                     })),
+                    prepare_next_turn: None,
                 }
             }
             /// Return a nonterminating empty tool result for stop-decision cases.
@@ -911,7 +912,7 @@ macro_rules! replay {
                     maestro_models::Tool {
                         name: "echo".into(),
                         description: "Echo".into(),
-                        parameters: json!({"type":"object","properties":{}}),
+                        parameters: json!({"type":"object","properties":{}}).into(),
                     },
                     "Echo".into(),
                     Owner::new(|_, _: Value, _, _| {

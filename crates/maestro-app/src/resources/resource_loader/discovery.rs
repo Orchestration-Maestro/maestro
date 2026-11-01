@@ -3,10 +3,10 @@
 use super::{DefaultEventBus, DefaultResourceLoader, ResourceExtensionPath, ResourceKind};
 use indexmap::IndexMap;
 use maestro_packages::{PackageManager, ResolvedPaths, ResolvedResource};
-use maestro_path::{SEP, join};
+use maestro_path::{SEP, expand_tilde_joined, join};
 use maestro_resources::{
     PathMetadata, SourceOrigin, SourceScope, canonicalize_path,
-    paths::{expand_tilde_text, home_directory, resolve},
+    paths::{home_directory, resolve},
 };
 use std::{collections::HashSet, io, path::Path, rc::Rc};
 
@@ -145,7 +145,7 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
         let flushed = self.settings_manager.borrow().flush();
         flushed.await;
         self.settings_manager.borrow_mut().reload_from_storage();
-        let mut resolved = self.package_manager.resolve(None).await?;
+        let (mut resolved, base_extensions) = self.resolve_packages().await?;
         let mut explicit = self
             .package_manager
             .resolve_extension_sources(
@@ -169,7 +169,8 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
             configured.extensions,
             &[],
         )?;
-        self.load_extension_resources(extension_paths).await?;
+        self.load_extension_resources(extension_paths, base_extensions)
+            .await?;
         let options = &self.options;
         for (collection, kind, explicit, configured, additional) in [
             (
@@ -293,7 +294,7 @@ fn expand_resource_path(
     path: &str,
     home: impl FnOnce() -> io::Result<String>,
 ) -> io::Result<String> {
-    expand_tilde_text(path.trim_matches(maestro_text::is_whitespace_scalar), home)
+    expand_tilde_joined(path.trim_matches(maestro_text::is_whitespace_scalar), home)
 }
 
 #[cfg(test)]
@@ -309,18 +310,20 @@ mod tests {
                 ("~", r"C:\h", r"C:\h"),
                 ("~/", r"C:\h", r"C:\h"),
                 ("~/x", r"C:\h", r"C:\h\x"),
-                ("~x", r"C:\h", r"C:\h\x"),
+                ("~x", r"C:\h", "~x"),
                 ("~", r"C:\h\.", r"C:\h\."),
                 ("~", "", ""),
+                ("~/x", "", "x"),
             ]
         } else {
             [
                 ("~", "/h", "/h"),
                 ("~/", "/h", "/h"),
                 ("~/x", "/h", "/h/x"),
-                ("~x", "/h", "/h/x"),
+                ("~x", "/h", "~x"),
                 ("~", "/h/.", "/h/."),
                 ("~", "", ""),
+                ("~/x", "", "x"),
             ]
         };
         for (written, home, expected) in rows {

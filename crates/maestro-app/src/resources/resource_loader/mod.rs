@@ -1,9 +1,11 @@
 //! Extensions, skills, prompt templates, themes, browser contributions, context files and
 //! system prompt files discovered for one working directory, with provenance for every resource.
 
+mod base_packages;
 mod context;
 mod discovery;
 mod extensions;
+mod load_time;
 mod overrides;
 mod themes;
 
@@ -106,6 +108,10 @@ pub trait ResourceLoader<E: ExtensionExecution = Threaded> {
     fn get_system_prompt(&self) -> Option<Rc<str>>;
     /// The texts appended to the system prompt.
     fn get_append_system_prompt(&self) -> Rc<[String]>;
+    /// Contributed model files in order, ranked before the catalog's existing files.
+    fn get_model_files(&self) -> Vec<String> {
+        Vec::new()
+    }
     /// Adds extension-contributed locations and reloads each kind that gained some.
     ///
     /// # Errors
@@ -126,6 +132,10 @@ pub struct ResourceLoaderOptions<E: ExtensionExecution = Threaded> {
     pub module_loader: ModuleLoader<E>,
     /// The bus shared by extensions; absent means the execution family's default bus.
     pub event_bus: Option<EventBusController<E>>,
+    /// Existing application tool services available during extension construction.
+    pub tool_construction: Option<maestro_extensions::ToolConstruction>,
+    /// Ordered base package sources whose factories run before other extensions.
+    pub base_package_sources: Vec<String>,
     /// Extension sources loaded before configured ones.
     pub additional_extension_paths: Vec<String>,
     /// Skill paths loaded after discovered ones.
@@ -156,6 +166,8 @@ pub struct ResourceLoaderOptions<E: ExtensionExecution = Threaded> {
     pub system_prompt_override: Option<ResourceOverride<Option<String>>>,
     /// Replaces the appended texts.
     pub append_system_prompt_override: Option<ResourceOverride<Vec<String>>>,
+    /// A caller's offline selection for configured packages, or the ambient flag.
+    pub offline: Option<bool>,
 }
 
 impl<E: ExtensionExecution> ResourceLoaderOptions<E> {
@@ -166,6 +178,8 @@ impl<E: ExtensionExecution> ResourceLoaderOptions<E> {
             local,
             module_loader,
             event_bus: None,
+            tool_construction: None,
+            base_package_sources: Vec::new(),
             additional_extension_paths: Vec::new(),
             additional_skill_paths: Vec::new(),
             additional_prompt_template_paths: Vec::new(),
@@ -181,6 +195,7 @@ impl<E: ExtensionExecution> ResourceLoaderOptions<E> {
             agents_files_override: None,
             system_prompt_override: None,
             append_system_prompt_override: None,
+            offline: None,
         }
     }
 }
@@ -235,6 +250,12 @@ struct LoaderState<E: ExtensionExecution> {
     system_prompt: Option<Rc<str>>,
     /// The appended texts.
     append_system_prompt: Rc<[String]>,
+    /// Base model files in contribution order.
+    model_files: Vec<String>,
+    /// The system prompt candidate below ordinary prompt inputs.
+    base_system_prompt: Option<String>,
+    /// Text that always precedes the ordinary append choice.
+    base_append_text: Vec<String>,
     /// Skill paths and contributions.
     skill_sources: Contributed,
     /// Prompt template paths and contributions.
@@ -316,7 +337,8 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
                 Rc::new(crate::output_guard::is_stdout_taken_over),
                 &resources.local,
             ),
-        );
+        )
+        .with_offline(resources.offline);
         let state = RefCell::new(LoaderState {
             extensions: Rc::new(LoadExtensionsResult {
                 extensions: Vec::new(),
@@ -330,6 +352,9 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
             agents_files: Rc::from([]),
             system_prompt: None,
             append_system_prompt: Rc::from([]),
+            model_files: Vec::new(),
+            base_system_prompt: None,
+            base_append_text: Vec::new(),
             skill_sources: Contributed::default(),
             prompt_sources: Contributed::default(),
             theme_sources: Contributed::default(),
@@ -404,6 +429,9 @@ impl<E: DefaultEventBus> ResourceLoader<E> for DefaultResourceLoader<E> {
     }
     fn get_append_system_prompt(&self) -> Rc<[String]> {
         Rc::clone(&self.state.borrow().append_system_prompt)
+    }
+    fn get_model_files(&self) -> Vec<String> {
+        self.state.borrow().model_files.clone()
     }
     fn extend_resources(&self, paths: ResourceExtensionPaths) -> io::Result<()> {
         let contributions = [

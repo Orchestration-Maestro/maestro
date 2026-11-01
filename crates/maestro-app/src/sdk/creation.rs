@@ -70,9 +70,108 @@ struct Recorded {
 /// and off without one. With [`SessionResources::Default`] the default loader is built for
 /// the working and agent directories and loaded first.
 ///
+/// # Examples
+///
+/// A controlled session streams one answer without a network request. The disposable
+/// directory owner removes the working and agent directories when the run ends.
+///
+/// ```
+/// use maestro_app::{
+///     AgentEvent, AgentSessionEvent, AssistantMessageEvent, AuthStorage, ConfigValueOperations,
+///     CreateAgentSessionOptions, Local, ModelRegistry, ModuleLoader, NoTools, PromptOptions,
+///     ResourceKind, ResourceLoaderOptions, SessionManager, SessionResources, SettingsManager,
+///     create_agent_session,
+/// };
+/// use maestro_models::{
+///     FauxAssistantMessageOptions, FauxResponseStep, RegisterFauxProviderOptions,
+///     faux_assistant_message, register_faux_provider,
+/// };
+/// use std::{cell::RefCell, rc::Rc, sync::{Arc, RwLock}};
+///
+/// struct NoCommands;
+/// impl ConfigValueOperations for NoCommands {
+///     fn execute(&self, _: &str) -> Option<Vec<u8>> { None }
+/// }
+///
+/// fn main() -> Result<(), Box<dyn std::error::Error>> {
+///     let root = maestro_test_directory::Scratch::new()?;
+///     let cwd = root.path().join("project");
+///     let agent_dir = root.path().join("agent");
+///     std::fs::create_dir_all(&cwd)?;
+///     std::fs::create_dir_all(&agent_dir)?;
+///     let cwd = cwd.to_string_lossy().into_owned();
+///     let agent_dir = agent_dir.to_string_lossy().into_owned();
+///     let executor = tokio::runtime::Builder::new_current_thread().enable_all().build()?;
+///     let local = Rc::new(tokio::task::LocalSet::new());
+///     executor.block_on(local.run_until(async {
+///         let provider = register_faux_provider(RegisterFauxProviderOptions::default());
+///         provider.set_responses(vec![FauxResponseStep::Message(Box::new(
+///             faux_assistant_message("Ready.", FauxAssistantMessageOptions::default()),
+///         ))]);
+///         let auth = Arc::new(AuthStorage::in_memory(Default::default()));
+///         auth.set_runtime_api_key("faux", "controlled-key");
+///         let registry = Arc::new(ModelRegistry::in_memory(auth.clone(), Arc::new(NoCommands))?);
+///         let module_loader: ModuleLoader<Local> =
+///             Rc::new(|_| Box::pin(std::future::ready(Ok(None))));
+///         let mut resources = ResourceLoaderOptions::new(Rc::clone(&local), module_loader);
+///         resources.disabled.extend([
+///             ResourceKind::Extensions, ResourceKind::Skills, ResourceKind::PromptTemplates,
+///             ResourceKind::Themes, ResourceKind::ContextFiles,
+///         ]);
+///         resources.system_prompt = Some("Answer briefly.".into());
+///         resources.append_system_prompt = Some(Vec::new());
+///         resources.offline = Some(true);
+///         let created = create_agent_session(CreateAgentSessionOptions {
+///             cwd: Some(cwd.clone()), agent_dir: Some(agent_dir),
+///             auth_storage: Some(auth), model_registry: Some(registry),
+///             model: Some(Arc::new(RwLock::new(provider.models[0].clone()))),
+///             thinking_level: None, scoped_models: Vec::new(),
+///             no_tools: Some(NoTools::All), tools: None, custom_tools: Vec::new(),
+///             resources: SessionResources::Default(Box::new(resources)),
+///             session_manager: Some(Rc::new(RefCell::new(
+///                 SessionManager::in_memory(Some(&cwd))?,
+///             ))),
+///             settings_manager: Some(Rc::new(RefCell::new(
+///                 SettingsManager::in_memory(Default::default()),
+///             ))),
+///             session_start_event: None, theme: Default::default(), offline: Some(true),
+///         }).await?;
+///         assert!(created.model_fallback_message.is_none());
+///         assert!(created.extensions_result.errors.is_empty());
+///         let session = created.session;
+///         let text = Rc::new(RefCell::new(String::new()));
+///         let output = Rc::clone(&text);
+///         let ended = Rc::new(tokio::sync::Notify::new());
+///         let completion = Rc::clone(&ended);
+///         let unsubscribe = session.subscribe(Rc::new(move |event| {
+///             if let AgentSessionEvent::Agent(event) = event {
+///                 match &*event.read().unwrap() {
+///                     AgentEvent::MessageUpdate {
+///                         assistant_message_event: AssistantMessageEvent::TextDelta { delta, .. }, ..
+///                     } => output.borrow_mut().push_str(delta),
+///                     AgentEvent::AgentEnd { .. } => completion.notify_one(),
+///                     _ => {}
+///                 }
+///             }
+///         }));
+///         let result = session.prompt("Report readiness.", PromptOptions::default()).await;
+///         if result.is_ok() { ended.notified().await; }
+///         unsubscribe();
+///         session.abort().await;
+///         session.dispose();
+///         provider.unregister();
+///         result?;
+///         assert_eq!(&*text.borrow(), "Ready.");
+///         assert_eq!(provider.state.call_count(), 1);
+///         Ok::<(), Box<dyn std::error::Error>>(())
+///     }))?;
+///     Ok(())
+/// }
+/// ```
+///
 /// # Errors
 /// Returns agent-directory, catalog, history, resource loading or documentation-path
-/// failures, and the failures of [`AgentSession::new`].
+/// failures, publisher admission refusals, and the failures of [`AgentSession::new`].
 pub async fn create_agent_session(
     options: CreateAgentSessionOptions,
 ) -> Result<CreateAgentSessionResult, DiagnosticErrorInfo> {
@@ -83,17 +182,15 @@ pub async fn create_agent_session(
             SessionManager::create(&services.cwd, None, &services.agent_dir).map_err(thrown)?,
         )),
     };
-    let resource_loader = match options.resources {
-        SessionResources::Loader(loader) => loader,
-        SessionResources::Default(resources) => default_resource_loader(
-            &services.cwd,
-            &services.agent_dir,
-            &services.settings_manager,
-            *resources,
-        )
-        .await
-        .map_err(thrown)?,
-    };
+    let resource_loader = resources(&services, options.resources, options.offline).await?;
+    admit_requested_tools(
+        &services.settings_manager.borrow(),
+        options.tools.as_deref(),
+    )?;
+    services
+        .model_registry
+        .set_base_model_files(resource_loader.get_model_files())
+        .map_err(thrown)?;
     let (agent, runner_ref, model_fallback_message) = prepare_agent(
         &services,
         &session_manager,
@@ -102,13 +199,21 @@ pub async fn create_agent_session(
     )?;
     let (allowed_tool_names, initial_active_tool_names) =
         tool_names(options.tools, options.no_tools);
-    let bin_dir = get_bin_dir(&services.agent_dir);
+    let construction = resource_loader
+        .get_extensions()
+        .runtime
+        .tool_construction()
+        .unwrap_or_else(|| tool_construction(&services.agent_dir, options.offline));
+    resource_loader
+        .get_extensions()
+        .runtime
+        .set_tool_construction(construction.clone());
     let session = AgentSession::new(AgentSessionConfig {
         agent,
         session_manager,
         settings_manager: services.settings_manager,
         cwd: services.cwd,
-        bin_dir: bin_dir.clone(),
+        bin_dir: construction.bin_dir,
         scoped_models: options.scoped_models,
         resource_loader: Rc::clone(&resource_loader),
         custom_tools: options.custom_tools,
@@ -118,7 +223,7 @@ pub async fn create_agent_session(
         base_tools_override: None,
         extension_runner_ref: Some(runner_ref),
         session_start_event: options.session_start_event,
-        tools_manager: Arc::new(ToolsManager::new(bin_dir, None)),
+        tools_manager: construction.tools_manager,
         theme: options.theme,
     })?;
     Ok(CreateAgentSessionResult {
@@ -126,6 +231,97 @@ pub async fn create_agent_session(
         extensions_result: resource_loader.get_extensions(),
         model_fallback_message,
     })
+}
+
+/// Selects one application tool owner before loading factories.
+fn tool_construction(
+    agent_dir: &str,
+    offline: Option<bool>,
+) -> maestro_extensions::ToolConstruction {
+    let bin_dir = get_bin_dir(agent_dir);
+    maestro_extensions::ToolConstruction {
+        tools_manager: Arc::new(ToolsManager::new(bin_dir.clone(), None).with_offline(offline)),
+        bin_dir,
+    }
+}
+
+/// Reports an explicit SDK refusal through the settings diagnostic channel.
+fn admit_sdk_request(
+    settings: &SettingsManager,
+    request: &maestro_settings::DecisionRequest<'_>,
+) -> Result<(), DiagnosticErrorInfo> {
+    settings.decide(request).map_err(|message| {
+        settings.report_refusal(maestro_settings::SettingsScope::Global, message.clone());
+        DiagnosticErrorInfo::new(Some("ConfigurationRefusal".into()), message)
+    })
+}
+
+/// Admits explicit SDK tools before history creation or live tool publication.
+fn admit_requested_tools(
+    settings: &SettingsManager,
+    tools: Option<&[String]>,
+) -> Result<(), DiagnosticErrorInfo> {
+    tools.map_or(Ok(()), |tools| {
+        admit_sdk_request(settings, &maestro_settings::DecisionRequest::Tools(tools))
+    })
+}
+
+/// Admits explicit selections while retaining the requested, unclamped thinking level.
+fn admit_requested_selection(
+    settings: &SettingsManager,
+    model: Option<&Arc<RwLock<Model>>>,
+    level: Option<&ModelThinkingLevel>,
+) -> Result<(), DiagnosticErrorInfo> {
+    let requested = level.cloned().unwrap_or_else(|| {
+        settings
+            .get_default_thinking_level()
+            .as_ref()
+            .map_or(DEFAULT_THINKING_LEVEL, model_level)
+    });
+    let requested = saved_level(&requested);
+    let identity = model.map(|model| {
+        let model = read(model);
+        (model.provider.clone(), model.id.clone())
+    });
+    let request = if let Some((provider, model_id)) = &identity {
+        maestro_settings::DecisionRequest::Model {
+            provider,
+            model_id,
+            thinking_level: requested.as_str(),
+        }
+    } else if level.is_some() {
+        maestro_settings::DecisionRequest::ThinkingLevel(requested.as_str())
+    } else {
+        return Ok(());
+    };
+    admit_sdk_request(settings, &request)
+}
+
+/// Loads resources only after their application-owned construction services are installed.
+async fn resources(
+    services: &Services,
+    resources: SessionResources,
+    offline: Option<bool>,
+) -> Result<
+    Rc<dyn crate::resources::resource_loader::ResourceLoader<maestro_models::Local>>,
+    DiagnosticErrorInfo,
+> {
+    match resources {
+        SessionResources::Loader(loader) => Ok(loader),
+        SessionResources::Default(mut resources) => {
+            resources
+                .tool_construction
+                .get_or_insert_with(|| tool_construction(&services.agent_dir, offline));
+            default_resource_loader(
+                &services.cwd,
+                &services.agent_dir,
+                &services.settings_manager,
+                *resources,
+            )
+            .await
+            .map_err(thrown)
+        }
+    }
 }
 
 /// The agent over the resolved model and thinking level, with the resumed messages or the
@@ -137,6 +333,11 @@ fn prepare_agent(
     explicit_model: Option<Arc<RwLock<Model>>>,
     explicit_level: Option<ModelThinkingLevel>,
 ) -> Result<PreparedAgent, DiagnosticErrorInfo> {
+    admit_requested_selection(
+        &services.settings_manager.borrow(),
+        explicit_model.as_ref(),
+        explicit_level.as_ref(),
+    )?;
     let recorded = recorded(&session_manager.borrow())?;
     let (model, model_fallback_message) = resolve_model(services, explicit_model, &recorded)?;
     let thinking_level = resolve_thinking_level(
@@ -265,7 +466,21 @@ fn resolve_model(
     if recorded.has_messages
         && let Some((provider, model_id)) = &recorded.model
     {
-        if let Some(model) = restore_saved_model(registry, provider, model_id).map_err(thrown)? {
+        let stored = maestro_settings::Settings(
+            serde_json::json!({"defaultProvider": provider, "defaultModel": model_id})
+                .as_object()
+                .cloned()
+                .unwrap_or_default(),
+        );
+        let resolved = services
+            .settings_manager
+            .borrow()
+            .resolve_stored_values(&stored);
+        if resolved.0.get("defaultProvider") == stored.0.get("defaultProvider")
+            && resolved.0.get("defaultModel") == stored.0.get("defaultModel")
+            && let Some(model) =
+                restore_saved_model(registry, provider, model_id).map_err(thrown)?
+        {
             return Ok((Some(model), None));
         }
         fallback_message = Some(format!("Could not restore model {provider}/{model_id}"));
@@ -308,6 +523,11 @@ fn resolve_thinking_level(
     recorded: Option<ModelThinkingLevel>,
     model: Option<&Arc<RwLock<Model>>>,
 ) -> ModelThinkingLevel {
+    let recorded = if explicit.is_none() {
+        recorded.map(|level| resolve_recorded_thinking(settings, &level))
+    } else {
+        None
+    };
     let level = explicit.or(recorded).unwrap_or_else(|| {
         settings
             .get_default_thinking_level()
@@ -317,6 +537,28 @@ fn resolve_thinking_level(
     model.map_or(ModelThinkingLevel::Off, |model| {
         clamp_thinking_level(&read(model), level)
     })
+}
+
+/// Resolves a recorded level through stored-value policy before capability clamping.
+fn resolve_recorded_thinking(
+    settings: &SettingsManager,
+    level: &ModelThinkingLevel,
+) -> ModelThinkingLevel {
+    let stored = maestro_settings::Settings(
+        [(
+            String::from("defaultThinkingLevel"),
+            Value::String(saved_level(level).as_str().into()),
+        )]
+        .into_iter()
+        .collect(),
+    );
+    settings
+        .resolve_stored_values(&stored)
+        .0
+        .get("defaultThinkingLevel")
+        .and_then(Value::as_str)
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(DEFAULT_THINKING_LEVEL)
 }
 
 /// Records the model and thinking level a new history starts with, or the thinking level a

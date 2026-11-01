@@ -248,8 +248,8 @@ fn git_source_forms_choose_clone_target_and_checkout() {
     let fixture = Fixture::new(&json!({}));
     for (source, added) in [
         ("https://github.com/user/repo", true),
-        ("ssh://git@github.com/user/repo", false),
-        ("git:git@github.com:user/repo", false),
+        ("ssh://git@github.com/user/repo", true),
+        ("git:git@github.com:user/repo", true),
     ] {
         assert_eq!(
             fixture
@@ -388,26 +388,55 @@ fn git_dependencies_use_live_configured_command() {
     assert_eq!(fixture.calls()[1].args, ["install"]);
 }
 
+#[cfg(unix)]
 #[test]
-fn unpinned_existing_git_target_does_not_read_command_or_modify_files() {
+fn unpinned_existing_git_target_refreshes_without_reading_command_or_modifying_files() {
     for as_file in [false, true] {
-        let fixture = Fixture::new(&json!({"npmCommand": [""]}));
-        let target = fixture.agent("git/github.com/user/repo");
+        let (manager, _settings, effects, tree) =
+            crate::support::uninstalled(&json!({"npmCommand": [""]}), &json!([]));
+        let target =
+            crate::support::below(tree.path(), "/home/reader/agent/git/github.com/user/repo");
         if as_file {
             native_support::write(&target, "a file");
         } else {
             native_support::write(format!("{target}/package.json"), "keep");
         }
+        // The refreshed head equals the installed one, so nothing is replaced or prepared.
+        *effects.capture_outputs.borrow_mut() = ["origin/main", "tip", "same", "same"]
+            .map(|text| Ok(text.to_owned()))
+            .into();
         let source = "https://github.com/user/repo";
-        block_on(fixture.manager.install(source, None)).unwrap();
-        assert!(fixture.calls().is_empty());
-        assert!(!std::path::Path::new(&fixture.agent("git/.gitignore")).exists());
+        crate::runtime::runtime()
+            .block_on(manager.install(source, None))
+            .unwrap();
+        let verbs: Vec<_> = effects
+            .calls
+            .borrow()
+            .iter()
+            .map(|(command, args)| format!("{command} {}", args[0]))
+            .collect();
         assert_eq!(
-            fixture.phases(),
+            verbs,
             [
-                (Phase::Start, Some(format!("Installing {source}..."))),
-                (Phase::Complete, None)
+                "git rev-parse",
+                "git rev-parse",
+                "git fetch",
+                "git rev-parse",
+                "git rev-parse"
             ]
+        );
+        if !as_file {
+            assert_eq!(
+                std::fs::read_to_string(format!("{target}/package.json")).unwrap(),
+                "keep"
+            );
+        }
+        assert!(
+            !std::path::Path::new(&crate::support::below(
+                tree.path(),
+                "/home/reader/agent/git/.gitignore"
+            ))
+            .exists()
         );
     }
 }
@@ -950,7 +979,19 @@ fn stored(fixture: &Fixture) -> serde_json::Value {
 
 #[test]
 fn manager_aliases_remain_usable_during_acquisition() {
+    check_manager_aliases_during_acquisition(false);
+}
+
+/// Admission preserves callback reentry and held acquisition edits.
+#[test]
+fn admitted_manager_aliases_remain_usable_during_acquisition() {
+    check_manager_aliases_during_acquisition(true);
+}
+
+/// Exercises live edits with and without an installed publisher.
+fn check_manager_aliases_during_acquisition(admitted: bool) {
     let fixture = Fixture::new(&json!({"packages": ["npm:listed"]}));
+    allow_package_edits(&fixture, admitted);
     let weak = Rc::downgrade(&fixture.manager);
     let uses = Rc::new(Cell::new(0));
     let counter = uses.clone();
@@ -1060,7 +1101,9 @@ fn persistence_happens_after_completed_acquisition() {
     native_support::write(fixture.project("pkgdir/file"), "x");
     block_on(manager.install_and_persist("./pkgdir", Some(Project))).unwrap();
     let project = fixture.settings.borrow().get_project_settings().0["packages"].clone();
-    assert_eq!(project, json!(["../pkgdir"]));
+    // The stored source is the native relative path, as the reference stores it.
+    let relative = format!("..{}pkgdir", std::path::MAIN_SEPARATOR);
+    assert_eq!(project, json!([relative]));
     assert!(block_on(manager.remove_and_persist("./pkgdir", Some(Project))).unwrap());
     assert!(!block_on(manager.remove_and_persist("./pkgdir", Some(Project))).unwrap());
 }
@@ -1129,9 +1172,21 @@ fn failed_acquisition_does_not_publish_settings() {
 
 #[test]
 fn persistence_reads_settings_after_acquisition() {
+    check_persistence_after_acquisition(false);
+}
+
+/// Admitted installation and removal retain edits accepted while waiting.
+#[test]
+fn admitted_persistence_reads_settings_after_acquisition() {
+    check_persistence_after_acquisition(true);
+}
+
+/// Exercises late reads without changing their original effect order.
+fn check_persistence_after_acquisition(admitted: bool) {
     let fixture = Fixture::new(
         &json!({"packages": [{"source": "npm:keep", "extensions": ["x"], "extra": 1}]}),
     );
+    allow_package_edits(&fixture, admitted);
     fixture.script.held.set(true);
     let mut operation = fixture.manager.install_and_persist("npm:added", None);
     assert!(poll_once(&mut operation).is_none());
@@ -1397,4 +1452,420 @@ fn git_windows_dot_segments_never_select_a_checkout() {
     ] {
         rejected_git_source_preserves_checkout(source, selected);
     }
+}
+
+/// Refuses the package preference edit before a managed source can run.
+struct RefusePackageEdit;
+impl maestro_settings::SettingsDecider for RefusePackageEdit {
+    fn decide(&self, _: &maestro_settings::DecisionRequest<'_>) -> Result<(), String> {
+        Err("release refuses packages".into())
+    }
+}
+
+/// Allows package intent but refuses its derived preference edit.
+struct RefusePackageSettingsEdit;
+impl maestro_settings::SettingsDecider for RefusePackageSettingsEdit {
+    fn decide(&self, request: &maestro_settings::DecisionRequest<'_>) -> Result<(), String> {
+        if matches!(
+            request,
+            maestro_settings::DecisionRequest::SettingsEdit { .. }
+        ) {
+            Err("release refuses package settings".into())
+        } else {
+            Ok(())
+        }
+    }
+}
+
+/// No child, progress callback or project file precedes a refused package edit.
+#[test]
+fn refused_package_edits_have_no_acquisition_or_removal_effects() {
+    for scope in [User, Project] {
+        for remove in [false, true] {
+            let fixture = Fixture::new(&json!({"packages":["npm:pkg"]}));
+            fixture
+                .settings
+                .borrow_mut()
+                .register_decider(Arc::new(RefusePackageSettingsEdit))
+                .unwrap();
+            let before = fixture.settings.borrow().get_global_settings();
+            let result = if remove {
+                block_on(fixture.manager.remove_and_persist("npm:pkg", Some(scope))).map(drop)
+            } else {
+                block_on(fixture.manager.install_and_persist("npm:pkg", Some(scope)))
+            };
+            assert_eq!(
+                result.unwrap_err().to_string(),
+                "release refuses package settings"
+            );
+            assert!(fixture.calls().is_empty());
+            assert!(fixture.phases().is_empty());
+            assert!(!std::path::Path::new(&fixture.project(".maestro/npm")).exists());
+            assert_eq!(fixture.settings.borrow().get_global_settings(), before);
+        }
+    }
+}
+
+/// A scoped persisted policy with one required package and optional package lock.
+fn package_layer(locked: bool) -> maestro_settings::BaseSettingsLayer {
+    maestro_settings::BaseSettingsLayer {
+        settings: serde_json::from_value(json!({"packages":["npm:pkg@1"]})).unwrap(),
+        locked: if locked {
+            ["packages".into()].into()
+        } else {
+            std::collections::BTreeSet::default()
+        },
+        source: "organization@1".into(),
+        recorded_at: "2026-10-28".into(),
+    }
+}
+
+/// Every public acquisition/removal surface checks its governing layer before progress.
+#[test]
+fn package_policy_checks_scope_and_required_identity_before_effects() {
+    for (project_layer, scope) in [
+        (false, User),
+        (false, Project),
+        (true, User),
+        (true, Project),
+    ] {
+        for (persist, remove) in [(false, false), (false, true), (true, false), (true, true)] {
+            let fixture = Fixture::new(&json!({"packages":["npm:pkg@2"]}));
+            fixture
+                .settings
+                .borrow_mut()
+                .publish_base_layer(SettingsScope::Global, Some(package_layer(true)));
+            if project_layer {
+                let mut layer = package_layer(false);
+                layer.settings = maestro_settings::Settings::default();
+                fixture
+                    .settings
+                    .borrow_mut()
+                    .publish_base_layer(SettingsScope::Project, Some(layer));
+            }
+            let source = "npm:pkg@2";
+            let result = match (persist, remove) {
+                (true, true) => {
+                    block_on(fixture.manager.remove_and_persist(source, Some(scope))).map(drop)
+                }
+                (true, false) => block_on(fixture.manager.install_and_persist(source, Some(scope))),
+                (false, true) => block_on(fixture.manager.remove(source, Some(scope))),
+                (false, false) => block_on(fixture.manager.install(source, Some(scope))),
+            };
+            if project_layer && scope == Project {
+                result.unwrap();
+            } else {
+                let error = result.unwrap_err().to_string();
+                assert!(error.contains("organization@1"), "{error}");
+                assert!(error.contains("2026-10-28"), "{error}");
+                assert!(fixture.calls().is_empty());
+                assert!(fixture.phases().is_empty());
+                assert!(!std::path::Path::new(&fixture.project(".maestro/npm")).exists());
+            }
+        }
+    }
+}
+
+/// Direct SDK operations also ask the installed decider before emitting progress.
+#[test]
+fn direct_package_operations_ask_decider_before_effects() {
+    let fixture = Fixture::new(&json!({}));
+    fixture
+        .settings
+        .borrow_mut()
+        .register_decider(Arc::new(RefusePackageEdit))
+        .unwrap();
+    for remove in [false, true] {
+        let result = if remove {
+            block_on(fixture.manager.remove("npm:pkg", None))
+        } else {
+            block_on(fixture.manager.install("npm:pkg", None))
+        };
+        assert_eq!(result.unwrap_err().to_string(), "release refuses packages");
+        assert!(fixture.calls().is_empty());
+        assert!(fixture.phases().is_empty());
+    }
+}
+
+/// Allows explicit package operations and their preference edits.
+struct AllowPackageEdit;
+impl maestro_settings::SettingsDecider for AllowPackageEdit {
+    fn decide(&self, _: &maestro_settings::DecisionRequest<'_>) -> Result<(), String> {
+        Ok(())
+    }
+}
+
+/// A current checkout publishes the requested spelling whether already configured or absent.
+#[test]
+fn admitted_current_git_checkout_publishes_requested_source() {
+    for configured in [false, true] {
+        let initial = if configured {
+            json!({"packages":["git:github.com/user/repo#kept"]})
+        } else {
+            json!({})
+        };
+        let fixture = Fixture::new(&initial);
+        native_support::write(fixture.agent("git/github.com/user/repo/kept"), "contents");
+        fixture
+            .settings
+            .borrow_mut()
+            .register_decider(Arc::new(AllowPackageEdit))
+            .unwrap();
+        let effects = Rc::new(crate::support::Effects::default());
+        *effects.capture_outputs.borrow_mut() = ["origin/main", "tip", "same", "same"]
+            .map(|text| Ok(text.to_owned()))
+            .into();
+        let manager = maestro_packages::DefaultPackageManager::new(
+            maestro_packages::PackageManagerOptions {
+                cwd: fixture.project(""),
+                agent_dir: fixture.agent(""),
+                settings_manager: fixture.settings.clone(),
+            },
+            crate::support::Controlled(effects.clone()),
+        );
+
+        block_on(manager.install_and_persist("git:github.com/user/repo", None)).unwrap();
+
+        assert_eq!(stored(&fixture), json!(["git:github.com/user/repo"]));
+        let verbs: Vec<_> = effects
+            .calls
+            .borrow()
+            .iter()
+            .map(|(_, args)| args[0].clone())
+            .collect();
+        assert_eq!(
+            verbs,
+            ["rev-parse", "rev-parse", "fetch", "rev-parse", "rev-parse"]
+        );
+        assert_eq!(
+            sandbox::read(fixture.agent("git/github.com/user/repo/kept")),
+            "contents"
+        );
+    }
+}
+
+/// An admitted equivalent spelling replaces its row without changing its pin or filters.
+#[test]
+fn admitted_source_spelling_replaces_same_pin_and_preserves_rows() {
+    for scope in [User, Project] {
+        let source = "npm: pkg@1";
+        let entries = json!([
+            "npm:before",
+            {"source":"npm:pkg@1", "skills":[], "unknown":7},
+            "npm:after"
+        ]);
+        let fixture = Fixture::new(&json!({"packages":entries}));
+        if scope == Project {
+            fixture.settings.borrow_mut().set_project_packages(
+                entries
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .cloned()
+                    .map(PackageSource::Unknown)
+                    .collect(),
+            );
+        }
+        fixture
+            .settings
+            .borrow_mut()
+            .register_decider(Arc::new(AllowPackageEdit))
+            .unwrap();
+
+        block_on(fixture.manager.install_and_persist(source, Some(scope))).unwrap();
+
+        let settings = fixture.settings.borrow();
+        let updated = match scope {
+            User => settings.get_global_settings(),
+            Project => settings.get_project_settings(),
+        };
+        assert_eq!(
+            updated.0["packages"],
+            json!([
+                "npm:before",
+                {"source":source, "skills":[], "unknown":7},
+                "npm:after"
+            ])
+        );
+        if scope == Project {
+            assert_eq!(settings.get_global_settings().0["packages"], entries);
+        }
+    }
+}
+
+/// Captures package intent and its exact derived edit in one ordered observation.
+struct OrderedPackageDecider(Arc<Mutex<Vec<&'static str>>>);
+impl maestro_settings::SettingsDecider for OrderedPackageDecider {
+    fn decide(&self, request: &maestro_settings::DecisionRequest<'_>) -> Result<(), String> {
+        let event = match request {
+            maestro_settings::DecisionRequest::PackageInstall { .. } => "intent",
+            maestro_settings::DecisionRequest::SettingsEdit { .. } => "edit",
+            _ => "other",
+        };
+        self.0.lock().unwrap().push(event);
+        Ok(())
+    }
+}
+
+/// Admission precedes progress; allowed contents still finish before preferences publish.
+#[test]
+fn allowed_package_admission_keeps_progress_before_preference_publication() {
+    for registered in [false, true] {
+        let fixture = Fixture::new(&json!({}));
+        let events = Arc::new(Mutex::new(Vec::new()));
+        if registered {
+            fixture
+                .settings
+                .borrow_mut()
+                .register_decider(Arc::new(OrderedPackageDecider(events.clone())))
+                .unwrap();
+        }
+        let log = events.clone();
+        let settings = fixture.settings.clone();
+        fixture
+            .manager
+            .set_progress_callback(Some(Rc::new(move |event| {
+                assert!(
+                    !settings
+                        .borrow()
+                        .get_global_settings()
+                        .0
+                        .contains_key("packages")
+                );
+                log.lock().unwrap().push(if event.r#type == Phase::Start {
+                    "start"
+                } else {
+                    "complete"
+                });
+                Ok(())
+            })));
+        block_on(fixture.manager.install_and_persist("npm:pkg", None)).unwrap();
+        assert_eq!(
+            *events.lock().unwrap(),
+            if registered {
+                vec!["intent", "edit", "start", "complete"]
+            } else {
+                vec!["start", "complete"]
+            }
+        );
+        assert_eq!(stored(&fixture), json!(["npm:pkg"]));
+    }
+}
+
+/// Borrow contention is recoverable before either explicit package operation.
+#[test]
+fn package_admission_returns_borrow_errors_before_effects() {
+    for remove in [false, true] {
+        let fixture = Fixture::new(&json!({}));
+        let _guard = fixture.settings.borrow_mut();
+        let result = if remove {
+            block_on(fixture.manager.remove("npm:pkg", None))
+        } else {
+            block_on(fixture.manager.install("npm:pkg", None))
+        };
+        assert!(result.is_err());
+        assert!(fixture.calls().is_empty());
+        assert!(fixture.phases().is_empty());
+    }
+}
+
+/// A shared guard retained during acquisition returns an error at publication.
+#[test]
+fn admitted_package_publication_returns_borrow_errors() {
+    for remove in [false, true] {
+        let fixture = Fixture::new(&json!({"packages":["npm:pkg"]}));
+        fixture
+            .settings
+            .borrow_mut()
+            .register_decider(Arc::new(AllowPackageEdit))
+            .unwrap();
+        fixture.script.held.set(true);
+        let mut operation = if remove {
+            fixture.manager.remove_and_persist("npm:pkg", None)
+        } else {
+            Box::pin(async {
+                fixture
+                    .manager
+                    .install_and_persist("npm:new", None)
+                    .await
+                    .map(|()| true)
+            })
+        };
+        assert!(poll_once(&mut operation).is_none());
+        let guard = fixture.settings.borrow();
+        fixture.script.held.set(false);
+        assert!(poll_once(&mut operation).unwrap().is_err());
+        assert_eq!(
+            guard.get_global_settings().0.get("packages"),
+            Some(&json!(["npm:pkg"]))
+        );
+    }
+}
+
+/// Installs the same allowing publisher only for the admitted variants.
+fn allow_package_edits(fixture: &Fixture, admitted: bool) {
+    if admitted {
+        fixture
+            .settings
+            .borrow_mut()
+            .register_decider(Arc::new(AllowPackageEdit))
+            .unwrap();
+    }
+}
+
+/// Admission covers the intended delta even when preflight finds it already satisfied.
+#[test]
+fn admitted_noop_package_intents_recompute_after_acquisition() {
+    for admitted in [false, true] {
+        check_noop_package_intents(admitted);
+    }
+}
+
+/// Exercises each satisfied intent while another operation changes its entry.
+fn check_noop_package_intents(admitted: bool) {
+    for remove in [false, true] {
+        let initial = if remove {
+            json!([])
+        } else {
+            json!(["npm:pkg"])
+        };
+        let fixture = Fixture::new(&json!({"packages": initial}));
+        allow_package_edits(&fixture, admitted);
+        fixture.script.held.set(true);
+        let mut operation = if remove {
+            fixture.manager.remove_and_persist("npm:pkg", None)
+        } else {
+            Box::pin(async {
+                fixture
+                    .manager
+                    .install_and_persist("npm:pkg", None)
+                    .await
+                    .map(|()| true)
+            })
+        };
+        assert!(poll_once(&mut operation).is_none());
+        fixture.settings.borrow_mut().set_packages(if remove {
+            vec![PackageSource::Source("npm:pkg".into())]
+        } else {
+            Vec::new()
+        });
+        fixture.script.held.set(false);
+        assert!(poll_once(&mut operation).unwrap().unwrap());
+        assert_eq!(stored(&fixture), initial);
+    }
+}
+
+/// A publisher can forbid an explicit install even when the entry already exists.
+#[test]
+fn forbidden_existing_package_install_has_no_effects() {
+    let fixture = Fixture::new(&json!({"packages":["npm:pkg"]}));
+    fixture
+        .settings
+        .borrow_mut()
+        .register_decider(Arc::new(RefusePackageEdit))
+        .unwrap();
+    assert!(block_on(fixture.manager.install_and_persist("npm:pkg", None)).is_err());
+    assert!(fixture.calls().is_empty());
+    assert!(fixture.phases().is_empty());
+    assert_eq!(stored(&fixture), json!(["npm:pkg"]));
 }

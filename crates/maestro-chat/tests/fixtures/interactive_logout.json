@@ -1,0 +1,903 @@
+[
+  {
+    "test": "logout_options_keep_saved_kinds_and_stable_names",
+    "input": {
+      "case": "empty",
+      "stored": [],
+      "configured": []
+    },
+    "expected": {
+      "options": []
+    }
+  },
+  {
+    "test": "logout_options_keep_saved_kinds_and_stable_names",
+    "input": {
+      "case": "stored-only",
+      "stored": [
+        {
+          "id": "z",
+          "record": {
+            "type": "oauth",
+            "access": "access",
+            "refresh": "refresh",
+            "expires": 1
+          },
+          "name": "Zulu"
+        },
+        {
+          "id": "a",
+          "record": {
+            "type": "api_key",
+            "key": "saved"
+          },
+          "name": "Alpha"
+        }
+      ],
+      "configured": [
+        {
+          "id": "environment-only",
+          "models": [
+            "one"
+          ],
+          "key": true
+        },
+        {
+          "id": "model-file-only",
+          "models": [
+            "two"
+          ],
+          "key": true
+        }
+      ]
+    },
+    "expected": {
+      "options": [
+        {
+          "id": "a",
+          "name": "Alpha",
+          "authType": "api_key"
+        },
+        {
+          "id": "z",
+          "name": "Zulu",
+          "authType": "oauth"
+        }
+      ]
+    }
+  },
+  {
+    "test": "logout_options_keep_saved_kinds_and_stable_names",
+    "input": {
+      "case": "disappearing-read",
+      "stored": [
+        {
+          "id": "absent",
+          "record": {
+            "type": "api_key"
+          }
+        },
+        {
+          "id": "a",
+          "record": {
+            "type": "api_key",
+            "key": "saved"
+          }
+        }
+      ],
+      "configured": []
+    },
+    "expected": {
+      "options": [
+        {
+          "id": "a",
+          "name": "a",
+          "authType": "api_key"
+        }
+      ]
+    }
+  },
+  {
+    "test": "logout_options_keep_saved_kinds_and_stable_names",
+    "input": {
+      "case": "stable-equal-names",
+      "stored": [
+        {
+          "id": "b",
+          "record": {
+            "type": "oauth",
+            "access": "access",
+            "refresh": "refresh",
+            "expires": 1
+          },
+          "name": "Same"
+        },
+        {
+          "id": "a",
+          "record": {
+            "type": "api_key",
+            "key": "saved"
+          },
+          "name": "Same"
+        }
+      ],
+      "configured": []
+    },
+    "expected": {
+      "options": [
+        {
+          "id": "b",
+          "name": "Same",
+          "authType": "oauth"
+        },
+        {
+          "id": "a",
+          "name": "Same",
+          "authType": "api_key"
+        }
+      ]
+    }
+  },
+  {
+    "test": "logout_options_keep_saved_kinds_and_stable_names",
+    "input": {
+      "case": "unicode-names",
+      "stored": [
+        {
+          "id": "a",
+          "record": {
+            "type": "api_key",
+            "key": "saved"
+          },
+          "name": "zebra"
+        },
+        {
+          "id": "b",
+          "record": {
+            "type": "api_key",
+            "key": "saved"
+          },
+          "name": "Ångström"
+        },
+        {
+          "id": "c",
+          "record": {
+            "type": "oauth",
+            "access": "access",
+            "refresh": "refresh",
+            "expires": 1
+          },
+          "name": "alpha"
+        },
+        {
+          "id": "d",
+          "record": {
+            "type": "api_key",
+            "key": "saved"
+          },
+          "name": "Alpha"
+        },
+        {
+          "id": "e",
+          "record": {
+            "type": "api_key",
+            "key": "saved"
+          },
+          "name": "éclair"
+        },
+        {
+          "id": "f",
+          "record": {
+            "type": "api_key",
+            "key": "saved"
+          },
+          "name": "éclair"
+        },
+        {
+          "id": "g",
+          "record": {
+            "type": "api_key",
+            "key": "saved"
+          },
+          "name": "😀"
+        }
+      ],
+      "configured": []
+    },
+    "expected": {
+      "options": [
+        {
+          "id": "g",
+          "name": "😀",
+          "authType": "api_key"
+        },
+        {
+          "id": "c",
+          "name": "alpha",
+          "authType": "oauth"
+        },
+        {
+          "id": "d",
+          "name": "Alpha",
+          "authType": "api_key"
+        },
+        {
+          "id": "b",
+          "name": "Ångström",
+          "authType": "api_key"
+        },
+        {
+          "id": "e",
+          "name": "éclair",
+          "authType": "api_key"
+        },
+        {
+          "id": "f",
+          "name": "éclair",
+          "authType": "api_key"
+        },
+        {
+          "id": "a",
+          "name": "zebra",
+          "authType": "api_key"
+        }
+      ]
+    }
+  },
+  {
+    "test": "logout_options_keep_saved_kinds_and_stable_names",
+    "input": {
+      "case": "empty-name",
+      "stored": [
+        {
+          "id": "a",
+          "record": {
+            "type": "oauth",
+            "access": "access",
+            "refresh": "refresh",
+            "expires": 1
+          },
+          "name": ""
+        },
+        {
+          "id": "b",
+          "record": {
+            "type": "api_key",
+            "key": "saved"
+          },
+          "name": "B"
+        }
+      ],
+      "configured": []
+    },
+    "expected": {
+      "options": [
+        {
+          "id": "a",
+          "name": "",
+          "authType": "oauth"
+        },
+        {
+          "id": "b",
+          "name": "B",
+          "authType": "api_key"
+        }
+      ]
+    }
+  },
+  {
+    "test": "logout_options_keep_saved_kinds_and_stable_names",
+    "input": {
+      "case": "identity-not-display",
+      "stored": [
+        {
+          "id": "provider one",
+          "record": {
+            "type": "api_key",
+            "key": "saved"
+          },
+          "name": "Same"
+        },
+        {
+          "id": "provider/two",
+          "record": {
+            "type": "oauth",
+            "access": "access",
+            "refresh": "refresh",
+            "expires": 1
+          },
+          "name": "Same"
+        }
+      ],
+      "configured": []
+    },
+    "expected": {
+      "options": [
+        {
+          "id": "provider one",
+          "name": "Same",
+          "authType": "api_key"
+        },
+        {
+          "id": "provider/two",
+          "name": "Same",
+          "authType": "oauth"
+        }
+      ]
+    }
+  },
+  {
+    "test": "logout_empty_command_restores_editor_and_reports_scope",
+    "input": {
+      "case": "exact",
+      "text": "/logout",
+      "saved": true
+    },
+    "expected": {
+      "selector": true,
+      "status": null,
+      "ordinary": null
+    }
+  },
+  {
+    "test": "logout_empty_command_restores_editor_and_reports_scope",
+    "input": {
+      "case": "nothing-saved",
+      "text": "/logout",
+      "saved": false
+    },
+    "expected": {
+      "selector": false,
+      "status": "No stored credentials to remove. /logout only removes credentials saved by /login; environment variables and models.json config are unchanged.",
+      "ordinary": null
+    }
+  },
+  {
+    "test": "logout_empty_command_restores_editor_and_reports_scope",
+    "input": {
+      "case": "extra-argument",
+      "text": "/logout extra",
+      "saved": true
+    },
+    "expected": {
+      "selector": false,
+      "status": null,
+      "ordinary": "/logout extra"
+    }
+  },
+  {
+    "test": "logout_empty_command_restores_editor_and_reports_scope",
+    "input": {
+      "case": "outer-spaces",
+      "text": " /logout ",
+      "saved": true
+    },
+    "expected": {
+      "selector": true,
+      "status": null,
+      "ordinary": null
+    }
+  },
+  {
+    "test": "logout_empty_command_restores_editor_and_reports_scope",
+    "input": {
+      "case": "outer-bom",
+      "text": "﻿/logout",
+      "saved": true
+    },
+    "expected": {
+      "selector": true,
+      "status": null,
+      "ordinary": null
+    }
+  },
+  {
+    "test": "logout_empty_command_restores_editor_and_reports_scope",
+    "input": {
+      "case": "inner-next-line",
+      "text": "/logout",
+      "saved": true
+    },
+    "expected": {
+      "selector": false,
+      "status": null,
+      "ordinary": "/logout"
+    }
+  },
+  {
+    "test": "logout_empty_command_restores_editor_and_reports_scope",
+    "input": {
+      "case": "empty",
+      "text": "",
+      "saved": true
+    },
+    "expected": {
+      "selector": false,
+      "status": null,
+      "ordinary": null
+    }
+  },
+  {
+    "test": "logout_selection_removes_only_chosen_saved_credential",
+    "input": {
+      "case": "subscription",
+      "selected": "z",
+      "providers": [
+        {
+          "id": "a",
+          "models": [
+            "one",
+            "two"
+          ],
+          "key": true
+        },
+        {
+          "id": "b",
+          "models": [
+            "one"
+          ],
+          "key": true
+        },
+        {
+          "id": "z",
+          "models": [],
+          "name": "Saved account"
+        }
+      ],
+      "stored": [
+        {
+          "id": "z",
+          "record": {
+            "type": "oauth",
+            "access": "access",
+            "refresh": "refresh",
+            "expires": 1
+          }
+        },
+        {
+          "id": "a",
+          "record": {
+            "type": "api_key",
+            "key": "saved"
+          }
+        }
+      ]
+    },
+    "expected": {
+      "count": 2.0,
+      "message": "Logged out of Saved account",
+      "error": null,
+      "accepted": [
+        "a"
+      ]
+    }
+  },
+  {
+    "test": "logout_selection_removes_only_chosen_saved_credential",
+    "input": {
+      "case": "api-key",
+      "selected": "z",
+      "providers": [
+        {
+          "id": "a",
+          "models": [
+            "one"
+          ],
+          "key": true
+        },
+        {
+          "id": "z",
+          "models": [],
+          "name": "Saved key"
+        }
+      ],
+      "stored": [
+        {
+          "id": "a",
+          "record": {
+            "type": "oauth",
+            "access": "access",
+            "refresh": "refresh",
+            "expires": 1
+          }
+        },
+        {
+          "id": "z",
+          "record": {
+            "type": "api_key",
+            "key": "saved"
+          }
+        }
+      ]
+    },
+    "expected": {
+      "count": 1.0,
+      "message": "Removed stored API key for Saved key. Environment variables and models.json config are unchanged.",
+      "error": null,
+      "accepted": [
+        "a"
+      ]
+    }
+  },
+  {
+    "test": "logout_selection_removes_only_chosen_saved_credential",
+    "input": {
+      "case": "captured-kind-and-name",
+      "selected": "a",
+      "providers": [
+        {
+          "id": "a",
+          "models": [],
+          "name": "Original name"
+        }
+      ],
+      "stored": [
+        {
+          "id": "a",
+          "record": {
+            "type": "api_key",
+            "key": "saved"
+          }
+        }
+      ]
+    },
+    "expected": {
+      "count": 0.0,
+      "message": "Removed stored API key for Original name. Environment variables and models.json config are unchanged.",
+      "error": null,
+      "accepted": []
+    }
+  },
+  {
+    "test": "logout_count_uses_scoped_or_available_candidates",
+    "input": {
+      "case": "unscoped",
+      "selected": "a",
+      "providers": [
+        {
+          "id": "a",
+          "models": [
+            "one",
+            "two"
+          ],
+          "key": true
+        },
+        {
+          "id": "b",
+          "models": [
+            "one"
+          ],
+          "key": true
+        }
+      ],
+      "stored": [
+        {
+          "id": "a",
+          "record": {
+            "type": "api_key",
+            "key": "saved"
+          }
+        }
+      ],
+      "scoped": []
+    },
+    "expected": {
+      "count": 2.0,
+      "message": "Removed stored API key for a. Environment variables and models.json config are unchanged.",
+      "error": null,
+      "accepted": []
+    }
+  },
+  {
+    "test": "logout_count_uses_scoped_or_available_candidates",
+    "input": {
+      "case": "scoped-over-available",
+      "selected": "a",
+      "providers": [
+        {
+          "id": "a",
+          "models": [
+            "one",
+            "two"
+          ],
+          "key": true
+        },
+        {
+          "id": "b",
+          "models": [
+            "one"
+          ],
+          "key": true
+        }
+      ],
+      "stored": [
+        {
+          "id": "a",
+          "record": {
+            "type": "api_key",
+            "key": "saved"
+          }
+        }
+      ],
+      "scoped": [
+        "b/one"
+      ]
+    },
+    "expected": {
+      "count": 1.0,
+      "message": "Removed stored API key for a. Environment variables and models.json config are unchanged.",
+      "error": null,
+      "accepted": []
+    }
+  },
+  {
+    "test": "logout_count_uses_scoped_or_available_candidates",
+    "input": {
+      "case": "scope-outnumbers-available",
+      "selected": "a",
+      "providers": [
+        {
+          "id": "a",
+          "models": [
+            "one",
+            "two"
+          ],
+          "key": true
+        },
+        {
+          "id": "b",
+          "models": [
+            "one"
+          ],
+          "oauthOnly": true
+        }
+      ],
+      "stored": [
+        {
+          "id": "a",
+          "record": {
+            "type": "api_key",
+            "key": "saved"
+          }
+        }
+      ],
+      "scoped": [
+        "a/one",
+        "b/one"
+      ]
+    },
+    "expected": {
+      "count": 2.0,
+      "message": "Removed stored API key for a. Environment variables and models.json config are unchanged.",
+      "error": null,
+      "accepted": []
+    }
+  },
+  {
+    "test": "logout_selection_uses_current_session_with_captured_choice",
+    "input": {
+      "case": "replacement-session",
+      "selected": "a",
+      "providers": [
+        {
+          "id": "a",
+          "models": [],
+          "name": "First session"
+        }
+      ],
+      "stored": [
+        {
+          "id": "a",
+          "record": {
+            "type": "api_key",
+            "key": "saved"
+          }
+        }
+      ],
+      "replacement": [
+        {
+          "id": "a",
+          "record": {
+            "type": "oauth",
+            "access": "access",
+            "refresh": "refresh",
+            "expires": 1
+          }
+        },
+        {
+          "id": "b",
+          "record": {
+            "type": "api_key",
+            "key": "saved"
+          }
+        }
+      ]
+    },
+    "expected": {
+      "count": 1.0,
+      "message": "Removed stored API key for First session. Environment variables and models.json config are unchanged.",
+      "error": null,
+      "accepted": [
+        "b"
+      ],
+      "original": [
+        "a"
+      ]
+    }
+  },
+  {
+    "test": "logout_failures_keep_reached_effects_and_restore_focus",
+    "input": {
+      "case": "first-refresh",
+      "selected": "a",
+      "providers": [
+        {
+          "id": "a",
+          "models": [
+            "one"
+          ],
+          "key": true
+        }
+      ],
+      "stored": [
+        {
+          "id": "a",
+          "record": {
+            "type": "api_key",
+            "key": "saved"
+          }
+        }
+      ]
+    },
+    "expected": {
+      "count": 0.0,
+      "message": null,
+      "error": "Logout failed: refresh refused",
+      "accepted": [
+        "refusing"
+      ]
+    }
+  },
+  {
+    "test": "logout_failures_keep_reached_effects_and_restore_focus",
+    "input": {
+      "case": "second-refresh",
+      "selected": "a",
+      "providers": [
+        {
+          "id": "a",
+          "models": [
+            "one"
+          ],
+          "key": true
+        }
+      ],
+      "stored": [
+        {
+          "id": "a",
+          "record": {
+            "type": "api_key",
+            "key": "saved"
+          }
+        }
+      ]
+    },
+    "expected": {
+      "count": 0.0,
+      "message": null,
+      "error": "Logout failed: refresh refused",
+      "accepted": [
+        "refusing"
+      ]
+    }
+  },
+  {
+    "test": "logout_unavailable_candidates_set_zero_without_error",
+    "input": {
+      "case": "available-failure",
+      "selected": "a",
+      "providers": [
+        {
+          "id": "a",
+          "models": [
+            "one"
+          ],
+          "key": true
+        },
+        {
+          "id": "b",
+          "models": [
+            "one"
+          ],
+          "key": true
+        }
+      ],
+      "stored": [
+        {
+          "id": "a",
+          "record": {
+            "type": "api_key",
+            "key": "saved"
+          }
+        }
+      ]
+    },
+    "expected": {
+      "count": 0.0,
+      "message": "Removed stored API key for a. Environment variables and models.json config are unchanged.",
+      "error": null,
+      "accepted": []
+    }
+  },
+  {
+    "test": "logout_persistence_failure_remains_a_store_diagnostic",
+    "input": {
+      "case": "write-failure",
+      "selected": "a",
+      "providers": [],
+      "stored": [
+        {
+          "id": "a",
+          "record": {
+            "type": "api_key",
+            "key": "saved"
+          }
+        },
+        {
+          "id": "b",
+          "record": {
+            "type": "oauth",
+            "access": "access",
+            "refresh": "refresh",
+            "expires": 1
+          }
+        }
+      ]
+    },
+    "expected": {
+      "count": 0.0,
+      "message": "Removed stored API key for a. Environment variables and models.json config are unchanged.",
+      "error": null,
+      "accepted": [
+        "b"
+      ],
+      "persisted": [
+        "a",
+        "b"
+      ]
+    }
+  },
+  {
+    "test": "logout_cancel_keeps_saved_credentials_and_restores_editor",
+    "input": {
+      "case": "cancel",
+      "selected": "a",
+      "providers": [
+        {
+          "id": "a",
+          "models": [
+            "one"
+          ],
+          "key": true
+        }
+      ],
+      "stored": [
+        {
+          "id": "a",
+          "record": {
+            "type": "api_key",
+            "key": "saved"
+          }
+        }
+      ]
+    },
+    "expected": {
+      "count": 0.0,
+      "message": null,
+      "error": null,
+      "accepted": [
+        "a"
+      ]
+    }
+  }
+]

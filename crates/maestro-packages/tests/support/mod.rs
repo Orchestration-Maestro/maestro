@@ -153,6 +153,20 @@ impl PackageOperations for Controlled {
             .unwrap_or_else(|| Ok(output("/root", "", Some(0))))
     }
 }
+/// Completes one owned operation on a fresh current-thread runtime that admitted its workers,
+/// then closes that runtime.
+///
+/// Only the unix manager tests consume it, so other hosts would see it unused.
+#[cfg(unix)]
+pub fn drive<T>(effects: &Rc<Effects>, operation: impl std::future::Future<Output = T>) -> T {
+    let local = Rc::new(tokio::task::LocalSet::new());
+    *effects.local.borrow_mut() = Rc::downgrade(&local);
+    let runtime = crate::runtime::runtime();
+    let result = runtime.block_on(local.run_until(operation));
+    runtime.block_on(Rc::try_unwrap(local).ok().unwrap());
+    result
+}
+
 /// Captured response for a controlled child.
 pub fn output(stdout: &str, stderr: &str, status: Option<i32>) -> CommandOutput {
     CommandOutput {
@@ -205,6 +219,8 @@ pub fn recorded_stages(text: &str) -> String {
 /// they are.
 pub fn below(root: &std::path::Path, path: &str) -> String {
     if path.starts_with('/') {
+        // The authored separators become native ones, as the package manager joins them.
+        let path = path.replace('/', std::path::MAIN_SEPARATOR_STR);
         format!("{}{path}", root.to_str().unwrap())
     } else {
         path.to_owned()
@@ -222,7 +238,12 @@ pub type Configured = (
 /// installed, npm contents at version 1.
 #[cfg(unix)]
 pub fn installed(user: &Value, project: &Value) -> Configured {
-    let configured = uninstalled(user, project);
+    installed_with(user, project, None)
+}
+/// [`installed`] over the caller's startup offline selection.
+#[cfg(unix)]
+pub fn installed_with(user: &Value, project: &Value, offline: Option<bool>) -> Configured {
+    let configured = uninstalled_with(user, project, offline);
     let tree = configured.3.path();
     let user = user.get("packages").and_then(Value::as_array);
     let scoped = user.into_iter().flatten().map(|entry| (true, entry));
@@ -254,18 +275,24 @@ pub fn installed(user: &Value, project: &Value) -> Configured {
 /// A configured manager over a fresh empty tree.
 #[cfg(unix)]
 pub fn uninstalled(user: &Value, project: &Value) -> Configured {
+    uninstalled_with(user, project, None)
+}
+/// [`uninstalled`] over the caller's startup offline selection.
+#[cfg(unix)]
+pub fn uninstalled_with(user: &Value, project: &Value, offline: Option<bool>) -> Configured {
     let tree = super::scratch::Scratch::new().unwrap();
-    let (manager, settings, effects) = manager_below(tree.path(), user, project);
+    let (manager, settings, effects) = manager_below(tree.path(), user, project, offline);
     (manager, settings, effects, tree)
 }
 /// A configured manager over `root`, laid out as the fixture paths spell it: the project at
 /// `/work/project`, the agent directory at `/home/reader/agent`, and the global npm root
-/// lookup answering `/root`.
+/// lookup answering `/root`. `offline` is the caller's startup selection.
 #[cfg(unix)]
 pub fn manager_below(
     root: &std::path::Path,
     user: &Value,
     project: &Value,
+    offline: Option<bool>,
 ) -> (
     Rc<DefaultPackageManager<Controlled>>,
     Rc<RefCell<SettingsManager>>,
@@ -290,7 +317,8 @@ pub fn manager_below(
             settings_manager: settings.clone(),
         },
         Controlled(effects.clone()),
-    );
+    )
+    .with_offline(offline);
     (Rc::new(manager), settings, effects)
 }
 /// The npm root holding a scope's installed packages in a configured tree.

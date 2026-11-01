@@ -301,6 +301,14 @@ explicit null is retained for supported thinking/routing fields and open tool
 details. Signature
 strings remain opaque; the separate signature metadata record accepts version 1.
 
+`Usage::total_tokens` keeps the presence of the saved count. An omitted total
+decodes, is never computed from the categories and is omitted again when the record
+is written; an explicit null stays null, and a supplied number, including its sign
+and fractional part, survives unchanged. `Usage::default` reports an explicit zero.
+Readers keep their own rules: current context falls back to the category counts when
+the total is missing or falsy, session statistics always sum the categories, and
+file reports add a missing total as zero.
+
 Model compatibility is one ordered open object, independent of the protocol identifier.
 `ModelCompat` retains mixed-family and custom members and allows ordinary map edits.
 The typed completion, response and message compatibility records convert into it with
@@ -323,9 +331,31 @@ ordered cancellable events through the ordinary invocation interface. See the
 ## Resolved request authentication
 
 `maestro-request::model_registry::ResolvedRequestAuth` owns the resolved key,
-ordered headers or denial string shared by the [native catalog](catalog.md#request-authentication)
+optional endpoint, ordered headers or denial string shared by the [native catalog](catalog.md#request-authentication)
 and [guest authoring library](extensions/guest.md). Both consumers re-export the
 same record; resolution policy remains with the producer.
+
+## Provider registration records
+
+`maestro-request::provider_config` owns `ProviderConfig<C>` and
+`ProviderModelConfig`, the data a provider registration carries. `C` holds the
+caller's callable operations and never enters the JSON form: the native catalog
+uses `ProviderConfigInput`, which is `ProviderConfig<ProviderCallbacks>`, and the
+guest authoring library uses `ProviderConfig` with no operations. The catalog
+re-exports `ProviderModelConfig` as `ProviderModelInput` and the guest under its
+own name. JSON field names are camel case, absent options are omitted, and empty
+strings, lists, maps and `false` stay as written.
+
+## Credential records
+
+`maestro-request::oauth::OAuthCredentials` and the `maestro-request::auth_storage`
+records (`ApiKeyCredential`, `AuthCredential`, `AuthStorageData`, `AuthSource` and
+`AuthStatus`) are the [credential owner's](credentials.md) typed records, defined
+once here and re-exported by models, credentials and the guest.
+`maestro-request::oauth` also owns `OAuthPrompt`, `OAuthAuthInfo`,
+`OAuthSelectOption` and `OAuthSelectPrompt`, re-exported by models and the guest.
+These are plain interaction data; callable login operations stay with their
+native or guest owners.
 
 ## Raw user-block text
 
@@ -369,13 +399,17 @@ the [tree guide](tree.md). Branch extraction and forking are described in
 [the extraction guide](sessions/session_manager.md#branch-extraction-and-forking).
 
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
-Native callers use its default JSON schema through models; guest authoring keeps
-its existing `ToolInfo<String>` alias. Identity-deduplicated live callback storage
-belongs to `maestro-models::records::listeners::Listeners<P>`. Agent subscriptions,
-session listeners and extension error delivery reuse it. For shared `Rc` callbacks
-it also owns subscribing, which returns the removal operation, and the live walk in
-registration order. What each listener receives and when it runs remain with the
-caller. The collection returns removed ownership for release outside guards.
+Native callers use its default parameter-schema owner through models; guest authoring
+keeps a `ToolInfo` alias over the same owner. Live callback storage
+belongs to `maestro-listeners::Listeners<P>`, with one admission per identity by
+default or one per registration as an event-emitter listener list keeps them.
+Agent subscriptions, session listeners, extension error delivery, terminal input
+listeners and native output-failure handlers reuse it. For shared `Rc` callbacks it
+also owns subscribing, which returns the removal
+operation, and the live walk in registration order. What each listener receives
+and when it runs remain with the caller. The collection returns removed ownership
+for release outside guards, and it reclaims retired registrations while no
+traversal runs, so one removal and a complete clear both stay cheap.
 
 
 ## Extension event records

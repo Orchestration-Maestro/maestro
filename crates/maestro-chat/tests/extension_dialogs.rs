@@ -135,6 +135,7 @@ fn dialogs_release_captures_and_cancel_work_with_containing_writer() {
                         timeout: Some(1000.0),
                         runtime: Rc::new(spy.clone()),
                         theme,
+                        on_toggle_tools_expanded: None,
                     },
                     ("Title".into(), vec!["Alpha".into()], None),
                 )
@@ -272,4 +273,55 @@ fn assert_pack_rows(
     let hint = &rows[rows.len() - 3];
     assert!(hint.contains(&theme.fg(&ThemeColor::Dim, "enter").unwrap()));
     assert!(hint.contains(&theme.fg(&ThemeColor::Muted, " cancel").unwrap()));
+}
+
+#[test]
+fn startup_selector_request_builds_existing_component() {
+    use crate::settings_selection_support::plain;
+    use maestro_app::presentation_data::input_selectors::ExtensionSelectorRequest;
+    use maestro_tui::{Component, get_keybindings};
+    use std::{cell::RefCell, rc::Rc};
+    let _admission = crate::registry::REGISTRY.lock().unwrap();
+    let _restore = crate::registry::Restore(get_keybindings());
+    let extension_dialog_support::StartupHost {
+        ui,
+        terminal,
+        factory,
+        runtime,
+    } = extension_dialog_support::startup_host();
+    let seen = Rc::new(RefCell::new(Vec::new()));
+    let (selecting, cancelling) = (seen.clone(), seen.clone());
+    let view = factory(ExtensionSelectorRequest {
+        title: "Choose".into(),
+        options: vec!["Continue".into(), "Cancel".into()],
+        on_select: Rc::new(move |value| selecting.borrow_mut().push(value.to_owned())),
+        on_cancel: Rc::new(move || cancelling.borrow_mut().push("cancelled".into())),
+        tui: ui.clone(),
+    })
+    .unwrap();
+    ui.add_child(view.component.clone());
+    ui.set_focus(Some(view.focus));
+    let first = ui.render(80).join("\n");
+    assert!(first.contains("Continue") && first.contains("Cancel"));
+    ui.start().unwrap();
+    runtime.settle().unwrap();
+    let painted = plain(&terminal.writes().concat());
+    assert!(painted.contains("→ Continue") && painted.contains("  Cancel"));
+    terminal.clear_writes();
+    terminal.send_input("\u{e}");
+    runtime.settle().unwrap();
+    let moved = plain(&terminal.writes().concat());
+    assert!(moved.contains("→ Cancel") && moved.contains("  Continue"));
+    terminal.send_input("\u{19}");
+    terminal.send_input("\u{18}");
+    assert_eq!(seen.borrow().as_slice(), ["Cancel", "cancelled"]);
+    for width in [3, 4, 8, 20] {
+        assert!(
+            ui.render(width)
+                .iter()
+                .all(|line| maestro_tui::visible_width(line) <= width)
+        );
+    }
+    ui.stop().unwrap();
+    assert_eq!(terminal.events(), ["start", "stop"]);
 }

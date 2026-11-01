@@ -47,6 +47,8 @@ struct Recipe {
     action: Option<String>,
     /// Offline environment value.
     offline: Option<String>,
+    /// Startup offline selection supplied to the manager.
+    selection: Option<bool>,
     /// Failed acquisition.
     #[serde(rename = "failInstall")]
     fail_install: Option<bool>,
@@ -161,7 +163,8 @@ fn setup(recipe: &Recipe, root: std::path::PathBuf) -> Option<Fixture> {
             settings_manager: Rc::clone(&settings),
         },
         support::Controlled(Rc::clone(&effects)),
-    );
+    )
+    .with_offline(recipe.selection);
     Some(Fixture {
         _denied: denied,
         base: root,

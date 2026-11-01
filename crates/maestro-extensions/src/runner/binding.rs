@@ -5,14 +5,14 @@ use crate::types::{ExtensionActions, ProviderActions, write};
 use crate::{
     EventError, ExtensionExecution,
     types::{
-        ExtensionCommandContextActions, ExtensionContextActions, ExtensionRuntimeState,
-        ExtensionUIContext,
+        ActivityGuard, ExtensionCommandContextActions, ExtensionContextActions, ExtensionUIContext,
+        ExtensionUIContextBinding,
     },
 };
 use maestro_catalog::ModelRegistry;
 use maestro_models::SharedHandle;
 use maestro_session::session_manager::ReadonlySessionManager;
-use std::{cell::RefCell, rc::Rc, sync::Arc};
+use std::{cell::RefCell, rc::Rc};
 
 /// The session a runner serves, fixed when the runner is created.
 pub struct ExtensionRunnerSession {
@@ -26,8 +26,8 @@ pub struct ExtensionRunnerSession {
 
 /// Runner state that its contexts read when used.
 pub(crate) struct ContextBinding {
-    /// Shared flag values and activity guard.
-    pub(super) runtime: Arc<ExtensionRuntimeState>,
+    /// This runner's own activity; a later runner over the same runtime keeps its own.
+    pub(super) activity: ActivityGuard,
     /// The served session.
     pub(super) session: ExtensionRunnerSession,
     /// Currently bound application operations.
@@ -37,17 +37,23 @@ pub(crate) struct ContextBinding {
     /// The headless fallback restored by a reset.
     pub(super) no_ui: ExtensionUIContext,
     /// The current UI context.
-    pub(super) ui: RefCell<ExtensionUIContext>,
+    pub(super) ui: RefCell<ExtensionUIContextBinding>,
+    /// The callback bound once to this runner's current UI acquisition.
+    pub(super) ui_error_reporter: RefCell<Option<crate::types::ExtensionErrorListener>>,
 }
 
 impl ContextBinding {
     /// Returns the current UI context; it keeps its host after later changes.
     pub(super) fn get_ui_context(&self) -> ExtensionUIContext {
-        self.ui.borrow().clone()
+        let mut context = self.ui.borrow().get().unwrap_or_else(|| self.no_ui.clone());
+        context
+            .error_reporter
+            .clone_from(&self.ui_error_reporter.borrow());
+        context
     }
     /// Whether an installed context, rather than a headless fallback, is current.
     pub(super) fn has_ui(&self) -> bool {
-        !self.ui.borrow().fallback
+        self.ui.borrow().has_ui()
     }
 }
 
@@ -70,7 +76,7 @@ impl<E: ExtensionExecution> ExtensionRunner<E> {
         drop(self.binding.actions.replace(context_actions));
         let bound = BoundProviders {
             actions: provider_actions,
-            catalog: SharedHandle::clone(&self.binding.session.model_registry),
+            catalog: SharedHandle::downgrade(&self.binding.session.model_registry),
         };
         let mut cursor = 0;
         while let Some((id, pending)) = self.runtime.next_or_bind(cursor, &bound) {
@@ -84,11 +90,13 @@ impl<E: ExtensionExecution> ExtensionRunner<E> {
         }
         Ok(())
     }
-    /// Invalidates this runner's contexts and registration, keeping the first message.
+    /// Invalidates this runner's contexts and its runtime's registration, each keeping its
+    /// first message.
     ///
     /// `None` uses the stale-context guidance.
     pub fn invalidate(&self, message: Option<String>) {
-        self.binding.runtime.invalidate(message);
+        self.binding.activity.invalidate(message.clone());
+        self.runtime.invalidate(message);
     }
     /// Requests a graceful shutdown through the bound operation, even when stale.
     ///
@@ -108,7 +116,7 @@ impl<E: ExtensionExecution> ExtensionRunner<E> {
         drop(
             self.binding
                 .command_actions
-                .replace(actions.unwrap_or_default()),
+                .replace(actions.unwrap_or_else(ExtensionCommandContextActions::unbound)),
         );
     }
 }

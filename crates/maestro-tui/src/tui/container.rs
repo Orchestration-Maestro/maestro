@@ -87,7 +87,7 @@ impl Container {
     /// shifts the later children back, so the next one is skipped, and a child listed twice
     /// is visited once per position reached. `clear`, and `set_children` with another
     /// array, install an array that this walk never visits anything in.
-    fn walk(&self) -> impl Iterator<Item = ComponentHandle> + use<> {
+    pub fn walk(&self) -> impl Iterator<Item = ComponentHandle> + use<> {
         let array = self.children();
         (0..).map_while(move |index| array.borrow().get(index).cloned())
     }

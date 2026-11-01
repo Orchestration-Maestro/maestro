@@ -141,7 +141,7 @@ fn calls(control: &Control) -> Vec<AssistantContent> {
             AssistantContent::ToolCall(ToolCall {
                 id: format!("call-{id}"),
                 name: name.into(),
-                arguments: JsonObject::from_iter([("value".into(), value)]),
+                arguments: JsonObject::from_iter([("value".into(), value)]).into(),
                 thought_signature: None,
             })
         })
@@ -382,7 +382,7 @@ fn tool(input: Arc<Input>, observed: Arc<Mutex<Observations>>) -> SharedAgentToo
         definition: Tool {
             name: "echo".into(),
             description: "Echo".into(),
-            parameters: json!({"type":"object","properties":{"value":{"type":if control.flag("stringSchema") { "string" } else { "integer" }}},"required":["value"]}),
+            parameters: json!({"type":"object","properties":{"value":{"type":if control.flag("stringSchema") { "string" } else { "integer" }}},"required":["value"]}).into(),
         },
         label: "Echo".into(),
         prepare_arguments: preparation,

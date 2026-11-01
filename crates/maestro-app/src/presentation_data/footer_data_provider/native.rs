@@ -1,8 +1,9 @@
-//! Unix file-system and Git process effects.
+//! Native file-system and Git process effects.
 
 use maestro_process::child_process::{CapturedChild, WaitOptions, wait_for_child_process};
 use maestro_process::{OutputMode, SpawnSyncError, SpawnSyncOptions, spawn_sync};
 use std::io;
+#[cfg(unix)]
 use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 use std::{rc::Rc, time::Duration};
@@ -45,13 +46,42 @@ impl WatchOperations for NativeFooterOperations {
 }
 /// Read the three metadata dimensions selected by footer polling.
 fn stats(path: &Path) -> Option<FooterFileStats> {
-    std::fs::metadata(path).ok().map(|m| FooterFileStats {
-        mtime_ms: millis(m.mtime(), m.mtime_nsec()),
-        ctime_ms: millis(m.ctime(), m.ctime_nsec()),
-        size: m.len().to_f64().unwrap_or_default(),
+    std::fs::metadata(path).ok().map(|m| {
+        let (mtime_ms, ctime_ms) = times(&m);
+        FooterFileStats {
+            mtime_ms,
+            ctime_ms,
+            size: m.len().to_f64().unwrap_or_default(),
+        }
     })
 }
-/// Convert Unix timestamp components without truncating fractional milliseconds.
+/// The modification and change times in milliseconds.
+#[cfg(unix)]
+fn times(m: &std::fs::Metadata) -> (f64, f64) {
+    (
+        millis(m.mtime(), m.mtime_nsec()),
+        millis(m.ctime(), m.ctime_nsec()),
+    )
+}
+/// The modification time in milliseconds, twice.
+#[cfg(windows)]
+fn times(m: &std::fs::Metadata) -> (f64, f64) {
+    let since = |time: Duration| {
+        millis(
+            time.as_secs().to_i64().unwrap_or_default(),
+            i64::from(time.subsec_nanos()),
+        )
+    };
+    let modified = m.modified().map_or(0.0, |time| {
+        match time.duration_since(std::time::UNIX_EPOCH) {
+            Ok(after) => since(after),
+            Err(before) => -since(before.duration()),
+        }
+    });
+    // shortcut: stable Rust has no Windows change time; use the modification time until it does.
+    (modified, modified)
+}
+/// Convert timestamp components since the Unix epoch without truncating fractional milliseconds.
 fn millis(seconds: i64, nanos: i64) -> f64 {
     seconds.to_f64().unwrap_or_default() * 1000.0 + nanos.to_f64().unwrap_or_default() / 1_000_000.0
 }
@@ -135,7 +165,7 @@ impl FooterOperations for NativeFooterOperations {
 
 /// Prepare the exact Git operands on the caller-selected directory.
 fn symbolic_command(repo_dir: &Path) -> Command {
-    let mut command = Command::new("git");
+    let mut command = maestro_process::command("git");
     command
         .arg("--no-optional-locks")
         .args(["symbolic-ref", "--quiet", "--short", "HEAD"])

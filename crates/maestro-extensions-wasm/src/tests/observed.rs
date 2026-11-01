@@ -69,10 +69,26 @@ impl Session {
     }
 }
 
+/// One tool registration the guest attempted, whether or not the host admitted it.
+pub struct Attempt {
+    /// The metadata document the guest sent.
+    pub metadata: String,
+    /// How many transcript lines the host recorded before the attempt.
+    pub position: usize,
+}
+
 /// Lines the host observed, the identities the extension dropped, how many resources the host
 /// still lends out, and the registrations it received.
 #[derive(Default)]
 pub struct Observed {
+    /// Controlled native waits while a custom view script drives independent tails.
+    pub tick_clock: Option<super::custom_ticks::Clock>,
+    /// Supplied native byte resources and exact operand observations.
+    pub native_io: super::native_io_host::Bank,
+    /// Supplied HTTP responses and forwarded request operands.
+    pub native_http: super::native_http_host::Bank,
+    /// Supplied file watch registration observations.
+    pub native_watch: super::native_watch_host::Bank,
     /// Raw shell byte receiver observations.
     pub shell: super::shell_host::Bank,
     /// Replacement-operation host decisions.
@@ -89,6 +105,8 @@ pub struct Observed {
     pub compactions: usize,
     /// Ordinary action controls.
     pub actions: super::action_host::Bank,
+    /// Host helper operations and their literal encoded operands.
+    pub helper_calls: Vec<(String, String)>,
     /// Registration transport observations and supplied flag replies.
     pub registrations: super::registration_host::Bank,
     /// Event-channel observations.
@@ -101,6 +119,12 @@ pub struct Observed {
     pub live: usize,
     /// Authored tool metadata in registration order.
     pub tools: Vec<String>,
+    /// Tool registrations the guest attempted, admitted or not, in attempt order.
+    pub attempts: Vec<Attempt>,
+    pub schemas: Vec<(String, String, u32)>,
+    pub schema_request_bytes: usize,
+    pub schema_response_bytes: usize,
+    pub schema_checks: usize,
     /// Delivered partial results in observation order.
     pub updates: Vec<String>,
     /// Partial result number to refuse, counted from zero, with the host's message.
@@ -109,6 +133,12 @@ pub struct Observed {
     pub readers: super::reader_host::Bank,
     /// Live context and catalog controls.
     pub catalog: super::catalog_host::Bank,
+    /// Retained UI acquisition identities and supplied rejections.
+    pub ui: super::ui_host::Bank,
+    /// Themes the host publishes under each handed-out key.
+    pub themes: super::theme_host::Bank,
+    /// The guest state identity of each tool row, by tool call id.
+    pub tool_rows: HashMap<String, u32>,
     /// Last identity handed out.
     next: u32,
     /// Registered callback keys by name, such as `event input`.
@@ -119,6 +149,8 @@ pub struct Observed {
     hold: VecDeque<Hold>,
     /// Whether the next session operation fails without running its continuation.
     reject_session: bool,
+    /// Captured standard output of the guest, when the host installed one.
+    pub stdout: Option<wasmtime_wasi::p2::pipe::MemoryOutputPipe>,
 }
 
 impl Observed {
@@ -155,11 +187,23 @@ impl Observed {
         self.live = self.live.saturating_sub(1);
     }
 
+    /// Every callback identity this isolated host issued, including those already dropped.
+    pub fn identities(&self) -> std::ops::RangeInclusive<u32> {
+        1..=self.next
+    }
+
     /// Hands out a fresh callback identity.
     pub fn next_identity(&mut self) -> u32 {
         self.next += 1;
         self.lend();
         self.next
+    }
+
+    /// Identities the controlled host still owns, including widget style callbacks.
+    pub fn live_identities(&self) -> Vec<u32> {
+        (1..=self.next)
+            .filter(|id| !self.dropped.contains(id))
+            .collect()
     }
 
     /// Records that the extension dropped an identity.
@@ -189,11 +233,19 @@ impl Observed {
     pub fn register_tool(
         &mut self,
         metadata: &str,
-        prepare: Option<u32>,
-        execute: u32,
+        (prepare, execute): (Option<u32>, u32),
+        (render_call, render_result): (Option<u32>, Option<u32>),
     ) -> Result<(), String> {
-        let value: serde_json::Value = serde_json::from_str(metadata).map_err(|e| e.to_string())?;
-        let name = value["name"].as_str().ok_or("missing tool name")?;
+        #[derive(serde::Deserialize)]
+        struct Named {
+            /// The registration identity observed by the host.
+            name: String,
+        }
+        let Named { name } = serde_json::from_str(metadata).map_err(|e| e.to_string())?;
+        self.attempts.push(Attempt {
+            metadata: metadata.into(),
+            position: self.transcript.len(),
+        });
         if let Some(error) = self.registrations.refusal() {
             return Err(error);
         }
@@ -203,6 +255,12 @@ impl Observed {
         self.tools.push(metadata.into());
         if let Some(prepare) = prepare {
             self.register(format!("prepare {name}"), prepare);
+        }
+        if let Some(render) = render_call {
+            self.register(format!("render-call {name}"), render);
+        }
+        if let Some(render) = render_result {
+            self.register(format!("render-result {name}"), render);
         }
         self.register(format!("tool {name}"), execute);
         Ok(())
@@ -262,6 +320,12 @@ impl Observed {
         if custom_type == "catalog-control" {
             self.catalog.control(data.expect("control document"));
         }
+        if custom_type == "ui-control" {
+            self.ui.control(data.expect("control document"));
+        }
+        if custom_type == "theme-control" {
+            self.themes.control(data.expect("control document"));
+        }
         self.log(format!("entry {custom_type} {}", data.unwrap_or("none")));
     }
 
@@ -285,6 +349,15 @@ impl Observed {
     pub fn take_registration(&mut self, name: &str) -> Option<u32> {
         let position = self.order.iter().position(|(queued, _)| queued == name)?;
         self.order.remove(position).map(|(_, key)| key)
+    }
+
+    /// Every key registered under `name`, in registration order.
+    pub fn registrations(&self, name: &str) -> Vec<u32> {
+        self.order
+            .iter()
+            .filter(|(queued, _)| queued == name)
+            .map(|(_, key)| *key)
+            .collect()
     }
 
     /// Takes the registration next in line for release, in registration order, then the

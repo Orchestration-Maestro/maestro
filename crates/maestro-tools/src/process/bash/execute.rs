@@ -1,16 +1,12 @@
 //! Per-call raw output and progress execution.
-use super::{BashExecOptions, BashExecution, BashOperations, BashSpawnContext, BashToolDetails};
+use super::{BashExecOptions, BashExecution, BashSpawnContext, BashToolDetails, result::LineBytes};
 use crate::{
     output::output_accumulator::{OutputAccumulator, OutputAccumulatorOptions, OutputSnapshot},
     utils::diagnostics::diagnostic,
 };
 use maestro_agent::{AgentToolResult, AgentToolUpdateCallback};
 use maestro_models::{Cancellation, DiagnosticErrorInfo, Local, Threaded};
-use std::{
-    io,
-    sync::{Arc, Mutex},
-    time::Duration,
-};
+use std::{io, sync::Mutex, time::Duration};
 use tokio::{sync::Notify, time::Instant};
 
 /// Output state shared only with the borrowed data sink.
@@ -87,7 +83,7 @@ impl Progress {
     fn finish<E: BashExecution>(
         mut self,
         update: Option<&AgentToolUpdateCallback<BashToolDetails, E>>,
-    ) -> io::Result<(OutputSnapshot, usize)> {
+    ) -> io::Result<(OutputSnapshot, LineBytes)> {
         if self.error.is_none() {
             self.error = self.output.finish().err();
         }
@@ -104,7 +100,11 @@ impl Progress {
         let closed = self.output.close_temp_file();
         let snapshot = snapshot?;
         closed?;
-        Ok((snapshot, self.output.get_last_line_bytes()))
+        let line_bytes = LineBytes {
+            last: self.output.get_last_line_bytes(),
+            ended: self.output.ended_line_bytes(),
+        };
+        Ok((snapshot, line_bytes))
     }
 }
 
@@ -120,7 +120,7 @@ async fn wait(deadline: Option<Instant>) {
 macro_rules! execute { ($mode:ty) => {
 /// Run the supplied operation and close its output before classifying settlement.
 pub(crate) async fn run(
-    operations: Arc<dyn BashOperations<$mode>>,
+    operations: <$mode as maestro_models::Execution>::Shared<<$mode as BashExecution>::Operations>,
     context: BashSpawnContext,
     timeout: Option<f64>,
     signal: Option<Cancellation>,
@@ -128,7 +128,9 @@ pub(crate) async fn run(
 ) -> Result<AgentToolResult<BashToolDetails>, DiagnosticErrorInfo> {
     let state = Mutex::new(Progress::new());
     let changed = Notify::new();
-    let result = {
+    let result = if signal.as_ref().is_some_and(Cancellation::is_aborted) {
+        Err(crate::process::bash::BashError::Aborted)
+    } else {
         let mut data = |bytes: &[u8]| {
             let value = state
                 .lock()
@@ -168,10 +170,10 @@ pub(crate) async fn run(
     let state = state
         .into_inner()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
-    let (snapshot, last_line_bytes) = state
+    let (snapshot, line_bytes) = state
         .finish::<$mode>(update.as_ref())
         .map_err(|error| diagnostic(&error))?;
-    crate::process::bash::result::settle(snapshot, last_line_bytes, result)
+    crate::process::bash::result::settle(snapshot, line_bytes, result)
 }
 
 }; }
@@ -179,9 +181,9 @@ execute!(Threaded);
 /// Local progress uses the same accumulator and selected deadlines.
 pub(super) mod local {
     use super::{
-        AgentToolResult, AgentToolUpdateCallback, Arc, BashExecOptions, BashOperations,
-        BashSpawnContext, BashToolDetails, Cancellation, DiagnosticErrorInfo, Local, Mutex, Notify,
-        Progress, diagnostic, wait,
+        AgentToolResult, AgentToolUpdateCallback, BashExecOptions, BashExecution, BashSpawnContext,
+        BashToolDetails, Cancellation, DiagnosticErrorInfo, Local, Mutex, Notify, Progress,
+        diagnostic, wait,
     };
     execute!(Local);
 }

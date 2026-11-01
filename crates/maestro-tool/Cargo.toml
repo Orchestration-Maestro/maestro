@@ -4,6 +4,7 @@ version = "0.1.0"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
+autotests = false
 
 [dependencies]
 maestro-request = { path = "../maestro-request" }
@@ -11,6 +12,10 @@ serde.workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true
+
+[[test]]
+name = "integration"
+path = "tests/integration.rs"
 
 [lints]
 workspace = true

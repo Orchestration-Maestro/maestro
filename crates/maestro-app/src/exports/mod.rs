@@ -10,7 +10,7 @@ mod clipboard;
 mod configuration;
 /// Existing credentials re-exports.
 mod credentials;
-/// Workspace daemon re-export, named separately from the exported module.
+/// Named daemon records and profiling operations for frontends.
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "daemon.rs"]
 mod daemon_exports;
@@ -18,7 +18,7 @@ mod daemon_exports;
 mod extensions;
 /// Existing json re-exports.
 mod json;
-/// Existing Markdown re-export, named separately from the exported module.
+/// Named Markdown records and parsing operations for frontends.
 #[path = "markdown.rs"]
 mod markdown_exports;
 /// Existing models re-exports.
@@ -31,11 +31,14 @@ mod presentation_data;
 mod process;
 /// Existing resources re-exports.
 mod resources;
+/// The JSONL protocol records and server.
+#[cfg(not(target_arch = "wasm32"))]
+mod rpc;
 /// Existing session re-exports.
 mod session;
 /// Existing settings re-exports.
 mod settings;
-/// Terminal emulator re-export, named separately from the exported module.
+/// Named terminal emulator records for the pane renderer.
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "terminal.rs"]
 mod terminal_exports;
@@ -54,10 +57,10 @@ pub use clipboard::*;
 pub use configuration::*;
 pub use credentials::*;
 #[cfg(not(target_arch = "wasm32"))]
-pub use daemon_exports::*;
+pub use daemon_exports::daemon;
 pub use extensions::*;
 pub use json::*;
-pub use markdown_exports::*;
+pub use markdown_exports::markdown;
 pub use models::*;
 #[cfg(not(target_arch = "wasm32"))]
 pub use packages::*;
@@ -65,11 +68,19 @@ pub use presentation_data::*;
 #[cfg(not(target_arch = "wasm32"))]
 pub use process::*;
 pub use resources::*;
+#[cfg(not(target_arch = "wasm32"))]
+pub use rpc::*;
 pub use session::*;
 pub use settings::*;
 #[cfg(not(target_arch = "wasm32"))]
-pub use terminal_exports::*;
+pub use terminal_exports::terminal;
 pub use text::*;
 #[cfg(not(target_arch = "wasm32"))]
 pub use theme::*;
 pub use tools::*;
+
+/// Changelog utility re-exports.
+#[cfg(not(target_arch = "wasm32"))]
+pub use crate::utils::changelog::{
+    ChangelogEntry, compare_versions, get_changelog_path, get_new_entries, parse_changelog,
+};

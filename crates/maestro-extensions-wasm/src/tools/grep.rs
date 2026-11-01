@@ -1,7 +1,24 @@
 //! Supplied grep tool data.
+use super::OperationFuture;
 use super::truncate::TruncationResult;
 use crate::Presence;
 use serde::{Deserialize, Serialize};
+use std::rc::Rc;
+
+/// Replaceable root inspection and context reads; searching remains native.
+#[derive(Clone)]
+pub struct GrepOperations {
+    /// Observes whether the resolved root is a directory.
+    pub is_directory: Rc<dyn Fn(String) -> OperationFuture<'static, bool>>,
+    /// Returns original context text for a matched absolute file.
+    pub read_file: Rc<dyn Fn(String) -> OperationFuture<'static, String>>,
+}
+/// Grep construction choices; absent observations use native filesystem access.
+#[derive(Default)]
+pub struct GrepToolOptions {
+    /// Independently retained replacement filesystem observations.
+    pub operations: Option<GrepOperations>,
+}
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 /// Arguments supplied to the grep tool.

@@ -2,17 +2,19 @@
 #![cfg(all(test, target_arch = "wasm32"))]
 
 pub use tests::*;
+pub mod walk;
 
 #[cfg(test)]
 mod tests {
+    use super::walk;
     use crate::support::{self, brand::pack};
     use maestro_theme::{BrandMode, BrandPack, SyntaxHighlighter, SyntectHighlighter};
     use maestro_web::{
-        Attachment, I18n, TranslationFunction,
+        I18n, TranslationFunction,
         browser::{
             attachment_content::{
                 AttachmentContent, AttachmentHost, AttachmentHostError, AttachmentSurface,
-                BrowserAttachmentHost, FocusTarget, ReadingLayout, ReadingPhase,
+                BrowserAttachmentHost, ReadingLayout, ReadingPhase,
             },
             timer::Timer,
         },
@@ -118,35 +120,36 @@ mod tests {
         serde_json::Value::String(fallback.html.clone())
     }
 
-    /// Mount both delimiter spellings and compare the recorded formula observations.
+    /// Mount both delimiter spellings of the rows `test` owns, or of every row, and compare
+    /// the recorded formula observations.
     ///
     /// # Panics
     /// Panics if a formula differs from its recorded browser observations.
-    pub async fn math_rows_match(test: &str) {
+    pub async fn math_rows_match(mounter: &mut dyn walk::Mounter, test: Option<&str>) {
         let all: Vec<MathRow> =
             serde_json::from_str(include_str!("../fixtures/markdown/math.json")).unwrap();
         assert_eq!(all.len(), 101);
         let inputs: std::collections::BTreeSet<_> =
             all.iter().map(|r| (&r.expression, r.display)).collect();
         assert_eq!(inputs.len(), all.len());
-        let mut surface = Surface::new();
         let mut count = 0;
-        for row in all.iter().filter(|row| row.test == test) {
+        for row in all
+            .iter()
+            .filter(|row| test.is_none_or(|test| row.test == test))
+        {
             count += 1;
             for (open, close) in if row.display {
                 [("$$", "$$"), ("\\[", "\\]")]
             } else {
                 [("$", "$"), ("\\(", "\\)")]
             } {
-                let mut block = MarkdownBlock::new(surface.host());
-                block.content = format!("{open}{}{close}", row.expression);
-                block.escape_html = false;
-                surface.settle(&mut block);
+                let content = format!("{open}{}{close}", row.expression);
+                let block = mounter.mount(&content, (false, false));
                 let expected = math_expected(row, open);
                 publish("mathExpected", &expected.to_string().into());
                 publish("mathBranch", &row.branch.clone().into());
-                publish("mathSource", &block.content.clone().into());
-                let promise = js("maestro.measureMath()")
+                publish("mathSource", &content.into());
+                let promise = walk::call("measureMath", &js_sys::Array::new())
                     .dyn_into::<js_sys::Promise>()
                     .unwrap();
                 let result = wasm_bindgen_futures::JsFuture::from(promise)
@@ -162,6 +165,10 @@ mod tests {
                 drop(block);
             }
         }
+        let Some(test) = test else {
+            assert_eq!(count, all.len());
+            return;
+        };
         let expected = match test {
             "math_roots_pad_bare_symbols_without_changing_groups"
             | "math_macro_failures_keep_inline_error_spans" => 22,
@@ -319,22 +326,6 @@ mod tests {
             self.copies.borrow_mut().push(text.to_owned());
             Box::pin(std::future::ready(true))
         }
-        fn capture_focus(&self) -> Result<Option<Rc<FocusTarget>>, AttachmentHostError> {
-            self.native.capture_focus()
-        }
-        fn restore_focus(&self, target: Rc<FocusTarget>) -> Result<Timer, AttachmentHostError> {
-            self.native.restore_focus(target)
-        }
-        fn dialog_bounds(
-            &self,
-            id: egui::Id,
-            dimensions: [&str; 2],
-        ) -> Result<egui::Rect, AttachmentHostError> {
-            self.native.dialog_bounds(id, dimensions)
-        }
-        fn native_key(&self, event: &web_sys::KeyboardEvent, context: &egui::Context) {
-            self.native.native_key(event, context);
-        }
         fn reading_layout(&self, id: egui::Id) -> Result<ReadingLayout, AttachmentHostError> {
             if self.fail_measure.replace(false) {
                 return Err(AttachmentHostError::Host(
@@ -389,9 +380,6 @@ mod tests {
             self.removed.borrow_mut().push(id);
             self.native.remove(id);
         }
-        fn take_escape(&self) -> bool {
-            self.native.take_escape()
-        }
         fn timer(
             &self,
             delay_ms: i32,
@@ -417,7 +405,10 @@ mod tests {
         ) -> Result<(), AttachmentHostError> {
             self.native.download_bytes(bytes, name, mime)
         }
-        fn download(&self, attachment: Rc<RefCell<Attachment>>) -> Result<(), AttachmentHostError> {
+        fn download(
+            &self,
+            attachment: maestro_web::SharedAttachment,
+        ) -> Result<(), AttachmentHostError> {
             self.native.download(attachment)
         }
     }
@@ -458,7 +449,7 @@ mod tests {
         }
     }
     impl Surface {
-        /// Bind to the runner's canvas and install the browser-side projections.
+        /// Bind the shared test canvas and install the browser-side projections.
         ///
         /// # Panics
         /// Panics if the test fixture or browser precondition is not satisfied.
@@ -467,12 +458,11 @@ mod tests {
             std::panic::set_hook(Box::new(|info| {
                 web_sys::console::error_1(&info.to_string().into());
             }));
-            let _ = js(include_str!("dom.js"));
-            publish(
-                "formulasJson",
-                &include_str!("../fixtures/markdown/formulas.json").into(),
+            let _ = js(
+                "if (!document.getElementById('canvas')) { const c=document.createElement('canvas'); c.id='canvas'; c.width=800; c.height=600; document.body.appendChild(c); }",
             );
-            let _ = js("maestro.formulas = JSON.parse(globalThis.formulasJson)");
+            let _ = js(include_str!("dom.js"));
+            walk::set_formulas();
             let canvas = web_sys::window()
                 .unwrap()
                 .document()
@@ -528,17 +518,6 @@ mod tests {
             let presentation = pack.presentation(BrandMode::Dark).unwrap();
             let size = self.size;
             self.draw_with(&presentation, size, None, draw)
-        }
-        /// Draw one frame through the reading projection of this surface's host.
-        ///
-        /// # Panics
-        /// Panics if the test fixture or browser precondition is not satisfied.
-        pub fn draw_reading<R>(
-            &mut self,
-            draw: impl FnOnce(&mut egui::Ui, maestro_web::tools::types::ToolRenderView<'_>) -> R,
-        ) -> R {
-            let host = self.host();
-            self.draw(|ui, frame| draw(ui, support::reading_view::view(&host, frame)))
         }
         /// Draw one frame with an explicit presentation, available size and modal.
         ///
@@ -642,10 +621,7 @@ mod tests {
         /// Panics if the test fixture or browser precondition is not satisfied.
         #[must_use]
         pub fn difference(html: &str) -> String {
-            publish("expectedHtml", &html.into());
-            js("maestro.diff(maestro.root(), globalThis.expectedHtml)")
-                .as_string()
-                .unwrap()
+            walk::difference(html)
         }
         /// First difference between the mounted structure and a recorded tree, or "".
         ///
@@ -653,10 +629,7 @@ mod tests {
         /// Panics if the test fixture or browser precondition is not satisfied.
         #[must_use]
         pub fn tree_difference(tree: &serde_json::Value) -> String {
-            publish("expectedTree", &tree.to_string().into());
-            js("maestro.treeDiff(maestro.root(), JSON.parse(globalThis.expectedTree))")
-                .as_string()
-                .unwrap()
+            walk::tree_difference(tree)
         }
         /// Press and release the primary button at `at` over the next three frames.
         ///
@@ -681,6 +654,20 @@ mod tests {
                 self.events = events;
                 self.draw(&mut draw);
             }
+        }
+    }
+    impl walk::Mounter for Surface {
+        fn mount(
+            &mut self,
+            content: &str,
+            (escape_html, thinking): (bool, bool),
+        ) -> Box<dyn std::any::Any> {
+            let mut block = MarkdownBlock::new(self.host());
+            content.clone_into(&mut block.content);
+            block.escape_html = escape_html;
+            block.is_thinking = thinking;
+            self.settle(&mut block);
+            Box::new(block)
         }
     }
     /// Center of the first native control slot in canvas points.

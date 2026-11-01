@@ -30,6 +30,8 @@ struct Empty {}
 struct Command {
     name: String,
     description: String,
+    #[serde(default)]
+    argument_hint: Option<String>,
 }
 
 #[test]
@@ -44,6 +46,7 @@ fn ordinary_slash_commands_keep_every_name_description_and_order() {
             .map(|c| Command {
                 name: c.name.clone(),
                 description: c.description.clone(),
+                argument_hint: c.argument_hint.clone(),
             })
             .collect();
         assert_eq!(actual, case.expected);

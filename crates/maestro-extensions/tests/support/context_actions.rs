@@ -176,3 +176,5 @@ pub fn check_compaction_forwarding(ctx: &ExtensionContext, recorder: &Recorder) 
     assert!(Rc::ptr_eq(forwarded.on_error.as_ref().unwrap(), &error));
     assert!(!called.get());
 }
+
+pub use crate::support::command_operations::silent_command_operations;

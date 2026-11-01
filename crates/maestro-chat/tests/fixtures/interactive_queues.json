@@ -1,0 +1,2237 @@
+[
+  {
+    "test": "queued_texts_merge_by_mode_without_reordering_or_deduplication",
+    "input": {
+      "op": "merge-clear",
+      "steering": [
+        "s",
+        "s"
+      ],
+      "followUp": [
+        "f"
+      ],
+      "local": [
+        {
+          "text": "lf",
+          "mode": "followUp"
+        },
+        {
+          "text": "ls",
+          "mode": "steer"
+        }
+      ]
+    },
+    "expected": {
+      "before": {
+        "steering": [
+          "s",
+          "s",
+          "ls"
+        ],
+        "followUp": [
+          "f",
+          "lf"
+        ]
+      },
+      "cleared": {
+        "steering": [
+          "s",
+          "s",
+          "ls"
+        ],
+        "followUp": [
+          "f",
+          "lf"
+        ]
+      },
+      "after": {
+        "calls": [
+          [
+            "clear"
+          ]
+        ],
+        "local": [],
+        "session": {
+          "steering": [],
+          "followUp": []
+        },
+        "text": "",
+        "history": [],
+        "errors": [],
+        "aborts": 0,
+        "pending": [],
+        "chat": []
+      }
+    }
+  },
+  {
+    "test": "pending_rows_keep_labels_live_hint_styles_and_clear_empty",
+    "input": {
+      "op": "display",
+      "width": 3
+    },
+    "expected": {
+      "painted": []
+    }
+  },
+  {
+    "test": "pending_rows_keep_labels_live_hint_styles_and_clear_empty",
+    "input": {
+      "op": "display",
+      "width": 12
+    },
+    "expected": {
+      "painted": []
+    }
+  },
+  {
+    "test": "pending_rows_keep_labels_live_hint_styles_and_clear_empty",
+    "input": {
+      "op": "display",
+      "width": 80
+    },
+    "expected": {
+      "painted": []
+    }
+  },
+  {
+    "test": "pending_rows_keep_labels_live_hint_styles_and_clear_empty",
+    "input": {
+      "op": "display",
+      "steering": [
+        "s"
+      ],
+      "width": 3
+    },
+    "expected": {
+      "painted": [
+        "",
+        " \u001b[0m.\u001b[0m ",
+        " \u001b[0m.\u001b[0m "
+      ]
+    }
+  },
+  {
+    "test": "pending_rows_keep_labels_live_hint_styles_and_clear_empty",
+    "input": {
+      "op": "display",
+      "steering": [
+        "s"
+      ],
+      "width": 12
+    },
+    "expected": {
+      "painted": [
+        "",
+        " @dim@Steerin\u001b[0m...\u001b[0m ",
+        " @dim@↳ Alt+U\u001b[0m...\u001b[0m "
+      ]
+    }
+  },
+  {
+    "test": "pending_rows_keep_labels_live_hint_styles_and_clear_empty",
+    "input": {
+      "op": "display",
+      "steering": [
+        "s"
+      ],
+      "width": 80
+    },
+    "expected": {
+      "painted": [
+        "",
+        " @dim@Steering: s\u001b[39m                                                                    ",
+        " @dim@↳ Alt+Up to edit all queued messages\u001b[39m                                           "
+      ]
+    }
+  },
+  {
+    "test": "pending_rows_keep_labels_live_hint_styles_and_clear_empty",
+    "input": {
+      "op": "display",
+      "followUp": [
+        "f"
+      ],
+      "width": 3
+    },
+    "expected": {
+      "painted": [
+        "",
+        " \u001b[0m.\u001b[0m ",
+        " \u001b[0m.\u001b[0m "
+      ]
+    }
+  },
+  {
+    "test": "pending_rows_keep_labels_live_hint_styles_and_clear_empty",
+    "input": {
+      "op": "display",
+      "followUp": [
+        "f"
+      ],
+      "width": 12
+    },
+    "expected": {
+      "painted": [
+        "",
+        " @dim@Follow-\u001b[0m...\u001b[0m ",
+        " @dim@↳ Alt+U\u001b[0m...\u001b[0m "
+      ]
+    }
+  },
+  {
+    "test": "pending_rows_keep_labels_live_hint_styles_and_clear_empty",
+    "input": {
+      "op": "display",
+      "followUp": [
+        "f"
+      ],
+      "width": 80
+    },
+    "expected": {
+      "painted": [
+        "",
+        " @dim@Follow-up: f\u001b[39m                                                                   ",
+        " @dim@↳ Alt+Up to edit all queued messages\u001b[39m                                           "
+      ]
+    }
+  },
+  {
+    "test": "pending_rows_keep_labels_live_hint_styles_and_clear_empty",
+    "input": {
+      "op": "display",
+      "steering": [
+        "s",
+        "s"
+      ],
+      "followUp": [
+        "f"
+      ],
+      "local": [
+        {
+          "text": "lf",
+          "mode": "followUp"
+        },
+        {
+          "text": "ls",
+          "mode": "steer"
+        }
+      ],
+      "width": 3
+    },
+    "expected": {
+      "painted": [
+        "",
+        " \u001b[0m.\u001b[0m ",
+        " \u001b[0m.\u001b[0m ",
+        " \u001b[0m.\u001b[0m ",
+        " \u001b[0m.\u001b[0m ",
+        " \u001b[0m.\u001b[0m ",
+        " \u001b[0m.\u001b[0m "
+      ]
+    }
+  },
+  {
+    "test": "pending_rows_keep_labels_live_hint_styles_and_clear_empty",
+    "input": {
+      "op": "display",
+      "steering": [
+        "s",
+        "s"
+      ],
+      "followUp": [
+        "f"
+      ],
+      "local": [
+        {
+          "text": "lf",
+          "mode": "followUp"
+        },
+        {
+          "text": "ls",
+          "mode": "steer"
+        }
+      ],
+      "width": 12
+    },
+    "expected": {
+      "painted": [
+        "",
+        " @dim@Steerin\u001b[0m...\u001b[0m ",
+        " @dim@Steerin\u001b[0m...\u001b[0m ",
+        " @dim@Steerin\u001b[0m...\u001b[0m ",
+        " @dim@Follow-\u001b[0m...\u001b[0m ",
+        " @dim@Follow-\u001b[0m...\u001b[0m ",
+        " @dim@↳ Alt+U\u001b[0m...\u001b[0m "
+      ]
+    }
+  },
+  {
+    "test": "pending_rows_keep_labels_live_hint_styles_and_clear_empty",
+    "input": {
+      "op": "display",
+      "steering": [
+        "s",
+        "s"
+      ],
+      "followUp": [
+        "f"
+      ],
+      "local": [
+        {
+          "text": "lf",
+          "mode": "followUp"
+        },
+        {
+          "text": "ls",
+          "mode": "steer"
+        }
+      ],
+      "width": 80
+    },
+    "expected": {
+      "painted": [
+        "",
+        " @dim@Steering: s\u001b[39m                                                                    ",
+        " @dim@Steering: s\u001b[39m                                                                    ",
+        " @dim@Steering: ls\u001b[39m                                                                   ",
+        " @dim@Follow-up: f\u001b[39m                                                                   ",
+        " @dim@Follow-up: lf\u001b[39m                                                                  ",
+        " @dim@↳ Alt+Up to edit all queued messages\u001b[39m                                           "
+      ]
+    }
+  },
+  {
+    "test": "pending_rows_keep_labels_live_hint_styles_and_clear_empty",
+    "input": {
+      "op": "hint",
+      "bindings": {
+        "app.message.dequeue": []
+      }
+    },
+    "expected": {
+      "painted": [
+        "",
+        " @dim@Steering: a\t\u001b[7m \u001b[27m                                                                ",
+        " @dim@↳  to edit all queued messages\u001b[39m                                                 "
+      ]
+    }
+  },
+  {
+    "test": "pending_rows_keep_labels_live_hint_styles_and_clear_empty",
+    "input": {
+      "op": "hint",
+      "bindings": {
+        "app.message.dequeue": [
+          "ctrl+alt+q",
+          "shift+up"
+        ]
+      }
+    },
+    "expected": {
+      "painted": [
+        "",
+        " @dim@Steering: a\t\u001b[7m \u001b[27m                                                                ",
+        " @dim@↳ Ctrl+Alt+Q/Shift+Up to edit all queued messages\u001b[39m                              "
+      ]
+    }
+  },
+  {
+    "test": "dequeue_restores_grouped_text_and_preserves_nonblank_draft",
+    "input": {
+      "op": "restore",
+      "steering": [
+        "s",
+        "s"
+      ],
+      "followUp": [
+        "f"
+      ],
+      "local": [
+        {
+          "text": "lf",
+          "mode": "followUp"
+        },
+        {
+          "text": "ls",
+          "mode": "steer"
+        }
+      ],
+      "text": "",
+      "abort": false
+    },
+    "expected": {
+      "count": 5,
+      "calls": [
+        [
+          "clear"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "s\n\ns\n\nls\n\nf\n\nlf",
+      "history": [],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "dequeue_restores_grouped_text_and_preserves_nonblank_draft",
+    "input": {
+      "op": "restore",
+      "steering": [
+        "s",
+        "s"
+      ],
+      "followUp": [
+        "f"
+      ],
+      "local": [
+        {
+          "text": "lf",
+          "mode": "followUp"
+        },
+        {
+          "text": "ls",
+          "mode": "steer"
+        }
+      ],
+      "text": "",
+      "abort": true
+    },
+    "expected": {
+      "count": 5,
+      "calls": [
+        [
+          "clear"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "s\n\ns\n\nls\n\nf\n\nlf",
+      "history": [],
+      "errors": [],
+      "aborts": 1,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "dequeue_restores_grouped_text_and_preserves_nonblank_draft",
+    "input": {
+      "op": "restore",
+      "steering": [
+        "s",
+        "s"
+      ],
+      "followUp": [
+        "f"
+      ],
+      "local": [
+        {
+          "text": "lf",
+          "mode": "followUp"
+        },
+        {
+          "text": "ls",
+          "mode": "steer"
+        }
+      ],
+      "text": "  draft  ",
+      "abort": false
+    },
+    "expected": {
+      "count": 5,
+      "calls": [
+        [
+          "clear"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "s\n\ns\n\nls\n\nf\n\nlf\n\n  draft  ",
+      "history": [],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "dequeue_restores_grouped_text_and_preserves_nonblank_draft",
+    "input": {
+      "op": "restore",
+      "steering": [
+        "s",
+        "s"
+      ],
+      "followUp": [
+        "f"
+      ],
+      "local": [
+        {
+          "text": "lf",
+          "mode": "followUp"
+        },
+        {
+          "text": "ls",
+          "mode": "steer"
+        }
+      ],
+      "text": "  draft  ",
+      "abort": true
+    },
+    "expected": {
+      "count": 5,
+      "calls": [
+        [
+          "clear"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "s\n\ns\n\nls\n\nf\n\nlf\n\n  draft  ",
+      "history": [],
+      "errors": [],
+      "aborts": 1,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "dequeue_restores_grouped_text_and_preserves_nonblank_draft",
+    "input": {
+      "op": "restore",
+      "steering": [
+        "s",
+        "s"
+      ],
+      "followUp": [
+        "f"
+      ],
+      "local": [
+        {
+          "text": "lf",
+          "mode": "followUp"
+        },
+        {
+          "text": "ls",
+          "mode": "steer"
+        }
+      ],
+      "text": "﻿",
+      "abort": false
+    },
+    "expected": {
+      "count": 5,
+      "calls": [
+        [
+          "clear"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "s\n\ns\n\nls\n\nf\n\nlf",
+      "history": [],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "dequeue_restores_grouped_text_and_preserves_nonblank_draft",
+    "input": {
+      "op": "restore",
+      "steering": [
+        "s",
+        "s"
+      ],
+      "followUp": [
+        "f"
+      ],
+      "local": [
+        {
+          "text": "lf",
+          "mode": "followUp"
+        },
+        {
+          "text": "ls",
+          "mode": "steer"
+        }
+      ],
+      "text": "﻿",
+      "abort": true
+    },
+    "expected": {
+      "count": 5,
+      "calls": [
+        [
+          "clear"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "s\n\ns\n\nls\n\nf\n\nlf",
+      "history": [],
+      "errors": [],
+      "aborts": 1,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "dequeue_restores_grouped_text_and_preserves_nonblank_draft",
+    "input": {
+      "op": "restore",
+      "steering": [
+        "s",
+        "s"
+      ],
+      "followUp": [
+        "f"
+      ],
+      "local": [
+        {
+          "text": "lf",
+          "mode": "followUp"
+        },
+        {
+          "text": "ls",
+          "mode": "steer"
+        }
+      ],
+      "text": "",
+      "abort": false
+    },
+    "expected": {
+      "count": 5,
+      "calls": [
+        [
+          "clear"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "s\n\ns\n\nls\n\nf\n\nlf\n\n",
+      "history": [],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "dequeue_restores_grouped_text_and_preserves_nonblank_draft",
+    "input": {
+      "op": "restore",
+      "steering": [
+        "s",
+        "s"
+      ],
+      "followUp": [
+        "f"
+      ],
+      "local": [
+        {
+          "text": "lf",
+          "mode": "followUp"
+        },
+        {
+          "text": "ls",
+          "mode": "steer"
+        }
+      ],
+      "text": "",
+      "abort": true
+    },
+    "expected": {
+      "count": 5,
+      "calls": [
+        [
+          "clear"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "s\n\ns\n\nls\n\nf\n\nlf\n\n",
+      "history": [],
+      "errors": [],
+      "aborts": 1,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "dequeue_restores_grouped_text_and_preserves_nonblank_draft",
+    "input": {
+      "op": "restore",
+      "steering": [
+        "s",
+        "s"
+      ],
+      "followUp": [
+        "f"
+      ],
+      "local": [
+        {
+          "text": "lf",
+          "mode": "followUp"
+        },
+        {
+          "text": "ls",
+          "mode": "steer"
+        }
+      ],
+      "text": "​",
+      "abort": false
+    },
+    "expected": {
+      "count": 5,
+      "calls": [
+        [
+          "clear"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "s\n\ns\n\nls\n\nf\n\nlf\n\n​",
+      "history": [],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "dequeue_restores_grouped_text_and_preserves_nonblank_draft",
+    "input": {
+      "op": "restore",
+      "steering": [
+        "s",
+        "s"
+      ],
+      "followUp": [
+        "f"
+      ],
+      "local": [
+        {
+          "text": "lf",
+          "mode": "followUp"
+        },
+        {
+          "text": "ls",
+          "mode": "steer"
+        }
+      ],
+      "text": "​",
+      "abort": true
+    },
+    "expected": {
+      "count": 5,
+      "calls": [
+        [
+          "clear"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "s\n\ns\n\nls\n\nf\n\nlf\n\n​",
+      "history": [],
+      "errors": [],
+      "aborts": 1,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "empty_restore_preserves_editor_and_stream_escape_still_aborts",
+    "input": {
+      "op": "restore-empty",
+      "abort": false
+    },
+    "expected": {
+      "count": 0,
+      "calls": [
+        [
+          "clear"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "kept",
+      "history": [],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "empty_restore_preserves_editor_and_stream_escape_still_aborts",
+    "input": {
+      "op": "restore-empty",
+      "abort": true
+    },
+    "expected": {
+      "count": 0,
+      "calls": [
+        [
+          "clear"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "kept",
+      "history": [],
+      "errors": [],
+      "aborts": 1,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "dequeue_restores_grouped_text_and_preserves_nonblank_draft",
+    "input": {
+      "op": "restore-override",
+      "currentText": ""
+    },
+    "expected": {
+      "calls": [
+        [
+          "clear"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "q",
+      "history": [],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "dequeue_restores_grouped_text_and_preserves_nonblank_draft",
+    "input": {
+      "op": "restore-override",
+      "currentText": null
+    },
+    "expected": {
+      "calls": [
+        [
+          "clear"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "q\n\nexisting",
+      "history": [],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "dequeue_restores_grouped_text_and_preserves_nonblank_draft",
+    "input": {
+      "op": "restore-override",
+      "currentText": " explicit "
+    },
+    "expected": {
+      "calls": [
+        [
+          "clear"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "q\n\n explicit ",
+      "history": [],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "dequeue_restores_grouped_text_and_preserves_nonblank_draft",
+    "input": {
+      "op": "restore-override",
+      "currentText": "﻿"
+    },
+    "expected": {
+      "calls": [
+        [
+          "clear"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "q",
+      "history": [],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "dequeue_restores_grouped_text_and_preserves_nonblank_draft",
+    "input": {
+      "op": "restore-override",
+      "currentText": ""
+    },
+    "expected": {
+      "calls": [
+        [
+          "clear"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "q\n\n",
+      "history": [],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "dequeue_status_uses_exact_zero_singular_and_plural_lines",
+    "input": {
+      "op": "dequeue",
+      "local": []
+    },
+    "expected": {
+      "calls": [
+        [
+          "clear"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "",
+      "history": [],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": [
+        "",
+        " @dim@No queued messages to restore\u001b[39m                                                  "
+      ]
+    }
+  },
+  {
+    "test": "dequeue_status_uses_exact_zero_singular_and_plural_lines",
+    "input": {
+      "op": "dequeue",
+      "local": [
+        {
+          "text": "one",
+          "mode": "steer"
+        }
+      ]
+    },
+    "expected": {
+      "calls": [
+        [
+          "clear"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "one",
+      "history": [],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": [
+        "",
+        " @dim@Restored 1 queued message to editor\u001b[39m                                            "
+      ]
+    }
+  },
+  {
+    "test": "dequeue_status_uses_exact_zero_singular_and_plural_lines",
+    "input": {
+      "op": "dequeue",
+      "local": [
+        {
+          "text": "one",
+          "mode": "steer"
+        },
+        {
+          "text": "two",
+          "mode": "followUp"
+        }
+      ]
+    },
+    "expected": {
+      "calls": [
+        [
+          "clear"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "one\n\ntwo",
+      "history": [],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": [
+        "",
+        " @dim@Restored 2 queued messages to editor\u001b[39m                                           "
+      ]
+    }
+  },
+  {
+    "test": "status_replaces_only_the_adjacent_retained_pair",
+    "input": {
+      "op": "status-interleaved"
+    },
+    "expected": {
+      "painted": [
+        "",
+        " @dim@second\u001b[39m                                                                         ",
+        "separator                                                                       ",
+        "",
+        " @dim@third\u001b[39m                                                                          "
+      ],
+      "children": 5
+    }
+  },
+  {
+    "test": "extension_command_detection_uses_slash_and_first_ascii_space",
+    "input": {
+      "op": "extension-detection",
+      "text": "plain"
+    },
+    "expected": {
+      "result": false
+    }
+  },
+  {
+    "test": "extension_command_detection_uses_slash_and_first_ascii_space",
+    "input": {
+      "op": "extension-detection",
+      "text": "/cmd"
+    },
+    "expected": {
+      "result": true
+    }
+  },
+  {
+    "test": "extension_command_detection_uses_slash_and_first_ascii_space",
+    "input": {
+      "op": "extension-detection",
+      "text": "/cmd argument"
+    },
+    "expected": {
+      "result": true
+    }
+  },
+  {
+    "test": "extension_command_detection_uses_slash_and_first_ascii_space",
+    "input": {
+      "op": "extension-detection",
+      "text": "/cmd\targument"
+    },
+    "expected": {
+      "result": false
+    }
+  },
+  {
+    "test": "extension_command_detection_uses_slash_and_first_ascii_space",
+    "input": {
+      "op": "extension-detection",
+      "text": " /cmd"
+    },
+    "expected": {
+      "result": false
+    }
+  },
+  {
+    "test": "extension_command_detection_uses_slash_and_first_ascii_space",
+    "input": {
+      "op": "extension-detection",
+      "text": "/unknown"
+    },
+    "expected": {
+      "result": false
+    }
+  },
+  {
+    "test": "extension_command_detection_uses_slash_and_first_ascii_space",
+    "input": {
+      "op": "extension-detection",
+      "text": "/"
+    },
+    "expected": {
+      "result": false
+    }
+  },
+  {
+    "test": "extension_command_detection_uses_slash_and_first_ascii_space",
+    "input": {
+      "op": "extension-detection",
+      "text": "/cmd\narg"
+    },
+    "expected": {
+      "result": false
+    }
+  },
+  {
+    "test": "compaction_enqueue_keeps_text_mode_history_and_status",
+    "input": {
+      "op": "enqueue",
+      "mode": "steer"
+    },
+    "expected": {
+      "calls": [],
+      "local": [
+        {
+          "text": " queued ",
+          "mode": "steer"
+        }
+      ],
+      "session": {
+        "steering": [
+          " queued "
+        ],
+        "followUp": []
+      },
+      "text": "",
+      "history": [
+        " queued "
+      ],
+      "errors": [],
+      "aborts": 0,
+      "pending": [
+        "",
+        " @dim@Steering:  queued \u001b[39m                                                             ",
+        " @dim@↳ Alt+Up to edit all queued messages\u001b[39m                                           "
+      ],
+      "chat": [
+        "",
+        " @dim@Queued message for after compaction\u001b[39m                                            "
+      ]
+    }
+  },
+  {
+    "test": "compaction_enqueue_keeps_text_mode_history_and_status",
+    "input": {
+      "op": "enqueue",
+      "mode": "followUp"
+    },
+    "expected": {
+      "calls": [],
+      "local": [
+        {
+          "text": " queued ",
+          "mode": "followUp"
+        }
+      ],
+      "session": {
+        "steering": [],
+        "followUp": [
+          " queued "
+        ]
+      },
+      "text": "",
+      "history": [
+        " queued "
+      ],
+      "errors": [],
+      "aborts": 0,
+      "pending": [
+        "",
+        " @dim@Follow-up:  queued \u001b[39m                                                            ",
+        " @dim@↳ Alt+Up to edit all queued messages\u001b[39m                                           "
+      ],
+      "chat": [
+        "",
+        " @dim@Queued message for after compaction\u001b[39m                                            "
+      ]
+    }
+  },
+  {
+    "test": "follow_up_routes_expanded_input_through_idle_stream_and_compaction",
+    "input": {
+      "op": "follow",
+      "state": "idle",
+      "text": "﻿",
+      "expanded": "﻿"
+    },
+    "expected": {
+      "calls": [],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "﻿",
+      "history": [],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "follow_up_routes_expanded_input_through_idle_stream_and_compaction",
+    "input": {
+      "op": "follow",
+      "state": "idle",
+      "text": "",
+      "expanded": ""
+    },
+    "expected": {
+      "calls": [
+        [
+          "submit",
+          ""
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "",
+      "history": [],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "follow_up_routes_expanded_input_through_idle_stream_and_compaction",
+    "input": {
+      "op": "follow",
+      "state": "idle",
+      "text": " selected ",
+      "expanded": " selected "
+    },
+    "expected": {
+      "calls": [
+        [
+          "submit",
+          "selected"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "",
+      "history": [],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "follow_up_routes_expanded_input_through_idle_stream_and_compaction",
+    "input": {
+      "op": "follow",
+      "state": "idle",
+      "text": "/cmd arg",
+      "expanded": "/cmd arg"
+    },
+    "expected": {
+      "calls": [
+        [
+          "submit",
+          "/cmd arg"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "",
+      "history": [],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "follow_up_routes_expanded_input_through_idle_stream_and_compaction",
+    "input": {
+      "op": "follow",
+      "state": "idle",
+      "text": "/unknown",
+      "expanded": "/unknown"
+    },
+    "expected": {
+      "calls": [
+        [
+          "submit",
+          "/unknown"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "",
+      "history": [],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "follow_up_routes_expanded_input_through_idle_stream_and_compaction",
+    "input": {
+      "op": "follow",
+      "state": "stream",
+      "text": "﻿",
+      "expanded": "﻿"
+    },
+    "expected": {
+      "calls": [],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "﻿",
+      "history": [],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "follow_up_routes_expanded_input_through_idle_stream_and_compaction",
+    "input": {
+      "op": "follow",
+      "state": "stream",
+      "text": "",
+      "expanded": ""
+    },
+    "expected": {
+      "calls": [
+        [
+          "prompt",
+          "",
+          {
+            "streamingBehavior": "followUp"
+          }
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "",
+      "history": [
+        ""
+      ],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "follow_up_routes_expanded_input_through_idle_stream_and_compaction",
+    "input": {
+      "op": "follow",
+      "state": "stream",
+      "text": " selected ",
+      "expanded": " selected "
+    },
+    "expected": {
+      "calls": [
+        [
+          "prompt",
+          "selected",
+          {
+            "streamingBehavior": "followUp"
+          }
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "",
+      "history": [
+        "selected"
+      ],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "follow_up_routes_expanded_input_through_idle_stream_and_compaction",
+    "input": {
+      "op": "follow",
+      "state": "stream",
+      "text": "/cmd arg",
+      "expanded": "/cmd arg"
+    },
+    "expected": {
+      "calls": [
+        [
+          "prompt",
+          "/cmd arg",
+          {
+            "streamingBehavior": "followUp"
+          }
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "",
+      "history": [
+        "/cmd arg"
+      ],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "follow_up_routes_expanded_input_through_idle_stream_and_compaction",
+    "input": {
+      "op": "follow",
+      "state": "stream",
+      "text": "/unknown",
+      "expanded": "/unknown"
+    },
+    "expected": {
+      "calls": [
+        [
+          "prompt",
+          "/unknown",
+          {
+            "streamingBehavior": "followUp"
+          }
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "",
+      "history": [
+        "/unknown"
+      ],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "follow_up_routes_expanded_input_through_idle_stream_and_compaction",
+    "input": {
+      "op": "follow",
+      "state": "compact",
+      "text": "﻿",
+      "expanded": "﻿"
+    },
+    "expected": {
+      "calls": [],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "﻿",
+      "history": [],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "follow_up_routes_expanded_input_through_idle_stream_and_compaction",
+    "input": {
+      "op": "follow",
+      "state": "compact",
+      "text": "",
+      "expanded": ""
+    },
+    "expected": {
+      "calls": [
+        [
+          "input",
+          ""
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "",
+      "history": [
+        ""
+      ],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": [
+        "",
+        " @dim@Queued message for after compaction\u001b[39m                                            ",
+        "",
+        "\u001b]133;A\u0007                                                                                ",
+        " @userMessageText@\u001b[39m                                                                               ",
+        "\u001b]133;B\u0007\u001b]133;C\u0007                                                                                "
+      ],
+      "pendingSample": {
+        "mode": "followUp",
+        "text": "",
+        "rows": [
+          "",
+          " @dim@Follow-up: \u001b[39m                                                                    ",
+          " @dim@↳ Alt+Up to edit all queued messages\u001b[39m                                           "
+        ]
+      }
+    }
+  },
+  {
+    "test": "follow_up_routes_expanded_input_through_idle_stream_and_compaction",
+    "input": {
+      "op": "follow",
+      "state": "compact",
+      "text": " selected ",
+      "expanded": " selected "
+    },
+    "expected": {
+      "calls": [
+        [
+          "input",
+          "selected"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "",
+      "history": [
+        "selected"
+      ],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": [
+        "",
+        " @dim@Queued message for after compaction\u001b[39m                                            ",
+        "",
+        "\u001b]133;A\u0007                                                                                ",
+        " @userMessageText@selected\u001b[39m                                                                       ",
+        "\u001b]133;B\u0007\u001b]133;C\u0007                                                                                "
+      ],
+      "pendingSample": {
+        "mode": "followUp",
+        "text": "selected",
+        "rows": [
+          "",
+          " @dim@Follow-up: selected\u001b[39m                                                            ",
+          " @dim@↳ Alt+Up to edit all queued messages\u001b[39m                                           "
+        ]
+      }
+    }
+  },
+  {
+    "test": "follow_up_routes_expanded_input_through_idle_stream_and_compaction",
+    "input": {
+      "op": "follow",
+      "state": "compact",
+      "text": "/cmd arg",
+      "expanded": "/cmd arg"
+    },
+    "expected": {
+      "calls": [
+        [
+          "prompt",
+          "/cmd arg",
+          null
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "",
+      "history": [
+        "/cmd arg"
+      ],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "follow_up_routes_expanded_input_through_idle_stream_and_compaction",
+    "input": {
+      "op": "follow",
+      "state": "compact",
+      "text": "/unknown",
+      "expanded": "/unknown"
+    },
+    "expected": {
+      "calls": [
+        [
+          "input",
+          "/unknown"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "",
+      "history": [
+        "/unknown"
+      ],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": [
+        "",
+        " @dim@Queued message for after compaction\u001b[39m                                            ",
+        "",
+        "\u001b]133;A\u0007                                                                                ",
+        " @userMessageText@/unknown\u001b[39m                                                                       ",
+        "\u001b]133;B\u0007\u001b]133;C\u0007                                                                                "
+      ],
+      "pendingSample": {
+        "mode": "followUp",
+        "text": "/unknown",
+        "rows": [
+          "",
+          " @dim@Follow-up: /unknown\u001b[39m                                                            ",
+          " @dim@↳ Alt+Up to edit all queued messages\u001b[39m                                           "
+        ]
+      }
+    }
+  },
+  {
+    "test": "enter_steers_during_streaming_and_prioritizes_compaction",
+    "input": {
+      "op": "submit",
+      "compacting": false,
+      "streaming": true,
+      "text": "plain"
+    },
+    "expected": {
+      "calls": [
+        [
+          "prompt",
+          "plain",
+          {
+            "streamingBehavior": "steer"
+          }
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "",
+      "history": [
+        "plain"
+      ],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "enter_steers_during_streaming_and_prioritizes_compaction",
+    "input": {
+      "op": "submit",
+      "compacting": false,
+      "streaming": true,
+      "text": "/cmd arg"
+    },
+    "expected": {
+      "calls": [
+        [
+          "prompt",
+          "/cmd arg",
+          {
+            "streamingBehavior": "steer"
+          }
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "",
+      "history": [
+        "/cmd arg"
+      ],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "enter_steers_during_streaming_and_prioritizes_compaction",
+    "input": {
+      "op": "submit",
+      "compacting": true,
+      "streaming": true,
+      "text": "plain"
+    },
+    "expected": {
+      "calls": [
+        [
+          "input",
+          "plain"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "",
+      "history": [
+        "plain"
+      ],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": [
+        "",
+        " @dim@Queued message for after compaction\u001b[39m                                            ",
+        "",
+        "\u001b]133;A\u0007                                                                                ",
+        " @userMessageText@plain\u001b[39m                                                                          ",
+        "\u001b]133;B\u0007\u001b]133;C\u0007                                                                                "
+      ],
+      "pendingSample": {
+        "mode": "steer",
+        "text": "plain",
+        "rows": [
+          "",
+          " @dim@Steering: plain\u001b[39m                                                                ",
+          " @dim@↳ Alt+Up to edit all queued messages\u001b[39m                                           "
+        ]
+      }
+    }
+  },
+  {
+    "test": "enter_steers_during_streaming_and_prioritizes_compaction",
+    "input": {
+      "op": "submit",
+      "compacting": true,
+      "streaming": true,
+      "text": "/cmd arg"
+    },
+    "expected": {
+      "calls": [
+        [
+          "prompt",
+          "/cmd arg",
+          null
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "",
+      "history": [
+        "/cmd arg"
+      ],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "stream_escape_restores_before_aborting",
+    "input": {
+      "op": "escape",
+      "streaming": false
+    },
+    "expected": {
+      "calls": [],
+      "local": [
+        {
+          "text": "lf",
+          "mode": "followUp"
+        },
+        {
+          "text": "ls",
+          "mode": "steer"
+        }
+      ],
+      "session": {
+        "steering": [
+          "s",
+          "s",
+          "ls"
+        ],
+        "followUp": [
+          "f",
+          "lf"
+        ]
+      },
+      "text": "draft",
+      "history": [],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "stream_escape_restores_before_aborting",
+    "input": {
+      "op": "escape",
+      "streaming": true
+    },
+    "expected": {
+      "calls": [
+        [
+          "clear"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "s\n\ns\n\nls\n\nf\n\nlf\n\ndraft",
+      "history": [],
+      "errors": [],
+      "aborts": 1,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "pending_rows_keep_labels_live_hint_styles_and_clear_empty",
+    "input": {
+      "op": "display-clear-sequence"
+    },
+    "expected": {
+      "before": [
+        "",
+        " @dim@Steering: before\u001b[39m                                                               ",
+        " @dim@↳ Alt+Up to edit all queued messages\u001b[39m                                           "
+      ],
+      "after": []
+    }
+  },
+  {
+    "test": "status_replaces_only_the_adjacent_retained_pair",
+    "input": {
+      "op": "status-identity",
+      "change": "replace-spacer"
+    },
+    "expected": {
+      "painted": [
+        "",
+        " @dim@first\u001b[39m                                                                          ",
+        "",
+        " @dim@second\u001b[39m                                                                         "
+      ],
+      "children": 4
+    }
+  },
+  {
+    "test": "status_replaces_only_the_adjacent_retained_pair",
+    "input": {
+      "op": "status-identity",
+      "change": "remove-last"
+    },
+    "expected": {
+      "painted": [
+        "",
+        "",
+        " @dim@second\u001b[39m                                                                         "
+      ],
+      "children": 3
+    }
+  },
+  {
+    "test": "status_replaces_only_the_adjacent_retained_pair",
+    "input": {
+      "op": "status-identity",
+      "change": "clear"
+    },
+    "expected": {
+      "painted": [
+        "",
+        " @dim@second\u001b[39m                                                                         "
+      ],
+      "children": 2
+    }
+  },
+  {
+    "test": "follow_up_routes_expanded_input_through_idle_stream_and_compaction",
+    "input": {
+      "op": "follow-fallback",
+      "text": "raw",
+      "expanded": " selected "
+    },
+    "expected": {
+      "calls": [
+        [
+          "submit",
+          "selected"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "",
+      "history": [],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "follow_up_routes_expanded_input_through_idle_stream_and_compaction",
+    "input": {
+      "op": "follow-fallback",
+      "text": " raw "
+    },
+    "expected": {
+      "calls": [
+        [
+          "submit",
+          "raw"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "",
+      "history": [],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "follow_up_routes_expanded_input_through_idle_stream_and_compaction",
+    "input": {
+      "op": "follow-fallback",
+      "text": " raw ",
+      "noSubmit": true
+    },
+    "expected": {
+      "calls": [],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": " raw ",
+      "history": [],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "queue_actions_use_real_session_compaction_and_prompt_routes",
+    "input": {
+      "op": "prompt-rejection",
+      "operation": "follow"
+    },
+    "expected": {
+      "error": "controlled rejection",
+      "calls": [
+        [
+          "prompt",
+          "selected",
+          {
+            "streamingBehavior": "followUp"
+          }
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "",
+      "history": [
+        "selected"
+      ],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "queue_actions_use_real_session_compaction_and_prompt_routes",
+    "input": {
+      "op": "prompt-rejection",
+      "operation": "submit"
+    },
+    "expected": {
+      "error": "controlled rejection",
+      "calls": [
+        [
+          "prompt",
+          "selected",
+          {
+            "streamingBehavior": "steer"
+          }
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "",
+      "history": [
+        "selected"
+      ],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "dequeue_restores_grouped_text_and_preserves_nonblank_draft",
+    "input": {
+      "op": "restore-blank-sdk-text",
+      "steering": [
+        "   "
+      ]
+    },
+    "expected": {
+      "count": 1,
+      "calls": [
+        [
+          "clear"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "draft",
+      "history": [],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "dequeue_restores_grouped_text_and_preserves_nonblank_draft",
+    "input": {
+      "op": "restore-blank-sdk-text",
+      "steering": [
+        "",
+        " ",
+        "q"
+      ]
+    },
+    "expected": {
+      "count": 3,
+      "calls": [
+        [
+          "clear"
+        ]
+      ],
+      "local": [],
+      "session": {
+        "steering": [],
+        "followUp": []
+      },
+      "text": "\n\n \n\nq\n\ndraft",
+      "history": [],
+      "errors": [],
+      "aborts": 0,
+      "pending": [],
+      "chat": []
+    }
+  },
+  {
+    "test": "key_display_capitalizes_each_live_binding_without_reordering",
+    "input": {
+      "op": "capitalize-key",
+      "key": ""
+    },
+    "expected": {
+      "result": ""
+    }
+  },
+  {
+    "test": "key_display_capitalizes_each_live_binding_without_reordering",
+    "input": {
+      "op": "capitalize-key",
+      "key": "ctrl+x/alt+enter"
+    },
+    "expected": {
+      "result": "Ctrl+X/Alt+Enter"
+    }
+  },
+  {
+    "test": "key_display_capitalizes_each_live_binding_without_reordering",
+    "input": {
+      "op": "capitalize-key",
+      "key": "ctrl++/"
+    },
+    "expected": {
+      "result": "Ctrl++/"
+    }
+  },
+  {
+    "test": "key_display_capitalizes_each_live_binding_without_reordering",
+    "input": {
+      "op": "capitalize-key",
+      "key": "/shift+up//"
+    },
+    "expected": {
+      "result": "/Shift+Up//"
+    }
+  },
+  {
+    "test": "key_display_capitalizes_each_live_binding_without_reordering",
+    "input": {
+      "op": "capitalize-key",
+      "key": "CTRL+X"
+    },
+    "expected": {
+      "result": "CTRL+X"
+    }
+  },
+  {
+    "test": "key_display_capitalizes_each_live_binding_without_reordering",
+    "input": {
+      "op": "capitalize-key",
+      "key": "alt+ß"
+    },
+    "expected": {
+      "result": "Alt+SS"
+    }
+  },
+  {
+    "test": "key_display_capitalizes_each_live_binding_without_reordering",
+    "input": {
+      "op": "capitalize-key",
+      "key": "ctrl+pageUp"
+    },
+    "expected": {
+      "result": "Ctrl+PageUp"
+    }
+  }
+]

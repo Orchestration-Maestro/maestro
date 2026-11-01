@@ -705,7 +705,7 @@ fn overlay_handle_noops_preserve_hidden_state_and_render_requests() {
 }
 
 #[test]
-fn overlay_cursor_failures_keep_completed_state_changes() {
+fn overlay_cursor_failures_remove_failed_admission_and_keep_completed_removal() {
     use crate::support::{manual_runtime::ManualRuntime, recording_terminal::RecordingTerminal};
     use maestro_tui::{TUI, TerminalImage};
     use std::io::ErrorKind;
@@ -726,13 +726,8 @@ fn overlay_cursor_failures_keep_completed_state_changes() {
     };
     assert_eq!(error.kind(), ErrorKind::BrokenPipe);
     assert_eq!(error.to_string(), "cursor failure");
-    assert!(tui.has_overlay() && overlay.focus.get());
-    assert_eq!(runtime.pending(), 0);
-    assert_eq!(
-        tui.hide_overlay().unwrap_err().kind(),
-        ErrorKind::BrokenPipe
-    );
     assert!(!tui.has_overlay() && base.focus.get());
+    assert!(!overlay.focus.get());
     assert_eq!(runtime.pending(), 0);
     terminal.set_hide_error(None);
     let mut handle = tui.show_overlay(overlay, None).unwrap();
@@ -1392,4 +1387,45 @@ fn replacement_overlay(
         handle.set_hidden(true);
     }
     Ok(handle)
+}
+
+#[test]
+fn overlay_failed_admission_preserves_a_reentrant_sibling() {
+    use crate::support::{manual_runtime::ManualRuntime, recording_terminal::RecordingTerminal};
+    use maestro_tui::{TUI, TerminalImage};
+    use std::{cell::Cell, io::ErrorKind};
+    let terminal = RecordingTerminal::new(20, 6);
+    let runtime = ManualRuntime::new();
+    let tui = TUI::new(
+        terminal.handle(),
+        runtime.handle(),
+        TerminalImage::new(|_| None, || 1),
+        None,
+    );
+    let base = Probe::shared(&[]);
+    tui.set_focus(Some(base.clone()));
+    let sibling = Probe::shared(&["sibling"]);
+    let (showing, output, nested) = (tui.clone(), terminal.clone(), sibling.clone());
+    let called = Cell::new(false);
+    let options = Rc::new(RefCell::new(OverlayOptions {
+        visible: Some(Rc::new(move |_, _| {
+            if !called.replace(true) {
+                showing.show_overlay(nested.clone(), None).unwrap();
+                output.set_hide_error(Some(ErrorKind::BrokenPipe));
+            }
+            true
+        })),
+        ..OverlayOptions::default()
+    }));
+    let failed = Probe::shared(&["failed"]);
+    let error = tui
+        .show_overlay(failed.clone(), Some(options))
+        .err()
+        .unwrap();
+    assert_eq!(error.kind(), ErrorKind::BrokenPipe);
+    assert!(tui.has_overlay() && sibling.focus.get());
+    assert!(!failed.focus.get());
+    terminal.set_hide_error(None);
+    tui.hide_overlay().unwrap();
+    assert!(!tui.has_overlay() && base.focus.get());
 }

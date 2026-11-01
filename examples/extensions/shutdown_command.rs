@@ -1,4 +1,5 @@
 //! A quit command and two tools that ask the host to shut down.
+// maestro-component: MAESTRO_SHUTDOWN_COMMAND_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
@@ -25,7 +26,7 @@ struct DeployParams {
 fn result(text: String, details: String) -> AgentToolResult {
     AgentToolResult {
         content: vec![UserBlock::Text(TextContent::new(text))],
-        details: Presence::Present(details),
+        details: Presence::Present(details.into()),
         terminate: Presence::Missing,
     }
 }
@@ -36,7 +37,7 @@ fn tool_metadata(name: &str, label: &str, description: &str, parameters: &Value)
         name: name.into(),
         label: label.into(),
         description: description.into(),
-        parameters: parameters.to_string(),
+        parameters: parameters.clone().into(),
         prompt_snippet: Presence::Missing,
         prompt_guidelines: Presence::Missing,
         render_shell: Presence::Missing,
@@ -56,6 +57,8 @@ fn quit() -> CommandOptions {
 /// The `finish_and_exit` tool, which requests shutdown before answering.
 fn finish_and_exit() -> ToolDefinition {
     ToolDefinition {
+        render_call: None,
+        render_result: None,
         metadata: tool_metadata(
             "finish_and_exit",
             "Finish and Exit",
@@ -78,6 +81,8 @@ fn finish_and_exit() -> ToolDefinition {
 /// The `deploy_and_exit` tool, which reports progress and then requests shutdown.
 fn deploy_and_exit() -> ToolDefinition {
     ToolDefinition {
+        render_call: None,
+        render_result: None,
         metadata: tool_metadata(
             "deploy_and_exit",
             "Deploy and Exit",

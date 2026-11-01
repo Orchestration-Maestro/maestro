@@ -41,9 +41,12 @@ impl OAuthProviderInterface for Provider {
         record.expires = f64::NAN;
         Box::pin(async move { Ok(record) })
     }
-    fn get_api_key<'a>(&self, record: &'a OAuthCredentials) -> Result<&'a str, OAuthError> {
+    fn get_api_key<'a>(
+        &self,
+        record: &'a OAuthCredentials,
+    ) -> Result<std::borrow::Cow<'a, str>, OAuthError> {
         self.events.lock().unwrap().push("key");
-        Ok(&record.refresh)
+        Ok(std::borrow::Cow::Borrowed(&record.refresh))
     }
 }
 #[cfg(not(target_arch = "wasm32"))]

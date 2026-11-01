@@ -59,3 +59,11 @@ export async function finish(bytes, mime, name, success) {
         console.log('PASS native download ' + state.mode + ': ' + state.events.join(' -> '));
     } finally { state.restore(); }
 }
+// Observe an activation that must leave the platform untouched.
+export async function finishNone() {
+    const state = active;
+    try {
+        if (state.blobs.length || state.anchors.length || state.events.length) throw new Error('unexpected download effects: ' + state.events.join(',') + ' (' + state.blobs.length + ' Blobs)');
+        console.log('PASS native download ' + state.mode + ': none');
+    } finally { state.restore(); }
+}

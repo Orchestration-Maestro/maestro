@@ -1,0 +1,334 @@
+{
+  "cases": [
+    {
+      "source": "",
+      "html": "<script>if (window.complete) window.complete();</script>",
+      "completions": 1,
+      "errors": 0,
+      "events": [
+        {
+          "completion": true,
+          "ready": "loading",
+          "parent": "HEAD",
+          "previous": "SCRIPT"
+        },
+        "dom-ready"
+      ],
+      "body": []
+    },
+    {
+      "source": "test",
+      "html": "test<script>if (window.complete) window.complete();</script>",
+      "completions": 1,
+      "errors": 0,
+      "events": [
+        {
+          "completion": true,
+          "ready": "loading",
+          "parent": "BODY",
+          "previous": null
+        },
+        "dom-ready"
+      ],
+      "body": [
+        "SCRIPT"
+      ]
+    },
+    {
+      "source": "<p>snow 雪😀</p>",
+      "html": "<p>snow 雪😀</p><script>if (window.complete) window.complete();</script>",
+      "completions": 1,
+      "errors": 0,
+      "events": [
+        {
+          "completion": true,
+          "ready": "loading",
+          "parent": "BODY",
+          "previous": "P"
+        },
+        "dom-ready"
+      ],
+      "body": [
+        "P",
+        "SCRIPT"
+      ]
+    },
+    {
+      "source": "<html></html>",
+      "html": "<html></html><script>if (window.complete) window.complete();</script>",
+      "completions": 1,
+      "errors": 0,
+      "events": [
+        {
+          "completion": true,
+          "ready": "loading",
+          "parent": "BODY",
+          "previous": null
+        },
+        "dom-ready"
+      ],
+      "body": [
+        "SCRIPT"
+      ]
+    },
+    {
+      "source": "<HTML></HTML>",
+      "html": "<HTML></HTML><script>if (window.complete) window.complete();</script>",
+      "completions": 1,
+      "errors": 0,
+      "events": [
+        {
+          "completion": true,
+          "ready": "loading",
+          "parent": "BODY",
+          "previous": null
+        },
+        "dom-ready"
+      ],
+      "body": [
+        "SCRIPT"
+      ]
+    },
+    {
+      "source": "x</html>y</html>",
+      "html": "x</html>y</html><script>if (window.complete) window.complete();</script>",
+      "completions": 1,
+      "errors": 0,
+      "events": [
+        {
+          "completion": true,
+          "ready": "loading",
+          "parent": "BODY",
+          "previous": null
+        },
+        "dom-ready"
+      ],
+      "body": [
+        "SCRIPT"
+      ]
+    },
+    {
+      "source": "</Html>",
+      "html": "</Html><script>if (window.complete) window.complete();</script>",
+      "completions": 1,
+      "errors": 0,
+      "events": [
+        {
+          "completion": true,
+          "ready": "loading",
+          "parent": "BODY",
+          "previous": null
+        },
+        "dom-ready"
+      ],
+      "body": [
+        "SCRIPT"
+      ]
+    },
+    {
+      "source": "﻿<html>\r\n<&>\u0000</html>",
+      "html": "﻿<html>\r\n<&>\u0000</html><script>if (window.complete) window.complete();</script>",
+      "completions": 1,
+      "errors": 0,
+      "events": [
+        {
+          "completion": true,
+          "ready": "loading",
+          "parent": "BODY",
+          "previous": null
+        },
+        "dom-ready"
+      ],
+      "body": [
+        "SCRIPT"
+      ]
+    },
+    {
+      "source": "<script>const s=\"</html>\";</script>",
+      "html": "<script>const s=\"</html>\";</script><script>if (window.complete) window.complete();</script>",
+      "completions": 1,
+      "errors": 0,
+      "events": [
+        {
+          "completion": true,
+          "ready": "loading",
+          "parent": "HEAD",
+          "previous": "SCRIPT"
+        },
+        "dom-ready"
+      ],
+      "body": []
+    },
+    {
+      "source": "<!-- </html> -->",
+      "html": "<!-- </html> --><script>if (window.complete) window.complete();</script>",
+      "completions": 1,
+      "errors": 0,
+      "events": [
+        {
+          "completion": true,
+          "ready": "loading",
+          "parent": "HEAD",
+          "previous": "SCRIPT"
+        },
+        "dom-ready"
+      ],
+      "body": []
+    },
+    {
+      "source": "雪\r\n</html>",
+      "html": "雪\r\n</html><script>if (window.complete) window.complete();</script>",
+      "completions": 1,
+      "errors": 0,
+      "events": [
+        {
+          "completion": true,
+          "ready": "loading",
+          "parent": "BODY",
+          "previous": null
+        },
+        "dom-ready"
+      ],
+      "body": [
+        "SCRIPT"
+      ]
+    },
+    {
+      "source": "plain\u0000text",
+      "html": "plain\u0000text<script>if (window.complete) window.complete();</script>",
+      "completions": 1,
+      "errors": 0,
+      "events": [
+        {
+          "completion": true,
+          "ready": "loading",
+          "parent": "BODY",
+          "previous": null
+        },
+        "dom-ready"
+      ],
+      "body": [
+        "SCRIPT"
+      ]
+    },
+    {
+      "source": "<html>  </html>",
+      "html": "<html>  </html><script>if (window.complete) window.complete();</script>",
+      "completions": 1,
+      "errors": 0,
+      "events": [
+        {
+          "completion": true,
+          "ready": "loading",
+          "parent": "BODY",
+          "previous": null
+        },
+        "dom-ready"
+      ],
+      "body": [
+        "SCRIPT"
+      ]
+    },
+    {
+      "source": "<!doctype html><html><head><title>plain</title></head><body><p>end</p></body></html>",
+      "html": "<!doctype html><html><head><title>plain</title></head><body><p>end</p></body></html><script>if (window.complete) window.complete();</script>",
+      "completions": 1,
+      "errors": 0,
+      "events": [
+        {
+          "completion": true,
+          "ready": "loading",
+          "parent": "BODY",
+          "previous": "P"
+        },
+        "dom-ready"
+      ],
+      "body": [
+        "P",
+        "SCRIPT"
+      ]
+    },
+    {
+      "source": "<html><body><script>events.push(\"authored\")</script><p>end</p></body></html>",
+      "html": "<html><body><script>events.push(\"authored\")</script><p>end</p></body></html><script>if (window.complete) window.complete();</script>",
+      "completions": 1,
+      "errors": 0,
+      "events": [
+        "authored",
+        {
+          "completion": true,
+          "ready": "loading",
+          "parent": "BODY",
+          "previous": "P"
+        },
+        "dom-ready"
+      ],
+      "body": [
+        "SCRIPT",
+        "P",
+        "SCRIPT"
+      ]
+    },
+    {
+      "source": "<html><body><div title=\"</html>\">data</div></body></html>",
+      "html": "<html><body><div title=\"</html>\">data</div></body></html><script>if (window.complete) window.complete();</script>",
+      "completions": 1,
+      "errors": 0,
+      "events": [
+        {
+          "completion": true,
+          "ready": "loading",
+          "parent": "BODY",
+          "previous": "DIV"
+        },
+        "dom-ready"
+      ],
+      "body": [
+        "DIV",
+        "SCRIPT"
+      ]
+    },
+    {
+      "source": "<html><body><script>window.value=\"</html>\";events.push(\"authored\")</script></body></html>",
+      "html": "<html><body><script>window.value=\"</html>\";events.push(\"authored\")</script></body></html><script>if (window.complete) window.complete();</script>",
+      "completions": 1,
+      "errors": 0,
+      "events": [
+        "authored",
+        {
+          "completion": true,
+          "ready": "loading",
+          "parent": "BODY",
+          "previous": "SCRIPT"
+        },
+        "dom-ready"
+      ],
+      "body": [
+        "SCRIPT",
+        "SCRIPT"
+      ]
+    },
+    {
+      "source": "<html><body><!-- open",
+      "html": "<html><body><!-- open<script>if (window.complete) window.complete();</script>",
+      "completions": 0,
+      "errors": 0,
+      "events": [
+        "dom-ready"
+      ],
+      "body": []
+    },
+    {
+      "source": "<html><body><script>window.value=1;",
+      "html": "<html><body><script>window.value=1;<script>if (window.complete) window.complete();</script>",
+      "completions": 0,
+      "errors": 1,
+      "events": [
+        "dom-ready"
+      ],
+      "body": [
+        "SCRIPT"
+      ]
+    }
+  ]
+}

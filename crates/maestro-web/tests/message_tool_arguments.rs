@@ -1,7 +1,8 @@
 //! Model object admission through the public browser tool dispatch.
 #![cfg(test)]
-use crate::support::tool_output::TextOnlyOutput as _;
-use crate::{brand, effects_support, recording_highlighter, support, tool_renderer_support};
+use crate::tool_renderer_support;
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen::prelude::wasm_bindgen;
 
 use maestro_web::tools::types::{
     ToolParams, ToolRendererBinding, ToolResultMessageView, ToolUiError,
@@ -160,7 +161,9 @@ fn model_tool_call_uses_default_raw_object_route() {
         assert!(
             render_tool::<_, Value>(
                 &call.name,
-                Some(ToolParams::object(&call.arguments)),
+                Some(ToolParams::object(
+                    call.arguments.as_object().expect("recorded object root"),
+                )),
                 None,
                 false
             )
@@ -178,7 +181,9 @@ fn model_tool_call_uses_default_raw_object_route() {
         assert!(
             render_tool::<_, Value>(
                 &call.name,
-                Some(ToolParams::object(&call.arguments)),
+                Some(ToolParams::object(
+                    call.arguments.as_object().expect("recorded object root"),
+                )),
                 None,
                 false
             )
@@ -223,10 +228,12 @@ fn native_operands_and_non_object_sdk_values_remain_available() {
     non_object_sdk_values();
 }
 
-#[test]
-fn default_object_input_keeps_canonical_json_spelling() {
-    use maestro_web::browser::attachment_content::AttachmentHost;
-    use maestro_web::tools::types::{ToolRenderState, ToolRenderView};
+/// The default listing preserves canonical numeric keys, number spelling and literal Unicode.
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub fn default_object_input_keeps_canonical_json_spelling(import_module: &js_sys::Function) {
+    use crate::contributions_support::{container, host, select, text, view};
+    use maestro_web::dom::MountedContent;
     reset();
     let object: maestro_app::JsonObject = serde_json::from_str(
         r#"{"b":"雪 <literal>","10":10,"2":2,"zero":-0.0,"large":1e21,"small":1e-7}"#,
@@ -239,34 +246,243 @@ fn default_object_input_keeps_canonical_json_spelling() {
         false,
     )
     .unwrap();
-    let highlighter = recording_highlighter::Highlighter::default();
-    let host: Rc<dyn AttachmentHost> = Rc::new(effects_support::Host::default());
-    let i18n = maestro_web::I18n::new(Rc::new(support::Host::default())).unwrap();
-    let pack = brand::pack("brand.json").unwrap();
-    let presentation = pack.presentation(maestro_theme::BrandMode::Dark).unwrap();
-    let context = egui::Context::default();
-    let mut row = ToolRenderState::default();
-    let mut output = context.run_ui(
-        egui::RawInput {
-            screen_rect: Some(egui::Rect::from_min_size(
-                egui::Pos2::ZERO,
-                egui::vec2(600., 600.),
-            )),
-            ..Default::default()
-        },
-        |ui| {
-            recipe
-                .render(
-                    ui,
-                    ToolRenderView::new(&host, &i18n, &presentation, &highlighter, None),
-                    &mut row,
-                )
-                .assert_no_overlays()
-                .unwrap();
-        },
+    let view = view();
+    let _elements = host(&view, import_module);
+    let parent = container();
+    let mut slot = MountedContent::default();
+    slot.show(recipe.content.as_ref(), &parent, &view).unwrap();
+    let block = select(slot.root().unwrap(), ".maestro-code");
+    assert_eq!(
+        parent.query_selector_all(".maestro-code").unwrap().length(),
+        1
     );
-    output.textures_delta.clear();
-    assert_eq!(&*highlighter.requests.borrow(), &[("{\n  \"2\": 2,\n  \"10\": 10,\n  \"b\": \"雪 <literal>\",\n  \"zero\": 0,\n  \"large\": 1e+21,\n  \"small\": 1e-7\n}".into(), "json".into())]);
+    assert_eq!(block.get_attribute("language").unwrap(), "json");
+    assert_eq!(
+        text(&select(&block, "pre code")),
+        "{\n  \"2\": 2,\n  \"10\": 10,\n  \"b\": \"雪 <literal>\",\n  \"zero\": 0,\n  \"large\": 1e+21,\n  \"small\": 1e-7\n}"
+    );
+    slot.clear();
+    parent.remove();
+}
+
+/// Tool rows borrow every argument root and retain native result details.
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen]
+pub fn tool_rows_dispatch_borrowed_argument_root_values() {
+    reset();
+    let native = Rc::new(Cell::new(0));
+    let envelope = message(Some(native.clone()));
+    for arguments in [
+        json!(null),
+        json!(false),
+        json!(0),
+        json!(""),
+        json!("text"),
+        json!([]),
+        json!([null, {"k": 1}]),
+        json!({}),
+        json!({"z": 1, "a": [false]}),
+    ] {
+        let call = Rc::new(model_call("root-dispatch", &arguments));
+        for (pending, aborted, is_streaming) in [
+            (false, false, false),
+            (true, false, false),
+            (false, false, true),
+            (true, true, true),
+        ] {
+            let streaming = !aborted && (pending || is_streaming);
+            let calls = Rc::new(Cell::new(0));
+            let id = if aborted {
+                "root-call"
+            } else {
+                "original call"
+            };
+            register_root_observer(&call, &calls, &native, streaming, id);
+            let props = maestro_web::ToolMessage {
+                tool_call: Some(call.clone()),
+                tool: None,
+                result: Some(Rc::new(envelope.clone())),
+                pending,
+                aborted,
+                is_streaming,
+            };
+            assert!(draw_row(&props).is_empty(), "custom rows draw no listing");
+            assert_eq!(calls.get(), 1, "{} {pending} {aborted}", call.arguments);
+        }
+    }
+    assert_eq!(
+        native.get(),
+        9 * 3,
+        "aborted rows replace the native envelope"
+    );
+}
+
+/// Default tool rows retain root-specific input and output listings.
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen]
+pub fn tool_rows_keep_root_specific_default_input_sections() {
+    reset();
+    let output = maestro_app::ToolResultMessage::<Value> {
+        content: vec![maestro_app::UserBlock::Text(maestro_app::TextContent::new(
+            r#"{"ok":true}"#.into(),
+        ))],
+        ..message(None)
+    };
+    let empty = maestro_app::ToolResultMessage::<Value> {
+        content: Vec::new(),
+        is_error: false,
+        ..message(None)
+    };
+    let ok = "{\n  \"ok\": true\n}";
+    let cases: [(
+        Value,
+        Option<&maestro_app::ToolResultMessage>,
+        bool,
+        Vec<&str>,
+    ); 17] = [
+        (json!(null), None, false, vec![]),
+        (json!(false), None, false, vec![]),
+        (json!(0), None, false, vec![]),
+        (json!(""), None, false, vec![]),
+        (json!(true), None, false, vec!["true"]),
+        (json!([]), None, true, vec!["[]"]),
+        (json!([5]), None, false, vec!["[\n  5\n]"]),
+        (json!([null]), None, false, vec!["[\n  null\n]"]),
+        (
+            json!(r#"{"b":1,"a":[2]}"#),
+            None,
+            false,
+            vec!["{\n  \"b\": 1,\n  \"a\": [\n    2\n  ]\n}"],
+        ),
+        (json!(r#""quoted""#), None, false, vec!["\"quoted\""]),
+        (json!("plain"), None, false, vec!["\"plain\""]),
+        (json!("null"), None, true, vec![]),
+        (json!({}), None, true, vec![]),
+        (json!({}), None, false, vec!["{}"]),
+        (json!(null), Some(&output), false, vec![ok]),
+        (json!({}), Some(&output), true, vec!["{}", ok]),
+        (json!({}), Some(&empty), false, vec!["{}"]),
+    ];
+    for custom in [false, true] {
+        if custom {
+            show_json_over_custom("default-sections");
+        }
+        for (arguments, result, is_streaming, expected) in &cases {
+            let call = Rc::new(model_call("default-sections", arguments));
+            let props = maestro_web::ToolMessage {
+                tool_call: Some(call.clone()),
+                tool: None,
+                result: result.map(|value| Rc::new(value.clone())),
+                pending: false,
+                aborted: false,
+                is_streaming: *is_streaming,
+            };
+            assert_eq!(draw_row(&props), *expected, "{arguments} {is_streaming}");
+        }
+    }
+    maestro_web::set_show_json_mode(false);
+}
+
+/// Register a custom renderer, then enable JSON mode so the default sections still render.
+#[cfg(target_arch = "wasm32")]
+fn show_json_over_custom(name: &str) {
+    register_tool_renderer(
+        name,
+        ToolRendererBinding::from_raw(Rc::new(Renderer(Rc::new(
+            |_: Option<&Value>, _: Option<ToolResultMessageView<'_>>, _| {
+                Ok(content("custom", true))
+            },
+        )))),
+    );
+    maestro_web::set_show_json_mode(true);
+}
+
+/// A retained model call holding the supplied argument value.
+#[cfg(target_arch = "wasm32")]
+fn model_call(name: &str, arguments: &Value) -> maestro_app::ToolCall {
+    serde_json::from_value(
+        json!({"type": "toolCall", "id": "root-call", "name": name, "arguments": arguments}),
+    )
+    .unwrap()
+}
+
+/// Register the call's operand route and check each callback borrows the original value.
+#[cfg(target_arch = "wasm32")]
+fn register_root_observer(
+    call: &maestro_app::ToolCall,
+    calls: &Rc<Cell<usize>>,
+    native: &Rc<Cell<i32>>,
+    streaming: bool,
+    id: &'static str,
+) {
+    let address = match call.arguments.as_object() {
+        Some(members) => std::ptr::from_ref(members) as usize,
+        None => std::ptr::from_ref(&call.arguments) as usize,
+    };
+    let expected = call.arguments.clone();
+    let (count, native) = (calls.clone(), native.clone());
+    let check = move |address_seen: usize,
+                      seen: Value,
+                      result: Option<ToolResultMessageView<'_, Rc<Cell<i32>>>>,
+                      flag: bool| {
+        assert_eq!(address_seen, address);
+        assert_eq!(seen, expected);
+        assert_eq!(flag, streaming);
+        let result = result.unwrap();
+        assert_eq!(result.tool_call_id(), id);
+        if let Some(details) = result.details() {
+            assert!(Rc::ptr_eq(details, &native));
+            native.set(native.get() + 1);
+        }
+        count.set(count.get() + 1);
+        Ok(content("root", true))
+    };
+    let binding = if call.arguments.is_object() {
+        ToolRendererBinding::from_raw(Rc::new(Renderer(Rc::new(
+            move |params: Option<&Map<String, Value>>, result, flag| {
+                let params = params.unwrap();
+                check(
+                    std::ptr::from_ref(params) as usize,
+                    Value::Object(params.clone()),
+                    result,
+                    flag,
+                )
+            },
+        ))))
+    } else {
+        ToolRendererBinding::from_raw(Rc::new(Renderer(Rc::new(
+            move |params: Option<&Value>, result, flag| {
+                let params = params.unwrap();
+                check(
+                    std::ptr::from_ref(params) as usize,
+                    params.clone(),
+                    result,
+                    flag,
+                )
+            },
+        ))))
+    };
+    register_tool_renderer(&call.name, binding);
+}
+
+/// Mount one tool row and read its JSON listings in order.
+#[cfg(target_arch = "wasm32")]
+fn draw_row<D: 'static>(props: &maestro_web::ToolMessage<D>) -> Vec<String> {
+    use crate::contributions_support::{body, text, view};
+    use maestro_web::dom::DomContent as _;
+    use wasm_bindgen::JsCast as _;
+    let view = view();
+    let root = props.mount(&view).unwrap();
+    body().append_child(&root.node).unwrap();
+    let element = root.node.unchecked_ref::<web_sys::Element>();
+    let blocks = element
+        .query_selector_all(".maestro-code[language='json'] pre code")
+        .unwrap();
+    let listings = (0..blocks.length())
+        .map(|index| text(&blocks.item(index).unwrap()))
+        .collect();
+    element.remove();
+    listings
 }
 
 /// Register the typed callback with the original envelope addresses.

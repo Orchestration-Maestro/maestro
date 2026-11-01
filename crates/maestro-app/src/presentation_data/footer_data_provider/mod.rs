@@ -8,7 +8,7 @@
 //! whose lexical rules belong to `maestro_path`.
 
 mod git;
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 mod native;
 mod operations;
 mod provider;
@@ -17,7 +17,8 @@ mod watch;
 pub use maestro_extensions::footer_data_provider::{
     ExtensionStatusIter, ExtensionStatuses, ReadonlyFooterDataProvider,
 };
-#[cfg(unix)]
+pub use maestro_watch::fs_watch::{FsWatcher, WatchOperations, WatchTimer};
+#[cfg(any(unix, windows))]
 pub use native::NativeFooterOperations;
 pub use operations::{FooterFileStats, FooterOperations};
 pub use provider::FooterDataProvider;

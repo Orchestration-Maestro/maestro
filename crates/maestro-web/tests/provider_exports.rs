@@ -9,15 +9,7 @@ use maestro_web::{
 /// Browser proxy exports reach application.
 fn browser_proxy_exports_reach_application() {
     assert!(should_use_proxy_for_provider("zai", ""));
-    let model: Model = serde_json::from_str(
-        r#"{
-      "id":"facade", "name":"Facade", "api":"unregistered-facade", "provider":"zai",
-      "baseUrl":"https://facade.test", "reasoning":false, "input":["text"],
-      "cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0},
-      "contextWindow":8192, "maxTokens":4096
-    }"#,
-    )
-    .unwrap();
+    let model = model();
     assert_eq!(
         apply_proxy_if_needed(model.clone(), "", Some("https://proxy.test")).base_url,
         "https://proxy.test/?url=https%3A%2F%2Ffacade.test"
@@ -43,4 +35,30 @@ fn browser_proxy_exports_reach_application() {
         panic!("settings failure must complete immediately")
     };
     assert_eq!(error.message, "facade settings");
+}
+
+/// Complete controlled model used by browser provider fixtures.
+pub(crate) fn model() -> Model {
+    serde_json::from_str(
+        r#"{
+  "id": "facade",
+  "name": "Facade",
+  "api": "unregistered-facade",
+  "provider": "zai",
+  "baseUrl": "https://facade.test",
+  "reasoning": false,
+  "input": [
+    "text"
+  ],
+  "cost": {
+    "input": 0,
+    "output": 0,
+    "cacheRead": 0,
+    "cacheWrite": 0
+  },
+  "contextWindow": 8192,
+  "maxTokens": 4096
+}"#,
+    )
+    .unwrap()
 }

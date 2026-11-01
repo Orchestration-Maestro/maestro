@@ -1,6 +1,7 @@
 //! Real commands through the runtime's public process and terminal owners.
 use super::*;
 use crate::pane::launch_env::PaneLaunchEnv;
+use maestro_test_directory::temporary_root;
 use maestro_test_process::{TestProcess, run_alone};
 use std::{ffi::OsString, io};
 
@@ -38,7 +39,7 @@ fn config(args: &[String]) -> (PaneRuntimeConfig, mpsc::Receiver<AppEvent>, Arc<
             executable: std::env::current_exe().unwrap(),
             args: args.iter().map(OsString::from).collect(),
         },
-        socket: std::env::temp_dir().join("maestro-test.sock"),
+        socket: temporary_root().join("maestro-test.sock"),
         executable: None,
     };
     (config, receiver, notify)
@@ -60,7 +61,7 @@ where
                 let runtime = PaneRuntime::spawn_shell_command(
                     config,
                     command,
-                    std::env::temp_dir(),
+                    temporary_root(),
                     &PaneLaunchEnv::default(),
                 )
                 .unwrap();
@@ -167,7 +168,8 @@ fn runtime_cwd_returns_accepted_report_without_rechecking_filesystem() {
     if run_alone(name).unwrap() {
         return;
     }
-    let path = std::env::temp_dir().join(format!("maestro-cwd-{}", std::process::id()));
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let path = scratch.path().join("cwd");
     std::fs::create_dir(&path).unwrap();
     let script = format!(
         "printf '\\033]7;file://{}\\033\\\\'; read -r line",
@@ -230,18 +232,18 @@ fn runtime_process_cwd_does_not_require_traversing_the_directory_path() {
     if run_alone(name).unwrap() {
         return;
     }
-    let base = std::env::temp_dir().join(format!("maestro-process-cwd-{}", std::process::id()));
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let base = scratch.path();
     let path = base.join("cwd");
     std::fs::create_dir_all(&path).unwrap();
     let script = format!("cd '{}'; printf 'CWD-READY'; read -r line", path.display());
     with_runtime(name, &script, |runtime, _, notify| async move {
         wait_text(&runtime, &notify, "CWD-READY").await;
         assert_eq!(runtime.cwd(), Some(path.clone()));
-        std::fs::set_permissions(&base, std::fs::Permissions::from_mode(0o0)).unwrap();
+        std::fs::set_permissions(base, std::fs::Permissions::from_mode(0o0)).unwrap();
         let observed = runtime.cwd();
-        std::fs::set_permissions(&base, std::fs::Permissions::from_mode(0o700)).unwrap();
+        std::fs::set_permissions(base, std::fs::Permissions::from_mode(0o700)).unwrap();
         runtime.shutdown().await;
-        std::fs::remove_dir_all(&base).unwrap();
         assert_eq!(observed, Some(path));
     });
 }
@@ -253,7 +255,7 @@ fn runtime_follow_cwd_falls_back_to_reported_pane_cwd_without_foreground_group()
         return;
     }
     with_runtime(name, "read -r line", |runtime, _, _| async move {
-        let cwd = std::env::temp_dir();
+        let cwd = temporary_root();
         runtime.shared.publish_cwd(cwd.clone());
         runtime.io.release_after_commit().await.unwrap();
         assert_eq!(runtime.follow_cwd().await, Some(cwd));
@@ -823,7 +825,7 @@ async fn check_manifest_resets(args: &[String]) {
     let runtime = PaneRuntime::spawn_shell_command(
         runtime_config,
         "read -r line",
-        std::env::temp_dir(),
+        temporary_root(),
         &PaneLaunchEnv::default(),
     )
     .unwrap();

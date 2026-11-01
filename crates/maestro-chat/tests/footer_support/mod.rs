@@ -2,13 +2,13 @@
 //! Session, metadata, theme and corpus support for the footer tests.
 use crate::published;
 pub mod corpus;
+pub mod session;
+
+use session::session;
 
 use maestro_app::{
-    AgentSession, AgentSessionConfig, AuthStorage, CompactionOptions, ConfigValues,
-    DefaultResourceLoader, DefaultResourceLoaderOptions, ExtensionStatuses, Local, Model,
-    ModelRegistry, ModuleLoader, Presence, ProcessConfigValueOperations,
-    ReadonlyFooterDataProvider, ResourceLoaderOptions, SessionManager, Settings, SettingsManager,
-    ThinkingLevel,
+    AgentSession, CompactionOptions, ExtensionStatuses, Local, Model, Presence,
+    ReadonlyFooterDataProvider, ThinkingLevel,
 };
 use maestro_chat::FooterComponent;
 use maestro_chat::components::footer::Environment;
@@ -150,7 +150,7 @@ pub struct World {
 impl World {
     /// A world over `cwd` with the dark palette published and one provider.
     pub fn new(cwd: &str, oauth_provider: Option<&str>) -> Self {
-        let session = session(cwd, oauth_provider);
+        let session = session(cwd, oauth_provider, |loader| loader).session;
         let (publication, theme) = published::published(&dark_theme());
         Self {
             session,
@@ -246,6 +246,17 @@ impl World {
         self.append_entries(&[serde_json::json!({"type": "message", "message": message})]);
     }
 
+    /// Puts one already-decoded answer into the conversation the session derives its context
+    /// usage from.
+    pub fn push_answer(&self, document: &Value) {
+        let message = serde_json::from_value(document.clone()).expect("a controlled answer");
+        self.session
+            .messages()
+            .write()
+            .unwrap_or_else(PoisonError::into_inner)
+            .push(message);
+    }
+
     /// Puts one answer into the conversation the session derives its context usage from.
     pub fn set_context(&self, tokens: f64) {
         let document = serde_json::json!({
@@ -271,12 +282,7 @@ impl World {
             "stopReason": "stop",
             "timestamp": 0.0
         });
-        let message = serde_json::from_value(document).expect("a controlled answer");
-        self.session
-            .messages()
-            .write()
-            .unwrap_or_else(PoisonError::into_inner)
-            .push(message);
+        self.push_answer(&document);
     }
 
     /// Appends a compaction record, which leaves context tokens unknown until the next answer.
@@ -302,7 +308,7 @@ pub fn unpublished(cwd: &str) -> World {
     let state = published::unpublished();
     let theme = state.theme();
     World {
-        session: session(cwd, None),
+        session: session(cwd, None, |loader| loader).session,
         metadata: Metadata::new(Some("main"), 1.0),
         publication: Rc::new(state),
         theme,
@@ -323,77 +329,6 @@ pub fn light_theme() -> Rc<Theme> {
 /// The text of a recorded environment value.
 fn text(value: Option<&Value>) -> Option<String> {
     value.and_then(Value::as_str).map(str::to_owned)
-}
-
-/// A memory session over an in-memory catalog, settings and loader.
-fn session(cwd: &str, oauth_provider: Option<&str>) -> Rc<AgentSession<Local>> {
-    let settings = Rc::new(RefCell::new(
-        SettingsManager::in_memory(Settings::default()),
-    ));
-    let history = Rc::new(RefCell::new(
-        SessionManager::in_memory(Some(cwd)).expect("a memory session"),
-    ));
-    let commands: ConfigValues = Arc::new(ProcessConfigValueOperations::new(|| {
-        Err(std::io::Error::other("not invoked"))
-    }));
-    let registry = Arc::new(
-        ModelRegistry::in_memory(
-            Arc::new(AuthStorage::in_memory(credentials(oauth_provider))),
-            commands,
-        )
-        .expect("an in-memory catalog"),
-    );
-    let module_loader: ModuleLoader<Local> = Rc::new(|_| Box::pin(async { Err("unused".into()) }));
-    let loader: Rc<DefaultResourceLoader<Local>> =
-        Rc::new(DefaultResourceLoader::new(DefaultResourceLoaderOptions {
-            cwd: cwd.to_owned(),
-            agent_dir: cwd.to_owned(),
-            settings_manager: Some(Rc::clone(&settings)),
-            resources: ResourceLoaderOptions::new(
-                Rc::new(tokio::task::LocalSet::new()),
-                module_loader,
-            ),
-        }));
-    AgentSession::new(AgentSessionConfig {
-        agent: Rc::default(),
-        session_manager: history,
-        settings_manager: settings,
-        cwd: cwd.to_owned(),
-        bin_dir: String::new(),
-        scoped_models: Vec::new(),
-        resource_loader: loader,
-        custom_tools: Vec::new(),
-        model_registry: registry,
-        initial_active_tool_names: None,
-        allowed_tool_names: None,
-        base_tools_override: None,
-        extension_runner_ref: None,
-        session_start_event: None,
-        tools_manager: Arc::new(maestro_app::agent_session::ToolsManager::new(
-            String::new(),
-            None,
-        )),
-        theme: LiveTheme::default(),
-    })
-    .expect("a memory session")
-}
-
-/// Stored credentials, with a subscription for `provider` when supplied.
-fn credentials(provider: Option<&str>) -> maestro_app::AuthStorageData {
-    let mut data = maestro_app::AuthStorageData::new();
-    if let Some(provider) = provider {
-        let credential = serde_json::json!({
-            "type": "oauth",
-            "access": "access",
-            "refresh": "refresh",
-            "expires": 0
-        });
-        data.insert(
-            provider.to_owned(),
-            serde_json::from_value(credential).expect("a stored subscription"),
-        );
-    }
-    data
 }
 
 /// A counter a test bumps to observe how often a getter answered.

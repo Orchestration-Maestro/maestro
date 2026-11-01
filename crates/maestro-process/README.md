@@ -7,6 +7,21 @@ post-exit grace ending collection. Retained bytes are returned; streamed bytes
 have already been delivered.
 `Termination::TerminateThenKill` kills a child still running after its delay.
 
+## Termination signals
+
+`termination::register_signals` delivers each termination signal of the host to a
+callback and returns the operation that stops delivery; calling it again changes
+nothing. `termination::signals_for_host` names the signals delivered: termination
+everywhere and a hangup off Windows. Delivery runs as tasks of the calling thread,
+so a caller drives it from a runtime with the signal driver. A native mode keeps
+its own exit policy. On Unix, removing the last live registration restores native
+TERM/HUP default actions. Removing one of several registrations leaves the others
+live. Reopening defers the retained prepared actions again; no stale preparation
+is installed. Dropping a removal handle alone does not unregister it.
+
+`DefaultSignalActions` prepares the native default action a repeated signal takes
+once restored.
+
 See the [process contract](../../docs/specs/maestro-port.md#crates-and-delivery-order).
 
 ## Command preparation
@@ -67,6 +82,11 @@ thread handle. Its worker writes optional owned bytes, closes stdin, ignores
 input errors and waits for the direct child. Stdout/stderr use the null device.
 Joining observes completion after normal reaping; dropping the handle does not
 cancel or join it. Startup errors return before a handle is delivered.
+
+`exit_signal_name` names the signal that ended a child, returning `None` for a
+numeric exit and for a signal this host does not name. `windows_shell_launch`
+builds a Windows shell launch for callers that must run through one, without
+parsing their command text.
 
 The application re-exports these original launch interfaces plus the tools
 owner's [asynchronous execution](../../docs/tools-process.md#running-a-command),

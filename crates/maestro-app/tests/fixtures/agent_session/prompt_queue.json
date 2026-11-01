@@ -1,0 +1,1402 @@
+{
+  "idle_prompt_records_one_answer": {
+    "users": [
+      "hi"
+    ],
+    "assistants": [
+      "hello"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "hi"
+      },
+      {
+        "role": "assistant",
+        "text": "hello"
+      }
+    ],
+    "pending": 0,
+    "steering": [],
+    "followUp": [],
+    "response_pending": 0,
+    "preflight": [
+      true
+    ]
+  },
+  "tool_turn_waits_for_the_final_answer": {
+    "users": [
+      "start"
+    ],
+    "assistants": [
+      "",
+      "done"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "start"
+      },
+      {
+        "role": "assistant",
+        "text": ""
+      },
+      {
+        "role": "toolResult",
+        "text": "echo:hello",
+        "isError": false
+      },
+      {
+        "role": "assistant",
+        "text": "done"
+      }
+    ],
+    "pending": 0,
+    "steering": [],
+    "followUp": [],
+    "requests": [
+      [
+        {
+          "role": "user",
+          "text": "start"
+        }
+      ],
+      [
+        {
+          "role": "user",
+          "text": "start"
+        },
+        {
+          "role": "assistant",
+          "text": ""
+        },
+        {
+          "role": "toolResult",
+          "text": "echo:hello",
+          "isError": false
+        }
+      ]
+    ],
+    "runs": [
+      "echo:hello"
+    ]
+  },
+  "tool_batch_reaches_one_continuation": {
+    "users": [
+      "run tools"
+    ],
+    "assistants": [
+      "",
+      "tool results: 2"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "run tools"
+      },
+      {
+        "role": "assistant",
+        "text": ""
+      },
+      {
+        "role": "toolResult",
+        "text": "slow:a",
+        "isError": false
+      },
+      {
+        "role": "toolResult",
+        "text": "fast:b",
+        "isError": false
+      },
+      {
+        "role": "assistant",
+        "text": "tool results: 2"
+      }
+    ],
+    "pending": 0,
+    "steering": [],
+    "followUp": [],
+    "requests": [
+      [
+        {
+          "role": "user",
+          "text": "run tools"
+        }
+      ],
+      [
+        {
+          "role": "user",
+          "text": "run tools"
+        },
+        {
+          "role": "assistant",
+          "text": ""
+        },
+        {
+          "role": "toolResult",
+          "text": "slow:a",
+          "isError": false
+        },
+        {
+          "role": "toolResult",
+          "text": "fast:b",
+          "isError": false
+        }
+      ]
+    ],
+    "runs": [
+      "fast:b",
+      "slow:a"
+    ]
+  },
+  "prompt_images_reach_the_provider": {
+    "users": [
+      "describe"
+    ],
+    "assistants": [
+      "ok"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "describe",
+        "content": [
+          {
+            "type": "text",
+            "text": "describe"
+          },
+          {
+            "type": "image",
+            "mimeType": "image/png",
+            "data": "ZmFrZQ=="
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "text": "ok"
+      }
+    ],
+    "pending": 0,
+    "steering": [],
+    "followUp": [],
+    "requests": [
+      [
+        {
+          "role": "user",
+          "text": "describe",
+          "content": [
+            {
+              "type": "text",
+              "text": "describe"
+            },
+            {
+              "type": "image",
+              "mimeType": "image/png",
+              "data": "ZmFrZQ=="
+            }
+          ]
+        }
+      ]
+    ]
+  },
+  "skill_input_reaches_the_provider_expanded": {
+    "users": [
+      "<skill name=\"test\" location=\"$SKILL_ROOT/test-skill.md\">\nReferences are relative to $SKILL_ROOT.\n\n# Test Skill\n\nUse the skill body.\n</skill>\n\nexplain this"
+    ],
+    "assistants": [
+      "ok"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "<skill name=\"test\" location=\"$SKILL_ROOT/test-skill.md\">\nReferences are relative to $SKILL_ROOT.\n\n# Test Skill\n\nUse the skill body.\n</skill>\n\nexplain this"
+      },
+      {
+        "role": "assistant",
+        "text": "ok"
+      }
+    ],
+    "pending": 0,
+    "steering": [],
+    "followUp": [],
+    "requests": [
+      [
+        {
+          "role": "user",
+          "text": "<skill name=\"test\" location=\"$SKILL_ROOT/test-skill.md\">\nReferences are relative to $SKILL_ROOT.\n\n# Test Skill\n\nUse the skill body.\n</skill>\n\nexplain this"
+        }
+      ]
+    ]
+  },
+  "template_input_reaches_the_provider_expanded": {
+    "users": [
+      "Review this code: src/index.ts"
+    ],
+    "assistants": [
+      "ok"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "Review this code: src/index.ts"
+      },
+      {
+        "role": "assistant",
+        "text": "ok"
+      }
+    ],
+    "pending": 0,
+    "steering": [],
+    "followUp": [],
+    "requests": [
+      [
+        {
+          "role": "user",
+          "text": "Review this code: src/index.ts"
+        }
+      ]
+    ]
+  },
+  "idle_command_keeps_a_scripted_answer": {
+    "users": [],
+    "assistants": [],
+    "messages": [],
+    "pending": 0,
+    "steering": [],
+    "followUp": [],
+    "runs": [
+      "hello world"
+    ],
+    "response_pending": 1,
+    "preflight": [
+      true
+    ],
+    "calls": 0
+  },
+  "idle_command_needs_no_scripted_answer": {
+    "users": [],
+    "assistants": [],
+    "messages": [],
+    "pending": 0,
+    "steering": [],
+    "followUp": [],
+    "runs": [
+      "hello world"
+    ],
+    "response_pending": 0,
+    "preflight": [
+      true
+    ],
+    "calls": 0
+  },
+  "idle_extension_message_starts_a_turn": {
+    "users": [
+      "from extension"
+    ],
+    "assistants": [
+      "response"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "from extension"
+      },
+      {
+        "role": "assistant",
+        "text": "response"
+      }
+    ],
+    "pending": 0,
+    "steering": [],
+    "followUp": [],
+    "requests": [
+      [
+        {
+          "role": "user",
+          "text": "from extension"
+        }
+      ]
+    ]
+  },
+  "busy_prompt_reports_the_queue_choice": {
+    "users": [
+      "start"
+    ],
+    "assistants": [
+      "",
+      "done"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "start"
+      },
+      {
+        "role": "assistant",
+        "text": ""
+      },
+      {
+        "role": "toolResult",
+        "text": "released",
+        "isError": false
+      },
+      {
+        "role": "assistant",
+        "text": "done"
+      }
+    ],
+    "pending": 0,
+    "steering": [],
+    "followUp": [],
+    "requests": [
+      [
+        {
+          "role": "user",
+          "text": "start"
+        }
+      ],
+      [
+        {
+          "role": "user",
+          "text": "start"
+        },
+        {
+          "role": "assistant",
+          "text": ""
+        },
+        {
+          "role": "toolResult",
+          "text": "released",
+          "isError": false
+        }
+      ]
+    ],
+    "during": {
+      "pending": 0,
+      "steering": [],
+      "followUp": []
+    },
+    "error": "Agent is already processing. Specify streamingBehavior ('steer' or 'followUp') to queue the message.",
+    "preflight": [
+      false
+    ]
+  },
+  "extension_steering_precedes_the_next_request": {
+    "users": [
+      "start",
+      "steer now"
+    ],
+    "assistants": [
+      "",
+      "saw steer"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "start"
+      },
+      {
+        "role": "assistant",
+        "text": ""
+      },
+      {
+        "role": "toolResult",
+        "text": "released",
+        "isError": false
+      },
+      {
+        "role": "user",
+        "text": "steer now"
+      },
+      {
+        "role": "assistant",
+        "text": "saw steer"
+      }
+    ],
+    "pending": 0,
+    "steering": [],
+    "followUp": [],
+    "requests": [
+      [
+        {
+          "role": "user",
+          "text": "start"
+        }
+      ],
+      [
+        {
+          "role": "user",
+          "text": "start"
+        },
+        {
+          "role": "assistant",
+          "text": ""
+        },
+        {
+          "role": "toolResult",
+          "text": "released",
+          "isError": false
+        },
+        {
+          "role": "user",
+          "text": "steer now"
+        }
+      ]
+    ],
+    "during": {
+      "pending": 1,
+      "steering": [
+        "steer now"
+      ],
+      "followUp": []
+    },
+    "sources": [
+      "interactive",
+      "extension"
+    ]
+  },
+  "follow_up_waits_for_ordinary_continuation": {
+    "users": [
+      "start",
+      "after current run"
+    ],
+    "assistants": [
+      "",
+      "follow-up response",
+      ""
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "start"
+      },
+      {
+        "role": "assistant",
+        "text": ""
+      },
+      {
+        "role": "toolResult",
+        "text": "released",
+        "isError": false
+      },
+      {
+        "role": "assistant",
+        "text": "follow-up response"
+      },
+      {
+        "role": "user",
+        "text": "after current run"
+      },
+      {
+        "role": "assistant",
+        "text": ""
+      }
+    ],
+    "pending": 0,
+    "steering": [],
+    "followUp": [],
+    "requests": [
+      [
+        {
+          "role": "user",
+          "text": "start"
+        }
+      ],
+      [
+        {
+          "role": "user",
+          "text": "start"
+        },
+        {
+          "role": "assistant",
+          "text": ""
+        },
+        {
+          "role": "toolResult",
+          "text": "released",
+          "isError": false
+        }
+      ],
+      [
+        {
+          "role": "user",
+          "text": "start"
+        },
+        {
+          "role": "assistant",
+          "text": ""
+        },
+        {
+          "role": "toolResult",
+          "text": "released",
+          "isError": false
+        },
+        {
+          "role": "assistant",
+          "text": "follow-up response"
+        },
+        {
+          "role": "user",
+          "text": "after current run"
+        }
+      ]
+    ],
+    "during": {
+      "pending": 1,
+      "steering": [],
+      "followUp": [
+        "after current run"
+      ]
+    }
+  },
+  "steering_one_at_a_time_keeps_fifo": {
+    "users": [
+      "start",
+      "steer 1",
+      "steer 2"
+    ],
+    "assistants": [
+      "",
+      "handled steer 1",
+      "handled steer 2"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "start"
+      },
+      {
+        "role": "assistant",
+        "text": ""
+      },
+      {
+        "role": "toolResult",
+        "text": "released",
+        "isError": false
+      },
+      {
+        "role": "user",
+        "text": "steer 1"
+      },
+      {
+        "role": "assistant",
+        "text": "handled steer 1"
+      },
+      {
+        "role": "user",
+        "text": "steer 2"
+      },
+      {
+        "role": "assistant",
+        "text": "handled steer 2"
+      }
+    ],
+    "pending": 0,
+    "steering": [],
+    "followUp": [],
+    "requests": [
+      [
+        {
+          "role": "user",
+          "text": "start"
+        }
+      ],
+      [
+        {
+          "role": "user",
+          "text": "start"
+        },
+        {
+          "role": "assistant",
+          "text": ""
+        },
+        {
+          "role": "toolResult",
+          "text": "released",
+          "isError": false
+        },
+        {
+          "role": "user",
+          "text": "steer 1"
+        }
+      ],
+      [
+        {
+          "role": "user",
+          "text": "start"
+        },
+        {
+          "role": "assistant",
+          "text": ""
+        },
+        {
+          "role": "toolResult",
+          "text": "released",
+          "isError": false
+        },
+        {
+          "role": "user",
+          "text": "steer 1"
+        },
+        {
+          "role": "assistant",
+          "text": "handled steer 1"
+        },
+        {
+          "role": "user",
+          "text": "steer 2"
+        }
+      ]
+    ],
+    "during": {
+      "pending": 2,
+      "steering": [
+        "steer 1",
+        "steer 2"
+      ],
+      "followUp": []
+    }
+  },
+  "follow_up_one_at_a_time_keeps_fifo": {
+    "users": [
+      "start",
+      "follow-up 1",
+      "follow-up 2"
+    ],
+    "assistants": [
+      "",
+      "original turn complete",
+      "handled follow-up 1",
+      "handled follow-up 2"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "start"
+      },
+      {
+        "role": "assistant",
+        "text": ""
+      },
+      {
+        "role": "toolResult",
+        "text": "released",
+        "isError": false
+      },
+      {
+        "role": "assistant",
+        "text": "original turn complete"
+      },
+      {
+        "role": "user",
+        "text": "follow-up 1"
+      },
+      {
+        "role": "assistant",
+        "text": "handled follow-up 1"
+      },
+      {
+        "role": "user",
+        "text": "follow-up 2"
+      },
+      {
+        "role": "assistant",
+        "text": "handled follow-up 2"
+      }
+    ],
+    "pending": 0,
+    "steering": [],
+    "followUp": [],
+    "requests": [
+      [
+        {
+          "role": "user",
+          "text": "start"
+        }
+      ],
+      [
+        {
+          "role": "user",
+          "text": "start"
+        },
+        {
+          "role": "assistant",
+          "text": ""
+        },
+        {
+          "role": "toolResult",
+          "text": "released",
+          "isError": false
+        }
+      ],
+      [
+        {
+          "role": "user",
+          "text": "start"
+        },
+        {
+          "role": "assistant",
+          "text": ""
+        },
+        {
+          "role": "toolResult",
+          "text": "released",
+          "isError": false
+        },
+        {
+          "role": "assistant",
+          "text": "original turn complete"
+        },
+        {
+          "role": "user",
+          "text": "follow-up 1"
+        }
+      ],
+      [
+        {
+          "role": "user",
+          "text": "start"
+        },
+        {
+          "role": "assistant",
+          "text": ""
+        },
+        {
+          "role": "toolResult",
+          "text": "released",
+          "isError": false
+        },
+        {
+          "role": "assistant",
+          "text": "original turn complete"
+        },
+        {
+          "role": "user",
+          "text": "follow-up 1"
+        },
+        {
+          "role": "assistant",
+          "text": "handled follow-up 1"
+        },
+        {
+          "role": "user",
+          "text": "follow-up 2"
+        }
+      ]
+    ],
+    "during": {
+      "pending": 2,
+      "steering": [],
+      "followUp": [
+        "follow-up 1",
+        "follow-up 2"
+      ]
+    }
+  },
+  "steering_all_keeps_one_batch": {
+    "users": [
+      "start",
+      "steer 1",
+      "steer 2"
+    ],
+    "assistants": [
+      "",
+      "batched steer response"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "start"
+      },
+      {
+        "role": "assistant",
+        "text": ""
+      },
+      {
+        "role": "toolResult",
+        "text": "released",
+        "isError": false
+      },
+      {
+        "role": "user",
+        "text": "steer 1"
+      },
+      {
+        "role": "user",
+        "text": "steer 2"
+      },
+      {
+        "role": "assistant",
+        "text": "batched steer response"
+      }
+    ],
+    "pending": 0,
+    "steering": [],
+    "followUp": [],
+    "requests": [
+      [
+        {
+          "role": "user",
+          "text": "start"
+        }
+      ],
+      [
+        {
+          "role": "user",
+          "text": "start"
+        },
+        {
+          "role": "assistant",
+          "text": ""
+        },
+        {
+          "role": "toolResult",
+          "text": "released",
+          "isError": false
+        },
+        {
+          "role": "user",
+          "text": "steer 1"
+        },
+        {
+          "role": "user",
+          "text": "steer 2"
+        }
+      ]
+    ],
+    "during": {
+      "pending": 2,
+      "steering": [
+        "steer 1",
+        "steer 2"
+      ],
+      "followUp": []
+    }
+  },
+  "follow_up_all_keeps_one_batch": {
+    "users": [
+      "start",
+      "follow-up 1",
+      "follow-up 2"
+    ],
+    "assistants": [
+      "",
+      "original turn complete",
+      "batched follow-up response"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "start"
+      },
+      {
+        "role": "assistant",
+        "text": ""
+      },
+      {
+        "role": "toolResult",
+        "text": "released",
+        "isError": false
+      },
+      {
+        "role": "assistant",
+        "text": "original turn complete"
+      },
+      {
+        "role": "user",
+        "text": "follow-up 1"
+      },
+      {
+        "role": "user",
+        "text": "follow-up 2"
+      },
+      {
+        "role": "assistant",
+        "text": "batched follow-up response"
+      }
+    ],
+    "pending": 0,
+    "steering": [],
+    "followUp": [],
+    "requests": [
+      [
+        {
+          "role": "user",
+          "text": "start"
+        }
+      ],
+      [
+        {
+          "role": "user",
+          "text": "start"
+        },
+        {
+          "role": "assistant",
+          "text": ""
+        },
+        {
+          "role": "toolResult",
+          "text": "released",
+          "isError": false
+        }
+      ],
+      [
+        {
+          "role": "user",
+          "text": "start"
+        },
+        {
+          "role": "assistant",
+          "text": ""
+        },
+        {
+          "role": "toolResult",
+          "text": "released",
+          "isError": false
+        },
+        {
+          "role": "assistant",
+          "text": "original turn complete"
+        },
+        {
+          "role": "user",
+          "text": "follow-up 1"
+        },
+        {
+          "role": "user",
+          "text": "follow-up 2"
+        }
+      ]
+    ],
+    "during": {
+      "pending": 2,
+      "steering": [],
+      "followUp": [
+        "follow-up 1",
+        "follow-up 2"
+      ]
+    }
+  },
+  "streaming_custom_steering_reaches_the_provider": {
+    "users": [
+      "start"
+    ],
+    "assistants": [
+      "",
+      "done"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "start"
+      },
+      {
+        "role": "assistant",
+        "text": ""
+      },
+      {
+        "role": "toolResult",
+        "text": "released",
+        "isError": false
+      },
+      {
+        "role": "custom",
+        "text": "steer custom",
+        "customType": "queue-test",
+        "display": true,
+        "details": {
+          "value": 1
+        }
+      },
+      {
+        "role": "assistant",
+        "text": "done"
+      }
+    ],
+    "pending": 0,
+    "steering": [],
+    "followUp": [],
+    "requests": [
+      [
+        {
+          "role": "user",
+          "text": "start"
+        }
+      ],
+      [
+        {
+          "role": "user",
+          "text": "start"
+        },
+        {
+          "role": "assistant",
+          "text": ""
+        },
+        {
+          "role": "toolResult",
+          "text": "released",
+          "isError": false
+        },
+        {
+          "role": "user",
+          "text": "steer custom"
+        }
+      ]
+    ],
+    "during": {
+      "pending": 0,
+      "steering": [],
+      "followUp": []
+    }
+  },
+  "streaming_custom_follow_up_waits_for_continuation": {
+    "users": [
+      "start"
+    ],
+    "assistants": [
+      "",
+      "original turn complete",
+      "done"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "start"
+      },
+      {
+        "role": "assistant",
+        "text": ""
+      },
+      {
+        "role": "toolResult",
+        "text": "released",
+        "isError": false
+      },
+      {
+        "role": "assistant",
+        "text": "original turn complete"
+      },
+      {
+        "role": "custom",
+        "text": "follow-up custom",
+        "customType": "queue-test",
+        "display": true,
+        "details": {
+          "value": 1
+        }
+      },
+      {
+        "role": "assistant",
+        "text": "done"
+      }
+    ],
+    "pending": 0,
+    "steering": [],
+    "followUp": [],
+    "requests": [
+      [
+        {
+          "role": "user",
+          "text": "start"
+        }
+      ],
+      [
+        {
+          "role": "user",
+          "text": "start"
+        },
+        {
+          "role": "assistant",
+          "text": ""
+        },
+        {
+          "role": "toolResult",
+          "text": "released",
+          "isError": false
+        }
+      ],
+      [
+        {
+          "role": "user",
+          "text": "start"
+        },
+        {
+          "role": "assistant",
+          "text": ""
+        },
+        {
+          "role": "toolResult",
+          "text": "released",
+          "isError": false
+        },
+        {
+          "role": "assistant",
+          "text": "original turn complete"
+        },
+        {
+          "role": "user",
+          "text": "follow-up custom"
+        }
+      ]
+    ],
+    "during": {
+      "pending": 0,
+      "steering": [],
+      "followUp": []
+    }
+  },
+  "queued_text_leaves_the_mirror_before_start": {
+    "users": [
+      "start",
+      "queued"
+    ],
+    "assistants": [
+      "",
+      "done"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "start"
+      },
+      {
+        "role": "assistant",
+        "text": ""
+      },
+      {
+        "role": "toolResult",
+        "text": "released",
+        "isError": false
+      },
+      {
+        "role": "user",
+        "text": "queued"
+      },
+      {
+        "role": "assistant",
+        "text": "done"
+      }
+    ],
+    "pending": 0,
+    "steering": [],
+    "followUp": [],
+    "requests": [
+      [
+        {
+          "role": "user",
+          "text": "start"
+        }
+      ],
+      [
+        {
+          "role": "user",
+          "text": "start"
+        },
+        {
+          "role": "assistant",
+          "text": ""
+        },
+        {
+          "role": "toolResult",
+          "text": "released",
+          "isError": false
+        },
+        {
+          "role": "user",
+          "text": "queued"
+        }
+      ]
+    ],
+    "during": {
+      "pending": 1,
+      "steering": [
+        "queued"
+      ],
+      "followUp": []
+    },
+    "counts": [
+      0
+    ]
+  },
+  "extension_slash_follow_up_stays_user_text": {
+    "users": [
+      "start",
+      "/testcmd queued"
+    ],
+    "assistants": [
+      "",
+      "first turn complete",
+      "queued follow-up handled by model"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "start"
+      },
+      {
+        "role": "assistant",
+        "text": ""
+      },
+      {
+        "role": "toolResult",
+        "text": "released",
+        "isError": false
+      },
+      {
+        "role": "assistant",
+        "text": "first turn complete"
+      },
+      {
+        "role": "user",
+        "text": "/testcmd queued"
+      },
+      {
+        "role": "assistant",
+        "text": "queued follow-up handled by model"
+      }
+    ],
+    "pending": 0,
+    "steering": [],
+    "followUp": [],
+    "requests": [
+      [
+        {
+          "role": "user",
+          "text": "start"
+        }
+      ],
+      [
+        {
+          "role": "user",
+          "text": "start"
+        },
+        {
+          "role": "assistant",
+          "text": ""
+        },
+        {
+          "role": "toolResult",
+          "text": "released",
+          "isError": false
+        }
+      ],
+      [
+        {
+          "role": "user",
+          "text": "start"
+        },
+        {
+          "role": "assistant",
+          "text": ""
+        },
+        {
+          "role": "toolResult",
+          "text": "released",
+          "isError": false
+        },
+        {
+          "role": "assistant",
+          "text": "first turn complete"
+        },
+        {
+          "role": "user",
+          "text": "/testcmd queued"
+        }
+      ]
+    ],
+    "during": {
+      "pending": 1,
+      "steering": [],
+      "followUp": [
+        "/testcmd queued"
+      ]
+    },
+    "runs": [],
+    "sources": [
+      "interactive",
+      "extension"
+    ]
+  },
+  "next_turn_custom_message_follows_the_user": {
+    "users": [
+      "normal prompt"
+    ],
+    "assistants": [
+      "done"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "normal prompt"
+      },
+      {
+        "role": "custom",
+        "text": "carry this",
+        "customType": "next-turn",
+        "display": true,
+        "details": {}
+      },
+      {
+        "role": "assistant",
+        "text": "done"
+      }
+    ],
+    "pending": 0,
+    "steering": [],
+    "followUp": [],
+    "requests": [
+      [
+        {
+          "role": "user",
+          "text": "normal prompt"
+        },
+        {
+          "role": "user",
+          "text": "carry this"
+        }
+      ]
+    ],
+    "before": {
+      "users": [],
+      "assistants": [],
+      "messages": [],
+      "pending": 0,
+      "steering": [],
+      "followUp": []
+    }
+  },
+  "unauthenticated_prompt_fails_before_dispatch": {
+    "users": [],
+    "assistants": [],
+    "messages": [],
+    "pending": 0,
+    "steering": [],
+    "followUp": [],
+    "error": "No API key found for faux.\n\nUse /login to log into a provider via OAuth or API key. See:\n  $DOCS/providers.md\n  $DOCS/models.md",
+    "preflight": [
+      false
+    ],
+    "calls": 0
+  },
+  "registered_command_cannot_be_steered": {
+    "users": [],
+    "assistants": [],
+    "messages": [],
+    "pending": 0,
+    "steering": [],
+    "followUp": [],
+    "error": "Extension command \"/testcmd\" cannot be queued. Use prompt() or execute the command when not streaming.",
+    "calls": 0
+  },
+  "registered_command_cannot_be_followed_up": {
+    "users": [],
+    "assistants": [],
+    "messages": [],
+    "pending": 0,
+    "steering": [],
+    "followUp": [],
+    "error": "Extension command \"/testcmd\" cannot be queued. Use prompt() or execute the command when not streaming.",
+    "calls": 0
+  }
+}

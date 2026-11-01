@@ -3,8 +3,7 @@
 use maestro_markdown::{Kind, MarkedOptions, Node, parse_with_options};
 use std::ops::Range;
 
-#[path = "grammar_rules/observations.rs"]
-mod observations;
+use crate::observations;
 
 #[test]
 fn deletion_keeps_unclosed_approximations_literal() {

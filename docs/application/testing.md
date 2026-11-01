@@ -44,9 +44,17 @@ provider sends:
   provider received.
 - A handler can report that it has started, then wait on a `watch` channel until
   the test releases it.
-- A test that checks the stored history waits for the session to deliver the
-  run's `agent_end` to its listeners. The agent becoming idle alone does not
-  show that the session has finished processing its queued events.
+- `waiting_tool` reports when its execution starts and answers once the test
+  releases it, so a test queues messages while the run is held and observes the
+  queue mirrors before delivery.
+- `session_run_ended` notifies once the session delivers the run's `agent_end` to
+  its listeners. The agent becoming idle alone does not show that the session has
+  finished processing its queued events.
+
+`prompt_to_end` uses `session_run_ended` to wait for prompt completion, including
+session persistence. Both helpers live in the harness; concurrency and navigation
+checks use that same completion route. The harness also uses the SDK's
+`transform_context` adapter to deliver extension context hooks.
 
 Registered callbacks hold notifiers and recorders, not the session, and no
 borrow outlives a callback or an await.
@@ -55,7 +63,11 @@ borrow outlives a callback or an await.
 
 Recorded cases live in `tests/fixtures/agent_session/*.json`. The concurrency
 checks compare each whole observation with its case in `concurrent.json`, so a
-recorded field no test reads fails them.
+recorded field no test reads fails them. The prompt and queue checks read one
+operation record per test name from `prompt_queue.json` and compare it whole:
+history, queue mirrors, provider requests, tool runs, errors and count fields
+included. The model, extension, statistics, reload, navigation and traversal
+checks each compare their complete keyed observation from `model_navigation.json`.
 `assistant-message-with-thinking-code.json` keeps only the content of a long
 thinking and code answer, signature included; the scripted provider owns the
 rest of the message. The `empty-agent` and `empty-cwd` roots are copied into
@@ -74,4 +86,19 @@ Run one group of checks through the shared integration-test program:
 ```sh
 cargo nextest run -p maestro-app --locked --test integration \
   -E 'test(/^agent_session_concurrent_checks::/)'
+```
+
+The model, reload and navigation qualification group includes the concurrency
+regressions that share its completion helpers:
+
+```sh
+cargo nextest run -p maestro-app --locked --test integration \
+  -E 'test(/^(agent_session_(model_extension|stats|tree_navigation|concurrent)|reload_stale_resource_settings|tree_cancel_compacting|tree_traversal)_checks::/)'
+```
+
+The prompt and queue checks run together:
+
+```sh
+cargo nextest run -p maestro-app --locked --test integration \
+  -E 'test(/^(agent_session_prompt_checks|agent_session_queue_checks|queued_slash_command_followup_checks)::/)'
 ```

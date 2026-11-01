@@ -4,7 +4,7 @@
     clippy::too_many_arguments,
     clippy::excessive_nesting
 )]
-use super::scenario::{Decision, Driver};
+use super::scenario::{Decision, Driver, transformed};
 use serde_json::{Value, json};
 /// Exact default stale-context diagnostic supplied by the host.
 const STALE: &str = "This extension ctx is stale after session replacement or reload. Do not use a captured maestro or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload().";
@@ -32,17 +32,7 @@ async fn ask(driver: &mut impl Driver, request: Value, command: bool) -> Result<
     let delivery = driver
         .deliver_input("event catalog", &request.to_string())
         .await?;
-    answer(delivery.decision)
-}
-/// Read the returned transformation rather than an operation transcript.
-fn answer(decision: Decision) -> Result<Value, String> {
-    let Decision::Returned(Ok(Some(text))) = decision else {
-        return Err("missing answer".into());
-    };
-    let transform: Value = serde_json::from_str(&text).map_err(|e| e.to_string())?;
-    assert_eq!(transform["action"], "transform");
-    serde_json::from_str(transform["text"].as_str().ok_or("missing text")?)
-        .map_err(|e| e.to_string())
+    transformed(delivery.decision)
 }
 /// Apply an acknowledged state mutation before creating the next context.
 async fn control(driver: &mut impl Driver, value: Value) -> Result<(), String> {
@@ -698,7 +688,7 @@ async fn pending_auth(driver: &mut impl Driver) -> Result<(), String> {
         let delivery = driver
             .deliver_held(handler, &event.to_string(), "/work")
             .await?;
-        let actual = answer(delivery.decision)?;
+        let actual = transformed(delivery.decision)?;
         let expected = if outer {
             json!({"error":"pending outer failure 雪"})
         } else {
@@ -769,13 +759,7 @@ async fn compaction(driver: &mut impl Driver) -> Result<(), String> {
     let Decision::Returned(Ok(Some(result))) = delivered.decision else {
         return Err("compaction callback did not return content".into());
     };
-    let mut result: Value = serde_json::from_str(&result).map_err(|e| e.to_string())?;
-    result["compaction"]["details"] = serde_json::from_str(
-        result["compaction"]["details"]
-            .as_str()
-            .ok_or("missing opaque details")?,
-    )
-    .map_err(|e| e.to_string())?;
+    let result: Value = serde_json::from_str(&result).map_err(|e| e.to_string())?;
     assert_eq!(
         result,
         json!({"compaction":{"summary":"User requests:\n- first request 雪\n- [complex]","firstKeptEntryId":"keep from preparation","tokensBefore":4321.5,"details":{"leaf":"live leaf 雪","models":["model z","model a"],"branchEntries":[branch]}}})

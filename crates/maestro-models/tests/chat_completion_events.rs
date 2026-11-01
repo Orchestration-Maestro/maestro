@@ -146,6 +146,12 @@ fn maestro_chat_resolves_late_tool_fields() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
+fn maestro_chat_normalizes_gateway_reasoning_field() -> TestResult {
+    rows_of("maestro_chat_normalizes_gateway_reasoning_field")
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
 fn maestro_chat_retains_thought_signatures() -> TestResult {
     rows_of("maestro_chat_retains_thought_signatures")
 }
@@ -905,7 +911,7 @@ fn maestro_chat_preserves_nonfinite_usage_results() -> TestResult {
         let infinite =
             usage_of(r#"{"prompt_tokens":1e400,"prompt_tokens_details":{"cached_tokens":1e400}}"#)
                 .await?;
-        assert!(infinite.input.is_nan() && infinite.total_tokens.is_nan());
+        assert!(infinite.input.is_nan() && infinite.total_tokens.present().unwrap().is_nan());
         assert_eq!(infinite.cache_read.to_bits(), f64::INFINITY.to_bits());
         assert_eq!(infinite.output.to_bits(), 0.0_f64.to_bits());
 
@@ -915,7 +921,10 @@ fn maestro_chat_preserves_nonfinite_usage_results() -> TestResult {
 
         let negative = usage_of(r#"{"completion_tokens":-1e400}"#).await?;
         assert_eq!(negative.output.to_bits(), f64::NEG_INFINITY.to_bits());
-        assert_eq!(negative.total_tokens.to_bits(), f64::NEG_INFINITY.to_bits());
+        assert_eq!(
+            negative.total_tokens.present().unwrap().to_bits(),
+            f64::NEG_INFINITY.to_bits()
+        );
         assert_eq!(negative.input.to_bits(), 0.0_f64.to_bits());
 
         let signed_zero = usage_of(r#"{"prompt_tokens":-0,"completion_tokens":-0}"#).await?;
@@ -931,7 +940,7 @@ fn maestro_chat_preserves_nonfinite_usage_results() -> TestResult {
             counted.output,
             counted.cache_read,
             counted.cache_write,
-            counted.total_tokens,
+            counted.total_tokens.present().copied().unwrap(),
         ];
         assert_eq!(
             figures.map(f64::to_bits),
@@ -1484,10 +1493,7 @@ fn assert_argument_call(message: &AssistantMessage, expected: &Value) -> TestRes
         return Err("expected one tool call".into());
     };
     assert_eq!((call.id.as_str(), call.name.as_str()), ("call", "lookup"));
-    assert_eq!(
-        &call.arguments,
-        expected.as_object().ok_or("expected object")?
-    );
+    assert_eq!(&call.arguments, expected);
     Ok(())
 }
 
@@ -1524,10 +1530,7 @@ async fn projected_call(ending: &str) -> TestResult {
             AssistantMessageEvent::ToolcallEnd {
                 partial, tool_call, ..
             } => {
-                assert_eq!(
-                    &tool_call.arguments,
-                    expected.as_object().ok_or("expected object")?
-                );
+                assert_eq!(&tool_call.arguments, &expected);
                 assert_argument_call(&*partial.read().map_err(|e| e.to_string())?, &expected)?;
                 ended = true;
             }
@@ -1595,7 +1598,7 @@ async fn bounded_call(depth: usize, complete: bool) -> TestResult {
     while let Some(event) = stream.next().await {
         match event {
             AssistantMessageEvent::ToolcallEnd { tool_call, .. } => {
-                assert_bounded_call(&Value::Object(tool_call.arguments), depth)?;
+                assert_bounded_call(&tool_call.arguments, depth)?;
                 ended = true;
             }
             AssistantMessageEvent::Done { .. } => done = true,
@@ -1667,5 +1670,41 @@ fn maestro_chat_emits_carriage_delimited_events() -> TestResult {
         assert_only_text(&message, "carriage");
         assert!(Arc::ptr_eq(&partial, &stream.result().await));
         Ok(())
+    })
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// A streamed tool call keeps every root kind it spells, and a partial literal is not a
+/// completed null.
+#[test]
+fn chat_argument_roots_survive_delta_and_finish() -> TestResult {
+    crate::runtime::run(async {
+        assert_calls(
+            &[
+                ("0", "a", "lookup", "42"),
+                ("1", "b", "lookup", "null"),
+                ("2", "c", "lookup", "[1,1]"),
+                ("3", "d", "lookup", "false"),
+                ("4", "e", "lookup", "\"text\""),
+                ("5", "f", "lookup", r#"{"q":"#),
+                ("5", "", "", r#""held"}"#),
+            ],
+            &[
+                ("a", "lookup", json!(42)),
+                ("b", "lookup", Value::Null),
+                ("c", "lookup", json!([1, 1])),
+                ("d", "lookup", json!(false)),
+                ("e", "lookup", json!("text")),
+                ("f", "lookup", json!({"q": "held"})),
+            ],
+        )
+        .await?;
+        assert_calls(&[("0", "a", "lookup", "n")], &[("a", "lookup", json!({}))]).await?;
+        assert_calls(&[("0", "a", "lookup", "nu")], &[("a", "lookup", json!({}))]).await?;
+        assert_calls(
+            &[("0", "a", "lookup", "null")],
+            &[("a", "lookup", Value::Null)],
+        )
+        .await
     })
 }

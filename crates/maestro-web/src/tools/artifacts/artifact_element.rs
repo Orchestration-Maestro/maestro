@@ -1,4 +1,8 @@
 //! Owned artifact fields with independent header and body drawing.
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod header;
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod preview;
 use crate::tools::artifacts::ArtifactUiError;
 /// Call-scoped localization and branding, never retained by a native factory.
 #[derive(Clone, Copy)]
@@ -53,4 +57,17 @@ pub trait ArtifactElement {
     fn disconnected_callback(&mut self) -> Result<(), ArtifactUiError> {
         Ok(())
     }
+}
+
+/// Synchronize a source tag's reflected filename without repeating attribute callbacks.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn filename(
+    node: &web_sys::Element,
+    filename: &str,
+) -> Result<(), crate::tools::types::ToolUiError> {
+    if node.get_attribute("filename").as_deref() != Some(filename) {
+        node.set_attribute("filename", filename)
+            .map_err(|error| crate::tools::types::ToolUiError::native(&error))?;
+    }
+    Ok(())
 }

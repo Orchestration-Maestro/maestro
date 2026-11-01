@@ -1,0 +1,1909 @@
+{
+  "rows": [
+    {
+      "name": "source-sequence",
+      "group": "crossings",
+      "initialUi": false,
+      "steps": [
+        {
+          "op": "turn",
+          "tokens": 110000
+        },
+        {
+          "op": "turn",
+          "tokens": 120000
+        },
+        {
+          "op": "turn",
+          "tokens": 95000
+        },
+        {
+          "op": "turn",
+          "tokens": 105000
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [
+        {
+          "compact": {
+            "instructions": null,
+            "complete": true,
+            "error": true
+          }
+        }
+      ],
+      "checkpoints": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        }
+      ]
+    },
+    {
+      "name": "first-below",
+      "group": "crossings",
+      "initialUi": false,
+      "steps": [
+        {
+          "op": "turn",
+          "tokens": 99999
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [],
+      "checkpoints": [
+        0
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        }
+      ]
+    },
+    {
+      "name": "first-at-threshold",
+      "group": "crossings",
+      "initialUi": false,
+      "steps": [
+        {
+          "op": "turn",
+          "tokens": 100000
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [],
+      "checkpoints": [
+        0
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        }
+      ]
+    },
+    {
+      "name": "first-above",
+      "group": "crossings",
+      "initialUi": false,
+      "steps": [
+        {
+          "op": "turn",
+          "tokens": 100001
+        },
+        {
+          "op": "turn",
+          "tokens": 120000
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [],
+      "checkpoints": [
+        0,
+        0
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        }
+      ]
+    },
+    {
+      "name": "equal-and-recross",
+      "group": "crossings",
+      "initialUi": false,
+      "steps": [
+        {
+          "op": "turn",
+          "tokens": 100000
+        },
+        {
+          "op": "turn",
+          "tokens": 100000
+        },
+        {
+          "op": "turn",
+          "tokens": 100001
+        },
+        {
+          "op": "turn",
+          "tokens": 100002
+        },
+        {
+          "op": "turn",
+          "tokens": 100000
+        },
+        {
+          "op": "turn",
+          "tokens": 100001
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [
+        {
+          "compact": {
+            "instructions": null,
+            "complete": true,
+            "error": true
+          }
+        },
+        {
+          "compact": {
+            "instructions": null,
+            "complete": true,
+            "error": true
+          }
+        }
+      ],
+      "checkpoints": [
+        0,
+        0,
+        1,
+        1,
+        1,
+        2
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        }
+      ]
+    },
+    {
+      "name": "fractional-boundary",
+      "group": "crossings",
+      "initialUi": false,
+      "steps": [
+        {
+          "op": "turn",
+          "tokens": 99999.5
+        },
+        {
+          "op": "turn",
+          "tokens": 100000.5
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [
+        {
+          "compact": {
+            "instructions": null,
+            "complete": true,
+            "error": true
+          }
+        }
+      ],
+      "checkpoints": [
+        0,
+        1
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        }
+      ]
+    },
+    {
+      "name": "zero-is-known",
+      "group": "crossings",
+      "initialUi": false,
+      "steps": [
+        {
+          "op": "turn",
+          "tokens": 0
+        },
+        {
+          "op": "turn",
+          "tokens": 100001
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [
+        {
+          "compact": {
+            "instructions": null,
+            "complete": true,
+            "error": true
+          }
+        }
+      ],
+      "checkpoints": [
+        0,
+        1
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        }
+      ]
+    },
+    {
+      "name": "unknown-initial",
+      "group": "unknown",
+      "initialUi": false,
+      "steps": [
+        {
+          "op": "turn",
+          "tokens": null
+        },
+        {
+          "op": "turn",
+          "usage": "absent"
+        },
+        {
+          "op": "turn",
+          "usage": "null"
+        },
+        {
+          "op": "turn",
+          "usage": "tokens-absent"
+        },
+        {
+          "op": "turn",
+          "tokens": 100001
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [],
+      "checkpoints": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        }
+      ]
+    },
+    {
+      "name": "unknown-preserves-low",
+      "group": "unknown",
+      "initialUi": false,
+      "steps": [
+        {
+          "op": "turn",
+          "tokens": 95000
+        },
+        {
+          "op": "turn",
+          "tokens": null
+        },
+        {
+          "op": "turn",
+          "usage": "absent"
+        },
+        {
+          "op": "turn",
+          "usage": "null"
+        },
+        {
+          "op": "turn",
+          "usage": "tokens-absent"
+        },
+        {
+          "op": "turn",
+          "tokens": 105000
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [
+        {
+          "compact": {
+            "instructions": null,
+            "complete": true,
+            "error": true
+          }
+        }
+      ],
+      "checkpoints": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        }
+      ]
+    },
+    {
+      "name": "unknown-preserves-high",
+      "group": "unknown",
+      "initialUi": false,
+      "steps": [
+        {
+          "op": "turn",
+          "tokens": 95000
+        },
+        {
+          "op": "turn",
+          "tokens": 105000
+        },
+        {
+          "op": "turn",
+          "tokens": null
+        },
+        {
+          "op": "turn",
+          "tokens": 106000
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [
+        {
+          "compact": {
+            "instructions": null,
+            "complete": true,
+            "error": true
+          }
+        }
+      ],
+      "checkpoints": [
+        0,
+        1,
+        1,
+        1
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        }
+      ]
+    },
+    {
+      "name": "command-empty",
+      "group": "commands",
+      "initialUi": false,
+      "steps": [
+        {
+          "op": "command",
+          "args": ""
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [
+        {
+          "compact": {
+            "instructions": null,
+            "complete": true,
+            "error": true
+          }
+        }
+      ],
+      "checkpoints": [
+        1
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        }
+      ]
+    },
+    {
+      "name": "command-blank",
+      "group": "commands",
+      "initialUi": false,
+      "steps": [
+        {
+          "op": "command",
+          "args": " \t\r\n "
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [
+        {
+          "compact": {
+            "instructions": null,
+            "complete": true,
+            "error": true
+          }
+        }
+      ],
+      "checkpoints": [
+        1
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        }
+      ]
+    },
+    {
+      "name": "command-custom",
+      "group": "commands",
+      "initialUi": false,
+      "steps": [
+        {
+          "op": "command",
+          "args": "  Keep decisions\nretain 雪  "
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [
+        {
+          "compact": {
+            "instructions": "Keep decisions\nretain 雪",
+            "complete": true,
+            "error": true
+          }
+        }
+      ],
+      "checkpoints": [
+        1
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        }
+      ]
+    },
+    {
+      "name": "command-unicode-space",
+      "group": "commands",
+      "initialUi": false,
+      "steps": [
+        {
+          "op": "command",
+          "args": "  Focus on tools  "
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [
+        {
+          "compact": {
+            "instructions": "Focus on tools",
+            "complete": true,
+            "error": true
+          }
+        }
+      ],
+      "checkpoints": [
+        1
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        }
+      ]
+    },
+    {
+      "name": "command-literal-zero",
+      "group": "commands",
+      "initialUi": false,
+      "steps": [
+        {
+          "op": "command",
+          "args": " 0 "
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [
+        {
+          "compact": {
+            "instructions": "0",
+            "complete": true,
+            "error": true
+          }
+        }
+      ],
+      "checkpoints": [
+        1
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        }
+      ]
+    },
+    {
+      "name": "command-bom",
+      "group": "commands",
+      "initialUi": false,
+      "steps": [
+        {
+          "op": "command",
+          "args": "﻿Keep﻿"
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [
+        {
+          "compact": {
+            "instructions": "﻿Keep﻿",
+            "complete": true,
+            "error": true
+          }
+        }
+      ],
+      "checkpoints": [
+        1
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        }
+      ]
+    },
+    {
+      "name": "command-next-line",
+      "group": "commands",
+      "initialUi": false,
+      "steps": [
+        {
+          "op": "command",
+          "args": "Keep"
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [
+        {
+          "compact": {
+            "instructions": "Keep",
+            "complete": true,
+            "error": true
+          }
+        }
+      ],
+      "checkpoints": [
+        1
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        }
+      ]
+    },
+    {
+      "name": "command-does-not-seed",
+      "group": "commands",
+      "initialUi": false,
+      "steps": [
+        {
+          "op": "command",
+          "args": "manual"
+        },
+        {
+          "op": "turn",
+          "tokens": 110000
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [
+        {
+          "compact": {
+            "instructions": "manual",
+            "complete": true,
+            "error": true
+          }
+        }
+      ],
+      "checkpoints": [
+        1,
+        1
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        }
+      ]
+    },
+    {
+      "name": "command-does-not-reset",
+      "group": "commands",
+      "initialUi": false,
+      "steps": [
+        {
+          "op": "turn",
+          "tokens": 95000
+        },
+        {
+          "op": "command",
+          "args": "manual"
+        },
+        {
+          "op": "turn",
+          "tokens": 105000
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [
+        {
+          "compact": {
+            "instructions": "manual",
+            "complete": true,
+            "error": true
+          }
+        },
+        {
+          "compact": {
+            "instructions": null,
+            "complete": true,
+            "error": true
+          }
+        }
+      ],
+      "checkpoints": [
+        0,
+        1,
+        2
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        }
+      ]
+    },
+    {
+      "name": "ui-complete",
+      "group": "notifications",
+      "initialUi": true,
+      "steps": [
+        {
+          "op": "command",
+          "args": ""
+        },
+        {
+          "op": "complete",
+          "request": 0
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [
+        {
+          "notify": {
+            "message": "Compaction started",
+            "kind": "info"
+          }
+        },
+        {
+          "compact": {
+            "instructions": null,
+            "complete": true,
+            "error": true
+          }
+        },
+        {
+          "notify": {
+            "message": "Compaction completed",
+            "kind": "info"
+          }
+        }
+      ],
+      "checkpoints": [
+        2,
+        3
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        }
+      ]
+    },
+    {
+      "name": "ui-error",
+      "group": "notifications",
+      "initialUi": true,
+      "steps": [
+        {
+          "op": "command",
+          "args": "notes"
+        },
+        {
+          "op": "error",
+          "request": 0,
+          "message": "provider refused Ω\nline"
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [
+        {
+          "notify": {
+            "message": "Compaction started",
+            "kind": "info"
+          }
+        },
+        {
+          "compact": {
+            "instructions": "notes",
+            "complete": true,
+            "error": true
+          }
+        },
+        {
+          "notify": {
+            "message": "Compaction failed: provider refused Ω\nline",
+            "kind": "error"
+          }
+        }
+      ],
+      "checkpoints": [
+        2,
+        3
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        }
+      ]
+    },
+    {
+      "name": "headless-complete",
+      "group": "notifications",
+      "initialUi": false,
+      "steps": [
+        {
+          "op": "command",
+          "args": ""
+        },
+        {
+          "op": "complete",
+          "request": 0
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [
+        {
+          "compact": {
+            "instructions": null,
+            "complete": true,
+            "error": true
+          }
+        }
+      ],
+      "checkpoints": [
+        1,
+        1
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        }
+      ]
+    },
+    {
+      "name": "headless-error",
+      "group": "notifications",
+      "initialUi": false,
+      "steps": [
+        {
+          "op": "command",
+          "args": ""
+        },
+        {
+          "op": "error",
+          "request": 0,
+          "message": ""
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [
+        {
+          "compact": {
+            "instructions": null,
+            "complete": true,
+            "error": true
+          }
+        }
+      ],
+      "checkpoints": [
+        1,
+        1
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        }
+      ]
+    },
+    {
+      "name": "ui-enabled-after-start",
+      "group": "notifications",
+      "initialUi": false,
+      "steps": [
+        {
+          "op": "command",
+          "args": ""
+        },
+        {
+          "op": "ui",
+          "value": true
+        },
+        {
+          "op": "complete",
+          "request": 0
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [
+        {
+          "compact": {
+            "instructions": null,
+            "complete": true,
+            "error": true
+          }
+        },
+        {
+          "notify": {
+            "message": "Compaction completed",
+            "kind": "info"
+          }
+        }
+      ],
+      "checkpoints": [
+        1,
+        1,
+        2
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        }
+      ]
+    },
+    {
+      "name": "ui-disabled-before-error",
+      "group": "notifications",
+      "initialUi": true,
+      "steps": [
+        {
+          "op": "command",
+          "args": ""
+        },
+        {
+          "op": "ui",
+          "value": false
+        },
+        {
+          "op": "error",
+          "request": 0,
+          "message": "not visible"
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [
+        {
+          "notify": {
+            "message": "Compaction started",
+            "kind": "info"
+          }
+        },
+        {
+          "compact": {
+            "instructions": null,
+            "complete": true,
+            "error": true
+          }
+        }
+      ],
+      "checkpoints": [
+        2,
+        2,
+        2
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        }
+      ]
+    },
+    {
+      "name": "turn-ui-start-and-error",
+      "group": "notifications",
+      "initialUi": true,
+      "steps": [
+        {
+          "op": "turn",
+          "tokens": 100000
+        },
+        {
+          "op": "turn",
+          "tokens": 100001
+        },
+        {
+          "op": "error",
+          "request": 0,
+          "message": "cancelled"
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [
+        {
+          "notify": {
+            "message": "Compaction started",
+            "kind": "info"
+          }
+        },
+        {
+          "compact": {
+            "instructions": null,
+            "complete": true,
+            "error": true
+          }
+        },
+        {
+          "notify": {
+            "message": "Compaction failed: cancelled",
+            "kind": "error"
+          }
+        }
+      ],
+      "checkpoints": [
+        0,
+        2,
+        3
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        }
+      ]
+    },
+    {
+      "name": "instances-independent",
+      "group": "instances",
+      "initialUi": false,
+      "steps": [
+        {
+          "op": "turn",
+          "tokens": 95000
+        },
+        {
+          "op": "turn",
+          "tokens": 105000,
+          "instance": 1
+        },
+        {
+          "op": "turn",
+          "tokens": 105000
+        },
+        {
+          "op": "turn",
+          "tokens": 100000,
+          "instance": 1
+        },
+        {
+          "op": "turn",
+          "tokens": 105000,
+          "instance": 1
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        },
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [
+        {
+          "compact": {
+            "instructions": null,
+            "complete": true,
+            "error": true
+          }
+        },
+        {
+          "compact": {
+            "instructions": null,
+            "complete": true,
+            "error": true
+          }
+        }
+      ],
+      "checkpoints": [
+        0,
+        0,
+        1,
+        1,
+        2
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        }
+      ]
+    },
+    {
+      "name": "ui-disabled-before-complete",
+      "group": "notifications",
+      "initialUi": true,
+      "steps": [
+        {
+          "op": "command",
+          "args": ""
+        },
+        {
+          "op": "ui",
+          "value": false
+        },
+        {
+          "op": "complete",
+          "request": 0
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [
+        {
+          "notify": {
+            "message": "Compaction started",
+            "kind": "info"
+          }
+        },
+        {
+          "compact": {
+            "instructions": null,
+            "complete": true,
+            "error": true
+          }
+        }
+      ],
+      "checkpoints": [
+        2,
+        2,
+        2
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        }
+      ]
+    },
+    {
+      "name": "ui-enabled-before-error",
+      "group": "notifications",
+      "initialUi": false,
+      "steps": [
+        {
+          "op": "command",
+          "args": ""
+        },
+        {
+          "op": "ui",
+          "value": true
+        },
+        {
+          "op": "error",
+          "request": 0,
+          "message": "now visible"
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [
+        {
+          "compact": {
+            "instructions": null,
+            "complete": true,
+            "error": true
+          }
+        },
+        {
+          "notify": {
+            "message": "Compaction failed: now visible",
+            "kind": "error"
+          }
+        }
+      ],
+      "checkpoints": [
+        1,
+        1,
+        2
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        }
+      ]
+    },
+    {
+      "name": "ui-error-empty-message",
+      "group": "notifications",
+      "initialUi": true,
+      "steps": [
+        {
+          "op": "command",
+          "args": ""
+        },
+        {
+          "op": "error",
+          "request": 0,
+          "message": ""
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [
+        {
+          "notify": {
+            "message": "Compaction started",
+            "kind": "info"
+          }
+        },
+        {
+          "compact": {
+            "instructions": null,
+            "complete": true,
+            "error": true
+          }
+        },
+        {
+          "notify": {
+            "message": "Compaction failed: ",
+            "kind": "error"
+          }
+        }
+      ],
+      "checkpoints": [
+        2,
+        3
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        }
+      ]
+    },
+    {
+      "name": "admission-rejected",
+      "group": "rejections",
+      "initialUi": true,
+      "steps": [
+        {
+          "op": "reject",
+          "method": "compact",
+          "message": "admission refused"
+        },
+        {
+          "op": "command",
+          "args": ""
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [
+        {
+          "notify": {
+            "message": "Compaction started",
+            "kind": "info"
+          }
+        }
+      ],
+      "checkpoints": [
+        0,
+        1
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        },
+        {
+          "error": "admission refused"
+        }
+      ]
+    },
+    {
+      "name": "started-notify-rejected",
+      "group": "rejections",
+      "initialUi": true,
+      "steps": [
+        {
+          "op": "reject",
+          "method": "notify",
+          "message": "notification refused"
+        },
+        {
+          "op": "command",
+          "args": ""
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [
+        {
+          "notify": {
+            "message": "Compaction started",
+            "kind": "info"
+          }
+        }
+      ],
+      "checkpoints": [
+        0,
+        1
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        },
+        {
+          "error": "notification refused"
+        }
+      ]
+    },
+    {
+      "name": "complete-notify-rejected",
+      "group": "rejections",
+      "initialUi": true,
+      "steps": [
+        {
+          "op": "command",
+          "args": ""
+        },
+        {
+          "op": "reject",
+          "method": "notify",
+          "message": "notification refused"
+        },
+        {
+          "op": "complete",
+          "request": 0
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [
+        {
+          "notify": {
+            "message": "Compaction started",
+            "kind": "info"
+          }
+        },
+        {
+          "compact": {
+            "instructions": null,
+            "complete": true,
+            "error": true
+          }
+        },
+        {
+          "notify": {
+            "message": "Compaction completed",
+            "kind": "info"
+          }
+        }
+      ],
+      "checkpoints": [
+        2,
+        2,
+        3
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        },
+        {
+          "error": "notification refused"
+        }
+      ]
+    },
+    {
+      "name": "error-notify-rejected",
+      "group": "rejections",
+      "initialUi": true,
+      "steps": [
+        {
+          "op": "command",
+          "args": ""
+        },
+        {
+          "op": "reject",
+          "method": "notify",
+          "message": "notification refused"
+        },
+        {
+          "op": "error",
+          "request": 0,
+          "message": "provider refused"
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [
+        {
+          "notify": {
+            "message": "Compaction started",
+            "kind": "info"
+          }
+        },
+        {
+          "compact": {
+            "instructions": null,
+            "complete": true,
+            "error": true
+          }
+        },
+        {
+          "notify": {
+            "message": "Compaction failed: provider refused",
+            "kind": "error"
+          }
+        }
+      ],
+      "checkpoints": [
+        2,
+        2,
+        3
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        },
+        {
+          "error": "notification refused"
+        }
+      ]
+    },
+    {
+      "name": "command-bom-only",
+      "group": "commands",
+      "initialUi": false,
+      "steps": [
+        {
+          "op": "command",
+          "args": "﻿"
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [
+        {
+          "compact": {
+            "instructions": "﻿",
+            "complete": true,
+            "error": true
+          }
+        }
+      ],
+      "checkpoints": [
+        1
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        }
+      ]
+    },
+    {
+      "name": "command-next-line-only",
+      "group": "commands",
+      "initialUi": false,
+      "steps": [
+        {
+          "op": "command",
+          "args": ""
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [
+        {
+          "compact": {
+            "instructions": null,
+            "complete": true,
+            "error": true
+          }
+        }
+      ],
+      "checkpoints": [
+        1
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        }
+      ]
+    },
+    {
+      "name": "turn-rejection-keeps-current",
+      "group": "rejections",
+      "initialUi": true,
+      "steps": [
+        {
+          "op": "turn",
+          "tokens": 95000
+        },
+        {
+          "op": "reject",
+          "method": "compact",
+          "message": "admission refused"
+        },
+        {
+          "op": "turn",
+          "tokens": 105000
+        },
+        {
+          "op": "turn",
+          "tokens": 106000
+        }
+      ],
+      "registrations": [
+        {
+          "event": "turn_end"
+        },
+        {
+          "command": "trigger-compact",
+          "description": "Trigger compaction immediately"
+        }
+      ],
+      "effects": [
+        {
+          "notify": {
+            "message": "Compaction started",
+            "kind": "info"
+          }
+        }
+      ],
+      "checkpoints": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "outcomes": [
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        },
+        {
+          "error": "admission refused"
+        },
+        {
+          "ok": null
+        }
+      ]
+    }
+  ]
+}

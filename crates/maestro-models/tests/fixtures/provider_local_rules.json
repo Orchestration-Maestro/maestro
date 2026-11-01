@@ -688,7 +688,7 @@
   {
     "kind": "arguments",
     "input": {
-      "text": " \t\r\n﻿ "
+      "text": " \t\r\n\ufeff\u00a0"
     },
     "expected": {
       "value": {},
@@ -699,7 +699,7 @@
   {
     "kind": "arguments",
     "input": {
-      "text": "﻿{\"a\":1"
+      "text": "\ufeff{\"a\":1"
     },
     "expected": {
       "value": {
@@ -714,7 +714,7 @@
   {
     "kind": "arguments",
     "input": {
-      "text": "{\"a\":1"
+      "text": "\u0085{\"a\":1"
     },
     "expected": {
       "value": {},
@@ -860,94 +860,6 @@
     }
   },
   {
-    "kind": "arguments",
-    "input": {
-      "text": "[]"
-    },
-    "expected": {
-      "value": {},
-      "keys": [],
-      "negativeZeroMembers": []
-    }
-  },
-  {
-    "kind": "arguments",
-    "input": {
-      "text": "[1]"
-    },
-    "expected": {
-      "value": {},
-      "keys": [],
-      "negativeZeroMembers": []
-    }
-  },
-  {
-    "kind": "arguments",
-    "input": {
-      "text": "null"
-    },
-    "expected": {
-      "value": {},
-      "keys": [],
-      "negativeZeroMembers": []
-    }
-  },
-  {
-    "kind": "arguments",
-    "input": {
-      "text": "false"
-    },
-    "expected": {
-      "value": {},
-      "keys": [],
-      "negativeZeroMembers": []
-    }
-  },
-  {
-    "kind": "arguments",
-    "input": {
-      "text": "0"
-    },
-    "expected": {
-      "value": {},
-      "keys": [],
-      "negativeZeroMembers": []
-    }
-  },
-  {
-    "kind": "arguments",
-    "input": {
-      "text": "-0"
-    },
-    "expected": {
-      "value": {},
-      "keys": [],
-      "negativeZeroMembers": []
-    }
-  },
-  {
-    "kind": "arguments",
-    "input": {
-      "text": "1"
-    },
-    "expected": {
-      "value": {},
-      "keys": [],
-      "negativeZeroMembers": []
-    }
-  },
-  {
-    "kind": "arguments",
-    "input": {
-      "text": "\"text\""
-    },
-    "expected": {
-      "value": {},
-      "keys": [],
-      "negativeZeroMembers": []
-    }
-  },
-  {
     "kind": "usage",
     "input": {
       "raw": null
@@ -1062,7 +974,7 @@
   {
     "kind": "id_units",
     "input": {
-      "id": "a.+/=é中🙂"
+      "id": "a.+/=\u00e9\u4e2d\ud83d\ude42"
     },
     "expected": {
       "replacement": "a________",
@@ -1084,7 +996,7 @@
   {
     "kind": "id_units",
     "input": {
-      "id": "a🙂|item"
+      "id": "a\ud83d\ude42|item"
     },
     "expected": {
       "replacement": "a___item",
@@ -1095,7 +1007,7 @@
   {
     "kind": "id_units",
     "input": {
-      "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa🙂|item"
+      "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\ud83d\ude42|item"
     },
     "expected": {
       "replacement": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa___item",
@@ -1117,7 +1029,7 @@
   {
     "kind": "id_units",
     "input": {
-      "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa🙂"
+      "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\ud83d\ude42"
     },
     "expected": {
       "replacement": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa__",
@@ -1150,7 +1062,7 @@
   {
     "kind": "id_units",
     "input": {
-      "id": "a|item🙂___|ignored"
+      "id": "a|item\ud83d\ude42___|ignored"
     },
     "expected": {
       "replacement": "a_item______ignored",

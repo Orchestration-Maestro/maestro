@@ -105,10 +105,8 @@ fn truncate_for_summary(text: &str) -> String {
 pub(crate) enum SummaryBlock<'a> {
     /// Visible text.
     Text(&'a str),
-    /// Reasoning text.
-    Thinking(&'a str),
-    /// Named tool and its argument object.
-    Tool(&'a str, &'a serde_json::Map<String, Value>),
+    /// Named tool and its complete argument value.
+    Tool(&'a str, &'a Value),
 }
 /// A selected model message for the shared writer.
 pub(crate) enum SummaryMessage<'a> {
@@ -119,29 +117,54 @@ pub(crate) enum SummaryMessage<'a> {
     /// Tool-result text.
     Tool(String),
 }
-/// Append assistant categories in thinking, text and tool order.
+/// Pair the entries a summary writes by name. Object members keep their canonical order,
+/// array and string roots take their positions, and every other root names none.
+fn argument_entries(arguments: &Value) -> Vec<(String, Cow<'_, Value>)> {
+    match arguments {
+        Value::Object(members) => maestro_json::canonical_entries(members.iter())
+            .into_iter()
+            .map(|(key, value)| (key.clone(), Cow::Borrowed(value)))
+            .collect(),
+        Value::Array(elements) => elements
+            .iter()
+            .enumerate()
+            .map(|(index, value)| (index.to_string(), Cow::Borrowed(value)))
+            .collect(),
+        Value::String(text) => text
+            .chars()
+            .enumerate()
+            .map(|(index, character)| {
+                (
+                    index.to_string(),
+                    Cow::Owned(Value::String(character.to_string())),
+                )
+            })
+            .collect(),
+        Value::Null | Value::Bool(_) | Value::Number(_) => Vec::new(),
+    }
+}
+/// Append assistant categories in text and tool order; thinking is never written.
 fn assistant_parts(
     blocks: &[SummaryBlock<'_>],
     parts: &mut Vec<String>,
 ) -> Result<(), serde_json::Error> {
-    let mut thinking = Vec::new();
     let mut text = Vec::new();
     let mut tools = Vec::new();
     for block in blocks {
         match block {
             SummaryBlock::Text(block) => text.push(*block),
-            SummaryBlock::Thinking(block) => thinking.push(*block),
             SummaryBlock::Tool(name, arguments) => {
-                let args = maestro_json::canonical_entries(*arguments)
+                let args = argument_entries(arguments)
                     .into_iter()
-                    .map(|(key, value)| Ok(format!("{key}={}", maestro_json::compact_json(value)?)))
+                    .map(|(key, value)| {
+                        Ok(format!("{key}={}", maestro_json::compact_json(&value)?))
+                    })
                     .collect::<Result<Vec<_>, serde_json::Error>>()?;
                 tools.push(format!("{name}({})", args.join(", ")));
             }
         }
     }
     for (label, blocks, separator) in [
-        ("Assistant thinking", thinking, "\n"),
         ("Assistant", text, "\n"),
         (
             "Assistant tool calls",
@@ -190,14 +213,12 @@ pub fn serialize_conversation(messages: &[Message]) -> Result<String, serde_json
                 message
                     .content
                     .iter()
-                    .map(|block| match block {
-                        AssistantContent::Text(block) => SummaryBlock::Text(&block.text),
-                        AssistantContent::Thinking(block) => {
-                            SummaryBlock::Thinking(&block.thinking)
-                        }
+                    .filter_map(|block| match block {
+                        AssistantContent::Text(block) => Some(SummaryBlock::Text(&block.text)),
                         AssistantContent::ToolCall(block) => {
-                            SummaryBlock::Tool(&block.name, &block.arguments)
+                            Some(SummaryBlock::Tool(&block.name, &block.arguments))
                         }
+                        AssistantContent::Thinking(_) => None,
                     })
                     .collect(),
             ),

@@ -3,7 +3,7 @@ use super::AgentSession;
 use super::state::thrown;
 use crate::utils::lock::read;
 use maestro_extensions::types::{
-    AppendEntryHandler, ExtensionActions, ExtensionContextActions, ProviderActions,
+    AppendEntryHandler, CompactOptions, ExtensionActions, ExtensionContextActions, ProviderActions,
     SendMessageHandler, SendUserMessageHandler, SetLabelHandler, SetModelHandler,
 };
 use maestro_extensions::{
@@ -67,7 +67,7 @@ impl AgentSession<Local> {
     }
 
     /// The extension commands, then the prompt templates, then the skills, as commands.
-    fn get_commands(&self) -> Vec<SlashCommandInfo> {
+    pub(crate) fn get_commands(&self) -> Vec<SlashCommandInfo> {
         let commands = self.extension_runner().get_registered_commands();
         let commands = commands.into_iter().map(|command| SlashCommandInfo {
             name: command.invocation_name,
@@ -236,13 +236,17 @@ fn set_model_action(weak: &Weak<AgentSession<Local>>) -> SetModelHandler<Local> 
             {
                 return Ok(false);
             }
-            session.set_model(model).await?;
-            Ok(true)
+            match session.set_model_checked(model).await {
+                Ok(()) => Ok(true),
+                Err(super::decisions::SelectionError::Refused(_)) => Ok(false),
+                Err(super::decisions::SelectionError::Failed(error)) => Err(error.into()),
+            }
         }) as <Local as Execution>::Future<'static, Result<bool, EventError>>
     })
 }
 
-/// The session reads and operations behind every context.
+/// The session reads and operations behind every context. Compaction and completion
+/// callback failures reach the request's error callback when supplied.
 fn context_actions(weak: &Weak<AgentSession<Local>>) -> ExtensionContextActions {
     let w = weak.clone();
     let get_model = Rc::new(move || with(&w, |session| Ok(Some(session.model()))));
@@ -253,6 +257,11 @@ fn context_actions(weak: &Weak<AgentSession<Local>>) -> ExtensionContextActions 
     let w = weak.clone();
     let abort = Rc::new(move || {
         with(&w, |session| {
+            let handler = session.state.borrow().bindings.abort_handler.clone();
+            if let Some(handler) = handler {
+                handler();
+                return Ok(());
+            }
             let aborting = Rc::clone(session);
             drop(session.start_operation(async move { aborting.abort().await }));
             Ok(())
@@ -271,24 +280,15 @@ fn context_actions(weak: &Weak<AgentSession<Local>>) -> ExtensionContextActions 
     let w = weak.clone();
     let get_context_usage = Rc::new(move || with(&w, |session| session.get_context_usage()));
     let w = weak.clone();
-    let compact = Rc::new(
-        move |options: Option<maestro_extensions::types::CompactOptions>| {
-            with(&w, |session| {
-                let options = options.unwrap_or_default();
-                let compacting = Rc::clone(session);
-                drop(session.start_operation(async move {
-                    let result = compacting
-                        .compact(options.custom_instructions.as_deref())
-                        .await;
-                    drop(match result {
-                        Ok(result) => options.on_complete.map(|complete| complete(result)),
-                        Err(error) => options.on_error.map(|failed| failed(error.into())),
-                    });
-                }));
-                Ok(())
-            })
-        },
-    );
+    let compact = Rc::new(move |options: Option<CompactOptions>| {
+        with(&w, |session| {
+            drop(session.start_operation(complete_compaction(
+                Rc::clone(session),
+                options.unwrap_or_default(),
+            )));
+            Ok(())
+        })
+    });
     let w = weak.clone();
     let get_system_prompt = Rc::new(move || with(&w, |session| Ok(session.system_prompt())));
     ExtensionContextActions {
@@ -301,6 +301,22 @@ fn context_actions(weak: &Weak<AgentSession<Local>>) -> ExtensionContextActions 
         get_context_usage,
         compact,
         get_system_prompt,
+    }
+}
+
+/// Runs compaction and completion under one error boundary, forwarding either failure.
+async fn complete_compaction(session: Rc<AgentSession<Local>>, options: CompactOptions) {
+    let result = session
+        .compact(options.custom_instructions.as_deref())
+        .await
+        .map_err(EventError::from)
+        .and_then(|result| {
+            options
+                .on_complete
+                .map_or(Ok(()), |complete| complete(result))
+        });
+    if let (Err(error), Some(failed)) = (result, options.on_error) {
+        drop(failed(error));
     }
 }
 

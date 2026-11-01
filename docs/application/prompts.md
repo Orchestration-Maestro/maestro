@@ -24,9 +24,11 @@ ends the prompt:
    becomes the expanded template. The skill block is
    `<skill name="<name>" location="<file>">`, the line
    `References are relative to <directory>.`, a blank line, the skill body without
-   its frontmatter and trimmed, and `</skill>`. An unknown skill keeps the text. A
-   skill file that cannot be read is reported with the file as its path and event
-   `skill_expansion`, and the text is kept.
+   its frontmatter and trimmed, and `</skill>`. The block is read back by the
+   application's `parse_skill_block`. The native transcript uses it, and it is
+   available to browser builds, which do not call it yet. An unknown
+   skill keeps the text. A skill file that cannot be read is reported with the file
+   as its path and event `skill_expansion`, and the text is kept.
 4. While a response streams, the session queues the prompt instead, as a steering
    message or a follow-up, whichever `streaming_behavior` asks for. Without a choice
    it refuses the prompt with
@@ -44,14 +46,30 @@ ends the prompt:
 `preflight_result` hears once whether the prompt was accepted: `true` when a
 command ran, a handler handled the input, the prompt was queued or the agent is
 about to be prompted, and `false` when a step failed. `prompt` returns after the
-agent and any retry settle. Once started, a prompt belongs to the session: dropping
-the returned future leaves it running to the end.
+agent and any retry settle. The prompt starts when `prompt` is called, so its
+steps up to the first wait (a command, the input handlers, queueing while a response
+streams, a refusal) have already run before the returned future is first polled.
+The prompt belongs to the session: the future only observes the result, and
+dropping it leaves the prompt running to the end.
 
 The base prompt is the system prompt construction built, or the one
 `set_active_tools_by_name` last built for the active tools.
 
 A failure supplied by an extension handler or listener, by shell operations or by a
 credential lookup keeps its name, code and stack when the session returns it.
+
+## Default system prompt
+
+The documentation section says:
+
+> - When reading maestro docs or examples, resolve docs/... under Additional docs and examples/... under Examples, not the current working directory
+
+Documentation and example paths use the directories named in that section, not
+the session's working directory.
+
+With `bash` selected and none of `grep`, `find` or `ls`, the exploration guideline
+is `- Use bash for file operations like ls, rg, find`. When any of those search
+tools is selected, or `bash` is absent, no exploration guideline is emitted.
 
 ## Queues
 
@@ -90,9 +108,10 @@ under the command as given. A configured command prefix goes on its own line bef
 the command that runs. A configured shell path runs it unless the options supply
 the shell operations. Progress chunks reach the caller in arrival order.
 `abort_bash` stops the running command, which is then recorded as cancelled without
-an exit status. `is_bash_running` is true while a command runs. Once started, a
-command belongs to the session: dropping the returned future leaves it running and
-its result is still recorded.
+an exit status. `is_bash_running` is true while a command runs. Calling
+`execute_bash` starts the command and installs its cancellation signal before the
+returned future is polled. The command belongs to the session: dropping even a
+never-polled result future leaves it running and its result is still recorded.
 
 `record_bash_result` records a result. While the agent is idle the record is
 appended to the history and the session at once. While a response streams it waits
@@ -101,3 +120,15 @@ message, so a response's tool calls and results stay together. When appending on
 fails, that prompt fails and only the results not yet appended stay pending. Shell
 records announce no message start or end. `exclude_from_context` is stored with the
 record when given, and a truncated result keeps the path of its full output.
+
+## Qualified delivery
+
+Prompt and message delivery, skill and template expansion, and queueing are checked
+through the real session by
+[`agent_session_prompt_checks`](../../crates/maestro-app/tests/agent_session_prompt_checks.rs),
+[`agent_session_queue_checks`](../../crates/maestro-app/tests/agent_session_queue_checks.rs)
+and
+[`queued_slash_command_followup_checks`](../../crates/maestro-app/tests/queued_slash_command_followup_checks.rs).
+Each case compares the fields its recorded operation holds: the session history and
+queue mirrors, and, for a case that makes one, the received provider requests, the
+tool results a run produced or the error it reported.

@@ -278,8 +278,96 @@ mod tests {
     }
 }
 
+/// A saved assistant message whose usage reports the categories 7/3/2/1 and cost 1.
+fn saved_assistant_without_total() -> serde_json::Value {
+    serde_json::json!({
+        "role": "assistant",
+        "content": [{"type": "text", "text": "answer"}],
+        "api": "chat",
+        "provider": "faux",
+        "model": "test",
+        "usage": {
+            "input": 7.0,
+            "output": 3.0,
+            "cacheRead": 2.0,
+            "cacheWrite": 1.0,
+            "cost": {"input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0, "total": 1.0}
+        },
+        "stopReason": "stop",
+        "timestamp": 0.0
+    })
+}
+
+#[test]
+fn saved_usage_preserves_total_presence() {
+    use maestro_request::presence::Presence;
+    use maestro_request::types::{Message, Usage};
+
+    let saved = saved_assistant_without_total();
+    let message: Message = serde_json::from_value(saved.clone()).unwrap();
+    let Message::Assistant(assistant) = message else {
+        panic!("a saved assistant record decoded as another role");
+    };
+    assert_eq!(assistant.usage.total_tokens, Presence::Missing);
+    let encoded = serde_json::to_value(&assistant.usage).unwrap();
+    assert!(!encoded.as_object().unwrap().contains_key("totalTokens"));
+    for (key, value) in [
+        ("input", 7.0),
+        ("output", 3.0),
+        ("cacheRead", 2.0),
+        ("cacheWrite", 1.0),
+    ] {
+        assert_eq!(encoded[key], serde_json::json!(value));
+    }
+    assert_eq!(encoded["cost"]["total"], serde_json::json!(1.0));
+
+    for (supplied, expected) in [
+        (serde_json::json!(null), Presence::Null),
+        (serde_json::json!(0.0), Presence::Present(0.0)),
+        (serde_json::json!(97.0), Presence::Present(97.0)),
+        (serde_json::json!(1.5), Presence::Present(1.5)),
+        (serde_json::json!(-2.0), Presence::Present(-2.0)),
+    ] {
+        let mut raw = saved["usage"].clone();
+        raw["totalTokens"] = supplied.clone();
+        let usage: Usage = serde_json::from_value(raw).unwrap();
+        assert_eq!(usage.total_tokens, expected);
+        let encoded = serde_json::to_value(&usage).unwrap();
+        assert_eq!(encoded["totalTokens"], supplied);
+    }
+
+    let signed: Usage = serde_json::from_str(
+        "{\"input\":7,\"output\":3,\"cacheRead\":2,\"cacheWrite\":1,\"totalTokens\":-0.0,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":1}}",
+    )
+    .unwrap();
+    assert_eq!(
+        signed.total_tokens.present().unwrap().to_bits(),
+        (-0.0_f64).to_bits()
+    );
+    assert!(
+        serde_json::to_string(&signed)
+            .unwrap()
+            .contains("\"totalTokens\":-0.0")
+    );
+
+    for supplied in [
+        serde_json::json!("9"),
+        serde_json::json!(true),
+        serde_json::json!({}),
+        serde_json::json!([]),
+    ] {
+        let mut raw = saved["usage"].clone();
+        raw["totalTokens"] = supplied.clone();
+        assert!(
+            serde_json::from_value::<Usage>(raw).is_err(),
+            "accepted a non-numeric total {supplied}"
+        );
+    }
+}
+
 #[test]
 fn usage_defaults_preserve_zero_fields() {
+    use maestro_request::presence::Presence;
     use maestro_request::types::Usage;
     let rows: serde_json::Value =
         serde_json::from_str(include_str!("fixtures/assistant-records.json")).unwrap();
@@ -293,7 +381,6 @@ fn usage_defaults_preserve_zero_fields() {
         usage.output,
         usage.cache_read,
         usage.cache_write,
-        usage.total_tokens,
         usage.cost.input,
         usage.cost.output,
         usage.cost.cache_read,
@@ -302,6 +389,14 @@ fn usage_defaults_preserve_zero_fields() {
     ] {
         assert_eq!(value.to_bits(), 0_f64.to_bits());
     }
+    let Presence::Present(total) = usage.total_tokens else {
+        panic!("the default usage left its total unset");
+    };
+    assert_eq!(total.to_bits(), 0_f64.to_bits());
+    assert_eq!(
+        serde_json::to_value(&usage).unwrap()["totalTokens"],
+        serde_json::json!(0.0)
+    );
 }
 
 #[test]

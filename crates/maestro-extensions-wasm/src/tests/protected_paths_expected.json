@@ -1,0 +1,1460 @@
+{
+  "rows": [
+    {
+      "name": "write-headless-env",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": ".env"
+        }
+      },
+      "hasUI": false,
+      "result": {
+        "block": true,
+        "reason": "Path \".env\" is protected"
+      },
+      "notifications": []
+    },
+    {
+      "name": "write-headless-git",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": ".git/config"
+        }
+      },
+      "hasUI": false,
+      "result": {
+        "block": true,
+        "reason": "Path \".git/config\" is protected"
+      },
+      "notifications": []
+    },
+    {
+      "name": "write-headless-modules",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": "node_modules/x"
+        }
+      },
+      "hasUI": false,
+      "result": {
+        "block": true,
+        "reason": "Path \"node_modules/x\" is protected"
+      },
+      "notifications": []
+    },
+    {
+      "name": "write-headless-env-substring",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": "project/.environment.local"
+        }
+      },
+      "hasUI": false,
+      "result": {
+        "block": true,
+        "reason": "Path \"project/.environment.local\" is protected"
+      },
+      "notifications": []
+    },
+    {
+      "name": "write-headless-git-substring",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": "a.git/config"
+        }
+      },
+      "hasUI": false,
+      "result": {
+        "block": true,
+        "reason": "Path \"a.git/config\" is protected"
+      },
+      "notifications": []
+    },
+    {
+      "name": "write-headless-modules-substring",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": "my_node_modules/x"
+        }
+      },
+      "hasUI": false,
+      "result": {
+        "block": true,
+        "reason": "Path \"my_node_modules/x\" is protected"
+      },
+      "notifications": []
+    },
+    {
+      "name": "write-headless-all-patterns",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": ".env/.git/node_modules/x"
+        }
+      },
+      "hasUI": false,
+      "result": {
+        "block": true,
+        "reason": "Path \".env/.git/node_modules/x\" is protected"
+      },
+      "notifications": []
+    },
+    {
+      "name": "write-headless-empty",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": ""
+        }
+      },
+      "hasUI": false,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "write-headless-ordinary",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": "src/main.rs"
+        }
+      },
+      "hasUI": false,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "write-headless-env-case",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": ".ENV"
+        }
+      },
+      "hasUI": false,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "write-headless-git-case",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": ".GIT/config"
+        }
+      },
+      "hasUI": false,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "write-headless-modules-case",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": "NODE_MODULES/x"
+        }
+      },
+      "hasUI": false,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "write-headless-git-no-slash",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": ".git"
+        }
+      },
+      "hasUI": false,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "write-headless-modules-no-slash",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": "node_modules"
+        }
+      },
+      "hasUI": false,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "write-headless-backslash",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": ".git\\config"
+        }
+      },
+      "hasUI": false,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "write-headless-unicode-and-quotes",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": "Ω/\".env\"\n😀"
+        }
+      },
+      "hasUI": false,
+      "result": {
+        "block": true,
+        "reason": "Path \"Ω/\".env\"\n😀\" is protected"
+      },
+      "notifications": []
+    },
+    {
+      "name": "write-headless-literal-dot-segments",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": ".git/../safe.txt"
+        }
+      },
+      "hasUI": false,
+      "result": {
+        "block": true,
+        "reason": "Path \".git/../safe.txt\" is protected"
+      },
+      "notifications": []
+    },
+    {
+      "name": "write-headless-spelling-not-canonicalized",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": "a/../safe.txt"
+        }
+      },
+      "hasUI": false,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "write-ui-env",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": ".env"
+        }
+      },
+      "hasUI": true,
+      "result": {
+        "block": true,
+        "reason": "Path \".env\" is protected"
+      },
+      "notifications": [
+        [
+          "Blocked write to protected path: .env",
+          "warning"
+        ]
+      ]
+    },
+    {
+      "name": "write-ui-git",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": ".git/config"
+        }
+      },
+      "hasUI": true,
+      "result": {
+        "block": true,
+        "reason": "Path \".git/config\" is protected"
+      },
+      "notifications": [
+        [
+          "Blocked write to protected path: .git/config",
+          "warning"
+        ]
+      ]
+    },
+    {
+      "name": "write-ui-modules",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": "node_modules/x"
+        }
+      },
+      "hasUI": true,
+      "result": {
+        "block": true,
+        "reason": "Path \"node_modules/x\" is protected"
+      },
+      "notifications": [
+        [
+          "Blocked write to protected path: node_modules/x",
+          "warning"
+        ]
+      ]
+    },
+    {
+      "name": "write-ui-env-substring",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": "project/.environment.local"
+        }
+      },
+      "hasUI": true,
+      "result": {
+        "block": true,
+        "reason": "Path \"project/.environment.local\" is protected"
+      },
+      "notifications": [
+        [
+          "Blocked write to protected path: project/.environment.local",
+          "warning"
+        ]
+      ]
+    },
+    {
+      "name": "write-ui-git-substring",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": "a.git/config"
+        }
+      },
+      "hasUI": true,
+      "result": {
+        "block": true,
+        "reason": "Path \"a.git/config\" is protected"
+      },
+      "notifications": [
+        [
+          "Blocked write to protected path: a.git/config",
+          "warning"
+        ]
+      ]
+    },
+    {
+      "name": "write-ui-modules-substring",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": "my_node_modules/x"
+        }
+      },
+      "hasUI": true,
+      "result": {
+        "block": true,
+        "reason": "Path \"my_node_modules/x\" is protected"
+      },
+      "notifications": [
+        [
+          "Blocked write to protected path: my_node_modules/x",
+          "warning"
+        ]
+      ]
+    },
+    {
+      "name": "write-ui-all-patterns",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": ".env/.git/node_modules/x"
+        }
+      },
+      "hasUI": true,
+      "result": {
+        "block": true,
+        "reason": "Path \".env/.git/node_modules/x\" is protected"
+      },
+      "notifications": [
+        [
+          "Blocked write to protected path: .env/.git/node_modules/x",
+          "warning"
+        ]
+      ]
+    },
+    {
+      "name": "write-ui-empty",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": ""
+        }
+      },
+      "hasUI": true,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "write-ui-ordinary",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": "src/main.rs"
+        }
+      },
+      "hasUI": true,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "write-ui-env-case",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": ".ENV"
+        }
+      },
+      "hasUI": true,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "write-ui-git-case",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": ".GIT/config"
+        }
+      },
+      "hasUI": true,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "write-ui-modules-case",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": "NODE_MODULES/x"
+        }
+      },
+      "hasUI": true,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "write-ui-git-no-slash",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": ".git"
+        }
+      },
+      "hasUI": true,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "write-ui-modules-no-slash",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": "node_modules"
+        }
+      },
+      "hasUI": true,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "write-ui-backslash",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": ".git\\config"
+        }
+      },
+      "hasUI": true,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "write-ui-unicode-and-quotes",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": "Ω/\".env\"\n😀"
+        }
+      },
+      "hasUI": true,
+      "result": {
+        "block": true,
+        "reason": "Path \"Ω/\".env\"\n😀\" is protected"
+      },
+      "notifications": [
+        [
+          "Blocked write to protected path: Ω/\".env\"\n😀",
+          "warning"
+        ]
+      ]
+    },
+    {
+      "name": "write-ui-literal-dot-segments",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": ".git/../safe.txt"
+        }
+      },
+      "hasUI": true,
+      "result": {
+        "block": true,
+        "reason": "Path \".git/../safe.txt\" is protected"
+      },
+      "notifications": [
+        [
+          "Blocked write to protected path: .git/../safe.txt",
+          "warning"
+        ]
+      ]
+    },
+    {
+      "name": "write-ui-spelling-not-canonicalized",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "write",
+        "input": {
+          "path": "a/../safe.txt"
+        }
+      },
+      "hasUI": true,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "edit-headless-env",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": ".env"
+        }
+      },
+      "hasUI": false,
+      "result": {
+        "block": true,
+        "reason": "Path \".env\" is protected"
+      },
+      "notifications": []
+    },
+    {
+      "name": "edit-headless-git",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": ".git/config"
+        }
+      },
+      "hasUI": false,
+      "result": {
+        "block": true,
+        "reason": "Path \".git/config\" is protected"
+      },
+      "notifications": []
+    },
+    {
+      "name": "edit-headless-modules",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": "node_modules/x"
+        }
+      },
+      "hasUI": false,
+      "result": {
+        "block": true,
+        "reason": "Path \"node_modules/x\" is protected"
+      },
+      "notifications": []
+    },
+    {
+      "name": "edit-headless-env-substring",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": "project/.environment.local"
+        }
+      },
+      "hasUI": false,
+      "result": {
+        "block": true,
+        "reason": "Path \"project/.environment.local\" is protected"
+      },
+      "notifications": []
+    },
+    {
+      "name": "edit-headless-git-substring",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": "a.git/config"
+        }
+      },
+      "hasUI": false,
+      "result": {
+        "block": true,
+        "reason": "Path \"a.git/config\" is protected"
+      },
+      "notifications": []
+    },
+    {
+      "name": "edit-headless-modules-substring",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": "my_node_modules/x"
+        }
+      },
+      "hasUI": false,
+      "result": {
+        "block": true,
+        "reason": "Path \"my_node_modules/x\" is protected"
+      },
+      "notifications": []
+    },
+    {
+      "name": "edit-headless-all-patterns",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": ".env/.git/node_modules/x"
+        }
+      },
+      "hasUI": false,
+      "result": {
+        "block": true,
+        "reason": "Path \".env/.git/node_modules/x\" is protected"
+      },
+      "notifications": []
+    },
+    {
+      "name": "edit-headless-empty",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": ""
+        }
+      },
+      "hasUI": false,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "edit-headless-ordinary",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": "src/main.rs"
+        }
+      },
+      "hasUI": false,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "edit-headless-env-case",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": ".ENV"
+        }
+      },
+      "hasUI": false,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "edit-headless-git-case",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": ".GIT/config"
+        }
+      },
+      "hasUI": false,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "edit-headless-modules-case",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": "NODE_MODULES/x"
+        }
+      },
+      "hasUI": false,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "edit-headless-git-no-slash",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": ".git"
+        }
+      },
+      "hasUI": false,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "edit-headless-modules-no-slash",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": "node_modules"
+        }
+      },
+      "hasUI": false,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "edit-headless-backslash",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": ".git\\config"
+        }
+      },
+      "hasUI": false,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "edit-headless-unicode-and-quotes",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": "Ω/\".env\"\n😀"
+        }
+      },
+      "hasUI": false,
+      "result": {
+        "block": true,
+        "reason": "Path \"Ω/\".env\"\n😀\" is protected"
+      },
+      "notifications": []
+    },
+    {
+      "name": "edit-headless-literal-dot-segments",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": ".git/../safe.txt"
+        }
+      },
+      "hasUI": false,
+      "result": {
+        "block": true,
+        "reason": "Path \".git/../safe.txt\" is protected"
+      },
+      "notifications": []
+    },
+    {
+      "name": "edit-headless-spelling-not-canonicalized",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": "a/../safe.txt"
+        }
+      },
+      "hasUI": false,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "edit-ui-env",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": ".env"
+        }
+      },
+      "hasUI": true,
+      "result": {
+        "block": true,
+        "reason": "Path \".env\" is protected"
+      },
+      "notifications": [
+        [
+          "Blocked write to protected path: .env",
+          "warning"
+        ]
+      ]
+    },
+    {
+      "name": "edit-ui-git",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": ".git/config"
+        }
+      },
+      "hasUI": true,
+      "result": {
+        "block": true,
+        "reason": "Path \".git/config\" is protected"
+      },
+      "notifications": [
+        [
+          "Blocked write to protected path: .git/config",
+          "warning"
+        ]
+      ]
+    },
+    {
+      "name": "edit-ui-modules",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": "node_modules/x"
+        }
+      },
+      "hasUI": true,
+      "result": {
+        "block": true,
+        "reason": "Path \"node_modules/x\" is protected"
+      },
+      "notifications": [
+        [
+          "Blocked write to protected path: node_modules/x",
+          "warning"
+        ]
+      ]
+    },
+    {
+      "name": "edit-ui-env-substring",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": "project/.environment.local"
+        }
+      },
+      "hasUI": true,
+      "result": {
+        "block": true,
+        "reason": "Path \"project/.environment.local\" is protected"
+      },
+      "notifications": [
+        [
+          "Blocked write to protected path: project/.environment.local",
+          "warning"
+        ]
+      ]
+    },
+    {
+      "name": "edit-ui-git-substring",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": "a.git/config"
+        }
+      },
+      "hasUI": true,
+      "result": {
+        "block": true,
+        "reason": "Path \"a.git/config\" is protected"
+      },
+      "notifications": [
+        [
+          "Blocked write to protected path: a.git/config",
+          "warning"
+        ]
+      ]
+    },
+    {
+      "name": "edit-ui-modules-substring",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": "my_node_modules/x"
+        }
+      },
+      "hasUI": true,
+      "result": {
+        "block": true,
+        "reason": "Path \"my_node_modules/x\" is protected"
+      },
+      "notifications": [
+        [
+          "Blocked write to protected path: my_node_modules/x",
+          "warning"
+        ]
+      ]
+    },
+    {
+      "name": "edit-ui-all-patterns",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": ".env/.git/node_modules/x"
+        }
+      },
+      "hasUI": true,
+      "result": {
+        "block": true,
+        "reason": "Path \".env/.git/node_modules/x\" is protected"
+      },
+      "notifications": [
+        [
+          "Blocked write to protected path: .env/.git/node_modules/x",
+          "warning"
+        ]
+      ]
+    },
+    {
+      "name": "edit-ui-empty",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": ""
+        }
+      },
+      "hasUI": true,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "edit-ui-ordinary",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": "src/main.rs"
+        }
+      },
+      "hasUI": true,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "edit-ui-env-case",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": ".ENV"
+        }
+      },
+      "hasUI": true,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "edit-ui-git-case",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": ".GIT/config"
+        }
+      },
+      "hasUI": true,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "edit-ui-modules-case",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": "NODE_MODULES/x"
+        }
+      },
+      "hasUI": true,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "edit-ui-git-no-slash",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": ".git"
+        }
+      },
+      "hasUI": true,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "edit-ui-modules-no-slash",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": "node_modules"
+        }
+      },
+      "hasUI": true,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "edit-ui-backslash",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": ".git\\config"
+        }
+      },
+      "hasUI": true,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "edit-ui-unicode-and-quotes",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": "Ω/\".env\"\n😀"
+        }
+      },
+      "hasUI": true,
+      "result": {
+        "block": true,
+        "reason": "Path \"Ω/\".env\"\n😀\" is protected"
+      },
+      "notifications": [
+        [
+          "Blocked write to protected path: Ω/\".env\"\n😀",
+          "warning"
+        ]
+      ]
+    },
+    {
+      "name": "edit-ui-literal-dot-segments",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": ".git/../safe.txt"
+        }
+      },
+      "hasUI": true,
+      "result": {
+        "block": true,
+        "reason": "Path \".git/../safe.txt\" is protected"
+      },
+      "notifications": [
+        [
+          "Blocked write to protected path: .git/../safe.txt",
+          "warning"
+        ]
+      ]
+    },
+    {
+      "name": "edit-ui-spelling-not-canonicalized",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit",
+        "input": {
+          "path": "a/../safe.txt"
+        }
+      },
+      "hasUI": true,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "read-{\"path\":\".env\"}",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "read",
+        "input": {
+          "path": ".env"
+        }
+      },
+      "hasUI": true,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "read-{}",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "read",
+        "input": {}
+      },
+      "hasUI": true,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "read-{\"path\":null}",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "read",
+        "input": {
+          "path": null
+        }
+      },
+      "hasUI": true,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "bash-{\"path\":\".env\"}",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "bash",
+        "input": {
+          "path": ".env"
+        }
+      },
+      "hasUI": true,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "bash-{}",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "bash",
+        "input": {}
+      },
+      "hasUI": true,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "bash-{\"path\":null}",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "bash",
+        "input": {
+          "path": null
+        }
+      },
+      "hasUI": true,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "Write-{\"path\":\".env\"}",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "Write",
+        "input": {
+          "path": ".env"
+        }
+      },
+      "hasUI": true,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "Write-{}",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "Write",
+        "input": {}
+      },
+      "hasUI": true,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "Write-{\"path\":null}",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "Write",
+        "input": {
+          "path": null
+        }
+      },
+      "hasUI": true,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "edit -{\"path\":\".env\"}",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit ",
+        "input": {
+          "path": ".env"
+        }
+      },
+      "hasUI": true,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "edit -{}",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit ",
+        "input": {}
+      },
+      "hasUI": true,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "edit -{\"path\":null}",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "edit ",
+        "input": {
+          "path": null
+        }
+      },
+      "hasUI": true,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "custom-{\"path\":\".env\"}",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "custom",
+        "input": {
+          "path": ".env"
+        }
+      },
+      "hasUI": true,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "custom-{}",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "custom",
+        "input": {}
+      },
+      "hasUI": true,
+      "result": null,
+      "notifications": []
+    },
+    {
+      "name": "custom-{\"path\":null}",
+      "event": {
+        "type": "tool_call",
+        "toolCallId": "controlled-call",
+        "toolName": "custom",
+        "input": {
+          "path": null
+        }
+      },
+      "hasUI": true,
+      "result": null,
+      "notifications": []
+    }
+  ],
+  "host_errors": [
+    {
+      "target": "hasUI",
+      "toolName": "write",
+      "path": ".env",
+      "branch": "error",
+      "error": "controlled host failure",
+      "notifications": []
+    },
+    {
+      "target": "hasUI",
+      "toolName": "write",
+      "path": "safe.rs",
+      "branch": "returned",
+      "notifications": []
+    },
+    {
+      "target": "hasUI",
+      "toolName": "read",
+      "path": ".env",
+      "branch": "returned",
+      "notifications": []
+    },
+    {
+      "target": "notify",
+      "toolName": "write",
+      "path": ".env",
+      "branch": "error",
+      "notifications": [
+        [
+          "Blocked write to protected path: .env",
+          "warning"
+        ]
+      ]
+    },
+    {
+      "target": "notify",
+      "toolName": "write",
+      "path": "safe.rs",
+      "branch": "returned",
+      "notifications": []
+    },
+    {
+      "target": "notify",
+      "toolName": "read",
+      "path": ".env",
+      "branch": "returned",
+      "notifications": []
+    }
+  ]
+}

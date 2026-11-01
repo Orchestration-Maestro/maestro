@@ -5,7 +5,7 @@ use std::{io, time::Duration};
 impl<O: PackageOperations> DefaultPackageManager<O> {
     /// Suppresses local and remote probe failures without changing the checkout.
     pub(super) async fn git_update_available(&self, path: &str) -> bool {
-        if super::update::offline() {
+        if self.offline() {
             return false;
         }
         let result = async {

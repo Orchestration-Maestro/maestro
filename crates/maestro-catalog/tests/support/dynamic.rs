@@ -92,9 +92,9 @@ mod native {
         fn get_api_key<'a>(
             &self,
             credentials: &'a maestro_models::OAuthCredentials,
-        ) -> Result<&'a str, maestro_models::OAuthError> {
+        ) -> Result<std::borrow::Cow<'a, str>, maestro_models::OAuthError> {
             self.record("key");
-            Ok(&credentials.access)
+            Ok(std::borrow::Cow::Borrowed(&credentials.access))
         }
         fn modify_models<'m>(
             &self,
@@ -158,7 +158,8 @@ mod native {
     /// # Panics
     /// Panics if the configuration guard is poisoned.
     pub fn callback(config: &SharedHandle<RwLock<ProviderConfigInput>>, message: &'static str) {
-        config.write().unwrap().stream_simple = Some(SharedHandle::new(FailedProvider(message)));
+        config.write().unwrap().callbacks.stream_simple =
+            Some(SharedHandle::new(FailedProvider(message)));
     }
     /// Invoke the current protocol through the raw public callback.
     /// # Panics

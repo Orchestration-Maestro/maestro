@@ -618,7 +618,6 @@ pub fn reading_frame_repaint_preserves_single_scroller_and_native_state() {
 #[wasm_bindgen]
 pub fn reading_frame_transitions_restore_both_nodes_after_failure() {
     reading_candidate_setup_failures_keep_the_published_root();
-    reading_input_transition_keeps_caller_class_and_native_events();
     for route in [Route::Retained, Route::Replacement] {
         for node in ["frame", "viewport", "slot0", "slot1", "slot2"] {
             slot_failure_moments(route, node);
@@ -741,55 +740,6 @@ fn reading_candidate_setup_failures_keep_the_published_root() {
     assert!(!js(&old, "return value.root.isConnected").as_bool().unwrap());
 }
 
-/// A direct-child input replacement clears reading markers without losing its own class.
-fn reading_input_transition_keeps_caller_class_and_native_events() {
-    use maestro_web::browser::attachment_content::{AttachmentContent, AttachmentSurface};
-    use maestro_web::components::input::InputProps;
-    let slots = Slots::new();
-    slots.publish(egui::vec2(300., 40.), &[]);
-    let old = slots.root();
-    let reference = Rc::new(std::cell::RefCell::new(None));
-    let calls = Rc::new(std::cell::Cell::new(0));
-    let observed = Rc::clone(&calls);
-    let props = InputProps {
-        class_name: "caller-input".into(),
-        input_ref: Some(Rc::clone(&reference)),
-        on_input: Some(Rc::new(move |_| observed.set(observed.get() + 1))),
-        ..Default::default()
-    };
-    slots
-        .host
-        .present(
-            AttachmentSurface {
-                id: slots.id,
-                rect: egui::Rect::from_min_size(slots.origin, egui::vec2(300., 40.)),
-                clip_rect: egui::Rect::EVERYTHING,
-                pixels_per_point: 1.,
-                opacity: 1.,
-                occluders: vec![],
-                content: AttachmentContent::Input {
-                    props: &props,
-                    accessible_label: "native input",
-                    value_changed: true,
-                    modal: None,
-                    context: &slots.context,
-                },
-            },
-            &slots.pack.presentation(BrandMode::Dark).unwrap(),
-        )
-        .unwrap();
-    assert!(!old.is_connected());
-    let input = reference.borrow().as_ref().unwrap().clone();
-    assert_eq!(input.parent_element().unwrap().class_name(), "caller-input");
-    js(&input, "value.dispatchEvent(new Event('input'))");
-    assert_eq!(calls.get(), 1);
-    slots.publish(egui::vec2(300., 40.), &[]);
-    assert!(!input.is_connected());
-    assert!(reference.borrow().is_none());
-    js(&input, "value.dispatchEvent(new Event('input'))");
-    assert_eq!(calls.get(), 1);
-}
-
 /// Exercise every before/after and publication boundary for one retained node.
 fn slot_failure_moments(route: Route, node: &str) {
     for moment in ["before", "after"] {
@@ -882,4 +832,114 @@ fn clipped_header_controls(header: &mut Header) {
         click_header(header, egui::pos2(290., 590.), egui::vec2(300., height));
         assert!(header.actions.is_empty());
     }
+}
+
+/// The native attachment layer intercepts real pointer input above every offline header control.
+pub(crate) async fn attachment_layer_intercepts_header_controls(
+    view: &Rc<maestro_web::dom::DomView>,
+) {
+    let canvas = view.document.create_element("canvas").unwrap();
+    for (name, value) in [
+        ("id", "canvas"),
+        ("width", "800"),
+        ("height", "600"),
+        ("style", "width:800px;height:600px;margin-top:120px"),
+    ] {
+        canvas.set_attribute(name, value).unwrap();
+    }
+    view.document.body().unwrap().append_child(&canvas).unwrap();
+    let header = Rc::new(std::cell::RefCell::new(Header::new()));
+    header.borrow_mut().draw(egui::vec2(800., 600.));
+    let listener = header_pointer_listener(&header, &canvas);
+    canvas
+        .add_event_listener_with_callback("click", listener.as_ref().unchecked_ref())
+        .unwrap();
+    for index in 0..3 {
+        header_overlay_pointer(view, &header, &canvas, index).await;
+    }
+    canvas
+        .remove_event_listener_with_callback("click", listener.as_ref().unchecked_ref())
+        .unwrap();
+    canvas.remove();
+}
+
+/// Compare one uncovered control with the same real pointer click intercepted by the attachment layer.
+async fn header_overlay_pointer(
+    view: &Rc<maestro_web::dom::DomView>,
+    header: &Rc<std::cell::RefCell<Header>>,
+    canvas: &web_sys::Element,
+    index: u32,
+) {
+    use crate::contributions_support::select;
+    use maestro_web::dom::DomContent as _;
+    let slot = select(&panel(), &format!(".control-slot:nth-child({})", index + 1));
+    let bounds = slot.get_bounding_client_rect();
+    let (x, y) = (
+        bounds.x() + bounds.width() / 2.,
+        bounds.y() + bounds.height() / 2.,
+    );
+    assert!(
+        view.document
+            .element_from_point(x.to_f32().unwrap(), y.to_f32().unwrap())
+            .unwrap()
+            .is_same_node(Some(canvas))
+    );
+    let point = serde_json::json!([x, y, true]).to_string();
+    crate::contributions_support::driver("driverPointer", &point).await;
+    assert_eq!(
+        header.borrow().actions.len(),
+        1,
+        "uncovered control {index}"
+    );
+    header.borrow_mut().actions.clear();
+    let overlay =
+        maestro_web::AttachmentOverlay::open(view, crate::attachment_support::attachment(), None)
+            .unwrap();
+    let root = overlay.mount(view).unwrap();
+    let target = view
+        .document
+        .element_from_point(x.to_f32().unwrap(), y.to_f32().unwrap())
+        .unwrap();
+    assert!(root.node.contains(Some(&target)));
+    crate::contributions_support::driver("driverPointer", &point).await;
+    assert!(
+        header.borrow().actions.is_empty(),
+        "covered control {index}"
+    );
+    assert!(
+        root.node.is_connected(),
+        "clicks inside the body do not close it"
+    );
+    select(&root.node, "[data-close]")
+        .unchecked_ref::<web_sys::HtmlElement>()
+        .click();
+    assert!(!root.node.is_connected());
+    crate::contributions_support::driver("driverPointer", &point).await;
+    assert_eq!(header.borrow().actions.len(), 1, "restored control {index}");
+    header.borrow_mut().actions.clear();
+}
+
+/// Forward an admitted native click through the same controlled header caller as its canvas witnesses.
+fn header_pointer_listener(
+    header: &Rc<std::cell::RefCell<Header>>,
+    canvas: &web_sys::Element,
+) -> wasm_bindgen::closure::Closure<dyn Fn(web_sys::Event)> {
+    let header = Rc::clone(header);
+    let canvas = canvas.clone();
+    wasm_bindgen::closure::Closure::new(move |event: web_sys::Event| {
+        let rect = canvas.get_bounding_client_rect();
+        let coordinate = |name: &str| {
+            js_sys::Reflect::get(&event, &name.into())
+                .unwrap()
+                .as_f64()
+                .unwrap()
+        };
+        let x = (coordinate("clientX") - rect.x()) * 800. / rect.width();
+        let y = (coordinate("clientY") - rect.y()) * 600. / rect.height();
+        click_header(
+            &mut header.borrow_mut(),
+            egui::pos2(x.to_f32().unwrap(), y.to_f32().unwrap()),
+            egui::vec2(800., 600.),
+        );
+    })
 }

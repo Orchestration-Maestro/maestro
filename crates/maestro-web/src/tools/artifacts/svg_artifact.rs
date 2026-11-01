@@ -22,6 +22,9 @@ pub struct SvgArtifact {
     modal: Option<egui::Id>,
     /// Deferred platform failure for the infallible field setter.
     failure: Option<ArtifactUiError>,
+    /// Most recently published native presentation.
+    #[cfg(target_arch = "wasm32")]
+    body: super::artifact_element::preview::LastBody,
     /// Retained native resource, independent of visible mode.
     #[cfg(target_arch = "wasm32")]
     preview_url: Option<crate::utils::download::ObjectUrl>,
@@ -38,6 +41,8 @@ impl SvgArtifact {
             modal: None,
             failure: None,
             #[cfg(target_arch = "wasm32")]
+            body: Rc::default(),
+            #[cfg(target_arch = "wasm32")]
             preview_url: None,
         }
     }
@@ -47,11 +52,11 @@ impl SvgArtifact {
             return Err(error);
         }
         self.source.set_visibility(
-            self.visible && self.toggle.mode == ViewMode::Code,
+            self.visible && self.toggle.mode() == ViewMode::Code,
             self.modal,
         )?;
         self.preview.set_visibility(
-            self.visible && self.toggle.mode == ViewMode::Preview,
+            self.visible && self.toggle.mode() == ViewMode::Preview,
             self.modal,
         )
     }
@@ -75,6 +80,23 @@ impl SvgArtifact {
         Ok(())
     }
 }
+impl Default for SvgArtifact {
+    /// Empty host-free SVG content, initially showing its preview.
+    fn default() -> Self {
+        Self {
+            source: TextArtifact::page_profile(SourceProfile::Svg),
+            preview: ImageArtifact::page_svg(),
+            toggle: PreviewCodeToggle::new(),
+            visible: true,
+            modal: None,
+            failure: None,
+            #[cfg(target_arch = "wasm32")]
+            body: Rc::default(),
+            #[cfg(target_arch = "wasm32")]
+            preview_url: None,
+        }
+    }
+}
 impl ArtifactElement for SvgArtifact {
     fn filename(&self) -> &str {
         self.source.filename()
@@ -93,7 +115,9 @@ impl ArtifactElement for SvgArtifact {
         self.source.set_content(content);
         #[cfg(target_arch = "wasm32")]
         {
-            self.failure = self.update_preview_url().err();
+            if self.source.is_retained() {
+                self.failure = self.update_preview_url().err();
+            }
         }
     }
     fn set_visibility(
@@ -108,7 +132,7 @@ impl ArtifactElement for SvgArtifact {
     super::retained::artifact_header_buttons!();
     fn render(&mut self, ui: &mut egui::Ui, view: ArtifactView<'_>) -> Result<(), ArtifactUiError> {
         self.reconcile()?;
-        if self.toggle.mode == ViewMode::Code {
+        if self.toggle.mode() == ViewMode::Code {
             self.source.render(ui, view)?;
         } else {
             self.preview.render(ui, view)?;
@@ -134,3 +158,8 @@ impl ArtifactElement for SvgArtifact {
         self.failure.take().map_or(Ok(()), Err)
     }
 }
+
+#[cfg(target_arch = "wasm32")]
+mod dom;
+#[cfg(target_arch = "wasm32")]
+pub(crate) use dom::define;

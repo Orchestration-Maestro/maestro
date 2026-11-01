@@ -15,3 +15,5 @@
   white-space: pre-wrap;
   overflow-wrap: break-word;
 }
+
+.maestro-text-artifact-body { height: 100%; min-height: 0; overflow: auto; }

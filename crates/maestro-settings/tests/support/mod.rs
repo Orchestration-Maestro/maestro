@@ -439,7 +439,7 @@ impl Backend {
 /// Like [`child_command`], but starts the child through bash after running `setup`.
 #[cfg(unix)]
 pub fn shell_child_command(test: &str, case: &str, setup: &str) -> TestProcess {
-    child_command(test, case).shell_setup(setup)
+    child_command(test, case).shell_setup("/bin/bash", setup)
 }
 
 /// The settings document for one scope below the supplied temporary root.

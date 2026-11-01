@@ -1,5 +1,5 @@
 //! Role-keyed custom content with typed retained callback ownership.
-use crate::tools::types::{ToolContent, ToolUiError};
+use crate::{dom::PreparedContent, tools::types::ToolUiError};
 use maestro_app::{AgentMessage, CustomAgentMessages, NoCustomMessages, ToolRendererState};
 use std::{collections::HashMap, rc::Rc};
 
@@ -7,9 +7,9 @@ use std::{collections::HashMap, rc::Rc};
 pub type MessageRole = String;
 /// Prepare owned content from the caller's original shared message.
 ///
-/// `T` selects the content representation. Its canvas default exists only while
-/// the canvas renderer family remains; page content uses [`crate::dom::DomContent`].
-pub trait MessageRenderer<C: CustomAgentMessages = NoCustomMessages, T = Box<dyn ToolContent>> {
+/// `T` selects the content representation. By default it is page content
+/// ([`crate::dom::DomContent`]) in the browser and the owned prepared record on native targets.
+pub trait MessageRenderer<C: CustomAgentMessages = NoCustomMessages, T = PreparedContent> {
     /// Prepare content without retaining the message borrow.
     /// # Errors
     /// Returns the supplied renderer's failure.
@@ -30,12 +30,12 @@ pub fn register_message_renderer<C: CustomAgentMessages + 'static, T: 'static>(
     let previous = table.borrow_mut().insert(role.into(), renderer);
     drop(previous);
 }
-/// Retain the current canvas role callback for this message representation.
+/// Retain the current role callback for the default content representation.
 #[must_use]
 pub fn get_message_renderer<C: CustomAgentMessages + 'static>(
     role: &str,
 ) -> Option<Rc<dyn MessageRenderer<C>>> {
-    retain::<C, Box<dyn ToolContent>>(role)
+    retain::<C, PreparedContent>(role)
 }
 /// Retain the callback registered for this role and content representation.
 fn retain<C: CustomAgentMessages + 'static, T: 'static>(
@@ -60,13 +60,13 @@ pub(crate) fn unregister_message_renderer<C: CustomAgentMessages + 'static, T: '
     drop(removed);
     owned
 }
-/// Prepare registered canvas content, or none for an unregistered role.
+/// Prepare registered content, or none for an unregistered role.
 /// # Errors
 /// Returns the reached renderer's original error without converting it to empty content.
 pub fn render_message<C: CustomAgentMessages + 'static>(
     message: &AgentMessage<C>,
-) -> Result<Option<Box<dyn ToolContent>>, ToolUiError> {
-    render::<C, Box<dyn ToolContent>>(message)
+) -> Result<Option<PreparedContent>, ToolUiError> {
+    render::<C, PreparedContent>(message)
 }
 /// Prepare the content its role's registered renderer produces.
 fn render<C: CustomAgentMessages + 'static, T: 'static>(
@@ -86,26 +86,8 @@ fn render<C: CustomAgentMessages + 'static, T: 'static>(
         .map(|renderer| renderer.render(message))
         .transpose()
 }
-/// Page-content message lookups.
+/// Page-content message lookups, the same role map as the root.
 #[cfg(target_arch = "wasm32")]
 pub mod dom {
-    use super::{
-        AgentMessage, CustomAgentMessages, MessageRenderer, Rc, ToolUiError, render, retain,
-    };
-    use crate::dom::DomContent;
-    /// Retain the current page-content role callback for this message representation.
-    #[must_use]
-    pub fn get_message_renderer<C: CustomAgentMessages + 'static>(
-        role: &str,
-    ) -> Option<Rc<dyn MessageRenderer<C, Box<dyn DomContent>>>> {
-        retain::<C, Box<dyn DomContent>>(role)
-    }
-    /// Prepare registered page content, or none for an unregistered role.
-    /// # Errors
-    /// Returns the reached renderer's original error without converting it to empty content.
-    pub fn render_message<C: CustomAgentMessages + 'static>(
-        message: &AgentMessage<C>,
-    ) -> Result<Option<Box<dyn DomContent>>, ToolUiError> {
-        render::<C, Box<dyn DomContent>>(message)
-    }
+    pub use super::{get_message_renderer, render_message};
 }

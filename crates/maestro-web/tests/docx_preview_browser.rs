@@ -418,25 +418,21 @@ async fn wait_for_load(frame: &web_sys::Element) {
 }
 
 /// Fetch one object URL as base64 text, or an empty text when it no longer resolves.
-async fn fetch_bytes(url: &str) -> String {
-    let fetch = js_sys::Function::new_with_args(
-        "url",
-        "return fetch(url).then(async (response) => {
-           if (!response.ok) return '';
-           const buffer = new Uint8Array(await response.arrayBuffer());
-           let text = '';
-           for (const byte of buffer) text += String.fromCharCode(byte);
-           return btoa(text);
-         }).catch(() => '');",
-    );
-    let promise: js_sys::Promise = fetch
-        .call1(&JsValue::NULL, &JsValue::from_str(url))
-        .unwrap()
-        .dyn_into()
-        .unwrap();
-    wasm_bindgen_futures::JsFuture::from(promise)
-        .await
-        .unwrap()
-        .as_string()
-        .unwrap()
+pub(crate) async fn fetch_bytes(url: &str) -> String {
+    use base64::Engine as _;
+    use wasm_bindgen_futures::JsFuture;
+    let Ok(response) = JsFuture::from(window().fetch_with_str(url)).await else {
+        return String::new();
+    };
+    let response: web_sys::Response = response.dyn_into().unwrap();
+    if !response.ok() {
+        return String::new();
+    }
+    let Ok(buffer) = response.array_buffer() else {
+        return String::new();
+    };
+    let Ok(bytes) = JsFuture::from(buffer).await else {
+        return String::new();
+    };
+    base64::engine::general_purpose::STANDARD.encode(js_sys::Uint8Array::new(&bytes).to_vec())
 }

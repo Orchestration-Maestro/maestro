@@ -203,6 +203,9 @@ fn extracted_context_reuses_local_timestamp_conversion() {
             .expect("selected timezone")
     });
     let Some(zone) = zone else {
+        if !maestro_test_process::local_zone_follows_tz() {
+            return;
+        }
         for zone in ["America/New_York", "UTC"] {
             let output = maestro_test_process::TestProcess::current(name)
                 .unwrap()
@@ -783,7 +786,8 @@ fn fork_uses_target_cwd_and_explicit_or_default_directory() {
     assert_eq!(manager.get_session_dir(), explicit);
     assert!(!fs::exists(&agent).unwrap());
     let default = SessionManager::fork_from(&source, "/work/target", None, &agent).unwrap();
-    let directory = below(scratch.path(), "agent/sessions/--work-target--");
+    let sessions = scratch.path().join("agent").join("sessions");
+    let directory = below(&sessions, "--work-target--");
     assert_eq!(default.get_session_dir(), directory);
     for (manager, directory) in [
         (&manager, explicit.as_str()),
@@ -824,7 +828,6 @@ fn fork_reuses_raw_loader_admission_and_exact_invalid_source_error() {
         ("empty", Some(String::new())),
         ("garbage", Some("not json".to_owned())),
         ("headerless", Some(format!("{user}\n"))),
-        ("null-first", Some(format!("null\n{header}\n"))),
     ];
     for (name, text) in invalid {
         let source = below(scratch.path(), &format!("{name}.jsonl"));
@@ -842,6 +845,7 @@ fn fork_reuses_raw_loader_admission_and_exact_invalid_source_error() {
         assert!(!fs::exists(&target).unwrap(), "{name}");
     }
     let tolerant = [
+        ("null-first", format!("null\n{header}\n{user}\n")),
         ("leading", format!("garbage\n{header}\n{user}\n")),
         ("tail", format!("{header}\n{user}\n{{\"type\":")),
         ("bom", format!("\u{feff}{header}\n")),

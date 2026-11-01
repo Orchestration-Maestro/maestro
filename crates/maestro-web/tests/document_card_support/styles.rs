@@ -1,94 +1,81 @@
-//! Selected brand roles and reached operation failures through real document cards.
+//! Native document-card brand roles and reached localization/highlighting causes.
 #![cfg(all(test, target_arch = "wasm32"))]
-use super::{fixture, prepare};
-use crate::{
-    markdown_support::{Surface, check},
-    tool_renderer_browser as drawing,
-    tool_renderer_support::styles::{draw, native_color},
-};
-use maestro_web::{
-    browser::attachment_content::AttachmentHostError,
-    tools::types::{ToolRenderState, ToolUiError},
-};
+use super::{browser::Card, fixture, prepare};
+use crate::contributions_support::{computed, host, rgb, select, view};
+use maestro_web::{dom::DomView, tools::types::ToolUiError};
+use std::{error::Error as _, rc::Rc, sync::Arc};
 
-pub fn run() {
-    let mut surface = Surface::new();
-    for pack in [surface.pack.clone(), surface.alternate.clone()] {
+/// Both supplied packs and modes color native text and status without a canvas host.
+pub fn run(import: &js_sys::Function) {
+    let view = view();
+    let _elements = host(&view, import);
+    for pack in [
+        view.pack.clone(),
+        Rc::new(crate::brand::pack("signal.json").unwrap()),
+    ] {
         for mode in [
             maestro_theme::BrandMode::Dark,
             maestro_theme::BrandMode::Light,
         ] {
-            let presentation = pack.presentation(mode).unwrap();
             for error in [false, true] {
-                card(&mut surface, &presentation, error);
+                let view = Rc::new(DomView {
+                    pack: pack.clone(),
+                    mode,
+                    ..(*view).clone()
+                });
+                card(view, error);
             }
         }
     }
-    errors(&mut surface);
+    errors(&view);
 }
-fn card(surface: &mut Surface, presentation: &maestro_theme::BrandPresentation<'_>, error: bool) {
+/// The original result caption, URL typography and status use the supplied brand roles.
+fn card(view: Rc<DomView>, error: bool) {
     let mut row = fixture()
         .into_iter()
         .find(|r| r.id == "extract-result-valid-false-false")
         .unwrap();
-    surface.time = Some(surface.time.unwrap_or(0.) + 1.);
     row.input.result.as_mut().unwrap().is_error = error;
-    let recipe = prepare(&row).unwrap();
-    let mut state = ToolRenderState::default();
-    draw(surface, &recipe, &mut state, presentation);
-    drawing::has_role(
-        surface,
-        drawing::glyphs(surface)[0],
-        if error { "error" } else { "success" },
-        presentation,
+    let card = Card::new(view, &row);
+    let view = &card.view;
+    let presentation = view.pack.presentation(view.mode).unwrap();
+    let role = if error { "error" } else { "success" };
+    let status = select(
+        &card.root(),
+        if error {
+            ".maestro-tool-error"
+        } else {
+            ".maestro-tool-complete"
+        },
     );
-    let at = drawing::glyphs(surface)[0].center();
-    surface.events = crate::attachment_support::click(at);
-    draw(surface, &recipe, &mut state, presentation);
-    surface.time = Some(surface.time.unwrap() + 0.3);
-    draw(surface, &recipe, &mut state, presentation);
-    native_color(".maestro-tool-url", "muted", presentation);
-    check(
-        "(()=>{const u=document.querySelector('.maestro-tool-url'),s=getComputedStyle(u);return s.fontSize==='14px'&&s.lineHeight==='20px'&&u.querySelector('strong').textContent==='URL:'&&u.querySelectorAll('strong').length===1})()",
-    );
-    surface.events = vec![egui::Event::PointerMoved(at)];
-    draw(surface, &recipe, &mut state, presentation);
-    let _ = crate::markdown_support::js(
-        "const caption=document.querySelector('.maestro-tool-caption');getComputedStyle(caption).color;for(const animation of caption.getAnimations())animation.finish()",
-    );
-    native_color(".maestro-tool-caption", "text", presentation);
+    assert_eq!(computed(&status, "color"), rgb(presentation.colors[role]));
+    let url = select(&card.root(), ".maestro-tool-url");
+    assert_eq!(computed(&url, "color"), rgb(presentation.colors["muted"]));
+    assert_eq!(computed(&url, "font-size"), "14px");
+    assert_eq!(computed(&url, "line-height"), "20px");
+    assert_eq!(select(&url, "strong").text_content().unwrap(), "URL:");
+    assert_eq!(url.query_selector_all("strong").unwrap().length(), 1);
 }
-
-fn errors(surface: &mut Surface) {
-    use crate::support::reading_view::view;
-    use std::error::Error as _;
+/// Reached failures retain their original typed cause instead of succeeding with stale content.
+fn errors(view: &Rc<DomView>) {
     let row = fixture()
         .into_iter()
         .find(|r| r.id == "extract-result-valid-false-false")
         .unwrap();
     let recipe = prepare(&row).unwrap();
-    let mut state = ToolRenderState::default();
-    let host = surface.host();
-    *surface.effects.fail_next.borrow_mut() = Some("controlled document placement".into());
-    let output = surface.draw(|ui, frame| recipe.render(ui, view(&host, frame), &mut state));
-    assert!(output.overlays.is_empty());
-    assert!(
-        matches!(output.response, Err(ToolUiError::Host(AttachmentHostError::Presentation(ref message))) if message == "controlled document placement")
-    );
-    drawing::draw(surface, &recipe, &mut state);
-    let dictionary = surface.i18n.get_translations();
-    let borrow = dictionary.borrow_mut();
-    let output = surface.draw(|ui, frame| recipe.render(ui, view(&host, frame), &mut state));
-    assert!(output.overlays.is_empty());
-    assert!(matches!(output.response, Err(ToolUiError::I18n(_))));
+    let dictionaries = view.i18n.get_translations();
+    let borrow = dictionaries.borrow_mut();
+    assert!(matches!(
+        recipe.content.mount(view),
+        Err(ToolUiError::I18n(_))
+    ));
     drop(borrow);
-    drawing::draw(surface, &recipe, &mut state);
-    let marker = std::sync::Arc::new(());
-    surface.highlighter =
-        std::rc::Rc::new(crate::failing_highlighter::FailingEngine(marker.clone()));
-    let output = surface.draw(|ui, frame| recipe.render(ui, view(&host, frame), &mut state));
-    assert!(output.overlays.is_empty());
-    let error = output.response.err().unwrap();
+    let marker = Arc::new(());
+    let failing = DomView {
+        highlighter: Rc::new(crate::failing_highlighter::FailingEngine(marker.clone())),
+        ..(**view).clone()
+    };
+    let error = recipe.content.mount(&failing).err().unwrap();
     let cause = error
         .source()
         .unwrap()
@@ -96,5 +83,5 @@ fn errors(surface: &mut Surface) {
         .unwrap()
         .downcast_ref::<crate::failing_highlighter::Cause>()
         .unwrap();
-    assert!(std::sync::Arc::ptr_eq(&cause.0, &marker));
+    assert!(Arc::ptr_eq(&cause.0, &marker));
 }

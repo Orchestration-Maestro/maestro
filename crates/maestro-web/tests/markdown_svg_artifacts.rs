@@ -103,8 +103,8 @@ fn preview_toggle_reports_only_real_changes() {
             None
         );
         states.push([
-            toggle.mode == ViewMode::Preview,
-            toggle.mode == ViewMode::Code,
+            toggle.mode() == ViewMode::Preview,
+            toggle.mode() == ViewMode::Code,
         ]);
         for index in [0, 1, 1, 0] {
             let position = slots(&frame.context)[index].center();
@@ -113,22 +113,22 @@ fn preview_toggle_reports_only_real_changes() {
             assert!(output.platform_output.events.iter().any(|event| matches!(event, egui::output::OutputEvent::Clicked(info) if info.label.as_ref() == Some(&case.titles[index]))));
             transitions.extend(transition.map(mode_name));
             states.push([
-                toggle.mode == ViewMode::Preview,
-                toggle.mode == ViewMode::Code,
+                toggle.mode() == ViewMode::Preview,
+                toggle.mode() == ViewMode::Code,
             ]);
         }
         assert_eq!(states, case.states);
         assert_eq!(transitions, case.events);
         let mut configured = PreviewCodeToggle::default();
-        configured.mode = ViewMode::Code;
+        configured.set_mode(ViewMode::Code);
         assert_eq!(
             toggle_frame(&frame, &mut configured, vec![], &mut paint).0,
             None
         );
         assert_eq!(
             [
-                configured.mode == ViewMode::Preview,
-                configured.mode == ViewMode::Code
+                configured.mode() == ViewMode::Preview,
+                configured.mode() == ViewMode::Code
             ],
             case.configured
         );
@@ -246,7 +246,7 @@ fn preview_toggle_paints_selected_hover_and_focus() {
         let preview = paint.region(&frame.context, &output.shapes, sample(controls[0]));
         let code = paint.region(&frame.context, &output.shapes, sample(controls[1]));
         assert_ne!(preview, code);
-        toggle.mode = ViewMode::Code;
+        toggle.set_mode(ViewMode::Code);
         let output = toggle_frame(&frame, &mut toggle, vec![], &mut paint).1;
 
         assert_ne!(

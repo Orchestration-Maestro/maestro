@@ -423,7 +423,10 @@ fn nonfinite(usage: &Usage) -> Value {
         ("output", usage.output),
         ("cacheRead", usage.cache_read),
         ("cacheWrite", usage.cache_write),
-        ("totalTokens", usage.total_tokens),
+        (
+            "totalTokens",
+            usage.total_tokens.present().copied().unwrap(),
+        ),
         ("cost.input", cost.input),
         ("cost.output", cost.output),
         ("cost.cacheRead", cost.cache_read),
@@ -633,14 +636,16 @@ fn consumed_fields<'a>(path: &str, kind: &str) -> Option<&'a [&'a str]> {
             | "response.completed"
             | "response.incomplete"
             | "response.failed" => &["type", "response"],
-            "response.output_item.added" | "response.output_item.done" => &["type", "item"],
-            "response.content_part.added" | "response.reasoning_summary_part.added" => {
-                &["type", "part"]
+            "response.output_item.added" | "response.output_item.done" => {
+                &["type", "output_index", "item"]
             }
-            "response.function_call_arguments.done" => &["type", "arguments"],
+            "response.content_part.added" | "response.reasoning_summary_part.added" => {
+                &["type", "output_index", "part"]
+            }
+            "response.function_call_arguments.done" => &["type", "output_index", "arguments"],
             "error" => &["type", "code", "message"],
-            _ if kind.rsplit('.').next() == Some("delta") => &["type", "delta"],
-            _ => &["type"],
+            _ if kind.rsplit('.').next() == Some("delta") => &["type", "output_index", "delta"],
+            _ => &["type", "output_index"],
         },
         "created" => &["id"],
         "completed" => &["id", "status", "usage", "service_tier"],

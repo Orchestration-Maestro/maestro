@@ -1,0 +1,2351 @@
+[
+  {
+    "test": "events_agent_start_selects_working_visibility_and_message",
+    "input": {
+      "op": "start",
+      "visible": false,
+      "progress": false,
+      "message": null
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_agent_start_selects_working_visibility_and_message",
+    "input": {
+      "op": "start",
+      "visible": false,
+      "progress": false,
+      "message": ""
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_agent_start_selects_working_visibility_and_message",
+    "input": {
+      "op": "start",
+      "visible": false,
+      "progress": false,
+      "message": "CUSTOM"
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_agent_start_selects_working_visibility_and_message",
+    "input": {
+      "op": "start",
+      "visible": false,
+      "progress": true,
+      "message": null
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_agent_start_selects_working_visibility_and_message",
+    "input": {
+      "op": "start",
+      "visible": false,
+      "progress": true,
+      "message": ""
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_agent_start_selects_working_visibility_and_message",
+    "input": {
+      "op": "start",
+      "visible": false,
+      "progress": true,
+      "message": "CUSTOM"
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_agent_start_selects_working_visibility_and_message",
+    "input": {
+      "op": "start",
+      "visible": true,
+      "progress": false,
+      "message": null
+    },
+    "expected": {
+      "chat": [],
+      "status": [
+        "",
+        " \u001b[38;5;1m\u280b\u001b[39m \u001b[38;5;8mWorking...\u001b[39m                                                                                       "
+      ],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_agent_start_selects_working_visibility_and_message",
+    "input": {
+      "op": "start",
+      "visible": true,
+      "progress": false,
+      "message": ""
+    },
+    "expected": {
+      "chat": [],
+      "status": [
+        "",
+        " FRAME \u001b[38;5;8m\u001b[39m                                                                                             "
+      ],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_agent_start_selects_working_visibility_and_message",
+    "input": {
+      "op": "start",
+      "visible": true,
+      "progress": false,
+      "message": "CUSTOM"
+    },
+    "expected": {
+      "chat": [],
+      "status": [
+        "",
+        " FRAME \u001b[38;5;8mCUSTOM\u001b[39m                                                                                       "
+      ],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_agent_start_selects_working_visibility_and_message",
+    "input": {
+      "op": "start",
+      "visible": true,
+      "progress": true,
+      "message": null
+    },
+    "expected": {
+      "chat": [],
+      "status": [
+        "",
+        " \u001b[38;5;1m\u280b\u001b[39m \u001b[38;5;8mWorking...\u001b[39m                                                                                       "
+      ],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_agent_start_selects_working_visibility_and_message",
+    "input": {
+      "op": "start",
+      "visible": true,
+      "progress": true,
+      "message": ""
+    },
+    "expected": {
+      "chat": [],
+      "status": [
+        "",
+        " FRAME \u001b[38;5;8m\u001b[39m                                                                                             "
+      ],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_agent_start_selects_working_visibility_and_message",
+    "input": {
+      "op": "start",
+      "visible": true,
+      "progress": true,
+      "message": "CUSTOM"
+    },
+    "expected": {
+      "chat": [],
+      "status": [
+        "",
+        " FRAME \u001b[38;5;8mCUSTOM\u001b[39m                                                                                       "
+      ],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_working_controls_update_retained_loader",
+    "input": {
+      "op": "visible",
+      "streaming": false,
+      "visible": false
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_working_controls_update_retained_loader",
+    "input": {
+      "op": "visible",
+      "streaming": false,
+      "visible": true
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_working_controls_update_retained_loader",
+    "input": {
+      "op": "visible",
+      "streaming": true,
+      "visible": false
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_working_controls_update_retained_loader",
+    "input": {
+      "op": "visible",
+      "streaming": true,
+      "visible": true
+    },
+    "expected": {
+      "chat": [],
+      "status": [
+        "",
+        " \u001b[38;5;8mWorking...\u001b[39m                                                                                         "
+      ],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_working_controls_update_retained_loader",
+    "input": {
+      "op": "indicator",
+      "indicator": {
+        "frames": []
+      }
+    },
+    "expected": {
+      "chat": [],
+      "status": [
+        "",
+        " \u001b[38;5;8mWorking...\u001b[39m                                                                                         "
+      ],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_working_controls_update_retained_loader",
+    "input": {
+      "op": "indicator",
+      "indicator": {
+        "frames": [
+          "ONLY"
+        ]
+      }
+    },
+    "expected": {
+      "chat": [],
+      "status": [
+        "",
+        " ONLY \u001b[38;5;8mWorking...\u001b[39m                                                                                    "
+      ],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_working_controls_update_retained_loader",
+    "input": {
+      "op": "indicator",
+      "indicator": {
+        "frames": [
+          "NEXT"
+        ],
+        "interval": 37
+      }
+    },
+    "expected": {
+      "chat": [],
+      "status": [
+        "",
+        " NEXT \u001b[38;5;8mWorking...\u001b[39m                                                                                    "
+      ],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_subscription_initializes_once_and_releases",
+    "input": {
+      "op": "init",
+      "initialized": false
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_subscription_initializes_once_and_releases",
+    "input": {
+      "op": "init",
+      "initialized": true
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_subscription_initializes_once_and_releases",
+    "input": {
+      "op": "subscribe"
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_message_roles_use_one_retained_stream",
+    "input": {
+      "op": "message_start",
+      "role": "custom"
+    },
+    "expected": {
+      "chat": [
+        "",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m",
+        "\u001b[48;5;72m \u001b[38;5;14m\u001b[1m[note]\u001b[22m\u001b[39m                                                                                             \u001b[49m",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m",
+        "\u001b[48;5;72m \u001b[38;5;13mCUSTOM\u001b[39m                                                                                             \u001b[49m",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m"
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_message_roles_use_one_retained_stream",
+    "input": {
+      "op": "message_start",
+      "role": "user"
+    },
+    "expected": {
+      "chat": [
+        "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+        "\u001b[48;5;71m \u001b[38;5;12mUSER\u001b[39m                                                                                               \u001b[49m",
+        "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m"
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_message_roles_use_one_retained_stream",
+    "input": {
+      "op": "message_start",
+      "role": "assistant"
+    },
+    "expected": {
+      "chat": [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 PARTIAL                                                                                            "
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": true
+    }
+  },
+  {
+    "test": "events_message_roles_use_one_retained_stream",
+    "input": {
+      "op": "message_start",
+      "role": "toolResult"
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_updates_reuse_assistant_and_tool_rows",
+    "input": {
+      "op": "update",
+      "active": false
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_updates_reuse_assistant_and_tool_rows",
+    "input": {
+      "op": "update",
+      "active": true
+    },
+    "expected": {
+      "chat": [
+        "",
+        " THIRD                                                                                              ",
+        "",
+        "\u001b[48;5;73m                                                                                                    \u001b[49m",
+        "\u001b[48;5;73m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;5;73m                                                                                                    \u001b[49m",
+        "\u001b[48;5;73m {                                                                                                  \u001b[49m",
+        "\u001b[48;5;73m   \"changed\": 2                                                                                     \u001b[49m",
+        "\u001b[48;5;73m }                                                                                                  \u001b[49m",
+        "\u001b[48;5;73m                                                                                                    \u001b[49m",
+        "",
+        "\u001b[48;5;73m                                                                                                    \u001b[49m",
+        "\u001b[48;5;73m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;5;73m                                                                                                    \u001b[49m",
+        "\u001b[48;5;73m {                                                                                                  \u001b[49m",
+        "\u001b[48;5;73m   \"z\": 1,                                                                                          \u001b[49m",
+        "\u001b[48;5;73m   \"a\": 2                                                                                           \u001b[49m",
+        "\u001b[48;5;73m }                                                                                                  \u001b[49m",
+        "\u001b[48;5;73m                                                                                                    \u001b[49m"
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [
+        "z",
+        "a"
+      ],
+      "history": [],
+      "streaming": true
+    }
+  },
+  {
+    "test": "events_message_end_preserves_failure_and_completion_branches",
+    "input": {
+      "op": "end",
+      "stop": "stop",
+      "retry": 0,
+      "error": null
+    },
+    "expected": {
+      "chat": [
+        "",
+        "\u001b[48;5;73m                                                                                                    \u001b[49m",
+        "\u001b[48;5;73m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;5;73m                                                                                                    \u001b[49m",
+        "\u001b[48;5;73m {                                                                                                  \u001b[49m",
+        "\u001b[48;5;73m   \"z\": 1,                                                                                          \u001b[49m",
+        "\u001b[48;5;73m   \"a\": 2                                                                                           \u001b[49m",
+        "\u001b[48;5;73m }                                                                                                  \u001b[49m",
+        "\u001b[48;5;73m                                                                                                    \u001b[49m"
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [
+        "z"
+      ],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_message_end_preserves_failure_and_completion_branches",
+    "input": {
+      "op": "end",
+      "stop": "toolUse",
+      "retry": 0,
+      "error": null
+    },
+    "expected": {
+      "chat": [
+        "",
+        "\u001b[48;5;73m                                                                                                    \u001b[49m",
+        "\u001b[48;5;73m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;5;73m                                                                                                    \u001b[49m",
+        "\u001b[48;5;73m {                                                                                                  \u001b[49m",
+        "\u001b[48;5;73m   \"z\": 1,                                                                                          \u001b[49m",
+        "\u001b[48;5;73m   \"a\": 2                                                                                           \u001b[49m",
+        "\u001b[48;5;73m }                                                                                                  \u001b[49m",
+        "\u001b[48;5;73m                                                                                                    \u001b[49m"
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [
+        "z"
+      ],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_message_end_preserves_failure_and_completion_branches",
+    "input": {
+      "op": "end",
+      "stop": "length",
+      "retry": 0,
+      "error": null
+    },
+    "expected": {
+      "chat": [
+        "",
+        " \u001b[38;5;6mError: Model stopped because it reached the maximum output token limit. The response may be        ",
+        " \u001b[38;5;6mincomplete.\u001b[39m                                                                                        ",
+        "",
+        "\u001b[48;5;73m                                                                                                    \u001b[49m",
+        "\u001b[48;5;73m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;5;73m                                                                                                    \u001b[49m",
+        "\u001b[48;5;73m {                                                                                                  \u001b[49m",
+        "\u001b[48;5;73m   \"z\": 1,                                                                                          \u001b[49m",
+        "\u001b[48;5;73m   \"a\": 2                                                                                           \u001b[49m",
+        "\u001b[48;5;73m }                                                                                                  \u001b[49m",
+        "\u001b[48;5;73m                                                                                                    \u001b[49m"
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [
+        "z"
+      ],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_message_end_preserves_failure_and_completion_branches",
+    "input": {
+      "op": "end",
+      "stop": "aborted",
+      "retry": 0,
+      "error": null
+    },
+    "expected": {
+      "chat": [
+        "",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m",
+        "\u001b[48;5;75m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m",
+        "\u001b[48;5;75m {                                                                                                  \u001b[49m",
+        "\u001b[48;5;75m   \"z\": 1,                                                                                          \u001b[49m",
+        "\u001b[48;5;75m   \"a\": 2                                                                                           \u001b[49m",
+        "\u001b[48;5;75m }                                                                                                  \u001b[49m",
+        "\u001b[48;5;75m Operation aborted                                                                                  \u001b[49m",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m"
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_message_end_preserves_failure_and_completion_branches",
+    "input": {
+      "op": "end",
+      "stop": "aborted",
+      "retry": 1,
+      "error": null
+    },
+    "expected": {
+      "chat": [
+        "",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m",
+        "\u001b[48;5;75m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m",
+        "\u001b[48;5;75m {                                                                                                  \u001b[49m",
+        "\u001b[48;5;75m   \"z\": 1,                                                                                          \u001b[49m",
+        "\u001b[48;5;75m   \"a\": 2                                                                                           \u001b[49m",
+        "\u001b[48;5;75m }                                                                                                  \u001b[49m",
+        "\u001b[48;5;75m Aborted after 1 retry attempt                                                                      \u001b[49m",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m"
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_message_end_preserves_failure_and_completion_branches",
+    "input": {
+      "op": "end",
+      "stop": "aborted",
+      "retry": 2,
+      "error": null
+    },
+    "expected": {
+      "chat": [
+        "",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m",
+        "\u001b[48;5;75m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m",
+        "\u001b[48;5;75m {                                                                                                  \u001b[49m",
+        "\u001b[48;5;75m   \"z\": 1,                                                                                          \u001b[49m",
+        "\u001b[48;5;75m   \"a\": 2                                                                                           \u001b[49m",
+        "\u001b[48;5;75m }                                                                                                  \u001b[49m",
+        "\u001b[48;5;75m Aborted after 2 retry attempts                                                                     \u001b[49m",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m"
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_message_end_preserves_failure_and_completion_branches",
+    "input": {
+      "op": "end",
+      "stop": "error",
+      "retry": 0,
+      "error": null
+    },
+    "expected": {
+      "chat": [
+        "",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m",
+        "\u001b[48;5;75m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m",
+        "\u001b[48;5;75m {                                                                                                  \u001b[49m",
+        "\u001b[48;5;75m   \"z\": 1,                                                                                          \u001b[49m",
+        "\u001b[48;5;75m   \"a\": 2                                                                                           \u001b[49m",
+        "\u001b[48;5;75m }                                                                                                  \u001b[49m",
+        "\u001b[48;5;75m Error                                                                                              \u001b[49m",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m"
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_message_end_preserves_failure_and_completion_branches",
+    "input": {
+      "op": "end",
+      "stop": "error",
+      "retry": 0,
+      "error": ""
+    },
+    "expected": {
+      "chat": [
+        "",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m",
+        "\u001b[48;5;75m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m",
+        "\u001b[48;5;75m {                                                                                                  \u001b[49m",
+        "\u001b[48;5;75m   \"z\": 1,                                                                                          \u001b[49m",
+        "\u001b[48;5;75m   \"a\": 2                                                                                           \u001b[49m",
+        "\u001b[48;5;75m }                                                                                                  \u001b[49m",
+        "\u001b[48;5;75m Error                                                                                              \u001b[49m",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m"
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_message_end_preserves_failure_and_completion_branches",
+    "input": {
+      "op": "end",
+      "stop": "error",
+      "retry": 0,
+      "error": "DETAIL"
+    },
+    "expected": {
+      "chat": [
+        "",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m",
+        "\u001b[48;5;75m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m",
+        "\u001b[48;5;75m {                                                                                                  \u001b[49m",
+        "\u001b[48;5;75m   \"z\": 1,                                                                                          \u001b[49m",
+        "\u001b[48;5;75m   \"a\": 2                                                                                           \u001b[49m",
+        "\u001b[48;5;75m }                                                                                                  \u001b[49m",
+        "\u001b[48;5;75m DETAIL                                                                                             \u001b[49m",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m"
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_tool_lifecycle_reuses_replayed_pending_rows",
+    "input": {
+      "op": "tool",
+      "seeded": false,
+      "isError": false
+    },
+    "expected": {
+      "chat": [
+        "",
+        "\u001b[48;5;74m                                                                                                    \u001b[49m",
+        "\u001b[48;5;74m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;5;74m                                                                                                    \u001b[49m",
+        "\u001b[48;5;74m {                                                                                                  \u001b[49m",
+        "\u001b[48;5;74m   \"z\": 2                                                                                           \u001b[49m",
+        "\u001b[48;5;74m }                                                                                                  \u001b[49m",
+        "\u001b[48;5;74m FINAL_RESULT                                                                                       \u001b[49m",
+        "\u001b[48;5;74m                                                                                                    \u001b[49m"
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_tool_lifecycle_reuses_replayed_pending_rows",
+    "input": {
+      "op": "tool",
+      "seeded": false,
+      "isError": true
+    },
+    "expected": {
+      "chat": [
+        "",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m",
+        "\u001b[48;5;75m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m",
+        "\u001b[48;5;75m {                                                                                                  \u001b[49m",
+        "\u001b[48;5;75m   \"z\": 2                                                                                           \u001b[49m",
+        "\u001b[48;5;75m }                                                                                                  \u001b[49m",
+        "\u001b[48;5;75m FINAL_RESULT                                                                                       \u001b[49m",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m"
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_tool_lifecycle_reuses_replayed_pending_rows",
+    "input": {
+      "op": "tool",
+      "seeded": true,
+      "isError": false
+    },
+    "expected": {
+      "chat": [
+        "",
+        "\u001b[48;5;74m                                                                                                    \u001b[49m",
+        "\u001b[48;5;74m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;5;74m                                                                                                    \u001b[49m",
+        "\u001b[48;5;74m {                                                                                                  \u001b[49m",
+        "\u001b[48;5;74m   \"z\": 1,                                                                                          \u001b[49m",
+        "\u001b[48;5;74m   \"a\": 2                                                                                           \u001b[49m",
+        "\u001b[48;5;74m }                                                                                                  \u001b[49m",
+        "\u001b[48;5;74m FINAL_RESULT                                                                                       \u001b[49m",
+        "\u001b[48;5;74m                                                                                                    \u001b[49m"
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_tool_lifecycle_reuses_replayed_pending_rows",
+    "input": {
+      "op": "tool",
+      "seeded": true,
+      "isError": true
+    },
+    "expected": {
+      "chat": [
+        "",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m",
+        "\u001b[48;5;75m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m",
+        "\u001b[48;5;75m {                                                                                                  \u001b[49m",
+        "\u001b[48;5;75m   \"z\": 1,                                                                                          \u001b[49m",
+        "\u001b[48;5;75m   \"a\": 2                                                                                           \u001b[49m",
+        "\u001b[48;5;75m }                                                                                                  \u001b[49m",
+        "\u001b[48;5;75m FINAL_RESULT                                                                                       \u001b[49m",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m"
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_unknown_tools_do_not_add_or_render_rows",
+    "input": {
+      "op": "unknown",
+      "phase": "update"
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_unknown_tools_do_not_add_or_render_rows",
+    "input": {
+      "op": "unknown",
+      "phase": "end"
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_agent_end_clears_transient_rows_before_shutdown",
+    "input": {
+      "op": "agent_end",
+      "loading": false,
+      "streaming": false,
+      "shutdown": false
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_agent_end_clears_transient_rows_before_shutdown",
+    "input": {
+      "op": "agent_end",
+      "loading": false,
+      "streaming": true,
+      "shutdown": false
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_agent_end_clears_transient_rows_before_shutdown",
+    "input": {
+      "op": "agent_end",
+      "loading": true,
+      "streaming": false,
+      "shutdown": false
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_agent_end_clears_transient_rows_before_shutdown",
+    "input": {
+      "op": "agent_end",
+      "loading": true,
+      "streaming": true,
+      "shutdown": false
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_agent_end_clears_transient_rows_before_shutdown",
+    "input": {
+      "op": "agent_end_progress_disabled",
+      "loading": false
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_agent_end_clears_transient_rows_before_shutdown",
+    "input": {
+      "op": "agent_end_progress_disabled",
+      "loading": true
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_thinking_toggle_and_label_keep_streaming_tail",
+    "input": {
+      "op": "thinking",
+      "hide": false,
+      "label": null
+    },
+    "expected": {
+      "chat": [
+        "\u001b]133;A\u0007",
+        " \u001b[3m\u001b[38;5;11mThinking...\u001b[39m\u001b[23m                                                                                        ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 ANSWER                                                                                             ",
+        "",
+        " \u001b[38;5;9mThinking blocks: hidden\u001b[39m                                                                            "
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": true
+    }
+  },
+  {
+    "test": "events_thinking_toggle_and_label_keep_streaming_tail",
+    "input": {
+      "op": "thinking",
+      "hide": false,
+      "label": ""
+    },
+    "expected": {
+      "chat": [
+        "\u001b]133;A\u0007",
+        "                                                                                                    ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 ANSWER                                                                                             ",
+        "",
+        " \u001b[38;5;9mThinking blocks: hidden\u001b[39m                                                                            "
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": true
+    }
+  },
+  {
+    "test": "events_thinking_toggle_and_label_keep_streaming_tail",
+    "input": {
+      "op": "thinking",
+      "hide": false,
+      "label": "CUSTOM_LABEL"
+    },
+    "expected": {
+      "chat": [
+        "\u001b]133;A\u0007",
+        " \u001b[3m\u001b[38;5;11mCUSTOM_LABEL\u001b[39m\u001b[23m                                                                                       ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 ANSWER                                                                                             ",
+        "",
+        " \u001b[38;5;9mThinking blocks: hidden\u001b[39m                                                                            "
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": true
+    }
+  },
+  {
+    "test": "events_thinking_toggle_and_label_keep_streaming_tail",
+    "input": {
+      "op": "thinking",
+      "hide": true,
+      "label": null
+    },
+    "expected": {
+      "chat": [
+        "\u001b]133;A\u0007",
+        " \u001b[3m\u001b[38;5;11mREASON\u001b[39m\u001b[23m                                                                                             ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 ANSWER                                                                                             ",
+        "",
+        " \u001b[38;5;9mThinking blocks: visible\u001b[39m                                                                           "
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": true
+    }
+  },
+  {
+    "test": "events_thinking_toggle_and_label_keep_streaming_tail",
+    "input": {
+      "op": "thinking",
+      "hide": true,
+      "label": ""
+    },
+    "expected": {
+      "chat": [
+        "\u001b]133;A\u0007",
+        " \u001b[3m\u001b[38;5;11mREASON\u001b[39m\u001b[23m                                                                                             ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 ANSWER                                                                                             ",
+        "",
+        " \u001b[38;5;9mThinking blocks: visible\u001b[39m                                                                           "
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": true
+    }
+  },
+  {
+    "test": "events_thinking_toggle_and_label_keep_streaming_tail",
+    "input": {
+      "op": "thinking",
+      "hide": true,
+      "label": "CUSTOM_LABEL"
+    },
+    "expected": {
+      "chat": [
+        "\u001b]133;A\u0007",
+        " \u001b[3m\u001b[38;5;11mREASON\u001b[39m\u001b[23m                                                                                             ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 ANSWER                                                                                             ",
+        "",
+        " \u001b[38;5;9mThinking blocks: visible\u001b[39m                                                                           "
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": true
+    }
+  },
+  {
+    "test": "events_queue_update_reads_current_session_display",
+    "input": {
+      "op": "queue",
+      "q": {
+        "steering": [],
+        "followUp": []
+      }
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_queue_update_reads_current_session_display",
+    "input": {
+      "op": "queue",
+      "q": {
+        "steering": [
+          "z",
+          "a",
+          "z"
+        ],
+        "followUp": [
+          "later"
+        ]
+      }
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [
+        "",
+        " \u001b[38;5;9mSteering: z\u001b[39m                                                                                        ",
+        " \u001b[38;5;9mSteering: a\u001b[39m                                                                                        ",
+        " \u001b[38;5;9mSteering: z\u001b[39m                                                                                        ",
+        " \u001b[38;5;9mFollow-up: later\u001b[39m                                                                                   ",
+        " \u001b[38;5;9m\u21b3  to edit all queued messages\u001b[39m                                                                     "
+      ],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_queue_update_reads_current_session_display",
+    "input": {
+      "op": "queue",
+      "q": {
+        "steering": [],
+        "followUp": [
+          "only"
+        ]
+      }
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [
+        "",
+        " \u001b[38;5;9mFollow-up: only\u001b[39m                                                                                    ",
+        " \u001b[38;5;9m\u21b3  to edit all queued messages\u001b[39m                                                                     "
+      ],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_thinking_level_refreshes_footer_and_border",
+    "input": {
+      "op": "level",
+      "bash": false
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_thinking_level_refreshes_footer_and_border",
+    "input": {
+      "op": "level",
+      "bash": true
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_thinking_toggle_keeps_the_default_streaming_tail",
+    "input": {
+      "op": "thinking_default",
+      "hide": false
+    },
+    "expected": {
+      "chat": [
+        "\u001b]133;A\u0007",
+        " \u001b[3m\u001b[38;5;11mThinking...\u001b[39m\u001b[23m                                                                                        ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 ANSWER                                                                                             ",
+        "",
+        " \u001b[38;5;9mThinking blocks: hidden\u001b[39m                                                                            "
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": true
+    }
+  },
+  {
+    "test": "events_thinking_toggle_keeps_the_default_streaming_tail",
+    "input": {
+      "op": "thinking_default",
+      "hide": true
+    },
+    "expected": {
+      "chat": [
+        "\u001b]133;A\u0007",
+        " \u001b[3m\u001b[38;5;11mREASON\u001b[39m\u001b[23m                                                                                             ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 ANSWER                                                                                             ",
+        "",
+        " \u001b[38;5;9mThinking blocks: visible\u001b[39m                                                                           "
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": true
+    }
+  },
+  {
+    "test": "events_message_end_ignores_user_and_unstarted_assistant",
+    "input": {
+      "op": "unstarted_end",
+      "role": "user"
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_message_end_ignores_user_and_unstarted_assistant",
+    "input": {
+      "op": "unstarted_end",
+      "role": "toolResult"
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_message_end_ignores_user_and_unstarted_assistant",
+    "input": {
+      "op": "unstarted_end",
+      "role": "custom"
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_message_end_ignores_user_and_unstarted_assistant",
+    "input": {
+      "op": "unstarted_end",
+      "role": "assistant"
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_renderer_fields_survive_progress_and_completion",
+    "input": {
+      "op": "details",
+      "kind": "missing",
+      "failed": false
+    },
+    "expected": {
+      "chat": [
+        "",
+        "\u001b[48;5;74m                                                                                                    \u001b[49m",
+        "\u001b[48;5;74m CALL                                                                                               \u001b[49m",
+        "\u001b[48;5;74m RESULT                                                                                             \u001b[49m",
+        "\u001b[48;5;74m                                                                                                    \u001b[49m"
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false,
+      "received": [
+        {
+          "detailsMissing": true,
+          "details": null,
+          "streaming": true,
+          "failed": false,
+          "signedZero": false
+        },
+        {
+          "detailsMissing": true,
+          "details": null,
+          "streaming": false,
+          "failed": false,
+          "signedZero": false
+        }
+      ]
+    }
+  },
+  {
+    "test": "events_renderer_fields_survive_progress_and_completion",
+    "input": {
+      "op": "details",
+      "kind": "missing",
+      "failed": true
+    },
+    "expected": {
+      "chat": [
+        "",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m",
+        "\u001b[48;5;75m CALL                                                                                               \u001b[49m",
+        "\u001b[48;5;75m RESULT                                                                                             \u001b[49m",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m"
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false,
+      "received": [
+        {
+          "detailsMissing": true,
+          "details": null,
+          "streaming": true,
+          "failed": false,
+          "signedZero": false
+        },
+        {
+          "detailsMissing": true,
+          "details": null,
+          "streaming": false,
+          "failed": true,
+          "signedZero": false
+        }
+      ]
+    }
+  },
+  {
+    "test": "events_renderer_fields_survive_progress_and_completion",
+    "input": {
+      "op": "details",
+      "kind": "null",
+      "failed": false
+    },
+    "expected": {
+      "chat": [
+        "",
+        "\u001b[48;5;74m                                                                                                    \u001b[49m",
+        "\u001b[48;5;74m CALL                                                                                               \u001b[49m",
+        "\u001b[48;5;74m RESULT                                                                                             \u001b[49m",
+        "\u001b[48;5;74m                                                                                                    \u001b[49m"
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false,
+      "received": [
+        {
+          "detailsMissing": false,
+          "details": null,
+          "streaming": true,
+          "failed": false,
+          "signedZero": false
+        },
+        {
+          "detailsMissing": false,
+          "details": null,
+          "streaming": false,
+          "failed": false,
+          "signedZero": false
+        }
+      ]
+    }
+  },
+  {
+    "test": "events_renderer_fields_survive_progress_and_completion",
+    "input": {
+      "op": "details",
+      "kind": "null",
+      "failed": true
+    },
+    "expected": {
+      "chat": [
+        "",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m",
+        "\u001b[48;5;75m CALL                                                                                               \u001b[49m",
+        "\u001b[48;5;75m RESULT                                                                                             \u001b[49m",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m"
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false,
+      "received": [
+        {
+          "detailsMissing": false,
+          "details": null,
+          "streaming": true,
+          "failed": false,
+          "signedZero": false
+        },
+        {
+          "detailsMissing": false,
+          "details": null,
+          "streaming": false,
+          "failed": true,
+          "signedZero": false
+        }
+      ]
+    }
+  },
+  {
+    "test": "events_renderer_fields_survive_progress_and_completion",
+    "input": {
+      "op": "details",
+      "kind": "string",
+      "failed": false
+    },
+    "expected": {
+      "chat": [
+        "",
+        "\u001b[48;5;74m                                                                                                    \u001b[49m",
+        "\u001b[48;5;74m CALL                                                                                               \u001b[49m",
+        "\u001b[48;5;74m RESULT                                                                                             \u001b[49m",
+        "\u001b[48;5;74m                                                                                                    \u001b[49m"
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false,
+      "received": [
+        {
+          "detailsMissing": false,
+          "details": "detail",
+          "streaming": true,
+          "failed": false,
+          "signedZero": false
+        },
+        {
+          "detailsMissing": false,
+          "details": "detail",
+          "streaming": false,
+          "failed": false,
+          "signedZero": false
+        }
+      ]
+    }
+  },
+  {
+    "test": "events_renderer_fields_survive_progress_and_completion",
+    "input": {
+      "op": "details",
+      "kind": "string",
+      "failed": true
+    },
+    "expected": {
+      "chat": [
+        "",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m",
+        "\u001b[48;5;75m CALL                                                                                               \u001b[49m",
+        "\u001b[48;5;75m RESULT                                                                                             \u001b[49m",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m"
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false,
+      "received": [
+        {
+          "detailsMissing": false,
+          "details": "detail",
+          "streaming": true,
+          "failed": false,
+          "signedZero": false
+        },
+        {
+          "detailsMissing": false,
+          "details": "detail",
+          "streaming": false,
+          "failed": true,
+          "signedZero": false
+        }
+      ]
+    }
+  },
+  {
+    "test": "events_renderer_fields_survive_progress_and_completion",
+    "input": {
+      "op": "details",
+      "kind": "number",
+      "failed": false
+    },
+    "expected": {
+      "chat": [
+        "",
+        "\u001b[48;5;74m                                                                                                    \u001b[49m",
+        "\u001b[48;5;74m CALL                                                                                               \u001b[49m",
+        "\u001b[48;5;74m RESULT                                                                                             \u001b[49m",
+        "\u001b[48;5;74m                                                                                                    \u001b[49m"
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false,
+      "received": [
+        {
+          "detailsMissing": false,
+          "details": 0,
+          "streaming": true,
+          "failed": false,
+          "signedZero": true
+        },
+        {
+          "detailsMissing": false,
+          "details": 0,
+          "streaming": false,
+          "failed": false,
+          "signedZero": true
+        }
+      ]
+    }
+  },
+  {
+    "test": "events_renderer_fields_survive_progress_and_completion",
+    "input": {
+      "op": "details",
+      "kind": "number",
+      "failed": true
+    },
+    "expected": {
+      "chat": [
+        "",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m",
+        "\u001b[48;5;75m CALL                                                                                               \u001b[49m",
+        "\u001b[48;5;75m RESULT                                                                                             \u001b[49m",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m"
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false,
+      "received": [
+        {
+          "detailsMissing": false,
+          "details": 0,
+          "streaming": true,
+          "failed": false,
+          "signedZero": true
+        },
+        {
+          "detailsMissing": false,
+          "details": 0,
+          "streaming": false,
+          "failed": true,
+          "signedZero": true
+        }
+      ]
+    }
+  },
+  {
+    "test": "events_renderer_fields_survive_progress_and_completion",
+    "input": {
+      "op": "details",
+      "kind": "boolean",
+      "failed": false
+    },
+    "expected": {
+      "chat": [
+        "",
+        "\u001b[48;5;74m                                                                                                    \u001b[49m",
+        "\u001b[48;5;74m CALL                                                                                               \u001b[49m",
+        "\u001b[48;5;74m RESULT                                                                                             \u001b[49m",
+        "\u001b[48;5;74m                                                                                                    \u001b[49m"
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false,
+      "received": [
+        {
+          "detailsMissing": false,
+          "details": false,
+          "streaming": true,
+          "failed": false,
+          "signedZero": false
+        },
+        {
+          "detailsMissing": false,
+          "details": false,
+          "streaming": false,
+          "failed": false,
+          "signedZero": false
+        }
+      ]
+    }
+  },
+  {
+    "test": "events_renderer_fields_survive_progress_and_completion",
+    "input": {
+      "op": "details",
+      "kind": "boolean",
+      "failed": true
+    },
+    "expected": {
+      "chat": [
+        "",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m",
+        "\u001b[48;5;75m CALL                                                                                               \u001b[49m",
+        "\u001b[48;5;75m RESULT                                                                                             \u001b[49m",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m"
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false,
+      "received": [
+        {
+          "detailsMissing": false,
+          "details": false,
+          "streaming": true,
+          "failed": false,
+          "signedZero": false
+        },
+        {
+          "detailsMissing": false,
+          "details": false,
+          "streaming": false,
+          "failed": true,
+          "signedZero": false
+        }
+      ]
+    }
+  },
+  {
+    "test": "events_renderer_fields_survive_progress_and_completion",
+    "input": {
+      "op": "details",
+      "kind": "object",
+      "failed": false
+    },
+    "expected": {
+      "chat": [
+        "",
+        "\u001b[48;5;74m                                                                                                    \u001b[49m",
+        "\u001b[48;5;74m CALL                                                                                               \u001b[49m",
+        "\u001b[48;5;74m RESULT                                                                                             \u001b[49m",
+        "\u001b[48;5;74m                                                                                                    \u001b[49m"
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false,
+      "received": [
+        {
+          "detailsMissing": false,
+          "details": {
+            "z": 1,
+            "a": 2
+          },
+          "streaming": true,
+          "failed": false,
+          "signedZero": false
+        },
+        {
+          "detailsMissing": false,
+          "details": {
+            "z": 1,
+            "a": 2
+          },
+          "streaming": false,
+          "failed": false,
+          "signedZero": false
+        }
+      ]
+    }
+  },
+  {
+    "test": "events_renderer_fields_survive_progress_and_completion",
+    "input": {
+      "op": "details",
+      "kind": "object",
+      "failed": true
+    },
+    "expected": {
+      "chat": [
+        "",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m",
+        "\u001b[48;5;75m CALL                                                                                               \u001b[49m",
+        "\u001b[48;5;75m RESULT                                                                                             \u001b[49m",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m"
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false,
+      "received": [
+        {
+          "detailsMissing": false,
+          "details": {
+            "z": 1,
+            "a": 2
+          },
+          "streaming": true,
+          "failed": false,
+          "signedZero": false
+        },
+        {
+          "detailsMissing": false,
+          "details": {
+            "z": 1,
+            "a": 2
+          },
+          "streaming": false,
+          "failed": true,
+          "signedZero": false
+        }
+      ]
+    }
+  },
+  {
+    "test": "events_renderer_fields_survive_progress_and_completion",
+    "input": {
+      "op": "details",
+      "kind": "array",
+      "failed": false
+    },
+    "expected": {
+      "chat": [
+        "",
+        "\u001b[48;5;74m                                                                                                    \u001b[49m",
+        "\u001b[48;5;74m CALL                                                                                               \u001b[49m",
+        "\u001b[48;5;74m RESULT                                                                                             \u001b[49m",
+        "\u001b[48;5;74m                                                                                                    \u001b[49m"
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false,
+      "received": [
+        {
+          "detailsMissing": false,
+          "details": [
+            1,
+            2
+          ],
+          "streaming": true,
+          "failed": false,
+          "signedZero": false
+        },
+        {
+          "detailsMissing": false,
+          "details": [
+            1,
+            2
+          ],
+          "streaming": false,
+          "failed": false,
+          "signedZero": false
+        }
+      ]
+    }
+  },
+  {
+    "test": "events_renderer_fields_survive_progress_and_completion",
+    "input": {
+      "op": "details",
+      "kind": "array",
+      "failed": true
+    },
+    "expected": {
+      "chat": [
+        "",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m",
+        "\u001b[48;5;75m CALL                                                                                               \u001b[49m",
+        "\u001b[48;5;75m RESULT                                                                                             \u001b[49m",
+        "\u001b[48;5;75m                                                                                                    \u001b[49m"
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false,
+      "received": [
+        {
+          "detailsMissing": false,
+          "details": [
+            1,
+            2
+          ],
+          "streaming": true,
+          "failed": false,
+          "signedZero": false
+        },
+        {
+          "detailsMissing": false,
+          "details": [
+            1,
+            2
+          ],
+          "streaming": false,
+          "failed": true,
+          "signedZero": false
+        }
+      ]
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/work/project",
+      "name": null
+    },
+    "expected": {
+      "title": "Maestro - project"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/work/project",
+      "name": ""
+    },
+    "expected": {
+      "title": "Maestro - project"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/work/project",
+      "name": "named"
+    },
+    "expected": {
+      "title": "Maestro - named - project"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/work/project",
+      "name": "\u754c\u001b[31m"
+    },
+    "expected": {
+      "title": "Maestro - \u754c\u001b[31m - project"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/work/project///",
+      "name": null
+    },
+    "expected": {
+      "title": "Maestro - project"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/work/project///",
+      "name": ""
+    },
+    "expected": {
+      "title": "Maestro - project"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/work/project///",
+      "name": "named"
+    },
+    "expected": {
+      "title": "Maestro - named - project"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/work/project///",
+      "name": "\u754c\u001b[31m"
+    },
+    "expected": {
+      "title": "Maestro - \u754c\u001b[31m - project"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/",
+      "name": null
+    },
+    "expected": {
+      "title": "Maestro - "
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/",
+      "name": ""
+    },
+    "expected": {
+      "title": "Maestro - "
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/",
+      "name": "named"
+    },
+    "expected": {
+      "title": "Maestro - named - "
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/",
+      "name": "\u754c\u001b[31m"
+    },
+    "expected": {
+      "title": "Maestro - \u754c\u001b[31m - "
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "relative",
+      "name": null
+    },
+    "expected": {
+      "title": "Maestro - relative"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "relative",
+      "name": ""
+    },
+    "expected": {
+      "title": "Maestro - relative"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "relative",
+      "name": "named"
+    },
+    "expected": {
+      "title": "Maestro - named - relative"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "relative",
+      "name": "\u754c\u001b[31m"
+    },
+    "expected": {
+      "title": "Maestro - \u754c\u001b[31m - relative"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "relative/",
+      "name": null
+    },
+    "expected": {
+      "title": "Maestro - relative"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "relative/",
+      "name": ""
+    },
+    "expected": {
+      "title": "Maestro - relative"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "relative/",
+      "name": "named"
+    },
+    "expected": {
+      "title": "Maestro - named - relative"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "relative/",
+      "name": "\u754c\u001b[31m"
+    },
+    "expected": {
+      "title": "Maestro - \u754c\u001b[31m - relative"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/work/a/..",
+      "name": null
+    },
+    "expected": {
+      "title": "Maestro - .."
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/work/a/..",
+      "name": ""
+    },
+    "expected": {
+      "title": "Maestro - .."
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/work/a/..",
+      "name": "named"
+    },
+    "expected": {
+      "title": "Maestro - named - .."
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/work/a/..",
+      "name": "\u754c\u001b[31m"
+    },
+    "expected": {
+      "title": "Maestro - \u754c\u001b[31m - .."
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/work/\u754c",
+      "name": null
+    },
+    "expected": {
+      "title": "Maestro - \u754c"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/work/\u754c",
+      "name": ""
+    },
+    "expected": {
+      "title": "Maestro - \u754c"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/work/\u754c",
+      "name": "named"
+    },
+    "expected": {
+      "title": "Maestro - named - \u754c"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/work/\u754c",
+      "name": "\u754c\u001b[31m"
+    },
+    "expected": {
+      "title": "Maestro - \u754c\u001b[31m - \u754c"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "C:\\work\\project",
+      "name": null
+    },
+    "expected": {
+      "title": "Maestro - C:\\work\\project"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "C:\\work\\project",
+      "name": ""
+    },
+    "expected": {
+      "title": "Maestro - C:\\work\\project"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "C:\\work\\project",
+      "name": "named"
+    },
+    "expected": {
+      "title": "Maestro - named - C:\\work\\project"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "C:\\work\\project",
+      "name": "\u754c\u001b[31m"
+    },
+    "expected": {
+      "title": "Maestro - \u754c\u001b[31m - C:\\work\\project"
+    }
+  },
+  {
+    "test": "events_title_keeps_the_session_name_producers_field_domain",
+    "input": {
+      "op": "title-domain",
+      "kind": "missing",
+      "name": null
+    },
+    "expected": {
+      "title": "Maestro - project"
+    }
+  },
+  {
+    "test": "events_title_keeps_the_session_name_producers_field_domain",
+    "input": {
+      "op": "title-domain",
+      "kind": "null",
+      "name": null
+    },
+    "expected": {
+      "title": "Maestro - project"
+    }
+  },
+  {
+    "test": "events_title_keeps_the_session_name_producers_field_domain",
+    "input": {
+      "op": "title-domain",
+      "kind": "string",
+      "name": "  \ufefftitle\ufeff  "
+    },
+    "expected": {
+      "title": "Maestro - title - project"
+    }
+  },
+  {
+    "test": "events_title_keeps_the_session_name_producers_field_domain",
+    "input": {
+      "op": "title-domain",
+      "kind": "number",
+      "name": 7
+    },
+    "expected": {
+      "errorKind": "invalid-session-name"
+    }
+  },
+  {
+    "test": "events_title_keeps_the_session_name_producers_field_domain",
+    "input": {
+      "op": "title-domain",
+      "kind": "boolean",
+      "name": true
+    },
+    "expected": {
+      "errorKind": "invalid-session-name"
+    }
+  },
+  {
+    "test": "events_title_keeps_the_session_name_producers_field_domain",
+    "input": {
+      "op": "title-domain",
+      "kind": "object",
+      "name": {}
+    },
+    "expected": {
+      "errorKind": "invalid-session-name"
+    }
+  },
+  {
+    "test": "events_title_keeps_the_session_name_producers_field_domain",
+    "input": {
+      "op": "title-domain",
+      "kind": "array",
+      "name": [
+        "name"
+      ]
+    },
+    "expected": {
+      "errorKind": "invalid-session-name"
+    }
+  }
+]

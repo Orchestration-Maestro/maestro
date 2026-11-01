@@ -1,0 +1,74 @@
+[
+  {
+    "test": "hotkeys_capitalize_the_start_of_each_extension_key_part",
+    "input": {
+      "key": ""
+    },
+    "expected": {
+      "result": ""
+    }
+  },
+  {
+    "test": "hotkeys_capitalize_the_start_of_each_extension_key_part",
+    "input": {
+      "key": "ctrl+alt+x"
+    },
+    "expected": {
+      "result": "Ctrl+Alt+X"
+    }
+  },
+  {
+    "test": "hotkeys_capitalize_the_start_of_each_extension_key_part",
+    "input": {
+      "key": "alt+_word"
+    },
+    "expected": {
+      "result": "Alt+_word"
+    }
+  },
+  {
+    "test": "hotkeys_capitalize_the_start_of_each_extension_key_part",
+    "input": {
+      "key": "alt+9word"
+    },
+    "expected": {
+      "result": "Alt+9word"
+    }
+  },
+  {
+    "test": "hotkeys_capitalize_the_start_of_each_extension_key_part",
+    "input": {
+      "key": "ctrl++a//"
+    },
+    "expected": {
+      "result": "Ctrl++A//"
+    }
+  },
+  {
+    "test": "hotkeys_capitalize_the_start_of_each_extension_key_part",
+    "input": {
+      "key": "éclair+ßeta"
+    },
+    "expected": {
+      "result": "Éclair+SSeta"
+    }
+  },
+  {
+    "test": "hotkeys_capitalize_the_start_of_each_extension_key_part",
+    "input": {
+      "key": "éclair"
+    },
+    "expected": {
+      "result": "Éclair"
+    }
+  },
+  {
+    "test": "hotkeys_capitalize_the_start_of_each_extension_key_part",
+    "input": {
+      "key": "foo-bar.baz/_word"
+    },
+    "expected": {
+      "result": "Foo-bar.baz/_word"
+    }
+  }
+]

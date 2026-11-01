@@ -15,8 +15,6 @@ use maestro_tui::{Input, tui::LocalFuture};
 use std::{
     cell::{Cell, RefCell},
     error::Error,
-    future::Future,
-    pin::Pin,
     rc::{Rc, Weak},
     time::Duration,
 };
@@ -26,22 +24,9 @@ mod mutations;
 mod rename;
 /// Owned asynchronous name-save callable.
 type RenameSession = Rc<dyn Fn(&str, &str) -> LocalFuture>;
-/// Owned discovery progress notification.
-pub type SessionListProgress = Rc<dyn Fn(usize, usize)>;
-/// Caller-owned asynchronous discovery result.
-pub type SessionsFuture =
-    Pin<Box<dyn Future<Output = Result<Vec<SessionInfo>, Box<dyn Error>>> + 'static>>;
-/// Session discovery factory, invoked before scheduling its future.
-pub type SessionsLoader = Rc<dyn Fn(Option<SessionListProgress>) -> SessionsFuture>;
-/// Caller notifications for selection, cancellation and explicit exit.
-pub struct SessionSelectorCallbacks {
-    /// Selected authored session path.
-    pub on_select: Rc<dyn Fn(&str)>,
-    /// Cancellation notification.
-    pub on_cancel: Rc<dyn Fn()>,
-    /// Explicit exit notification.
-    pub on_exit: Rc<dyn Fn()>,
-}
+pub use maestro_app::presentation_data::input_selectors::{
+    SessionListProgress, SessionSelectorCallbacks, SessionsFuture, SessionsLoader,
+};
 /// Supplied discovery presentation and host observations.
 pub struct SessionSelectorOptions {
     /// Retained live manager for named filtering; omitted values load application defaults.

@@ -1,8 +1,18 @@
+#[cfg(not(target_arch = "wasm32"))]
+#[path = "model_history_projection/root_routes.rs"]
+mod root_routes;
+
 #[cfg(test)]
 mod tests {
     use crate::clock::epoch_millis;
     use maestro_models::*;
     use serde_json::json;
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn history_projections_keep_root_specific_defaults() -> crate::chat::TestResult {
+        crate::runtime::run(super::root_routes::check())
+    }
 
     fn model() -> Model {
         Model {
@@ -581,6 +591,8 @@ mod tests {
             panic!()
         };
         call.arguments
+            .as_object_mut()
+            .expect("projected object root")
             .insert("nested".into(), json!({"changed":true}));
         assistant.response_id = Some("changed".into());
         let Message::User(user) = &mut output[0] else {
@@ -608,7 +620,8 @@ mod tests {
             tools: Some(vec![Tool {
                 name: "first".into(),
                 description: "supplied".into(),
-                parameters: json!({"type":"object", "properties":{"nested":{"type":"object"}}}),
+                parameters: json!({"type":"object", "properties":{"nested":{"type":"object"}}})
+                    .into(),
             }]),
         };
         let original = context.clone();

@@ -1,0 +1,2934 @@
+[
+  {
+    "test": "compaction_labels_keep_reason_live_keys_and_editor",
+    "input": {
+      "op": "start-end",
+      "reason": "manual",
+      "progress": false,
+      "previous": true
+    },
+    "expected": {
+      "start": {
+        "status": [
+          "",
+          " @accent@⠋\u001b[39m @muted@Compacting context... (escape to cancel)\u001b[39m                                                         "
+        ],
+        "chat": [],
+        "progress": [],
+        "timers": [
+          80
+        ],
+        "editor": "draft"
+      },
+      "end": {
+        "status": [],
+        "chat": [
+          "",
+          " @error@Error: Compaction cancelled\u001b[39m                                                                        ",
+          ""
+        ],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      },
+      "restored": true
+    }
+  },
+  {
+    "test": "compaction_labels_keep_reason_live_keys_and_editor",
+    "input": {
+      "op": "start-end",
+      "reason": "manual",
+      "progress": true,
+      "previous": true
+    },
+    "expected": {
+      "start": {
+        "status": [
+          "",
+          " @accent@⠋\u001b[39m @muted@Compacting context... (escape to cancel)\u001b[39m                                                         "
+        ],
+        "chat": [],
+        "progress": [
+          true
+        ],
+        "timers": [
+          80
+        ],
+        "editor": "draft"
+      },
+      "end": {
+        "status": [],
+        "chat": [
+          "",
+          " @error@Error: Compaction cancelled\u001b[39m                                                                        ",
+          ""
+        ],
+        "progress": [
+          true,
+          false
+        ],
+        "timers": [],
+        "editor": "draft"
+      },
+      "restored": true
+    }
+  },
+  {
+    "test": "compaction_labels_keep_reason_live_keys_and_editor",
+    "input": {
+      "op": "start-end",
+      "reason": "threshold",
+      "progress": false,
+      "previous": true
+    },
+    "expected": {
+      "start": {
+        "status": [
+          "",
+          " @accent@⠋\u001b[39m @muted@Auto-compacting... (escape to cancel)\u001b[39m                                                            "
+        ],
+        "chat": [],
+        "progress": [],
+        "timers": [
+          80
+        ],
+        "editor": "draft"
+      },
+      "end": {
+        "status": [],
+        "chat": [
+          "",
+          " @dim@Auto-compaction cancelled\u001b[39m                                                                          "
+        ],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      },
+      "restored": true
+    }
+  },
+  {
+    "test": "compaction_labels_keep_reason_live_keys_and_editor",
+    "input": {
+      "op": "start-end",
+      "reason": "threshold",
+      "progress": true,
+      "previous": true
+    },
+    "expected": {
+      "start": {
+        "status": [
+          "",
+          " @accent@⠋\u001b[39m @muted@Auto-compacting... (escape to cancel)\u001b[39m                                                            "
+        ],
+        "chat": [],
+        "progress": [
+          true
+        ],
+        "timers": [
+          80
+        ],
+        "editor": "draft"
+      },
+      "end": {
+        "status": [],
+        "chat": [
+          "",
+          " @dim@Auto-compaction cancelled\u001b[39m                                                                          "
+        ],
+        "progress": [
+          true,
+          false
+        ],
+        "timers": [],
+        "editor": "draft"
+      },
+      "restored": true
+    }
+  },
+  {
+    "test": "compaction_labels_keep_reason_live_keys_and_editor",
+    "input": {
+      "op": "start-end",
+      "reason": "overflow",
+      "progress": false,
+      "previous": true
+    },
+    "expected": {
+      "start": {
+        "status": [
+          "",
+          " @accent@⠋\u001b[39m @muted@Context overflow detected, Auto-compacting... (escape to cancel)\u001b[39m                                 "
+        ],
+        "chat": [],
+        "progress": [],
+        "timers": [
+          80
+        ],
+        "editor": "draft"
+      },
+      "end": {
+        "status": [],
+        "chat": [
+          "",
+          " @dim@Auto-compaction cancelled\u001b[39m                                                                          "
+        ],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      },
+      "restored": true
+    }
+  },
+  {
+    "test": "compaction_labels_keep_reason_live_keys_and_editor",
+    "input": {
+      "op": "start-end",
+      "reason": "overflow",
+      "progress": true,
+      "previous": true
+    },
+    "expected": {
+      "start": {
+        "status": [
+          "",
+          " @accent@⠋\u001b[39m @muted@Context overflow detected, Auto-compacting... (escape to cancel)\u001b[39m                                 "
+        ],
+        "chat": [],
+        "progress": [
+          true
+        ],
+        "timers": [
+          80
+        ],
+        "editor": "draft"
+      },
+      "end": {
+        "status": [],
+        "chat": [
+          "",
+          " @dim@Auto-compaction cancelled\u001b[39m                                                                          "
+        ],
+        "progress": [
+          true,
+          false
+        ],
+        "timers": [],
+        "editor": "draft"
+      },
+      "restored": true
+    }
+  },
+  {
+    "test": "compaction_completion_keeps_seeded_replay_and_one_summary",
+    "input": {
+      "op": "compaction-outcome",
+      "reason": "manual",
+      "outcome": "aborted",
+      "willRetry": false
+    },
+    "expected": {
+      "chat": [
+        "",
+        " @error@Error: Compaction cancelled\u001b[39m                                                                        ",
+        ""
+      ],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_completion_keeps_seeded_replay_and_one_summary",
+    "input": {
+      "op": "compaction-outcome",
+      "reason": "manual",
+      "outcome": "result",
+      "willRetry": false
+    },
+    "expected": {
+      "chat": [
+        "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+        "\u001b[48;5;71m \u001b[38;5;12mHISTORY_ALPHA\u001b[39m                                                                                      \u001b[49m",
+        "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+        "",
+        "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+        "\u001b[48;5;71m \u001b[38;5;12mHISTORY_BETA\u001b[39m                                                                                       \u001b[49m",
+        "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+        "",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m",
+        "\u001b[48;5;72m \u001b[38;5;14m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m",
+        "\u001b[48;5;72m \u001b[1m\u001b[38;5;13mCompacted from 123 tokens\u001b[39m\u001b[22m                                                                          \u001b[49m",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m",
+        "\u001b[48;5;72m \u001b[38;5;13msummary\u001b[39m                                                                                            \u001b[49m",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m"
+      ],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_completion_keeps_seeded_replay_and_one_summary",
+    "input": {
+      "op": "compaction-outcome",
+      "reason": "manual",
+      "outcome": "error",
+      "willRetry": false
+    },
+    "expected": {
+      "chat": [
+        "",
+        " @error@Error: provider failure\u001b[39m                                                                            ",
+        ""
+      ],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_completion_keeps_seeded_replay_and_one_summary",
+    "input": {
+      "op": "compaction-outcome",
+      "reason": "manual",
+      "outcome": "empty",
+      "willRetry": false
+    },
+    "expected": {
+      "chat": [],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_completion_keeps_seeded_replay_and_one_summary",
+    "input": {
+      "op": "compaction-outcome",
+      "reason": "manual",
+      "outcome": "empty-error",
+      "willRetry": false
+    },
+    "expected": {
+      "chat": [],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_completion_keeps_seeded_replay_and_one_summary",
+    "input": {
+      "op": "compaction-outcome",
+      "reason": "threshold",
+      "outcome": "aborted",
+      "willRetry": false
+    },
+    "expected": {
+      "chat": [
+        "",
+        " @dim@Auto-compaction cancelled\u001b[39m                                                                          "
+      ],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_completion_keeps_seeded_replay_and_one_summary",
+    "input": {
+      "op": "compaction-outcome",
+      "reason": "threshold",
+      "outcome": "result",
+      "willRetry": false
+    },
+    "expected": {
+      "chat": [
+        "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+        "\u001b[48;5;71m \u001b[38;5;12mHISTORY_ALPHA\u001b[39m                                                                                      \u001b[49m",
+        "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+        "",
+        "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+        "\u001b[48;5;71m \u001b[38;5;12mHISTORY_BETA\u001b[39m                                                                                       \u001b[49m",
+        "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+        "",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m",
+        "\u001b[48;5;72m \u001b[38;5;14m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m",
+        "\u001b[48;5;72m \u001b[1m\u001b[38;5;13mCompacted from 123 tokens\u001b[39m\u001b[22m                                                                          \u001b[49m",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m",
+        "\u001b[48;5;72m \u001b[38;5;13msummary\u001b[39m                                                                                            \u001b[49m",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m"
+      ],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_completion_keeps_seeded_replay_and_one_summary",
+    "input": {
+      "op": "compaction-outcome",
+      "reason": "threshold",
+      "outcome": "error",
+      "willRetry": false
+    },
+    "expected": {
+      "chat": [
+        "",
+        " @error@provider failure\u001b[39m                                                                                   "
+      ],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_completion_keeps_seeded_replay_and_one_summary",
+    "input": {
+      "op": "compaction-outcome",
+      "reason": "threshold",
+      "outcome": "empty",
+      "willRetry": false
+    },
+    "expected": {
+      "chat": [],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_completion_keeps_seeded_replay_and_one_summary",
+    "input": {
+      "op": "compaction-outcome",
+      "reason": "threshold",
+      "outcome": "empty-error",
+      "willRetry": false
+    },
+    "expected": {
+      "chat": [],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_completion_keeps_seeded_replay_and_one_summary",
+    "input": {
+      "op": "compaction-outcome",
+      "reason": "overflow",
+      "outcome": "aborted",
+      "willRetry": false
+    },
+    "expected": {
+      "chat": [
+        "",
+        " @dim@Auto-compaction cancelled\u001b[39m                                                                          "
+      ],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_completion_keeps_seeded_replay_and_one_summary",
+    "input": {
+      "op": "compaction-outcome",
+      "reason": "overflow",
+      "outcome": "result",
+      "willRetry": true
+    },
+    "expected": {
+      "chat": [
+        "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+        "\u001b[48;5;71m \u001b[38;5;12mHISTORY_ALPHA\u001b[39m                                                                                      \u001b[49m",
+        "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+        "",
+        "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+        "\u001b[48;5;71m \u001b[38;5;12mHISTORY_BETA\u001b[39m                                                                                       \u001b[49m",
+        "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+        "",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m",
+        "\u001b[48;5;72m \u001b[38;5;14m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m",
+        "\u001b[48;5;72m \u001b[1m\u001b[38;5;13mCompacted from 123 tokens\u001b[39m\u001b[22m                                                                          \u001b[49m",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m",
+        "\u001b[48;5;72m \u001b[38;5;13msummary\u001b[39m                                                                                            \u001b[49m",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m"
+      ],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_completion_keeps_seeded_replay_and_one_summary",
+    "input": {
+      "op": "compaction-outcome",
+      "reason": "overflow",
+      "outcome": "error",
+      "willRetry": false
+    },
+    "expected": {
+      "chat": [
+        "",
+        " @error@provider failure\u001b[39m                                                                                   "
+      ],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_completion_keeps_seeded_replay_and_one_summary",
+    "input": {
+      "op": "compaction-outcome",
+      "reason": "overflow",
+      "outcome": "empty",
+      "willRetry": false
+    },
+    "expected": {
+      "chat": [],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_completion_keeps_seeded_replay_and_one_summary",
+    "input": {
+      "op": "compaction-outcome",
+      "reason": "overflow",
+      "outcome": "empty-error",
+      "willRetry": false
+    },
+    "expected": {
+      "chat": [],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "retry_countdown_interrupts_then_restores_previous_action",
+    "input": {
+      "op": "retry-countdown",
+      "delayMs": 0,
+      "success": false
+    },
+    "expected": {
+      "frames": [
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in -1s... (escape to cancel)\u001b[39m                                                      "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in -1s... (escape to cancel)\u001b[39m                                                      "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in -1s... (escape to cancel)\u001b[39m                                                      "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in -1s... (escape to cancel)\u001b[39m                                                      "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        }
+      ],
+      "end": {
+        "status": [],
+        "chat": [
+          "",
+          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 ",
+          ""
+        ],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      }
+    }
+  },
+  {
+    "test": "retry_countdown_interrupts_then_restores_previous_action",
+    "input": {
+      "op": "retry-countdown",
+      "delayMs": 0,
+      "success": true
+    },
+    "expected": {
+      "frames": [
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in -1s... (escape to cancel)\u001b[39m                                                      "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in -1s... (escape to cancel)\u001b[39m                                                      "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in -1s... (escape to cancel)\u001b[39m                                                      "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in -1s... (escape to cancel)\u001b[39m                                                      "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        }
+      ],
+      "end": {
+        "status": [],
+        "chat": [],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      }
+    }
+  },
+  {
+    "test": "retry_countdown_interrupts_then_restores_previous_action",
+    "input": {
+      "op": "retry-countdown",
+      "delayMs": 1,
+      "success": false
+    },
+    "expected": {
+      "frames": [
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 1s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        }
+      ],
+      "end": {
+        "status": [],
+        "chat": [
+          "",
+          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 ",
+          ""
+        ],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      }
+    }
+  },
+  {
+    "test": "retry_countdown_interrupts_then_restores_previous_action",
+    "input": {
+      "op": "retry-countdown",
+      "delayMs": 1,
+      "success": true
+    },
+    "expected": {
+      "frames": [
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 1s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        }
+      ],
+      "end": {
+        "status": [],
+        "chat": [],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      }
+    }
+  },
+  {
+    "test": "retry_countdown_interrupts_then_restores_previous_action",
+    "input": {
+      "op": "retry-countdown",
+      "delayMs": 999,
+      "success": false
+    },
+    "expected": {
+      "frames": [
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 1s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        }
+      ],
+      "end": {
+        "status": [],
+        "chat": [
+          "",
+          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 ",
+          ""
+        ],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      }
+    }
+  },
+  {
+    "test": "retry_countdown_interrupts_then_restores_previous_action",
+    "input": {
+      "op": "retry-countdown",
+      "delayMs": 999,
+      "success": true
+    },
+    "expected": {
+      "frames": [
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 1s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        }
+      ],
+      "end": {
+        "status": [],
+        "chat": [],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      }
+    }
+  },
+  {
+    "test": "retry_countdown_interrupts_then_restores_previous_action",
+    "input": {
+      "op": "retry-countdown",
+      "delayMs": 1000,
+      "success": false
+    },
+    "expected": {
+      "frames": [
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 1s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        }
+      ],
+      "end": {
+        "status": [],
+        "chat": [
+          "",
+          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 ",
+          ""
+        ],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      }
+    }
+  },
+  {
+    "test": "retry_countdown_interrupts_then_restores_previous_action",
+    "input": {
+      "op": "retry-countdown",
+      "delayMs": 1000,
+      "success": true
+    },
+    "expected": {
+      "frames": [
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 1s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        }
+      ],
+      "end": {
+        "status": [],
+        "chat": [],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      }
+    }
+  },
+  {
+    "test": "retry_countdown_interrupts_then_restores_previous_action",
+    "input": {
+      "op": "retry-countdown",
+      "delayMs": 1001,
+      "success": false
+    },
+    "expected": {
+      "frames": [
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 2s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 1s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        }
+      ],
+      "end": {
+        "status": [],
+        "chat": [
+          "",
+          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 ",
+          ""
+        ],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      }
+    }
+  },
+  {
+    "test": "retry_countdown_interrupts_then_restores_previous_action",
+    "input": {
+      "op": "retry-countdown",
+      "delayMs": 1001,
+      "success": true
+    },
+    "expected": {
+      "frames": [
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 2s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 1s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        }
+      ],
+      "end": {
+        "status": [],
+        "chat": [],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      }
+    }
+  },
+  {
+    "test": "retry_countdown_interrupts_then_restores_previous_action",
+    "input": {
+      "op": "retry-countdown",
+      "delayMs": 2500,
+      "success": false
+    },
+    "expected": {
+      "frames": [
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 3s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 2s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 1s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        }
+      ],
+      "end": {
+        "status": [],
+        "chat": [
+          "",
+          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 ",
+          ""
+        ],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      }
+    }
+  },
+  {
+    "test": "retry_countdown_interrupts_then_restores_previous_action",
+    "input": {
+      "op": "retry-countdown",
+      "delayMs": 2500,
+      "success": true
+    },
+    "expected": {
+      "frames": [
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 3s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 2s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 1s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        }
+      ],
+      "end": {
+        "status": [],
+        "chat": [],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      }
+    }
+  },
+  {
+    "test": "retry_completion_cancels_wait_and_restores_previous_action",
+    "input": {
+      "op": "retry-end",
+      "success": false
+    },
+    "expected": {
+      "status": [],
+      "chat": [
+        "",
+        " @error@Error: Retry failed after 3 attempts: Unknown error\u001b[39m                                                ",
+        ""
+      ],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "retry_completion_cancels_wait_and_restores_previous_action",
+    "input": {
+      "op": "retry-end",
+      "success": false,
+      "finalError": ""
+    },
+    "expected": {
+      "status": [],
+      "chat": [
+        "",
+        " @error@Error: Retry failed after 3 attempts: Unknown error\u001b[39m                                                ",
+        ""
+      ],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "retry_completion_cancels_wait_and_restores_previous_action",
+    "input": {
+      "op": "retry-end",
+      "success": false,
+      "finalError": "last failure"
+    },
+    "expected": {
+      "status": [],
+      "chat": [
+        "",
+        " @error@Error: Retry failed after 3 attempts: last failure\u001b[39m                                                 ",
+        ""
+      ],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "retry_completion_cancels_wait_and_restores_previous_action",
+    "input": {
+      "op": "retry-end",
+      "success": true
+    },
+    "expected": {
+      "status": [],
+      "chat": [],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "retry_completion_cancels_wait_and_restores_previous_action",
+    "input": {
+      "op": "retry-end",
+      "success": true,
+      "finalError": ""
+    },
+    "expected": {
+      "status": [],
+      "chat": [],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "retry_completion_cancels_wait_and_restores_previous_action",
+    "input": {
+      "op": "retry-end",
+      "success": true,
+      "finalError": "last failure"
+    },
+    "expected": {
+      "status": [],
+      "chat": [],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "retry_replacement_preserves_working_row_and_previous_action",
+    "input": {
+      "op": "retry-replace-and-live-keys"
+    },
+    "expected": {
+      "changed": {
+        "status": [
+          "",
+          " @warning@⠋\u001b[39m @muted@Retrying (1/4) in 2s... (ctrl+q/alt+x to cancel)\u001b[39m                                                 "
+        ],
+        "chat": [],
+        "progress": [],
+        "timers": [
+          80,
+          1000
+        ],
+        "editor": "draft"
+      },
+      "after": {
+        "status": [
+          "",
+          " @warning@⠋\u001b[39m @muted@Retrying (2/4) in 1s... (ctrl+q/alt+x to cancel)\u001b[39m                                                 "
+        ],
+        "chat": [],
+        "progress": [],
+        "timers": [
+          80,
+          1000
+        ],
+        "editor": "draft"
+      },
+      "end": {
+        "status": [],
+        "chat": [],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      },
+      "working": {
+        "status": [
+          "",
+          " @accent@⠋\u001b[39m @muted@Working...\u001b[39m                                                                                       "
+        ],
+        "chat": [],
+        "progress": [],
+        "timers": [
+          80
+        ],
+        "editor": "draft"
+      }
+    }
+  },
+  {
+    "test": "compaction_labels_keep_reason_live_keys_and_editor",
+    "input": {
+      "op": "configured-cancel-hint",
+      "keys": []
+    },
+    "expected": {
+      "start": {
+        "status": [
+          "",
+          " @accent@⠋\u001b[39m @muted@Compacting context... ( to cancel)\u001b[39m                                                               "
+        ],
+        "chat": [],
+        "progress": [],
+        "timers": [
+          80
+        ],
+        "editor": "draft"
+      },
+      "end": {
+        "status": [],
+        "chat": [
+          "",
+          " @error@Error: Compaction cancelled\u001b[39m                                                                        ",
+          ""
+        ],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      },
+      "restored": true
+    }
+  },
+  {
+    "test": "compaction_labels_keep_reason_live_keys_and_editor",
+    "input": {
+      "op": "configured-cancel-hint",
+      "keys": [
+        "ctrl+q",
+        "alt+x"
+      ]
+    },
+    "expected": {
+      "start": {
+        "status": [
+          "",
+          " @accent@⠋\u001b[39m @muted@Compacting context... (ctrl+q/alt+x to cancel)\u001b[39m                                                   "
+        ],
+        "chat": [],
+        "progress": [],
+        "timers": [
+          80
+        ],
+        "editor": "draft"
+      },
+      "end": {
+        "status": [],
+        "chat": [
+          "",
+          " @error@Error: Compaction cancelled\u001b[39m                                                                        ",
+          ""
+        ],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      },
+      "restored": true
+    }
+  },
+  {
+    "test": "retry_countdown_interrupts_then_restores_previous_action",
+    "input": {
+      "op": "retry-fractional-limit",
+      "maxAttempts": 2.5,
+      "delayMs": 333.3
+    },
+    "expected": {
+      "start": {
+        "status": [
+          "",
+          " @warning@⠋\u001b[39m @muted@Retrying (1/2.5) in 1s... (escape to cancel)\u001b[39m                                                     "
+        ],
+        "chat": [],
+        "progress": [],
+        "timers": [
+          80,
+          1000
+        ],
+        "editor": "draft"
+      },
+      "end": {
+        "status": [],
+        "chat": [],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      }
+    }
+  },
+  {
+    "test": "compaction_labels_keep_reason_live_keys_and_editor",
+    "input": {
+      "op": "live-progress-setting",
+      "before": false,
+      "after": true
+    },
+    "expected": {
+      "chat": [
+        "",
+        " @error@Error: Compaction cancelled\u001b[39m                                                                        ",
+        ""
+      ],
+      "progress": [
+        false
+      ],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_labels_keep_reason_live_keys_and_editor",
+    "input": {
+      "op": "live-progress-setting",
+      "before": true,
+      "after": false
+    },
+    "expected": {
+      "chat": [
+        "",
+        " @error@Error: Compaction cancelled\u001b[39m                                                                        ",
+        ""
+      ],
+      "progress": [
+        true
+      ],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_completion_keeps_seeded_replay_and_one_summary",
+    "input": {
+      "op": "compaction-empty-summary-zero-tokens"
+    },
+    "expected": {
+      "chat": [
+        "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+        "\u001b[48;5;71m \u001b[38;5;12mHISTORY_ALPHA\u001b[39m                                                                                      \u001b[49m",
+        "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+        "",
+        "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+        "\u001b[48;5;71m \u001b[38;5;12mHISTORY_BETA\u001b[39m                                                                                       \u001b[49m",
+        "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+        "",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m",
+        "\u001b[48;5;72m \u001b[38;5;14m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m",
+        "\u001b[48;5;72m \u001b[1m\u001b[38;5;13mCompacted from 0 tokens\u001b[39m\u001b[22m                                                                            \u001b[49m",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m"
+      ],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_selects_first_prompt_and_retains_tail_modes",
+    "input": {
+      "willRetry": false,
+      "local": []
+    },
+    "expected": {
+      "log": [],
+      "local": [],
+      "errors": [],
+      "pending": 0,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_selects_first_prompt_and_retains_tail_modes",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        }
+      ]
+    },
+    "expected": {
+      "log": [
+        "a command /cmd a",
+        "a command /cmd b"
+      ],
+      "local": [],
+      "errors": [],
+      "pending": 0,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_selects_first_prompt_and_retains_tail_modes",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "first",
+          "mode": "followUp"
+        }
+      ]
+    },
+    "expected": {
+      "log": [
+        "a prompt first"
+      ],
+      "local": [],
+      "errors": [],
+      "pending": 0,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_selects_first_prompt_and_retains_tail_modes",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-s",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-f",
+          "mode": "followUp"
+        }
+      ]
+    },
+    "expected": {
+      "log": [
+        "a command /cmd a",
+        "a prompt first",
+        "a steer tail-s",
+        "a command /cmd b",
+        "a follow-up tail-f"
+      ],
+      "local": [],
+      "errors": [],
+      "pending": 0,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_selects_first_prompt_and_retains_tail_modes",
+    "input": {
+      "willRetry": true,
+      "local": []
+    },
+    "expected": {
+      "log": [],
+      "local": [],
+      "errors": [],
+      "pending": 0,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_selects_first_prompt_and_retains_tail_modes",
+    "input": {
+      "willRetry": true,
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        }
+      ]
+    },
+    "expected": {
+      "log": [
+        "a command /cmd a",
+        "a command /cmd b"
+      ],
+      "local": [],
+      "errors": [],
+      "pending": 0,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_selects_first_prompt_and_retains_tail_modes",
+    "input": {
+      "willRetry": true,
+      "local": [
+        {
+          "text": "first",
+          "mode": "followUp"
+        }
+      ]
+    },
+    "expected": {
+      "log": [
+        "a follow-up first"
+      ],
+      "local": [],
+      "errors": [],
+      "pending": 3,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_selects_first_prompt_and_retains_tail_modes",
+    "input": {
+      "willRetry": true,
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-s",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-f",
+          "mode": "followUp"
+        }
+      ]
+    },
+    "expected": {
+      "log": [
+        "a command /cmd a",
+        "a follow-up first",
+        "a steer tail-s",
+        "a command /cmd b",
+        "a follow-up tail-f"
+      ],
+      "local": [],
+      "errors": [],
+      "pending": 5,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_failures_restore_the_snapshot_and_clear_session_queue",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-s",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-f",
+          "mode": "followUp"
+        }
+      ],
+      "faults": {
+        "message": "controlled failure",
+        "fault": "command"
+      }
+    },
+    "expected": {
+      "log": [
+        "a command /cmd a"
+      ],
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-s",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-f",
+          "mode": "followUp"
+        }
+      ],
+      "errors": [
+        "Failed to send queued messages: controlled failure"
+      ],
+      "pending": 7,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_failures_restore_the_snapshot_and_clear_session_queue",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-s",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-f",
+          "mode": "followUp"
+        }
+      ],
+      "faults": {
+        "message": "controlled failure",
+        "prompt": "first"
+      }
+    },
+    "expected": {
+      "log": [
+        "a command /cmd a",
+        "a prompt first"
+      ],
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-s",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-f",
+          "mode": "followUp"
+        }
+      ],
+      "errors": [
+        "Failed to send queued messages: controlled failure"
+      ],
+      "pending": 7,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_failures_restore_the_snapshot_and_clear_session_queue",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "/skill:broken",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-f",
+          "mode": "followUp"
+        }
+      ],
+      "faults": {
+        "message": "controlled failure",
+        "fault": "queue"
+      }
+    },
+    "expected": {
+      "log": [
+        "a command /cmd a",
+        "a prompt first"
+      ],
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "/skill:broken",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-f",
+          "mode": "followUp"
+        }
+      ],
+      "errors": [
+        "Failed to send queued messages: controlled failure"
+      ],
+      "pending": 7,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_failures_restore_the_snapshot_and_clear_session_queue",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-s",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "/skill:broken",
+          "mode": "followUp"
+        }
+      ],
+      "faults": {
+        "message": "controlled failure",
+        "fault": "queue"
+      }
+    },
+    "expected": {
+      "log": [
+        "a command /cmd a",
+        "a prompt first",
+        "a steer tail-s",
+        "a command /cmd b"
+      ],
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-s",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "/skill:broken",
+          "mode": "followUp"
+        }
+      ],
+      "errors": [
+        "Failed to send queued messages: controlled failure"
+      ],
+      "pending": 7,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_failures_restore_the_snapshot_and_clear_session_queue",
+    "input": {
+      "willRetry": true,
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-s",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-f",
+          "mode": "followUp"
+        }
+      ],
+      "faults": {
+        "message": "controlled failure",
+        "fault": "command"
+      }
+    },
+    "expected": {
+      "log": [
+        "a command /cmd a"
+      ],
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-s",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-f",
+          "mode": "followUp"
+        }
+      ],
+      "errors": [
+        "Failed to send queued messages: controlled failure"
+      ],
+      "pending": 7,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_failures_restore_the_snapshot_and_clear_session_queue",
+    "input": {
+      "willRetry": true,
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "/skill:broken",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-s",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-f",
+          "mode": "followUp"
+        }
+      ],
+      "faults": {
+        "message": "controlled failure",
+        "fault": "queue"
+      }
+    },
+    "expected": {
+      "log": [
+        "a command /cmd a"
+      ],
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "/skill:broken",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-s",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-f",
+          "mode": "followUp"
+        }
+      ],
+      "errors": [
+        "Failed to send queued messages: controlled failure"
+      ],
+      "pending": 7,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_failures_restore_the_snapshot_and_clear_session_queue",
+    "input": {
+      "willRetry": true,
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "/skill:broken",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-f",
+          "mode": "followUp"
+        }
+      ],
+      "faults": {
+        "message": "controlled failure",
+        "fault": "queue"
+      }
+    },
+    "expected": {
+      "log": [
+        "a command /cmd a",
+        "a follow-up first"
+      ],
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "/skill:broken",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-f",
+          "mode": "followUp"
+        }
+      ],
+      "errors": [
+        "Failed to send queued messages: controlled failure"
+      ],
+      "pending": 7,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_failures_restore_the_snapshot_and_clear_session_queue",
+    "input": {
+      "willRetry": true,
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-s",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "/skill:broken",
+          "mode": "followUp"
+        }
+      ],
+      "faults": {
+        "message": "controlled failure",
+        "fault": "queue"
+      }
+    },
+    "expected": {
+      "log": [
+        "a command /cmd a",
+        "a follow-up first",
+        "a steer tail-s",
+        "a command /cmd b"
+      ],
+      "local": [
+        {
+          "text": "/cmd a",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail-s",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd b",
+          "mode": "followUp"
+        },
+        {
+          "text": "/skill:broken",
+          "mode": "followUp"
+        }
+      ],
+      "errors": [
+        "Failed to send queued messages: controlled failure"
+      ],
+      "pending": 7,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_failure_uses_singular_error_line",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "first",
+          "mode": "steer"
+        }
+      ],
+      "faults": {
+        "prompt": "first",
+        "message": "one failed"
+      }
+    },
+    "expected": {
+      "log": [
+        "a prompt first"
+      ],
+      "local": [
+        {
+          "text": "first",
+          "mode": "steer"
+        }
+      ],
+      "errors": [
+        "Failed to send queued message: one failed"
+      ],
+      "pending": 3,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_delayed_failure_stops_admission_and_restores_once",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "first",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd pending",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail",
+          "mode": "followUp"
+        }
+      ],
+      "faults": {
+        "prompt": "first",
+        "message": "first failure",
+        "delayed": true,
+        "heldFails": false
+      }
+    },
+    "expected": {
+      "log": [
+        "a prompt first",
+        "a command /cmd pending"
+      ],
+      "local": [
+        {
+          "text": "first",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd pending",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail",
+          "mode": "followUp"
+        },
+        {
+          "text": "newer",
+          "mode": "steer"
+        }
+      ],
+      "errors": [
+        "Failed to send queued messages: first failure"
+      ],
+      "pending": 6,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_delayed_failure_stops_admission_and_restores_once",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "first",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd pending",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail",
+          "mode": "followUp"
+        }
+      ],
+      "faults": {
+        "prompt": "first",
+        "message": "first failure",
+        "delayed": true,
+        "heldFails": true
+      }
+    },
+    "expected": {
+      "log": [
+        "a prompt first",
+        "a command /cmd pending"
+      ],
+      "local": [
+        {
+          "text": "first",
+          "mode": "steer"
+        },
+        {
+          "text": "/cmd pending",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail",
+          "mode": "followUp"
+        },
+        {
+          "text": "newer",
+          "mode": "steer"
+        }
+      ],
+      "errors": [
+        "Failed to send queued messages: first failure"
+      ],
+      "pending": 6,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_real_commands_and_modes_reach_provider",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "/cmd prefix",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "/late tail",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail",
+          "mode": "steer"
+        }
+      ],
+      "edit": "editor"
+    },
+    "expected": {
+      "log": [
+        "a command /cmd prefix",
+        "a prompt first",
+        "a command /late tail",
+        "a steer tail"
+      ],
+      "local": [],
+      "errors": [],
+      "pending": 0,
+      "editor": "replaced draft"
+    }
+  },
+  {
+    "test": "compaction_flush_real_commands_and_modes_reach_provider",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "/cmd prefix",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "/late tail",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail",
+          "mode": "steer"
+        }
+      ],
+      "edit": "add-command"
+    },
+    "expected": {
+      "log": [
+        "a command /cmd prefix",
+        "a prompt first",
+        "a command /late tail",
+        "a steer tail"
+      ],
+      "local": [],
+      "errors": [],
+      "pending": 0,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_real_commands_and_modes_reach_provider",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "/cmd prefix",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "/late tail",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail",
+          "mode": "steer"
+        }
+      ],
+      "edit": "remove-command"
+    },
+    "expected": {
+      "log": [
+        "a command /cmd prefix",
+        "a prompt first",
+        "a follow-up /late tail",
+        "a steer tail"
+      ],
+      "local": [],
+      "errors": [],
+      "pending": 0,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_follows_current_session_after_command",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "/cmd change",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        },
+        {
+          "text": "tail",
+          "mode": "steer"
+        }
+      ],
+      "replace": true
+    },
+    "expected": {
+      "log": [
+        "a command /cmd change",
+        "b prompt first",
+        "b steer tail"
+      ],
+      "local": [],
+      "errors": [],
+      "pending": 0,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_follows_current_session_after_command",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "/cmd change",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        }
+      ],
+      "replace": true,
+      "faults": {
+        "prompt": "first",
+        "message": "controlled switch failure"
+      }
+    },
+    "expected": {
+      "log": [
+        "a command /cmd change",
+        "b prompt first"
+      ],
+      "local": [
+        {
+          "text": "/cmd change",
+          "mode": "steer"
+        },
+        {
+          "text": "first",
+          "mode": "followUp"
+        }
+      ],
+      "errors": [
+        "Failed to send queued messages: controlled switch failure"
+      ],
+      "pending": 4,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_selected_commands_still_prompt_after_removal",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "/cmd remove",
+          "mode": "steer"
+        },
+        {
+          "text": "/late selected",
+          "mode": "followUp"
+        }
+      ],
+      "edit": "remove-command"
+    },
+    "expected": {
+      "log": [
+        "a command /cmd remove",
+        "a prompt /late selected"
+      ],
+      "local": [],
+      "errors": [],
+      "pending": 0,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_selected_prefix_still_prompts_after_removal",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "/cmd remove",
+          "mode": "steer"
+        },
+        {
+          "text": "/late selected",
+          "mode": "followUp"
+        },
+        {
+          "text": "first",
+          "mode": "steer"
+        }
+      ],
+      "edit": "remove-command"
+    },
+    "expected": {
+      "log": [
+        "a command /cmd remove",
+        "a prompt /late selected",
+        "a prompt first"
+      ],
+      "local": [],
+      "errors": [],
+      "pending": 0,
+      "editor": "draft"
+    }
+  }
+]

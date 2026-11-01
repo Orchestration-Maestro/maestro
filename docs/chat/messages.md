@@ -10,9 +10,12 @@ custom callbacks remain supported. Layout delegates to the
 
 ## User and assistant content
 
-The user widget puts Markdown inside a padded `userMessageBg` panel with
-`userMessageText` foreground. Nonempty user rendering prefixes the first row with
-OSC 133 A and the last row with OSC 133 B/C, without adding a row.
+The user widget is one Markdown layer that pads and colours itself: one column of
+horizontal padding, one blank row above and below, `userMessageText` foreground
+and the `userMessageBg` background across the full width. No outer panel keeps a
+second copy of its rows. Empty text renders no rows. Nonempty user rendering
+prefixes the first row with OSC 133 A and the last row with OSC 133 B/C, without
+adding a row.
 User-authored Markdown keeps pasted terminal colour sequences unchanged.
 
 The assistant constructor accepts an optional shared assistant message and
@@ -23,17 +26,31 @@ content is cleaned with the shared [display helpers](../tools-read.md#display-he
 before terminal styling and hyperlink generation. This removes authored escape
 sequences and C0 controls other than TAB, LF and CR without removing renderer styling.
 Visible blocks retain
-their order, with a leading spacer and a gap after thinking only when another
-visible block follows. Hidden thinking uses the literal label instead of Markdown.
+their order. Consecutive thinking blocks form one run, which any other block,
+an empty text block or a tool call included, ends. A run renders its non-empty
+thoughts, joined by a blank line, as one italic Markdown section, or one literal
+hidden-thinking label when thinking is hidden; a run of empty thoughts renders
+nothing. The content has a leading spacer and a gap after a run only when a later
+text or thinking block has text.
 
-`update_content` replaces the retained shared handle and rebuilds the inner
-content. Both thinking setters and `invalidate` rebuild from that handle, observing
+`AssistantMessageComponent::from_record` builds the same widget from a stored
+assistant record. It reads only the content blocks and the stop reason and error
+text it displays, so tool-call arguments keep whatever JSON value was stored.
+
+`update_content` replaces the retained shared handle, releasing a stored record,
+and rebuilds the inner content. Both thinking setters and `invalidate` rebuild from that handle, observing
 edits through a surviving message alias. Any tool-call block suppresses prompt
-markers and failure notices. Without tools, aborted/error messages append their
-notice, and nonempty rendering receives the same markers as a user message.
+markers and failure notices, except the output-length notice below. Without tools,
+aborted/error messages append their notice, and nonempty rendering receives the
+same markers as a user message.
 Absent/empty abort errors and `Request was aborted` display `Operation aborted`;
 absent/empty error text displays `Error: Unknown error`. Successful stop reasons
 ignore error text. Whitespace-only errors are not trimmed.
+
+A message that stopped at the output token limit (stop reason `length`) always
+appends `Error: Model stopped because it reached the maximum output token limit.
+The response may be incomplete.`, with or without tool calls, because the limit can
+cut a tool call short before its own row can report anything.
 
 ## Summaries
 
@@ -58,8 +75,9 @@ invalidation. Summary labels and hints are repainted when rebuilt.
 
 `CustomMessageComponent` renders an extension-supplied custom message and
 `SkillInvocationMessageComponent` renders a parsed skill block; both are exported
-at the crate root and in their `components` modules, and the skill widget is
-native-only with its parsed record. Constructors take the live theme, prepared
+at the crate root and in their `components` modules; the skill widget is
+native-only, while the parsed record it renders belongs to the application and is
+available to browser builds. Constructors take the live theme, prepared
 Markdown callbacks and shared terminal image capabilities.
 
 The custom widget keeps one leading spacer and then either the component returned
@@ -156,3 +174,19 @@ terminal support are independent. Kitty conversion uses the existing synchronous
 PNG converter; successful cache entries match both payload and MIME, and replaced
 results discard stale entries. Image conversion schedules no deferred work.
 Native edit previews retain their existing runtime and read-only preflight.
+
+A self-rendered row whose callbacks draw nothing omits its own leading blank row;
+with no images it renders no rows at all, before and after its result. Each image
+keeps its own blank row above it, and children a caller adds or puts in place of the
+blank row still render. The row walks its children as `Container` does.
+
+When the result slot has no callback, or its callback fails, the row shows the
+result text split on newlines in the `toolOutput` colour: every line when
+expanded, otherwise the first 10 followed by the muted
+`... (<count> more lines, <expand key> to expand)` hint. Empty text adds no row.
+
+## Expand hints and notices
+
+Collapsed tool previews and shell rows end their expand or collapse hint with a
+`)` in the muted colour, as the text before the key is. An interactive error
+notice is followed by one blank row; warnings and status notices are not.

@@ -11,7 +11,7 @@ use serde_json::Value;
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 /// Every test name a fixture row may select.
-const TEST_NAMES: [&str; 28] = [
+const TEST_NAMES: [&str; 29] = [
     "thought_flag_alone_classifies_parts",
     "signature_retention_keeps_last_nonempty_value",
     "call_id_requirement_uses_exact_model_prefixes",
@@ -40,6 +40,7 @@ const TEST_NAMES: [&str; 28] = [
     "tool_schema_modes_preserve_or_remove_only_metadata",
     "plain_schema_preserves_tools_order_and_source_values",
     "schema_array_metadata_is_removed_without_changing_leaf_data",
+    "history_arguments_keep_nullish_defaults",
 ];
 
 /// One recorded case.
@@ -221,7 +222,7 @@ fn check(name: &str, ordered: bool) -> TestResult {
 #[test]
 fn every_recorded_case_belongs_to_a_named_test() -> TestResult {
     let owners: Vec<String> = rows()?.into_iter().map(|row| row.test).collect();
-    assert_eq!(owners.len(), 166);
+    assert_eq!(owners.len(), 169);
     for owner in &owners {
         assert!(
             TEST_NAMES.contains(&owner.as_str()),
@@ -381,6 +382,11 @@ fn call_arguments_keep_nested_data_without_history_mutation() -> TestResult {
         "call_arguments_keep_nested_data_without_history_mutation",
         true,
     )
+}
+
+#[test]
+fn history_arguments_keep_nullish_defaults() -> TestResult {
+    check("history_arguments_keep_nullish_defaults", true)
 }
 
 #[test]

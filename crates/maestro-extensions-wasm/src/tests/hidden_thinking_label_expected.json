@@ -1,0 +1,921 @@
+{
+  "metadata": [
+    {
+      "operation": "event",
+      "name": "session_start"
+    },
+    {
+      "operation": "command",
+      "name": "thinking-label",
+      "description": "Set the hidden thinking label. Use without args to reset.",
+      "completions": false
+    }
+  ],
+  "cases": [
+    {
+      "name": "startup_and_repeat",
+      "steps": [
+        {
+          "input": {
+            "operation": "session_start"
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "Pondering..."
+                ]
+              }
+            ],
+            "error": null
+          }
+        },
+        {
+          "input": {
+            "operation": "session_start"
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "Pondering..."
+                ]
+              }
+            ],
+            "error": null
+          }
+        }
+      ]
+    },
+    {
+      "name": "literal_custom_label",
+      "steps": [
+        {
+          "input": {
+            "operation": "session_start"
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "Pondering..."
+                ]
+              }
+            ],
+            "error": null
+          }
+        },
+        {
+          "input": {
+            "operation": "command",
+            "args": "   Deep thought   "
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "Deep thought"
+                ]
+              },
+              {
+                "method": "notify",
+                "operands": [
+                  "Hidden thinking label set to: Deep thought",
+                  null
+                ]
+              }
+            ],
+            "error": null
+          }
+        },
+        {
+          "input": {
+            "operation": "session_start"
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "Deep thought"
+                ]
+              }
+            ],
+            "error": null
+          }
+        }
+      ]
+    },
+    {
+      "name": "empty_resets_then_start_reapplies_example_default",
+      "steps": [
+        {
+          "input": {
+            "operation": "command",
+            "args": "custom"
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "custom"
+                ]
+              },
+              {
+                "method": "notify",
+                "operands": [
+                  "Hidden thinking label set to: custom",
+                  null
+                ]
+              }
+            ],
+            "error": null
+          }
+        },
+        {
+          "input": {
+            "operation": "command",
+            "args": ""
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  null
+                ]
+              },
+              {
+                "method": "notify",
+                "operands": [
+                  "Hidden thinking label reset to: Pondering...",
+                  null
+                ]
+              }
+            ],
+            "error": null
+          }
+        },
+        {
+          "input": {
+            "operation": "session_start"
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "Pondering..."
+                ]
+              }
+            ],
+            "error": null
+          }
+        }
+      ]
+    },
+    {
+      "name": "ascii_whitespace_resets",
+      "steps": [
+        {
+          "input": {
+            "operation": "command",
+            "args": "custom"
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "custom"
+                ]
+              },
+              {
+                "method": "notify",
+                "operands": [
+                  "Hidden thinking label set to: custom",
+                  null
+                ]
+              }
+            ],
+            "error": null
+          }
+        },
+        {
+          "input": {
+            "operation": "command",
+            "args": " \t\r\n"
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  null
+                ]
+              },
+              {
+                "method": "notify",
+                "operands": [
+                  "Hidden thinking label reset to: Pondering...",
+                  null
+                ]
+              }
+            ],
+            "error": null
+          }
+        },
+        {
+          "input": {
+            "operation": "session_start"
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "Pondering..."
+                ]
+              }
+            ],
+            "error": null
+          }
+        }
+      ]
+    },
+    {
+      "name": "unicode_whitespace_resets",
+      "steps": [
+        {
+          "input": {
+            "operation": "command",
+            "args": "custom"
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "custom"
+                ]
+              },
+              {
+                "method": "notify",
+                "operands": [
+                  "Hidden thinking label set to: custom",
+                  null
+                ]
+              }
+            ],
+            "error": null
+          }
+        },
+        {
+          "input": {
+            "operation": "command",
+            "args": "\t\n\u000b\f\r                  　"
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  null
+                ]
+              },
+              {
+                "method": "notify",
+                "operands": [
+                  "Hidden thinking label reset to: Pondering...",
+                  null
+                ]
+              }
+            ],
+            "error": null
+          }
+        },
+        {
+          "input": {
+            "operation": "session_start"
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "Pondering..."
+                ]
+              }
+            ],
+            "error": null
+          }
+        }
+      ]
+    },
+    {
+      "name": "unicode_whitespace_trims_custom",
+      "steps": [
+        {
+          "input": {
+            "operation": "command",
+            "args": "\t\n\u000b\f\r                  　λ🧠\t\n\u000b\f\r                  　"
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "λ🧠"
+                ]
+              },
+              {
+                "method": "notify",
+                "operands": [
+                  "Hidden thinking label set to: λ🧠",
+                  null
+                ]
+              }
+            ],
+            "error": null
+          }
+        },
+        {
+          "input": {
+            "operation": "session_start"
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "λ🧠"
+                ]
+              }
+            ],
+            "error": null
+          }
+        }
+      ]
+    },
+    {
+      "name": "interior_bytes_remain_literal",
+      "steps": [
+        {
+          "input": {
+            "operation": "command",
+            "args": "  A\t\n B  "
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "A\t\n B"
+                ]
+              },
+              {
+                "method": "notify",
+                "operands": [
+                  "Hidden thinking label set to: A\t\n B",
+                  null
+                ]
+              }
+            ],
+            "error": null
+          }
+        },
+        {
+          "input": {
+            "operation": "session_start"
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "A\t\n B"
+                ]
+              }
+            ],
+            "error": null
+          }
+        }
+      ]
+    },
+    {
+      "name": "nonwhitespace_neighbour_remains",
+      "steps": [
+        {
+          "input": {
+            "operation": "command",
+            "args": "​"
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "​"
+                ]
+              },
+              {
+                "method": "notify",
+                "operands": [
+                  "Hidden thinking label set to: ​",
+                  null
+                ]
+              }
+            ],
+            "error": null
+          }
+        },
+        {
+          "input": {
+            "operation": "session_start"
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "​"
+                ]
+              }
+            ],
+            "error": null
+          }
+        }
+      ]
+    },
+    {
+      "name": "default_text_is_still_a_custom_set",
+      "steps": [
+        {
+          "input": {
+            "operation": "command",
+            "args": "Pondering..."
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "Pondering..."
+                ]
+              },
+              {
+                "method": "notify",
+                "operands": [
+                  "Hidden thinking label set to: Pondering...",
+                  null
+                ]
+              }
+            ],
+            "error": null
+          }
+        },
+        {
+          "input": {
+            "operation": "session_start"
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "Pondering..."
+                ]
+              }
+            ],
+            "error": null
+          }
+        }
+      ]
+    },
+    {
+      "name": "successive_custom_and_reset",
+      "steps": [
+        {
+          "input": {
+            "operation": "command",
+            "args": "first"
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "first"
+                ]
+              },
+              {
+                "method": "notify",
+                "operands": [
+                  "Hidden thinking label set to: first",
+                  null
+                ]
+              }
+            ],
+            "error": null
+          }
+        },
+        {
+          "input": {
+            "operation": "command",
+            "args": "second"
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "second"
+                ]
+              },
+              {
+                "method": "notify",
+                "operands": [
+                  "Hidden thinking label set to: second",
+                  null
+                ]
+              }
+            ],
+            "error": null
+          }
+        },
+        {
+          "input": {
+            "operation": "session_start"
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "second"
+                ]
+              }
+            ],
+            "error": null
+          }
+        },
+        {
+          "input": {
+            "operation": "command",
+            "args": ""
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  null
+                ]
+              },
+              {
+                "method": "notify",
+                "operands": [
+                  "Hidden thinking label reset to: Pondering...",
+                  null
+                ]
+              }
+            ],
+            "error": null
+          }
+        },
+        {
+          "input": {
+            "operation": "session_start"
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "Pondering..."
+                ]
+              }
+            ],
+            "error": null
+          }
+        },
+        {
+          "input": {
+            "operation": "command",
+            "args": "third"
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "third"
+                ]
+              },
+              {
+                "method": "notify",
+                "operands": [
+                  "Hidden thinking label set to: third",
+                  null
+                ]
+              }
+            ],
+            "error": null
+          }
+        },
+        {
+          "input": {
+            "operation": "session_start"
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "third"
+                ]
+              }
+            ],
+            "error": null
+          }
+        }
+      ]
+    },
+    {
+      "name": "start_rejection_is_returned",
+      "steps": [
+        {
+          "input": {
+            "operation": "session_start",
+            "reject": {
+              "method": "setHiddenThinkingLabel",
+              "message": "UI rejected: literal 🧠"
+            }
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "Pondering..."
+                ]
+              }
+            ],
+            "error": "UI rejected: literal 🧠"
+          }
+        },
+        {
+          "input": {
+            "operation": "session_start"
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "Pondering..."
+                ]
+              }
+            ],
+            "error": null
+          }
+        }
+      ]
+    },
+    {
+      "name": "custom_set_rejection_keeps_new_label",
+      "steps": [
+        {
+          "input": {
+            "operation": "command",
+            "args": "replacement",
+            "reject": {
+              "method": "setHiddenThinkingLabel",
+              "message": "UI rejected: literal 🧠"
+            }
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "replacement"
+                ]
+              }
+            ],
+            "error": "UI rejected: literal 🧠"
+          }
+        },
+        {
+          "input": {
+            "operation": "session_start"
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "replacement"
+                ]
+              }
+            ],
+            "error": null
+          }
+        }
+      ]
+    },
+    {
+      "name": "reset_set_rejection_keeps_default",
+      "steps": [
+        {
+          "input": {
+            "operation": "command",
+            "args": "custom"
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "custom"
+                ]
+              },
+              {
+                "method": "notify",
+                "operands": [
+                  "Hidden thinking label set to: custom",
+                  null
+                ]
+              }
+            ],
+            "error": null
+          }
+        },
+        {
+          "input": {
+            "operation": "command",
+            "args": "",
+            "reject": {
+              "method": "setHiddenThinkingLabel",
+              "message": "UI rejected: literal 🧠"
+            }
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  null
+                ]
+              }
+            ],
+            "error": "UI rejected: literal 🧠"
+          }
+        },
+        {
+          "input": {
+            "operation": "session_start"
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "Pondering..."
+                ]
+              }
+            ],
+            "error": null
+          }
+        }
+      ]
+    },
+    {
+      "name": "custom_notify_rejection_keeps_new_label",
+      "steps": [
+        {
+          "input": {
+            "operation": "command",
+            "args": "replacement",
+            "reject": {
+              "method": "notify",
+              "message": "UI rejected: literal 🧠"
+            }
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "replacement"
+                ]
+              },
+              {
+                "method": "notify",
+                "operands": [
+                  "Hidden thinking label set to: replacement",
+                  null
+                ]
+              }
+            ],
+            "error": "UI rejected: literal 🧠"
+          }
+        },
+        {
+          "input": {
+            "operation": "session_start"
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "replacement"
+                ]
+              }
+            ],
+            "error": null
+          }
+        }
+      ]
+    },
+    {
+      "name": "reset_notify_rejection_keeps_default",
+      "steps": [
+        {
+          "input": {
+            "operation": "command",
+            "args": "custom"
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "custom"
+                ]
+              },
+              {
+                "method": "notify",
+                "operands": [
+                  "Hidden thinking label set to: custom",
+                  null
+                ]
+              }
+            ],
+            "error": null
+          }
+        },
+        {
+          "input": {
+            "operation": "command",
+            "args": "",
+            "reject": {
+              "method": "notify",
+              "message": "UI rejected: literal 🧠"
+            }
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  null
+                ]
+              },
+              {
+                "method": "notify",
+                "operands": [
+                  "Hidden thinking label reset to: Pondering...",
+                  null
+                ]
+              }
+            ],
+            "error": "UI rejected: literal 🧠"
+          }
+        },
+        {
+          "input": {
+            "operation": "session_start"
+          },
+          "expected": {
+            "calls": [
+              {
+                "method": "setHiddenThinkingLabel",
+                "operands": [
+                  "Pondering..."
+                ]
+              }
+            ],
+            "error": null
+          }
+        }
+      ]
+    }
+  ]
+}

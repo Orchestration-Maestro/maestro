@@ -2,8 +2,8 @@
 use super::reader_host::{Data as Replies, Reader};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
+use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
 /// Supplied usage, without integer conversion.
 #[derive(Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -98,13 +98,13 @@ impl Bank {
             self.data = state;
         }
         if let Some(data) = c.registry {
-            self.registry = Reader(Arc::new(Mutex::new(data)));
+            self.registry = Reader::from_data(data);
         }
         if let Some(data) = c.registry_update {
             *self.registry.0.lock().unwrap() = data;
         }
         if let Some(data) = c.model {
-            self.model = Reader(Arc::new(Mutex::new(data)));
+            self.model = Reader::from_data(data);
         }
         if let Some(data) = c.model_update {
             *self.model.0.lock().unwrap() = data;
@@ -135,8 +135,6 @@ impl Bank {
         reader.record("model", &[])
     }
 }
-/// Retained opaque UI owner.
-pub struct Ui;
 /// Authentication outcome controlled by supplied replies.
 pub fn auth(reader: &Reader, model: &str) -> Result<Value, String> {
     let model: Value = serde_json::from_str(model).map_err(|e| e.to_string())?;
@@ -176,18 +174,22 @@ pub fn resolved(value: &Value) -> maestro_request::model_registry::ResolvedReque
                 .map(|p| (p[0].as_str().unwrap().into(), p[1].as_str().unwrap().into()))
                 .collect()
         }),
+        base_url: None,
     }
 }
 
 use super::host::{Imports, State};
 use crate::bindings::host_side::maestro::extension::host;
 use wasmtime::component::{Accessor, Resource};
-impl host::HostExtensionUiContext for State {
-    fn drop(&mut self, this: Resource<Ui>) -> wasmtime::Result<()> {
-        self.release(this)
-    }
-}
 impl host::HostModelRegistry for State {
+    fn auth_storage(
+        &mut self,
+        this: Resource<Reader>,
+    ) -> wasmtime::Result<Result<Resource<Reader>, String>> {
+        let reader = self.table.get(&this)?.clone();
+        Ok(Ok(self.push(reader)?))
+    }
+
     fn get_all(&mut self, this: Resource<Reader>) -> wasmtime::Result<Result<String, String>> {
         Ok(self
             .table
@@ -198,12 +200,19 @@ impl host::HostModelRegistry for State {
     fn get_available(
         &mut self,
         this: Resource<Reader>,
-    ) -> wasmtime::Result<Result<String, String>> {
-        Ok(self
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let result = self
             .table
             .get(&this)?
             .record("getAvailable", &[])
-            .and_then(|v| v.ok_or("missing list".into())))
+            .and_then(|v| v.ok_or("missing list".into()))
+            .map(host::RouteValue::Text);
+        self.push(super::host::Route {
+            steps: std::collections::VecDeque::new(),
+            running: None,
+            rows: None,
+            result: Some(result),
+        })
     }
     fn find(
         &mut self,
@@ -216,11 +225,119 @@ impl host::HostModelRegistry for State {
             .get(&this)?
             .record("find", &[json!(provider), json!(model_id)]))
     }
+    fn refresh(
+        &mut self,
+        this: Resource<Reader>,
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let result = self.table.get(&this)?.unit("refresh", &[]);
+        self.routed(result)
+    }
+    fn get_error(
+        &mut self,
+        this: Resource<Reader>,
+    ) -> wasmtime::Result<Result<Option<String>, String>> {
+        Ok(self.table.get(&this)?.optional("getError", &[]))
+    }
+    fn has_configured_auth(
+        &mut self,
+        this: Resource<Reader>,
+        model: String,
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let result = self
+            .table
+            .get(&this)?
+            .flag("hasConfiguredAuth", &[json!(model)])
+            .map(host::RouteValue::Boolean);
+        self.push(super::host::Route {
+            steps: std::collections::VecDeque::new(),
+            running: None,
+            rows: None,
+            result: Some(result),
+        })
+    }
+    fn get_provider_auth_status(
+        &mut self,
+        this: Resource<Reader>,
+        provider: String,
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let result = self
+            .table
+            .get(&this)?
+            .record("getProviderAuthStatus", &[json!(provider)])
+            .and_then(|v| v.ok_or("missing status".into()))
+            .map(host::RouteValue::Text);
+        self.push(super::host::Route {
+            steps: std::collections::VecDeque::new(),
+            running: None,
+            rows: None,
+            result: Some(result),
+        })
+    }
+    fn get_provider_display_name(
+        &mut self,
+        this: Resource<Reader>,
+        provider: String,
+    ) -> wasmtime::Result<Result<String, String>> {
+        Ok(self
+            .table
+            .get(&this)?
+            .optional("getProviderDisplayName", &[json!(provider)])
+            .and_then(|v| v.ok_or("missing name".into())))
+    }
+    fn is_using_oauth(
+        &mut self,
+        this: Resource<Reader>,
+        model: String,
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let result = self.table.get(&this)?.flag("isUsingOAuth", &[json!(model)]);
+        self.routed_value(result.map(host::RouteValue::Boolean))
+    }
+    fn register_provider(
+        &mut self,
+        this: Resource<Reader>,
+        name: String,
+        config: String,
+        _callbacks: (
+            Option<Resource<super::host::Identity>>,
+            Option<(Resource<super::host::Identity>, String, Option<bool>)>,
+        ),
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let result = self
+            .table
+            .get(&this)?
+            .unit("registerProvider", &[json!(name), json!(config)]);
+        self.routed(result)
+    }
+    fn unregister_provider(
+        &mut self,
+        this: Resource<Reader>,
+        name: String,
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let result = self
+            .table
+            .get(&this)?
+            .unit("unregisterProvider", &[json!(name)]);
+        self.routed(result)
+    }
     fn drop(&mut self, this: Resource<Reader>) -> wasmtime::Result<()> {
         self.release(this)
     }
 }
 impl host::HostModelRegistryWithStore<State> for Imports {
+    async fn get_api_key_for_provider(
+        accessor: &Accessor<State, Self>,
+        this: Resource<Reader>,
+        provider: String,
+    ) -> wasmtime::Result<Result<Option<String>, String>> {
+        let hold = accessor.with(|mut a| a.get().observed.take_hold());
+        super::observed::pause(hold).await;
+        accessor.with(|mut a| {
+            Ok(a.get()
+                .table
+                .get(&this)?
+                .optional("getApiKeyForProvider", &[json!(provider)]))
+        })
+    }
     async fn get_api_key_and_headers(
         accessor: &Accessor<State, Self>,
         this: Resource<Reader>,
@@ -235,12 +352,13 @@ impl host::HostModelRegistryWithStore<State> for Imports {
         accessor.with(|mut a| {
             let s = a.get();
             let answer = auth(s.table.get(&this)?, &model).map(|v| match resolved(&v) {
-                crate::ResolvedRequestAuth::Ok { api_key, headers } => {
-                    host::ResolvedRequestAuth::Ok(host::RequestAuth {
-                        api_key,
-                        headers: headers.map(|h| h.into_iter().collect()),
-                    })
-                }
+                crate::ResolvedRequestAuth::Ok {
+                    api_key, headers, ..
+                } => host::ResolvedRequestAuth::Ok(host::RequestAuth {
+                    base_url: None,
+                    api_key,
+                    headers: headers.map(|h| h.into_iter().collect()),
+                }),
                 crate::ResolvedRequestAuth::Error { error } => {
                     host::ResolvedRequestAuth::Error(error)
                 }

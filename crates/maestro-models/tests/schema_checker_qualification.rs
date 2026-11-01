@@ -14,19 +14,16 @@ fn check(schema: Value, input: Value) -> Result<Value, String> {
     ]));
     check_object(
         parameters,
-        maestro_models::JsonObject::from_iter([("value".into(), input)]),
+        maestro_models::JsonObject::from_iter([("value".into(), input)]).into(),
     )
     .map(|arguments| arguments["value"].clone())
 }
 
-fn check_object(
-    schema: Value,
-    arguments: maestro_models::JsonObject,
-) -> Result<maestro_models::JsonObject, String> {
-    let tool = Tool {
+fn check_object(schema: Value, arguments: Value) -> Result<Value, String> {
+    let tool: Tool = Tool {
         name: "check".into(),
         description: String::new(),
-        parameters: schema,
+        parameters: schema.into(),
     };
     let call = ToolCall {
         id: "1".into(),
@@ -436,15 +433,15 @@ fn maestro_keeps_schema_resource_origins_distinct() {
         ("https://one.example/schema?q=1", false),
     ] {
         let schema = json!({"$id":"https://one.example/schema", "$defs":{"target":{"$id":"target", "type":"number"}},"properties":{"n":{"$ref":format!("{reference}#/$defs/target")}}});
-        let tool = Tool {
+        let tool: Tool = Tool {
             name: "check".into(),
             description: String::new(),
-            parameters: schema,
+            parameters: schema.into(),
         };
         let call = ToolCall {
             id: "1".into(),
             name: "check".into(),
-            arguments: maestro_models::JsonObject::from_iter([("n".into(), json!(1))]),
+            arguments: json!({"n": 1}),
             thought_signature: None,
         };
         if valid {
@@ -479,16 +476,36 @@ fn maestro_rejects_nonprogressing_reference_cycles() {
 }
 
 #[test]
+fn maestro_resolves_pointer_references_from_the_enclosing_resource() {
+    let schema = json!({
+        "$defs": {"S": {"type": "number"}},
+        "properties": {"value": {"$defs": {"S": {"type": "string"}}, "$ref": "#/$defs/S"}}
+    });
+    assert_eq!(
+        check_object(schema.clone(), json!({"value": 1})),
+        Ok(json!({"value": 1}))
+    );
+    assert!(check_object(schema, json!({"value": "text"})).is_err());
+}
+
+#[test]
 fn maestro_resolves_schema_ids_anchors_and_recursive_references() {
     let arguments = maestro_models::JsonObject::from_iter([("example".into(), json!(1))]);
     assert_eq!(
-        check_object(json!({"propertyNames":{"$ref":"#"}}), arguments.clone()).unwrap(),
-        arguments
+        check_object(
+            json!({"propertyNames":{"$ref":"#"}}),
+            arguments.clone().into()
+        )
+        .unwrap(),
+        serde_json::Value::Object(arguments)
     );
     let schema = json!({"$id":"https://schemas.example/root","$defs":{"n":{"$id":"number","$anchor":"count","type":"number"}},"properties":{"a":{"$ref":"number#count"},"b":{"$ref":"https://schemas.example/number"}}});
     let arguments =
         maestro_models::JsonObject::from_iter([("a".into(), json!(1)), ("b".into(), json!(2))]);
-    assert_eq!(check_object(schema, arguments.clone()).unwrap(), arguments);
+    assert_eq!(
+        check_object(schema, arguments.clone().into()).unwrap(),
+        serde_json::Value::Object(arguments)
+    );
     let recursive = json!({"$id":"https://schemas.example/node","$recursiveAnchor":true,"properties":{"value":{"type":"number"},"next":{"$recursiveRef":"#"}}});
     assert!(check(recursive.clone(), json!({"value":1,"next":{"value":2}})).is_ok());
     assert!(check(recursive, json!({"value":1,"next":{"value":"2"}})).is_err());
@@ -656,7 +673,7 @@ fn maestro_reports_all_declared_dependency_names() {
         let input =
             maestro_models::JsonObject::from_iter([("a".into(), json!(1)), ("b".into(), json!(2))]);
         assert_eq!(
-            check_object(schema, input).unwrap_err(),
+            check_object(schema, input.into()).unwrap_err(),
             "Validation failed for tool \"check\":\n  - root: must have properties b, c when property a is present\n\nReceived arguments:\n{\n  \"a\": 1,\n  \"b\": 2\n}"
         );
     }
@@ -673,7 +690,7 @@ fn maestro_preserves_literal_missing_property_names() {
         ),
     ] {
         assert_eq!(
-            check_object(schema, input.as_object().unwrap().clone()).unwrap_err(),
+            check_object(schema, input.clone()).unwrap_err(),
             format!(
                 "Validation failed for tool \"check\":\n  - {path}: must have required properties a/b\n\nReceived arguments:\n{}",
                 serde_json::to_string_pretty(&input).unwrap()
@@ -765,7 +782,7 @@ fn maestro_uses_ordinary_paths_for_empty_required_names() {
         ),
     ] {
         assert_eq!(
-            check_object(schema, input.as_object().unwrap().clone()).unwrap_err(),
+            check_object(schema, input.clone()).unwrap_err(),
             format!(
                 "Validation failed for tool \"check\":\n  - {path}: must have required properties \n\nReceived arguments:\n{}",
                 serde_json::to_string_pretty(&input).unwrap()
@@ -779,11 +796,11 @@ fn maestro_resolves_fragment_id_aliases_for_every_reference_kind() {
     for keyword in ["$ref", "$recursiveRef", "$dynamicRef"] {
         let schema = json!({"$defs":{"n":{"$id":"#num","type":"number"}},"properties":{"n":{keyword:"#num"}}});
         assert_eq!(
-            check_object(schema.clone(), json!({"n":1}).as_object().unwrap().clone()).unwrap(),
-            json!({"n":1}).as_object().unwrap().clone()
+            check_object(schema.clone(), json!({"n":1})).unwrap(),
+            json!({"n":1})
         );
         assert_eq!(
-            check_object(schema, json!({"n":"x"}).as_object().unwrap().clone()).unwrap_err(),
+            check_object(schema, json!({"n":"x"})).unwrap_err(),
             "Validation failed for tool \"check\":\n  - n: must be number\n\nReceived arguments:\n{\n  \"n\": \"x\"\n}"
         );
     }
@@ -860,10 +877,10 @@ fn maestro_accepts_dependent_schemas_and_active_contains_maximum() {
 fn maestro_resolves_pointers_inside_fragment_id_scopes() {
     for keyword in ["$ref", "$recursiveRef", "$dynamicRef"] {
         let schema = json!({"$defs":{"n":{"$id":"#num","$defs":{"v":{"type":"number"}},keyword:"#/$defs/v"}},"properties":{"n":{"$ref":"#num"}}});
-        let accepted = json!({"n":1}).as_object().unwrap().clone();
+        let accepted = json!({"n":1});
         assert_eq!(check_object(schema.clone(), accepted.clone()), Ok(accepted));
         assert_eq!(
-            check_object(schema, json!({"n":"x"}).as_object().unwrap().clone()).unwrap_err(),
+            check_object(schema, json!({"n":"x"})).unwrap_err(),
             "Validation failed for tool \"check\":\n  - n: must be number\n\nReceived arguments:\n{\n  \"n\": \"x\"\n}"
         );
     }
@@ -877,13 +894,13 @@ fn maestro_requires_exact_array_pointer_indexes() {
             ("1", json!([false, {"type":"number"}])),
         ] {
             let schema = json!({"$defs":{"tuple":tuple},"properties":{"n":{keyword:format!("#/$defs/tuple/{index}")}}});
-            let accepted = json!({"n":1}).as_object().unwrap().clone();
+            let accepted = json!({"n":1});
             assert_eq!(check_object(schema, accepted.clone()), Ok(accepted));
         }
         for index in ["+0", "+1", "%2B0", "%2B1", "01", "-0"] {
             let schema = json!({"$defs":{"tuple":[{"type":"number"},{"type":"number"}]},"properties":{"n":{keyword:format!("#/$defs/tuple/{index}")}}});
             assert_eq!(
-                check_object(schema, json!({"n":1}).as_object().unwrap().clone()).unwrap_err(),
+                check_object(schema, json!({"n":1})).unwrap_err(),
                 "Validation failed for tool \"check\":\n  - n: schema is false\n\nReceived arguments:\n{\n  \"n\": 1\n}"
             );
         }
@@ -899,7 +916,7 @@ fn maestro_limits_ordered_diagnostics_to_eight_distinct_messages() {
     }});
     let arguments = json!({"a":{},"b":{},"c":{},"d":{},"e":{},"f":{},"g":{},"h":{},"i":{}});
     assert_eq!(
-        check_object(schema, arguments.as_object().unwrap().clone()).unwrap_err(),
+        check_object(schema, arguments.clone()).unwrap_err(),
         format!(
             "Validation failed for tool \"check\":\n  - a: must be number\n  - b: must be number\n  - c: must be number\n  - d: must be number\n  - e: must be number\n  - f: must be number\n  - g: must be number\n  - h: must be number\n\nReceived arguments:\n{}",
             serde_json::to_string_pretty(&arguments).unwrap()
@@ -913,15 +930,11 @@ fn maestro_reports_missing_dependencies_once_per_distinct_message() {
     let schema = json!({"dependentRequired":{"a":["b","c"]}});
     let arguments = json!({"a":1});
     assert_eq!(
-        check_object(schema.clone(), arguments.as_object().unwrap().clone()).unwrap_err(),
+        check_object(schema.clone(), arguments.clone()).unwrap_err(),
         "Validation failed for tool \"check\":\n  - root: must have properties b, c when property a is present\n\nReceived arguments:\n{\n  \"a\": 1\n}"
     );
     assert_eq!(
-        check_object(
-            json!({"allOf":[schema.clone(),schema]}),
-            arguments.as_object().unwrap().clone()
-        )
-        .unwrap_err(),
+        check_object(json!({"allOf":[schema.clone(),schema]}), arguments).unwrap_err(),
         "Validation failed for tool \"check\":\n  - root: must have properties b, c when property a is present\n\nReceived arguments:\n{\n  \"a\": 1\n}"
     );
 }
@@ -939,12 +952,12 @@ fn maestro_resolves_relative_references_against_the_enclosing_id() {
         });
         // The reference accepts n:1 and rejects n:"x" by using the document root.
         assert_eq!(
-            check_object(schema.clone(), json!({"n":1}).as_object().unwrap().clone()).unwrap_err(),
+            check_object(schema.clone(), json!({"n":1})).unwrap_err(),
             "Validation failed for tool \"check\":\n  - n: must be string\n\nReceived arguments:\n{\n  \"n\": 1\n}"
         );
         assert_eq!(
-            check_object(schema, json!({"n":"x"}).as_object().unwrap().clone()).unwrap(),
-            json!({"n":"x"}).as_object().unwrap().clone()
+            check_object(schema, json!({"n":"x"})).unwrap(),
+            json!({"n":"x"})
         );
     }
 }
@@ -960,7 +973,6 @@ type Rows<'a> = Vec<(Value, Vec<&'a str>)>;
 
 /// Check one complete public result; no diagnostic lines means unchanged acceptance.
 fn expect(schema: &Value, arguments: Value, lines: &[&str]) -> Checked {
-    let arguments: maestro_models::JsonObject = serde_json::from_value(arguments)?;
     let expected = if lines.is_empty() {
         Ok(arguments.clone())
     } else {
@@ -2082,8 +2094,8 @@ fn native(source: &str) -> String {
 fn assert_placed(
     label: &str,
     schema: &Value,
-    argument_sets: &[maestro_models::JsonObject],
-    outcome: impl Fn(&maestro_models::JsonObject) -> Result<maestro_models::JsonObject, String>,
+    argument_sets: &[Value],
+    outcome: impl Fn(&Value) -> Result<Value, String>,
 ) {
     for arguments in argument_sets {
         assert_eq!(
@@ -2096,13 +2108,7 @@ fn assert_placed(
 
 #[test]
 fn maestro_rejects_malformed_patterns_in_every_schema_the_checker_builds() {
-    let argument_sets = [
-        maestro_models::JsonObject::new(),
-        maestro_models::JsonObject::from_iter([
-            ("p".into(), json!("text")),
-            ("q".into(), json!(3)),
-        ]),
-    ];
+    let argument_sets = [json!({}), json!({"p": "text", "q": 3})];
     let native = native("[");
     for (placement, place) in BUILT_PLACEMENTS {
         for fragment in malformed("[") {
@@ -2115,7 +2121,7 @@ fn maestro_rejects_malformed_patterns_in_every_schema_the_checker_builds() {
 
 #[test]
 fn maestro_ignores_malformed_patterns_in_schemas_the_checker_never_builds() {
-    let empty = [maestro_models::JsonObject::new()];
+    let empty = [json!({})];
     for (placement, place) in UNBUILT_PLACEMENTS {
         for fragment in malformed("[") {
             assert_placed(placement, &place(fragment), &empty, |arguments| {
@@ -2138,7 +2144,7 @@ fn maestro_ignores_malformed_patterns_in_schemas_the_checker_never_builds() {
             json!({}),
         ),
     ] {
-        let arguments = [arguments.as_object().unwrap().clone()];
+        let arguments = [arguments];
         assert_placed(name, &schema, &arguments, |arguments| Ok(arguments.clone()));
     }
 }
@@ -2156,7 +2162,7 @@ fn maestro_reports_a_malformed_pattern_before_any_argument_is_checked() {
         json!({"other":true}),
     ] {
         assert_eq!(
-            check_object(schema.clone(), arguments.as_object().unwrap().clone()),
+            check_object(schema.clone(), arguments.clone()),
             Err(native("[")),
             "{arguments}"
         );
@@ -2232,11 +2238,7 @@ fn maestro_reports_the_first_malformed_pattern_in_build_order() {
     assert_ne!(native("["), native("("));
     for (row, schema, first) in BUILD_ORDER {
         let schema: Value = serde_json::from_str(schema).unwrap();
-        assert_eq!(
-            check_object(schema, maestro_models::JsonObject::new()),
-            Err(native(first)),
-            "{row}"
-        );
+        assert_eq!(check_object(schema, json!({})), Err(native(first)), "{row}");
     }
 }
 
@@ -2247,7 +2249,7 @@ fn maestro_skips_conversion_alternatives_whose_expressions_do_not_compile() {
             for mut alternative in malformed(source) {
                 alternative["type"] = json!("number");
                 let schema = json!({"type":"object","properties":{"p":{keyword:[alternative, 1]}}});
-                let arguments = maestro_models::JsonObject::from_iter([("p".into(), json!("5"))]);
+                let arguments = json!({"p": "5"});
                 assert_eq!(
                     check_object(schema, arguments).map(|arguments| arguments["p"].clone()),
                     Ok(converted.clone()),
@@ -2347,10 +2349,7 @@ fn maestro_prepares_a_shared_reference_target_in_every_scope_that_reaches_it() -
 #[test]
 fn maestro_reports_a_malformed_pattern_that_only_a_later_scope_reaches() {
     assert_eq!(
-        check_object(
-            shared_dynamic_reference("["),
-            maestro_models::JsonObject::new()
-        ),
+        check_object(shared_dynamic_reference("["), json!({})),
         Err(native("["))
     );
 }

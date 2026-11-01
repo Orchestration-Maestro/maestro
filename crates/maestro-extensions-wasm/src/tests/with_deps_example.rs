@@ -2,8 +2,8 @@
 use serde_json::{Value, json};
 
 use super::controlled::Controlled;
-use super::example_support::{registered, result_value};
-use super::hello_example::{assert_metadata, released};
+use super::example_support::{registered, release_all, result_value};
+use super::hello_example::assert_metadata;
 use crate::component_adapter::{Exports, ToolCapabilities};
 use crate::{Extension, ExtensionAPI, ExtensionFuture};
 
@@ -91,7 +91,7 @@ fn run_group(group: &str, count: usize) -> Result<(), String> {
                 &invoked(&host, &exports, key, params(&row, false)).await,
             );
         }
-        released(&host, key);
+        release_all(&host, &["tool parse_duration"]);
         Ok(())
     })
 }
@@ -100,10 +100,10 @@ fn run_group(group: &str, count: usize) -> Result<(), String> {
 #[test]
 fn with_deps_registers_duration_schema() -> Result<(), String> {
     super::block_on(async {
-        let (host, key, _exports) = registered::<WithDeps>("tool parse_duration").await?;
+        let (host, ..) = registered::<WithDeps>("tool parse_duration").await?;
         assert_metadata(&host.observed().tools, &corpus()["metadata"]);
         assert!(host.observed().callback("prepare parse_duration").is_err());
-        released(&host, key);
+        release_all(&host, &["tool parse_duration"]);
         Ok(())
     })
 }
@@ -162,7 +162,7 @@ fn with_deps_ignores_unused_invocation_handles() -> Result<(), String> {
             &row,
             &invoked(&host, &exports, key, params(&row, false)).await,
         );
-        released(&host, key);
+        release_all(&host, &["tool parse_duration"]);
         Ok(())
     })
 }
@@ -170,10 +170,7 @@ fn with_deps_ignores_unused_invocation_handles() -> Result<(), String> {
 /// The built single-copy example registers and executes across the component interface.
 #[test]
 fn with_deps_component_uses_its_parsing_dependency() -> Result<(), String> {
-    let path = super::build::example_component("with_deps")?;
-    let (engine, component) = super::build::compile(&path).map_err(|error| error.to_string())?;
-    let mut harness = super::block_on(super::host::Harness::from_compiled(&engine, &component))
-        .map_err(|error| error.to_string())?;
+    let mut harness = super::host::Harness::example("with_deps")?;
     let recorded = corpus();
     assert_metadata(&harness.observed().tools, &recorded["metadata"]);
     let key = harness

@@ -33,12 +33,14 @@ It reuses the [terminal toolkit](../terminal/components.md) and
   capabilities using the custom router.
 
 - `FooterComponent` renders three rows at most. The first shows the working
-  directory with its home shortened, the branch in parentheses and the session
-  name after a bullet. The second puts the cumulative token and cache totals,
-  the subscription cost and the context display on the left, and the model with
-  its provider and thinking level on the right, padded to the viewport width.
+  directory with its home shortened to `~` only for the home itself and the paths below
+  it (see [Footer metadata](../application/footer.md#working-directory-display)), the branch
+  in parentheses and the session name after a bullet. The second puts the
+  cumulative token and cache totals, the subscription cost and the context
+  display on the left, and the model with its provider and thinking level on the
+  right, padded to the viewport width.
   When the left side leaves no column for the model after the two-column gap,
-  the row holds the left side alone, narrower than the viewport.
+  the row holds the left side alone, without additional padding.
   The third shows the extension statuses in the shared locale order of their
   keys, each reduced to one line. Tokens spell as plain below a thousand, one
   decimal below ten thousand, whole thousands below a million, one decimal

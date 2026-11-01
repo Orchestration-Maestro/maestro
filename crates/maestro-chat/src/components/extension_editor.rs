@@ -1,5 +1,6 @@
 //! Multiline extension input with inherited-terminal external editing.
 use super::dynamic_border::DynamicBorder;
+use crate::external_editor::{ExternalEditorFile, edit_external_file, external_command};
 use maestro_theme::{LiveTheme, ThemeColor, ThemeError};
 use maestro_tui::editor_component::TextCallback;
 use maestro_tui::tui::{InputHandler, TuiRuntime};
@@ -8,9 +9,7 @@ use maestro_tui::{
     TUI, Text,
 };
 use std::{
-    fs::{self, OpenOptions},
-    io::{self, Write},
-    path::Path,
+    io,
     rc::{Rc, Weak},
 };
 
@@ -108,7 +107,7 @@ impl ExtensionEditorComponent {
         }
         Ok(())
     }
-    /// Creates an owned edit file and restores the terminal after every reached body outcome.
+    /// Edits the buffer in the configured external editor through the shared edit owner.
     fn open_external_editor(&self) -> io::Result<()> {
         let Some(command) = external_command(self.runtime.as_ref()) else {
             return Ok(());
@@ -120,64 +119,22 @@ impl ExtensionEditorComponent {
             "maestro-extension-editor-{}.md",
             self.runtime.log_context().unix_ms
         ));
-        let mut options = OpenOptions::new();
-        options.write(true).create_new(true);
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::OpenOptionsExt;
-            options.mode(0o600);
-        }
-        let mut owned = false;
-        let result = (|| {
-            let mut file = options.open(&path)?;
-            owned = true;
-            file.write_all(self.editor.get_text().as_bytes())?;
-            drop(file);
-            tui.stop()?;
-            self.edit_file(&command, &path)
-        })();
-        if owned {
-            let _ = fs::remove_file(&path);
-        }
-        tui.start()?;
-        tui.request_render(true);
-        result
-    }
-    /// Replaces the buffer only after a successfully observed zero exit.
-    fn edit_file(&self, command: &str, path: &Path) -> io::Result<()> {
-        let command = native_command(
-            command,
-            path,
+        let file = ExternalEditorFile {
+            command: &command,
+            path: &path,
+            text: &self.editor.get_text(),
+        };
+        edit_external_file(
+            &tui,
             #[cfg(windows)]
             self.runtime.as_ref(),
-        );
-        match command.spawn_sync(maestro_app::SpawnSyncOptions::Inherit) {
-            Ok(output) if output.status.success() => {
-                let bytes = fs::read(path)?;
-                let content = String::from_utf8_lossy(&bytes);
-                self.editor
-                    .set_text(content.strip_suffix('\n').unwrap_or(&content));
-            }
-            Ok(_) | Err(maestro_app::SpawnSyncError::Spawn(_)) => {}
-            Err(
-                maestro_app::SpawnSyncError::Infrastructure(error)
-                | maestro_app::SpawnSyncError::Wait(error),
-            ) => return Err(error),
-            Err(maestro_app::SpawnSyncError::Timeout) => {
-                return Err(io::Error::new(
-                    io::ErrorKind::TimedOut,
-                    "external editor timed out",
-                ));
-            }
-        }
-        Ok(())
+            |text| {
+                self.editor.set_text(text);
+                Ok::<_, io::Error>(())
+            },
+            &file,
+        )
     }
-}
-/// Samples the current nonempty visual editor, falling back to the editor variable.
-fn external_command(runtime: &dyn TuiRuntime) -> Option<String> {
-    ["VISUAL", "EDITOR"]
-        .into_iter()
-        .find_map(|key| runtime.environment(key).filter(|value| !value.is_empty()))
 }
 component_children!(ExtensionEditorComponent, Container, container);
 impl Focusable for ExtensionEditorComponent {
@@ -209,34 +166,6 @@ impl Component for ExtensionEditorComponent {
     }
 }
 
-/// Builds the launch with the path last; only non-Windows commands split on ASCII spaces.
-fn native_command(
-    command: &str,
-    path: &Path,
-    #[cfg(windows)] runtime: &dyn TuiRuntime,
-) -> maestro_app::LaunchContext<'static, Vec<(&'static str, String)>> {
-    #[cfg(not(windows))]
-    {
-        let mut tokens = command.split(' ');
-        maestro_app::Launch {
-            executable: tokens.next().unwrap_or_default().into(),
-            args: tokens.map(str::to_owned).collect(),
-            verbatim: false,
-        }
-        .with_context(vec![], None)
-        .arg(path)
-    }
-    #[cfg(windows)]
-    {
-        let (launch, env) = windows_command(
-            command,
-            &path.to_string_lossy(),
-            runtime.environment("comspec").as_deref(),
-        );
-        launch.with_context(vec![env], None)
-    }
-}
-
 /// Prepares the constructor-time help using the global registry.
 fn editor_hint(theme: &LiveTheme, runtime: &dyn TuiRuntime) -> Result<String, ThemeError> {
     let mut hints = vec![
@@ -253,26 +182,3 @@ fn editor_hint(theme: &LiveTheme, runtime: &dyn TuiRuntime) -> Result<String, Th
         .collect::<Result<Vec<_>, _>>()?
         .join("  "))
 }
-
-/// Returns native interpreter arguments while preserving the original command string.
-#[cfg(any(windows, test))]
-fn windows_command(
-    command: &str,
-    path: &str,
-    shell: Option<&str>,
-) -> (maestro_app::Launch, (&'static str, String)) {
-    /// Environment operand keeps the filename out of interpreted command text.
-    const EDITOR_FILE_ENV: &str = "MAESTRO_EDITOR_FILE";
-    let mut launch = maestro_app::windows_shell_launch(command, shell);
-    let operand = if launch.verbatim {
-        format!(" \"%{EDITOR_FILE_ENV}%\"")
-    } else {
-        format!(" \"${EDITOR_FILE_ENV}\"")
-    };
-    if let Some(text) = launch.args.last_mut() {
-        text.insert_str(text.len() - usize::from(launch.verbatim), &operand);
-    }
-    (launch, (EDITOR_FILE_ENV, path.into()))
-}
-#[cfg(test)]
-mod tests;

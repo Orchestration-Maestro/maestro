@@ -241,11 +241,13 @@ and empty strings remain present. An owner can read only names it registered;
 the runner can set any name. Value snapshots are independent ordered maps, while
 returned flag records retain their owners.
 
-Invalidation, through `ExtensionRunner::invalidate` or the shared runtime state,
-retains the first message, including an empty string. Registration, facade flag
-reads and every guarded context operation then return that error before effects. Runner
-queries and its flag setter remain available. Omitting the message uses guidance
-about stale contexts after session replacement or reload.
+Invalidation keeps the first message, including an empty string. A stale shared
+runtime state makes registration and facade flag reads return that error before
+effects. `ExtensionRunner::invalidate` also invalidates the runtime, and every
+guarded operation of that runner's contexts then fails with the runner's first
+message. A runner created later over the same runtime keeps its contexts
+active. Runner queries and its flag setter remain available. Omitting the
+message uses guidance about stale contexts after session replacement or reload.
 
 ## Shortcuts and diagnostics
 
@@ -332,9 +334,12 @@ assert_eq!(history.borrow().get_cwd(), "/work");
 
 Commands receive `ExtensionCommandContext`, the base context plus six operations:
 `wait_for_idle`, `new_session`, `fork`, `navigate_tree`, `switch_session` and `reload`.
-`bind_command_context(Some(actions))` replaces these independently of `bind_core`;
-`None` restores no-op waits and reloads and uncancelled session-change results.
-Defaults never run supplied setup or continuation callbacks.
+The six are `CommandContextOperations`, which a runtime owns;
+`ExtensionCommandContextActions::new` wraps them for a runner to bind. A session binds
+the value its application runtime builds, so a caller asks the runtime instead of
+supplying a second policy. `bind_command_context(Some(actions))` replaces these
+independently of `bind_core`; `None` restores no-op waits and reloads and uncancelled
+session-change results. Defaults never run supplied setup or continuation callbacks.
 
 Each call checks activity, selects the current operation and starts it immediately,
 before its returned local future is polled. A later rebind or invalidation does not
@@ -351,10 +356,23 @@ base and command members still apply the guard. Application operations, not the
 context, run `setup` and `with_session` callbacks and create replacement sessions.
 
 ```rust
-use maestro_extensions::{ExtensionCommandContextActions, ExtensionRunner, ReplacedSessionContext};
+use maestro_extensions::{
+    CommandContextOperations, ExtensionCommandContextActions, ExtensionRunner, ReplacedSessionContext,
+};
 use maestro_extensions::types::{NewSessionCommandOptions, SessionChangeResult};
 use maestro_extensions::runner::ExtensionRunnerSession;
 use std::{cell::RefCell, rc::Rc, sync::{Arc, RwLock}};
+# fn no_op_operations() -> CommandContextOperations {
+#     let uncancelled = || Box::pin(std::future::ready(Ok(SessionChangeResult { cancelled: false })));
+#     CommandContextOperations {
+#         wait_for_idle: Rc::new(|| Box::pin(std::future::ready(Ok(())))),
+#         new_session: Rc::new(move |_| uncancelled()),
+#         fork: Rc::new(move |_, _| uncancelled()),
+#         navigate_tree: Rc::new(move |_, _| uncancelled()),
+#         switch_session: Rc::new(move |_, _| uncancelled()),
+#         reload: Rc::new(|| Box::pin(std::future::ready(Ok(())))),
+#     }
+# }
 # fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 # let auth = maestro_models::SharedHandle::new(maestro_credentials::AuthStorage::in_memory(Default::default()));
 # struct NoCommands;
@@ -373,13 +391,15 @@ let runner = ExtensionRunner::<maestro_models::Threaded>::new(
     Arc::new(RwLock::new(Vec::new())), maestro_extensions::create_extension_runtime::<maestro_models::Threaded>(), session,
     Arc::new(|_| {}), maestro_theme::LiveTheme::default(),
 );
-runner.bind_command_context(Some(ExtensionCommandContextActions {
-    new_session: Rc::new(|options| {
-        assert_eq!(options.unwrap().parent_session.as_deref(), Some("/parent.jsonl"));
-        Box::pin(async { Ok(SessionChangeResult { cancelled: true }) })
-    }),
-    ..Default::default()
-}));
+runner.bind_command_context(Some(ExtensionCommandContextActions::new(
+    CommandContextOperations {
+        new_session: Rc::new(|options| {
+            assert_eq!(options.unwrap().parent_session.as_deref(), Some("/parent.jsonl"));
+            Box::pin(async { Ok(SessionChangeResult { cancelled: true }) })
+        }),
+        ..no_op_operations()
+    },
+)));
 let ctx = runner.create_command_context();
 let executor = tokio::runtime::Builder::new_current_thread().build()?;
 executor.block_on(async {
@@ -570,6 +590,12 @@ default. Renderer state remains local and is projected by `ToolRendererBinding`.
 Typed result renderers decode details through `from_definition`; raw renderers and
 Serialize-only details use `RegisteredToolInput::from_raw` without a decoder.
 
+A parameter schema built by a schema builder carries the kind of each node its author
+declared, beside the ordinary JSON Schema value. Argument preparation converts those
+nodes before the plain conversion pass; a schema written as ordinary JSON has no
+declared kinds and is converted as JSON alone. Provider payloads and saved JSON drop
+the declared kinds.
+
 ```rust
 use maestro_extensions::{ExtensionContext, ExtensionFactory, load_extension_from_factory};
 use maestro_models::{Local, Tool};
@@ -584,7 +610,7 @@ let factory: ExtensionFactory<Local> = Rc::new(|api| {
     let tool: ToolDefinitionRecord<ExtensionContext, Value, Value, (), Local, Local> =
         ToolDefinitionRecord {
             definition: Tool { name: "echo".into(), description: "Echo arguments".into(),
-                parameters: json!({"type":"object"}) },
+                parameters: json!({"type":"object"}).into() },
             label: "Echo".into(), prompt_snippet: None, prompt_guidelines: None,
             render_shell: None, prepare_arguments: None, execution_mode: None,
             execute: Rc::new(|_, params, _, _, ctx| Box::pin(async move {
@@ -614,3 +640,8 @@ belong to the shared request owner, re-exported by models and specialized with
 native domain handles or the guest's existing carriers. `BuildSystemPromptOptions`
 is also exported at the extension root for constructing prompt operands. The guest adapter alone
 snapshots stream observations and encodes capability resources.
+
+Local definitions retain executable parameter schemas (`ParameterSchema<SchemaCode>`).
+Registration, enumeration and re-registration keep their author callbacks alive;
+validation calls them after argument preparation and before typed execution decoding.
+Default threaded definitions and model request contexts remain data-only.

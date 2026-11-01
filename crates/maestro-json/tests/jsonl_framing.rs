@@ -146,3 +146,18 @@ fn jsonl_splitters_keep_independent_state() {
     drop(right);
     assert_eq!(left.finish().as_deref(), Some("rest"));
 }
+
+#[test]
+fn native_json_line_preserves_integer_boundaries() {
+    let value = json!({"seq": 9_007_199_254_740_993_u64, "nested": [u64::MAX, i64::MIN],
+        "float": 1e21, "zero": -0.0});
+    let line = maestro_json::jsonl::serialize_native_json_line(&value).unwrap();
+    assert_eq!(
+        line,
+        "{\"seq\":9007199254740993,\"nested\":[18446744073709551615,-9223372036854775808],\"float\":1e+21,\"zero\":0}\n"
+    );
+    assert_eq!(
+        serde_json::from_str::<serde_json::Value>(&line).unwrap()["seq"],
+        value["seq"]
+    );
+}

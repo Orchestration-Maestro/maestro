@@ -110,3 +110,77 @@ impl<C: CustomAgentMessages> Clone for AgentEvent<C> {
         }
     }
 }
+/// The event as one record: its snake-case `type`, then its members, with a tool call's
+/// identifier, name and arguments as `toolCallId`, `toolName` and `args`.
+impl<C: CustomAgentMessages + serde::Serialize> serde::Serialize for AgentEvent<C> {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::SerializeMap;
+        let mut map = serializer.serialize_map(None)?;
+        match self {
+            Self::AgentStart => map.serialize_entry("type", "agent_start")?,
+            Self::AgentEnd { messages } => {
+                map.serialize_entry("type", "agent_end")?;
+                map.serialize_entry("messages", messages)?;
+            }
+            Self::TurnStart => map.serialize_entry("type", "turn_start")?,
+            Self::TurnEnd {
+                message,
+                tool_results,
+            } => {
+                map.serialize_entry("type", "turn_end")?;
+                map.serialize_entry("message", message)?;
+                map.serialize_entry("toolResults", tool_results)?;
+            }
+            Self::MessageStart { message } => {
+                map.serialize_entry("type", "message_start")?;
+                map.serialize_entry("message", message)?;
+            }
+            Self::MessageUpdate {
+                message,
+                assistant_message_event,
+            } => {
+                map.serialize_entry("type", "message_update")?;
+                map.serialize_entry("assistantMessageEvent", assistant_message_event)?;
+                map.serialize_entry("message", message)?;
+            }
+            Self::MessageEnd { message } => {
+                map.serialize_entry("type", "message_end")?;
+                map.serialize_entry("message", message)?;
+            }
+            Self::ToolExecutionStart { tool_call } => {
+                serialize_tool_call(&mut map, "tool_execution_start", tool_call)?;
+            }
+            Self::ToolExecutionUpdate {
+                tool_call,
+                partial_result,
+            } => {
+                serialize_tool_call(&mut map, "tool_execution_update", tool_call)?;
+                map.serialize_entry("partialResult", partial_result)?;
+            }
+            Self::ToolExecutionEnd {
+                tool_call,
+                result,
+                is_error,
+            } => {
+                map.serialize_entry("type", "tool_execution_end")?;
+                map.serialize_entry("toolCallId", &tool_call.id)?;
+                map.serialize_entry("toolName", &tool_call.name)?;
+                map.serialize_entry("result", result)?;
+                map.serialize_entry("isError", is_error)?;
+            }
+        }
+        map.end()
+    }
+}
+
+/// Writes a tool event's `type`, `toolCallId`, `toolName` and `args`.
+fn serialize_tool_call<M: serde::ser::SerializeMap>(
+    map: &mut M,
+    kind: &str,
+    tool_call: &AgentToolCall,
+) -> Result<(), M::Error> {
+    map.serialize_entry("type", kind)?;
+    map.serialize_entry("toolCallId", &tool_call.id)?;
+    map.serialize_entry("toolName", &tool_call.name)?;
+    map.serialize_entry("args", &tool_call.arguments)
+}

@@ -66,7 +66,7 @@ pub(super) struct ModelDefinition {
     compat: Option<ModelCompat>,
 }
 /// Optional metadata actually consumed by model composition.
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(super) struct ModelOverride {
     /// Authored request header sources.
@@ -90,7 +90,7 @@ pub(super) struct ModelOverride {
     compat: Option<ModelCompat>,
 }
 /// Individually supplied token prices.
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct CostOverride {
     /// Input price.
@@ -261,7 +261,7 @@ fn custom(
     Some(model)
 }
 /// Overlay selected metadata without applying undeclared API or endpoint fields.
-fn apply(model: &mut Model, fields: ModelOverride) {
+pub(super) fn apply(model: &mut Model, fields: ModelOverride) {
     if let Some(name) = fields.name {
         model.name = name;
     }
@@ -292,7 +292,10 @@ fn apply(model: &mut Model, fields: ModelOverride) {
     model.compat = merge_compat(model.compat.take(), fields.compat);
 }
 /// Overlay compatibility; a routing slot merges one level only when either side is truthy.
-fn merge_compat(base: Option<ModelCompat>, overlay: Option<ModelCompat>) -> Option<ModelCompat> {
+pub(super) fn merge_compat(
+    base: Option<ModelCompat>,
+    overlay: Option<ModelCompat>,
+) -> Option<ModelCompat> {
     let Some(overlay) = overlay else {
         return base;
     };

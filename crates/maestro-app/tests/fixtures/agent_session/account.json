@@ -3,21 +3,13 @@
     "loaded": {
       "ok": {}
     },
-    "written": {
-      "ok": true
-    },
-    "file_text": "{\n  \"alpha\": {\n    \"type\": \"oauth\"\n  }\n}",
-    "file_bytes": 40
+    "file_text": "{\n  \"alpha\": {\n    \"type\": \"oauth\"\n  }\n}"
   },
   "malformed_file": {
     "loaded": {
       "ok": {}
     },
-    "written": {
-      "ok": true
-    },
-    "file_text": "{\n  \"alpha\": {\n    \"type\": \"oauth\"\n  }\n}",
-    "file_bytes": 40
+    "file_text": "{\n  \"alpha\": {\n    \"type\": \"oauth\"\n  }\n}"
   },
   "object_root": {
     "loaded": {
@@ -31,54 +23,19 @@
         }
       }
     },
-    "written": {
-      "ok": true
-    },
     "file_text": "{\n  \"beta\": {\n    \"type\": \"oauth\"\n  },\n  \"gamma\": {\n    \"type\": \"api_key\",\n    \"key\": \"k\"\n  },\n  \"alpha\": {\n    \"type\": \"oauth\"\n  }\n}",
     "file_bytes": 133
   },
   "array_root": {
-    "loaded": {
-      "ok": [
-        {
-          "type": "oauth"
-        }
-      ]
-    },
-    "written": {
-      "ok": true
-    },
-    "file_text": "[\n  {\n    \"type\": \"oauth\"\n  }\n]",
-    "file_bytes": 31
+    "file_text": "[\n  {\n    \"type\": \"oauth\"\n  }\n]"
   },
   "scalar_number_root": {
-    "loaded": {
-      "ok": 5
-    },
-    "written": {
-      "error": "TypeError: Cannot create property 'alpha' on number '5'"
-    },
-    "file_text": "5",
-    "file_bytes": 1
+    "file_text": "5"
   },
   "scalar_string_root": {
-    "loaded": {
-      "ok": "text"
-    },
-    "written": {
-      "error": "TypeError: Cannot create property 'alpha' on string 'text'"
-    },
-    "file_text": "\"text\"",
-    "file_bytes": 6
+    "file_text": "\"text\""
   },
   "null_root": {
-    "loaded": {
-      "ok": null
-    },
-    "written": {
-      "error": "TypeError: Cannot set properties of null (setting 'alpha')"
-    },
-    "file_text": "null",
-    "file_bytes": 4
+    "file_text": "null"
   }
 }

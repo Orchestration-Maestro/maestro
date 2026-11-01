@@ -5,7 +5,7 @@ use crate::support;
 use maestro_agent::{AgentMessage, ThinkingLevel};
 use maestro_models::{
     AssistantContent, FauxAssistantMessageOptions, FauxResponseStep, FauxToolCallOptions,
-    JsonObject, RegisterFauxProviderOptions, StopReason, ToolResultMessage, UserContent,
+    RegisterFauxProviderOptions, StopReason, ToolResultMessage, UserContent,
     faux_assistant_message, faux_text, faux_thinking, faux_tool_call,
 };
 use serde_json::{Value, json};
@@ -309,10 +309,9 @@ async fn maestro_tool_result_tail_can_continue_case() {
         .collect::<String>();
     assert_eq!(text, "5 + 3 = 8");
     let agent = agent_for(faux.get_model(None).unwrap(), vec![tool]);
-    let arguments: JsonObject = json!({"expression": "5 + 3"}).as_object().unwrap().clone();
     let call = AssistantContent::ToolCall(faux_tool_call(
         "calculate",
-        arguments,
+        json!({"expression": "5 + 3"}),
         FauxToolCallOptions {
             id: Some("calc-1".into()),
         },

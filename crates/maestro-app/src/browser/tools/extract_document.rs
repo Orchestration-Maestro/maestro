@@ -72,7 +72,16 @@ fn build_tool(fetch: Fetch, load: LoadAttachment) -> ExtractDocumentTool {
         Tool {
             name: "extract_document".into(),
             description: EXTRACT_DOCUMENT_DESCRIPTION.into(),
-            parameters: serde_json::json!({"type":"object","required":["url"],"properties":{"url":{"type":"string","description":"URL of the document to extract text from (PDF, DOCX, XLSX, or PPTX)"}}}),
+            parameters: maestro_models::ParameterSchema::authored(
+                serde_json::json!({"type":"object","required":["url"],"properties":{"url":{"type":"string","description":"URL of the document to extract text from (PDF, DOCX, XLSX, or PPTX)"}}}),
+                [
+                    (String::new(), maestro_models::SchemaKind::Object),
+                    (
+                        "/properties/url".to_owned(),
+                        maestro_models::SchemaKind::String,
+                    ),
+                ],
+            ),
         },
         "Extract Document".into(),
         SharedHandle::new(move |_, args: ExtractDocumentParams, signal, _| {

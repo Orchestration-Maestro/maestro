@@ -190,6 +190,19 @@ impl<'a> StyleState<'a> {
         self.attributes & Attribute::Underline.bit() != 0
     }
 
+    /// Whether this style shows on a blank cell. Inverse, underline and a background colour
+    /// paint a space; a foreground colour and the other attributes leave it invisible.
+    pub(super) const fn shows_on_blank(&self) -> bool {
+        self.attributes & (Attribute::Inverse.bit() | Attribute::Underline.bit()) != 0
+            || self.background.is_some()
+    }
+
+    /// Whether this style paints the cells after a wrapped row. A row closes underline at its
+    /// end but keeps inverse and its background, so only those reach the cells that follow.
+    pub(super) const fn paints_after_row(&self) -> bool {
+        self.attributes & Attribute::Inverse.bit() != 0 || self.background.is_some()
+    }
+
     /// Applies the parameters of an SGR escape.
     pub(super) fn apply_sgr(&mut self, params: &'a str) {
         if params.is_empty() {

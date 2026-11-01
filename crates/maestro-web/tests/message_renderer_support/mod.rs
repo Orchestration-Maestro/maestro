@@ -1,10 +1,7 @@
 //! Native custom-message fixtures shared by registry and browser consumers.
 #![cfg(test)]
 use maestro_app::{AgentMessage, CustomAgentMessages};
-use maestro_web::{
-    MessageRenderer,
-    tools::types::{ToolContent, ToolUiError},
-};
+use maestro_web::{MessageRenderer, tools::types::ToolUiError};
 use std::{
     rc::Rc,
     sync::{Arc, RwLock, atomic::AtomicU32},
@@ -23,15 +20,16 @@ impl CustomAgentMessages for NativeMessage {
     }
 }
 /// A supplied typed callback, without JSON conversion or retained frame operands.
-pub type Callback =
-    dyn Fn(&AgentMessage<NativeMessage>) -> Result<Box<dyn ToolContent>, ToolUiError>;
+pub type Callback = dyn Fn(
+    &AgentMessage<NativeMessage>,
+) -> Result<crate::tool_renderer_support::PreparedContent, ToolUiError>;
 /// Ordinary user renderer for the native fixture.
 pub struct Renderer(pub Rc<Callback>);
 impl MessageRenderer<NativeMessage> for Renderer {
     fn render(
         &self,
         message: &AgentMessage<NativeMessage>,
-    ) -> Result<Box<dyn ToolContent>, ToolUiError> {
+    ) -> Result<crate::tool_renderer_support::PreparedContent, ToolUiError> {
         (self.0)(message)
     }
 }

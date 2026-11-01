@@ -3,17 +3,22 @@ members = ["crates/*"]
 resolver = "3"
 
 [workspace.dependencies]
+globset = { version = "=0.4.20", default-features = false }
 percent-encoding = "=2.3.2"
 regex = "=1.13.1"
+regex-syntax = { version = "=0.8.11", default-features = false, features = ["std"] }
 maestro-text = { path = "crates/maestro-text" }
+maestro-listeners = { path = "crates/maestro-listeners" }
 interprocess = { version = "=2.4.2", default-features = false }
 maestro-dependencies = { path = "crates/maestro-dependencies" }
 maestro-test-process = { path = "crates/maestro-test-process" }
 maestro-test-directory = { path = "crates/maestro-test-directory" }
+maestro-test-terminal = { path = "crates/maestro-test-terminal" }
 maestro-test-tracing = { path = "crates/maestro-test-tracing" }
 futures-util = { version = "=0.3.34", default-features = false, features = ["std", "sink"] }
 num-bigint = "=0.4.8"
 num-traits = "=0.2.19"
+nix = { version = "=0.31.3", default-features = false, features = ["signal"] }
 ryu-js = "=1.0.3"
 serde = { version = "=1.0.229", features = ["derive"] }
 serde_json = { version = "=1.0.151", features = ["preserve_order", "float_roundtrip"] }
@@ -70,6 +75,10 @@ opt-level = 3
 
 # Markdown, highlighting and the hook's conventions check run through it, two to three times slower unoptimised.
 [profile.dev.package.regress]
+opt-level = 3
+
+# The test setup hashes the lock files on every nextest run; an unoptimised digest makes the reused-directory path about three times slower.
+[profile.dev.package.sha2]
 opt-level = 3
 
 [profile.test]

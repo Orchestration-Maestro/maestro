@@ -1,0 +1,1565 @@
+[
+  {
+    "id": "refine-default-message",
+    "test": "refinement_messages_keep_default_static_and_dynamic_text",
+    "input": {
+      "n": 1
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: Refine Error\n\nReceived arguments:\n{\n  \"n\": 1\n}"
+    }
+  },
+  {
+    "id": "refine-static-message",
+    "test": "refinement_messages_keep_default_static_and_dynamic_text",
+    "input": {
+      "n": 1
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: not admitted\n\nReceived arguments:\n{\n  \"n\": 1\n}"
+    }
+  },
+  {
+    "id": "refine-dynamic-message",
+    "test": "refinement_messages_keep_default_static_and_dynamic_text",
+    "input": {
+      "n": "3"
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: not admitted: 3\n\nReceived arguments:\n{\n  \"n\": \"3\"\n}"
+    }
+  },
+  {
+    "id": "refine-stack-errors",
+    "test": "stacked_refinements_keep_order_and_all_failures",
+    "input": {
+      "n": "3"
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: first\n  - n: second\n\nReceived arguments:\n{\n  \"n\": \"3\"\n}"
+    }
+  },
+  {
+    "id": "refine-stack-first-ok",
+    "test": "stacked_refinements_keep_order_and_all_failures",
+    "input": {
+      "n": "3"
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: second\n\nReceived arguments:\n{\n  \"n\": \"3\"\n}"
+    }
+  },
+  {
+    "id": "refine-stack-second-ok",
+    "test": "stacked_refinements_keep_order_and_all_failures",
+    "input": {
+      "n": "3"
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: first\n\nReceived arguments:\n{\n  \"n\": \"3\"\n}"
+    }
+  },
+  {
+    "id": "refine-empty-errors",
+    "test": "refinement_messages_keep_default_static_and_dynamic_text",
+    "input": {
+      "n": 1
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: \n\nReceived arguments:\n{\n  \"n\": 1\n}"
+    }
+  },
+  {
+    "id": "equal-refinement-messages",
+    "test": "refinement_errors_keep_distinct_indices_and_the_error_limit",
+    "input": {
+      "n": 1
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: same\n  - n: same\n\nReceived arguments:\n{\n  \"n\": 1\n}"
+    }
+  },
+  {
+    "id": "many-refinement-messages",
+    "test": "refinement_errors_keep_distinct_indices_and_the_error_limit",
+    "input": {
+      "n": 1
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: error 0\n  - n: error 1\n  - n: error 2\n  - n: error 3\n  - n: error 4\n  - n: error 5\n  - n: error 6\n  - n: error 7\n\nReceived arguments:\n{\n  \"n\": 1\n}"
+    }
+  },
+  {
+    "id": "error-factory-after-limit",
+    "test": "refinement_errors_keep_distinct_indices_and_the_error_limit",
+    "input": {
+      "n": 1
+    },
+    "result": {
+      "error": "last factory stopped"
+    }
+  },
+  {
+    "id": "base-positive-null",
+    "test": "base_conversion_precedes_its_check",
+    "input": {
+      "n": null
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: must match check function\n\nReceived arguments:\n{\n  \"n\": null\n}"
+    }
+  },
+  {
+    "id": "base-positive-true",
+    "test": "base_conversion_precedes_its_check",
+    "input": {
+      "n": true
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: must match check function\n\nReceived arguments:\n{\n  \"n\": true\n}"
+    }
+  },
+  {
+    "id": "base-positive-false",
+    "test": "base_conversion_precedes_its_check",
+    "input": {
+      "n": false
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: must match check function\n\nReceived arguments:\n{\n  \"n\": false\n}"
+    }
+  },
+  {
+    "id": "base-positive-zero",
+    "test": "base_conversion_precedes_its_check",
+    "input": {
+      "n": 0
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: must match check function\n\nReceived arguments:\n{\n  \"n\": 0\n}"
+    }
+  },
+  {
+    "id": "base-positive-one",
+    "test": "base_conversion_precedes_its_check",
+    "input": {
+      "n": 1
+    },
+    "result": {
+      "ok": {
+        "n": 1
+      }
+    }
+  },
+  {
+    "id": "base-positive-negative",
+    "test": "base_conversion_precedes_its_check",
+    "input": {
+      "n": -1
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: must match check function\n\nReceived arguments:\n{\n  \"n\": -1\n}"
+    }
+  },
+  {
+    "id": "base-positive-fraction",
+    "test": "base_conversion_precedes_its_check",
+    "input": {
+      "n": 1.5
+    },
+    "result": {
+      "ok": {
+        "n": 1.5
+      }
+    }
+  },
+  {
+    "id": "base-positive-empty",
+    "test": "base_conversion_precedes_its_check",
+    "input": {
+      "n": ""
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: must match check function\n\nReceived arguments:\n{\n  \"n\": \"\"\n}"
+    }
+  },
+  {
+    "id": "base-positive-number",
+    "test": "base_conversion_precedes_its_check",
+    "input": {
+      "n": "4"
+    },
+    "result": {
+      "ok": {
+        "n": 4
+      }
+    }
+  },
+  {
+    "id": "base-positive-bad",
+    "test": "base_conversion_precedes_its_check",
+    "input": {
+      "n": "word"
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: must match check function\n\nReceived arguments:\n{\n  \"n\": \"word\"\n}"
+    }
+  },
+  {
+    "id": "base-positive-array",
+    "test": "base_conversion_precedes_its_check",
+    "input": {
+      "n": []
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: must match check function\n\nReceived arguments:\n{\n  \"n\": []\n}"
+    }
+  },
+  {
+    "id": "base-positive-object",
+    "test": "base_conversion_precedes_its_check",
+    "input": {
+      "n": {}
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: must match check function\n\nReceived arguments:\n{\n  \"n\": {}\n}"
+    }
+  },
+  {
+    "id": "base-default-null",
+    "test": "base_defaults_keep_every_json_kind",
+    "input": {
+      "n": null
+    },
+    "result": {
+      "ok": {
+        "n": null
+      }
+    }
+  },
+  {
+    "id": "refine-null",
+    "test": "refinement_follows_declared_conversion",
+    "input": {
+      "n": null
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: positive expected\n\nReceived arguments:\n{\n  \"n\": null\n}"
+    }
+  },
+  {
+    "id": "base-default-true",
+    "test": "base_defaults_keep_every_json_kind",
+    "input": {
+      "n": true
+    },
+    "result": {
+      "ok": {
+        "n": true
+      }
+    }
+  },
+  {
+    "id": "refine-true",
+    "test": "refinement_follows_declared_conversion",
+    "input": {
+      "n": true
+    },
+    "result": {
+      "ok": {
+        "n": 1
+      }
+    }
+  },
+  {
+    "id": "base-default-false",
+    "test": "base_defaults_keep_every_json_kind",
+    "input": {
+      "n": false
+    },
+    "result": {
+      "ok": {
+        "n": false
+      }
+    }
+  },
+  {
+    "id": "refine-false",
+    "test": "refinement_follows_declared_conversion",
+    "input": {
+      "n": false
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: positive expected\n\nReceived arguments:\n{\n  \"n\": false\n}"
+    }
+  },
+  {
+    "id": "base-default-zero",
+    "test": "base_defaults_keep_every_json_kind",
+    "input": {
+      "n": 0
+    },
+    "result": {
+      "ok": {
+        "n": 0
+      }
+    }
+  },
+  {
+    "id": "refine-zero",
+    "test": "refinement_follows_declared_conversion",
+    "input": {
+      "n": 0
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: positive expected\n\nReceived arguments:\n{\n  \"n\": 0\n}"
+    }
+  },
+  {
+    "id": "base-default-one",
+    "test": "base_defaults_keep_every_json_kind",
+    "input": {
+      "n": 1
+    },
+    "result": {
+      "ok": {
+        "n": 1
+      }
+    }
+  },
+  {
+    "id": "refine-one",
+    "test": "refinement_follows_declared_conversion",
+    "input": {
+      "n": 1
+    },
+    "result": {
+      "ok": {
+        "n": 1
+      }
+    }
+  },
+  {
+    "id": "base-default-negative",
+    "test": "base_defaults_keep_every_json_kind",
+    "input": {
+      "n": -1
+    },
+    "result": {
+      "ok": {
+        "n": -1
+      }
+    }
+  },
+  {
+    "id": "refine-negative",
+    "test": "refinement_follows_declared_conversion",
+    "input": {
+      "n": -1
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: positive expected\n\nReceived arguments:\n{\n  \"n\": -1\n}"
+    }
+  },
+  {
+    "id": "base-default-fraction",
+    "test": "base_defaults_keep_every_json_kind",
+    "input": {
+      "n": 1.5
+    },
+    "result": {
+      "ok": {
+        "n": 1.5
+      }
+    }
+  },
+  {
+    "id": "refine-fraction",
+    "test": "refinement_follows_declared_conversion",
+    "input": {
+      "n": 1.5
+    },
+    "result": {
+      "ok": {
+        "n": 1.5
+      }
+    }
+  },
+  {
+    "id": "base-default-empty",
+    "test": "base_defaults_keep_every_json_kind",
+    "input": {
+      "n": ""
+    },
+    "result": {
+      "ok": {
+        "n": ""
+      }
+    }
+  },
+  {
+    "id": "refine-empty",
+    "test": "refinement_follows_declared_conversion",
+    "input": {
+      "n": ""
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: positive expected\n\nReceived arguments:\n{\n  \"n\": \"\"\n}"
+    }
+  },
+  {
+    "id": "base-default-number",
+    "test": "base_defaults_keep_every_json_kind",
+    "input": {
+      "n": "4"
+    },
+    "result": {
+      "ok": {
+        "n": "4"
+      }
+    }
+  },
+  {
+    "id": "refine-number",
+    "test": "refinement_follows_declared_conversion",
+    "input": {
+      "n": "4"
+    },
+    "result": {
+      "ok": {
+        "n": 4
+      }
+    }
+  },
+  {
+    "id": "base-default-bad",
+    "test": "base_defaults_keep_every_json_kind",
+    "input": {
+      "n": "word"
+    },
+    "result": {
+      "ok": {
+        "n": "word"
+      }
+    }
+  },
+  {
+    "id": "refine-bad",
+    "test": "refinement_follows_declared_conversion",
+    "input": {
+      "n": "word"
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: must be number\n\nReceived arguments:\n{\n  \"n\": \"word\"\n}"
+    }
+  },
+  {
+    "id": "base-default-array",
+    "test": "base_defaults_keep_every_json_kind",
+    "input": {
+      "n": []
+    },
+    "result": {
+      "ok": {
+        "n": []
+      }
+    }
+  },
+  {
+    "id": "refine-array",
+    "test": "refinement_follows_declared_conversion",
+    "input": {
+      "n": []
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: must be number\n\nReceived arguments:\n{\n  \"n\": []\n}"
+    }
+  },
+  {
+    "id": "base-default-object",
+    "test": "base_defaults_keep_every_json_kind",
+    "input": {
+      "n": {}
+    },
+    "result": {
+      "ok": {
+        "n": {}
+      }
+    }
+  },
+  {
+    "id": "refine-object",
+    "test": "refinement_follows_declared_conversion",
+    "input": {
+      "n": {}
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: must be number\n\nReceived arguments:\n{\n  \"n\": {}\n}"
+    }
+  },
+  {
+    "id": "optional-base-missing",
+    "test": "missing_nodes_do_not_invoke_schema_code",
+    "input": {},
+    "result": {
+      "ok": {}
+    }
+  },
+  {
+    "id": "required-base-missing",
+    "test": "missing_nodes_do_not_invoke_schema_code",
+    "input": {},
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: must have required properties n\n\nReceived arguments:\n{}"
+    }
+  },
+  {
+    "id": "refine-prior-minimum",
+    "test": "ordinary_schema_failure_skips_refinement",
+    "input": {
+      "n": "3"
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: must be >= 5\n\nReceived arguments:\n{\n  \"n\": \"3\"\n}"
+    }
+  },
+  {
+    "id": "refine-prior-type",
+    "test": "ordinary_schema_failure_skips_refinement",
+    "input": {
+      "n": {}
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: must be number\n\nReceived arguments:\n{\n  \"n\": {}\n}"
+    }
+  },
+  {
+    "id": "throw-convert",
+    "test": "schema_code_failures_keep_their_original_messages",
+    "input": {
+      "n": "4"
+    },
+    "result": {
+      "error": "conversion stopped"
+    }
+  },
+  {
+    "id": "throw-check",
+    "test": "schema_code_failures_keep_their_original_messages",
+    "input": {
+      "n": "4"
+    },
+    "result": {
+      "error": "check stopped"
+    }
+  },
+  {
+    "id": "throw-errors",
+    "test": "schema_code_failures_keep_their_original_messages",
+    "input": {
+      "n": "-2"
+    },
+    "result": {
+      "error": "errors stopped"
+    }
+  },
+  {
+    "id": "refine-throw-check",
+    "test": "schema_code_failures_keep_their_original_messages",
+    "input": {
+      "n": 4
+    },
+    "result": {
+      "error": "check stopped"
+    }
+  },
+  {
+    "id": "refine-throw-error",
+    "test": "schema_code_failures_keep_their_original_messages",
+    "input": {
+      "n": -2
+    },
+    "result": {
+      "error": "message stopped"
+    }
+  },
+  {
+    "id": "root-replace",
+    "test": "root_conversion_keeps_mutations_but_discards_replacement",
+    "input": {
+      "n": 1
+    },
+    "result": {
+      "ok": {
+        "n": 1
+      }
+    }
+  },
+  {
+    "id": "member-replace",
+    "test": "nested_conversion_keeps_replacement_and_mutations",
+    "input": {
+      "child": {
+        "n": 1
+      }
+    },
+    "result": {
+      "ok": {
+        "child": {
+          "n": 5
+        }
+      }
+    }
+  },
+  {
+    "id": "root-mutate",
+    "test": "root_conversion_keeps_mutations_but_discards_replacement",
+    "input": {
+      "n": 1
+    },
+    "result": {
+      "ok": {
+        "n": 5
+      }
+    }
+  },
+  {
+    "id": "member-mutate",
+    "test": "nested_conversion_keeps_replacement_and_mutations",
+    "input": {
+      "child": {
+        "n": 1
+      }
+    },
+    "result": {
+      "ok": {
+        "child": {
+          "n": 5
+        }
+      }
+    }
+  },
+  {
+    "id": "root-add",
+    "test": "root_conversion_keeps_mutations_but_discards_replacement",
+    "input": {
+      "n": 1
+    },
+    "result": {
+      "ok": {
+        "n": 1,
+        "added": true
+      }
+    }
+  },
+  {
+    "id": "member-add",
+    "test": "nested_conversion_keeps_replacement_and_mutations",
+    "input": {
+      "child": {
+        "n": 1
+      }
+    },
+    "result": {
+      "ok": {
+        "child": {
+          "n": 1,
+          "added": true
+        }
+      }
+    }
+  },
+  {
+    "id": "root-delete",
+    "test": "root_conversion_keeps_mutations_but_discards_replacement",
+    "input": {
+      "n": 1
+    },
+    "result": {
+      "ok": {}
+    }
+  },
+  {
+    "id": "member-delete",
+    "test": "nested_conversion_keeps_replacement_and_mutations",
+    "input": {
+      "child": {
+        "n": 1
+      }
+    },
+    "result": {
+      "ok": {
+        "child": {}
+      }
+    }
+  },
+  {
+    "id": "root-throw",
+    "test": "root_conversion_keeps_mutations_but_discards_replacement",
+    "input": {
+      "n": 1
+    },
+    "result": {
+      "error": "conversion stopped"
+    }
+  },
+  {
+    "id": "member-throw",
+    "test": "nested_conversion_keeps_replacement_and_mutations",
+    "input": {
+      "child": {
+        "n": 1
+      }
+    },
+    "result": {
+      "error": "conversion stopped"
+    }
+  },
+  {
+    "id": "base-refine-distinct-failure",
+    "test": "ordinary_schema_failure_skips_refinement",
+    "input": {
+      "n": "-2"
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: must match check function\n\nReceived arguments:\n{\n  \"n\": \"-2\"\n}"
+    }
+  },
+  {
+    "id": "root-base-default-null",
+    "test": "base_defaults_keep_every_json_kind",
+    "input": null,
+    "result": {
+      "ok": null
+    }
+  },
+  {
+    "id": "root-refine-pass-null",
+    "test": "refinement_follows_declared_conversion",
+    "input": null,
+    "result": {
+      "ok": null
+    }
+  },
+  {
+    "id": "root-base-default-true",
+    "test": "base_defaults_keep_every_json_kind",
+    "input": true,
+    "result": {
+      "ok": true
+    }
+  },
+  {
+    "id": "root-refine-pass-true",
+    "test": "refinement_follows_declared_conversion",
+    "input": true,
+    "result": {
+      "ok": true
+    }
+  },
+  {
+    "id": "root-base-default-false",
+    "test": "base_defaults_keep_every_json_kind",
+    "input": false,
+    "result": {
+      "ok": false
+    }
+  },
+  {
+    "id": "root-refine-pass-false",
+    "test": "refinement_follows_declared_conversion",
+    "input": false,
+    "result": {
+      "ok": false
+    }
+  },
+  {
+    "id": "root-base-default-zero",
+    "test": "base_defaults_keep_every_json_kind",
+    "input": 0,
+    "result": {
+      "ok": 0
+    }
+  },
+  {
+    "id": "root-refine-pass-zero",
+    "test": "refinement_follows_declared_conversion",
+    "input": 0,
+    "result": {
+      "ok": 0
+    }
+  },
+  {
+    "id": "root-base-default-one",
+    "test": "base_defaults_keep_every_json_kind",
+    "input": 1,
+    "result": {
+      "ok": 1
+    }
+  },
+  {
+    "id": "root-refine-pass-one",
+    "test": "refinement_follows_declared_conversion",
+    "input": 1,
+    "result": {
+      "ok": 1
+    }
+  },
+  {
+    "id": "root-base-default-negative",
+    "test": "base_defaults_keep_every_json_kind",
+    "input": -1,
+    "result": {
+      "ok": -1
+    }
+  },
+  {
+    "id": "root-refine-pass-negative",
+    "test": "refinement_follows_declared_conversion",
+    "input": -1,
+    "result": {
+      "ok": -1
+    }
+  },
+  {
+    "id": "root-base-default-fraction",
+    "test": "base_defaults_keep_every_json_kind",
+    "input": 1.5,
+    "result": {
+      "ok": 1.5
+    }
+  },
+  {
+    "id": "root-refine-pass-fraction",
+    "test": "refinement_follows_declared_conversion",
+    "input": 1.5,
+    "result": {
+      "ok": 1.5
+    }
+  },
+  {
+    "id": "root-base-default-empty",
+    "test": "base_defaults_keep_every_json_kind",
+    "input": "",
+    "result": {
+      "ok": ""
+    }
+  },
+  {
+    "id": "root-refine-pass-empty",
+    "test": "refinement_follows_declared_conversion",
+    "input": "",
+    "result": {
+      "ok": ""
+    }
+  },
+  {
+    "id": "root-base-default-number",
+    "test": "base_defaults_keep_every_json_kind",
+    "input": "4",
+    "result": {
+      "ok": "4"
+    }
+  },
+  {
+    "id": "root-refine-pass-number",
+    "test": "refinement_follows_declared_conversion",
+    "input": "4",
+    "result": {
+      "ok": "4"
+    }
+  },
+  {
+    "id": "root-base-default-bad",
+    "test": "base_defaults_keep_every_json_kind",
+    "input": "word",
+    "result": {
+      "ok": "word"
+    }
+  },
+  {
+    "id": "root-refine-pass-bad",
+    "test": "refinement_follows_declared_conversion",
+    "input": "word",
+    "result": {
+      "ok": "word"
+    }
+  },
+  {
+    "id": "root-base-default-array",
+    "test": "base_defaults_keep_every_json_kind",
+    "input": [],
+    "result": {
+      "ok": []
+    }
+  },
+  {
+    "id": "root-refine-pass-array",
+    "test": "refinement_follows_declared_conversion",
+    "input": [],
+    "result": {
+      "ok": []
+    }
+  },
+  {
+    "id": "root-base-default-object",
+    "test": "base_defaults_keep_every_json_kind",
+    "input": {},
+    "result": {
+      "ok": {}
+    }
+  },
+  {
+    "id": "root-refine-pass-object",
+    "test": "refinement_follows_declared_conversion",
+    "input": {},
+    "result": {
+      "ok": {}
+    }
+  },
+  {
+    "id": "root-base-scalar-replacement",
+    "test": "root_conversion_keeps_mutations_but_discards_replacement",
+    "input": "4",
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - root: must match check function\n\nReceived arguments:\n\"4\""
+    }
+  },
+  {
+    "id": "root-base-scalar-admitted",
+    "test": "root_conversion_keeps_mutations_but_discards_replacement",
+    "input": 4,
+    "result": {
+      "ok": 4
+    }
+  },
+  {
+    "id": "convert-error-before-pattern-compile",
+    "test": "schema_code_failures_keep_their_original_messages",
+    "input": {
+      "n": "4",
+      "other": "x"
+    },
+    "result": {
+      "error": "conversion stopped"
+    }
+  },
+  {
+    "id": "base-array",
+    "test": "container_nodes_keep_code_at_each_member",
+    "input": {
+      "n": [
+        "2",
+        "3"
+      ]
+    },
+    "result": {
+      "ok": {
+        "n": [
+          2,
+          3
+        ]
+      }
+    }
+  },
+  {
+    "id": "base-wrap",
+    "test": "container_nodes_keep_code_at_each_member",
+    "input": {
+      "n": "2"
+    },
+    "result": {
+      "ok": {
+        "n": [
+          2
+        ]
+      }
+    }
+  },
+  {
+    "id": "base-tuple",
+    "test": "container_nodes_keep_code_at_each_member",
+    "input": {
+      "n": [
+        "2",
+        null
+      ]
+    },
+    "result": {
+      "ok": {
+        "n": [
+          2,
+          "null"
+        ]
+      }
+    }
+  },
+  {
+    "id": "base-record",
+    "test": "container_nodes_keep_code_at_each_member",
+    "input": {
+      "n": {
+        "a": "2",
+        "b": "3"
+      }
+    },
+    "result": {
+      "ok": {
+        "n": {
+          "a": 2,
+          "b": 3
+        }
+      }
+    }
+  },
+  {
+    "id": "base-additional",
+    "test": "container_nodes_keep_code_at_each_member",
+    "input": {
+      "n": {
+        "keep": "yes",
+        "a": "2"
+      }
+    },
+    "result": {
+      "ok": {
+        "n": {
+          "keep": "yes",
+          "a": 2
+        }
+      }
+    }
+  },
+  {
+    "id": "base-additional-empty",
+    "test": "container_nodes_keep_code_at_each_member",
+    "input": {
+      "n": {
+        "a": "2"
+      }
+    },
+    "result": {
+      "ok": {
+        "n": {
+          "a": 2
+        }
+      }
+    }
+  },
+  {
+    "id": "base-ref",
+    "test": "references_keep_executable_nodes_in_scope",
+    "input": {
+      "n": "2"
+    },
+    "result": {
+      "ok": {
+        "n": 2
+      }
+    }
+  },
+  {
+    "id": "union-first-matching",
+    "test": "union_selection_checks_custom_code",
+    "input": {
+      "n": "2"
+    },
+    "result": {
+      "ok": {
+        "n": "2"
+      }
+    }
+  },
+  {
+    "id": "union-converted",
+    "test": "union_selection_checks_custom_code",
+    "input": {
+      "n": "2"
+    },
+    "result": {
+      "ok": {
+        "n": 2
+      }
+    }
+  },
+  {
+    "id": "union-failure",
+    "test": "union_selection_checks_custom_code",
+    "input": {
+      "n": "bad"
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: must match check function\n  - n: must be null\n  - n: must match a schema in anyOf\n\nReceived arguments:\n{\n  \"n\": \"bad\"\n}"
+    }
+  },
+  {
+    "id": "refine-union-selection",
+    "test": "union_selection_checks_custom_code",
+    "input": {
+      "n": "2"
+    },
+    "result": {
+      "ok": {
+        "n": 2
+      }
+    }
+  },
+  {
+    "id": "base-and-refine",
+    "test": "base_and_refinement_keep_both_rules",
+    "input": {
+      "n": "2"
+    },
+    "result": {
+      "ok": {
+        "n": 2
+      }
+    }
+  },
+  {
+    "id": "base-and-refine-failure",
+    "test": "base_and_refinement_keep_both_rules",
+    "input": {
+      "n": "-2"
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: must match check function\n\nReceived arguments:\n{\n  \"n\": \"-2\"\n}"
+    }
+  },
+  {
+    "id": "mixed-number",
+    "test": "data_only_and_code_carrying_siblings_keep_distinct_results",
+    "input": {
+      "code": "2",
+      "authored": "4",
+      "plain": "4"
+    },
+    "result": {
+      "ok": {
+        "code": 2,
+        "authored": 4,
+        "plain": 4
+      }
+    }
+  },
+  {
+    "id": "mixed-string",
+    "test": "data_only_and_code_carrying_siblings_keep_distinct_results",
+    "input": {
+      "code": "2",
+      "authored": null,
+      "plain": null
+    },
+    "result": {
+      "ok": {
+        "code": 2,
+        "authored": "null",
+        "plain": ""
+      }
+    }
+  },
+  {
+    "id": "mixed-array",
+    "test": "data_only_and_code_carrying_siblings_keep_distinct_results",
+    "input": {
+      "code": "2",
+      "authored": "4",
+      "plain": "4"
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - plain: must be array\n\nReceived arguments:\n{\n  \"code\": \"2\",\n  \"authored\": \"4\",\n  \"plain\": \"4\"\n}"
+    }
+  },
+  {
+    "id": "mixed-object",
+    "test": "data_only_and_code_carrying_siblings_keep_distinct_results",
+    "input": {
+      "code": "2",
+      "authored": {
+        "a": "4"
+      },
+      "plain": {
+        "a": "4"
+      }
+    },
+    "result": {
+      "ok": {
+        "code": 2,
+        "authored": {
+          "a": 4
+        },
+        "plain": {
+          "a": 4
+        }
+      }
+    }
+  },
+  {
+    "id": "refine-edit-mutate",
+    "test": "refinement_argument_edits_reach_execution",
+    "input": {
+      "n": {
+        "value": 1
+      }
+    },
+    "result": {
+      "ok": {
+        "n": {
+          "value": 7
+        }
+      }
+    }
+  },
+  {
+    "id": "refine-edit-add",
+    "test": "refinement_argument_edits_reach_execution",
+    "input": {
+      "n": {
+        "value": 1
+      }
+    },
+    "result": {
+      "ok": {
+        "n": {
+          "value": 1,
+          "extra": true
+        }
+      }
+    }
+  },
+  {
+    "id": "refine-edit-delete",
+    "test": "refinement_argument_edits_reach_execution",
+    "input": {
+      "n": {
+        "value": 1
+      }
+    },
+    "result": {
+      "ok": {
+        "n": {}
+      }
+    }
+  },
+  {
+    "id": "serialized-code",
+    "test": "ordinary_serialization_never_retains_executable_code",
+    "input": {
+      "n": "2"
+    },
+    "result": {
+      "ok": {
+        "n": "2"
+      }
+    }
+  },
+  {
+    "id": "escaped-member-error",
+    "test": "callback_diagnostics_keep_member_paths",
+    "input": {
+      "a/b~c": "-1"
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - a.b~c: must match check function\n\nReceived arguments:\n{\n  \"a/b~c\": \"-1\"\n}"
+    }
+  },
+  {
+    "id": "nested-array-error",
+    "test": "callback_diagnostics_keep_member_paths",
+    "input": {
+      "n": [
+        "2",
+        "-1"
+      ]
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n.1: must match check function\n\nReceived arguments:\n{\n  \"n\": [\n    \"2\",\n    \"-1\"\n  ]\n}"
+    }
+  },
+  {
+    "id": "refine-intersection",
+    "test": "composed_schemas_retain_custom_checks",
+    "input": {
+      "n": "-2"
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: positive expected\n\nReceived arguments:\n{\n  \"n\": \"-2\"\n}"
+    }
+  },
+  {
+    "id": "refine-nested-composition",
+    "test": "composed_schemas_retain_custom_checks",
+    "input": {
+      "n": {
+        "x": "-2",
+        "y": 3
+      }
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n.x: positive expected\n\nReceived arguments:\n{\n  \"n\": {\n    \"x\": \"-2\",\n    \"y\": 3\n  }\n}"
+    }
+  },
+  {
+    "id": "refine-cyclic",
+    "test": "references_keep_executable_nodes_in_scope",
+    "input": {
+      "n": {
+        "value": "-2"
+      }
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n.value: positive expected\n\nReceived arguments:\n{\n  \"n\": {\n    \"value\": \"-2\"\n  }\n}"
+    }
+  },
+  {
+    "id": "base-check-edit-mutate",
+    "test": "base_check_argument_edits_reach_execution",
+    "input": {
+      "n": {
+        "value": 1
+      }
+    },
+    "result": {
+      "ok": {
+        "n": {
+          "value": 7
+        }
+      }
+    }
+  },
+  {
+    "id": "base-check-edit-add",
+    "test": "base_check_argument_edits_reach_execution",
+    "input": {
+      "n": {
+        "value": 1
+      }
+    },
+    "result": {
+      "ok": {
+        "n": {
+          "value": 1,
+          "extra": true
+        }
+      }
+    }
+  },
+  {
+    "id": "base-check-edit-delete",
+    "test": "base_check_argument_edits_reach_execution",
+    "input": {
+      "n": {
+        "value": 1
+      }
+    },
+    "result": {
+      "ok": {
+        "n": {}
+      }
+    }
+  },
+  {
+    "id": "union-eager-later-throw",
+    "test": "union_selection_checks_custom_code",
+    "input": {
+      "n": "input"
+    },
+    "result": {
+      "error": "later conversion stopped"
+    }
+  },
+  {
+    "id": "root-refine-error",
+    "test": "callback_diagnostics_keep_member_paths",
+    "input": {
+      "n": "2"
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - root: root rejected\n\nReceived arguments:\n{\n  \"n\": \"2\"\n}"
+    }
+  },
+  {
+    "id": "refine-authored-string",
+    "test": "data_only_and_code_carrying_siblings_keep_distinct_results",
+    "input": {
+      "n": null
+    },
+    "result": {
+      "ok": {
+        "n": "null"
+      }
+    }
+  },
+  {
+    "id": "refine-plain-string",
+    "test": "data_only_and_code_carrying_siblings_keep_distinct_results",
+    "input": {
+      "n": null
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: expected null text\n\nReceived arguments:\n{\n  \"n\": null\n}"
+    }
+  },
+  {
+    "id": "refine-error-after-edit",
+    "test": "refinement_argument_edits_reach_execution",
+    "input": {
+      "n": {
+        "value": 1
+      }
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: added: true\n\nReceived arguments:\n{\n  \"n\": {\n    \"value\": 1\n  }\n}"
+    }
+  },
+  {
+    "id": "root-refine-reject-null",
+    "test": "callback_diagnostics_keep_member_paths",
+    "input": null,
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - root: root rejected\n\nReceived arguments:\nnull"
+    }
+  },
+  {
+    "id": "root-refine-reject-true",
+    "test": "callback_diagnostics_keep_member_paths",
+    "input": true,
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - root: root rejected\n\nReceived arguments:\ntrue"
+    }
+  },
+  {
+    "id": "root-refine-reject-false",
+    "test": "callback_diagnostics_keep_member_paths",
+    "input": false,
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - root: root rejected\n\nReceived arguments:\nfalse"
+    }
+  },
+  {
+    "id": "root-refine-reject-zero",
+    "test": "callback_diagnostics_keep_member_paths",
+    "input": 0,
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - root: root rejected\n\nReceived arguments:\n0"
+    }
+  },
+  {
+    "id": "root-refine-reject-one",
+    "test": "callback_diagnostics_keep_member_paths",
+    "input": 1,
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - root: root rejected\n\nReceived arguments:\n1"
+    }
+  },
+  {
+    "id": "root-refine-reject-negative",
+    "test": "callback_diagnostics_keep_member_paths",
+    "input": -1,
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - root: root rejected\n\nReceived arguments:\n-1"
+    }
+  },
+  {
+    "id": "root-refine-reject-fraction",
+    "test": "callback_diagnostics_keep_member_paths",
+    "input": 1.5,
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - root: root rejected\n\nReceived arguments:\n1.5"
+    }
+  },
+  {
+    "id": "root-refine-reject-empty",
+    "test": "callback_diagnostics_keep_member_paths",
+    "input": "",
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - root: root rejected\n\nReceived arguments:\n\"\""
+    }
+  },
+  {
+    "id": "root-refine-reject-number",
+    "test": "callback_diagnostics_keep_member_paths",
+    "input": "4",
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - root: root rejected\n\nReceived arguments:\n\"4\""
+    }
+  },
+  {
+    "id": "root-refine-reject-bad",
+    "test": "callback_diagnostics_keep_member_paths",
+    "input": "word",
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - root: root rejected\n\nReceived arguments:\n\"word\""
+    }
+  },
+  {
+    "id": "root-refine-reject-array",
+    "test": "callback_diagnostics_keep_member_paths",
+    "input": [],
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - root: root rejected\n\nReceived arguments:\n[]"
+    }
+  },
+  {
+    "id": "root-refine-reject-object",
+    "test": "callback_diagnostics_keep_member_paths",
+    "input": {},
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - root: root rejected\n\nReceived arguments:\n{}"
+    }
+  },
+  {
+    "id": "plain-guard-without-base-kind",
+    "test": "base_and_refinement_keep_both_rules",
+    "input": {
+      "n": "-2"
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: must match check function\n\nReceived arguments:\n{\n  \"n\": \"-2\"\n}"
+    }
+  },
+  {
+    "id": "authored-guard-without-base-kind",
+    "test": "base_and_refinement_keep_both_rules",
+    "input": {
+      "n": "-2"
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: must match check function\n\nReceived arguments:\n{\n  \"n\": \"-2\"\n}"
+    }
+  },
+  {
+    "id": "valid-union-skips-error-factory",
+    "test": "union_selection_checks_custom_code",
+    "input": {
+      "n": 1
+    },
+    "result": {
+      "ok": {
+        "n": 1
+      }
+    }
+  },
+  {
+    "id": "error-before-later-edit-absent",
+    "test": "refinement_argument_edits_reach_execution",
+    "input": {
+      "n": {}
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: B absent\n\nReceived arguments:\n{\n  \"n\": {}\n}"
+    }
+  },
+  {
+    "id": "error-before-later-edit-present",
+    "test": "refinement_argument_edits_reach_execution",
+    "input": {
+      "n": {
+        "flag": true
+      }
+    },
+    "result": {
+      "error": "Validation failed for tool \"custom\":\n  - n: B present\n\nReceived arguments:\n{\n  \"n\": {\n    \"flag\": true\n  }\n}"
+    }
+  }
+]

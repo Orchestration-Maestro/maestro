@@ -1,4 +1,4 @@
-code-block {
+code-block, markdown-block, thinking-block {
   display: block;
 }
 .maestro-code .control-slot .maestro-button {
@@ -15,7 +15,7 @@ code-block {
   justify-content: center;
   gap: 0.5rem;
   box-sizing: border-box;
-  border: 1px solid transparent;
+  border: 0 solid transparent;
   border-radius: var(--maestro-radii-control);
   outline: none;
   font-family: var(--maestro-type-body-font);
@@ -75,11 +75,13 @@ code-block {
   background: color-mix(in srgb, var(--maestro-color-error) 90%, transparent);
 }
 .maestro-button-outline {
+  border-width: 1px;
   border-color: var(--maestro-color-border);
   background: var(--maestro-color-background);
   color: var(--maestro-color-text);
 }
 .maestro-button-secondary {
+  box-shadow: inset 0 0 0 1px var(--maestro-color-border);
   background: var(--maestro-color-panel);
   color: var(--maestro-color-text);
 }
@@ -93,6 +95,19 @@ code-block {
 .maestro-button-outline:hover, .maestro-button-ghost:hover {
   background: var(--maestro-color-panel);
   color: var(--maestro-color-text);
+}
+.maestro-button.maestro-button-compact {
+  height: 1.25rem;
+  padding: 0 0.5rem;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+}
+.maestro-button-ghost.maestro-button-compact {
+  color: var(--maestro-color-muted);
+}
+.maestro-button-ghost.maestro-button-compact:hover {
+  background: var(--maestro-color-accent);
+  color: var(--maestro-color-on-accent);
 }
 .maestro-button-link {
   background: transparent;
@@ -136,6 +151,7 @@ code-block {
 .maestro-tool-section-label {
   margin-bottom: 0.25rem;
   font-size: 0.75rem;
+  line-height: 1rem;
   font-weight: 500;
   color: var(--maestro-color-muted);
 }
@@ -143,3 +159,270 @@ code-block {
   font-size: 0.875rem;
   color: var(--maestro-color-error);
 }
+.maestro-button.maestro-thinking-header {
+  display: flex;
+  width: 100%;
+  height: auto;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  border: 0;
+  background: transparent;
+  color: var(--maestro-color-muted);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.25rem;
+}
+.maestro-thinking-chevron {
+  display: inline-flex;
+  transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.maestro-thinking-expanded .maestro-thinking-chevron {
+  transform: rotate(90deg);
+}
+.maestro-expandable-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--maestro-color-muted);
+  font-family: var(--maestro-type-body-font);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  text-align: left;
+  cursor: pointer;
+  transition: color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.maestro-expandable-toggle:hover { color: var(--maestro-color-text); }
+.maestro-expandable-chevron { display: inline-flex; }
+.maestro-expandable-details { margin-top: 0.5rem; }
+.maestro-toggle {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: 1.75rem;
+  overflow: hidden;
+  border: 1px solid var(--maestro-color-border);
+  border-radius: var(--maestro-radii-control);
+  background: color-mix(in srgb, var(--maestro-color-panel) 60%, transparent);
+}
+.maestro-toggle[hidden] {
+  display: none;
+}
+.maestro-toggle-button {
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 0.5rem;
+  border: 0;
+  background: transparent;
+  color: var(--maestro-color-muted);
+  cursor: pointer;
+}
+.maestro-toggle-button[data-mode-label] {
+  padding: 0 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.maestro-toggle-button:hover {
+  color: var(--maestro-color-text);
+}
+.maestro-toggle-button:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--maestro-color-accent);
+}
+.maestro-toggle-selected, .maestro-toggle-selected:hover {
+  background: var(--maestro-color-background);
+  color: var(--maestro-color-text);
+}
+.maestro-provider-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  border: 1px solid var(--maestro-color-border);
+  border-radius: var(--maestro-radii-panel);
+  padding: 1rem;
+  font-family: var(--maestro-type-body-font);
+}
+.maestro-provider-content {
+  flex: 1 1 0%;
+}
+.maestro-provider-name {
+  color: var(--maestro-color-text);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+}
+.maestro-provider-details, .maestro-provider-status {
+  margin-top: 0.25rem;
+  color: var(--maestro-color-muted);
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+.maestro-provider-type {
+  text-transform: capitalize;
+}
+.maestro-provider-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.maestro-provider-connected {
+  color: var(--maestro-color-success);
+}
+.maestro-provider-checking {
+  color: var(--maestro-color-warning);
+}
+.maestro-provider-disconnected {
+  color: var(--maestro-color-error);
+}
+.maestro-provider-status:has(.maestro-provider-connected, .maestro-provider-checking, .maestro-provider-disconnected) {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.maestro-attachment-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  background: color-mix(in srgb, var(--maestro-color-background) 90%, transparent);
+  color: var(--maestro-color-text);
+  font-family: var(--maestro-type-body-font);
+}
+.maestro-attachment-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--maestro-spacing-sm) var(--maestro-spacing-md);
+  border-bottom: 1px solid var(--maestro-color-border);
+  background: color-mix(in srgb, var(--maestro-color-background) 95%, transparent);
+  backdrop-filter: blur(8px);
+}
+.maestro-attachment-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: calc(var(--maestro-type-body-size) * .875);
+  font-weight: 500;
+}
+.maestro-attachment-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--maestro-spacing-sm);
+}
+.maestro-attachment-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+}
+.maestro-attachment-text, .maestro-attachment-document {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  max-width: 896px;
+  overflow: auto;
+  background: var(--maestro-color-panel);
+  color: var(--maestro-color-text);
+  border: 1px solid var(--maestro-color-border);
+  padding: var(--maestro-spacing-lg);
+}
+.maestro-attachment-text pre {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: var(--maestro-type-mono-font);
+  font-size: calc(var(--maestro-type-body-size) * .875);
+}
+.maestro-attachment-extracted pre {
+  font-size: calc(var(--maestro-type-body-size) * .75);
+  line-height: 1.625;
+}
+.maestro-attachment-presentation, .maestro-attachment-document {
+  max-width: 1000px;
+}
+.maestro-attachment-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: var(--maestro-radii-panel);
+}
+.maestro-attachment-body > .maestro-pdf {
+  width: 100%;
+  height: 100%;
+  max-width: 1000px;
+  overflow: auto;
+  background: var(--maestro-color-panel);
+  border: 1px solid var(--maestro-color-border);
+}
+.maestro-attachment-body > .maestro-excel {
+  width: 100%;
+  overflow: auto;
+  background: var(--maestro-color-panel);
+}
+.maestro-attachment-body .maestro-excel-tab {
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: var(--maestro-spacing-sm) var(--maestro-spacing-md);
+  color: var(--maestro-color-muted);
+  font: inherit;
+  font-size: calc(var(--maestro-type-body-size) * .875);
+  cursor: pointer;
+}
+.maestro-attachment-body .maestro-excel-tab[aria-selected="true"] {
+  border-bottom-color: var(--maestro-color-accent);
+  color: var(--maestro-color-accent);
+  font-weight: 500;
+}
+.maestro-attachment-body .maestro-excel-tab:hover {
+  color: var(--maestro-color-text);
+}
+.maestro-attachment-body .maestro-excel-tab:focus-visible {
+  outline: 2px solid var(--maestro-color-accent);
+}
+.maestro-attachment-document {
+  padding: 0;
+}
+.maestro-attachment-image,
+.maestro-attachment-presentation,
+.maestro-attachment-document,
+.maestro-attachment-body > .maestro-pdf {
+  box-shadow: 0 10px 15px -3px color-mix(in srgb, var(--maestro-color-text) 10%, transparent),
+    0 4px 6px -4px color-mix(in srgb, var(--maestro-color-text) 10%, transparent);
+}
+
+.maestro-attachment-tile { display: block; max-height: 4rem; font-family: var(--maestro-type-body-font); }
+.maestro-tile-shell { position: relative; display: inline-block; }
+.maestro-tile-open { display: block; box-sizing: border-box; width: 4rem; height: 4rem; margin: 0; padding: 0; cursor: pointer; border: 1px solid var(--maestro-color-border); border-radius: var(--maestro-radii-panel); background: none; color: inherit; font: inherit; overflow: hidden; transition: opacity .15s; }
+.maestro-tile-open:hover { opacity: .8; }
+.maestro-tile-open:focus-visible { outline: 2px solid var(--maestro-color-accent); }
+.maestro-tile-image { display: block; width: 100%; height: 100%; object-fit: cover; }
+.maestro-tile-fallback { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: .5rem; background: var(--maestro-color-panel); color: var(--maestro-color-muted); }
+.maestro-tile-label { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; font-size: .625rem; }
+.maestro-tile-badge { position: absolute; bottom: 0; left: 0; right: 0; padding: .125rem .25rem; border-radius: 0 0 var(--maestro-radii-panel) var(--maestro-radii-panel); background: color-mix(in srgb, var(--maestro-color-background) 90%, transparent); color: var(--maestro-color-muted); font-size: .625rem; text-align: center; font-weight: 500; }
+.maestro-tile-remove { position: absolute; top: -.25rem; right: -.25rem; width: 1.25rem; height: 1.25rem; padding: 0; border: 1px solid var(--maestro-color-border); border-radius: 50%; background: var(--maestro-color-panel); color: var(--maestro-color-muted); transition: opacity .15s; }
+.maestro-tile-remove:hover { background: var(--maestro-color-border); color: var(--maestro-color-text); }
+@media (hover: hover) { .maestro-tile-remove { opacity: 0; } .maestro-tile-shell:hover .maestro-tile-remove, .maestro-tile-remove:focus-visible { opacity: 1; } }
+
+.maestro-tool-toggle { cursor: pointer; transition: color .15s; }
+.maestro-tool-toggle:hover { color: var(--maestro-color-text); }
+.maestro-tool-toggle:has(> .maestro-tool-chevron:focus-visible) { outline: 2px solid var(--maestro-color-accent); }
+.maestro-tool-chevron { display: inline-block; margin: 0; padding: 0; border: 0; background: transparent; color: var(--maestro-color-muted); font: inherit; cursor: pointer; }
+.maestro-tool-chevron:focus-visible { outline: none; }
+.maestro-tool-chevron .hidden { display: none; }
+.maestro-tool-card > * + * { margin-top: .75rem; }
+.maestro-tool-body { overflow: hidden; transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1); }
+.maestro-tool-body.max-h-0 { max-height: 0; }
+.maestro-tool-body.max-h-\[2000px\] { max-height: 2000px; }
+.maestro-tool-body.mt-3, .maestro-tool-body > * + * { margin-top: .75rem; }
+.maestro-tool-url { font-size: 0.875rem; color: var(--maestro-color-muted); }
+.maestro-tool-files { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .75rem; }

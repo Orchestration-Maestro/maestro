@@ -1,0 +1,3500 @@
+{
+  "rows": [
+    {
+      "id": "status-0",
+      "input": {
+        "language": "en",
+        "modelCase": "missing",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": ""
+        },
+        "isAutoDiscovery": false
+      },
+      "expected": {
+        "text": "Models: 0"
+      }
+    },
+    {
+      "id": "status-1",
+      "input": {
+        "language": "en",
+        "modelCase": "missing",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": ""
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "Models: 0"
+      }
+    },
+    {
+      "id": "status-2",
+      "input": {
+        "language": "en",
+        "modelCase": "missing",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": ""
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 2,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "Models: 0"
+      }
+    },
+    {
+      "id": "status-3",
+      "input": {
+        "language": "en",
+        "modelCase": "missing",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": ""
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": {
+        "text": "Models: 0"
+      }
+    },
+    {
+      "id": "status-4",
+      "input": {
+        "language": "en",
+        "modelCase": "missing",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": ""
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "disconnected"
+        }
+      },
+      "expected": {
+        "text": "Models: 0"
+      }
+    },
+    {
+      "id": "status-5",
+      "input": {
+        "language": "en",
+        "modelCase": "missing",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": ""
+        },
+        "isAutoDiscovery": true
+      },
+      "expected": {
+        "text": ""
+      }
+    },
+    {
+      "id": "status-6",
+      "input": {
+        "language": "en",
+        "modelCase": "missing",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": ""
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "● 0 models"
+      }
+    },
+    {
+      "id": "status-7",
+      "input": {
+        "language": "en",
+        "modelCase": "missing",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": ""
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 2,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "● 2 models"
+      }
+    },
+    {
+      "id": "status-8",
+      "input": {
+        "language": "en",
+        "modelCase": "missing",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": ""
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": {
+        "text": "● Checking..."
+      }
+    },
+    {
+      "id": "status-9",
+      "input": {
+        "language": "en",
+        "modelCase": "missing",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": ""
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "disconnected"
+        }
+      },
+      "expected": {
+        "text": "● Disconnected"
+      }
+    },
+    {
+      "id": "status-10",
+      "input": {
+        "language": "en",
+        "modelCase": "null",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": null
+        },
+        "isAutoDiscovery": false
+      },
+      "expected": {
+        "text": "Models: 0"
+      }
+    },
+    {
+      "id": "status-11",
+      "input": {
+        "language": "en",
+        "modelCase": "null",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": null
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "Models: 0"
+      }
+    },
+    {
+      "id": "status-12",
+      "input": {
+        "language": "en",
+        "modelCase": "null",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": null
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 2,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "Models: 0"
+      }
+    },
+    {
+      "id": "status-13",
+      "input": {
+        "language": "en",
+        "modelCase": "null",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": null
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": {
+        "text": "Models: 0"
+      }
+    },
+    {
+      "id": "status-14",
+      "input": {
+        "language": "en",
+        "modelCase": "null",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": null
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "disconnected"
+        }
+      },
+      "expected": {
+        "text": "Models: 0"
+      }
+    },
+    {
+      "id": "status-15",
+      "input": {
+        "language": "en",
+        "modelCase": "null",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": null
+        },
+        "isAutoDiscovery": true
+      },
+      "expected": {
+        "text": ""
+      }
+    },
+    {
+      "id": "status-16",
+      "input": {
+        "language": "en",
+        "modelCase": "null",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": null
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "● 0 models"
+      }
+    },
+    {
+      "id": "status-17",
+      "input": {
+        "language": "en",
+        "modelCase": "null",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": null
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 2,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "● 2 models"
+      }
+    },
+    {
+      "id": "status-18",
+      "input": {
+        "language": "en",
+        "modelCase": "null",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": null
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": {
+        "text": "● Checking..."
+      }
+    },
+    {
+      "id": "status-19",
+      "input": {
+        "language": "en",
+        "modelCase": "null",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": null
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "disconnected"
+        }
+      },
+      "expected": {
+        "text": "● Disconnected"
+      }
+    },
+    {
+      "id": "status-20",
+      "input": {
+        "language": "en",
+        "modelCase": "empty",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": []
+        },
+        "isAutoDiscovery": false
+      },
+      "expected": {
+        "text": "Models: 0"
+      }
+    },
+    {
+      "id": "status-21",
+      "input": {
+        "language": "en",
+        "modelCase": "empty",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": []
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "Models: 0"
+      }
+    },
+    {
+      "id": "status-22",
+      "input": {
+        "language": "en",
+        "modelCase": "empty",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": []
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 2,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "Models: 0"
+      }
+    },
+    {
+      "id": "status-23",
+      "input": {
+        "language": "en",
+        "modelCase": "empty",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": []
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": {
+        "text": "Models: 0"
+      }
+    },
+    {
+      "id": "status-24",
+      "input": {
+        "language": "en",
+        "modelCase": "empty",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": []
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "disconnected"
+        }
+      },
+      "expected": {
+        "text": "Models: 0"
+      }
+    },
+    {
+      "id": "status-25",
+      "input": {
+        "language": "en",
+        "modelCase": "empty",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": []
+        },
+        "isAutoDiscovery": true
+      },
+      "expected": {
+        "text": ""
+      }
+    },
+    {
+      "id": "status-26",
+      "input": {
+        "language": "en",
+        "modelCase": "empty",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": []
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "● 0 models"
+      }
+    },
+    {
+      "id": "status-27",
+      "input": {
+        "language": "en",
+        "modelCase": "empty",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": []
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 2,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "● 2 models"
+      }
+    },
+    {
+      "id": "status-28",
+      "input": {
+        "language": "en",
+        "modelCase": "empty",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": []
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": {
+        "text": "● Checking..."
+      }
+    },
+    {
+      "id": "status-29",
+      "input": {
+        "language": "en",
+        "modelCase": "empty",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": []
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "disconnected"
+        }
+      },
+      "expected": {
+        "text": "● Disconnected"
+      }
+    },
+    {
+      "id": "status-30",
+      "input": {
+        "language": "en",
+        "modelCase": "one",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            }
+          ]
+        },
+        "isAutoDiscovery": false
+      },
+      "expected": {
+        "text": "Models: 1"
+      }
+    },
+    {
+      "id": "status-31",
+      "input": {
+        "language": "en",
+        "modelCase": "one",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            }
+          ]
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "Models: 1"
+      }
+    },
+    {
+      "id": "status-32",
+      "input": {
+        "language": "en",
+        "modelCase": "one",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            }
+          ]
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 2,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "Models: 1"
+      }
+    },
+    {
+      "id": "status-33",
+      "input": {
+        "language": "en",
+        "modelCase": "one",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            }
+          ]
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": {
+        "text": "Models: 1"
+      }
+    },
+    {
+      "id": "status-34",
+      "input": {
+        "language": "en",
+        "modelCase": "one",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            }
+          ]
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "disconnected"
+        }
+      },
+      "expected": {
+        "text": "Models: 1"
+      }
+    },
+    {
+      "id": "status-35",
+      "input": {
+        "language": "en",
+        "modelCase": "one",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            }
+          ]
+        },
+        "isAutoDiscovery": true
+      },
+      "expected": {
+        "text": ""
+      }
+    },
+    {
+      "id": "status-36",
+      "input": {
+        "language": "en",
+        "modelCase": "one",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            }
+          ]
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "● 0 models"
+      }
+    },
+    {
+      "id": "status-37",
+      "input": {
+        "language": "en",
+        "modelCase": "one",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            }
+          ]
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 2,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "● 2 models"
+      }
+    },
+    {
+      "id": "status-38",
+      "input": {
+        "language": "en",
+        "modelCase": "one",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            }
+          ]
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": {
+        "text": "● Checking..."
+      }
+    },
+    {
+      "id": "status-39",
+      "input": {
+        "language": "en",
+        "modelCase": "one",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            }
+          ]
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "disconnected"
+        }
+      },
+      "expected": {
+        "text": "● Disconnected"
+      }
+    },
+    {
+      "id": "status-40",
+      "input": {
+        "language": "en",
+        "modelCase": "two",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            },
+            {
+              "id": "model-2"
+            }
+          ]
+        },
+        "isAutoDiscovery": false
+      },
+      "expected": {
+        "text": "Models: 2"
+      }
+    },
+    {
+      "id": "status-41",
+      "input": {
+        "language": "en",
+        "modelCase": "two",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            },
+            {
+              "id": "model-2"
+            }
+          ]
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "Models: 2"
+      }
+    },
+    {
+      "id": "status-42",
+      "input": {
+        "language": "en",
+        "modelCase": "two",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            },
+            {
+              "id": "model-2"
+            }
+          ]
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 2,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "Models: 2"
+      }
+    },
+    {
+      "id": "status-43",
+      "input": {
+        "language": "en",
+        "modelCase": "two",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            },
+            {
+              "id": "model-2"
+            }
+          ]
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": {
+        "text": "Models: 2"
+      }
+    },
+    {
+      "id": "status-44",
+      "input": {
+        "language": "en",
+        "modelCase": "two",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            },
+            {
+              "id": "model-2"
+            }
+          ]
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "disconnected"
+        }
+      },
+      "expected": {
+        "text": "Models: 2"
+      }
+    },
+    {
+      "id": "status-45",
+      "input": {
+        "language": "en",
+        "modelCase": "two",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            },
+            {
+              "id": "model-2"
+            }
+          ]
+        },
+        "isAutoDiscovery": true
+      },
+      "expected": {
+        "text": ""
+      }
+    },
+    {
+      "id": "status-46",
+      "input": {
+        "language": "en",
+        "modelCase": "two",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            },
+            {
+              "id": "model-2"
+            }
+          ]
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "● 0 models"
+      }
+    },
+    {
+      "id": "status-47",
+      "input": {
+        "language": "en",
+        "modelCase": "two",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            },
+            {
+              "id": "model-2"
+            }
+          ]
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 2,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "● 2 models"
+      }
+    },
+    {
+      "id": "status-48",
+      "input": {
+        "language": "en",
+        "modelCase": "two",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            },
+            {
+              "id": "model-2"
+            }
+          ]
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": {
+        "text": "● Checking..."
+      }
+    },
+    {
+      "id": "status-49",
+      "input": {
+        "language": "en",
+        "modelCase": "two",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            },
+            {
+              "id": "model-2"
+            }
+          ]
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "disconnected"
+        }
+      },
+      "expected": {
+        "text": "● Disconnected"
+      }
+    },
+    {
+      "id": "status-50",
+      "input": {
+        "language": "de",
+        "modelCase": "missing",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": ""
+        },
+        "isAutoDiscovery": false
+      },
+      "expected": {
+        "text": "Modelle: 0"
+      }
+    },
+    {
+      "id": "status-51",
+      "input": {
+        "language": "de",
+        "modelCase": "missing",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": ""
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "Modelle: 0"
+      }
+    },
+    {
+      "id": "status-52",
+      "input": {
+        "language": "de",
+        "modelCase": "missing",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": ""
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 2,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "Modelle: 0"
+      }
+    },
+    {
+      "id": "status-53",
+      "input": {
+        "language": "de",
+        "modelCase": "missing",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": ""
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": {
+        "text": "Modelle: 0"
+      }
+    },
+    {
+      "id": "status-54",
+      "input": {
+        "language": "de",
+        "modelCase": "missing",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": ""
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "disconnected"
+        }
+      },
+      "expected": {
+        "text": "Modelle: 0"
+      }
+    },
+    {
+      "id": "status-55",
+      "input": {
+        "language": "de",
+        "modelCase": "missing",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": ""
+        },
+        "isAutoDiscovery": true
+      },
+      "expected": {
+        "text": ""
+      }
+    },
+    {
+      "id": "status-56",
+      "input": {
+        "language": "de",
+        "modelCase": "missing",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": ""
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "● 0 Modelle"
+      }
+    },
+    {
+      "id": "status-57",
+      "input": {
+        "language": "de",
+        "modelCase": "missing",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": ""
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 2,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "● 2 Modelle"
+      }
+    },
+    {
+      "id": "status-58",
+      "input": {
+        "language": "de",
+        "modelCase": "missing",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": ""
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": {
+        "text": "● Überprüfe..."
+      }
+    },
+    {
+      "id": "status-59",
+      "input": {
+        "language": "de",
+        "modelCase": "missing",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": ""
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "disconnected"
+        }
+      },
+      "expected": {
+        "text": "● Getrennt"
+      }
+    },
+    {
+      "id": "status-60",
+      "input": {
+        "language": "de",
+        "modelCase": "null",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": null
+        },
+        "isAutoDiscovery": false
+      },
+      "expected": {
+        "text": "Modelle: 0"
+      }
+    },
+    {
+      "id": "status-61",
+      "input": {
+        "language": "de",
+        "modelCase": "null",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": null
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "Modelle: 0"
+      }
+    },
+    {
+      "id": "status-62",
+      "input": {
+        "language": "de",
+        "modelCase": "null",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": null
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 2,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "Modelle: 0"
+      }
+    },
+    {
+      "id": "status-63",
+      "input": {
+        "language": "de",
+        "modelCase": "null",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": null
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": {
+        "text": "Modelle: 0"
+      }
+    },
+    {
+      "id": "status-64",
+      "input": {
+        "language": "de",
+        "modelCase": "null",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": null
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "disconnected"
+        }
+      },
+      "expected": {
+        "text": "Modelle: 0"
+      }
+    },
+    {
+      "id": "status-65",
+      "input": {
+        "language": "de",
+        "modelCase": "null",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": null
+        },
+        "isAutoDiscovery": true
+      },
+      "expected": {
+        "text": ""
+      }
+    },
+    {
+      "id": "status-66",
+      "input": {
+        "language": "de",
+        "modelCase": "null",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": null
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "● 0 Modelle"
+      }
+    },
+    {
+      "id": "status-67",
+      "input": {
+        "language": "de",
+        "modelCase": "null",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": null
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 2,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "● 2 Modelle"
+      }
+    },
+    {
+      "id": "status-68",
+      "input": {
+        "language": "de",
+        "modelCase": "null",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": null
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": {
+        "text": "● Überprüfe..."
+      }
+    },
+    {
+      "id": "status-69",
+      "input": {
+        "language": "de",
+        "modelCase": "null",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": null
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "disconnected"
+        }
+      },
+      "expected": {
+        "text": "● Getrennt"
+      }
+    },
+    {
+      "id": "status-70",
+      "input": {
+        "language": "de",
+        "modelCase": "empty",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": []
+        },
+        "isAutoDiscovery": false
+      },
+      "expected": {
+        "text": "Modelle: 0"
+      }
+    },
+    {
+      "id": "status-71",
+      "input": {
+        "language": "de",
+        "modelCase": "empty",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": []
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "Modelle: 0"
+      }
+    },
+    {
+      "id": "status-72",
+      "input": {
+        "language": "de",
+        "modelCase": "empty",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": []
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 2,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "Modelle: 0"
+      }
+    },
+    {
+      "id": "status-73",
+      "input": {
+        "language": "de",
+        "modelCase": "empty",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": []
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": {
+        "text": "Modelle: 0"
+      }
+    },
+    {
+      "id": "status-74",
+      "input": {
+        "language": "de",
+        "modelCase": "empty",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": []
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "disconnected"
+        }
+      },
+      "expected": {
+        "text": "Modelle: 0"
+      }
+    },
+    {
+      "id": "status-75",
+      "input": {
+        "language": "de",
+        "modelCase": "empty",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": []
+        },
+        "isAutoDiscovery": true
+      },
+      "expected": {
+        "text": ""
+      }
+    },
+    {
+      "id": "status-76",
+      "input": {
+        "language": "de",
+        "modelCase": "empty",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": []
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "● 0 Modelle"
+      }
+    },
+    {
+      "id": "status-77",
+      "input": {
+        "language": "de",
+        "modelCase": "empty",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": []
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 2,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "● 2 Modelle"
+      }
+    },
+    {
+      "id": "status-78",
+      "input": {
+        "language": "de",
+        "modelCase": "empty",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": []
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": {
+        "text": "● Überprüfe..."
+      }
+    },
+    {
+      "id": "status-79",
+      "input": {
+        "language": "de",
+        "modelCase": "empty",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": []
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "disconnected"
+        }
+      },
+      "expected": {
+        "text": "● Getrennt"
+      }
+    },
+    {
+      "id": "status-80",
+      "input": {
+        "language": "de",
+        "modelCase": "one",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            }
+          ]
+        },
+        "isAutoDiscovery": false
+      },
+      "expected": {
+        "text": "Modelle: 1"
+      }
+    },
+    {
+      "id": "status-81",
+      "input": {
+        "language": "de",
+        "modelCase": "one",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            }
+          ]
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "Modelle: 1"
+      }
+    },
+    {
+      "id": "status-82",
+      "input": {
+        "language": "de",
+        "modelCase": "one",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            }
+          ]
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 2,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "Modelle: 1"
+      }
+    },
+    {
+      "id": "status-83",
+      "input": {
+        "language": "de",
+        "modelCase": "one",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            }
+          ]
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": {
+        "text": "Modelle: 1"
+      }
+    },
+    {
+      "id": "status-84",
+      "input": {
+        "language": "de",
+        "modelCase": "one",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            }
+          ]
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "disconnected"
+        }
+      },
+      "expected": {
+        "text": "Modelle: 1"
+      }
+    },
+    {
+      "id": "status-85",
+      "input": {
+        "language": "de",
+        "modelCase": "one",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            }
+          ]
+        },
+        "isAutoDiscovery": true
+      },
+      "expected": {
+        "text": ""
+      }
+    },
+    {
+      "id": "status-86",
+      "input": {
+        "language": "de",
+        "modelCase": "one",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            }
+          ]
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "● 0 Modelle"
+      }
+    },
+    {
+      "id": "status-87",
+      "input": {
+        "language": "de",
+        "modelCase": "one",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            }
+          ]
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 2,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "● 2 Modelle"
+      }
+    },
+    {
+      "id": "status-88",
+      "input": {
+        "language": "de",
+        "modelCase": "one",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            }
+          ]
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": {
+        "text": "● Überprüfe..."
+      }
+    },
+    {
+      "id": "status-89",
+      "input": {
+        "language": "de",
+        "modelCase": "one",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            }
+          ]
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "disconnected"
+        }
+      },
+      "expected": {
+        "text": "● Getrennt"
+      }
+    },
+    {
+      "id": "status-90",
+      "input": {
+        "language": "de",
+        "modelCase": "two",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            },
+            {
+              "id": "model-2"
+            }
+          ]
+        },
+        "isAutoDiscovery": false
+      },
+      "expected": {
+        "text": "Modelle: 2"
+      }
+    },
+    {
+      "id": "status-91",
+      "input": {
+        "language": "de",
+        "modelCase": "two",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            },
+            {
+              "id": "model-2"
+            }
+          ]
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "Modelle: 2"
+      }
+    },
+    {
+      "id": "status-92",
+      "input": {
+        "language": "de",
+        "modelCase": "two",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            },
+            {
+              "id": "model-2"
+            }
+          ]
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 2,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "Modelle: 2"
+      }
+    },
+    {
+      "id": "status-93",
+      "input": {
+        "language": "de",
+        "modelCase": "two",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            },
+            {
+              "id": "model-2"
+            }
+          ]
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": {
+        "text": "Modelle: 2"
+      }
+    },
+    {
+      "id": "status-94",
+      "input": {
+        "language": "de",
+        "modelCase": "two",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            },
+            {
+              "id": "model-2"
+            }
+          ]
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "disconnected"
+        }
+      },
+      "expected": {
+        "text": "Modelle: 2"
+      }
+    },
+    {
+      "id": "status-95",
+      "input": {
+        "language": "de",
+        "modelCase": "two",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            },
+            {
+              "id": "model-2"
+            }
+          ]
+        },
+        "isAutoDiscovery": true
+      },
+      "expected": {
+        "text": ""
+      }
+    },
+    {
+      "id": "status-96",
+      "input": {
+        "language": "de",
+        "modelCase": "two",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            },
+            {
+              "id": "model-2"
+            }
+          ]
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "● 0 Modelle"
+      }
+    },
+    {
+      "id": "status-97",
+      "input": {
+        "language": "de",
+        "modelCase": "two",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            },
+            {
+              "id": "model-2"
+            }
+          ]
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 2,
+          "status": "connected"
+        }
+      },
+      "expected": {
+        "text": "● 2 Modelle"
+      }
+    },
+    {
+      "id": "status-98",
+      "input": {
+        "language": "de",
+        "modelCase": "two",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            },
+            {
+              "id": "model-2"
+            }
+          ]
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": {
+        "text": "● Überprüfe..."
+      }
+    },
+    {
+      "id": "status-99",
+      "input": {
+        "language": "de",
+        "modelCase": "two",
+        "provider": {
+          "id": "id-1",
+          "name": " <b>雪</b> ",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "model-1"
+            },
+            {
+              "id": "model-2"
+            }
+          ]
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "disconnected"
+        }
+      },
+      "expected": {
+        "text": "● Getrennt"
+      }
+    }
+  ],
+  "callbacks": [
+    {
+      "input": {
+        "language": "en",
+        "isAutoDiscovery": false,
+        "mask": 0,
+        "provider": {
+          "id": "original",
+          "name": "<em>literal</em>",
+          "type": "anthropic-messages",
+          "baseUrl": " <script>literal</script> "
+        }
+      },
+      "expected": {
+        "labels": [],
+        "callbacks": [],
+        "providerIdentity": true
+      }
+    },
+    {
+      "input": {
+        "language": "en",
+        "isAutoDiscovery": false,
+        "mask": 1,
+        "provider": {
+          "id": "original",
+          "name": "<em>literal</em>",
+          "type": "anthropic-messages",
+          "baseUrl": " <script>literal</script> "
+        }
+      },
+      "expected": {
+        "labels": [],
+        "callbacks": [],
+        "providerIdentity": true
+      }
+    },
+    {
+      "input": {
+        "language": "en",
+        "isAutoDiscovery": false,
+        "mask": 2,
+        "provider": {
+          "id": "original",
+          "name": "<em>literal</em>",
+          "type": "anthropic-messages",
+          "baseUrl": " <script>literal</script> "
+        }
+      },
+      "expected": {
+        "labels": [
+          "Edit"
+        ],
+        "callbacks": [
+          {
+            "name": "onEdit",
+            "providerId": "original"
+          }
+        ],
+        "providerIdentity": true
+      }
+    },
+    {
+      "input": {
+        "language": "en",
+        "isAutoDiscovery": false,
+        "mask": 3,
+        "provider": {
+          "id": "original",
+          "name": "<em>literal</em>",
+          "type": "anthropic-messages",
+          "baseUrl": " <script>literal</script> "
+        }
+      },
+      "expected": {
+        "labels": [
+          "Edit"
+        ],
+        "callbacks": [
+          {
+            "name": "onEdit",
+            "providerId": "original"
+          }
+        ],
+        "providerIdentity": true
+      }
+    },
+    {
+      "input": {
+        "language": "en",
+        "isAutoDiscovery": false,
+        "mask": 4,
+        "provider": {
+          "id": "original",
+          "name": "<em>literal</em>",
+          "type": "anthropic-messages",
+          "baseUrl": " <script>literal</script> "
+        }
+      },
+      "expected": {
+        "labels": [
+          "Delete"
+        ],
+        "callbacks": [
+          {
+            "name": "onDelete",
+            "providerId": "original"
+          }
+        ],
+        "providerIdentity": true
+      }
+    },
+    {
+      "input": {
+        "language": "en",
+        "isAutoDiscovery": false,
+        "mask": 5,
+        "provider": {
+          "id": "original",
+          "name": "<em>literal</em>",
+          "type": "anthropic-messages",
+          "baseUrl": " <script>literal</script> "
+        }
+      },
+      "expected": {
+        "labels": [
+          "Delete"
+        ],
+        "callbacks": [
+          {
+            "name": "onDelete",
+            "providerId": "original"
+          }
+        ],
+        "providerIdentity": true
+      }
+    },
+    {
+      "input": {
+        "language": "en",
+        "isAutoDiscovery": false,
+        "mask": 6,
+        "provider": {
+          "id": "original",
+          "name": "<em>literal</em>",
+          "type": "anthropic-messages",
+          "baseUrl": " <script>literal</script> "
+        }
+      },
+      "expected": {
+        "labels": [
+          "Edit",
+          "Delete"
+        ],
+        "callbacks": [
+          {
+            "name": "onEdit",
+            "providerId": "original"
+          },
+          {
+            "name": "onDelete",
+            "providerId": "original"
+          }
+        ],
+        "providerIdentity": true
+      }
+    },
+    {
+      "input": {
+        "language": "en",
+        "isAutoDiscovery": false,
+        "mask": 7,
+        "provider": {
+          "id": "original",
+          "name": "<em>literal</em>",
+          "type": "anthropic-messages",
+          "baseUrl": " <script>literal</script> "
+        }
+      },
+      "expected": {
+        "labels": [
+          "Edit",
+          "Delete"
+        ],
+        "callbacks": [
+          {
+            "name": "onEdit",
+            "providerId": "original"
+          },
+          {
+            "name": "onDelete",
+            "providerId": "original"
+          }
+        ],
+        "providerIdentity": true
+      }
+    },
+    {
+      "input": {
+        "language": "en",
+        "isAutoDiscovery": true,
+        "mask": 0,
+        "provider": {
+          "id": "original",
+          "name": "<em>literal</em>",
+          "type": "llama.cpp",
+          "baseUrl": " <script>literal</script> "
+        }
+      },
+      "expected": {
+        "labels": [],
+        "callbacks": [],
+        "providerIdentity": true
+      }
+    },
+    {
+      "input": {
+        "language": "en",
+        "isAutoDiscovery": true,
+        "mask": 1,
+        "provider": {
+          "id": "original",
+          "name": "<em>literal</em>",
+          "type": "llama.cpp",
+          "baseUrl": " <script>literal</script> "
+        }
+      },
+      "expected": {
+        "labels": [
+          "Refresh"
+        ],
+        "callbacks": [
+          {
+            "name": "onRefresh",
+            "providerId": "original"
+          }
+        ],
+        "providerIdentity": true
+      }
+    },
+    {
+      "input": {
+        "language": "en",
+        "isAutoDiscovery": true,
+        "mask": 2,
+        "provider": {
+          "id": "original",
+          "name": "<em>literal</em>",
+          "type": "llama.cpp",
+          "baseUrl": " <script>literal</script> "
+        }
+      },
+      "expected": {
+        "labels": [
+          "Edit"
+        ],
+        "callbacks": [
+          {
+            "name": "onEdit",
+            "providerId": "original"
+          }
+        ],
+        "providerIdentity": true
+      }
+    },
+    {
+      "input": {
+        "language": "en",
+        "isAutoDiscovery": true,
+        "mask": 3,
+        "provider": {
+          "id": "original",
+          "name": "<em>literal</em>",
+          "type": "llama.cpp",
+          "baseUrl": " <script>literal</script> "
+        }
+      },
+      "expected": {
+        "labels": [
+          "Refresh",
+          "Edit"
+        ],
+        "callbacks": [
+          {
+            "name": "onRefresh",
+            "providerId": "original"
+          },
+          {
+            "name": "onEdit",
+            "providerId": "original"
+          }
+        ],
+        "providerIdentity": true
+      }
+    },
+    {
+      "input": {
+        "language": "en",
+        "isAutoDiscovery": true,
+        "mask": 4,
+        "provider": {
+          "id": "original",
+          "name": "<em>literal</em>",
+          "type": "llama.cpp",
+          "baseUrl": " <script>literal</script> "
+        }
+      },
+      "expected": {
+        "labels": [
+          "Delete"
+        ],
+        "callbacks": [
+          {
+            "name": "onDelete",
+            "providerId": "original"
+          }
+        ],
+        "providerIdentity": true
+      }
+    },
+    {
+      "input": {
+        "language": "en",
+        "isAutoDiscovery": true,
+        "mask": 5,
+        "provider": {
+          "id": "original",
+          "name": "<em>literal</em>",
+          "type": "llama.cpp",
+          "baseUrl": " <script>literal</script> "
+        }
+      },
+      "expected": {
+        "labels": [
+          "Refresh",
+          "Delete"
+        ],
+        "callbacks": [
+          {
+            "name": "onRefresh",
+            "providerId": "original"
+          },
+          {
+            "name": "onDelete",
+            "providerId": "original"
+          }
+        ],
+        "providerIdentity": true
+      }
+    },
+    {
+      "input": {
+        "language": "en",
+        "isAutoDiscovery": true,
+        "mask": 6,
+        "provider": {
+          "id": "original",
+          "name": "<em>literal</em>",
+          "type": "llama.cpp",
+          "baseUrl": " <script>literal</script> "
+        }
+      },
+      "expected": {
+        "labels": [
+          "Edit",
+          "Delete"
+        ],
+        "callbacks": [
+          {
+            "name": "onEdit",
+            "providerId": "original"
+          },
+          {
+            "name": "onDelete",
+            "providerId": "original"
+          }
+        ],
+        "providerIdentity": true
+      }
+    },
+    {
+      "input": {
+        "language": "en",
+        "isAutoDiscovery": true,
+        "mask": 7,
+        "provider": {
+          "id": "original",
+          "name": "<em>literal</em>",
+          "type": "llama.cpp",
+          "baseUrl": " <script>literal</script> "
+        }
+      },
+      "expected": {
+        "labels": [
+          "Refresh",
+          "Edit",
+          "Delete"
+        ],
+        "callbacks": [
+          {
+            "name": "onRefresh",
+            "providerId": "original"
+          },
+          {
+            "name": "onEdit",
+            "providerId": "original"
+          },
+          {
+            "name": "onDelete",
+            "providerId": "original"
+          }
+        ],
+        "providerIdentity": true
+      }
+    },
+    {
+      "input": {
+        "language": "de",
+        "isAutoDiscovery": false,
+        "mask": 0,
+        "provider": {
+          "id": "original",
+          "name": "<em>literal</em>",
+          "type": "anthropic-messages",
+          "baseUrl": " <script>literal</script> "
+        }
+      },
+      "expected": {
+        "labels": [],
+        "callbacks": [],
+        "providerIdentity": true
+      }
+    },
+    {
+      "input": {
+        "language": "de",
+        "isAutoDiscovery": false,
+        "mask": 1,
+        "provider": {
+          "id": "original",
+          "name": "<em>literal</em>",
+          "type": "anthropic-messages",
+          "baseUrl": " <script>literal</script> "
+        }
+      },
+      "expected": {
+        "labels": [],
+        "callbacks": [],
+        "providerIdentity": true
+      }
+    },
+    {
+      "input": {
+        "language": "de",
+        "isAutoDiscovery": false,
+        "mask": 2,
+        "provider": {
+          "id": "original",
+          "name": "<em>literal</em>",
+          "type": "anthropic-messages",
+          "baseUrl": " <script>literal</script> "
+        }
+      },
+      "expected": {
+        "labels": [
+          "Bearbeiten"
+        ],
+        "callbacks": [
+          {
+            "name": "onEdit",
+            "providerId": "original"
+          }
+        ],
+        "providerIdentity": true
+      }
+    },
+    {
+      "input": {
+        "language": "de",
+        "isAutoDiscovery": false,
+        "mask": 3,
+        "provider": {
+          "id": "original",
+          "name": "<em>literal</em>",
+          "type": "anthropic-messages",
+          "baseUrl": " <script>literal</script> "
+        }
+      },
+      "expected": {
+        "labels": [
+          "Bearbeiten"
+        ],
+        "callbacks": [
+          {
+            "name": "onEdit",
+            "providerId": "original"
+          }
+        ],
+        "providerIdentity": true
+      }
+    },
+    {
+      "input": {
+        "language": "de",
+        "isAutoDiscovery": false,
+        "mask": 4,
+        "provider": {
+          "id": "original",
+          "name": "<em>literal</em>",
+          "type": "anthropic-messages",
+          "baseUrl": " <script>literal</script> "
+        }
+      },
+      "expected": {
+        "labels": [
+          "Löschen"
+        ],
+        "callbacks": [
+          {
+            "name": "onDelete",
+            "providerId": "original"
+          }
+        ],
+        "providerIdentity": true
+      }
+    },
+    {
+      "input": {
+        "language": "de",
+        "isAutoDiscovery": false,
+        "mask": 5,
+        "provider": {
+          "id": "original",
+          "name": "<em>literal</em>",
+          "type": "anthropic-messages",
+          "baseUrl": " <script>literal</script> "
+        }
+      },
+      "expected": {
+        "labels": [
+          "Löschen"
+        ],
+        "callbacks": [
+          {
+            "name": "onDelete",
+            "providerId": "original"
+          }
+        ],
+        "providerIdentity": true
+      }
+    },
+    {
+      "input": {
+        "language": "de",
+        "isAutoDiscovery": false,
+        "mask": 6,
+        "provider": {
+          "id": "original",
+          "name": "<em>literal</em>",
+          "type": "anthropic-messages",
+          "baseUrl": " <script>literal</script> "
+        }
+      },
+      "expected": {
+        "labels": [
+          "Bearbeiten",
+          "Löschen"
+        ],
+        "callbacks": [
+          {
+            "name": "onEdit",
+            "providerId": "original"
+          },
+          {
+            "name": "onDelete",
+            "providerId": "original"
+          }
+        ],
+        "providerIdentity": true
+      }
+    },
+    {
+      "input": {
+        "language": "de",
+        "isAutoDiscovery": false,
+        "mask": 7,
+        "provider": {
+          "id": "original",
+          "name": "<em>literal</em>",
+          "type": "anthropic-messages",
+          "baseUrl": " <script>literal</script> "
+        }
+      },
+      "expected": {
+        "labels": [
+          "Bearbeiten",
+          "Löschen"
+        ],
+        "callbacks": [
+          {
+            "name": "onEdit",
+            "providerId": "original"
+          },
+          {
+            "name": "onDelete",
+            "providerId": "original"
+          }
+        ],
+        "providerIdentity": true
+      }
+    },
+    {
+      "input": {
+        "language": "de",
+        "isAutoDiscovery": true,
+        "mask": 0,
+        "provider": {
+          "id": "original",
+          "name": "<em>literal</em>",
+          "type": "llama.cpp",
+          "baseUrl": " <script>literal</script> "
+        }
+      },
+      "expected": {
+        "labels": [],
+        "callbacks": [],
+        "providerIdentity": true
+      }
+    },
+    {
+      "input": {
+        "language": "de",
+        "isAutoDiscovery": true,
+        "mask": 1,
+        "provider": {
+          "id": "original",
+          "name": "<em>literal</em>",
+          "type": "llama.cpp",
+          "baseUrl": " <script>literal</script> "
+        }
+      },
+      "expected": {
+        "labels": [
+          "Aktualisieren"
+        ],
+        "callbacks": [
+          {
+            "name": "onRefresh",
+            "providerId": "original"
+          }
+        ],
+        "providerIdentity": true
+      }
+    },
+    {
+      "input": {
+        "language": "de",
+        "isAutoDiscovery": true,
+        "mask": 2,
+        "provider": {
+          "id": "original",
+          "name": "<em>literal</em>",
+          "type": "llama.cpp",
+          "baseUrl": " <script>literal</script> "
+        }
+      },
+      "expected": {
+        "labels": [
+          "Bearbeiten"
+        ],
+        "callbacks": [
+          {
+            "name": "onEdit",
+            "providerId": "original"
+          }
+        ],
+        "providerIdentity": true
+      }
+    },
+    {
+      "input": {
+        "language": "de",
+        "isAutoDiscovery": true,
+        "mask": 3,
+        "provider": {
+          "id": "original",
+          "name": "<em>literal</em>",
+          "type": "llama.cpp",
+          "baseUrl": " <script>literal</script> "
+        }
+      },
+      "expected": {
+        "labels": [
+          "Aktualisieren",
+          "Bearbeiten"
+        ],
+        "callbacks": [
+          {
+            "name": "onRefresh",
+            "providerId": "original"
+          },
+          {
+            "name": "onEdit",
+            "providerId": "original"
+          }
+        ],
+        "providerIdentity": true
+      }
+    },
+    {
+      "input": {
+        "language": "de",
+        "isAutoDiscovery": true,
+        "mask": 4,
+        "provider": {
+          "id": "original",
+          "name": "<em>literal</em>",
+          "type": "llama.cpp",
+          "baseUrl": " <script>literal</script> "
+        }
+      },
+      "expected": {
+        "labels": [
+          "Löschen"
+        ],
+        "callbacks": [
+          {
+            "name": "onDelete",
+            "providerId": "original"
+          }
+        ],
+        "providerIdentity": true
+      }
+    },
+    {
+      "input": {
+        "language": "de",
+        "isAutoDiscovery": true,
+        "mask": 5,
+        "provider": {
+          "id": "original",
+          "name": "<em>literal</em>",
+          "type": "llama.cpp",
+          "baseUrl": " <script>literal</script> "
+        }
+      },
+      "expected": {
+        "labels": [
+          "Aktualisieren",
+          "Löschen"
+        ],
+        "callbacks": [
+          {
+            "name": "onRefresh",
+            "providerId": "original"
+          },
+          {
+            "name": "onDelete",
+            "providerId": "original"
+          }
+        ],
+        "providerIdentity": true
+      }
+    },
+    {
+      "input": {
+        "language": "de",
+        "isAutoDiscovery": true,
+        "mask": 6,
+        "provider": {
+          "id": "original",
+          "name": "<em>literal</em>",
+          "type": "llama.cpp",
+          "baseUrl": " <script>literal</script> "
+        }
+      },
+      "expected": {
+        "labels": [
+          "Bearbeiten",
+          "Löschen"
+        ],
+        "callbacks": [
+          {
+            "name": "onEdit",
+            "providerId": "original"
+          },
+          {
+            "name": "onDelete",
+            "providerId": "original"
+          }
+        ],
+        "providerIdentity": true
+      }
+    },
+    {
+      "input": {
+        "language": "de",
+        "isAutoDiscovery": true,
+        "mask": 7,
+        "provider": {
+          "id": "original",
+          "name": "<em>literal</em>",
+          "type": "llama.cpp",
+          "baseUrl": " <script>literal</script> "
+        }
+      },
+      "expected": {
+        "labels": [
+          "Aktualisieren",
+          "Bearbeiten",
+          "Löschen"
+        ],
+        "callbacks": [
+          {
+            "name": "onRefresh",
+            "providerId": "original"
+          },
+          {
+            "name": "onEdit",
+            "providerId": "original"
+          },
+          {
+            "name": "onDelete",
+            "providerId": "original"
+          }
+        ],
+        "providerIdentity": true
+      }
+    }
+  ],
+  "updates": {
+    "replacedProviderAndCallback": true,
+    "mutatedOriginal": true,
+    "removedCallbackNoop": true,
+    "calls": [
+      "new:next"
+    ]
+  },
+  "routeControls": [
+    {
+      "input": {
+        "provider": {
+          "id": "old",
+          "name": "old",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "first"
+            },
+            {
+              "id": "second"
+            }
+          ]
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": "Models: 2"
+    },
+    {
+      "input": {
+        "provider": {
+          "id": "old",
+          "name": "old",
+          "type": "ollama",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "first"
+            },
+            {
+              "id": "second"
+            }
+          ]
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": "● Checking..."
+    },
+    {
+      "input": {
+        "provider": {
+          "id": "old",
+          "name": "old",
+          "type": "llama.cpp",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "first"
+            },
+            {
+              "id": "second"
+            }
+          ]
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": "Models: 2"
+    },
+    {
+      "input": {
+        "provider": {
+          "id": "old",
+          "name": "old",
+          "type": "llama.cpp",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "first"
+            },
+            {
+              "id": "second"
+            }
+          ]
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": "● Checking..."
+    },
+    {
+      "input": {
+        "provider": {
+          "id": "old",
+          "name": "old",
+          "type": "vllm",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "first"
+            },
+            {
+              "id": "second"
+            }
+          ]
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": "Models: 2"
+    },
+    {
+      "input": {
+        "provider": {
+          "id": "old",
+          "name": "old",
+          "type": "vllm",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "first"
+            },
+            {
+              "id": "second"
+            }
+          ]
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": "● Checking..."
+    },
+    {
+      "input": {
+        "provider": {
+          "id": "old",
+          "name": "old",
+          "type": "lmstudio",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "first"
+            },
+            {
+              "id": "second"
+            }
+          ]
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": "Models: 2"
+    },
+    {
+      "input": {
+        "provider": {
+          "id": "old",
+          "name": "old",
+          "type": "lmstudio",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "first"
+            },
+            {
+              "id": "second"
+            }
+          ]
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": "● Checking..."
+    },
+    {
+      "input": {
+        "provider": {
+          "id": "old",
+          "name": "old",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "first"
+            },
+            {
+              "id": "second"
+            }
+          ]
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": "Models: 2"
+    },
+    {
+      "input": {
+        "provider": {
+          "id": "old",
+          "name": "old",
+          "type": "openai-completions",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "first"
+            },
+            {
+              "id": "second"
+            }
+          ]
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": "● Checking..."
+    },
+    {
+      "input": {
+        "provider": {
+          "id": "old",
+          "name": "old",
+          "type": "openai-responses",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "first"
+            },
+            {
+              "id": "second"
+            }
+          ]
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": "Models: 2"
+    },
+    {
+      "input": {
+        "provider": {
+          "id": "old",
+          "name": "old",
+          "type": "openai-responses",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "first"
+            },
+            {
+              "id": "second"
+            }
+          ]
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": "● Checking..."
+    },
+    {
+      "input": {
+        "provider": {
+          "id": "old",
+          "name": "old",
+          "type": "anthropic-messages",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "first"
+            },
+            {
+              "id": "second"
+            }
+          ]
+        },
+        "isAutoDiscovery": false,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": "Models: 2"
+    },
+    {
+      "input": {
+        "provider": {
+          "id": "old",
+          "name": "old",
+          "type": "anthropic-messages",
+          "baseUrl": "",
+          "models": [
+            {
+              "id": "first"
+            },
+            {
+              "id": "second"
+            }
+          ]
+        },
+        "isAutoDiscovery": true,
+        "status": {
+          "modelCount": 0,
+          "status": "checking"
+        }
+      },
+      "expected": "● Checking..."
+    }
+  ]
+}

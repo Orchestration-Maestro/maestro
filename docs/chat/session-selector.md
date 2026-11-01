@@ -8,7 +8,10 @@ session records, a live theme and host observations; storage stays caller-owned.
 ## Discovery
 
 `SessionSelectorComponent::new` takes Current/All `SessionsLoader` factories,
-`SessionSelectorCallbacks` and `SessionSelectorOptions`. It returns an
+`SessionSelectorCallbacks` and `SessionSelectorOptions`. The loader, progress,
+future and callback records are declared once in
+`maestro_app::presentation_data::input_selectors` and re-exported here; the
+options stay with this widget. It returns an
 `io::Result`, resolving the optional key manager before starting Current
 discovery. Configuration-root errors return before discovery begins. Factories receive an owned `SessionListProgress`
 callback and return a fallible owned `SessionsFuture`; the supplied runtime drives
@@ -72,9 +75,11 @@ flag forwards each set immediately to the search input.
 
 Rows show names (including present empty names) or first messages, tree connectors,
 counts and fixed elapsed-time units. Working directories are optional. Displayed
-paths shorten a raw, nonempty home prefix rather than a path-component prefix.
-C0 controls and DEL become spaces in displayed messages and metadata; message
-text is additionally trimmed. Authored selection/callback identities are unchanged.
+paths show the home as `~` only for the home itself and the paths below it, so a
+sibling that shares the home's leading text stays as written, as it does when that
+home is empty or `/`. The part below the home keeps its spelling. C0 controls and DEL become spaces in
+displayed messages and metadata; message text is additionally trimmed. Authored
+selection/callback identities are unchanged.
 Empty views offer only actions enabled in the current key registry.
 
 The current session's canonical identity is captured once during construction.

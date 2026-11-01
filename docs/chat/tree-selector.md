@@ -100,13 +100,15 @@ The list borrows display fields only when their row reaches the window. Reached
 malformed text or a missing matched tool-argument receiver returns `InvalidData`;
 theme failures are propagated. Tool results resolve the last matching call from
 all ordered assistant rows, including hidden rows. Path summaries read the supplied
-runtime's nonempty HOME, then USERPROFILE, at each render and shorten a raw prefix.
+runtime's nonempty HOME, then USERPROFILE, at each render and show the home and the
+paths below it as `~`, with the part below the home as written.
 `command`, `path`, `file_path` and `pattern` use their tool defaults for falsy
 values. Before tool-specific formatting, truthy strings supply text and other
 truthy values become compact JSON. Shell summaries still normalize newlines and
-tabs, trim and truncate; paths still shorten a matching home prefix. Numeric
-read ranges have separate formatting rules. Entry text remains strictly
-string-valued. Rendering performs no filesystem or scheduling operations.
+tabs, trim and truncate; paths still show the home and what is below it as `~`, and an empty
+or `/` home leaves them as written. Numeric read ranges have separate formatting
+rules. Entry text remains strictly string-valued. Rendering performs no
+filesystem or scheduling operations.
 
 The supplied live theme is read on every render. `styles_enabled` controls bold
 selection and italic empty titles; colors remain theme-owned. `invalidate()` is a

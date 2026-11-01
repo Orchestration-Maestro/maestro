@@ -66,6 +66,48 @@ fn browser_setup_errors_reach_stderr_and_transcript() {
     assert!(failures.is_empty(), "{}", failures.join("\n"));
 }
 
+/// Lockfile regeneration resolves the fixture's crates from the run's prepared sources.
+#[test]
+fn browser_lockfile_generation_resolves_prepared_sources() {
+    let browser = Browser::new();
+    browser.generate_lockfile();
+    assert!(
+        browser
+            .workspace
+            .path()
+            .with_file_name("cargo-home/config.toml")
+            .is_file(),
+        "lockfile generation must resolve through a private source configuration"
+    );
+}
+
+/// Lockfile generation and metadata queries finish while the shared Cargo home is unusable.
+#[test]
+fn browser_resolution_never_reaches_the_shared_cargo_home() {
+    if !recipe_support::without_shared_cargo_home() {
+        recipe_support::rerun_without_shared_cargo_home(
+            "browser_resolution_never_reaches_the_shared_cargo_home",
+        );
+        return;
+    }
+    let browser = Browser::new();
+    browser.generate_lockfile();
+    success(
+        &browser
+            .cargo()
+            .args([
+                "metadata",
+                "--offline",
+                "--format-version",
+                "1",
+                "--manifest-path",
+            ])
+            .arg(browser.fixture("Cargo.toml"))
+            .output()
+            .unwrap(),
+    );
+}
+
 #[test]
 fn browser_clean_preserves_authored_inputs() {
     let browser = Browser::new();
@@ -97,7 +139,7 @@ fn browser_clean_preserves_authored_inputs() {
 }
 
 #[path = "fixtures/browser_support.rs"]
-mod browser_support;
+pub(crate) mod browser_support;
 use browser_support::{Browser, success};
 use std::fs;
 
@@ -182,34 +224,64 @@ fn browser_compile_watch_starts_no_server() {
 
 #[test]
 fn browser_check_repairs_formatting() {
-    let browser = Browser::new();
+    let browser = Browser::cached();
     browser.workspace_sources();
-    for path in [
+    let sources = [
         browser.fixture("src/main.rs"),
         browser.path("crates/maestro-web/src/lib.rs"),
-    ] {
+    ]
+    .map(|path| {
         let original = fs::read_to_string(&path).unwrap();
         fs::write(&path, format!("\n\n{original}")).unwrap();
-        success(&browser.run("browser-check"));
+        (path, original)
+    });
+    success(&browser.run("browser-check"));
+    for (path, original) in sources {
         assert_eq!(fs::read_to_string(path).unwrap(), original);
     }
 }
 
 #[test]
-fn browser_checks_reject_invalid_sources() {
-    let browser = Browser::new();
-    browser.workspace_sources();
+fn browser_author_checks_accept_valid_sources() {
+    let browser = Browser::cached();
     success(&browser.run("browser-check"));
-    for (path, invalid) in [
-        (browser.fixture("src/main.rs"), "\nnot Rust"),
-        (browser.path("crates/maestro-web/src/lib.rs"), "\nnot Rust"),
-        (browser.fixture("src/main.rs"), "\nfn unused() {}\n"),
-    ] {
-        let original = fs::read_to_string(&path).unwrap();
-        fs::write(&path, format!("{original}{invalid}")).unwrap();
-        assert!(!browser.run("browser-check").status.success());
-        fs::write(path, original).unwrap();
-    }
+    assert_no_browser_distribution(&browser);
+}
+
+#[test]
+fn browser_checks_reject_invalid_fixture_syntax() {
+    assert_browser_source_rejected(
+        "crates/maestro-tooling/tests/fixtures/browser_author/src/main.rs",
+        "\nnot Rust",
+    );
+}
+
+#[test]
+fn browser_checks_reject_invalid_library_syntax() {
+    assert_browser_source_rejected("crates/maestro-web/src/lib.rs", "\nnot Rust");
+}
+
+#[test]
+fn browser_checks_reject_fixture_warnings() {
+    assert_browser_source_rejected(
+        "crates/maestro-tooling/tests/fixtures/browser_author/src/main.rs",
+        "\nfn unused() {}\n",
+    );
+}
+
+/// Exercise each refusal independently while keeping the full authored fixture.
+fn assert_browser_source_rejected(relative: &str, invalid: &str) {
+    let browser = Browser::cached();
+    let path = browser.path(relative);
+    let original = fs::read_to_string(&path).unwrap();
+    fs::write(&path, format!("{original}{invalid}")).unwrap();
+    assert!(!browser.run("browser-check").status.success());
+    fs::write(path, original).unwrap();
+    assert_no_browser_distribution(&browser);
+}
+
+/// Checks must not produce either browser distribution, including after a refusal.
+fn assert_no_browser_distribution(browser: &Browser) {
     assert!(!browser.path("target/maestro-browser/library").exists());
     assert!(!browser.path("target/maestro-browser/example").exists());
 }
@@ -603,7 +675,8 @@ fn browser_wasm_closure_excludes_native_engines() {
     fs::write(&manifest, original).unwrap();
     fs::write(browser.fixture("Cargo.lock"), lock).unwrap();
     success(&browser.run("browser-library-build"));
-    let tree = toolchain_support::command("cargo")
+    let tree = browser
+        .cargo()
         .args([
             "tree",
             "--locked",
@@ -656,7 +729,7 @@ fn browser_debug_build_keeps_source_locations() {
 
 #[test]
 fn browser_assets_follow_relative_selected_identity() {
-    let browser = Browser::new();
+    let browser = Browser::cached();
     for (pack, body) in [
         ("assets/brand/brand.json", "Barlow"),
         ("assets/brand/packs/signal.json", "Space Grotesk"),
@@ -1276,7 +1349,7 @@ fn assert_ignored_event(receive: &std::sync::mpsc::Receiver<String>, path: &str)
 #[test]
 #[cfg(target_os = "linux")]
 fn browser_author_native_hook_preserves_overrides_environment_and_failure() {
-    let browser = Browser::new();
+    let browser = Browser::cached();
     browser_support::bootstrap_source(&browser);
     fs::create_dir(browser.fixture("scripts")).unwrap();
     let script = browser.path("hook-source");
@@ -1394,7 +1467,7 @@ fn browser_author_hook_status_propagates() {
 
 #[test]
 fn browser_author_check_preserves_adjacent_locks() {
-    let browser = Browser::new();
+    let browser = Browser::cached();
     let before = browser_support::authored(&browser);
     success(&browser.run("browser-example-check"));
     assert_eq!(browser_support::authored(&browser), before);
@@ -1474,7 +1547,7 @@ fn browser_author_trunk_rejects_stale_lock_without_writes() {
 
 #[test]
 fn browser_author_included_files_rebuild_without_source_changes() {
-    let browser = Browser::new();
+    let browser = Browser::cached();
     browser_support::bootstrap_source(&browser);
     let source = fs::read(browser.fixture("src/main.rs")).unwrap();
     success(&browser.run("browser-library-build"));
@@ -1589,7 +1662,8 @@ fn browser_author_unrelated_workspace_bump_keeps_fixture_lock() {
 
 /// Qualify the actual resolved graph, not only the manifest spelling.
 fn assert_fixture_independent(browser: &Browser) {
-    let metadata = toolchain_support::command(env!("CARGO"))
+    let metadata = browser
+        .cargo()
         .args([
             "metadata",
             "--locked",
@@ -1616,14 +1690,27 @@ fn assert_fixture_independent(browser: &Browser) {
 #[test]
 fn browser_author_shared_launcher_uses_invoking_checkout() {
     let browser = Browser::new();
+    drop(Browser::cold());
     browser_support::bootstrap_source(&browser);
-    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let target = root.join("target/browser-author-tests");
+    let command = browser.command("browser-debug-build");
+    let target = std::path::PathBuf::from(
+        command
+            .get_envs()
+            .find(|(key, _)| *key == "CARGO_TARGET_DIR")
+            .unwrap()
+            .1
+            .unwrap(),
+    );
+    assert_eq!(
+        target,
+        browser_support::target_directory(),
+        "warm browser recipes must reuse the run's shared Cargo target"
+    );
     fs::create_dir_all(&target).unwrap();
     let target = target.canonicalize().unwrap();
     success(
         &toolchain_support::command(env!("CARGO"))
-            .current_dir(&root)
+            .current_dir(browser.workspace.path())
             .args(["build", "--locked", "-p", "maestro-tooling", "--bins"])
             .env("CARGO_TARGET_DIR", &target)
             .output()
@@ -1657,9 +1744,19 @@ fn browser_author_shared_launcher_uses_invoking_checkout() {
     );
 }
 
+/// The cold checkout compiles its dependencies at the plain development profile.
+#[test]
+fn browser_cold_checkout_builds_dependencies_at_the_plain_dev_profile() {
+    let browser = Browser::cold();
+    let manifest: toml::Table =
+        toml::from_str(&fs::read_to_string(browser.path("Cargo.toml")).unwrap()).unwrap();
+    let packages = manifest["profile"]["dev"]["package"].as_table().unwrap();
+    assert_eq!(packages.keys().collect::<Vec<_>>(), ["*"]);
+}
+
 #[test]
 fn browser_author_bootstraps_from_empty_build_state() {
-    let browser = Browser::new();
+    let browser = Browser::cold();
     browser_support::bootstrap_source(&browser);
     let (home, target) = browser_support::cold_sources(&browser);
     let before = browser_support::authored(&browser);

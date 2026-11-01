@@ -10,11 +10,40 @@ pub(super) fn mount(
     document: &Document,
     sheets: &Sheets,
     surface: (egui::Id, egui::Rect, Option<egui::Id>, bool),
+    selected: usize,
 ) -> Result<ReadingRoot, AttachmentHostError> {
+    let root = root(document, sheets, surface.3, selected)?;
+    let mut slots = Vec::new();
+    if let Some(strip) = root
+        .query_selector(".maestro-excel-tabs")
+        .map_err(|e| host_error(&e))?
+    {
+        for (index, _) in sheets.values.iter().enumerate() {
+            let slot = create(document, "span", "maestro-excel-tab")?;
+            strip.append_child(&slot).map_err(|e| host_error(&e))?;
+            slots.push((surface.0.with(index), slot));
+        }
+    }
+    Ok(ReadingRoot {
+        frame_style: "",
+        decoration: None,
+        commit: None,
+        owner: None,
+        element: root,
+        slots,
+    })
+}
+/// Build stable table bodies independently of the caller's tab controls.
+pub(super) fn root(
+    document: &Document,
+    sheets: &Sheets,
+    padded: bool,
+    selected: usize,
+) -> Result<web_sys::Element, AttachmentHostError> {
     let root = create(
         document,
         "section",
-        if surface.3 {
+        if padded {
             "maestro-excel maestro-excel-artifact"
         } else {
             "maestro-excel"
@@ -24,14 +53,8 @@ pub(super) fn mount(
     style.set_text_content(Some(include_str!("../excel.css")));
     root.append_child(&style).map_err(|e| host_error(&e))?;
     let multi = sheets.values.len() > 1;
-    let mut slots = Vec::new();
     if multi {
         let strip = create(document, "div", "maestro-excel-tabs")?;
-        for (index, _) in sheets.values.iter().enumerate() {
-            let slot = create(document, "span", "maestro-excel-tab")?;
-            strip.append_child(&slot).map_err(|e| host_error(&e))?;
-            slots.push((surface.0.with(index), slot));
-        }
         root.append_child(&strip).map_err(|e| host_error(&e))?;
     }
     let mut nodes = Vec::new();
@@ -48,9 +71,8 @@ pub(super) fn mount(
         match content {
             Ok(html) => body.set_inner_html(html),
             Err(text) => {
-                let error = super::super::error::mount(document, text, surface.3)?;
-                body.append_child(&error.element)
-                    .map_err(|e| host_error(&e))?;
+                let error = super::super::error::root(document, text, padded)?;
+                body.append_child(&error).map_err(|e| host_error(&e))?;
             }
         }
         root.append_child(&body).map_err(|e| host_error(&e))?;
@@ -60,15 +82,8 @@ pub(super) fn mount(
         .map_err(|e| host_error(&e))?;
     *sheets.root.borrow_mut() = Some(root.clone());
     *sheets.nodes.borrow_mut() = nodes;
-    select(sheets, 0)?;
-    Ok(ReadingRoot {
-        frame_style: "",
-        decoration: None,
-        commit: None,
-        owner: None,
-        element: root,
-        slots,
-    })
+    select(sheets, selected)?;
+    Ok(root)
 }
 /// Hide rather than rebuild bodies, preserving native selection and both offsets.
 pub(super) fn select(sheets: &Sheets, selected: usize) -> Result<(), AttachmentHostError> {
@@ -81,6 +96,20 @@ pub(super) fn select(sheets: &Sheets, selected: usize) -> Result<(), AttachmentH
         if node.get_attribute("style").as_deref() != Some(value) {
             node.set_attribute("style", value)
                 .map_err(|e| host_error(&e))?;
+        }
+    }
+    if let Some(root) = sheets.root.borrow().as_ref() {
+        let buttons = root
+            .query_selector_all(".maestro-excel-tabs > button")
+            .map_err(|e| host_error(&e))?;
+        for index in 0..buttons.length() {
+            use wasm_bindgen::JsCast as _;
+            if let Some(button) = buttons.item(index) {
+                let button: web_sys::Element = button.unchecked_into();
+                button
+                    .set_attribute("aria-selected", &(index as usize == selected).to_string())
+                    .map_err(|e| host_error(&e))?;
+            }
         }
     }
     Ok(())
@@ -109,4 +138,67 @@ pub(super) fn reveal(sheets: &Sheets, index: usize) -> Result<(), AttachmentHost
         slot.scroll_into_view();
     }
     Ok(())
+}
+
+/// Mount native tab controls on the shared sheet bodies without a canvas placement owner.
+pub(super) fn native(
+    view: &crate::dom::DomView,
+    sheets: &std::rc::Rc<Sheets>,
+    selected: &std::rc::Rc<std::cell::Cell<usize>>,
+    padded: bool,
+) -> Result<crate::dom::DomRoot, crate::tools::types::ToolUiError> {
+    use crate::tools::types::ToolUiError;
+    let root = root(&view.document, sheets, padded, selected.get())?;
+    root.remove_attribute("style")
+        .map_err(|error| ToolUiError::native(&error))?;
+    let mut events = Vec::new();
+    if let Some(strip) = root
+        .query_selector(".maestro-excel-tabs")
+        .map_err(|error| ToolUiError::native(&error))?
+    {
+        for index in 0..sheets.values.len() {
+            let (button, event) = tab(view, sheets, selected, index)?;
+            strip
+                .append_child(&button)
+                .map_err(|error| ToolUiError::native(&error))?;
+            events.push(event);
+        }
+    }
+    select(sheets, selected.get())?;
+    Ok(crate::dom::DomRoot {
+        node: root.into(),
+        owner: Some(Box::new(events)),
+    })
+}
+/// Retained native worksheet selection callback.
+type TabEvent = crate::browser::event_subscription::EventSubscription<
+    wasm_bindgen::closure::Closure<dyn Fn() -> Result<(), wasm_bindgen::JsValue>>,
+>;
+/// Prepare one native tab and subscribe through the shared event owner.
+fn tab(
+    view: &crate::dom::DomView,
+    sheets: &std::rc::Rc<Sheets>,
+    selected: &std::rc::Rc<std::cell::Cell<usize>>,
+    index: usize,
+) -> Result<(web_sys::Element, TabEvent), crate::tools::types::ToolUiError> {
+    use crate::{browser::event_subscription::EventSubscription, tools::types::ToolUiError};
+    use std::rc::Rc;
+    use wasm_bindgen::closure::Closure;
+    let button = view
+        .document
+        .create_element("button")
+        .map_err(|error| ToolUiError::native(&error))?;
+    button.set_class_name("maestro-excel-tab");
+    button.set_text_content(Some(&sheets.values[index].0));
+    button
+        .set_attribute("type", "button")
+        .map_err(|error| ToolUiError::native(&error))?;
+    let (sheets, selected) = (Rc::clone(sheets), Rc::clone(selected));
+    let click = Closure::<dyn Fn() -> Result<(), wasm_bindgen::JsValue>>::new(move || {
+        selected.set(index);
+        select(&sheets, index).map_err(|error| wasm_bindgen::JsValue::from_str(&error.to_string()))
+    });
+    let event = EventSubscription::new(button.clone().into(), "click", click)
+        .map_err(|error| ToolUiError::native(&error))?;
+    Ok((button, event))
 }

@@ -180,9 +180,13 @@ fn registry_with_commands(
         .collect();
     let text = serde_json::json!({ "providers": providers }).to_string();
     let storage = SharedHandle::new(AuthStorage::in_memory(AuthStorageData::new()));
-    let registry =
-        ModelRegistry::with_operations(storage, "<models>", Json(text), crate::support::values())
-            .unwrap();
+    let registry = ModelRegistry::with_operations(
+        storage,
+        "<models>",
+        Json(text),
+        crate::support::forbidden(),
+    )
+    .unwrap();
     *registry.get_all().write().unwrap() = handles.to_vec();
     registry
 }

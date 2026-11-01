@@ -2,8 +2,7 @@
 
 use std::cell::Cell;
 
-use rustix::stdio::stdout;
-use rustix::termios::tcgetwinsize;
+use super::platform::window_size;
 
 /// The width used when neither the terminal nor `COLUMNS` supplies a positive one.
 const DEFAULT_COLUMNS: usize = 80;
@@ -23,11 +22,8 @@ struct Size {
 impl Size {
     /// The size of standard output, or `None` when standard output reports none.
     fn query() -> Option<Self> {
-        let size = tcgetwinsize(stdout()).ok()?;
-        Some(Self {
-            columns: usize::from(size.ws_col),
-            rows: usize::from(size.ws_row),
-        })
+        let (columns, rows) = window_size()?;
+        Some(Self { columns, rows })
     }
 }
 

@@ -1,0 +1,2890 @@
+[
+  {
+    "input": {
+      "isStreaming": false
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 1,
+      "status": "inprogress",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 1,
+      "status": "inprogress",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": []
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 0,
+      "status": "error",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": []
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 0,
+      "status": "error",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": null
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 1,
+      "status": "inprogress",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": null
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 1,
+      "status": "inprogress",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": null
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": null
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": null
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": []
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 0,
+      "status": "error",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": null
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": []
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 0,
+      "status": "error",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": null
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": null
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": ""
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 1,
+      "status": "inprogress",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": ""
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 1,
+      "status": "inprogress",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": ""
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": ""
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": ""
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": []
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 0,
+      "status": "error",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": ""
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": []
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 0,
+      "status": "error",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": ""
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": ""
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": false
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 1,
+      "status": "inprogress",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": false
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 1,
+      "status": "inprogress",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": false
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": false
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": false
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": []
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 0,
+      "status": "error",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": false
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": []
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 0,
+      "status": "error",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": false
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": false
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": true
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 1,
+      "status": "inprogress",
+      "console": [
+        {
+          "content": "> true",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": true
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 1,
+      "status": "inprogress",
+      "console": [
+        {
+          "content": "> true",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": true
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [
+        {
+          "content": "> true\n\nfirst\nlast",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": true
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [
+        {
+          "content": "> true\n\nfirst\nlast",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": true
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": []
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "error",
+      "console": [
+        {
+          "content": "> true",
+          "variant": "error"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": true
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": []
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "error",
+      "console": [
+        {
+          "content": "> true",
+          "variant": "error"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": true
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [
+        {
+          "content": "> true",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": true
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [
+        {
+          "content": "> true",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": 0
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 1,
+      "status": "inprogress",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": 0
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 1,
+      "status": "inprogress",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": 0
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": 0
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": 0
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": []
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 0,
+      "status": "error",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": 0
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": []
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 0,
+      "status": "error",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": 0
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": 0
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Waiting for command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": 2
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 1,
+      "status": "inprogress",
+      "console": [
+        {
+          "content": "> 2",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": 2
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 1,
+      "status": "inprogress",
+      "console": [
+        {
+          "content": "> 2",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": 2
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [
+        {
+          "content": "> 2\n\nfirst\nlast",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": 2
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [
+        {
+          "content": "> 2\n\nfirst\nlast",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": 2
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": []
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "error",
+      "console": [
+        {
+          "content": "> 2",
+          "variant": "error"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": 2
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": []
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "error",
+      "console": [
+        {
+          "content": "> 2",
+          "variant": "error"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": 2
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [
+        {
+          "content": "> 2",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": 2
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [
+        {
+          "content": "> 2",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": "named"
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 1,
+      "status": "inprogress",
+      "console": [
+        {
+          "content": "> named",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": "named"
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 1,
+      "status": "inprogress",
+      "console": [
+        {
+          "content": "> named",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": "named"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [
+        {
+          "content": "> named\n\nfirst\nlast",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": "named"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [
+        {
+          "content": "> named\n\nfirst\nlast",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": "named"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": []
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "error",
+      "console": [
+        {
+          "content": "> named",
+          "variant": "error"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": "named"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": []
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "error",
+      "console": [
+        {
+          "content": "> named",
+          "variant": "error"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": "named"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [
+        {
+          "content": "> named",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": "named"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [
+        {
+          "content": "> named",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": "  named  "
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 1,
+      "status": "inprogress",
+      "console": [
+        {
+          "content": ">   named  ",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": "  named  "
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 1,
+      "status": "inprogress",
+      "console": [
+        {
+          "content": ">   named  ",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": "  named  "
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [
+        {
+          "content": ">   named  \n\nfirst\nlast",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": "  named  "
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [
+        {
+          "content": ">   named  \n\nfirst\nlast",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": "  named  "
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": []
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "error",
+      "console": [
+        {
+          "content": ">   named  ",
+          "variant": "error"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": "  named  "
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": []
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "error",
+      "console": [
+        {
+          "content": ">   named  ",
+          "variant": "error"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": "  named  "
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [
+        {
+          "content": ">   named  ",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": "  named  "
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [
+        {
+          "content": ">   named  ",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": " "
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 1,
+      "status": "inprogress",
+      "console": [
+        {
+          "content": ">  ",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": " "
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 1,
+      "status": "inprogress",
+      "console": [
+        {
+          "content": ">  ",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": " "
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [
+        {
+          "content": ">  \n\nfirst\nlast",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": " "
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [
+        {
+          "content": ">  \n\nfirst\nlast",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": " "
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": []
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "error",
+      "console": [
+        {
+          "content": ">  ",
+          "variant": "error"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": " "
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": []
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "error",
+      "console": [
+        {
+          "content": ">  ",
+          "variant": "error"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": " "
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [
+        {
+          "content": ">  ",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": " "
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [
+        {
+          "content": ">  ",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": {}
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 1,
+      "status": "inprogress",
+      "console": [
+        {
+          "content": "> {}",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": {}
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 1,
+      "status": "inprogress",
+      "console": [
+        {
+          "content": "> {}",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": {}
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [
+        {
+          "content": "> {}\n\nfirst\nlast",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": {}
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [
+        {
+          "content": "> {}\n\nfirst\nlast",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": {}
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": []
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "error",
+      "console": [
+        {
+          "content": "> {}",
+          "variant": "error"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": {}
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": []
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "error",
+      "console": [
+        {
+          "content": "> {}",
+          "variant": "error"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": {}
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [
+        {
+          "content": "> {}",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": {}
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [
+        {
+          "content": "> {}",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": [
+          1
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 1,
+      "status": "inprogress",
+      "console": [
+        {
+          "content": "> [1]",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": [
+          1
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 1,
+      "status": "inprogress",
+      "console": [
+        {
+          "content": "> [1]",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": [
+          1
+        ]
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [
+        {
+          "content": "> [1]\n\nfirst\nlast",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": [
+          1
+        ]
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [
+        {
+          "content": "> [1]\n\nfirst\nlast",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": [
+          1
+        ]
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": []
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "error",
+      "console": [
+        {
+          "content": "> [1]",
+          "variant": "error"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": [
+          1
+        ]
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": []
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "error",
+      "console": [
+        {
+          "content": "> [1]",
+          "variant": "error"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": false,
+      "params": {
+        "command": [
+          1
+        ]
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [
+        {
+          "content": "> [1]",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "input": {
+      "isStreaming": true,
+      "params": {
+        "command": [
+          1
+        ]
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "isCustom": false,
+      "header": "Running command...",
+      "spinner": 0,
+      "status": "complete",
+      "console": [
+        {
+          "content": "> [1]",
+          "variant": "default"
+        }
+      ],
+      "errors": []
+    }
+  }
+]

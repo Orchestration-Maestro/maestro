@@ -2,7 +2,7 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-mod support;
+use crate::support;
 use support::{assert_identity_invariants, populate_terminals};
 
 use maestro_daemon::{app::state::DaemonState, settings::model::Config};

@@ -10,30 +10,7 @@
         "forwarded": {
           "model": "faux-1",
           "injected": true
-        },
-        "keys": [
-          "model",
-          "reasoning",
-          "sessionId",
-          "onPayload",
-          "onResponse",
-          "transport",
-          "thinkingBudgets",
-          "maxRetryDelayMs",
-          "toolExecution",
-          "beforeToolCall",
-          "afterToolCall",
-          "convertToLlm",
-          "transformContext",
-          "getApiKey",
-          "getSteeringMessages",
-          "getFollowUpMessages",
-          "apiKey",
-          "signal",
-          "timeoutMs",
-          "maxRetries",
-          "headers"
-        ]
+        }
       }
     ],
     "message_count": 2,

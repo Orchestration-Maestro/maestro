@@ -5,7 +5,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
     Harness, HarnessOptions, answer, corpus, get_assistant_texts, get_message_text, get_user_texts,
-    harness, on_task_set, start_prompt,
+    harness, on_task_set, prompt_to_end, session_run_ended, start_prompt,
 };
 use indexmap::IndexMap;
 use maestro_agent::{AgentEvent, AgentMessage, AgentToolRecord, AgentToolResult, SharedAgentTool};
@@ -47,20 +47,6 @@ fn stored_roles(manager: &dyn ReadonlySessionManager) -> Vec<String> {
 /// The roles of the session's stored message entries.
 fn roles(h: &Harness) -> Vec<String> {
     stored_roles(&*h.session.session_manager().borrow())
-}
-
-/// Notified once the session has delivered the end of an agent run to its listeners.
-fn session_run_ended(h: &Harness) -> Rc<Notify> {
-    let ended = Rc::new(Notify::new());
-    let notify = Rc::clone(&ended);
-    drop(h.session.subscribe(Rc::new(move |event| {
-        if let AgentSessionEvent::Agent(event) = event
-            && matches!(*event.read().unwrap(), AgentEvent::AgentEnd { .. })
-        {
-            notify.notify_one();
-        }
-    })));
-    ended
 }
 
 /// The cancellation a provider request carries.
@@ -164,7 +150,8 @@ fn dummy_tools(failing: Option<&'static str>) -> IndexMap<String, SharedAgentToo
             name: "dummy".into(),
             description: "Dummy tool".into(),
             parameters: json!({"type": "object", "properties": {"q": {"type": "string"}},
-                "required": ["q"]}),
+                "required": ["q"]})
+            .into(),
         },
         description: None,
         label: "dummy".into(),
@@ -201,25 +188,16 @@ fn dummy_calls(text: Option<&str>, calls: &[(&str, &str)]) -> AssistantMessage {
         .into_iter()
         .collect();
     content.extend(calls.iter().map(|(q, id)| {
-        let arguments = json!({"q": q}).as_object().unwrap().clone();
         let options = FauxToolCallOptions {
             id: Some((*id).into()),
         };
-        AssistantContent::ToolCall(faux_tool_call("dummy", arguments, options))
+        AssistantContent::ToolCall(faux_tool_call("dummy", json!({"q": q}), options))
     }));
     let options = FauxAssistantMessageOptions {
         stop_reason: Some(StopReason::ToolUse),
         ..FauxAssistantMessageOptions::default()
     };
     faux_assistant_message(content, options)
-}
-
-/// Prompts `text` and waits until the session has delivered the run's end.
-async fn prompt_to_end(h: &Harness, text: &str, options: PromptOptions) {
-    let ended = session_run_ended(h);
-    h.session.prompt(text, options).await.unwrap();
-    h.session.agent().wait_for_idle().await;
-    ended.notified().await;
 }
 
 /// The supplied thinking and code answer, as its fixture records it.
@@ -324,6 +302,20 @@ fn assert_released(h: Harness) {
     drop(h);
     assert!(maestro_models::get_api_provider(&api).is_none());
     assert!(!root.exists());
+}
+
+#[test]
+fn dropping_the_harness_disposes_the_session() {
+    on_task_set(|_| async {
+        let h = harness(HarnessOptions::default()).await;
+        let context = h.runner().create_context();
+        assert!(context.cwd().is_ok());
+        drop(h);
+        assert!(
+            context.cwd().is_err(),
+            "the session disposed with its harness"
+        );
+    });
 }
 
 #[test]
@@ -758,22 +750,23 @@ fn slow_message_handlers_preserve_history_order() {
 }
 
 /// Copies the committed empty root `name` below `base`, returning the copy's path.
-#[cfg(unix)]
 fn copy_empty_root(base: &str, name: &str) -> String {
-    let source = format!("{}/tests/fixtures/{name}", env!("CARGO_MANIFEST_DIR"));
-    let copy = format!("{base}/{name}");
+    let source = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests")
+        .join("fixtures")
+        .join(name);
+    let copy = std::path::Path::new(base).join(name);
     std::fs::create_dir(&copy).unwrap();
-    std::fs::copy(format!("{source}/.gitkeep"), format!("{copy}/.gitkeep")).unwrap();
-    copy
+    std::fs::copy(source.join(".gitkeep"), copy.join(".gitkeep")).unwrap();
+    copy.to_str().unwrap().to_owned()
 }
 
-#[cfg(unix)]
 #[test]
 fn empty_resource_roots_keep_the_session_isolated() {
     use maestro_app::{CreateAgentSessionOptions, ResourceLoaderOptions, SessionResources};
     let expected = expected("empty_roots");
     let test = "empty_resource_roots_keep_the_session_isolated";
-    crate::resource_fixtures::with_isolated_home(test, |base| {
+    crate::isolated_home::with_isolated_home(test, |base| {
         let cwd = copy_empty_root(base, "empty-cwd");
         let agent_dir = copy_empty_root(base, "empty-agent");
         let counts = on_task_set(|local| async move {
@@ -800,6 +793,7 @@ fn empty_resource_roots_keep_the_session_isolated() {
                 settings_manager: Some(Rc::new(RefCell::new(settings))),
                 session_start_event: None,
                 theme: maestro_theme::LiveTheme::default(),
+                offline: None,
             })
             .await
             .unwrap();

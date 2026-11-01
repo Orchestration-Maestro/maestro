@@ -160,10 +160,7 @@ fn invalid_area_discards_its_unknown_key_warnings() {
 use super::support::{block_on, capture, manager, put};
 use crate::settings::model::ConfigReloadStatus;
 use maestro_settings::{SettingsManager, SettingsScope, SettingsStorage};
-use std::sync::{
-    Arc,
-    atomic::{AtomicUsize, Ordering},
-};
+use std::sync::Arc;
 
 #[test]
 fn theme_name_warning_survives_reload() {
@@ -174,42 +171,37 @@ fn theme_name_warning_survives_reload() {
     let (loaded, errors) = load_config(&mut manager, Path::new("."));
     assert!(errors.is_empty());
     assert!(loaded.diagnostics[0].contains("unknown theme name multiplexer.theme.name"));
-    let mut current = loaded.config;
+    let mut current = loaded;
     let (report, errors) = block_on(reload_config(&mut manager, &mut current, Path::new(".")));
     assert!(errors.is_empty());
     assert_eq!(report.status, ConfigReloadStatus::Partial);
     assert!(report.diagnostics[0].contains("using \"catppuccin\""));
-    assert_eq!(current.theme.name.as_deref(), Some("unknown"));
+    assert_eq!(current.config.theme.name.as_deref(), Some("unknown"));
 }
 
 #[test]
 fn unreadable_settings_report_startup_and_reload_impact() {
-    static NEXT: AtomicUsize = AtomicUsize::new(0);
-    let root = std::env::temp_dir().join(format!(
-        "maestro-settings-read-{}-{}",
-        std::process::id(),
-        NEXT.fetch_add(1, Ordering::Relaxed)
-    ));
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path();
     std::fs::create_dir_all(root.join("settings.json")).unwrap();
     let root_text = root.to_str().unwrap();
     let mut manager = SettingsManager::create(root_text, root_text, "project");
-    let ((loaded, errors), warning) = capture(|| load_config(&mut manager, &root));
+    let ((loaded, errors), warning) = capture(|| load_config(&mut manager, root));
     assert!(errors.is_empty());
     assert_eq!(loaded.config, Config::default());
     assert!(loaded.diagnostics[0].starts_with("config read error:"));
     assert!(loaded.diagnostics[0].ends_with("using defaults"));
     assert!(warning.contains("config read error, using defaults"));
     assert!(warning.contains("err="));
-    let mut current = project(json!({"daemon":{"paneShell":"kept"}})).config;
+    let mut current = project(json!({"daemon":{"paneShell":"kept"}}));
     let prior = current.clone();
     let ((report, errors), warning) =
-        capture(|| block_on(reload_config(&mut manager, &mut current, &root)));
+        capture(|| block_on(reload_config(&mut manager, &mut current, root)));
     assert!(errors.is_empty());
     assert_eq!(report.status, ConfigReloadStatus::Failed);
-    assert_eq!(current, prior);
+    assert_eq!(current.config, prior.config);
     assert!(report.diagnostics[0].ends_with("keeping current config"));
     assert!(warning.is_empty());
-    std::fs::remove_dir_all(root).unwrap();
 }
 
 #[test]
@@ -217,7 +209,7 @@ fn reload_status_tracks_independent_area_outcomes() {
     let old = json!({"multiplexer":{"mouseCapture":false,"theme":{"name":"nord"}},
         "daemon":{"paneShell":"first","paneHistory":true},"update":{"versionCheck":false}});
     let (mut manager, storage) = manager(&old, &json!({}));
-    let mut current = load_config(&mut manager, Path::new(".")).0.config;
+    let mut current = load_config(&mut manager, Path::new(".")).0;
     put(
         &*storage,
         SettingsScope::Global,
@@ -227,11 +219,11 @@ fn reload_status_tracks_independent_area_outcomes() {
     );
     let report = block_on(reload_config(&mut manager, &mut current, Path::new("."))).0;
     assert_eq!(report.status, ConfigReloadStatus::Partial);
-    assert!(!current.ui.mouse_capture.0);
-    assert_eq!(current.theme.name.as_deref(), Some("dracula"));
-    assert_eq!(current.terminal.default_shell, "second");
-    assert!(!current.experimental.pane_history.0);
-    assert!(current.update.version_check);
+    assert!(!current.config.ui.mouse_capture.0);
+    assert_eq!(current.config.theme.name.as_deref(), Some("dracula"));
+    assert_eq!(current.config.terminal.default_shell, "second");
+    assert!(!current.config.experimental.pane_history.0);
+    assert!(current.config.update.version_check);
     put(&*storage, SettingsScope::Global, "{");
     block_on(manager.reload()); // Queue an earlier read failure, not this reload's error.
     put(&*storage, SettingsScope::Global, "{}");
@@ -239,7 +231,7 @@ fn reload_status_tracks_independent_area_outcomes() {
     assert_eq!(report.status, ConfigReloadStatus::Applied);
     assert_eq!(errors.len(), 1);
     assert_eq!(errors[0].scope, SettingsScope::Global);
-    assert_eq!(current, Config::default());
+    assert_eq!(current.config, Config::default());
     assert!(report.diagnostics.is_empty());
 }
 
@@ -270,12 +262,12 @@ fn queued_write_failure_does_not_poison_reload() {
         storage: maestro_settings::InMemorySettingsStorage::new(),
     }));
     manager.set_global_key("daemon", "paneShell", json!("not-saved"));
-    let mut current = Config::default();
+    let mut current = project(json!({}));
     let (report, errors) = block_on(reload_config(&mut manager, &mut current, Path::new(".")));
     assert_eq!(report.status, ConfigReloadStatus::Applied);
     assert_eq!(errors.len(), 1);
     assert_eq!(errors[0].error.to_string(), "controlled write failure");
-    assert_eq!(current, Config::default());
+    assert_eq!(current.config, Config::default());
 }
 
 /// Build one authored nested setting without changing any sibling's type.
@@ -334,11 +326,11 @@ fn area_reload_obeys_json_field_domains() {
 #[test]
 fn malformed_namespaces_and_positional_records_retain_their_areas() {
     let (mut manager, storage) = manager(&json!({"multiplexer":{"onboarding":false}}), &json!({}));
-    let mut current = load_config(&mut manager, Path::new(".")).0.config;
+    let mut current = load_config(&mut manager, Path::new(".")).0;
     put(&*storage, SettingsScope::Global, r#"{"multiplexer":null}"#);
     let report = block_on(reload_config(&mut manager, &mut current, Path::new("."))).0;
     assert_eq!(report.status, ConfigReloadStatus::Partial);
-    assert_eq!(current.onboarding, Some(false));
+    assert_eq!(current.config.onboarding, Some(false));
     for path in [
         "multiplexer.theme",
         "multiplexer.theme.custom",
@@ -426,8 +418,8 @@ fn object_host_cursor_retains_previous_ui_on_reload() {
         &json!({"multiplexer":{"hostCursor":"drawn","sidebarWidth":31}}),
         &json!({}),
     );
-    let mut current = load_config(&mut manager, Path::new(".")).0.config;
-    let previous = current.ui.clone();
+    let mut current = load_config(&mut manager, Path::new(".")).0;
+    let previous = current.config.ui.clone();
     put(
         &*storage,
         SettingsScope::Global,
@@ -435,7 +427,7 @@ fn object_host_cursor_retains_previous_ui_on_reload() {
     );
     let (report, errors) = block_on(reload_config(&mut manager, &mut current, Path::new(".")));
     assert!(errors.is_empty());
-    assert_eq!(current.ui, previous);
+    assert_eq!(current.config.ui, previous);
     assert_eq!(report.status, ConfigReloadStatus::Partial);
     assert!(
         report

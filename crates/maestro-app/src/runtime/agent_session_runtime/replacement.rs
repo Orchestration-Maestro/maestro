@@ -15,7 +15,8 @@ use std::{cell::RefCell, path::Path, rc::Rc};
 
 impl AgentSessionRuntime {
     /// Resumes the session file at `session_path`, in `cwd_override` when supplied, unless an
-    /// extension cancels the switch.
+    /// extension cancels the switch. Rebinding and continuation retain the resumed session
+    /// if another operation replaces it while a callback is suspended.
     ///
     /// # Errors
     /// Returns the missing-directory error, a history failure, an extension error listener's
@@ -40,14 +41,17 @@ impl AgentSessionRuntime {
             SessionManager::open(session_path, None, cwd_override).map_err(thrown)?;
         assert_session_cwd_exists(&session_manager, &self.cwd())?;
         self.resume(session_manager, previous_session_file).await?;
-        self.finish_session_replacement(options.with_session.as_ref())
+        self.finish_session_replacement(&self.session(), options.with_session.as_ref())
             .await?;
         Ok(SessionChangeResult { cancelled: false })
     }
 
     /// Starts a new session in the current directory, optionally recording `parent_session`,
     /// prepares its history with `setup` and continues with `with_session`, unless an
-    /// extension cancels the switch.
+    /// extension cancels the switch. The new history is kept in memory exactly when the
+    /// current one is, and stored in the current session directory otherwise. Setup, message
+    /// reload and continuation retain the created session if another operation replaces it
+    /// while a callback is suspended.
     ///
     /// # Errors
     /// Returns a history failure, an extension error listener's failure, the setup's failure
@@ -64,6 +68,7 @@ impl AgentSessionRuntime {
         }
         let session = self.session();
         let previous_session_file = session.session_file();
+        let persisted = session.session_manager().borrow().is_persisted();
         let session_dir = session
             .session_manager()
             .borrow()
@@ -71,8 +76,12 @@ impl AgentSessionRuntime {
             .to_owned();
         let cwd = self.cwd();
         let agent_dir = self.services().agent_dir.clone();
-        let mut session_manager =
-            SessionManager::create(&cwd, Some(&session_dir), &agent_dir).map_err(thrown)?;
+        let mut session_manager = if persisted {
+            SessionManager::create(&cwd, Some(&session_dir), &agent_dir)
+        } else {
+            SessionManager::in_memory(Some(&cwd))
+        }
+        .map_err(thrown)?;
         if let Some(parent_session) = options.parent_session {
             session_manager.new_session(NewSessionOptions {
                 parent_session: Presence::Present(parent_session),
@@ -92,8 +101,8 @@ impl AgentSessionRuntime {
             )),
         })
         .await?;
+        let session = self.session();
         if let Some(setup) = options.setup {
-            let session = self.session();
             setup(Rc::clone(session.session_manager()))
                 .await
                 .map_err(thrown)?;
@@ -105,7 +114,7 @@ impl AgentSessionRuntime {
             let messages = crate::agent_session::agent_messages(context.messages)?;
             crate::utils::lock::write(session.state()).set_messages(messages);
         }
-        self.finish_session_replacement(options.with_session.as_ref())
+        self.finish_session_replacement(&session, options.with_session.as_ref())
             .await?;
         Ok(SessionChangeResult { cancelled: false })
     }
@@ -154,7 +163,8 @@ impl AgentSessionRuntime {
             SessionManager::open(&destination, Some(&session_dir), cwd_override).map_err(thrown)?;
         assert_session_cwd_exists(&session_manager, &self.cwd())?;
         self.resume(session_manager, previous_session_file).await?;
-        self.finish_session_replacement(None).await?;
+        self.finish_session_replacement(&self.session(), None)
+            .await?;
         Ok(SessionChangeResult { cancelled: false })
     }
 

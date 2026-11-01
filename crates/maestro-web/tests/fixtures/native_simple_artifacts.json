@@ -1,0 +1,520 @@
+{
+  "guidance": [
+    {
+      "input": {
+        "filename": "<literal>&.txt",
+        "content": "AAH/",
+        "language": "en"
+      },
+      "expected": {
+        "filename": "<literal>&.txt",
+        "guidance": [
+          "Preview not available for this file type.",
+          "Click the download button above to view it on your computer."
+        ],
+        "titles": [
+          "Download"
+        ]
+      }
+    },
+    {
+      "input": {
+        "filename": "<literal>&.txt",
+        "content": "AAH/",
+        "language": "de"
+      },
+      "expected": {
+        "filename": "<literal>&.txt",
+        "guidance": [
+          "Vorschau für diesen Dateityp nicht verfügbar.",
+          "Klicken Sie oben auf die Download-Schaltfläche, um die Datei auf Ihrem Computer anzuzeigen."
+        ],
+        "titles": [
+          "Herunterladen"
+        ]
+      }
+    }
+  ],
+  "mime": [
+    {
+      "filename": "",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "no-dot",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "UPPER.JS",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "a.TS",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.PY",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.RB",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.YML",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.PS1",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.BAT",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.jsx",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.tsx",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.java",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.c",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.cpp",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.cs",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.php",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.go",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.rust",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.swift",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.kotlin",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.scala",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.dart",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.html",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.css",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.scss",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.sass",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.less",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.json",
+      "mime": "application/json"
+    },
+    {
+      "filename": "x.xml",
+      "mime": "application/xml"
+    },
+    {
+      "filename": "x.yaml",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.toml",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.sql",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.sh",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.bash",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.r",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.matlab",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.julia",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.lua",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.perl",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.vue",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "x.svelte",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "literal/<&>.txt",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "a.md",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "a.MARKDOWN",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "a.svg",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "a.xls",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "a.xlsx",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "a.pdf",
+      "mime": "application/pdf"
+    },
+    {
+      "filename": "a.zip",
+      "mime": "application/zip"
+    },
+    {
+      "filename": "a.tar",
+      "mime": "application/x-tar"
+    },
+    {
+      "filename": "a.gz",
+      "mime": "application/gzip"
+    },
+    {
+      "filename": "a.rar",
+      "mime": "application/vnd.rar"
+    },
+    {
+      "filename": "a.7z",
+      "mime": "application/x-7z-compressed"
+    },
+    {
+      "filename": "a.mp3",
+      "mime": "audio/mpeg"
+    },
+    {
+      "filename": "a.mp4",
+      "mime": "video/mp4"
+    },
+    {
+      "filename": "a.avi",
+      "mime": "video/x-msvideo"
+    },
+    {
+      "filename": "a.mov",
+      "mime": "video/quicktime"
+    },
+    {
+      "filename": "a.wav",
+      "mime": "audio/wav"
+    },
+    {
+      "filename": "a.ogg",
+      "mime": "audio/ogg"
+    },
+    {
+      "filename": "a.bin",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "a.JPG",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "a.jpeg",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "a.gif",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "a.webp",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "a.bmp",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "a.ico",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "a.PNG",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "a.",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "name.İ",
+      "mime": "application/octet-stream"
+    },
+    {
+      "filename": "name.Σ",
+      "mime": "application/octet-stream"
+    }
+  ],
+  "decode": [
+    {
+      "content": "",
+      "expected": {
+        "branch": "success",
+        "bytes": []
+      }
+    },
+    {
+      "content": "Zg==",
+      "expected": {
+        "branch": "success",
+        "bytes": [
+          102
+        ]
+      }
+    },
+    {
+      "content": "Zm8=",
+      "expected": {
+        "branch": "success",
+        "bytes": [
+          102,
+          111
+        ]
+      }
+    },
+    {
+      "content": "Zm9v",
+      "expected": {
+        "branch": "success",
+        "bytes": [
+          102,
+          111,
+          111
+        ]
+      }
+    },
+    {
+      "content": "test",
+      "expected": {
+        "branch": "success",
+        "bytes": [
+          181,
+          235,
+          45
+        ]
+      }
+    },
+    {
+      "content": "Zg",
+      "expected": {
+        "branch": "success",
+        "bytes": [
+          102
+        ]
+      }
+    },
+    {
+      "content": "Zm8",
+      "expected": {
+        "branch": "success",
+        "bytes": [
+          102,
+          111
+        ]
+      }
+    },
+    {
+      "content": "Z",
+      "expected": {
+        "branch": "error"
+      }
+    },
+    {
+      "content": "Zg=",
+      "expected": {
+        "branch": "error"
+      }
+    },
+    {
+      "content": "Zg===",
+      "expected": {
+        "branch": "error"
+      }
+    },
+    {
+      "content": "Z=g=",
+      "expected": {
+        "branch": "error"
+      }
+    },
+    {
+      "content": "Zm_9",
+      "expected": {
+        "branch": "error"
+      }
+    },
+    {
+      "content": "Zm-9",
+      "expected": {
+        "branch": "error"
+      }
+    },
+    {
+      "content": "Zh==",
+      "expected": {
+        "branch": "success",
+        "bytes": [
+          102
+        ]
+      }
+    },
+    {
+      "content": "Zm9=",
+      "expected": {
+        "branch": "success",
+        "bytes": [
+          102,
+          111
+        ]
+      }
+    },
+    {
+      "content": " Zm9v\t\n\f\r",
+      "expected": {
+        "branch": "success",
+        "bytes": [
+          102,
+          111,
+          111
+        ]
+      }
+    },
+    {
+      "content": "﻿Zm9v",
+      "expected": {
+        "branch": "error"
+      }
+    },
+    {
+      "content": "Zm9v",
+      "expected": {
+        "branch": "error"
+      }
+    },
+    {
+      "content": "data:image/png;base64,Zm9v",
+      "expected": {
+        "branch": "success",
+        "bytes": [
+          102,
+          111,
+          111
+        ]
+      }
+    },
+    {
+      "content": "data:image/png;base64,Zm9v\nYmFy",
+      "expected": {
+        "branch": "success",
+        "bytes": [
+          102,
+          111,
+          111,
+          98,
+          97,
+          114
+        ]
+      }
+    },
+    {
+      "content": "data:image/png;base64,\nZm8=",
+      "expected": {
+        "branch": "success",
+        "bytes": [
+          102,
+          111
+        ]
+      }
+    },
+    {
+      "content": "data:image/png,plain",
+      "expected": {
+        "branch": "error"
+      }
+    },
+    {
+      "content": "DATA:image/png;base64,Zm9v",
+      "expected": {
+        "branch": "error"
+      }
+    },
+    {
+      "content": "data:image/png;base64,",
+      "expected": {
+        "branch": "error"
+      }
+    }
+  ]
+}

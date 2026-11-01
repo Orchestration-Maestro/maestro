@@ -51,6 +51,7 @@ impl AuthStorage {
         provider: &OAuthProviderHandle,
     ) -> Result<Option<String>, AuthStorageError> {
         let mut key = None;
+        let mut written = None;
         self.storage
             .with_lock_async(Box::new(|current| {
                 Box::pin(async {
@@ -58,10 +59,14 @@ impl AuthStorage {
                         .refresh_under_lock(provider_id, provider, current)
                         .await?;
                     key = selected;
+                    written.clone_from(&text);
                     Ok(text)
                 })
             }))
             .await?;
+        if written.is_some() {
+            self.state().stored = written;
+        }
         Ok(key)
     }
 
@@ -74,15 +79,17 @@ impl AuthStorage {
     ) -> Result<Refreshed, AuthStorageError> {
         let record = {
             let mut state = self.state();
-            state.data = parse_storage_data(current.as_deref())?;
-            state.load_error = false;
+            state.accept(
+                parse_storage_data(current.as_deref())?,
+                current.unwrap_or_default(),
+            );
             state.data.get(provider_id).and_then(decode)
         };
         let Some(AuthCredential::OAuth(credentials)) = record else {
             return Ok((None, None));
         };
         if (self.clock)() < credentials.expires {
-            return Ok((Some(provider.get_api_key(&credentials)?.to_owned()), None));
+            return Ok((Some(provider.get_api_key(&credentials)?.into_owned()), None));
         }
         let selected = IndexMap::from([(provider_id.to_owned(), credentials)]);
         let Some(refreshed) = get_oauth_api_key(provider_id, &selected, None).await? else {

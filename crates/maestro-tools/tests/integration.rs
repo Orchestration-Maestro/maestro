@@ -5,6 +5,7 @@ mod agent_shell_native;
 mod agent_shell_progress;
 #[cfg(not(target_arch = "wasm32"))]
 mod agent_shell_support;
+mod authored_schemas;
 mod cancellable_delay;
 mod command_execution;
 mod diff_rendering;
@@ -54,6 +55,7 @@ mod read_rendering;
 mod read_support;
 mod search_tool_lookup;
 mod shell_tree_cleanup;
+mod startup_environment;
 mod streamed_output;
 mod support;
 mod tool_definition_contract;
@@ -65,6 +67,7 @@ mod write_support;
 
 mod visual_tail;
 
+mod bash_operation_affinity;
 mod bash_rendering;
 
 mod renderer_projection;

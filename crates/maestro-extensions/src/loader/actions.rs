@@ -103,7 +103,12 @@ impl<E: ExtensionExecution> ExtensionAPI<E> {
     ///
     /// # Errors
     /// Returns the stale error, the not-initialized error or the operation's error.
-    pub fn get_all_tools(&self) -> Result<Vec<ToolInfo>, EventError> {
+    pub fn get_all_tools(
+        &self,
+    ) -> Result<
+        Vec<ToolInfo<maestro_models::ParameterSchema<maestro_models::SchemaCode>>>,
+        EventError,
+    > {
         self.action(|actions| &actions.get_all_tools)?()
     }
     /// Selects the active tools through the bound operation.
@@ -165,7 +170,8 @@ impl<E: ExtensionExecution> ExtensionAPI<E> {
     /// # Errors
     /// Returns the stale error, or the bound route's error after binding.
     pub fn unregister_provider(&self, name: &str) -> Result<(), EventError> {
-        self.owner()?;
-        self.runtime.unregister_provider(name)
+        let owner = self.owner()?;
+        let path = read(&owner).path.clone();
+        self.runtime.unregister_provider_from(name, Some(&path))
     }
 }

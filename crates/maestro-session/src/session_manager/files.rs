@@ -1,20 +1,57 @@
 //! Native JSONL loading and continuation selection.
-use super::{FileEntry, parse_session_entries};
+use super::{
+    FileEntry,
+    conversions::invalid,
+    records::{Admission, for_each_entry},
+};
 use serde_json::Value;
+use sha2::{Digest, Sha256};
 use std::{
     fs,
-    io::{self, Read},
+    io::{self, BufReader, Read},
+    ops::ControlFlow,
     time::UNIX_EPOCH,
 };
+
+/// Encode an authored working directory into its session directory name.
+///
+/// Strips one leading separator and replaces separators and drive colons with
+/// dashes. Performs no I/O and does not normalize the authored path.
+pub(crate) fn encode_session_dir(cwd: &str) -> String {
+    let cwd = cwd.strip_prefix(['/', '\\']).unwrap_or(cwd);
+    format!("--{}--", cwd.replace(['/', '\\', ':'], "-"))
+}
+
+/// The directory beneath a base that holds one working directory's sessions.
+///
+/// Only this module builds one, so a caller receives a session directory
+/// instead of spelling one:
+///
+/// ```compile_fail,E0603
+/// let _ = maestro_session::SessionDir(String::from("--workspace--"));
+/// ```
+pub struct SessionDir(String);
+
+impl SessionDir {
+    /// The directory path this record names.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+/// The directory beneath `base` that holds the sessions of `cwd`.
+#[must_use]
+pub fn sessions_dir(base: &str, cwd: &str) -> SessionDir {
+    SessionDir(maestro_path::join(&[base, &encode_session_dir(cwd)]))
+}
 
 /// Encode the authored cwd into a default directory beneath the resolved agent root.
 ///
 /// # Errors
 /// Propagates native directory creation errors.
 pub fn get_default_session_dir(cwd: &str, agent_dir: &str) -> io::Result<String> {
-    let cwd = cwd.strip_prefix(['/', '\\']).unwrap_or(cwd);
-    let safe = format!("--{}--", cwd.replace(['/', '\\', ':'], "-"));
-    let directory = maestro_path::join(&[agent_dir, "sessions", &safe]);
+    let directory = maestro_path::join(&[agent_dir, "sessions", &encode_session_dir(cwd)]);
     if !std::path::Path::new(&directory).exists() {
         fs::create_dir_all(&directory)?;
     }
@@ -29,13 +66,98 @@ pub fn load_entries_from_file(file_path: &str) -> io::Result<Vec<FileEntry>> {
     if !std::path::Path::new(file_path).exists() {
         return Ok(Vec::new());
     }
-    let bytes = fs::read(file_path)?;
-    let entries = parse_session_entries(&String::from_utf8_lossy(&bytes));
-    Ok(if entries.first().is_some_and(valid_header) {
-        entries
-    } else {
-        Vec::new()
-    })
+    Ok(Snapshot::read(fs::File::open(file_path)?)?.entries)
+}
+
+/// The records of one session file with the digest and length of the bytes they came from.
+pub(super) struct Snapshot {
+    /// Admitted records; empty unless the first one is a valid session header.
+    pub(super) entries: Vec<FileEntry>,
+    /// SHA-256 of every byte read.
+    pub(super) digest: [u8; 32],
+    /// Number of bytes read.
+    pub(super) len: u64,
+}
+
+impl Snapshot {
+    /// Read to the end, skipping empty JSON values and requiring a valid first header.
+    pub(super) fn read(reader: impl Read) -> io::Result<Self> {
+        let mut hashing = Hashing::new(reader);
+        let mut entries = Vec::new();
+        for_each_entry(BufReader::new(&mut hashing), Admission::Nonempty, |entry| {
+            entries.push(entry);
+            ControlFlow::Continue(())
+        })?;
+        if !entries.first().is_some_and(valid_header) {
+            entries.clear();
+        }
+        let (digest, len) = hashing.finish();
+        Ok(Self {
+            entries,
+            digest,
+            len,
+        })
+    }
+
+    /// Refuse a nonempty file that holds no valid session, so a rewrite cannot erase it.
+    ///
+    /// # Errors
+    /// Fails with `Session file is not a valid maestro session: {path}` when bytes were read
+    /// but no admitted record came out of them.
+    pub(super) fn require_session(&self, path: &str) -> io::Result<()> {
+        if self.entries.is_empty() && self.len > 0 {
+            return Err(invalid(&format!(
+                "Session file is not a valid maestro session: {path}"
+            )));
+        }
+        Ok(())
+    }
+
+    /// What an absent file holds.
+    pub(super) fn absent() -> Self {
+        Self {
+            entries: Vec::new(),
+            digest: Sha256::digest([]).into(),
+            len: 0,
+        }
+    }
+}
+
+/// A reader that hashes and counts every byte it passes on.
+pub(super) struct Hashing<R> {
+    /// The wrapped reader.
+    inner: R,
+    /// Digest state over the bytes read so far.
+    hasher: Sha256,
+    /// Bytes read so far.
+    len: u64,
+}
+
+impl<R: Read> Hashing<R> {
+    /// Wrap `inner` before any byte is read.
+    pub(super) fn new(inner: R) -> Self {
+        Self {
+            inner,
+            hasher: Sha256::new(),
+            len: 0,
+        }
+    }
+
+    /// The digest and length of what was read.
+    pub(super) fn finish(self) -> ([u8; 32], u64) {
+        (self.hasher.finalize().into(), self.len)
+    }
+}
+
+impl<R: Read> Read for Hashing<R> {
+    fn read(&mut self, buffer: &mut [u8]) -> io::Result<usize> {
+        let count = self.inner.read(buffer)?;
+        self.hasher.update(&buffer[..count]);
+        self.len = self
+            .len
+            .saturating_add(u64::try_from(count).unwrap_or(u64::MAX));
+        Ok(count)
+    }
 }
 
 /// Whether the raw first record admits a session identity.

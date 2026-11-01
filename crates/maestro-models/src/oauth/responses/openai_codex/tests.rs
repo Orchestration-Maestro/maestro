@@ -535,6 +535,9 @@ impl Interaction {
 }
 #[cfg(not(target_arch = "wasm32"))]
 impl crate::OAuthLoginCallbacks for Interaction {
+    fn callback_presence(&self) -> (bool, bool, bool) {
+        (true, self.manual.lock().unwrap().is_some(), true)
+    }
     fn on_auth(&self, info: crate::OAuthAuthInfo) -> Result<(), OAuthError> {
         assert_eq!(
             info.instructions.as_deref(),
@@ -681,7 +684,12 @@ fn response_prompt_fallback_validates_optional_state() {
                 assert_eq!(fields["code"], expected.unwrap());
                 success_fetch()(request)
             });
-            let result = login(callbacks, checked, callback::cancelled()).await;
+            let result = login(
+                callbacks,
+                checked,
+                crate::oauth::native::CallbackServer::cancelled(),
+            )
+            .await;
             match expected {
                 Ok(_) => assert_eq!(result.unwrap().refresh, "rotated"),
                 Err(error) => assert_eq!(result.unwrap_err().to_string(), error),
@@ -689,10 +697,14 @@ fn response_prompt_fallback_validates_optional_state() {
         }
         let callbacks = Interaction::new(None, "unused", "prompt");
         assert_eq!(
-            login(callbacks, success_fetch(), callback::cancelled())
-                .await
-                .unwrap_err()
-                .to_string(),
+            login(
+                callbacks,
+                success_fetch(),
+                crate::oauth::native::CallbackServer::cancelled()
+            )
+            .await
+            .unwrap_err()
+            .to_string(),
             "prompt failed"
         );
     });
@@ -721,7 +733,7 @@ async fn check_winner(winner: &str) {
         Ok(input)
     }));
     let server = if winner == "cancelled" {
-        callback::cancelled()
+        crate::oauth::native::CallbackServer::cancelled()
     } else {
         listener()
     };

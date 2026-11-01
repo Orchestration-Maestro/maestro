@@ -1,0 +1,177 @@
+[
+  {
+    "operation": "initial",
+    "case": "initial-127",
+    "input": {
+      "messages": [
+        "Summarize the text given"
+      ],
+      "stdinContent": "README contents\n"
+    },
+    "expected": {
+      "initialMessage": "README contents\nSummarize the text given",
+      "remaining_messages": []
+    }
+  },
+  {
+    "operation": "initial",
+    "case": "initial-128",
+    "input": {
+      "messages": [],
+      "stdinContent": "README contents"
+    },
+    "expected": {
+      "initialMessage": "README contents",
+      "remaining_messages": []
+    }
+  },
+  {
+    "operation": "initial",
+    "case": "initial-129",
+    "input": {
+      "messages": [
+        "Explain it",
+        "Second message"
+      ],
+      "stdinContent": "stdin\n",
+      "fileText": "file\n"
+    },
+    "expected": {
+      "initialMessage": "stdin\nfile\nExplain it",
+      "remaining_messages": [
+        "Second message"
+      ]
+    }
+  },
+  {
+    "operation": "initial",
+    "case": "initial-130",
+    "input": {
+      "messages": []
+    },
+    "expected": {
+      "remaining_messages": []
+    }
+  },
+  {
+    "operation": "initial",
+    "case": "initial-131",
+    "input": {
+      "messages": [],
+      "stdinContent": ""
+    },
+    "expected": {
+      "initialMessage": "",
+      "remaining_messages": []
+    }
+  },
+  {
+    "operation": "initial",
+    "case": "initial-132",
+    "input": {
+      "messages": [],
+      "fileText": ""
+    },
+    "expected": {
+      "remaining_messages": []
+    }
+  },
+  {
+    "operation": "initial",
+    "case": "initial-133",
+    "input": {
+      "messages": [
+        "",
+        "later"
+      ],
+      "stdinContent": "",
+      "fileText": "x"
+    },
+    "expected": {
+      "initialMessage": "x",
+      "remaining_messages": [
+        "later"
+      ]
+    }
+  },
+  {
+    "operation": "initial",
+    "case": "initial-134",
+    "input": {
+      "messages": [
+        "first",
+        "second"
+      ],
+      "fileImages": [
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ]
+    },
+    "expected": {
+      "initialMessage": "first",
+      "initialImages": [
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "remaining_messages": [
+        "second"
+      ]
+    }
+  },
+  {
+    "operation": "initial",
+    "case": "initial-135",
+    "input": {
+      "messages": [],
+      "fileImages": []
+    },
+    "expected": {
+      "remaining_messages": []
+    }
+  },
+  {
+    "operation": "initial",
+    "case": "initial-136",
+    "input": {
+      "messages": [],
+      "fileImages": [
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ]
+    },
+    "expected": {
+      "initialImages": [
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "remaining_messages": []
+    }
+  },
+  {
+    "operation": "initial",
+    "case": "initial-137",
+    "input": {
+      "messages": [
+        " \n"
+      ],
+      "stdinContent": " \t",
+      "fileText": "\n"
+    },
+    "expected": {
+      "initialMessage": " \t\n \n",
+      "remaining_messages": []
+    }
+  }
+]

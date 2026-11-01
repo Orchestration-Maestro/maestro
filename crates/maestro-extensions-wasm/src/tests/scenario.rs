@@ -140,6 +140,47 @@ pub trait Driver {
     fn previous_signal(&mut self) -> &mut Option<usize>;
     /// Repeats release through a fresh borrow of an existing identity.
     async fn repeat_release(&mut self, handler: u32) -> Result<(), String>;
+    /// Runs one tool renderer for the row its info names, keeping the row's guest state, and
+    /// renders the returned component at `width`.
+    async fn render_tool(
+        &mut self,
+        run: ToolRenderRun<'_>,
+        width: u32,
+    ) -> Result<Vec<String>, String>;
+    /// Renders the custom footer, if the host shows one.
+    async fn footer(&mut self, width: u32) -> Result<Option<Vec<String>>, String>;
+    /// Runs every live branch change listener in registration order and returns each answer.
+    async fn branch_change(&mut self) -> Result<Vec<serde_json::Value>, String>;
+    /// The header container's children and the rendering of its custom header, if any.
+    async fn header(&mut self, width: u32) -> Result<(Vec<String>, Option<Vec<String>>), String>;
+    /// Renders the factory widget the host shows under `key`, or reports that it shows none.
+    async fn widget(&mut self, key: &str, width: u32) -> Result<Vec<String>, String>;
+    /// Reads a factory component's width and calls its expansion handler when present.
+    async fn widget_capabilities(
+        &mut self,
+        key: &str,
+        expanded: bool,
+    ) -> Result<(Option<f64>, bool), String>;
+    /// Runs one host request on the authored editor the host shows, describing the answer as
+    /// [`super::editor_host`] does.
+    async fn editor_request(
+        &mut self,
+        request: serde_json::Value,
+    ) -> Result<serde_json::Value, String>;
+    /// Runs one host request on the authored completion provider on top of the host's stack,
+    /// describing the answer as [`super::provider_host`] does.
+    async fn provider_request(
+        &mut self,
+        request: serde_json::Value,
+    ) -> Result<serde_json::Value, String>;
+    /// Calls one method of the component of the authored editor the host shows.
+    async fn editor_component(
+        &mut self,
+        call: super::renderer_host::Call<'_>,
+    ) -> Result<super::renderer_host::Reply, String>;
+    /// Delivers one terminal input chunk to every live terminal input listener in
+    /// registration order and returns each listener's answer.
+    async fn terminal_input(&mut self, data: &str) -> Result<Vec<serde_json::Value>, String>;
     /// Delivers one compaction notification through an existing borrowed emitter.
     async fn notify_compaction(
         &mut self,
@@ -220,8 +261,8 @@ pub trait Driver {
     /// Runs the command that starts a new session; its continuation waits for idle, and the
     /// wait is held until the driver saw it pending.
     async fn command(&mut self, args: &str) -> Result<(), String>;
-    /// Releases every registered callback in registration order, including the ones that
-    /// releasing registers.
+    /// Drops every retained component, then releases every registered callback in
+    /// registration order, including the ones that releasing registers.
     async fn release_all(&mut self);
     /// Releases the callback registered as `name`; whether there was one.
     async fn release(&mut self, name: &str) -> bool;
@@ -297,6 +338,18 @@ pub trait Driver {
             .await?;
         Ok(fixtures::noted(&delivery))
     }
+}
+
+/// Reads the answer an event route returned as its input transformation.
+pub fn transformed(decision: Decision) -> Result<serde_json::Value, String> {
+    let Decision::Returned(Ok(Some(text))) = decision else {
+        return Err("missing event answer".into());
+    };
+    let transform: serde_json::Value =
+        serde_json::from_str(&text).map_err(|error| error.to_string())?;
+    assert_eq!(transform["action"], "transform");
+    serde_json::from_str(transform["text"].as_str().ok_or("missing text")?)
+        .map_err(|error| error.to_string())
 }
 
 /// Writes the outcome of a delivery to the transcript as `label -> description`, or as
@@ -376,3 +429,16 @@ pub const EXPECTED: &[&str] = &[
     r#"entry released "reentrant-guard""#,
     "register event late",
 ];
+
+/// One tool rendering: the tool, the renderer slot, what the renderer reads and, for a result,
+/// the result document.
+pub struct ToolRenderRun<'a> {
+    /// Tool name.
+    pub tool: &'a str,
+    /// `call` or `result`.
+    pub slot: &'a str,
+    /// The row's call id, arguments, directory and flags.
+    pub info: &'a serde_json::Value,
+    /// The result document of a result rendering.
+    pub result: Option<&'a serde_json::Value>,
+}

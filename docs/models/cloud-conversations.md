@@ -16,9 +16,13 @@ API; request processing and payload hooks still receive the original descriptor.
 
 ## Conversation input
 
+Message roles and content kinds are closed typed records. JSON model invocations
+reject an unknown role or content block during decoding, before provider conversion.
+
 History first passes through the [shared projection](../conversation-projection.md). User content keeps
-its text and block order. Blank assistant text and thinking are skipped; retained text is not
-trimmed. Claude thinking without a nonblank signature becomes plain text; other models send
+its text and block order. Blank user and tool-result text is dropped, and a turn or result left
+without content holds the placeholder `<empty>`. Blank assistant text and thinking are skipped;
+retained text is not trimmed. Claude thinking without a nonblank signature becomes plain text; other models send
 reasoning text without a signature. Consecutive tool results become one user turn, preserving
 result order and error or success status.
 
@@ -35,9 +39,12 @@ converted turn only when it is a user turn. Long retention adds `ttl: "1h"`.
 `AWS_BEDROCK_FORCE_CACHE=1` enables cache points only when neither the identifier nor the name,
 including their separator-normalized forms, contains `claude`.
 
-Thinking settings apply only to reasoning Claude models. Opus 4.6/4.7 and Sonnet 4.6 candidates
-use adaptive thinking with mapped effort; Opus 4.7 preserves native extra-high effort before
-consulting the descriptor map. Other Claude candidates use fixed budgets from
+A Claude request without an explicit `max_tokens` sends the model's advertised cap as
+`inferenceConfig.maxTokens`; other Bedrock models send none unless asked.
+
+Thinking settings apply only to reasoning Claude models. Opus 4.6 to 4.8, Sonnet 4.6 and Sonnet 5
+candidates use adaptive thinking with mapped effort; Opus 4.7 preserves native extra-high effort
+before consulting the descriptor map. Other Claude candidates use fixed budgets from
 [`ThinkingBudgets`](../model-options.md), with interleaved thinking enabled unless explicitly
 false. Display defaults to summarized; a government region selected from the option or
 region environment variables, or a government model identifier, omits the display. The
@@ -47,6 +54,12 @@ endpoint and profile region do not determine that display decision.
 `SimpleStreamOptions`, resolves [base options and token budgets](../model-options.md), adjusts
 fixed-budget Claude token limits and the selected budget slot, then calls `stream_bedrock`.
 Adaptive Claude and other models do not receive that adjustment.
+
+The catalog generator also marks Messages models whose case-sensitive IDs contain
+`opus-4-6`, `opus-4.6`, `opus-4-7`, `opus-4.7`, `opus-4-8`, `opus-4.8`, `sonnet-4-6`,
+`sonnet-4.6`, `sonnet-5` or `sonnet.5` with `forceAdaptiveThinking: true`, retaining their
+other compatibility settings. The [Messages adapter](messages.md#thinking) sends adaptive
+thinking and mapped effort for these models without a thinking budget or interleaved-thinking beta.
 
 Text, thinking and tool-call updates reduce into the shared assistant message. Generic
 `stream`, `stream_simple`, `complete` and `complete_simple` dispatch through the bundled
@@ -174,7 +187,7 @@ its proxy. The default sender returns redirects without following them.
 
 ### Proxy scripts
 
-A selected `pac+data:`, `pac+file:`, `pac+http:` or `pac+https:` URL loads a
+A selected `pac+data:`, `pac+file:`, `pac+ftp:`, `pac+http:` or `pac+https:` URL loads a
 proxy script instead of opening a direct destination connection. Both opaque
 `pac+data:,script` and hierarchical `pac+data://,script` spellings are accepted.
 The script receives the complete destination URL and its canonical host, including
@@ -184,11 +197,13 @@ Fallback happens only before application bytes are sent. A connected proxy's
 CONNECT refusal is returned with its status, headers and body, without replay.
 
 Scripts have the standard host, DNS, network, local-address, time, weekday and
-calendar helpers. Local-address discovery first probes `8.8.8.8:53`, closes that
-socket, and falls back to native interfaces on failure. It selects the first
-non-loopback IPv4 on the first eligible interface, preserving interface and
-per-interface address order. An authored `alert` emits its exact message through
-tracing rather than printing.
+calendar helpers. `myIpAddress()` discovers the local IPv4 through a UDP route
+lookup for `8.8.8.8:53`. It sends no packet and needs no answering endpoint or
+time limit. The socket closes before returning the address. On any socket error,
+it falls back to native interfaces, selecting the first non-loopback IPv4 on the
+first eligible interface and preserving interface and per-interface address
+order. An authored `alert` emits its exact message through tracing rather than
+printing.
 
 Each bridge retains separate script globals for each destination protocol and
 source URL, independently of its connection timeout settings. Compilation resolves
@@ -198,10 +213,41 @@ Unchanged source keeps that context; successfully compiled replacement code
 creates a new one. Failed compilation cannot publish source metadata or
 revive an old script through a later unchanged response. File sources compare the
 opened file's millisecond modification time; HTTP and HTTPS sources use cache
-headers, validators and up to five redirects. Source requests do not recursively
-apply the script they are loading. Destination exclusions and a supplied sender
-skip script loading entirely. FTP sources are tracked separately in
-[#1908](https://github.com/Orchestration-Maestro/maestro/issues/1908).
+headers, validators and up to five redirects; FTP sources ask the server for the
+file's modification time and compare it at millisecond precision.
+Source requests do not recursively apply the script they are loading. Destination
+exclusions and a supplied sender skip script loading entirely.
+
+An FTP source logs in with the URL's decoded credentials, or anonymously when it has
+none, at the URL's port, or 21 when it names none. After the greeting it enables UTF-8,
+logs in, reads the server's features, selects binary mode and file structure, and asks a
+machine listing to carry the facts it reads. A password never appears in a diagnostic: a
+rejected command reports the control characters it held, without the command. It asks the
+modification-time command first: a refused file is not found, while an unsupported command
+falls back to listing the containing directory. Only a machine listing carries a
+comparable instant, so an entry from a Unix or DOS listing is not found; a listing in no
+accepted format reports the listing format as its own error. Machine-listing entries keep
+the name the server spelled and the stamp it reported, including a fractional stamp, a
+symbolic-link type, and a name that holds a semicolon or starts with a space; the last
+nonempty modification fact wins, and a current- or parent-directory entry is not a source
+entry. A listing asks for a machine listing first when the server advertises one, then for
+`LIST -a` and `LIST`, and keeps the first command the server accepts; only a refused
+command advances to the next one. A transfer the server refuses is not found rather than an
+empty script, and a transfer that breaks off is an error rather than a shortened one.
+
+A passive data connection opens in extended passive mode first, taking only the port from a
+reply that may delimit it with `|` or, as the IBM i server does, with `!`. When that preparation
+fails the loader falls back to the classic mode, which keeps the data host the server advertises
+unless that address is private and the control connection's is not. Every completed read or
+write restarts its own connection's inactivity window, so a greeting, reply or transfer that
+keeps arriving byte by byte outlives thirty seconds while a silent connection fails at its own
+boundary. The data connection's window starts when the server admits the transfer, and control
+replies during the transfer neither end nor restart it; once the data ends, the control
+connection's window runs again until the completion arrives. A transfer
+settles only when both the data connection ended and the control connection reported
+completion, in either order. A directory listing larger than 40 MiB is refused, and the control
+and data connections close on success, failure and cancellation, with the goodbye sent without
+waiting for its reply.
 
 ## Hooks and results
 

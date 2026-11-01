@@ -93,7 +93,7 @@ reasoning quality, cache-hit rates or billing.
 
 ### Not available yet
 
-- Standalone model-account commands: [tracked work](https://github.com/Orchestration-Maestro/maestro/issues/247).
+- The standalone model-account executable and its terminal console: [tracked work](https://github.com/Orchestration-Maestro/maestro/issues/249). The account command library itself is delivered; see [standalone account commands](../model_login.md).
 
 Cloud content generation and cloud conversations in the table are distinct protocols.
 
@@ -246,7 +246,9 @@ interchangeable with absence. Provider-specific extras and nullable fields are
 listed in [module linkage](module-linkage.md#raw-extras).
 
 Reported `Usage` keeps input, output, cache-read, cache-write and total tokens;
-`UsageCost` has each category and total. `calculate_cost` uses the supplied
+`UsageCost` has each category and total. The total keeps the presence of the saved
+count: a report that omits it leaves it absent rather than zero, and a supplied
+number, zero included, is kept as supplied. `calculate_cost` uses the supplied
 model's USD-per-million rates; it estimates, rather than certifies, billing.
 Do not double-count cached categories or reinterpret an adapter's reported
 total. See [accounting](accounting.md) and its controlled usage/abort tests.

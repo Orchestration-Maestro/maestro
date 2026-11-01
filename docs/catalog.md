@@ -1,7 +1,8 @@
 # Local model catalog
 
 `maestro-catalog::ModelRegistry` composes the offline descriptors with an explicit
-model file. `create` uses native file operations; `with_operations` accepts
+model file or an ordered list of files. `create` uses native file operations;
+`with_operations` accepts
 caller-selected `ModelFileOperations`. Browser callers use that adapter surface.
 `in_memory` skips file access. `auth_storage` borrows the supplied credential
 owner. Constructors take that credential as
@@ -12,6 +13,20 @@ which runs the commands that configured credential values name; it is a platform
 handle in the same way. Native file and command effects require `Send + Sync`;
 browser effects may capture local `Rc` state.
 
+`with_model_files` takes an ordered `Vec<String>` with supplied file operations.
+The single-file constructors use the same path with one entry. Later files
+replace supplied fields while retaining unsupplied provider and model-override
+fields. Custom models overlay by provider and ID: a later definition replaces
+the whole earlier definition without moving its first position. Compatibility
+overlays keep the loading rules below, including one-level routing overlays.
+
+`set_base_model_files` replaces the ordered base files below the construction-time
+files and refreshes the registry, replaying dynamic providers. An empty base that
+was already empty leaves the current catalog untouched. Session construction and
+reload use this operation for base-package contributions.
+
+[Configure custom models](models/custom.md) walks through editing `models.json`,
+local endpoints, field defaults and compatibility settings.
 [Model selection](selection.md) describes references, patterns and command-line choices.
 
 ## Errors
@@ -40,6 +55,9 @@ Custom API and endpoint defaults come from the provider, then its first offline
 model; custom-model fields take precedence. Omitted custom metadata uses the ID
 as name, text input, no reasoning, zero prices, a 128000 context window and a
 16384 output limit.
+
+The `modelOverrides` of a provider also apply to the models an extension registers for it,
+and their `headers` are merged over the registered model's own.
 
 Provider URL and compatibility overrides precede built-in model metadata
 changes. Partial prices and thinking-level maps retain unsupplied fields;
@@ -101,6 +119,11 @@ display-name reads and refresh. A callback requires a nonempty provider API;
 a nonempty model list requires a provider endpoint, key or OAuth, and an API on
 each model or its provider. Validation failure changes nothing. Dynamic
 `ProviderModelInput` values do not use the file loader's defaults or limit checks.
+
+`ProviderConfigInput` is the [shared provider record](records.md#provider-registration-records)
+with `ProviderCallbacks` beside its data: `stream_simple` and `oauth` live in its
+`callbacks` field. Its JSON form deserializes straight into `ProviderConfigInput`
+with no operations, so an extension's registration data needs no second record.
 
 Nonempty model lists replace this provider's descriptors and append definitions
 in supplied order, including duplicates. Missing or empty lists do not replace
@@ -173,6 +196,11 @@ and model-header sources at their later consuming phases.
 ## Authentication metadata
 
 `has_configured_auth` checks credential presence then configured key presence.
+Cloudflare API-key sources also require an account ID and, for AI Gateway, a
+gateway ID; missing or empty stored IDs fall back independently to the environment.
+Stored OAuth credentials with a registered OAuth handler remain available on
+presence alone, without account lookup, key extraction or refresh. Account
+configuration is still checked at request time.
 `get_available` returns a separate list of shared descriptors, preserving selected
 slot order and duplicates. `get_provider_auth_status` prefers credential metadata,
 otherwise describes a nonempty configured command, environment variable or literal key.
@@ -188,3 +216,26 @@ after the preceding callback. See [credential resolution](credentials.md#stored-
 OAuth metadata, the shared mutable
 `BUILT_IN_PROVIDER_DISPLAY_NAMES` table, then the provider ID. Empty names are
 present values.
+
+## Extension catalogs
+
+The native component host forwards provider registration and removal through the
+extension's existing runtime. Registration before binding uses its queue; direct
+mutations through a retained `ModelRegistry` use that catalog instead. Catalog
+refresh, authentication metadata, display names and request authentication reach
+the original native owner. Invalid provider input is rejected before publication;
+a rejected operation leaves independently retained credentials usable.
+
+`ModelRegistry::auth_storage` in the guest returns the same credentials the
+catalog uses. Its retained handle also keeps the catalog's credential-command
+effects, available to native adapters through `config_values()`. A key changed
+through that handle is visible to later catalog requests.
+
+Guest catalogs can also be constructed over a retained credential handle from the
+same host. `create(&api, auth_storage, path)` uses the supplied model path or the
+application's lazy default; `in_memory(&api, auth_storage)` performs no model-file
+I/O. Credential and model paths are independent. The application installs
+`CatalogConstruction` on the extension runtime before loading factories, using
+its configuration-path owner and credential-command effects. Catalog metadata
+queries support authored credential fallback callbacks, including same-instance
+synchronous reentry.

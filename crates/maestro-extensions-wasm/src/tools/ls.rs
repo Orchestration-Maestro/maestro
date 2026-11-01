@@ -1,4 +1,23 @@
 //! Supplied ls tool data.
+use super::OperationFuture;
+use std::rc::Rc;
+
+/// Replaceable directory observations; ordering and output selection remain native.
+#[derive(Clone)]
+pub struct LsOperations {
+    /// Observes the resolved root before any directory access.
+    pub exists: Rc<dyn Fn(String) -> OperationFuture<'static, bool>>,
+    /// Observes whether the root or an entry is a directory.
+    pub stat: Rc<dyn Fn(String) -> OperationFuture<'static, bool>>,
+    /// Returns original entry names in producer order.
+    pub readdir: Rc<dyn Fn(String) -> OperationFuture<'static, Vec<String>>>,
+}
+/// Listing construction choices; absent operations use the native filesystem.
+#[derive(Default)]
+pub struct LsToolOptions {
+    /// Independently retained directory observations.
+    pub operations: Option<LsOperations>,
+}
 use super::truncate::TruncationResult;
 use crate::Presence;
 use serde::{Deserialize, Serialize};

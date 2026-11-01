@@ -21,7 +21,7 @@ fn tool_call_edits_reach_next_handler_and_execution_without_revalidation() {
         let bus = support::LocalBus::new();
         let loaded = support::loaded("tool", bus.controller.for_extension());
         let mut definition = tool_support::definition("echo", "Echo");
-        definition.definition.parameters = json!({"type":"string"});
+        definition.definition.parameters = json!({"type":"string"}).into();
         loaded.api.register_tool(definition).unwrap();
         let runner = Rc::new(support::runner(&loaded.owners));
         loaded
@@ -206,9 +206,9 @@ async fn tool_result_patches_present_fields_and_preserves_prior_changes_case() {
 }
 
 async fn user_bash_keeps_first_result_and_invocable_operations_case() {
-    use maestro_tools::{BashOperations, BashResult};
+    use maestro_tools::{BashExecution, BashResult};
     use std::sync::Arc;
-    type Ops = Arc<dyn BashOperations>;
+    type Ops = Arc<<maestro_models::Threaded as BashExecution>::Operations>;
     let bus = support::LocalBus::new();
     let loaded = support::loaded("bash", bus.controller.for_extension());
     let runner = support::runner(&loaded.owners);
@@ -308,9 +308,9 @@ fn install_tool_result_patch(loaded: &support::Loaded, patch: serde_json::Value)
 }
 
 async fn shell_result_answers(event: &mut UserBashEvent) {
-    use maestro_tools::{BashOperations, BashResult};
+    use maestro_tools::{BashExecution, BashResult};
     use std::sync::Arc;
-    type Ops = Arc<dyn BashOperations>;
+    type Ops = Arc<<maestro_models::Threaded as BashExecution>::Operations>;
     for answer in [
         json!({}),
         json!({"result":{"output":"replacement","exitCode":3.0,"cancelled":false,"truncated":false}}),
@@ -348,10 +348,13 @@ async fn shell_result_answers(event: &mut UserBashEvent) {
 
 fn install_shell_operations(
     loaded: &support::Loaded,
-    operations: &std::sync::Arc<dyn maestro_tools::BashOperations>,
+    operations: &std::sync::Arc<
+        <maestro_models::Threaded as maestro_tools::BashExecution>::Operations,
+    >,
 ) {
     use maestro_tools::BashResult;
-    type Ops = std::sync::Arc<dyn maestro_tools::BashOperations>;
+    type Ops =
+        std::sync::Arc<<maestro_models::Threaded as maestro_tools::BashExecution>::Operations>;
     loaded
         .api
         .on::<UserBashEvent, UserBashEventResult<Ops, BashResult>>(

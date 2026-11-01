@@ -66,14 +66,6 @@ fn automatic_test_discovery_is_rejected() {
 }
 
 #[test]
-fn custom_test_target_without_opt_in_is_unchecked() {
-    let workspace = workspace();
-    rewrite(&workspace, "autotests = false", "");
-    rewrite(&workspace, "name = \"integration\"", "name = \"custom\"");
-    check_workspace(workspace.root.path()).unwrap();
-}
-
-#[test]
 fn missing_or_extra_test_targets_are_rejected() {
     let target = "[[test]]\nname = \"integration\"\npath = \"tests/integration.rs\"";
     for replacement in [
@@ -152,11 +144,24 @@ fn test_module_decoys_are_rejected() {
 }
 
 #[test]
-fn unmigrated_test_layout_is_unchanged() {
+fn new_crate_test_files_require_one_program() {
+    let crates = ["maestro-models", OWNER];
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-models", "maestro-path"]);
-    let tests = workspace.root.path().join("crates/maestro-path/tests");
-    std::fs::create_dir_all(&tests).unwrap();
-    std::fs::write(tests.join("standalone.rs"), "").unwrap();
+    workspace.foundation(&crates);
+    let manifests = crates.map(|name| {
+        let root = workspace.root.path().join("crates").join(name);
+        std::fs::create_dir_all(root.join("tests")).unwrap();
+        std::fs::write(root.join("tests/standalone.rs"), "").unwrap();
+        root.join("Cargo.toml").display().to_string()
+    });
+    let error = check_workspace(workspace.root.path()).unwrap_err();
+    assert!(manifests.iter().all(|path| error.contains(path)), "{error}");
+    workspace.integration(crates[0]);
+    let error = check_workspace(workspace.root.path()).unwrap_err();
+    assert!(
+        !error.contains(&manifests[0]) && error.contains(&manifests[1]),
+        "{error}"
+    );
+    workspace.integration(OWNER);
     check_workspace(workspace.root.path()).unwrap();
 }

@@ -106,16 +106,21 @@ fn replacement_hook(cwd: String) -> maestro_tools::BashSpawnHook {
         );
         assert_eq!(
             context.env.get(std::ffi::OsStr::new("MAESTRO_HOOK_ONLY")),
-            initial_hook_value.as_ref()
+            initial_hook_value.as_ref().map(|_| &initial_hook_value)
         );
         assert_eq!(
-            context.env.get(std::ffi::OsStr::new("PATH")).unwrap(),
+            context
+                .env
+                .get(std::ffi::OsStr::new("PATH"))
+                .unwrap()
+                .as_ref()
+                .unwrap(),
             std::ffi::OsStr::new(&expected_path)
         );
         context.env.clear();
         context
             .env
-            .insert("MAESTRO_HOOK_ONLY".into(), "hook env".into());
+            .insert("MAESTRO_HOOK_ONLY".into(), Some("hook env".into()));
         context.cwd.clone_from(&cwd);
         context.command = "printf '%s' \"$MAESTRO_HOOK_ONLY\"".into();
         Ok(context)
@@ -194,7 +199,7 @@ async fn native_artifact(tool: &maestro_agent::AgentTool, status: i32) {
         .unwrap()
         .as_str()
         .unwrap();
-    assert!(text.contains("[Showing lines 1002-3001 of 3001. Full output: <artifact>]"));
+    assert!(text.contains("[Showing lines 1001-3000 of 3000. Full output: <artifact>]"));
     if status == 7 {
         assert!(text.ends_with("\n\nCommand exited with code 7"));
     }
@@ -453,5 +458,65 @@ fn shell_path(path: String) -> BashToolOptions {
     BashToolOptions {
         shell_path: Some(path),
         ..BashToolOptions::default()
+    }
+}
+
+/// Cancellation before execution never enters either backend, including observer-triggered abort.
+#[test]
+fn bash_native_preabort_never_starts_operations() {
+    let dir = Scratch::new().unwrap();
+    run(async {
+        for supplied in [false, true] {
+            check_native_preabort(&dir, supplied).await;
+        }
+    });
+}
+
+/// Both preexisting cancellation and a synchronous initial observer stop backend entry.
+async fn check_native_preabort(dir: &Scratch, supplied: bool) {
+    for abort_in_update in [false, true] {
+        let signal = maestro_models::Cancellation::new();
+        if !abort_in_update {
+            signal.abort();
+        }
+        let entered = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let called = entered.clone();
+        let operations = Immediate(Arc::new(move |_, _, _| {
+            called.store(true, std::sync::atomic::Ordering::SeqCst);
+            Ok(BashExecResult {
+                exit_code: Some(0.0),
+            })
+        }));
+        let tool = create_bash_tool(
+            dir.text(),
+            String::new(),
+            BashToolOptions {
+                operations: supplied.then(|| {
+                    Arc::new(operations) as Arc<dyn maestro_tools::BashOperations + Send + Sync>
+                }),
+                // An aborted call must not even resolve the local shell configuration.
+                shell_path: Some(dir.path().join("missing-shell").to_str().unwrap().into()),
+                ..BashToolOptions::default()
+            },
+        );
+        let selected = signal.clone();
+        let result = (tool.execute)(
+            "cancelled".into(),
+            json!({"command":"printf must-not-run"}),
+            Some(signal),
+            Some(Arc::new(move |value| {
+                assert!(value.content.is_empty());
+                if abort_in_update {
+                    selected.abort();
+                }
+            })),
+        )
+        .await;
+        assert_eq!(
+            result.unwrap_err().message,
+            "Command aborted",
+            "{supplied}/{abort_in_update}"
+        );
+        assert!(!entered.load(std::sync::atomic::Ordering::SeqCst));
     }
 }

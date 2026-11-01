@@ -5,18 +5,15 @@ use crate::browser::attachment_content::{
     browser::{host_error, sync_text},
 };
 use std::{cell::RefCell, rc::Rc};
-/// Mount one retained literal body in the actual canvas document.
-pub(super) fn mount(
+use web_sys::Element;
+/// Build the literal body nodes, returning its root and its owned text nodes.
+pub(super) fn body(
     document: &web_sys::Document,
-    text: &Rc<RefCell<Text>>,
-) -> Result<ReadingRoot, AttachmentHostError> {
+) -> Result<(Element, [Element; 3]), AttachmentHostError> {
     let create = |tag| document.create_element(tag).map_err(|e| host_error(&e));
     let root = create("section")?;
     root.set_attribute("class", "maestro-generic-artifact")
         .map_err(|e| host_error(&e))?;
-    let style = create("style")?;
-    style.set_text_content(Some(include_str!("../generic_artifact.css")));
-    root.append_child(&style).map_err(|e| host_error(&e))?;
     let body = create("div")?;
     let icon = icon(document)?;
     body.append_child(&icon).map_err(|e| host_error(&e))?;
@@ -36,6 +33,20 @@ pub(super) fn mount(
         .map_err(|e| host_error(&e))?;
     body.append_child(&guidance).map_err(|e| host_error(&e))?;
     root.append_child(&body).map_err(|e| host_error(&e))?;
+    Ok((root, nodes))
+}
+/// Mount one retained literal body in the actual canvas document.
+pub(super) fn mount(
+    document: &web_sys::Document,
+    text: &Rc<RefCell<Text>>,
+) -> Result<ReadingRoot, AttachmentHostError> {
+    let (root, nodes) = body(document)?;
+    let style = document
+        .create_element("style")
+        .map_err(|e| host_error(&e))?;
+    style.set_text_content(Some(include_str!("../generic_artifact.css")));
+    root.insert_before(&style, root.first_child().as_ref())
+        .map_err(|e| host_error(&e))?;
     let mut text = text.borrow_mut();
     text.nodes = Some(nodes);
     sync_text(text.nodes.as_ref(), &text.values);

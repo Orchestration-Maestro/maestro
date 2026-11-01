@@ -12,6 +12,7 @@ use crate::{
 };
 #[cfg(not(target_arch = "wasm32"))]
 use futures_util::FutureExt as _;
+use std::borrow::Cow;
 use std::fmt::Write as _;
 
 /// Redirect identity independent of the listener host.
@@ -216,8 +217,11 @@ impl crate::OAuthProviderInterface for OpenAICodexOAuthProvider {
     ) -> BoxFuture<Result<OAuthCredentials, OAuthError>> {
         refresh_openai_codex_token(credentials.refresh, fetch)
     }
-    fn get_api_key<'a>(&self, credentials: &'a OAuthCredentials) -> Result<&'a str, OAuthError> {
-        Ok(&credentials.access)
+    fn get_api_key<'a>(
+        &self,
+        credentials: &'a OAuthCredentials,
+    ) -> Result<Cow<'a, str>, OAuthError> {
+        Ok(Cow::Borrowed(&credentials.access))
     }
 }
 /// Response-account provider operations.

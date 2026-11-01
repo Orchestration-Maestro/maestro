@@ -1,4 +1,8 @@
 //! Original-byte download control.
+/// Native control operands and activation.
+#[cfg(target_arch = "wasm32")]
+pub mod dom;
+
 use crate::browser::attachment_content::{self, AttachmentHost};
 use crate::tools::artifacts::ArtifactUiError;
 use crate::tools::artifacts::artifact_element::ArtifactView;

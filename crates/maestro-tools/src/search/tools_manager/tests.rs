@@ -372,7 +372,9 @@ fn install_fetch(row: &Install, requests: &Arc<Mutex<Vec<Request>>>) -> Fetch {
 
 /// Expand only the recorded path and process placeholders.
 fn expand(text: &str, bin: &str) -> String {
-    text.replace("<BIN>", bin)
+    // The installer joins below the directory natively; the recording joins with `/`.
+    text.replace("<BIN>/", &format!("{bin}{}", std::path::MAIN_SEPARATOR))
+        .replace("<BIN>", bin)
         .replace("<PID>", &std::process::id().to_string())
 }
 
@@ -390,7 +392,11 @@ fn output_matches(row: &Install, output: &[u8], bin: &str) {
     }
     if let Some(last) = &row.last_line_prefix {
         let expected = format!("{prefix}{}", expand(last, bin));
-        assert!(output.starts_with(&expected), "{} output prefix", row.id);
+        assert!(
+            output.starts_with(&expected),
+            "{} output prefix: {output:?}",
+            row.id
+        );
         let detail = output
             .strip_prefix(&expected)
             .unwrap()
@@ -467,6 +473,20 @@ fn online(test: &str) -> bool {
     false
 }
 
+/// Whether the host `tar` extracts an empty file as an archive, probed inside `dir`.
+fn accepts_empty_archive(dir: &str) -> bool {
+    let probe = Path::new(dir).join("empty.tar.gz");
+    std::fs::write(&probe, b"").unwrap();
+    let status = std::process::Command::new("tar")
+        .arg("xzf")
+        .arg(&probe)
+        .args(["-C", dir])
+        .status()
+        .unwrap();
+    std::fs::remove_file(probe).unwrap();
+    status.success()
+}
+
 /// Run the named installation group on its chosen hosts.
 async fn installs(name: &str) {
     if !online(name) {
@@ -474,6 +494,13 @@ async fn installs(name: &str) {
     }
     for row in cases::<Install>(name) {
         let scratch = Staging::create(std::env::temp_dir().to_str().unwrap(), "unit").unwrap();
+        // A host `tar` that accepts an empty archive reaches the binary check instead of the
+        // recorded extraction failure.
+        let empty = (row.download.as_ref()).is_some_and(|body| body.text.as_deref() == Some(""));
+        if empty && accepts_empty_archive(&scratch.path) {
+            eprintln!("{} needs a host tar that refuses an empty archive", row.id);
+            continue;
+        }
         let bin = maestro_path::join(&[
             &scratch.path,
             if row.bin_exists { "bin" } else { "nested/bin" },
@@ -643,6 +670,57 @@ fn windows_binary_directory_entries_carry_the_exe_suffix() {
     });
 }
 
+/// Fd stops at the last Intel macOS build; every other host asks for the latest release.
+#[test]
+fn fd_downloads_pin_to_the_last_intel_macos_build() {
+    const ASSET: &str = "https://github.com/sharkdp/fd/releases/download";
+    const LOOKUP: &str = "https://api.github.com/repos/sharkdp/fd/releases/latest";
+    let cases = [
+        (
+            "macos",
+            "x86_64",
+            vec![format!(
+                "{ASSET}/v10.3.0/fd-v10.3.0-x86_64-apple-darwin.tar.gz"
+            )],
+        ),
+        (
+            "macos",
+            "aarch64",
+            vec![
+                LOOKUP.to_owned(),
+                format!("{ASSET}/v11.0.0/fd-v11.0.0-aarch64-apple-darwin.tar.gz"),
+            ],
+        ),
+        (
+            "linux",
+            "x86_64",
+            vec![
+                LOOKUP.to_owned(),
+                format!("{ASSET}/v11.0.0/fd-v11.0.0-x86_64-unknown-linux-gnu.tar.gz"),
+            ],
+        ),
+    ];
+    for (os, arch, expected) in cases {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let bin = maestro_path::join(&[scratch.path().to_str().unwrap(), "bin"]);
+        let urls = Arc::new(Mutex::new(Vec::new()));
+        let seen = Arc::clone(&urls);
+        let fetch: Fetch = Arc::new(move |request| {
+            let answer = if request.url == LOOKUP {
+                response(200, br#"{"tag_name":"v11.0.0"}"#.to_vec())
+            } else {
+                response(404, Vec::new())
+            };
+            seen.lock().unwrap().push(request.url);
+            Box::pin(async { Ok(answer) })
+        });
+        let mut manager = ToolsManager::new(bin, Some(fetch));
+        manager.host = Host { os, arch };
+        assert_eq!(run(manager.install_missing(SearchTool::Fd, None)), None);
+        assert_eq!(*urls.lock().unwrap(), expected, "{os} {arch}");
+    }
+}
+
 #[test]
 fn lookup_and_download_deadlines_cover_the_whole_body() {
     if !online("lookup_and_download_deadlines_cover_the_whole_body") {
@@ -724,7 +802,8 @@ fn concurrent_installs_stage_in_separate_directories() {
         );
         assert_eq!(results, (None, None));
         let prefix = format!(
-            "Failed to download fd: Binary not found in archive: expected fd under {bin}/extract_tmp_fd_{}_",
+            "Failed to download fd: Binary not found in archive: expected fd under {bin}{}extract_tmp_fd_{}_",
+            std::path::MAIN_SEPARATOR,
             std::process::id()
         );
         let messages: Vec<_> = [first, second]

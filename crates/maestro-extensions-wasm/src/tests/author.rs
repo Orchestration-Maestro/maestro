@@ -7,23 +7,33 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use maestro_extensions_wasm::{
-    AbortSignal, CommandOptions, CompactionResult, ExtensionAPI, ExtensionCommandContext,
-    ExtensionContext, ExtensionEvent, ExtensionEventResult, ExtensionFuture, ExtensionHandler,
-    ExtensionResult, InputEventResult, InputTransform, NewSessionCommandData,
-    NewSessionCommandOptions, Presence, SessionBeforeCompactEvent, SessionBeforeCompactResult,
-    SessionEvent, SignalPort,
+    AbortListener, AbortSignal, CommandOptions, CompactionResult, ExtensionAPI,
+    ExtensionCommandContext, ExtensionContext, ExtensionEvent, ExtensionEventResult,
+    ExtensionFuture, ExtensionHandler, ExtensionResult, InputEventResult, InputTransform,
+    NewSessionCommandData, NewSessionCommandOptions, Presence, SessionBeforeCompactEvent,
+    SessionBeforeCompactResult, SessionEvent, SignalPort, Subscription, SubscriptionPort,
 };
 use serde::Deserialize;
 use serde_json::{Value, from_value, json};
 
 #[path = "action_author.rs"]
 mod action_author;
+#[path = "authored_editor_author.rs"]
+mod authored_editor_author;
 #[path = "bus_author.rs"]
 mod bus_author;
 #[path = "catalog_author.rs"]
 mod catalog_author;
 #[path = "compaction_author.rs"]
 mod compaction_author;
+#[path = "completion_author.rs"]
+mod completion_author;
+#[path = "editor_factory_author.rs"]
+mod editor_factory_author;
+#[path = "factory_component_author.rs"]
+mod factory_component_author;
+#[path = "provider_author.rs"]
+mod provider_author;
 #[path = "reader_author.rs"]
 mod reader_author;
 #[path = "registration_author.rs"]
@@ -37,12 +47,36 @@ mod renderer_author;
 mod replacement_author;
 #[path = "setup_author.rs"]
 mod setup_author;
+#[path = "stacked_provider_author.rs"]
+mod stacked_provider_author;
 #[cfg(not(target_arch = "wasm32"))]
 use super::registration_fixture;
+#[path = "custom_author.rs"]
+pub(crate) mod custom_author;
+#[path = "custom_overlay_author.rs"]
+pub(crate) mod custom_overlay_author;
+#[path = "focus_author.rs"]
+pub(crate) mod focus_author;
+#[path = "nested_schema_fixture.rs"]
+pub(crate) mod nested_schema_fixture;
+#[path = "overlay_author.rs"]
+pub(crate) mod overlay_author;
+#[path = "schema_author.rs"]
+mod schema_author;
 #[path = "shell_author.rs"]
 mod shell_author;
+#[path = "theme_author.rs"]
+mod theme_author;
 #[path = "tool_author.rs"]
 mod tool_author;
+#[path = "tui_author.rs"]
+pub(crate) mod tui_author;
+#[path = "ui_author.rs"]
+pub(crate) mod ui_author;
+#[path = "widget_author.rs"]
+mod widget_author;
+#[path = "writer_author.rs"]
+pub(crate) mod writer_author;
 
 /// Reports its label to the host when this guard is dropped.
 struct Released {
@@ -360,6 +394,15 @@ impl SignalPort for Live {
     fn aborted(&self) -> bool {
         false
     }
+    fn subscribe(&self, _listener: AbortListener) -> ExtensionResult<Subscription> {
+        Ok(Subscription::new(Rc::new(Live)))
+    }
+}
+
+impl SubscriptionPort for Live {
+    fn unsubscribe(&self) -> ExtensionResult<()> {
+        Ok(())
+    }
 }
 
 /// What the probe handler and the command that feeds it share.
@@ -420,11 +463,12 @@ fn register_probe(api: &ExtensionAPI) -> Result<(), String> {
                     if let Some(result) = capture_registration(&api, &args, &ctx) {
                         return result;
                     }
-                    if args == "catalog" {
-                        return catalog_author::register(&api);
-                    }
-                    if args == "reader" {
-                        return reader_author::register(&api);
+                    match args.as_str() {
+                        "catalog" => return catalog_author::register(&api),
+                        "reader" => return reader_author::register(&api),
+                        "theme" => return theme_author::register(&api),
+                        "ui" => return ui_author::register(&api),
+                        _ => {}
                     }
                     if let Some(config) = args.strip_prefix("tools ") {
                         return tool_author::register(&api, config, Rc::clone(&captured));
@@ -598,7 +642,9 @@ fn mark(event: &mut ExtensionEvent) -> ExtensionResult<()> {
         ExtensionEvent::Session(SessionEvent::Shutdown(shutdown)) => {
             shutdown.target_session_file = Presence::Present(changed());
         }
-        ExtensionEvent::BeforeProviderRequest(request) => request.payload = changed(),
+        ExtensionEvent::BeforeProviderRequest(request) => {
+            request.payload = json!(changed()).to_string().into();
+        }
         ExtensionEvent::AfterProviderResponse(response) => response.status = 201.0,
         ExtensionEvent::ToolCall(event) => {
             return tool_author::mark(&mut event.input, &event.tool_name);
@@ -752,7 +798,7 @@ fn write_number(event: &mut ExtensionEvent, bits: &str, field: Option<&str>) -> 
                 .write()
                 .map_err(|e| e.to_string())?
                 .usage
-                .total_tokens = value;
+                .total_tokens = maestro_request::presence::Presence::Present(value);
         }
         ExtensionEvent::Session(SessionEvent::BeforeCompact(compact)) => match field {
             Some("reserveTokens") => compact.preparation.settings.reserve_tokens = value,
@@ -884,7 +930,7 @@ fn register_helpers(api: &ExtensionAPI, args: &str) -> Option<ExtensionResult<()
     match args {
         "setup-register" => Some(setup_author::register(api)),
         "replacement-register" => Some(replacement_author::register(api)),
-        _ => None,
+        _ => provider_author::dispatch(api, args),
     }
 }
 

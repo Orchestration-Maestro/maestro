@@ -1,5 +1,8 @@
 //! Shared daemon state admission and invariant observations.
 
+pub mod launch;
+pub mod runtime;
+
 use maestro_daemon::app::state::DaemonState;
 
 /// Admit terminal metadata for each pane using its topology-owned identity.

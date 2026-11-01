@@ -1,0 +1,304 @@
+{
+  "rows": [
+    {
+      "name": "no_listeners",
+      "inputs": [
+        "original",
+        ""
+      ],
+      "seen": [],
+      "delivered": [
+        "original",
+        ""
+      ]
+    },
+    {
+      "name": "registration_order",
+      "inputs": [
+        "original"
+      ],
+      "seen": [
+        [
+          "z",
+          "original"
+        ],
+        [
+          "a",
+          "original"
+        ]
+      ],
+      "delivered": [
+        "original"
+      ]
+    },
+    {
+      "name": "distinct_identity",
+      "inputs": [
+        "original"
+      ],
+      "seen": [
+        [
+          "same",
+          "original"
+        ],
+        [
+          "same",
+          "original"
+        ]
+      ],
+      "delivered": [
+        "original"
+      ]
+    },
+    {
+      "name": "duplicate_unsubscribe_0",
+      "inputs": [
+        "original"
+      ],
+      "seen": [],
+      "delivered": [
+        "original"
+      ]
+    },
+    {
+      "name": "duplicate_unsubscribe_1",
+      "inputs": [
+        "original"
+      ],
+      "seen": [],
+      "delivered": [
+        "original"
+      ]
+    },
+    {
+      "name": "duplicate_keeps_position",
+      "inputs": [
+        "original"
+      ],
+      "seen": [
+        [
+          "z",
+          "original"
+        ],
+        [
+          "a",
+          "original"
+        ]
+      ],
+      "delivered": [
+        "original"
+      ]
+    },
+    {
+      "name": "direct_remove_absent",
+      "inputs": [
+        "original"
+      ],
+      "seen": [
+        [
+          "kept",
+          "original"
+        ]
+      ],
+      "delivered": [
+        "original"
+      ]
+    },
+    {
+      "name": "old_handle_removes_readded",
+      "inputs": [
+        "original"
+      ],
+      "seen": [],
+      "delivered": [
+        "original"
+      ]
+    },
+    {
+      "name": "live_add",
+      "inputs": [
+        "original"
+      ],
+      "seen": [
+        [
+          "a",
+          "original"
+        ],
+        [
+          "b",
+          "original"
+        ]
+      ],
+      "delivered": [
+        "original"
+      ]
+    },
+    {
+      "name": "live_remove",
+      "inputs": [
+        "original"
+      ],
+      "seen": [
+        [
+          "a",
+          "original"
+        ]
+      ],
+      "delivered": [
+        "original"
+      ]
+    },
+    {
+      "name": "remove_self",
+      "inputs": [
+        "original"
+      ],
+      "seen": [
+        [
+          "z",
+          "original"
+        ],
+        [
+          "a",
+          "original"
+        ],
+        [
+          "b",
+          "original"
+        ]
+      ],
+      "delivered": [
+        "original"
+      ]
+    },
+    {
+      "name": "readd_moves_to_tail",
+      "inputs": [
+        "original"
+      ],
+      "seen": [
+        [
+          "a",
+          "original"
+        ],
+        [
+          "c",
+          "original"
+        ],
+        [
+          "b",
+          "original"
+        ]
+      ],
+      "delivered": [
+        "original"
+      ]
+    },
+    {
+      "name": "self_readd_once",
+      "inputs": [
+        "original"
+      ],
+      "seen": [
+        [
+          "a",
+          "original"
+        ],
+        [
+          "b",
+          "original"
+        ],
+        [
+          "a",
+          "original"
+        ]
+      ],
+      "delivered": [
+        "original"
+      ]
+    },
+    {
+      "name": "consume_short_circuits",
+      "inputs": [
+        "original"
+      ],
+      "seen": [
+        [
+          "a",
+          "original"
+        ]
+      ],
+      "delivered": []
+    },
+    {
+      "name": "empty_final_stops",
+      "inputs": [
+        "original"
+      ],
+      "seen": [
+        [
+          "a",
+          "original"
+        ],
+        [
+          "b",
+          ""
+        ]
+      ],
+      "delivered": []
+    },
+    {
+      "name": "empty_then_rewrite",
+      "inputs": [
+        "original"
+      ],
+      "seen": [
+        [
+          "a",
+          "original"
+        ],
+        [
+          "b",
+          ""
+        ]
+      ],
+      "delivered": [
+        "recovered"
+      ]
+    },
+    {
+      "name": "replace_preserves_bytes",
+      "inputs": [
+        "original"
+      ],
+      "seen": [
+        [
+          "a",
+          "original"
+        ],
+        [
+          "b",
+          "é\t\u001b[31mλ"
+        ]
+      ],
+      "delivered": [
+        "é\t\u001b[31mλ"
+      ]
+    },
+    {
+      "name": "dropped_handle_keeps_registration",
+      "inputs": [
+        "original"
+      ],
+      "seen": [
+        [
+          "kept",
+          "original"
+        ]
+      ],
+      "delivered": [
+        "original"
+      ]
+    }
+  ]
+}

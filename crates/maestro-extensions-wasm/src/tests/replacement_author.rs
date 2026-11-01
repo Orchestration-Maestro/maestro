@@ -302,6 +302,8 @@ fn ordinary_callbacks(api: &ExtensionAPI) -> ExtensionResult<()> {
     })?;
     let log = api.clone();
     api.register_tool(maestro_extensions_wasm::ToolDefinition {
+        render_call: None,
+        render_result: None,
         metadata: serde_json::from_value(json!({"name":"replacement-ordinary","label":"Ordinary","description":"Reads its supplied context","parameters":"{}"})).unwrap(),
         prepare_arguments: None,
         execute: Rc::new(move |_, _, _, _, ctx: maestro_extensions_wasm::ExtensionContext| {

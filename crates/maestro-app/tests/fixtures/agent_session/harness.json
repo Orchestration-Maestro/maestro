@@ -55,8 +55,6 @@
   },
   "retry_on_transient_error": {
     "call_count": 2,
-    "retry_start_count": 1,
-    "retry_end_count": 1,
     "retry_end_success": true,
     "retry_start_attempt": 1,
     "retry_start_delay_ms": 1,
@@ -114,77 +112,16 @@
     ]
   },
   "streams_text_deltas": {
-    "text_delta_count": 3,
-    "reconstructed": "hello world",
-    "stream_types": [
-      "text_start",
-      "text_delta",
-      "text_delta",
-      "text_delta",
-      "text_end"
-    ]
+    "reconstructed": "hello world"
   },
   "streams_thinking_deltas": {
     "thinking_start_count": 1,
-    "thinking_delta_count": 6,
     "thinking_end_count": 1,
-    "reconstructed": "let me think about this",
-    "stream_types": [
-      "thinking_start",
-      "thinking_delta",
-      "thinking_delta",
-      "thinking_delta",
-      "thinking_delta",
-      "thinking_delta",
-      "thinking_delta",
-      "thinking_end",
-      "text_start",
-      "text_delta",
-      "text_delta",
-      "text_end"
-    ]
+    "reconstructed": "let me think about this"
   },
   "streams_tool_call_deltas": {
     "toolcall_start_count": 1,
-    "toolcall_delta_count": 3,
-    "toolcall_end_count": 1,
-    "stream_types": [
-      "toolcall_start",
-      "toolcall_delta",
-      "toolcall_delta",
-      "toolcall_delta",
-      "toolcall_end",
-      "text_start",
-      "text_delta",
-      "text_end"
-    ]
-  },
-  "streams_thinking_then_text_then_tool_call": {
-    "first_thinking": 0,
-    "first_text": 3,
-    "first_toolcall": 10,
-    "stream_types": [
-      "thinking_start",
-      "thinking_delta",
-      "thinking_end",
-      "text_start",
-      "text_delta",
-      "text_delta",
-      "text_delta",
-      "text_delta",
-      "text_delta",
-      "text_end",
-      "toolcall_start",
-      "toolcall_delta",
-      "toolcall_delta",
-      "toolcall_delta",
-      "toolcall_delta",
-      "toolcall_end",
-      "text_start",
-      "text_delta",
-      "text_delta",
-      "text_end"
-    ]
+    "toolcall_end_count": 1
   },
   "inline_extension_factories": {
     "commands": [

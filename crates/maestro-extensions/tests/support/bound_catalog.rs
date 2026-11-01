@@ -49,9 +49,12 @@ impl OAuthProviderInterface for Account {
         credentials.access = "refreshed".into();
         Box::pin(async move { Ok(credentials) })
     }
-    fn get_api_key<'a>(&self, credentials: &'a OAuthCredentials) -> Result<&'a str, OAuthError> {
+    fn get_api_key<'a>(
+        &self,
+        credentials: &'a OAuthCredentials,
+    ) -> Result<Cow<'a, str>, OAuthError> {
         self.events.lock().unwrap().push("key");
-        Ok(&credentials.access)
+        Ok(Cow::Borrowed(&credentials.access))
     }
     fn modify_models<'m>(
         &self,
@@ -132,8 +135,8 @@ fn consumer_config(
             serde_json::from_value(serde_json::json!({"X-Model":"model","X-Order":"model"}))
                 .unwrap(),
         );
-        input.stream_simple = Some(original.clone());
-        input.oauth = Some(Arc::new(Account {
+        input.callbacks.stream_simple = Some(original.clone());
+        input.callbacks.oauth = Some(Arc::new(Account {
             catalog: Arc::downgrade(registry),
             throws: false,
             events: events.clone(),
@@ -189,7 +192,7 @@ pub fn bound_provider_configuration_reaches_stream_oauth_and_request_consumers()
     registry.unregister_provider("p").unwrap();
     assert!(get_api_provider("extension-original").is_none());
     assert!(get_oauth_provider("p").is_none());
-    config.write().unwrap().stream_simple = None;
+    config.write().unwrap().callbacks.stream_simple = None;
     let weak = Arc::downgrade(&original);
     drop(original);
     executor.block_on(
@@ -209,7 +212,9 @@ async fn assert_request(
     model: &Arc<std::sync::RwLock<Model>>,
 ) {
     match registry.get_api_key_and_headers(model).await {
-        maestro_catalog::ResolvedRequestAuth::Ok { api_key, headers } => {
+        maestro_catalog::ResolvedRequestAuth::Ok {
+            api_key, headers, ..
+        } => {
             assert!(matches!(api_key.as_deref(), Some("literal-key")));
             let headers = headers.unwrap();
             assert!(matches!(headers["X-Order"].as_str(), "model"));
@@ -236,7 +241,7 @@ fn reentry_case((throws, queued): (bool, bool)) {
     );
     let events = Arc::new(Mutex::new(Vec::new()));
     let config = tests::good("outer-model");
-    config.write().unwrap().oauth = Some(Arc::new(Account {
+    config.write().unwrap().callbacks.oauth = Some(Arc::new(Account {
         catalog: Arc::downgrade(&registry),
         throws,
         events: events.clone(),
@@ -309,7 +314,9 @@ fn request_variants(
         registry.register_provider("p", config.clone()).unwrap();
         let model = registry.find("p", "m").unwrap();
         match crate::runtime_support::runtime().block_on(registry.get_api_key_and_headers(&model)) {
-            maestro_catalog::ResolvedRequestAuth::Ok { api_key, headers } => {
+            maestro_catalog::ResolvedRequestAuth::Ok {
+                api_key, headers, ..
+            } => {
                 assert!(matches!(api_key.as_deref(), Some("literal-key")));
                 match headers {
                     Some(headers) => {
@@ -333,7 +340,7 @@ async fn exercise_account(account: &OAuthProviderHandle) {
     let credentials = account.login(Arc::new(NoInteraction), None).await.unwrap();
     let credentials = account.refresh_token(credentials, None).await.unwrap();
     assert!(matches!(
-        account.get_api_key(&credentials).unwrap(),
+        account.get_api_key(&credentials).unwrap().as_ref(),
         "refreshed"
     ));
 }

@@ -63,3 +63,33 @@ impl std::fmt::Debug for BashOperations {
         f.debug_struct("BashOperations").finish_non_exhaustive()
     }
 }
+
+/// Owned shell operands observed after command prefixing.
+#[derive(Clone, Serialize, Deserialize)]
+pub struct BashSpawnContext {
+    /// Literal command, including any configured prefix.
+    pub command: String,
+    /// Selected execution directory.
+    pub cwd: String,
+    /// Complete replacement environment, retaining unset entries.
+    pub env: IndexMap<String, Option<String>>,
+}
+/// Synchronous operand replacement with callback-scoped event emission.
+pub type BashSpawnHook = Rc<
+    dyn for<'a> Fn(
+        BashSpawnContext,
+        crate::CallbackEmitter<'a>,
+    ) -> ExtensionResult<BashSpawnContext>,
+>;
+/// Independent controls for the original native shell factory.
+#[derive(Default)]
+pub struct BashToolOptions {
+    /// Replacement execution; omission selects the native local shell.
+    pub operations: Option<BashOperations>,
+    /// Nonempty prefix inserted before the original command.
+    pub command_prefix: Option<String>,
+    /// Explicit local executable, ignored when operations are supplied.
+    pub shell_path: Option<String>,
+    /// Synchronous interception after prefixing and before execution.
+    pub spawn_hook: Option<BashSpawnHook>,
+}

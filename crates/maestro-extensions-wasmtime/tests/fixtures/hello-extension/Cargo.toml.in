@@ -1,0 +1,14 @@
+[package]
+name = "hello-extension"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+maestro-extensions-wasm = { path = "../maestro/crates/maestro-extensions-wasm" }
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = { version = "=1.0.151", features = ["float_roundtrip"] }
+
+[workspace]

@@ -32,7 +32,7 @@ use crate::{BoxFuture, Cancellation, DiagnosticErrorInfo};
 
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) use body::buffered;
-pub(crate) use body::collect_body;
+pub use body::collect_body;
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) use client::{ProxySelector, Route, configured_fetch, supplied_fetch};
 #[cfg(not(target_arch = "wasm32"))]
@@ -49,7 +49,7 @@ pub(crate) use headers::{
 pub(crate) use maestro_text::decode_utf8;
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) use retry::{RequestPolicy, RetryStatuses, send_with_policy};
-pub(crate) use retry::{send, send_with_status_error};
+pub(crate) use retry::{request_timeout, send, send_with_status_error};
 pub(crate) use runtime::sleep;
 pub(crate) use runtime::spawn_detached;
 pub use runtime::{Raced, race};
@@ -57,7 +57,7 @@ pub(crate) use server_sent_events::{ServerSentEvent, SseMessages};
 
 /// One HTTP attempt: method, final URL, lowercase headers and body bytes.
 #[derive(Clone)]
-pub struct HttpRequest {
+pub struct HttpRequest<B = Vec<u8>> {
     /// HTTP method.
     pub method: String,
     /// Final request URL.
@@ -69,8 +69,8 @@ pub struct HttpRequest {
     /// any attempt. Every other character reaches the client, whose own rules decide whether it
     /// can carry the value.
     pub headers: IndexMap<String, String>,
-    /// Request body.
-    pub body: Vec<u8>,
+    /// Request body; the default uses bytes, while optional bytes preserve an absent body.
+    pub body: B,
     /// Signal the sender races each attempt against; a replacement client may watch it too,
     /// but the plain default client ignores it.
     pub signal: Option<Cancellation>,
@@ -146,4 +146,30 @@ pub type Fetch = Arc<dyn Fn(HttpRequest) -> BoxFuture<Result<HttpResponse, Fetch
 #[must_use]
 pub fn default_fetch() -> Fetch {
     Arc::new(client::fetch)
+}
+
+/// Send one attempt through the default client, preserving an absent request body.
+///
+/// Uses the same request normalization, shared client and response conversion as
+/// [`default_fetch`], without retry, timeout or cancellation policy.
+///
+/// # Errors
+/// The returned future reports request conversion and transport failures as [`FetchError`].
+#[must_use]
+pub fn fetch_optional_body(
+    request: HttpRequest<Option<Vec<u8>>>,
+) -> BoxFuture<Result<HttpResponse, FetchError>> {
+    client::fetch(request)
+}
+
+/// Parse the decimal integer prefix used by numeric helper arguments.
+#[cfg(not(target_arch = "wasm32"))]
+pub(super) fn decimal_prefix(text: &str) -> Option<i32> {
+    let text = text.trim_start_matches(maestro_text::is_whitespace_scalar);
+    let digits = text.strip_prefix(['+', '-']).unwrap_or(text);
+    let count = digits.bytes().take_while(u8::is_ascii_digit).count();
+    if count == 0 {
+        return None;
+    }
+    text[..text.len() - digits.len() + count].parse().ok()
 }

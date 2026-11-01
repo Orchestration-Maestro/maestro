@@ -45,6 +45,8 @@ pub fn call(
             args: vec![],
             value: args[0].clone(),
             raw: None,
+            error: None,
+            once: false,
         });
     }
     Ok(observed.setup.value.clone())
@@ -61,6 +63,8 @@ pub fn reader(name: &str) -> Reader {
         args: vec![],
         value: json!(name),
         raw: None,
+        error: None,
+        once: false,
     });
     reader
 }
@@ -320,11 +324,12 @@ pub fn command_start(
     observed: &mut Observed,
     parent: Option<&str>,
     callbacks: (bool, bool),
+    present: bool,
 ) -> Option<super::observed::Hold> {
     if observed.setup.record_options == Some(true) {
         observed.log(format!(
             "setup-options {}",
-            json!({"parent":parent,"setup":callbacks.0,"continuation":callbacks.1})
+            json!({"present":present,"parent":parent,"setup":callbacks.0,"continuation":callbacks.1})
         ));
     }
     if observed.setup.hold_return {

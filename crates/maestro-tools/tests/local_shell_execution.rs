@@ -128,7 +128,7 @@ async fn environment_routes(bin: &str, cwd: &str, shell: &str) {
         if mode == 1 {
             env.insert(
                 OsString::from("TEST_LOCAL_BASH_OPS"),
-                OsString::from("replacement"),
+                Some(OsString::from("replacement")),
             );
         }
         let mut bytes = Vec::new();
@@ -362,7 +362,8 @@ fn local_bash_has_its_own_session_and_process_group() {
         let mut sink = |data: &[u8]| bytes.extend_from_slice(data);
         let result = operations
             .exec(
-                "printf '%s\\n' \"$$\"; ps -o sid= -p $$; ps -o pgid= -p $$; if ( : </dev/tty ) 2>/dev/null; then exit 9; fi",
+                // Not every `ps` names the session column, so the interpreter reads both ids.
+                "printf '%s\\n' \"$$\"; python3 -c 'import os; print(os.getsid(0)); print(os.getpgrp())'; if ( : </dev/tty ) 2>/dev/null; then exit 9; fi",
                 "/",
                 BashExecOptions {
                     on_data: &mut sink,
@@ -443,7 +444,7 @@ impl maestro_tools::BashOperations for Supplied {
             assert!(options.signal.unwrap().is_aborted());
             assert_eq!(
                 options.env.unwrap().get(&OsString::from("MARK")),
-                Some(&OsString::from("supplied"))
+                Some(&Some(OsString::from("supplied")))
             );
             (options.on_data)(b"custom-bytes");
             Ok(maestro_tools::BashExecResult {
@@ -460,11 +461,12 @@ impl maestro_tools::BashOperations for Supplied {
 #[test]
 fn supplied_bash_operations_keep_open_result_values() {
     run(async {
-        let operations: std::sync::Arc<dyn maestro_tools::BashOperations> =
-            std::sync::Arc::new(Supplied);
+        let operations: std::sync::Arc<
+            <maestro_models::Threaded as maestro_tools::BashExecution>::Operations,
+        > = std::sync::Arc::new(Supplied);
         let signal = Cancellation::new();
         signal.abort();
-        let env = [(OsString::from("MARK"), OsString::from("supplied"))]
+        let env = [(OsString::from("MARK"), Some(OsString::from("supplied")))]
             .into_iter()
             .collect();
         for (command, wanted) in [("fractional", Some(0.5)), ("absent", None)] {
@@ -509,11 +511,11 @@ fn native_shell_environment_reads_each_process_inheritance() {
                 .map_or(String::new(), |value| format!(":{value}"));
             assert_eq!(
                 first.get(&OsString::from("PATH")),
-                Some(&OsString::from(format!("/first{suffix}")))
+                Some(&Some(OsString::from(format!("/first{suffix}"))))
             );
             assert_eq!(
                 second.get(&OsString::from("PATH")),
-                Some(&OsString::from(format!("/second{suffix}")))
+                Some(&Some(OsString::from(format!("/second{suffix}"))))
             );
             assert_eq!(std::env::var_os("PATH"), value.map(OsString::from));
         }

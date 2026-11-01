@@ -3,7 +3,11 @@
 use std::future::Future;
 use std::io;
 use std::pin::Pin;
+use std::rc::Rc;
 use std::time::Duration;
+
+/// Receives a native output failure.
+pub type OutputErrorHandler = Rc<dyn Fn(&io::Error)>;
 
 /// A terminal that components render to and that delivers input.
 pub trait Terminal {
@@ -27,12 +31,14 @@ pub trait Terminal {
 
     /// Reads and discards pending input before exit so key releases do not leak to a shell.
     ///
-    /// `None` leaves the adapter's defaults: a 1000 ms limit and a 50 ms idle exit.
+    /// `None` leaves the adapter's defaults: a 1000 ms limit and a 50 ms idle exit. The
+    /// returned future owns its state, so a scheduled frame may borrow and render to the
+    /// same terminal while the drain is pending.
     fn drain_input(
         &mut self,
         max: Option<Duration>,
         idle: Option<Duration>,
-    ) -> Pin<Box<dyn Future<Output = io::Result<()>> + '_>>;
+    ) -> Pin<Box<dyn Future<Output = io::Result<()>> + 'static>>;
 
     /// Writes output to the terminal.
     ///
@@ -110,4 +116,11 @@ pub trait Terminal {
     ///
     /// Returns the device error when the effect cannot be carried out.
     fn set_progress(&mut self, active: bool) -> io::Result<()>;
+
+    /// Registers `handler` for native output failures; the returned operation removes it and
+    /// does nothing when repeated.
+    fn on_output_error(&self, handler: OutputErrorHandler) -> Box<dyn Fn()> {
+        let _ = handler;
+        Box::new(|| ())
+    }
 }

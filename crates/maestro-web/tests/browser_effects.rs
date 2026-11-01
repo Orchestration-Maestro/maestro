@@ -1,11 +1,8 @@
-//! Timer ownership and input Escape operands; native dispatch is browser-qualified.
+//! Timer ownership; native dispatch is browser-qualified.
 #![cfg(test)]
-/// Shared drawing conformance support.
-use crate::attachment_support;
 use crate::effects_support;
-use crate::input_support;
 use effects_support::Host;
-use maestro_web::{Input, browser::attachment_content::*, components::input::InputProps};
+use maestro_web::browser::attachment_content::*;
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,
@@ -88,23 +85,6 @@ fn browser_effects_keep_local_futures_and_host_failures() {
         host.timer(500, false, Rc::new(|| {})),
         Err(AttachmentHostError::BorrowConflict)
     ));
-    *host.failure.borrow_mut() = Some(AttachmentHostError::Presentation("rejected".into()));
-    let mut input = Input::new(InputProps::default(), host.clone());
-    let mut frame = attachment_support::Frame::default();
-    frame.run(vec![], |ctx, i, p| {
-        let mut ui = egui::Ui::new(
-            ctx.clone(),
-            egui::Id::new("failure"),
-            egui::UiBuilder::new(),
-        );
-        assert!(matches!(
-            input.render(&mut ui, i, p),
-            Err(maestro_web::components::input::InputUiError::Host(
-                AttachmentHostError::Presentation(_)
-            ))
-        ));
-    });
-    drop(input);
     host.run_work();
     assert!(completed.get());
     assert_eq!(host.admissions.get(), 0);
@@ -139,31 +119,4 @@ fn browser_timer_owners_cancel_independently_during_delivery() {
     assert_eq!(second.get(), 3);
     assert!(handle.borrow().is_none());
     assert_eq!(host.live(), 1);
-}
-
-#[test]
-fn input_escape_bridge_keeps_one_keydown_route_and_releases_it() {
-    let updates = Rc::new(RefCell::new(Vec::new()));
-    let seen = updates.clone();
-    let host = input_support::Host::new(move |s, _| {
-        let AttachmentContent::Input { props, .. } = &s.content else {
-            panic!("not input")
-        };
-        seen.borrow_mut().push((s.id, props.on_key_down.clone()));
-    });
-    let callback: maestro_web::components::input::KeyCallback = Rc::new(|_| {});
-    let mut input = Input::new(InputProps::default(), host.clone());
-    input_support::render(&mut input, 300.);
-    input_support::render(&mut input, 300.);
-    input.set_props(InputProps {
-        on_key_down: Some(callback.clone()),
-        ..Default::default()
-    });
-    input_support::render(&mut input, 300.);
-    drop(input);
-    let updates = updates.borrow();
-    assert!(updates[..2].iter().all(|u| u.1.is_none()));
-    assert!(Rc::ptr_eq(updates[2].1.as_ref().unwrap(), &callback));
-    assert!(updates.iter().all(|u| u.0 == updates[0].0));
-    assert_eq!(*host.removed.borrow(), [updates[0].0]);
 }

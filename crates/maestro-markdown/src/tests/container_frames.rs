@@ -1,5 +1,5 @@
 //! Container lineage and stateful caller observations through complete parsing.
-use super::SELECTIONS;
+use super::{MULTIBYTE_REENTRY_BODY, MULTIBYTE_REENTRY_SOURCE, SELECTIONS};
 use crate::{BlockToken, BlockTokenizer, Kind, MarkedOptions, Node, parse_with_tokenizer};
 use std::{cell::RefCell, fmt::Write};
 
@@ -889,5 +889,38 @@ fn callback_operand_accounting_keeps_requested_output_separate() {
             }
         }
         assert_eq!(counts, expected, "list={list} n={n}");
+    }
+}
+
+#[test]
+fn reply_quote_reentry_keeps_its_authored_body_for_every_grammar() {
+    for options in SELECTIONS {
+        let document = crate::parse_with_options(MULTIBYTE_REENTRY_SOURCE.to_owned(), options);
+        let Kind::Quote(outer, _) = &document.nodes[1].kind else {
+            panic!("outer quote")
+        };
+        let Kind::List(_, items) = &outer[0].kind else {
+            panic!("quoted list")
+        };
+        let Kind::Item(children) = &items[0].kind else {
+            panic!("quoted item")
+        };
+        let Kind::Quote(container, container_body) = &children[1].kind else {
+            panic!("container quote")
+        };
+        // The reply renderer reads the ancestor body before the quote it holds.
+        assert_eq!(
+            container_body.to_owned_string(),
+            MULTIBYTE_REENTRY_BODY,
+            "{options:?}"
+        );
+        let Kind::Quote(_, body) = &container[0].kind else {
+            panic!("re-entered quote")
+        };
+        assert_eq!(
+            body.to_owned_string(),
+            MULTIBYTE_REENTRY_BODY,
+            "{options:?}"
+        );
     }
 }

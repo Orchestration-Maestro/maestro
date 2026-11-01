@@ -42,8 +42,9 @@ window. The code-span runs take one pass over the source; the label scan takes o
 forward pass over bracket pairs and one reverse pass over the closers they reach, and
 records the next unescaped `]` at each offset. A reference opener whose window holds
 no such closing bracket therefore skips the caller's reference rules, while an
-admitted window still runs the explicit rule and then the shortcut or collapsed rule
-over its whole window, so admitted openers keep their existing cost and the tokenizer
+admitted window still runs the explicit rule and, on an explicit miss, the shortcut or
+collapsed rule over its whole window, so admitted openers keep their existing cost and
+the tokenizer
 as a whole makes no linearity promise.
 Masks remain local to each window because clipping can reveal syntax hidden by an
 enclosing mask. Label-closer lookup is constant time and code-span lookup is a binary
@@ -81,11 +82,12 @@ names the original document source, not its container-local spelling.
 Documents, list items and quote chunks share one block accumulator. Quotes
 suspend and resume through retained source handles. Quote reentry retains the
 trailing container's own raw source and its ancestor's unconsumed remainder. The
-trailing list item keeps its admission state and block output while its quote
-resumes. An item that stopped accepting lines keeps only what publication and a
-caller tokenizer's replay read: its settled block output with the step a replay
-resumes from, its semantic body, its task marker state, and whether a blank line
-ends it.
+ancestor cuts back at the container's authored start, or at a body it published
+itself, so a character is never split. The trailing list item keeps its admission
+state and block output while its quote resumes. An item that stopped accepting
+lines keeps only what publication and a caller tokenizer's replay read: its
+settled block output with the step a replay resumes from, its semantic body, its
+task marker state, and whether a blank line ends it.
 Admission resumes at the first open block: one whose grammar read the item's
 current end, or whose following content sits on the item's unterminated last
 line. Open indented code continues from the line it reached. A caller block

@@ -83,6 +83,8 @@ and an optional replacement package name. It returns an owned `SelfUpdateCommand
 only for an evidenced global installation whose package directory and immediate
 parent pass write-access checks. A replacement contains removal then installation
 in `steps`; otherwise callers execute the top-level command and literal `args`.
+Every installation step passes `--ignore-scripts` before the package operand.
+Removal steps do not pass that flag.
 The display is human-readable text, not a POSIX shell command to execute.
 
 The selector reuses installation detection and caller-selected package roots.
@@ -112,7 +114,23 @@ Selection reads the home directory through the shared path expansion and checks
 write access on the package directory and its immediate parent itself. Unix access
 uses the OS write-access operation; Windows checks existence and read-only
 attributes, not directory ACLs, so a later update may still fail with a
-permissions error. See the
+permissions error.
+
+`get_self_update_plan` returns the distribution identity and whether installation
+should run, without any text: a forced update, a failed or absent release lookup
+and a changed package identity all install, while a release that is not newer
+than the running version skips. `run_self_update` runs the selected steps in
+order with inherited standard streams and no deadline, reporting an unsuccessful
+child as `exited with code {code}` or `terminated by signal {name}`.
+
+`get_self_update_command_from_settings` and
+`get_self_update_unavailable_instruction_from_settings` read the retained global
+`npmCommand` field of a settings snapshot and delegate to the selector and
+instruction operations above. The field is decoded only for an npm installation
+and only where a branch consumes it; a value that is not a string array is
+reported as that branch's typed error. `SelfUpdateOperations::run_command`
+carries the inherited-I/O child as a default method, so the read-only query
+adapters keep their signatures. See the
 [configuration library notes](../libraries/application-configuration.md).
 
 ## Workspace preferences

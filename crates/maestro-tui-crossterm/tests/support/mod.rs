@@ -38,8 +38,13 @@ const CASE_MARKER: &str = "MAESTRO_TERMINAL_TEST_CASE";
 /// Variables a scenario sees only when it sets them.
 const SCENARIO_VARIABLES: [&str; 4] = ["COLUMNS", "LINES", "MAESTRO_TUI_WRITE_LOG", "TZ"];
 
-/// The bytes a terminal writes when it starts: bracketed paste on, then the keyboard query.
-pub const START_BYTES: &str = "\x1b[?2004h\x1b[?u";
+/// The bytes a terminal writes when it starts: bracketed paste on, the keyboard flags
+/// requested, then the keyboard and device-attribute queries.
+pub const START_BYTES: &str = "\x1b[?2004h\x1b[>7u\x1b[?u\x1b[c";
+
+/// The bytes a started terminal writes when it stops with no progress shown: bracketed paste
+/// off, then the keyboard flags popped.
+pub const STOP_BYTES: &str = "\x1b[?2004l\x1b[<u";
 
 /// Runs scenario number `case` of `test` in a child copy of the calling test and fails the
 /// test when the child fails. Inside the child it runs `scenario` only when it is the case
@@ -165,6 +170,15 @@ pub fn pipe_output() -> Capture {
     let (reader, writer) = rustix::pipe::pipe().expect("a pipe opens");
     dup2_stdout(&writer).expect("the pipe becomes standard output");
     Capture::new(reader)
+}
+
+/// The status flags of standard output that a status-flag change can set or clear. macOS
+/// also reports a kernel-only bit once a descriptor has been written, which none can.
+pub fn stdout_flags() -> OFlags {
+    let flags = fcntl_getfl(stdout()).expect("flags read");
+    #[cfg(target_os = "macos")]
+    let flags = flags.difference(OFlags::from_bits_retain(0x1_0000));
+    flags
 }
 
 /// Installs a pseudo-terminal as standard output and returns what is written to it.

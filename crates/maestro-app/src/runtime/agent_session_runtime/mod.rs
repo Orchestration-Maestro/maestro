@@ -8,17 +8,21 @@ pub use fork::ForkResult;
 use super::agent_session_services::{AgentSessionRuntimeDiagnostic, AgentSessionServices};
 use crate::agent_session::{AgentSession, thrown};
 use maestro_extensions::runner::emit_session_shutdown_event;
-use maestro_extensions::types::WithSession;
+use maestro_extensions::types::{SessionChangeResult, WithSession};
 use maestro_extensions::{
-    LoadExtensionsResult, SessionBeforeSwitchEvent, SessionBeforeSwitchReason,
-    SessionShutdownEvent, SessionShutdownReason, SessionStartEvent,
+    CommandContextOperations, EventError, ExtensionCommandContextActions, LoadExtensionsResult,
+    SessionBeforeSwitchEvent, SessionBeforeSwitchReason, SessionShutdownEvent,
+    SessionShutdownReason, SessionStartEvent,
 };
 use maestro_models::{DiagnosticErrorInfo, Execution, Local};
 use maestro_session::{
     Presence, SessionManager,
     session_cwd::{MissingSessionCwdError, assert_session_cwd_exists},
 };
-use std::{cell::RefCell, rc::Rc};
+use std::{
+    cell::RefCell,
+    rc::{Rc, Weak},
+};
 
 /// The local future the runtime's callbacks return.
 pub type RuntimeFuture<T> = <Local as Execution>::Future<'static, Result<T, DiagnosticErrorInfo>>;
@@ -56,6 +60,10 @@ pub type CreateAgentSessionRuntimeFactory =
 
 /// Rebinds a host to a replacement session before the caller continues against it.
 pub type RebindSession = Rc<dyn Fn(Rc<AgentSession>) -> RuntimeFuture<()>>;
+
+/// Host teardown that runs before the current session is invalidated; its failure stops
+/// the teardown before the session is disposed.
+pub type BeforeSessionInvalidate = Rc<dyn Fn() -> Result<(), EventError>>;
 
 /// Why a runtime operation failed.
 #[derive(Debug)]
@@ -107,6 +115,13 @@ impl std::fmt::Display for SessionImportFileNotFoundError {
 
 impl std::error::Error for SessionImportFileNotFoundError {}
 
+/// The runtime a stored command operation belongs to, while its caller keeps it.
+fn current(runtime: &Weak<AgentSessionRuntime>) -> Result<Rc<AgentSessionRuntime>, EventError> {
+    runtime
+        .upgrade()
+        .ok_or_else(|| "the session runtime has ended".into())
+}
+
 /// The session and services now in effect.
 struct Current {
     /// The session.
@@ -130,7 +145,7 @@ pub struct AgentSessionRuntime {
     /// Rebinds the host to each replacement.
     rebind_session: RefCell<Option<RebindSession>>,
     /// Runs after the shutdown handlers and before the session is invalidated.
-    before_session_invalidate: RefCell<Option<Rc<dyn Fn()>>>,
+    before_session_invalidate: RefCell<Option<BeforeSessionInvalidate>>,
 }
 
 impl AgentSessionRuntime {
@@ -191,9 +206,80 @@ impl AgentSessionRuntime {
 
     /// Sets a synchronous callback that runs after the shutdown handlers finish and before
     /// the current session is invalidated, for host teardown that must not wait, such as
-    /// detaching extension components before their context becomes stale.
-    pub fn set_before_session_invalidate(&self, before_session_invalidate: Option<Rc<dyn Fn()>>) {
+    /// detaching extension components before their context becomes stale. Its failure is
+    /// the operation's failure, and the session is then neither invalidated nor disposed.
+    pub fn set_before_session_invalidate(
+        &self,
+        before_session_invalidate: Option<BeforeSessionInvalidate>,
+    ) {
         *self.before_session_invalidate.borrow_mut() = before_session_invalidate;
+    }
+
+    /// The command-context operations a host binds for the current session.
+    ///
+    /// Each operation resolves the runtime and its current session when it runs, so a command
+    /// reaches the session a replacement installed.
+    #[must_use]
+    pub fn command_context_actions(self: &Rc<Self>) -> ExtensionCommandContextActions {
+        let runtime = Rc::downgrade(self);
+        let (idle, new, fork, navigate, switch, reload) = (
+            runtime.clone(),
+            runtime.clone(),
+            runtime.clone(),
+            runtime.clone(),
+            runtime.clone(),
+            runtime,
+        );
+        ExtensionCommandContextActions::new(CommandContextOperations {
+            wait_for_idle: Rc::new(move || {
+                let runtime = current(&idle);
+                Box::pin(async move {
+                    runtime?.session().wait_for_idle().await;
+                    Ok(())
+                })
+            }),
+            new_session: Rc::new(move |options| {
+                let runtime = current(&new);
+                Box::pin(
+                    async move { Ok(runtime?.new_session(options.unwrap_or_default()).await?) },
+                )
+            }),
+            fork: Rc::new(move |entry_id, options| {
+                let runtime = current(&fork);
+                Box::pin(async move {
+                    let forked = runtime?
+                        .fork(&entry_id, options.unwrap_or_default())
+                        .await?;
+                    Ok(SessionChangeResult {
+                        cancelled: forked.cancelled,
+                    })
+                })
+            }),
+            navigate_tree: Rc::new(move |target_id, options| {
+                let runtime = current(&navigate);
+                Box::pin(async move {
+                    let session = runtime?.session();
+                    let navigated = session
+                        .navigate_tree(&target_id, options.unwrap_or_default())
+                        .await?;
+                    Ok(SessionChangeResult {
+                        cancelled: navigated.cancelled,
+                    })
+                })
+            }),
+            switch_session: Rc::new(move |session_path, options| {
+                let runtime = current(&switch);
+                Box::pin(async move {
+                    Ok(runtime?
+                        .switch_session(&session_path, None, options.unwrap_or_default())
+                        .await?)
+                })
+            }),
+            reload: Rc::new(move || {
+                let runtime = current(&reload);
+                Box::pin(async move { Ok(runtime?.session().reload().await?) })
+            }),
+        })
     }
 
     /// Tells the extensions about a coming switch; whether one cancelled it.
@@ -215,7 +301,7 @@ impl AgentSessionRuntime {
     }
 
     /// Shuts the current session down for `reason`, runs the invalidation callback and
-    /// disposes the session.
+    /// disposes the session; a callback failure stops before the disposal.
     async fn teardown_current(
         &self,
         reason: SessionShutdownReason,
@@ -231,7 +317,7 @@ impl AgentSessionRuntime {
             .map_err(thrown)?;
         let callback = self.before_session_invalidate.borrow().clone();
         if let Some(callback) = callback {
-            callback();
+            callback().map_err(thrown)?;
         }
         session.dispose();
         Ok(())
@@ -252,17 +338,19 @@ impl AgentSessionRuntime {
         Ok(())
     }
 
-    /// Rebinds the host to the replacement, then continues against it.
+    /// Rebinds the host to the captured replacement, then continues against that session
+    /// even if another operation replaces the current session during rebinding.
     async fn finish_session_replacement(
         &self,
+        session: &Rc<AgentSession>,
         with_session: Option<&WithSession>,
     ) -> Result<(), DiagnosticErrorInfo> {
         let rebind = self.rebind_session.borrow().clone();
         if let Some(rebind) = rebind {
-            rebind(self.session()).await?;
+            rebind(Rc::clone(session)).await?;
         }
         if let Some(with_session) = with_session {
-            with_session(self.session().create_replaced_session_context())
+            with_session(session.create_replaced_session_context())
                 .await
                 .map_err(thrown)?;
         }

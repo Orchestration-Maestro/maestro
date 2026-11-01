@@ -1,0 +1,1492 @@
+[
+  {
+    "operation": "text",
+    "text": "# Changes\npreamble\n## [2.1.0] date\nalpha\n\n### Added\n- café\n## 1.2.3\nbeta\n## [2.1.0]\nduplicate",
+    "expected": [
+      {
+        "major": 2,
+        "minor": 1,
+        "patch": 0,
+        "content": "## [2.1.0] date\nalpha\n\n### Added\n- café"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "## 1.2.3\nbeta"
+      },
+      {
+        "major": 2,
+        "minor": 1,
+        "patch": 0,
+        "content": "## [2.1.0]\nduplicate"
+      }
+    ]
+  },
+  {
+    "operation": "text",
+    "text": "## [1.2.3] date\nbody",
+    "expected": [
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "## [1.2.3] date\nbody"
+      }
+    ]
+  },
+  {
+    "operation": "text",
+    "text": "## 01.002.0003 trailing\nbody",
+    "expected": [
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "## 01.002.0003 trailing\nbody"
+      }
+    ]
+  },
+  {
+    "operation": "text",
+    "text": "## [1.2.3\nbody",
+    "expected": [
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "## [1.2.3\nbody"
+      }
+    ]
+  },
+  {
+    "operation": "text",
+    "text": "## 1.2.3]\nbody",
+    "expected": [
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "## 1.2.3]\nbody"
+      }
+    ]
+  },
+  {
+    "operation": "text",
+    "text": "## 1.2.3.4\nbody",
+    "expected": [
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "## 1.2.3.4\nbody"
+      }
+    ]
+  },
+  {
+    "operation": "text",
+    "text": "## 1.2.3-beta\nbody",
+    "expected": [
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "## 1.2.3-beta\nbody"
+      }
+    ]
+  },
+  {
+    "operation": "text",
+    "text": "## \t [1.2.3]\nbody",
+    "expected": [
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "## \t [1.2.3]\nbody"
+      }
+    ]
+  },
+  {
+    "operation": "text",
+    "text": "## 1.2.3xyz\nbody",
+    "expected": [
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "## 1.2.3xyz\nbody"
+      }
+    ]
+  },
+  {
+    "operation": "text",
+    "text": "## text ## [4.5.6]\nbody",
+    "expected": [
+      {
+        "major": 4,
+        "minor": 5,
+        "patch": 6,
+        "content": "## text ## [4.5.6]\nbody"
+      }
+    ]
+  },
+  {
+    "operation": "text",
+    "text": "##\t1.2.3\nbody",
+    "expected": []
+  },
+  {
+    "operation": "text",
+    "text": " ## 1.2.3\nbody",
+    "expected": []
+  },
+  {
+    "operation": "text",
+    "text": "### 1.2.3\nbody",
+    "expected": []
+  },
+  {
+    "operation": "text",
+    "text": "## [v1.2.3]\nbody",
+    "expected": []
+  },
+  {
+    "operation": "text",
+    "text": "## ١.٢.٣\nbody",
+    "expected": []
+  },
+  {
+    "operation": "text",
+    "text": "## 1.2\nbody",
+    "expected": []
+  },
+  {
+    "operation": "text",
+    "text": "## 1.2.-3\nbody",
+    "expected": []
+  },
+  {
+    "operation": "text",
+    "text": "## 1.2.3tail\nbody",
+    "expected": [
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "## 1.2.3tail\nbody"
+      }
+    ]
+  },
+  {
+    "operation": "text",
+    "text": "## Release ### [1.2.3]\nbody",
+    "expected": [
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "## Release ### [1.2.3]\nbody"
+      }
+    ]
+  },
+  {
+    "operation": "text",
+    "text": "",
+    "expected": []
+  },
+  {
+    "operation": "text",
+    "text": "# title\nbody",
+    "expected": []
+  },
+  {
+    "operation": "text",
+    "text": "## [1.2.3]\nold\n## Unreleased\nskipped\n### child\n## 2.0.0\nnew",
+    "expected": [
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "## [1.2.3]\nold"
+      },
+      {
+        "major": 2,
+        "minor": 0,
+        "patch": 0,
+        "content": "## 2.0.0\nnew"
+      }
+    ]
+  },
+  {
+    "operation": "text",
+    "text": "## Unreleased\nskipped\n## 1.0.0",
+    "expected": [
+      {
+        "major": 1,
+        "minor": 0,
+        "patch": 0,
+        "content": "## 1.0.0"
+      }
+    ]
+  },
+  {
+    "operation": "text",
+    "text": "## 1.0.0\n## 2.0.0",
+    "expected": [
+      {
+        "major": 1,
+        "minor": 0,
+        "patch": 0,
+        "content": "## 1.0.0"
+      },
+      {
+        "major": 2,
+        "minor": 0,
+        "patch": 0,
+        "content": "## 2.0.0"
+      }
+    ]
+  },
+  {
+    "operation": "text",
+    "text": "## 1.0.0",
+    "expected": [
+      {
+        "major": 1,
+        "minor": 0,
+        "patch": 0,
+        "content": "## 1.0.0"
+      }
+    ]
+  },
+  {
+    "operation": "text",
+    "text": "## 1.0.0\n##\t2.0.0\n \n## 3.0.0",
+    "expected": [
+      {
+        "major": 1,
+        "minor": 0,
+        "patch": 0,
+        "content": "## 1.0.0\n##\t2.0.0"
+      },
+      {
+        "major": 3,
+        "minor": 0,
+        "patch": 0,
+        "content": "## 3.0.0"
+      }
+    ]
+  },
+  {
+    "operation": "text",
+    "text": "## 1.2.3\r\nbody\r\n\r\n",
+    "expected": [
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "## 1.2.3\r\nbody"
+      }
+    ]
+  },
+  {
+    "operation": "text",
+    "text": "﻿## 1.2.3\nbody",
+    "expected": []
+  },
+  {
+    "operation": "text",
+    "text": "## 1.2.3\nbody﻿ \n",
+    "expected": [
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "## 1.2.3\nbody"
+      }
+    ]
+  },
+  {
+    "operation": "text",
+    "text": "## 1.2.3\nbody\n",
+    "expected": [
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "## 1.2.3\nbody"
+      }
+    ]
+  },
+  {
+    "operation": "text",
+    "text": "## 1.2.3\n  interior  \nlast\n\n",
+    "expected": [
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "## 1.2.3\n  interior  \nlast"
+      }
+    ]
+  },
+  {
+    "operation": "text",
+    "text": "## ﻿1.2.3\nbody",
+    "expected": [
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "## ﻿1.2.3\nbody"
+      }
+    ]
+  },
+  {
+    "operation": "text",
+    "text": "## 1.2.3\nbody",
+    "expected": []
+  },
+  {
+    "operation": "text",
+    "text": "## 1.2.3\rbody\r## 2.0.0",
+    "expected": [
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "## 1.2.3\rbody\r## 2.0.0"
+      }
+    ]
+  },
+  {
+    "operation": "text",
+    "text": "## 9007199254740993.02.003\nlarge",
+    "expected": [
+      {
+        "major": 9007199254740992,
+        "minor": 2,
+        "patch": 3,
+        "content": "## 9007199254740993.02.003\nlarge"
+      }
+    ]
+  },
+  {
+    "operation": "bytes",
+    "bytes": [
+      35,
+      35,
+      32,
+      49,
+      46,
+      50,
+      46,
+      51,
+      10,
+      255,
+      195,
+      169
+    ],
+    "expected": [
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "## 1.2.3\n�é"
+      }
+    ]
+  },
+  {
+    "operation": "unreadable",
+    "kind": "missing",
+    "warnings": 0
+  },
+  {
+    "operation": "unreadable",
+    "kind": "directory",
+    "warnings": 1
+  },
+  {
+    "operation": "unreadable",
+    "kind": "nul",
+    "warnings": 0
+  },
+  {
+    "operation": "compare",
+    "left": {
+      "major": 5,
+      "minor": 0,
+      "patch": 0,
+      "content": ""
+    },
+    "right": {
+      "major": 1,
+      "minor": 9,
+      "patch": 9,
+      "content": ""
+    },
+    "expected": 4
+  },
+  {
+    "operation": "compare",
+    "left": {
+      "major": 1,
+      "minor": 9,
+      "patch": 0,
+      "content": ""
+    },
+    "right": {
+      "major": 1,
+      "minor": 2,
+      "patch": 9,
+      "content": ""
+    },
+    "expected": 7
+  },
+  {
+    "operation": "compare",
+    "left": {
+      "major": 1,
+      "minor": 2,
+      "patch": 0,
+      "content": ""
+    },
+    "right": {
+      "major": 1,
+      "minor": 2,
+      "patch": 8,
+      "content": ""
+    },
+    "expected": -8
+  },
+  {
+    "operation": "compare",
+    "left": {
+      "major": 1,
+      "minor": 2,
+      "patch": 3,
+      "content": "a"
+    },
+    "right": {
+      "major": 1,
+      "minor": 2,
+      "patch": 3,
+      "content": "b"
+    },
+    "expected": 0
+  },
+  {
+    "operation": "compare",
+    "left": {
+      "major": 1,
+      "minor": 0,
+      "patch": 9,
+      "content": ""
+    },
+    "right": {
+      "major": 2,
+      "minor": 0,
+      "patch": 0,
+      "content": ""
+    },
+    "expected": -1
+  },
+  {
+    "operation": "compare",
+    "left": {
+      "major": 1,
+      "minor": 0.5,
+      "patch": 3,
+      "content": ""
+    },
+    "right": {
+      "major": 1,
+      "minor": 0,
+      "patch": 3,
+      "content": ""
+    },
+    "expected": 0.5
+  },
+  {
+    "operation": "select",
+    "entries": [
+      {
+        "major": 2,
+        "minor": 0,
+        "patch": 0,
+        "content": "two"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "equal"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-a"
+      },
+      {
+        "major": 0,
+        "minor": 9,
+        "patch": 9,
+        "content": "old"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-b"
+      },
+      {
+        "major": 1,
+        "minor": 3,
+        "patch": 0,
+        "content": "minor"
+      }
+    ],
+    "last_version": "1.2.3",
+    "expected": [
+      0,
+      2,
+      4,
+      5
+    ]
+  },
+  {
+    "operation": "select",
+    "entries": [
+      {
+        "major": 2,
+        "minor": 0,
+        "patch": 0,
+        "content": "two"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "equal"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-a"
+      },
+      {
+        "major": 0,
+        "minor": 9,
+        "patch": 9,
+        "content": "old"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-b"
+      },
+      {
+        "major": 1,
+        "minor": 3,
+        "patch": 0,
+        "content": "minor"
+      }
+    ],
+    "last_version": "",
+    "expected": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
+  },
+  {
+    "operation": "select",
+    "entries": [
+      {
+        "major": 2,
+        "minor": 0,
+        "patch": 0,
+        "content": "two"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "equal"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-a"
+      },
+      {
+        "major": 0,
+        "minor": 9,
+        "patch": 9,
+        "content": "old"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-b"
+      },
+      {
+        "major": 1,
+        "minor": 3,
+        "patch": 0,
+        "content": "minor"
+      }
+    ],
+    "last_version": "1",
+    "expected": [
+      0,
+      1,
+      2,
+      4,
+      5
+    ]
+  },
+  {
+    "operation": "select",
+    "entries": [
+      {
+        "major": 2,
+        "minor": 0,
+        "patch": 0,
+        "content": "two"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "equal"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-a"
+      },
+      {
+        "major": 0,
+        "minor": 9,
+        "patch": 9,
+        "content": "old"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-b"
+      },
+      {
+        "major": 1,
+        "minor": 3,
+        "patch": 0,
+        "content": "minor"
+      }
+    ],
+    "last_version": "1.2",
+    "expected": [
+      0,
+      1,
+      2,
+      4,
+      5
+    ]
+  },
+  {
+    "operation": "select",
+    "entries": [
+      {
+        "major": 2,
+        "minor": 0,
+        "patch": 0,
+        "content": "two"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "equal"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-a"
+      },
+      {
+        "major": 0,
+        "minor": 9,
+        "patch": 9,
+        "content": "old"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-b"
+      },
+      {
+        "major": 1,
+        "minor": 3,
+        "patch": 0,
+        "content": "minor"
+      }
+    ],
+    "last_version": "1..3",
+    "expected": [
+      0,
+      1,
+      2,
+      4,
+      5
+    ]
+  },
+  {
+    "operation": "select",
+    "entries": [
+      {
+        "major": 2,
+        "minor": 0,
+        "patch": 0,
+        "content": "two"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "equal"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-a"
+      },
+      {
+        "major": 0,
+        "minor": 9,
+        "patch": 9,
+        "content": "old"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-b"
+      },
+      {
+        "major": 1,
+        "minor": 3,
+        "patch": 0,
+        "content": "minor"
+      }
+    ],
+    "last_version": "garbage.2.3",
+    "expected": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
+  },
+  {
+    "operation": "select",
+    "entries": [
+      {
+        "major": 2,
+        "minor": 0,
+        "patch": 0,
+        "content": "two"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "equal"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-a"
+      },
+      {
+        "major": 0,
+        "minor": 9,
+        "patch": 9,
+        "content": "old"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-b"
+      },
+      {
+        "major": 1,
+        "minor": 3,
+        "patch": 0,
+        "content": "minor"
+      }
+    ],
+    "last_version": "1.2.bad",
+    "expected": [
+      0,
+      1,
+      2,
+      4,
+      5
+    ]
+  },
+  {
+    "operation": "select",
+    "entries": [
+      {
+        "major": 2,
+        "minor": 0,
+        "patch": 0,
+        "content": "two"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "equal"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-a"
+      },
+      {
+        "major": 0,
+        "minor": 9,
+        "patch": 9,
+        "content": "old"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-b"
+      },
+      {
+        "major": 1,
+        "minor": 3,
+        "patch": 0,
+        "content": "minor"
+      }
+    ],
+    "last_version": "v1.2.3",
+    "expected": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
+  },
+  {
+    "operation": "select",
+    "entries": [
+      {
+        "major": 2,
+        "minor": 0,
+        "patch": 0,
+        "content": "two"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "equal"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-a"
+      },
+      {
+        "major": 0,
+        "minor": 9,
+        "patch": 9,
+        "content": "old"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-b"
+      },
+      {
+        "major": 1,
+        "minor": 3,
+        "patch": 0,
+        "content": "minor"
+      }
+    ],
+    "last_version": "1.2.3-beta",
+    "expected": [
+      0,
+      1,
+      2,
+      4,
+      5
+    ]
+  },
+  {
+    "operation": "select",
+    "entries": [
+      {
+        "major": 2,
+        "minor": 0,
+        "patch": 0,
+        "content": "two"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "equal"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-a"
+      },
+      {
+        "major": 0,
+        "minor": 9,
+        "patch": 9,
+        "content": "old"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-b"
+      },
+      {
+        "major": 1,
+        "minor": 3,
+        "patch": 0,
+        "content": "minor"
+      }
+    ],
+    "last_version": "1.2.3.999",
+    "expected": [
+      0,
+      2,
+      4,
+      5
+    ]
+  },
+  {
+    "operation": "select",
+    "entries": [
+      {
+        "major": 2,
+        "minor": 0,
+        "patch": 0,
+        "content": "two"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "equal"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-a"
+      },
+      {
+        "major": 0,
+        "minor": 9,
+        "patch": 9,
+        "content": "old"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-b"
+      },
+      {
+        "major": 1,
+        "minor": 3,
+        "patch": 0,
+        "content": "minor"
+      }
+    ],
+    "last_version": " 1 . 2 . 3 ",
+    "expected": [
+      0,
+      2,
+      4,
+      5
+    ]
+  },
+  {
+    "operation": "select",
+    "entries": [
+      {
+        "major": 2,
+        "minor": 0,
+        "patch": 0,
+        "content": "two"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "equal"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-a"
+      },
+      {
+        "major": 0,
+        "minor": 9,
+        "patch": 9,
+        "content": "old"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-b"
+      },
+      {
+        "major": 1,
+        "minor": 3,
+        "patch": 0,
+        "content": "minor"
+      }
+    ],
+    "last_version": "﻿1.2.3﻿",
+    "expected": [
+      0,
+      2,
+      4,
+      5
+    ]
+  },
+  {
+    "operation": "select",
+    "entries": [
+      {
+        "major": 2,
+        "minor": 0,
+        "patch": 0,
+        "content": "two"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "equal"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-a"
+      },
+      {
+        "major": 0,
+        "minor": 9,
+        "patch": 9,
+        "content": "old"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-b"
+      },
+      {
+        "major": 1,
+        "minor": 3,
+        "patch": 0,
+        "content": "minor"
+      }
+    ],
+    "last_version": "1.2.3",
+    "expected": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
+  },
+  {
+    "operation": "select",
+    "entries": [
+      {
+        "major": 2,
+        "minor": 0,
+        "patch": 0,
+        "content": "two"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "equal"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-a"
+      },
+      {
+        "major": 0,
+        "minor": 9,
+        "patch": 9,
+        "content": "old"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-b"
+      },
+      {
+        "major": 1,
+        "minor": 3,
+        "patch": 0,
+        "content": "minor"
+      }
+    ],
+    "last_version": "+1.2.3",
+    "expected": [
+      0,
+      2,
+      4,
+      5
+    ]
+  },
+  {
+    "operation": "select",
+    "entries": [
+      {
+        "major": 2,
+        "minor": 0,
+        "patch": 0,
+        "content": "two"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "equal"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-a"
+      },
+      {
+        "major": 0,
+        "minor": 9,
+        "patch": 9,
+        "content": "old"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-b"
+      },
+      {
+        "major": 1,
+        "minor": 3,
+        "patch": 0,
+        "content": "minor"
+      }
+    ],
+    "last_version": "-1.2.3",
+    "expected": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
+  },
+  {
+    "operation": "select",
+    "entries": [
+      {
+        "major": 2,
+        "minor": 0,
+        "patch": 0,
+        "content": "two"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "equal"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-a"
+      },
+      {
+        "major": 0,
+        "minor": 9,
+        "patch": 9,
+        "content": "old"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-b"
+      },
+      {
+        "major": 1,
+        "minor": 3,
+        "patch": 0,
+        "content": "minor"
+      }
+    ],
+    "last_version": "1e0.2.3",
+    "expected": [
+      0,
+      2,
+      4,
+      5
+    ]
+  },
+  {
+    "operation": "select",
+    "entries": [
+      {
+        "major": 2,
+        "minor": 0,
+        "patch": 0,
+        "content": "two"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "equal"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-a"
+      },
+      {
+        "major": 0,
+        "minor": 9,
+        "patch": 9,
+        "content": "old"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-b"
+      },
+      {
+        "major": 1,
+        "minor": 3,
+        "patch": 0,
+        "content": "minor"
+      }
+    ],
+    "last_version": "Infinity.2.3",
+    "expected": []
+  },
+  {
+    "operation": "select",
+    "entries": [
+      {
+        "major": 2,
+        "minor": 0,
+        "patch": 0,
+        "content": "two"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "equal"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-a"
+      },
+      {
+        "major": 0,
+        "minor": 9,
+        "patch": 9,
+        "content": "old"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-b"
+      },
+      {
+        "major": 1,
+        "minor": 3,
+        "patch": 0,
+        "content": "minor"
+      }
+    ],
+    "last_version": "-Infinity.2.3",
+    "expected": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
+  },
+  {
+    "operation": "select",
+    "entries": [
+      {
+        "major": 2,
+        "minor": 0,
+        "patch": 0,
+        "content": "two"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "equal"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-a"
+      },
+      {
+        "major": 0,
+        "minor": 9,
+        "patch": 9,
+        "content": "old"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-b"
+      },
+      {
+        "major": 1,
+        "minor": 3,
+        "patch": 0,
+        "content": "minor"
+      }
+    ],
+    "last_version": "inf.2.3",
+    "expected": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
+  },
+  {
+    "operation": "select",
+    "entries": [],
+    "last_version": "1.2.2",
+    "expected": []
+  },
+  {
+    "operation": "select",
+    "entries": [
+      {
+        "major": 1,
+        "minor": 3,
+        "patch": 0,
+        "content": "minor"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-b"
+      },
+      {
+        "major": 0,
+        "minor": 9,
+        "patch": 9,
+        "content": "old"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 4,
+        "content": "patch-a"
+      },
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "equal"
+      },
+      {
+        "major": 2,
+        "minor": 0,
+        "patch": 0,
+        "content": "two"
+      }
+    ],
+    "last_version": "1.2.2",
+    "expected": [
+      0,
+      1,
+      3,
+      4,
+      5
+    ]
+  }
+]

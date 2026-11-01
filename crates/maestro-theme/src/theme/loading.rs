@@ -4,6 +4,7 @@ use maestro_json::canonical_entries;
 use num_traits::ToPrimitive;
 use serde_json::Value;
 use std::collections::HashSet;
+use std::io::{self, IsTerminal};
 
 /// Read a file as UTF-8 text, replacing invalid sequences.
 ///
@@ -97,7 +98,7 @@ fn detect_mode() -> ColorMode {
     if matches!(term.as_str(), "" | "dumb" | "linux") {
         return ColorMode::Color256;
     }
-    if env("TERM_PROGRAM").as_deref() == Some("Apple_Terminal")
+    if env(maestro_tui::TERM_PROGRAM).as_deref() == Some("Apple_Terminal")
         || term == "screen"
         || term.starts_with("screen-")
         || term.starts_with("screen.")
@@ -105,6 +106,103 @@ fn detect_mode() -> ColorMode {
         return ColorMode::Color256;
     }
     ColorMode::Truecolor
+}
+/// Whether text written for the terminal takes colour, decided on standard output, the
+/// process environment and the platform.
+#[must_use]
+pub fn supports_color() -> bool {
+    color_supported(
+        io::stdout().is_terminal(),
+        |name| std::env::var_os(name).map(|value| value.to_string_lossy().into_owned()),
+        std::env::consts::OS,
+    )
+}
+/// Decide colour in order: a `FORCE_COLOR` of `0` or `false` forbids it, an Azure Pipelines
+/// agent allows it, a captured stream without `FORCE_COLOR` forbids it, and then the terminal,
+/// platform, continuous-integration service and terminal names decide, falling back to
+/// whether `FORCE_COLOR` asked for colour.
+fn color_supported(
+    stdout_is_terminal: bool,
+    env: impl Fn(&str) -> Option<String>,
+    os: &str,
+) -> bool {
+    let force = env("FORCE_COLOR").map(|level| match level.as_str() {
+        "true" | "" => 1,
+        "false" => 0,
+        // Text that is not a whole number still counts as set, without asking for colour.
+        level => level.parse::<i64>().unwrap_or(-1),
+    });
+    if force == Some(0) {
+        return false;
+    }
+    if env("TF_BUILD").is_some() && env("AGENT_NAME").is_some() {
+        return true;
+    }
+    if !stdout_is_terminal && force.is_none() {
+        return false;
+    }
+    let forced = force.is_some_and(|level| level > 0);
+    let term = env("TERM").unwrap_or_default();
+    if term == "dumb" {
+        return forced;
+    }
+    if os == "windows" {
+        return true;
+    }
+    if env("CI").is_some() {
+        return CI_SERVICES.iter().any(|name| env(name).is_some())
+            || env("CI_NAME").as_deref() == Some("codeship")
+            || forced;
+    }
+    if let Some(version) = env("TEAMCITY_VERSION") {
+        return teamcity_colors(&version);
+    }
+    env("COLORTERM").is_some()
+        || matches!(
+            env(maestro_tui::TERM_PROGRAM).as_deref(),
+            Some("iTerm.app" | "Apple_Terminal")
+        )
+        || term == "wezterm"
+        || term_names_color(&term)
+        || forced
+}
+/// Continuous-integration services whose logs show colour.
+const CI_SERVICES: [&str; 8] = [
+    "GITHUB_ACTIONS",
+    "GITEA_ACTIONS",
+    "CIRCLECI",
+    "TRAVIS",
+    "APPVEYOR",
+    "GITLAB_CI",
+    "BUILDKITE",
+    "DRONE",
+];
+/// The `TeamCity` build log shows colour from version 9.1.
+fn teamcity_colors(version: &str) -> bool {
+    let digits = |text: &str| !text.is_empty() && text.bytes().all(|byte| byte.is_ascii_digit());
+    let Some((major, rest)) = version.split_once('.') else {
+        return false;
+    };
+    if major.len() >= 2 && digits(major) {
+        return true;
+    }
+    major == "9"
+        && rest
+            .split_once('.')
+            .is_some_and(|(minor, _)| digits(minor) && minor.bytes().any(|byte| byte != b'0'))
+}
+/// Whether a `TERM` name, read case-insensitively, belongs to a colour terminal family
+/// (`xterm-kitty` and `xterm-ghostty` among the `xterm` names).
+fn term_names_color(term: &str) -> bool {
+    let term = term.to_ascii_lowercase();
+    term.ends_with("-256")
+        || term.ends_with("-256color")
+        || ["screen", "xterm", "vt100", "vt220", "rxvt"]
+            .iter()
+            .any(|family| term.starts_with(family))
+        || ["color", "ansi", "cygwin", "linux"]
+            .iter()
+            .any(|part| term.contains(part))
 }
 /// Admit selected runtime fields with the native schema validator.
 fn validate(path: &str, json: &Value) -> Result<(), ThemeError> {
@@ -182,3 +280,5 @@ pub(super) fn resolve(value: &Value, vars: &Value) -> Result<ColorValue, ThemeEr
     }
     authored(current)
 }
+#[cfg(test)]
+mod tests;

@@ -1,0 +1,2517 @@
+[
+  {
+    "name": "notifications",
+    "input": {
+      "event": "session_start"
+    },
+    "output": {
+      "output": {
+        "trace": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e"
+        ],
+        "returned": "absent"
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "session_start",
+          "error": "first",
+          "stack": true
+        },
+        {
+          "extensionPath": "<extension:0>",
+          "event": "session_start",
+          "error": "middle",
+          "stack": true
+        },
+        {
+          "extensionPath": "<extension:1>",
+          "event": "session_start",
+          "error": "last",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "notifications",
+    "input": {
+      "event": "session_compact"
+    },
+    "output": {
+      "output": {
+        "trace": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e"
+        ],
+        "returned": "absent"
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "session_compact",
+          "error": "first",
+          "stack": true
+        },
+        {
+          "extensionPath": "<extension:0>",
+          "event": "session_compact",
+          "error": "middle",
+          "stack": true
+        },
+        {
+          "extensionPath": "<extension:1>",
+          "event": "session_compact",
+          "error": "last",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "notifications",
+    "input": {
+      "event": "session_shutdown"
+    },
+    "output": {
+      "output": {
+        "trace": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e"
+        ],
+        "returned": "absent"
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "session_shutdown",
+          "error": "first",
+          "stack": true
+        },
+        {
+          "extensionPath": "<extension:0>",
+          "event": "session_shutdown",
+          "error": "middle",
+          "stack": true
+        },
+        {
+          "extensionPath": "<extension:1>",
+          "event": "session_shutdown",
+          "error": "last",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "notifications",
+    "input": {
+      "event": "session_tree"
+    },
+    "output": {
+      "output": {
+        "trace": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e"
+        ],
+        "returned": "absent"
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "session_tree",
+          "error": "first",
+          "stack": true
+        },
+        {
+          "extensionPath": "<extension:0>",
+          "event": "session_tree",
+          "error": "middle",
+          "stack": true
+        },
+        {
+          "extensionPath": "<extension:1>",
+          "event": "session_tree",
+          "error": "last",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "notifications",
+    "input": {
+      "event": "after_provider_response"
+    },
+    "output": {
+      "output": {
+        "trace": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e"
+        ],
+        "returned": "absent"
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "after_provider_response",
+          "error": "first",
+          "stack": true
+        },
+        {
+          "extensionPath": "<extension:0>",
+          "event": "after_provider_response",
+          "error": "middle",
+          "stack": true
+        },
+        {
+          "extensionPath": "<extension:1>",
+          "event": "after_provider_response",
+          "error": "last",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "notifications",
+    "input": {
+      "event": "agent_start"
+    },
+    "output": {
+      "output": {
+        "trace": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e"
+        ],
+        "returned": "absent"
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "agent_start",
+          "error": "first",
+          "stack": true
+        },
+        {
+          "extensionPath": "<extension:0>",
+          "event": "agent_start",
+          "error": "middle",
+          "stack": true
+        },
+        {
+          "extensionPath": "<extension:1>",
+          "event": "agent_start",
+          "error": "last",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "notifications",
+    "input": {
+      "event": "agent_end"
+    },
+    "output": {
+      "output": {
+        "trace": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e"
+        ],
+        "returned": "absent"
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "agent_end",
+          "error": "first",
+          "stack": true
+        },
+        {
+          "extensionPath": "<extension:0>",
+          "event": "agent_end",
+          "error": "middle",
+          "stack": true
+        },
+        {
+          "extensionPath": "<extension:1>",
+          "event": "agent_end",
+          "error": "last",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "notifications",
+    "input": {
+      "event": "turn_start"
+    },
+    "output": {
+      "output": {
+        "trace": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e"
+        ],
+        "returned": "absent"
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "turn_start",
+          "error": "first",
+          "stack": true
+        },
+        {
+          "extensionPath": "<extension:0>",
+          "event": "turn_start",
+          "error": "middle",
+          "stack": true
+        },
+        {
+          "extensionPath": "<extension:1>",
+          "event": "turn_start",
+          "error": "last",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "notifications",
+    "input": {
+      "event": "turn_end"
+    },
+    "output": {
+      "output": {
+        "trace": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e"
+        ],
+        "returned": "absent"
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "turn_end",
+          "error": "first",
+          "stack": true
+        },
+        {
+          "extensionPath": "<extension:0>",
+          "event": "turn_end",
+          "error": "middle",
+          "stack": true
+        },
+        {
+          "extensionPath": "<extension:1>",
+          "event": "turn_end",
+          "error": "last",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "notifications",
+    "input": {
+      "event": "message_start"
+    },
+    "output": {
+      "output": {
+        "trace": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e"
+        ],
+        "returned": "absent"
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "message_start",
+          "error": "first",
+          "stack": true
+        },
+        {
+          "extensionPath": "<extension:0>",
+          "event": "message_start",
+          "error": "middle",
+          "stack": true
+        },
+        {
+          "extensionPath": "<extension:1>",
+          "event": "message_start",
+          "error": "last",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "notifications",
+    "input": {
+      "event": "message_update"
+    },
+    "output": {
+      "output": {
+        "trace": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e"
+        ],
+        "returned": "absent"
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "message_update",
+          "error": "first",
+          "stack": true
+        },
+        {
+          "extensionPath": "<extension:0>",
+          "event": "message_update",
+          "error": "middle",
+          "stack": true
+        },
+        {
+          "extensionPath": "<extension:1>",
+          "event": "message_update",
+          "error": "last",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "notifications",
+    "input": {
+      "event": "tool_execution_start"
+    },
+    "output": {
+      "output": {
+        "trace": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e"
+        ],
+        "returned": "absent"
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "tool_execution_start",
+          "error": "first",
+          "stack": true
+        },
+        {
+          "extensionPath": "<extension:0>",
+          "event": "tool_execution_start",
+          "error": "middle",
+          "stack": true
+        },
+        {
+          "extensionPath": "<extension:1>",
+          "event": "tool_execution_start",
+          "error": "last",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "notifications",
+    "input": {
+      "event": "tool_execution_update"
+    },
+    "output": {
+      "output": {
+        "trace": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e"
+        ],
+        "returned": "absent"
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "tool_execution_update",
+          "error": "first",
+          "stack": true
+        },
+        {
+          "extensionPath": "<extension:0>",
+          "event": "tool_execution_update",
+          "error": "middle",
+          "stack": true
+        },
+        {
+          "extensionPath": "<extension:1>",
+          "event": "tool_execution_update",
+          "error": "last",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "notifications",
+    "input": {
+      "event": "tool_execution_end"
+    },
+    "output": {
+      "output": {
+        "trace": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e"
+        ],
+        "returned": "absent"
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "tool_execution_end",
+          "error": "first",
+          "stack": true
+        },
+        {
+          "extensionPath": "<extension:0>",
+          "event": "tool_execution_end",
+          "error": "middle",
+          "stack": true
+        },
+        {
+          "extensionPath": "<extension:1>",
+          "event": "tool_execution_end",
+          "error": "last",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "notifications",
+    "input": {
+      "event": "model_select"
+    },
+    "output": {
+      "output": {
+        "trace": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e"
+        ],
+        "returned": "absent"
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "model_select",
+          "error": "first",
+          "stack": true
+        },
+        {
+          "extensionPath": "<extension:0>",
+          "event": "model_select",
+          "error": "middle",
+          "stack": true
+        },
+        {
+          "extensionPath": "<extension:1>",
+          "event": "model_select",
+          "error": "last",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "notifications",
+    "input": {
+      "event": "thinking_level_select"
+    },
+    "output": {
+      "output": {
+        "trace": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e"
+        ],
+        "returned": "absent"
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "thinking_level_select",
+          "error": "first",
+          "stack": true
+        },
+        {
+          "extensionPath": "<extension:0>",
+          "event": "thinking_level_select",
+          "error": "middle",
+          "stack": true
+        },
+        {
+          "extensionPath": "<extension:1>",
+          "event": "thinking_level_select",
+          "error": "last",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "session-veto",
+    "input": {
+      "event": "session_before_switch",
+      "outcome": "last"
+    },
+    "output": {
+      "output": {
+        "result": {
+          "cancel": false,
+          "tag": "last"
+        },
+        "trace": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e"
+        ],
+        "signalIdentity": true,
+        "preparation": {
+          "summary": "retained"
+        }
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "session_before_switch",
+          "error": "veto fault",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "session-veto",
+    "input": {
+      "event": "session_before_switch",
+      "outcome": "cancel"
+    },
+    "output": {
+      "output": {
+        "result": {
+          "cancel": true,
+          "tag": "stop"
+        },
+        "trace": [
+          "a",
+          "b",
+          "c",
+          "d"
+        ],
+        "signalIdentity": true,
+        "preparation": {
+          "summary": "retained"
+        }
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "session_before_switch",
+          "error": "veto fault",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "session-veto",
+    "input": {
+      "event": "session_before_fork",
+      "outcome": "last"
+    },
+    "output": {
+      "output": {
+        "result": {
+          "cancel": false,
+          "tag": "last"
+        },
+        "trace": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e"
+        ],
+        "signalIdentity": true,
+        "preparation": {
+          "summary": "retained"
+        }
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "session_before_fork",
+          "error": "veto fault",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "session-veto",
+    "input": {
+      "event": "session_before_fork",
+      "outcome": "cancel"
+    },
+    "output": {
+      "output": {
+        "result": {
+          "cancel": true,
+          "tag": "stop"
+        },
+        "trace": [
+          "a",
+          "b",
+          "c",
+          "d"
+        ],
+        "signalIdentity": true,
+        "preparation": {
+          "summary": "retained"
+        }
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "session_before_fork",
+          "error": "veto fault",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "session-veto",
+    "input": {
+      "event": "session_before_compact",
+      "outcome": "last"
+    },
+    "output": {
+      "output": {
+        "result": {
+          "cancel": false,
+          "tag": "last"
+        },
+        "trace": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e"
+        ],
+        "signalIdentity": true,
+        "preparation": {
+          "summary": "retained"
+        }
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "session_before_compact",
+          "error": "veto fault",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "session-veto",
+    "input": {
+      "event": "session_before_compact",
+      "outcome": "cancel"
+    },
+    "output": {
+      "output": {
+        "result": {
+          "cancel": true,
+          "tag": "stop"
+        },
+        "trace": [
+          "a",
+          "b",
+          "c",
+          "d"
+        ],
+        "signalIdentity": true,
+        "preparation": {
+          "summary": "retained"
+        }
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "session_before_compact",
+          "error": "veto fault",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "session-veto",
+    "input": {
+      "event": "session_before_tree",
+      "outcome": "last"
+    },
+    "output": {
+      "output": {
+        "result": {
+          "cancel": false,
+          "tag": "last"
+        },
+        "trace": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e"
+        ],
+        "signalIdentity": true,
+        "preparation": {
+          "summary": "retained"
+        }
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "session_before_tree",
+          "error": "veto fault",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "session-veto",
+    "input": {
+      "event": "session_before_tree",
+      "outcome": "cancel"
+    },
+    "output": {
+      "output": {
+        "result": {
+          "cancel": true,
+          "tag": "stop"
+        },
+        "trace": [
+          "a",
+          "b",
+          "c",
+          "d"
+        ],
+        "signalIdentity": true,
+        "preparation": {
+          "summary": "retained"
+        }
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "session_before_tree",
+          "error": "veto fault",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "shutdown-helper",
+    "input": {
+      "present": false
+    },
+    "output": {
+      "output": {
+        "emitted": false,
+        "trace": []
+      },
+      "errors": []
+    }
+  },
+  {
+    "name": "shutdown-helper",
+    "input": {
+      "present": true
+    },
+    "output": {
+      "output": {
+        "emitted": true,
+        "trace": [
+          "failed",
+          "healthy"
+        ]
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "session_shutdown",
+          "error": "shutdown fault",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "live-registration",
+    "input": {
+      "phase": "awaited same collection"
+    },
+    "output": {
+      "trace": [
+        "start",
+        "resumed",
+        "added"
+      ]
+    }
+  },
+  {
+    "name": "context",
+    "input": {
+      "kind": "in-place,throw,replacement"
+    },
+    "output": {
+      "output": {
+        "original": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "original"
+              }
+            ]
+          }
+        ],
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "edited"
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": "tail"
+          },
+          {
+            "role": "assistant",
+            "content": "replaced"
+          }
+        ]
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "context",
+          "error": "after mutation",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "context",
+    "input": {
+      "kind": "empty replacement"
+    },
+    "output": {
+      "messages": []
+    }
+  },
+  {
+    "name": "context-rebinding",
+    "input": {
+      "returned": "absent"
+    },
+    "output": {
+      "output": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "original"
+          }
+        ],
+        "seen": [
+          "original"
+        ]
+      },
+      "errors": []
+    }
+  },
+  {
+    "name": "payload",
+    "input": {
+      "values": [
+        "null",
+        "false",
+        "zero",
+        "empty text",
+        "empty array",
+        "empty object",
+        "absent"
+      ]
+    },
+    "output": {
+      "output": {
+        "payload": {},
+        "seen": [
+          {
+            "initial": true
+          },
+          null,
+          false,
+          0,
+          "",
+          "nonempty",
+          [],
+          {}
+        ]
+      },
+      "errors": []
+    }
+  },
+  {
+    "name": "payload-rebinding",
+    "input": {
+      "returned": "error"
+    },
+    "output": {
+      "output": {
+        "payload": {
+          "nested": {
+            "flag": "mutated"
+          }
+        },
+        "original": {
+          "nested": {
+            "flag": "mutated"
+          }
+        },
+        "sameIdentity": true
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "before_provider_request",
+          "error": "after edit",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "before-agent",
+    "input": {
+      "kind": "empty prompt and messages"
+    },
+    "output": {
+      "output": {
+        "result": {
+          "messages": [
+            {
+              "customType": "first",
+              "content": "one",
+              "display": true
+            },
+            {
+              "customType": "second",
+              "content": "two",
+              "display": false
+            }
+          ],
+          "systemPrompt": "final"
+        },
+        "seen": [
+          [
+            "initial",
+            "initial"
+          ],
+          [
+            "",
+            ""
+          ]
+        ]
+      },
+      "errors": []
+    }
+  },
+  {
+    "name": "concurrent-prompts",
+    "input": {
+      "initial": [
+        "alpha",
+        "beta"
+      ]
+    },
+    "output": {
+      "first": {
+        "systemPrompt": "alpha!"
+      },
+      "second": {
+        "systemPrompt": "beta!"
+      },
+      "seen": [
+        "alpha"
+      ]
+    }
+  },
+  {
+    "name": "message-end",
+    "input": {
+      "mode": "none"
+    },
+    "output": {
+      "output": {
+        "message": null,
+        "modified": false,
+        "original": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "original"
+            }
+          ],
+          "signature": "kept",
+          "extra": {
+            "x": 2
+          }
+        }
+      },
+      "errors": []
+    }
+  },
+  {
+    "name": "message-end",
+    "input": {
+      "mode": "same"
+    },
+    "output": {
+      "output": {
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "original"
+            }
+          ],
+          "signature": "kept",
+          "extra": {
+            "x": 2
+          }
+        },
+        "modified": true,
+        "original": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "original"
+            }
+          ],
+          "signature": "kept",
+          "extra": {
+            "x": 2
+          }
+        }
+      },
+      "errors": []
+    }
+  },
+  {
+    "name": "message-end",
+    "input": {
+      "mode": "replace"
+    },
+    "output": {
+      "output": {
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "new"
+            }
+          ],
+          "signature": "kept",
+          "extra": {
+            "x": 2
+          }
+        },
+        "modified": true,
+        "original": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "original"
+            }
+          ],
+          "signature": "kept",
+          "extra": {
+            "x": 2
+          }
+        }
+      },
+      "errors": []
+    }
+  },
+  {
+    "name": "message-end",
+    "input": {
+      "mode": "wrong-role"
+    },
+    "output": {
+      "output": {
+        "message": null,
+        "modified": false,
+        "original": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "original"
+            }
+          ],
+          "signature": "kept",
+          "extra": {
+            "x": 2
+          }
+        }
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "message_end",
+          "error": "message_end handlers must return a message with the same role",
+          "stack": false
+        }
+      ]
+    }
+  },
+  {
+    "name": "input",
+    "input": {
+      "edit": "omitted"
+    },
+    "output": {
+      "output": {
+        "result": {
+          "action": "continue"
+        },
+        "trace": [
+          "first",
+          "second"
+        ],
+        "originalImages": [
+          {
+            "type": "image",
+            "data": "old",
+            "mimeType": "image/png"
+          }
+        ]
+      },
+      "errors": []
+    }
+  },
+  {
+    "name": "input",
+    "input": {
+      "edit": "null"
+    },
+    "output": {
+      "output": {
+        "result": {
+          "action": "continue"
+        },
+        "trace": [
+          "first",
+          "second"
+        ],
+        "originalImages": [
+          {
+            "type": "image",
+            "data": "old",
+            "mimeType": "image/png"
+          }
+        ]
+      },
+      "errors": []
+    }
+  },
+  {
+    "name": "input",
+    "input": {
+      "edit": "empty"
+    },
+    "output": {
+      "output": {
+        "result": {
+          "action": "transform",
+          "text": "original",
+          "images": []
+        },
+        "trace": [
+          "first",
+          "second"
+        ],
+        "originalImages": [
+          {
+            "type": "image",
+            "data": "old",
+            "mimeType": "image/png"
+          }
+        ]
+      },
+      "errors": []
+    }
+  },
+  {
+    "name": "input",
+    "input": {
+      "edit": "equal"
+    },
+    "output": {
+      "output": {
+        "result": {
+          "action": "transform",
+          "text": "original",
+          "images": [
+            {
+              "type": "image",
+              "data": "old",
+              "mimeType": "image/png"
+            }
+          ]
+        },
+        "trace": [
+          "first",
+          "second"
+        ],
+        "originalImages": [
+          {
+            "type": "image",
+            "data": "old",
+            "mimeType": "image/png"
+          }
+        ]
+      },
+      "errors": []
+    }
+  },
+  {
+    "name": "input",
+    "input": {
+      "edit": "same"
+    },
+    "output": {
+      "output": {
+        "result": {
+          "action": "continue"
+        },
+        "trace": [
+          "first",
+          "second"
+        ],
+        "originalImages": [
+          {
+            "type": "image",
+            "data": "old",
+            "mimeType": "image/png"
+          }
+        ]
+      },
+      "errors": []
+    }
+  },
+  {
+    "name": "input",
+    "input": {
+      "edit": "different"
+    },
+    "output": {
+      "output": {
+        "result": {
+          "action": "transform",
+          "text": "original",
+          "images": [
+            {
+              "type": "image",
+              "data": "new",
+              "mimeType": "image/png"
+            }
+          ]
+        },
+        "trace": [
+          "first",
+          "second"
+        ],
+        "originalImages": [
+          {
+            "type": "image",
+            "data": "old",
+            "mimeType": "image/png"
+          }
+        ]
+      },
+      "errors": []
+    }
+  },
+  {
+    "name": "input",
+    "input": {
+      "edit": "text-reverted"
+    },
+    "output": {
+      "output": {
+        "result": {
+          "action": "continue"
+        },
+        "trace": [
+          "first",
+          "second"
+        ],
+        "originalImages": [
+          {
+            "type": "image",
+            "data": "old",
+            "mimeType": "image/png"
+          }
+        ]
+      },
+      "errors": []
+    }
+  },
+  {
+    "name": "input",
+    "input": {
+      "edit": "handled"
+    },
+    "output": {
+      "output": {
+        "result": {
+          "action": "handled"
+        },
+        "trace": [
+          "first"
+        ],
+        "originalImages": [
+          {
+            "type": "image",
+            "data": "old",
+            "mimeType": "image/png"
+          }
+        ]
+      },
+      "errors": []
+    }
+  },
+  {
+    "name": "input",
+    "input": {
+      "edit": "error"
+    },
+    "output": {
+      "output": {
+        "result": {
+          "action": "continue"
+        },
+        "trace": [
+          "first",
+          "second"
+        ],
+        "originalImages": [
+          {
+            "type": "image",
+            "data": "old",
+            "mimeType": "image/png"
+          }
+        ]
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "input",
+          "error": "input fault",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "input",
+    "input": {
+      "edit": "equal-empty-new-identity"
+    },
+    "output": {
+      "output": {
+        "result": {
+          "action": "transform",
+          "text": "original",
+          "images": []
+        }
+      },
+      "errors": []
+    }
+  },
+  {
+    "name": "input",
+    "input": {
+      "edit": "mutate-same-list-return-continue"
+    },
+    "output": {
+      "output": {
+        "result": {
+          "action": "continue"
+        },
+        "originalImages": [
+          {
+            "type": "image",
+            "data": "old",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "image",
+            "data": "mutated",
+            "mimeType": "image/png"
+          }
+        ]
+      },
+      "errors": []
+    }
+  },
+  {
+    "name": "tool-call",
+    "input": {
+      "outcome": "last"
+    },
+    "output": {
+      "output": {
+        "result": {},
+        "thrown": null,
+        "trace": [
+          "first",
+          "after",
+          "later"
+        ],
+        "input": {
+          "path": "after"
+        }
+      },
+      "errors": []
+    }
+  },
+  {
+    "name": "tool-call",
+    "input": {
+      "outcome": "block"
+    },
+    "output": {
+      "output": {
+        "result": {
+          "block": true,
+          "reason": "stop"
+        },
+        "thrown": null,
+        "trace": [
+          "first",
+          "after"
+        ],
+        "input": {
+          "path": "after"
+        }
+      },
+      "errors": []
+    }
+  },
+  {
+    "name": "tool-call",
+    "input": {
+      "outcome": "throw"
+    },
+    "output": {
+      "output": {
+        "result": null,
+        "thrown": "tool fault",
+        "trace": [
+          "first",
+          "after"
+        ],
+        "input": {
+          "path": "after"
+        }
+      },
+      "errors": []
+    }
+  },
+  {
+    "name": "tool-result",
+    "input": {
+      "mode": "none"
+    },
+    "output": {
+      "output": {
+        "result": null,
+        "modified": false,
+        "original": {
+          "type": "tool_result",
+          "toolName": "read",
+          "toolCallId": "id",
+          "input": {
+            "path": "original"
+          },
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "details": {
+            "old": true
+          },
+          "isError": true
+        }
+      },
+      "errors": []
+    }
+  },
+  {
+    "name": "tool-result",
+    "input": {
+      "mode": "empty"
+    },
+    "output": {
+      "output": {
+        "result": null,
+        "modified": false,
+        "original": {
+          "type": "tool_result",
+          "toolName": "read",
+          "toolCallId": "id",
+          "input": {
+            "path": "original"
+          },
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "details": {
+            "old": true
+          },
+          "isError": true
+        }
+      },
+      "errors": []
+    }
+  },
+  {
+    "name": "tool-result",
+    "input": {
+      "mode": "content"
+    },
+    "output": {
+      "output": {
+        "result": {
+          "content": [],
+          "details": {
+            "old": true
+          },
+          "isError": true
+        },
+        "modified": true,
+        "original": {
+          "type": "tool_result",
+          "toolName": "read",
+          "toolCallId": "id",
+          "input": {
+            "path": "original"
+          },
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "details": {
+            "old": true
+          },
+          "isError": true
+        }
+      },
+      "errors": []
+    }
+  },
+  {
+    "name": "tool-result",
+    "input": {
+      "mode": "all-fields"
+    },
+    "output": {
+      "output": {
+        "result": {
+          "content": [],
+          "details": null,
+          "isError": false
+        },
+        "modified": true,
+        "original": {
+          "type": "tool_result",
+          "toolName": "read",
+          "toolCallId": "id",
+          "input": {
+            "path": "original"
+          },
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "details": {
+            "old": true
+          },
+          "isError": true
+        }
+      },
+      "errors": []
+    }
+  },
+  {
+    "name": "tool-result",
+    "input": {
+      "mode": "partial-after-error"
+    },
+    "output": {
+      "output": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "after"
+            }
+          ],
+          "details": null,
+          "isError": true
+        },
+        "modified": true,
+        "original": {
+          "type": "tool_result",
+          "toolName": "read",
+          "toolCallId": "id",
+          "input": {
+            "path": "original"
+          },
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "details": {
+            "old": true
+          },
+          "isError": true
+        }
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "tool_result",
+          "error": "patch fault",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "resources",
+    "input": {
+      "reason": "reload"
+    },
+    "output": {
+      "output": {
+        "skillPaths": [
+          {
+            "path": "z",
+            "extensionPath": "<extension:0>"
+          },
+          {
+            "path": "a",
+            "extensionPath": "<extension:0>"
+          },
+          {
+            "path": "z",
+            "extensionPath": "<extension:0>"
+          },
+          {
+            "path": "a",
+            "extensionPath": "<extension:1>"
+          }
+        ],
+        "promptPaths": [
+          {
+            "path": "p",
+            "extensionPath": "<extension:1>"
+          }
+        ],
+        "themePaths": [
+          {
+            "path": "theme",
+            "extensionPath": "<extension:0>"
+          }
+        ]
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:1>",
+          "event": "resources_discover",
+          "error": "resource fault",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "user-bash",
+    "input": {
+      "mode": "none"
+    },
+    "output": {
+      "output": {
+        "result": null,
+        "trace": [
+          "failed",
+          "winner",
+          "later"
+        ]
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "user_bash",
+          "error": "shell fault",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "user-bash",
+    "input": {
+      "mode": "empty"
+    },
+    "output": {
+      "output": {
+        "result": {},
+        "trace": [
+          "failed",
+          "winner"
+        ]
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "user_bash",
+          "error": "shell fault",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "user-bash",
+    "input": {
+      "mode": "result"
+    },
+    "output": {
+      "output": {
+        "result": {
+          "result": {
+            "output": "replacement",
+            "exitCode": 0,
+            "cancelled": false,
+            "truncated": false
+          }
+        },
+        "trace": [
+          "failed",
+          "winner"
+        ]
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "user_bash",
+          "error": "shell fault",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "user-bash",
+    "input": {
+      "mode": "operations"
+    },
+    "output": {
+      "output": {
+        "result": {
+          "operations": "retained invoked handle"
+        },
+        "trace": [
+          "failed",
+          "winner",
+          "executed"
+        ]
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "user_bash",
+          "error": "shell fault",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "work-count",
+    "input": {
+      "n": 16
+    },
+    "output": {
+      "calls": 16
+    }
+  },
+  {
+    "name": "work-count",
+    "input": {
+      "n": 32
+    },
+    "output": {
+      "calls": 32
+    }
+  },
+  {
+    "name": "notification-live",
+    "input": {
+      "event": "session_start"
+    },
+    "output": {
+      "trace": [
+        "start",
+        "resumed",
+        "added"
+      ]
+    }
+  },
+  {
+    "name": "notification-live",
+    "input": {
+      "event": "session_compact"
+    },
+    "output": {
+      "trace": [
+        "start",
+        "resumed",
+        "added"
+      ]
+    }
+  },
+  {
+    "name": "notification-live",
+    "input": {
+      "event": "session_shutdown"
+    },
+    "output": {
+      "trace": [
+        "start",
+        "resumed",
+        "added"
+      ]
+    }
+  },
+  {
+    "name": "notification-live",
+    "input": {
+      "event": "session_tree"
+    },
+    "output": {
+      "trace": [
+        "start",
+        "resumed",
+        "added"
+      ]
+    }
+  },
+  {
+    "name": "notification-live",
+    "input": {
+      "event": "after_provider_response"
+    },
+    "output": {
+      "trace": [
+        "start",
+        "resumed",
+        "added"
+      ]
+    }
+  },
+  {
+    "name": "notification-live",
+    "input": {
+      "event": "agent_start"
+    },
+    "output": {
+      "trace": [
+        "start",
+        "resumed",
+        "added"
+      ]
+    }
+  },
+  {
+    "name": "notification-live",
+    "input": {
+      "event": "agent_end"
+    },
+    "output": {
+      "trace": [
+        "start",
+        "resumed",
+        "added"
+      ]
+    }
+  },
+  {
+    "name": "notification-live",
+    "input": {
+      "event": "turn_start"
+    },
+    "output": {
+      "trace": [
+        "start",
+        "resumed",
+        "added"
+      ]
+    }
+  },
+  {
+    "name": "notification-live",
+    "input": {
+      "event": "turn_end"
+    },
+    "output": {
+      "trace": [
+        "start",
+        "resumed",
+        "added"
+      ]
+    }
+  },
+  {
+    "name": "notification-live",
+    "input": {
+      "event": "message_start"
+    },
+    "output": {
+      "trace": [
+        "start",
+        "resumed",
+        "added"
+      ]
+    }
+  },
+  {
+    "name": "notification-live",
+    "input": {
+      "event": "message_update"
+    },
+    "output": {
+      "trace": [
+        "start",
+        "resumed",
+        "added"
+      ]
+    }
+  },
+  {
+    "name": "notification-live",
+    "input": {
+      "event": "tool_execution_start"
+    },
+    "output": {
+      "trace": [
+        "start",
+        "resumed",
+        "added"
+      ]
+    }
+  },
+  {
+    "name": "notification-live",
+    "input": {
+      "event": "tool_execution_update"
+    },
+    "output": {
+      "trace": [
+        "start",
+        "resumed",
+        "added"
+      ]
+    }
+  },
+  {
+    "name": "notification-live",
+    "input": {
+      "event": "tool_execution_end"
+    },
+    "output": {
+      "trace": [
+        "start",
+        "resumed",
+        "added"
+      ]
+    }
+  },
+  {
+    "name": "notification-live",
+    "input": {
+      "event": "model_select"
+    },
+    "output": {
+      "trace": [
+        "start",
+        "resumed",
+        "added"
+      ]
+    }
+  },
+  {
+    "name": "notification-live",
+    "input": {
+      "event": "thinking_level_select"
+    },
+    "output": {
+      "trace": [
+        "start",
+        "resumed",
+        "added"
+      ]
+    }
+  },
+  {
+    "name": "session-selected",
+    "input": {
+      "event": "session_before_switch",
+      "variant": "absent"
+    },
+    "output": {
+      "present": false,
+      "result": null
+    }
+  },
+  {
+    "name": "session-selected",
+    "input": {
+      "event": "session_before_switch",
+      "variant": "empty"
+    },
+    "output": {
+      "present": true,
+      "result": {}
+    }
+  },
+  {
+    "name": "session-selected",
+    "input": {
+      "event": "session_before_switch",
+      "variant": "false"
+    },
+    "output": {
+      "present": true,
+      "result": {
+        "cancel": false
+      }
+    }
+  },
+  {
+    "name": "session-selected",
+    "input": {
+      "event": "session_before_fork",
+      "variant": "absent"
+    },
+    "output": {
+      "present": false,
+      "result": null
+    }
+  },
+  {
+    "name": "session-selected",
+    "input": {
+      "event": "session_before_fork",
+      "variant": "empty"
+    },
+    "output": {
+      "present": true,
+      "result": {}
+    }
+  },
+  {
+    "name": "session-selected",
+    "input": {
+      "event": "session_before_fork",
+      "variant": "false"
+    },
+    "output": {
+      "present": true,
+      "result": {
+        "cancel": false
+      }
+    }
+  },
+  {
+    "name": "session-selected",
+    "input": {
+      "event": "session_before_compact",
+      "variant": "absent"
+    },
+    "output": {
+      "present": false,
+      "result": null
+    }
+  },
+  {
+    "name": "session-selected",
+    "input": {
+      "event": "session_before_compact",
+      "variant": "empty"
+    },
+    "output": {
+      "present": true,
+      "result": {}
+    }
+  },
+  {
+    "name": "session-selected",
+    "input": {
+      "event": "session_before_compact",
+      "variant": "false"
+    },
+    "output": {
+      "present": true,
+      "result": {
+        "cancel": false
+      }
+    }
+  },
+  {
+    "name": "session-selected",
+    "input": {
+      "event": "session_before_tree",
+      "variant": "absent"
+    },
+    "output": {
+      "present": false,
+      "result": null
+    }
+  },
+  {
+    "name": "session-selected",
+    "input": {
+      "event": "session_before_tree",
+      "variant": "empty"
+    },
+    "output": {
+      "present": true,
+      "result": {}
+    }
+  },
+  {
+    "name": "session-selected",
+    "input": {
+      "event": "session_before_tree",
+      "variant": "false"
+    },
+    "output": {
+      "present": true,
+      "result": {
+        "cancel": false
+      }
+    }
+  },
+  {
+    "name": "before-agent-branches",
+    "input": {
+      "variant": "absent"
+    },
+    "output": {
+      "output": {
+        "present": false,
+        "result": null,
+        "imagesIdentity": true,
+        "optionsIdentity": true,
+        "untrimmedPrompt": true
+      },
+      "errors": []
+    }
+  },
+  {
+    "name": "before-agent-branches",
+    "input": {
+      "variant": "prompt"
+    },
+    "output": {
+      "output": {
+        "present": true,
+        "result": {
+          "systemPrompt": ""
+        },
+        "imagesIdentity": true,
+        "optionsIdentity": true,
+        "untrimmedPrompt": true
+      },
+      "errors": []
+    }
+  },
+  {
+    "name": "before-agent-branches",
+    "input": {
+      "variant": "message"
+    },
+    "output": {
+      "output": {
+        "present": true,
+        "result": {
+          "messages": [
+            {
+              "customType": "notice",
+              "content": "notice text",
+              "display": true
+            }
+          ]
+        },
+        "imagesIdentity": true,
+        "optionsIdentity": true,
+        "untrimmedPrompt": true
+      },
+      "errors": []
+    }
+  },
+  {
+    "name": "before-agent-branches",
+    "input": {
+      "variant": "error-after-message"
+    },
+    "output": {
+      "output": {
+        "present": true,
+        "result": {
+          "messages": [
+            {
+              "customType": "notice",
+              "content": "notice text",
+              "display": true
+            }
+          ]
+        },
+        "imagesIdentity": true,
+        "optionsIdentity": true,
+        "untrimmedPrompt": true
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "before_agent_start",
+          "error": "agent hook fault",
+          "stack": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "payload-zero",
+    "input": {
+      "value": "negative zero"
+    },
+    "output": {
+      "negativeZero": true
+    }
+  },
+  {
+    "name": "payload-order",
+    "input": {
+      "keys": [
+        "z",
+        "a"
+      ]
+    },
+    "output": {
+      "keys": [
+        "z",
+        "a"
+      ],
+      "negativeZero": true,
+      "payload": {
+        "z": 0,
+        "a": [
+          null,
+          false,
+          0,
+          "",
+          {},
+          []
+        ]
+      }
+    }
+  },
+  {
+    "name": "abort-in-hook",
+    "input": {
+      "event": "session_before_compact"
+    },
+    "output": {
+      "seen": [
+        true
+      ],
+      "result": {
+        "cancel": false
+      }
+    }
+  },
+  {
+    "name": "abort-in-hook",
+    "input": {
+      "event": "session_before_tree"
+    },
+    "output": {
+      "seen": [
+        true
+      ],
+      "result": {
+        "cancel": false
+      }
+    }
+  },
+  {
+    "name": "resource-owner-path",
+    "input": {
+      "phase": "changed inside callback"
+    },
+    "output": {
+      "skillPaths": [
+        {
+          "path": "exact",
+          "extensionPath": "<renamed>"
+        }
+      ],
+      "promptPaths": [],
+      "themePaths": []
+    }
+  },
+  {
+    "name": "input",
+    "input": {
+      "edit": "empty text"
+    },
+    "output": {
+      "action": "transform",
+      "text": ""
+    }
+  },
+  {
+    "name": "reporter-failure",
+    "input": {
+      "event": "agent_start"
+    },
+    "output": {
+      "error": "listener failure",
+      "seen": []
+    }
+  },
+  {
+    "name": "authored-stack",
+    "input": {
+      "event": "agent_start"
+    },
+    "output": {
+      "output": {
+        "completed": true
+      },
+      "errors": [
+        {
+          "extensionPath": "<extension:0>",
+          "event": "agent_start",
+          "error": "owned diagnostic",
+          "stack": "owned stack"
+        }
+      ]
+    }
+  }
+]

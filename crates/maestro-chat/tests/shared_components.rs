@@ -165,6 +165,227 @@ fn border_uses_live_theme_but_custom_color_needs_no_theme() {
 }
 
 #[test]
+fn extension_widget_host_builds_widgets_over_the_live_theme_and_terminal() {
+    use maestro_app::ExtensionWidgets;
+    use maestro_tui::{Markdown, MarkdownOptions};
+    let (state, live) = published::published(&colors(31, 32, 33, 34));
+    let highlighter = Rc::new(maestro_theme::SyntectHighlighter::new().unwrap());
+    let terminal = TerminalImage::new(|_| None, || 1);
+    let host =
+        maestro_chat::ExtensionWidgetHost::new(live.clone(), highlighter.clone(), terminal.clone());
+    let border = host.dynamic_border(None);
+    let application = DynamicBorder::new(live.clone(), None);
+    assert_eq!(border.render(4), application.render(4));
+    state.set_theme_instance(colors(35, 36, 37, 38)).unwrap();
+    assert_eq!(
+        border.render(4),
+        application.render(4),
+        "the border follows the live theme"
+    );
+    let painted = host.dynamic_border(Some(Rc::new(|text| format!("[{text}]"))));
+    assert_eq!(painted.render(2), ["[──]"]);
+    let options = || MarkdownOptions {
+        clean_content: false,
+        padding_x: 1,
+        padding_y: 0,
+        default_text_style: None,
+    };
+    let text = "# Title\n\n```rust\nfn main() {}\n```";
+    let built = host.markdown(text.into(), options(), Rc::new(host.markdown_theme()));
+    let theme = maestro_theme::get_markdown_theme(live, highlighter, true);
+    let direct = Markdown::new(text.into(), options(), Rc::new(theme), terminal);
+    assert_eq!(
+        built.render(24),
+        direct.render(24),
+        "the toolkit Markdown with the live styles"
+    );
+}
+
+#[test]
+fn extension_widget_host_builds_application_loaders_and_list_styles() {
+    use maestro_app::ExtensionWidgets;
+    let (_state, live) = published::published(&colors(31, 32, 33, 34));
+    let highlighter = Rc::new(maestro_theme::SyntectHighlighter::new().unwrap());
+    let host = maestro_chat::ExtensionWidgetHost::new(
+        live.clone(),
+        highlighter,
+        TerminalImage::new(|_| None, || 1),
+    );
+    let runtime = ManualRuntime::new();
+    let tui = writer(&runtime);
+    let theme = live.get().unwrap();
+    for cancellable in [true, false] {
+        let loader = host
+            .bordered_loader(&tui, theme.clone(), "Working".into(), cancellable)
+            .unwrap();
+        let options = maestro_chat::BorderedLoaderOptions { cancellable };
+        let direct = maestro_chat::BorderedLoader::new(
+            &tui,
+            theme.clone(),
+            "Working".into(),
+            options,
+            &live,
+        )
+        .unwrap();
+        assert_eq!(
+            loader.render(30),
+            direct.render(30),
+            "the application's loader"
+        );
+        loader.dispose();
+        direct.dispose();
+    }
+    let loader = host
+        .bordered_loader(&tui, theme, "Working".into(), true)
+        .unwrap();
+    let aborted = Rc::new(Cell::new(false));
+    let seen = aborted.clone();
+    loader.set_on_abort(Some(Rc::new(move || seen.set(true))));
+    loader.input_handler().unwrap().handle_input("\u{1b}");
+    assert!(
+        loader.signal().is_aborted() && aborted.get(),
+        "escape cancels the loader"
+    );
+    assert_eq!(
+        loader.rows().children().borrow().len(),
+        6,
+        "borders, loader, hint and spacers"
+    );
+    let select = host.select_list_theme();
+    let direct = maestro_theme::get_select_list_theme(live.clone());
+    assert_eq!((select.selected_text)("x"), (direct.selected_text)("x"));
+    let settings = host.settings_list_theme();
+    let direct = maestro_theme::get_settings_list_theme(live);
+    assert_eq!((settings.value)("x", false), (direct.value)("x", false));
+    assert_eq!(settings.cursor, direct.cursor);
+}
+
+#[test]
+fn extension_widget_host_lends_application_keybindings_hints_and_editor_styles() {
+    use maestro_app::ExtensionWidgets;
+    let (_state, live) = published::published(&colors(31, 32, 33, 34));
+    let highlighter = Rc::new(maestro_theme::SyntectHighlighter::new().unwrap());
+    let host = maestro_chat::ExtensionWidgetHost::new(
+        live.clone(),
+        highlighter,
+        TerminalImage::new(|_| None, || 1),
+    );
+    assert_application_keybindings(&host);
+    let hint = host.key_hint("tui.select.up", "up").unwrap();
+    assert_eq!(
+        hint,
+        maestro_app::key_hint("tui.select.up", "up", &live).unwrap()
+    );
+    let raw = host.raw_key_hint("esc", "back").unwrap();
+    assert_eq!(
+        raw,
+        maestro_app::raw_key_hint("esc", "back", &live).unwrap()
+    );
+    let theme = host.editor_theme();
+    let direct = maestro_theme::get_editor_theme(live);
+    assert_eq!((theme.border_color)("x"), (direct.border_color)("x"));
+}
+
+/// The supplied managers retain their own file, overrides and effective snapshots.
+fn assert_application_keybindings(host: &dyn maestro_app::ExtensionWidgets) {
+    use maestro_tui::KeybindingKeys;
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let dir = scratch.path().to_str().unwrap().to_owned();
+    let user = vec![(
+        "tui.select.up".to_owned(),
+        Some(KeybindingKeys::Single("f3".to_owned())),
+    )];
+    let keybindings = host.keybindings(user.clone(), None);
+    assert_eq!(keybindings.get_user_bindings(), user);
+    assert_eq!(keybindings.get_keys("tui.select.up"), ["f3"]);
+    keybindings.reload();
+    assert_eq!(
+        keybindings.get_user_bindings(),
+        user,
+        "no file keeps the bindings"
+    );
+    let created = host.create_keybindings(Some(dir.clone())).unwrap();
+    assert_eq!(created.get_keys("tui.select.up"), ["up"]);
+    let retained = created.clone();
+    let mut snapshot = retained.get_effective_config();
+    snapshot.clear();
+    let path = format!("{dir}/keybindings.json");
+    std::fs::write(&path, r#"{"tui.select.up":"f9"}"#).unwrap();
+    drop(created);
+    retained.reload();
+    assert_eq!(
+        retained.get_keys("tui.select.up"),
+        ["f9"],
+        "reloads its file"
+    );
+    assert!(retained.get_effective_config().contains(&(
+        "tui.select.up".into(),
+        Some(KeybindingKeys::Single("f9".into()))
+    )));
+    let explicit = host.keybindings(user, Some(path.clone()));
+    assert_eq!(
+        explicit.get_keys("tui.select.up"),
+        ["f3"],
+        "constructor is inert"
+    );
+    explicit.reload();
+    assert_eq!(explicit.get_keys("tui.select.up"), ["f9"]);
+    std::fs::write(path, r#"{"tui.select.up":[]}"#).unwrap();
+    explicit.reload();
+    assert!(explicit.get_keys("tui.select.up").is_empty());
+    assert_eq!(
+        retained.get_keys("tui.select.up"),
+        ["f9"],
+        "independent manager"
+    );
+    assert_eq!(
+        keybindings.get_keys("tui.select.up"),
+        ["f3"],
+        "pathless manager"
+    );
+}
+
+#[test]
+fn extension_widget_host_builds_the_application_custom_editor() {
+    use maestro_app::ExtensionWidgets;
+    let (_state, live) = published::published(&colors(31, 32, 33, 34));
+    let highlighter = Rc::new(maestro_theme::SyntectHighlighter::new().unwrap());
+    let host = maestro_chat::ExtensionWidgetHost::new(
+        live,
+        highlighter,
+        TerminalImage::new(|_| None, || 1),
+    );
+    let runtime = ManualRuntime::new();
+    let tui = writer(&runtime);
+    let keybindings = host.keybindings(Vec::new(), None).manager;
+    let options = maestro_tui::EditorOptions {
+        padding_x: Some(2.0),
+        autocomplete_max_visible: None,
+    };
+    let editor = host.custom_editor(&tui, host.editor_theme(), keybindings, options);
+    assert_eq!(
+        editor.editor().get_padding_x().to_bits(),
+        2.0_f64.to_bits(),
+        "the options reach the editor"
+    );
+    let interrupted = Rc::new(Cell::new(0));
+    let seen = interrupted.clone();
+    let handler: Rc<dyn Fn()> = Rc::new(move || seen.set(seen.get() + 1));
+    editor
+        .action_handlers()
+        .borrow_mut()
+        .insert("app.interrupt".to_owned(), handler);
+    editor.input_handler().unwrap().handle_input("\u{1b}");
+    assert_eq!(
+        interrupted.get(),
+        1,
+        "the application's interrupt action runs"
+    );
+    editor.input_handler().unwrap().handle_input("x");
+    assert_eq!(editor.get_text(), "x", "other input edits");
+}
+
+#[test]
 fn border_returns_painter_output_without_preserving_rule_glyphs() {
     let state = published::unpublished();
     let border = DynamicBorder::new(state.theme(), Some(Rc::new(|text| text.replace('─', "="))));

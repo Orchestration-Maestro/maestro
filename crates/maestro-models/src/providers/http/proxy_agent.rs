@@ -173,7 +173,7 @@ pub(super) fn decode(value: &str) -> std::io::Result<String> {
                 .get(index + 1..index + 3)
                 .is_some_and(|digits| digits.iter().all(u8::is_ascii_hexdigit))
         {
-            return Err(std::io::Error::other("Invalid proxy credential escape"));
+            return Err(std::io::Error::other("Invalid percent escape"));
         }
     }
     percent_encoding::percent_decode_str(value)

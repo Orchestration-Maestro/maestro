@@ -142,6 +142,59 @@ fn text_narrow_viewports_keep_whole_graphemes() -> Result<(), serde_json::Error>
     Ok(())
 }
 
+/// A release notice whose version number carries an inverse blank: a styled blank row keeps its
+/// cell through padding and a width change, and the rows are rebuilt when the text is replaced.
+#[test]
+fn text_retains_visible_styled_blank_rows() {
+    let dark = "\u{1b}[1m\u{1b}[38;2;255;255;0mUpdate Available\u{1b}[39m\u{1b}[22m\n\
+                \u{1b}[38;2;128;128;128mNew version \u{1b}[7m \u{1b}[27m is available. Run \
+                \u{1b}[39m\u{1b}[38;2;138;190;183mmaestro update\u{1b}[39m";
+    let light = "\u{1b}[1m\u{1b}[38;2;154;115;38mUpdate Available\u{1b}[39m\u{1b}[22m\n\
+                 \u{1b}[38;2;108;108;108mNew version \u{1b}[7m \u{1b}[27m is available. Run \
+                 \u{1b}[39m\u{1b}[38;2;90;128;128mmaestro update\u{1b}[39m";
+    let dark_rows = [
+        " \u{1b}[1m\u{1b}[38;2;255;255;0mUpdate       ",
+        " \u{1b}[1;38;2;255;255;0mAvailable\u{1b}[39m\u{1b}[22m    ",
+        " \u{1b}[38;2;128;128;128mNew version  ",
+        " \u{1b}[38;2;128;128;128m \u{1b}[7m \u{1b}[27m is        ",
+        " \u{1b}[38;2;128;128;128mavailable.   ",
+        " \u{1b}[38;2;128;128;128mRun \u{1b}[39m\u{1b}[38;2;138;190;183mmaestro  ",
+        " \u{1b}[38;2;138;190;183mupdate\u{1b}[39m       ",
+    ];
+    let text = Text::new(dark.to_owned(), 1, 0, None);
+    assert_eq!(text.render(14), dark_rows);
+
+    let light_rows = [
+        " \u{1b}[1m\u{1b}[38;2;154;115;38mUpdate       ",
+        " \u{1b}[1;38;2;154;115;38mAvailable\u{1b}[39m\u{1b}[22m    ",
+        " \u{1b}[38;2;108;108;108mNew version  ",
+        " \u{1b}[38;2;108;108;108m \u{1b}[7m \u{1b}[27m is        ",
+        " \u{1b}[38;2;108;108;108mavailable.   ",
+        " \u{1b}[38;2;108;108;108mRun \u{1b}[39m\u{1b}[38;2;90;128;128mmaestro  ",
+        " \u{1b}[38;2;90;128;128mupdate\u{1b}[39m       ",
+    ];
+    let narrow: Vec<&str> = vec![
+        " \u{1b}[1m\u{1b}[38;2;255;255;0mUpdate ",
+        " \u{1b}[1;38;2;255;255;0mAvaila ",
+        " \u{1b}[1;38;2;255;255;0mble\u{1b}[39m\u{1b}[22m    ",
+        " \u{1b}[38;2;128;128;128mNew    ",
+        " \u{1b}[38;2;128;128;128mversio ",
+        " \u{1b}[38;2;128;128;128mn \u{1b}[7m \u{1b}[27m is ",
+        " \u{1b}[38;2;128;128;128mavaila ",
+        " \u{1b}[38;2;128;128;128mble.   ",
+        " \u{1b}[38;2;128;128;128mRun    ",
+        " \u{1b}[38;2;128;128;128m\u{1b}[39m\u{1b}[38;2;138;190;183mmaestr ",
+        " \u{1b}[38;2;138;190;183mo      ",
+        " \u{1b}[38;2;138;190;183mupdate\u{1b}[39m ",
+    ];
+    assert_eq!(text.render(8), narrow, "a width change re-wraps the blanks");
+
+    text.set_text(light.to_owned());
+    assert_eq!(text.render(14), light_rows, "prepared styling is replaced");
+    text.invalidate();
+    assert_eq!(text.render(14), light_rows, "a repaint keeps the same rows");
+}
+
 /// A child that records the widths it renders at and shows `x` only when it has a cell.
 struct Letter(RefCell<Vec<usize>>);
 
@@ -254,4 +307,84 @@ fn widget_defaults_keep_padding_and_passive_capabilities() {
         assert!(widget.input_handler().is_none() && widget.focusable().is_none());
         assert!(!widget.wants_key_release());
     }
+}
+
+#[test]
+fn text_paints_consecutive_blank_continuations() {
+    for (on, off) in [("\x1b[44m", "\x1b[49m"), ("\x1b[7m", "\x1b[27m")] {
+        let text = Text::new(format!("- {on}   {off}"), 0, 0, None);
+        assert_eq!(
+            text.render(1),
+            [
+                "-".to_owned(),
+                format!(" {on}"),
+                format!("{on} "),
+                format!("{on} "),
+                format!("{on} {off}")
+            ]
+        );
+    }
+    let text = Text::new("- \x1b[4m   \x1b[24m".to_owned(), 0, 0, None);
+    assert_eq!(
+        text.render(1),
+        [
+            "-",
+            "\x1b[4m \x1b[24m",
+            "\x1b[4m \x1b[24m",
+            "\x1b[4m \x1b[24m"
+        ]
+    );
+}
+
+#[test]
+fn text_keeps_filtered_authored_lines_and_metadata() {
+    for marker in ["", "\x1b]133;A\x07", maestro_tui::CURSOR_MARKER] {
+        let text = Text::new(format!("a\n\x1b[31m{marker}  \x1b[39m\nb"), 0, 0, None);
+        assert_eq!(
+            text.render(1),
+            ["a".to_owned(), format!("{marker} "), "b".to_owned()]
+        );
+    }
+}
+
+#[test]
+fn text_keeps_metadata_from_discarded_continuations() {
+    for marker in [maestro_tui::CURSOR_MARKER, "\x1b]133;A\x07"] {
+        let text = Text::new(format!("- \x1b[4m{marker} \x1b[24m"), 0, 0, None);
+        let underlined = text.render(1);
+        text.set_text(format!("\t{marker}a"));
+        assert_eq!(
+            (underlined, text.render(1)),
+            (
+                vec!["-".to_owned(), format!("\x1b[4m{marker} \x1b[24m")],
+                vec![format!("{marker}a")]
+            )
+        );
+    }
+}
+
+/// Asserts the rows `Text` renders for each case, naming every input that differs.
+fn assert_renders(cases: &[crate::ansi_wrapping::BoundaryCase]) {
+    let actual: Vec<_> = cases
+        .iter()
+        .map(|case| {
+            let text = Text::new(case.text.clone(), 0, 0, None);
+            (case.text.as_str(), text.render(case.width))
+        })
+        .collect();
+    let expected: Vec<_> = cases
+        .iter()
+        .map(|case| (case.text.as_str(), case.rendered.clone()))
+        .collect();
+    assert_eq!(actual, expected);
+}
+
+#[test]
+fn text_pads_after_the_authored_boundary_reset() {
+    assert_renders(&crate::ansi_wrapping::boundary_cases());
+}
+
+#[test]
+fn text_paints_no_row_of_inherited_style_alone() {
+    assert_renders(&crate::ansi_wrapping::inherited_style_cases());
 }

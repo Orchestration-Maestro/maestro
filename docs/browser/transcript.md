@@ -1,58 +1,64 @@
 # Browser transcript
 
-## Retained message rows
+## Message rows
 
-`UserMessage`, `AssistantMessage`, `ToolMessage`, `ToolMessageDebugView`,
-`AbortedMessage` and `ThinkingBlock` are available at the web crate root and
-under `components`. Construct host-backed rows with `new(host)`; tool rows need
-no host until rendering. Each render borrows `ToolRenderView` for the current
-localization, presentation, syntax engine, native host and modal identity.
-Keep the row between frames, not its borrowed view or props.
+`UserMessage<C>`, `AssistantMessage<D>`, `ToolMessage<D>`, `ToolMessageDebugView`
+and `AbortedMessage` are available at the web crate root and under
+`components::messages`. They mount through `DomContent` with no attachment host.
+`Default` leaves required operands unset and optional ones absent; mounting a row
+without its required message or call returns an error.
 
-`UserMessageInput` borrows ordinary user content or content with the original
-attachment handles. Only the first text block is displayed. A render returns
-independently owned attachment overlays: keep those overlays separately if they
-must outlive the row. The user bubble's gradient and border share its fixed
-frame; that frame applies the rounded backdrop blur outside the text scroller.
-The bubble fits its text and attachments within the parent width, including its
-native-resolved border and padding.
+`UserMessage` holds the original application message. The row selects the first
+text block without trimming its source. Only the attachment-bearing user branch
+emits tiles, in original order, retaining the original shared handles. Candidate
+children are prepared before replacing the contents of the containing root, so a
+failed preparation preserves its last content.
 
-`AssistantMessageProps` supplies tool names, pending IDs, result maps, visibility
-flags, streaming state and an optional cost action. `ToolMessageProps` borrows
-the original call and result. Both preserve caller-defined native result details
-without serialization bounds. Assistant children retain state by visible position
-and component kind. Thinking disclosures start collapsed and keep expansion
-through content and streaming updates. Replacing the cost action replaces the
-live callback; removing usage or releasing the row revokes it. Chevron rotation,
-hover color and action text use a 150-ms cubic-bezier(0.4, 0, 0.2, 1) transition.
+`AssistantMessage` retains the original shared assistant and tool collection. It
+admits text and thinking with the shared whitespace rules, preserving the
+displayed source and content order. Children retain their roots and thinking
+expansion by emitted position and kind. `ToolResults::Live` retains the original
+mutable standard envelopes, resolving each reached result independently;
+`ToolResults::Native` retains standalone native-detail envelopes without cloning
+or serialization bounds on their details. Tool visibility, pending visibility and
+streaming are independent. Nonstreaming usage delegates formatting and uses the
+current cost action; replacing, hiding or releasing that action revokes the old
+control. Literal localized errors and aborts remain visible when selected,
+including while streaming.
 
-Debug fields distinguish absent arguments/details, explicit JSON null and
-result presence. Call and Result headings use medium weight; absent-result text
-uses normal-weight small text. Strict JSON strings are parsed for display; other
-strings stay literal. All three debug listings use literal code input, so `YWJj` stays
-`YWJj` when displayed or copied. The standalone encoded-input `CodeBlock`
-constructor keeps its existing behavior.
+`ToolMessage` holds the original call and result envelope as shared handles. An
+empty or absent `tool` name selects the call's own name. An abort replaces any
+result with an error result for the same call ID and name, stamped with the
+current time, and ends streaming. The selected renderer receives the original
+argument object and result details. Only default content gets the ordinary card.
+A changed card choice publishes fully prepared content; a failed candidate keeps
+the last one.
 
-All text uses the existing native reading host, with its fixed placement frame,
-clipped scrolling viewport, fractional canvas projection and modal admission.
-Message rows do not add a separate placement or event-listener system.
+`ToolMessageDebugView` shows the call arguments as JSON and, when `has_result` is
+set, the joined text output and the details. Missing values show empty code,
+`null` stays `null`, JSON strings are parsed strictly and other text stays
+literal, never decoded as base64. Listings stay in place while the result stays
+shown. `AbortedMessage` shows the localized abort text.
+
+Row text is ordinary page text, so the browser's own find and selection reach it.
+Rows add no hidden text copy, focus registry or placement system of their own.
 
 ## Custom message roles
 
 `register_message_renderer`, `get_message_renderer` and `render_message` use
 open role strings. Registering the same role replaces the current callback for
 that native message representation. A previously retained callback remains
-usable. Unknown roles return no content. Callbacks prepare owned `ToolContent`
-recipes; draw them with the ordinary `ToolRenderResult` and `ToolRenderState`.
+usable. Unknown roles return no content. Callbacks prepare owned page content.
 The registry releases its guards before invoking or dropping user callbacks.
 
 A custom message can carry a native handle without JSON conversion:
 
-```rust
+```rust,ignore
 use std::sync::{Arc, atomic::{AtomicU32, Ordering}};
-use maestro_app::{AgentMessage, CustomAgentMessages, ToolRendererState};
+use maestro_app::{AgentMessage, CustomAgentMessages};
 use maestro_web::{MessageRenderer, register_message_renderer};
-use maestro_web::tools::types::{ToolContent, ToolContentOutput, ToolRenderView, ToolUiError};
+use maestro_web::dom::{DomContent, DomRoot, DomView};
+use maestro_web::tools::types::ToolUiError;
 
 struct NativeMessage {
     role: String,
@@ -62,18 +68,22 @@ impl CustomAgentMessages for NativeMessage {
     fn role(&self) -> &str { &self.role }
 }
 struct Label(String);
-impl ToolContent for Label {
-    fn render(
-        &self, ui: &mut egui::Ui, _: ToolRenderView<'_>, _: &ToolRendererState,
-    ) -> ToolContentOutput {
-        ToolContentOutput { response: Ok(ui.label(&self.0)), overlays: Vec::new() }
+impl DomContent for Label {
+    fn mount(&self, view: &DomView) -> Result<DomRoot, ToolUiError> {
+        let node = view.document.create_element("span").map_err(|e| ToolUiError::native(&e))?;
+        node.set_text_content(Some(&self.0));
+        Ok(DomRoot::new(node))
+    }
+    fn update(&self, root: &DomRoot, _: &DomView) -> Result<(), ToolUiError> {
+        root.node.set_text_content(Some(&self.0));
+        Ok(())
     }
 }
 struct CounterRenderer;
 impl MessageRenderer<NativeMessage> for CounterRenderer {
     fn render(
         &self, message: &AgentMessage<NativeMessage>,
-    ) -> Result<Box<dyn ToolContent>, ToolUiError> {
+    ) -> Result<Box<dyn DomContent>, ToolUiError> {
         let AgentMessage::Custom(value) = message else {
             return Err(ToolUiError::Presentation("Expected a native counter".into()));
         };
@@ -85,16 +95,59 @@ register_message_renderer("counter", std::rc::Rc::new(CounterRenderer));
 ```
 
 The input remains the caller's `AgentMessage<NativeMessage>`. Changing its
-counter changes the next prepared recipe; no registry or message guard spans
-recipe drawing.
+counter changes the next prepared content; no registry or message guard spans
+mounting. `MessageRenderer<C, T>` names the produced content as its second type
+parameter, page content by default in the browser build.
+`message_renderer_registry::dom` holds the same two lookups under the browser
+module path.
 
-`MessageRenderer<C, T>` takes the produced content as a second type parameter,
-with the canvas `Box<dyn ToolContent>` as its default. Registering a
-`MessageRenderer<C, Box<dyn DomContent>>` keeps a separate page-content table
-with the same open roles and replacement rules. In the browser build,
-`message_renderer_registry::dom::get_message_renderer` and
-`message_renderer_registry::dom::render_message` read that table; the canvas
-lookups never see page renderers, and the other way round.
+## Message list
+
+`MessageList<C>` shows the completed messages of a session. `messages` is the
+shared history (`Arc<RwLock<Vec<AgentMessage<..>>>>`); `tools`,
+`pending_tool_calls`, `is_streaming` and `on_cost_click` are forwarded to each
+assistant row. Mount it once and call `update` after changing the history or a
+setting.
+
+Preparing the list reads the history twice: once to index every tool result by
+its exact call ID, keeping the last result for a repeated ID, and once in order to
+choose each row. Neither read holds the history while a renderer runs, so a
+renderer may edit the history or a record. A result edited after indexing is
+still found under its indexed ID, and the row sees the edited envelope.
+
+Artifact entries are skipped before any role renderer sees them. A registered
+role renderer comes first for every other entry and receives the original
+message handle; its content is used even when it is empty, and its error is
+returned unchanged. Otherwise ordinary and attachment-bearing user entries show
+user rows and assistant entries show assistant rows. Result entries and unknown
+roles show nothing; their results appear inside the assistant row that made the
+call. Assistant rows never stream and never hide tool calls; they hide pending
+calls only while `is_streaming` is set.
+
+Rows are placed by emitted position, counting only shown entries. A position
+keeps its root while it shows the same kind of row, so skipped entries before it
+do not move it; a different kind replaces the root, and positions past the last
+row are removed.
+
+## Streaming message
+
+`StreamingMessageContainer<C>` shows the assistant message a response is
+writing. `set_message(message, false)` keeps only the latest message and shows it
+on the next animation frame, as a copy of its content taken then: several writes
+in one frame show once, edits made before that frame are included, and later
+edits to the original do not change what was shown. `set_message(message, true)`
+shows the original message at once, so later edits appear on the next `update`.
+Clearing with `None` is immediate too. Either way, a frame queued earlier is
+retired and cannot show stale content, and the next deferred message shows on its
+own first frame. The frame comes from the shared cancel-on-drop browser timer.
+
+Only assistant messages are shown; user, result and caller-defined messages show
+nothing, as the message list shows them. The assistant row receives `tools`,
+`pending_tool_calls`, `tool_results_by_id`, `on_cost_click` and `is_streaming`;
+it never hides tool calls or pending calls. While `is_streaming` is set, a pulsing
+caret in the muted color follows the row, or stands alone before a message
+arrives. Updates keep the assistant row's root. A released root receives no
+later frames; mounting again shows the current message.
 
 ## Native copy controls
 
@@ -187,5 +240,31 @@ engine is consumed even when Markdown content is unchanged. A control that gains
 focus is scrolled into view. Dropping the owner removes the native root and revokes
 pending feedback.
 
+`MarkdownBlock::default()` and `ThinkingBlock::default()` are page content: they
+implement `DomContent` without a canvas host, and `MountedContent` places them.
+Markdown mounts a `div.maestro-markdown` root and puts the prepared document in
+the page's light DOM, so its text stays findable and selectable. An update with
+the same source and escaping keeps every node and refreshes the listings with the
+supplied syntax engine and localization. Switching to the reasoning presentation
+changes only the root's class, so listings, copy feedback and selection stay.
+Changed source is prepared, highlighted and assembled off the page, then replaces
+the root's children. A failed update returns its error and leaves the previous
+document in place.
+
+The reasoning disclosure is a native button named `Thinking...` with a chevron.
+Pointer, Enter or Space activation toggles it once. While expanded it shows the
+untrimmed source as a reasoning `MarkdownBlock`; the body exists only then. Each
+root keeps its own expansion through content and streaming updates, and dropping
+the root releases its toggle. The header shimmers while streaming. Its color and
+the chevron's rotation change through 150 ms transitions, and a reversed toggle
+turns back from the current angle. The `new(host)` constructors keep drawing on a
+canvas for the artifacts that still use one.
+
 Tool-renderer listings use the same listing pipeline with literal input; see
 [tool renderers](tool-renderers.md). Their text is not auto-decoded.
+
+## Provider-card continuation
+
+[Custom provider cards](components.md#custom-provider-cards) mount as native page
+content independently of the transcript. The editor and complete chat composition
+remain separate continuation work; the card does not deliver those surfaces.

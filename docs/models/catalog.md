@@ -40,11 +40,30 @@ formatted file would exceed 500 lines, using `_1`, `_2`, … suffixes for all of
 partitions. Provider assembly preserves original registry order, including
 interleaved families; filenames never determine enumeration order.
 
+## Provider rules
+
+The generator applies these rules, so the committed catalog carries their result:
+
+- Direct `OpenAI` Responses models that accept reasoning effort `none` map `off` to it. GPT-5.5 Pro
+  offers no off, minimal or low level, directly or through a gateway, and direct GPT-5.5 offers
+  no minimal level.
+- `OpenRouter` `DeepSeek` V4 maps `xhigh` to the gateway's own `xhigh`. `OpenRouter` Kimi K2.6 sends
+  system instructions and replays reasoning content.
+- All Xiaomi variants route through the `OpenAI`-compatible `/v1` endpoints, replay thinking as
+  `reasoning_content`, and the token plans omit `MiMo` V2 Flash.
+- Moonshot and the `OpenCode` Kimi K2.6 routes use the thinking-object format, so thinking off sends
+  a disabled thinking object, and neither sends `reasoning_effort`. `OpenCode` Go Kimi K2.6 hides
+  minimal, low and medium and has no off level. Gateway completion models send explicit limits as
+  `max_tokens`.
+- Nine extended-context `GitHub` Copilot models have a one-million-token window; other providers
+  keep theirs. Direct `MiniMax` models keep their upstream limits.
+- Grok 3 and Grok 3 Fast stay when the upstream feed omits them.
+
 ## Controlled catalog example
 
 ```rust
 use maestro_models::{
-    ModelThinkingLevel, Usage, UsageCost, calculate_cost, clamp_thinking_level,
+    ModelThinkingLevel, Usage, calculate_cost, clamp_thinking_level,
     get_model, get_models, get_providers, get_supported_thinking_levels, models_are_equal,
 };
 
@@ -56,12 +75,11 @@ assert_eq!(clamp_thinking_level(&model, ModelThinkingLevel::Xhigh), ModelThinkin
 
 model.name = "My descriptor".into();
 assert_ne!(get_model("google", "gemini-2.5-flash").unwrap().name, model.name);
-let mut usage = Usage {
-    input: 100.0, output: 20.0, cache_read: 0.0, cache_write: 0.0,
-    total_tokens: 120.0,
-    cost: UsageCost { input: 0.0, output: 0.0, cache_read: 0.0, cache_write: 0.0, total: 0.0 },
-};
+let mut usage: Usage = serde_json::from_value(serde_json::json!({
+    "input": 100.0, "output": 20.0, "cacheRead": 0.0, "cacheWrite": 0.0, "totalTokens": 120.0,
+    "cost": {"input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0, "total": 0.0},
+})).unwrap();
 let estimate = calculate_cost(&model, &mut usage);
 assert!(estimate.total > 0.0);
-assert_eq!(usage.total_tokens, 120.0);
+assert_eq!(usage.total_tokens.present(), Some(&120.0));
 ```

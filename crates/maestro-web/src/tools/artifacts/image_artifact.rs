@@ -30,7 +30,7 @@ pub struct ImageArtifact {
     /// Original base64 or data URL.
     content: String,
     /// Platform effects.
-    host: Rc<dyn AttachmentHost>,
+    host: Option<Rc<dyn AttachmentHost>>,
     /// Independent surface identity.
     id: egui::Id,
     /// Live native operands.
@@ -48,6 +48,10 @@ impl ImageArtifact {
     /// Start with empty filename and content using the supplied native host.
     #[must_use]
     pub fn new(host: Rc<dyn AttachmentHost>) -> Self {
+        Self::with_host(Some(host))
+    }
+    /// Create image storage independently of retained effects.
+    fn with_host(host: Option<Rc<dyn AttachmentHost>>) -> Self {
         Self {
             filename: String::new(),
             content: String::new(),
@@ -59,6 +63,12 @@ impl ImageArtifact {
             changed: true,
             context: None,
         }
+    }
+    /// Create a host-free literal SVG image with no fallback substitution.
+    pub(super) fn page_svg() -> Self {
+        let image = Self::default();
+        image.body.borrow_mut().svg = true;
+        image
     }
     /// Reuse the native image owner for a literal SVG resource.
     pub(super) fn for_svg(host: Rc<dyn AttachmentHost>) -> Self {
@@ -105,12 +115,17 @@ impl ImageArtifact {
         if !self.changed && muted == self.muted {
             return;
         }
-        let source = if self.body.borrow().svg || self.content.starts_with("data:") {
+        self.assign(&mut self.body.borrow_mut(), muted);
+        muted.clone_into(&mut self.muted);
+        self.changed = false;
+    }
+    /// Refresh source and fallback while retaining a failed unchanged image.
+    fn assign(&self, body: &mut Body, muted: &str) {
+        let source = if body.svg || self.content.starts_with("data:") {
             self.content.clone()
         } else {
             format!("data:{};base64,{}", self.mime(), self.content)
         };
-        let mut body = self.body.borrow_mut();
         if body.source != source {
             body.failed = false;
         }
@@ -120,10 +135,14 @@ impl ImageArtifact {
             "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='50' y='50' text-anchor='middle' dominant-baseline='middle' fill='%23{}'%3EImage Error%3C/text%3E%3C/svg%3E",
             muted.trim_start_matches('#')
         );
-        muted.clone_into(&mut self.muted);
-        self.changed = false;
     }
     super::retained::artifact_reading!(body);
+}
+impl Default for ImageArtifact {
+    /// Empty host-free image content.
+    fn default() -> Self {
+        Self::with_host(None)
+    }
 }
 impl ArtifactElement for ImageArtifact {
     fn filename(&self) -> &str {
@@ -142,15 +161,7 @@ impl ArtifactElement for ImageArtifact {
         self.content = content;
         self.repaint();
     }
-    fn set_visibility(
-        &mut self,
-        visible: bool,
-        modal: Option<egui::Id>,
-    ) -> Result<(), ArtifactUiError> {
-        self.host
-            .set_retained_visibility(self.id, visible, modal)
-            .map_err(ArtifactUiError::Host)
-    }
+    super::retained::artifact_visibility!();
     fn get_header_buttons(
         &mut self,
         ui: &mut egui::Ui,
@@ -160,7 +171,7 @@ impl ArtifactElement for ImageArtifact {
         download_button::draw(
             ui,
             view,
-            self.host.as_ref(),
+            super::retained::host(self.host.as_ref())?.as_ref(),
             &self.filename,
             (self.mime(), &self.bytes()?),
         )
@@ -176,7 +187,7 @@ impl ArtifactElement for ImageArtifact {
             .allocate_space(ui.available_size().max(egui::Vec2::ZERO))
             .1;
         attachment_content::reading::present(
-            self.host.as_ref(),
+            super::retained::host(self.host.as_ref())?.as_ref(),
             ui,
             (self.id, rect, None),
             &reading,
@@ -188,8 +199,13 @@ impl ArtifactElement for ImageArtifact {
 }
 impl Drop for ImageArtifact {
     fn drop(&mut self) {
-        self.host.remove(self.id);
+        if let Some(host) = &self.host {
+            host.remove(self.id);
+        }
     }
 }
 #[cfg(target_arch = "wasm32")]
 mod browser;
+
+#[cfg(target_arch = "wasm32")]
+mod dom;

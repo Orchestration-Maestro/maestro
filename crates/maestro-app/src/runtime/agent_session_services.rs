@@ -72,6 +72,8 @@ pub struct CreateAgentSessionServicesOptions<E: ExtensionExecution = Threaded> {
     pub extension_flag_values: Option<IndexMap<String, FlagValue>>,
     /// The resource loader inputs.
     pub resource_loader_options: ResourceLoaderOptions<E>,
+    /// A caller's offline selection for search programs, or the ambient flag.
+    pub offline: Option<bool>,
 }
 
 /// Coherent infrastructure for one session working directory; no session is created.
@@ -90,6 +92,8 @@ pub struct AgentSessionServices<E: ExtensionExecution = Threaded> {
     pub resource_loader: Rc<dyn ResourceLoader<E>>,
     /// Problems found while creating the services.
     pub diagnostics: Vec<AgentSessionRuntimeDiagnostic>,
+    /// The startup offline selection sessions created from these services inherit.
+    pub offline: Option<bool>,
 }
 
 /// An error diagnostic.
@@ -111,7 +115,7 @@ fn apply_extension_flag_values<E: ExtensionExecution>(
         let extension = read(extension);
         for (name, flag) in &extension.flags {
             let flag = read(flag);
-            registered.insert(name.clone(), flag.r#type);
+            registered.entry(name.clone()).or_insert(flag.r#type);
         }
     }
     let mut diagnostics = Vec::new();
@@ -205,13 +209,22 @@ pub async fn create_agent_session_services<E: DefaultEventBus>(
             .map_err(io::Error::other)?,
         ),
     };
-    let resource_loader = default_resource_loader(
-        &cwd,
-        &agent_dir,
-        &settings_manager,
-        options.resource_loader_options,
-    )
-    .await?;
+    let mut resources = options.resource_loader_options;
+    resources.tool_construction.get_or_insert_with(|| {
+        let bin_dir = crate::configuration::config::paths::get_bin_dir(&agent_dir);
+        maestro_extensions::ToolConstruction {
+            tools_manager: Arc::new(
+                maestro_tools::ToolsManager::new(bin_dir.clone(), None)
+                    .with_offline(options.offline),
+            ),
+            bin_dir,
+        }
+    });
+    let resource_loader =
+        default_resource_loader(&cwd, &agent_dir, &settings_manager, resources).await?;
+    model_registry
+        .set_base_model_files(resource_loader.get_model_files())
+        .map_err(io::Error::other)?;
     let extensions = resource_loader.get_extensions();
     let mut diagnostics = register_providers(&extensions, &model_registry);
     if let Some(values) = options.extension_flag_values {
@@ -225,6 +238,7 @@ pub async fn create_agent_session_services<E: DefaultEventBus>(
         model_registry,
         resource_loader,
         diagnostics,
+        offline: options.offline,
     })
 }
 
@@ -297,6 +311,7 @@ pub async fn create_agent_session_from_services(
         settings_manager: Some(Rc::clone(&services.settings_manager)),
         session_start_event: options.session_start_event,
         theme: options.theme,
+        offline: services.offline,
     })
     .await
 }

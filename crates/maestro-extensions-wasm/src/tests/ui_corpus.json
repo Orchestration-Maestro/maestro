@@ -1,0 +1,236 @@
+{
+  "notifications": [
+    {
+      "call": { "op": "notify", "message": "" },
+      "host": { "method": "notify", "operands": ["", null] }
+    },
+    {
+      "call": { "op": "notify", "message": "", "kind": "info" },
+      "host": { "method": "notify", "operands": ["", "Info"] }
+    },
+    {
+      "call": { "op": "notify", "message": "literal 雪\r\n\u0085line", "kind": "warning" },
+      "host": { "method": "notify", "operands": ["literal 雪\r\n\u0085line", "Warning"] }
+    },
+    {
+      "call": { "op": "notify", "message": "\ufeffspaced  out", "kind": "error" },
+      "host": { "method": "notify", "operands": ["\ufeffspaced  out", "Error"] }
+    },
+    {
+      "call": { "op": "notify", "message": "styled \u001b[7minverse\u001b[0m" },
+      "host": { "method": "notify", "operands": ["styled \u001b[7minverse\u001b[0m", null] }
+    },
+    {
+      "call": { "op": "notify", "message": "  padded  ", "kind": "info" },
+      "host": { "method": "notify", "operands": ["  padded  ", "Info"] }
+    },
+    {
+      "call": { "op": "notify", "message": "", "kind": "warning" },
+      "host": { "method": "notify", "operands": ["", "Warning"] }
+    },
+    {
+      "call": { "op": "notify", "message": "", "kind": "error" },
+      "host": { "method": "notify", "operands": ["", "Error"] }
+    }
+  ],
+  "status": [
+    {
+      "call": { "op": "setStatus", "key": "one", "text": "first" },
+      "host": { "method": "setStatus", "operands": ["one", "first"] }
+    },
+    {
+      "call": { "op": "setStatus", "key": "two", "text": "" },
+      "host": { "method": "setStatus", "operands": ["two", ""] }
+    },
+    {
+      "call": { "op": "setStatus", "key": "one", "text": "replaced" },
+      "host": { "method": "setStatus", "operands": ["one", "replaced"] }
+    },
+    {
+      "call": { "op": "setStatus", "key": "one" },
+      "host": { "method": "setStatus", "operands": ["one", null] }
+    },
+    {
+      "call": { "op": "setStatus", "key": "", "text": "empty key" },
+      "host": { "method": "setStatus", "operands": ["", "empty key"] }
+    },
+    {
+      "call": { "op": "setStatus", "key": "literal 雪", "text": "value with spaces" },
+      "host": { "method": "setStatus", "operands": ["literal 雪", "value with spaces"] }
+    },
+    {
+      "call": { "op": "setStatus", "key": "two" },
+      "host": { "method": "setStatus", "operands": ["two", null] }
+    }
+  ],
+  "workingMessages": [
+    {
+      "call": { "op": "setWorkingMessage", "message": "working 雪" },
+      "host": { "method": "setWorkingMessage", "operands": ["working 雪"] }
+    },
+    {
+      "call": { "op": "setWorkingMessage", "message": "" },
+      "host": { "method": "setWorkingMessage", "operands": [""] }
+    },
+    {
+      "call": { "op": "setWorkingMessage" },
+      "host": { "method": "setWorkingMessage", "operands": [null] }
+    }
+  ],
+  "workingVisibility": [
+    {
+      "call": { "op": "setWorkingVisible", "visible": true },
+      "host": { "method": "setWorkingVisible", "operands": [true] }
+    },
+    {
+      "call": { "op": "setWorkingVisible", "visible": false },
+      "host": { "method": "setWorkingVisible", "operands": [false] }
+    }
+  ],
+  "workingIndicator": [
+    {
+      "call": { "op": "setWorkingIndicator" },
+      "host": { "method": "setWorkingIndicator", "operands": [null] }
+    },
+    {
+      "call": { "op": "setWorkingIndicator", "options": {} },
+      "host": { "method": "setWorkingIndicator", "operands": [{ "frames": null, "intervalMs": null }] }
+    },
+    {
+      "call": { "op": "setWorkingIndicator", "options": { "frames": [] } },
+      "host": { "method": "setWorkingIndicator", "operands": [{ "frames": [], "intervalMs": null }] }
+    },
+    {
+      "call": { "op": "setWorkingIndicator", "options": { "frames": ["●"] } },
+      "host": { "method": "setWorkingIndicator", "operands": [{ "frames": ["●"], "intervalMs": null }] }
+    },
+    {
+      "call": { "op": "setWorkingIndicator", "options": { "frames": ["a", "b", "a"] } },
+      "host": { "method": "setWorkingIndicator", "operands": [{ "frames": ["a", "b", "a"], "intervalMs": null }] }
+    },
+    {
+      "call": { "op": "setWorkingIndicator", "options": { "frames": [""] } },
+      "host": { "method": "setWorkingIndicator", "operands": [{ "frames": [""], "intervalMs": null }] }
+    },
+    {
+      "call": { "op": "setWorkingIndicator", "options": { "frames": ["\u001b[7m雪\u001b[0m"] } },
+      "host": { "method": "setWorkingIndicator", "operands": [{ "frames": ["\u001b[7m雪\u001b[0m"], "intervalMs": null }] }
+    },
+    {
+      "call": { "op": "setWorkingIndicator", "options": { "intervalMs": 120.0 } },
+      "host": { "method": "setWorkingIndicator", "operands": [{ "frames": null, "intervalMs": 120.0 }] }
+    },
+    {
+      "call": { "op": "setWorkingIndicator", "options": { "frames": [], "intervalMs": 0.0 } },
+      "host": { "method": "setWorkingIndicator", "operands": [{ "frames": [], "intervalMs": 0.0 }] }
+    },
+    {
+      "call": { "op": "setWorkingIndicator", "options": { "intervalMs": -120.0 } },
+      "host": { "method": "setWorkingIndicator", "operands": [{ "frames": null, "intervalMs": -120.0 }] }
+    },
+    {
+      "call": { "op": "setWorkingIndicator", "options": { "intervalMs": -0.0 } },
+      "host": { "method": "setWorkingIndicator", "operands": [{ "frames": null, "intervalMs": -0.0 }] }
+    }
+  ],
+  "thinkingLabels": [
+    {
+      "call": { "op": "setHiddenThinkingLabel", "label": "collapsed 雪" },
+      "host": { "method": "setHiddenThinkingLabel", "operands": ["collapsed 雪"] }
+    },
+    {
+      "call": { "op": "setHiddenThinkingLabel", "label": "" },
+      "host": { "method": "setHiddenThinkingLabel", "operands": [""] }
+    },
+    {
+      "call": { "op": "setHiddenThinkingLabel" },
+      "host": { "method": "setHiddenThinkingLabel", "operands": [null] }
+    }
+  ],
+  "widgets": [
+    {
+      "call": { "op": "setWidget", "key": "widget" },
+      "host": { "method": "setWidget", "operands": ["widget", null, null] }
+    },
+    {
+      "call": { "op": "setWidget", "key": "widget", "content": ["first", "second"] },
+      "host": { "method": "setWidget", "operands": ["widget", ["first", "second"], null] }
+    },
+    {
+      "call": { "op": "setWidget", "key": "widget", "content": ["first"], "options": {} },
+      "host": { "method": "setWidget", "operands": ["widget", ["first"], { "placement": null }] }
+    },
+    {
+      "call": { "op": "setWidget", "key": "widget", "content": ["first"], "options": { "placement": "aboveEditor" } },
+      "host": { "method": "setWidget", "operands": ["widget", ["first"], { "placement": "AboveEditor" }] }
+    },
+    {
+      "call": { "op": "setWidget", "key": "widget", "content": ["first"], "options": { "placement": "belowEditor" } },
+      "host": { "method": "setWidget", "operands": ["widget", ["first"], { "placement": "BelowEditor" }] }
+    },
+    {
+      "call": { "op": "setWidget", "key": "widget", "content": ["a", "a", ""] },
+      "host": { "method": "setWidget", "operands": ["widget", ["a", "a", ""], null] }
+    },
+    {
+      "call": { "op": "setWidget", "key": "widget", "content": [] },
+      "host": { "method": "setWidget", "operands": ["widget", [], null] }
+    },
+    {
+      "call": { "op": "setWidget", "key": "widget", "content": ["replacement"] },
+      "host": { "method": "setWidget", "operands": ["widget", ["replacement"], null] }
+    },
+    {
+      "call": { "op": "setWidget", "key": "", "content": ["empty key"] },
+      "host": { "method": "setWidget", "operands": ["", ["empty key"], null] }
+    },
+    {
+      "call": { "op": "setWidget", "key": "other 雪", "content": ["literal 雪", "\u001b[7minverse\u001b[0m"], "options": { "placement": "belowEditor" } },
+      "host": { "method": "setWidget", "operands": ["other 雪", ["literal 雪", "\u001b[7minverse\u001b[0m"], { "placement": "BelowEditor" }] }
+    }
+  ],
+  "titles": [
+    {
+      "call": { "op": "setTitle", "title": "" },
+      "host": { "method": "setTitle", "operands": [""] }
+    },
+    {
+      "call": { "op": "setTitle", "title": "literal 雪 \u001b[7mtitle\u001b[0m" },
+      "host": { "method": "setTitle", "operands": ["literal 雪 \u001b[7mtitle\u001b[0m"] }
+    }
+  ],
+  "errors": [
+    {
+      "call": { "op": "notify", "message": "rejected" },
+      "error": "notify rejected 雪\nline"
+    },
+    {
+      "call": { "op": "setStatus", "key": "one", "text": "rejected" },
+      "error": "status rejected Ω"
+    },
+    {
+      "call": { "op": "setWorkingMessage", "message": "rejected" },
+      "error": "working message rejected"
+    },
+    {
+      "call": { "op": "setWorkingVisible", "visible": true },
+      "error": "visibility rejected"
+    },
+    {
+      "call": { "op": "setWorkingIndicator", "options": { "frames": ["x"] } },
+      "error": "indicator rejected"
+    },
+    {
+      "call": { "op": "setHiddenThinkingLabel", "label": "rejected" },
+      "error": "label rejected"
+    },
+    {
+      "call": { "op": "setWidget", "key": "widget", "content": ["rejected"] },
+      "error": "widget rejected"
+    },
+    {
+      "call": { "op": "setTitle", "title": "rejected" },
+      "error": "title rejected"
+    }
+  ]
+}

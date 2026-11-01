@@ -1,4 +1,5 @@
 use super::*;
+use ra_ap_rustc_lexer::FrontmatterAllowed;
 
 /// Independent flat lexer vector for identity and count comparisons.
 fn flat(source: &str) -> Vec<String> {

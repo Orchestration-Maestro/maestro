@@ -435,3 +435,36 @@ fn carriage_transport() -> (
     });
     (fetch, reached, release)
 }
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn response_argument_roots_survive_each_completion_route() -> chat::TestResult {
+    crate::runtime::run(async {
+        for row in crate::root_routes::recorded()?.responses {
+            let (feed, body) = crate::messages::feed();
+            let stream =
+                maestro_models::providers::responses::openai_responses::stream_openai_responses(
+                    chat::model(
+                        &serde_json::json!({"api":"openai-responses","provider":"openai"}),
+                    )?,
+                    chat::context(&serde_json::json!({"messages":[]}))?,
+                    Some(maestro_models::OpenAIResponsesOptions {
+                        common: maestro_models::StreamOptions {
+                            api_key: Some("fixture-key".into()),
+                            fetch: Some(crate::root_routes::body_fetch(body)),
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    }),
+                );
+            crate::root_routes::gated(
+                &stream,
+                feed,
+                row.chunks.into_iter().map(String::into_bytes).collect(),
+                row.expected,
+            )
+            .await?;
+        }
+        Ok(())
+    })
+}

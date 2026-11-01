@@ -24,8 +24,14 @@ is not provided.
 
 `maestro_session::messages::parse_timestamp_millis`, also exposed through
 `maestro_app`, returns `Option<i64>` for the same date forms. Ambiguous local
-fall-back times select the earlier instant. Invalid input returns `None`; the
-message constructors retain their NaN fallback.
+fall-back times select the earlier instant. A local time a daylight-saving change
+skips resolves to the instant the offset in force at that reading gives, so it
+advances by the change the zone actually made instead of being rejected. Invalid
+input returns `None`; the message constructors retain their NaN fallback.
+
+`maestro_session::messages::local_timestamp_millis` is that same resolution on its
+own, for callers that already hold a local date-time. Reports use it for calendar
+boundaries, so no second local-time resolver exists.
 
 The open `CustomAgentMessages<T, C>` enum bridges these four application variants
 to the agent's custom-role trait. `Other(C)` retains caller-defined roles without

@@ -33,6 +33,7 @@ url = "=2.5.8"
 ryu-js.workspace = true
 futures-util.workspace = true
 maestro-models = { path = "../maestro-models" }
+maestro-listeners.workspace = true
 maestro-tools = { path = "../maestro-tools" }
 maestro-session = { path = "../maestro-session" }
 maestro-json = { path = "../maestro-json" }
@@ -40,11 +41,12 @@ maestro-tui = { path = "../maestro-tui" }
 maestro-text = { path = "../maestro-text", features = ["number-format"] }
 maestro-path = { path = "../maestro-path" }
 maestro-watch = { path = "../maestro-watch" }
+regex.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-export = { path = "../maestro-export" }
-regex.workspace = true
 maestro-workspace = { path = "../maestro-workspace" }
+maestro-lock = { path = "../maestro-lock" }
 maestro-daemon = { path = "../maestro-daemon" }
 maestro-terminal = { path = "../maestro-terminal" }
 maestro-packages = { path = "../maestro-packages" }
@@ -52,10 +54,11 @@ maestro-dependencies.workspace = true
 maestro-text = { path = "../maestro-text", features = ["collation"] }
 maestro-tools = { path = "../maestro-tools" }
 maestro-process = { path = "../maestro-process" }
+maestro-listing = { path = "../maestro-listing" }
 maestro-theme = { path = "../maestro-theme" }
 chrono = { version = "=0.4.45", default-features = false, features = ["clock"] }
 uuid = { version = "=1.27.0", default-features = false, features = ["std", "v4"] }
-tokio = { version = "=1.53.3", default-features = false, features = ["rt", "time", "process", "sync"] }
+tokio = { version = "=1.53.3", default-features = false, features = ["rt", "time", "process", "sync", "io-util", "macros"] }
 
 [target.'cfg(all(not(target_arch = "wasm32"), any(windows, all(unix, not(any(target_os = "ios", target_os = "android", target_os = "emscripten"))))))'.dependencies]
 clipboard-rs = { version = "=0.2.4", default-features = false }
@@ -72,7 +75,7 @@ maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
 tokio-tungstenite = { version = "=0.30.0", default-features = false, features = ["connect", "rustls-tls-native-roots"] }
 futures-util = { workspace = true, features = ["async-await"] }
-tokio = { version = "=1.53.3", default-features = false, features = ["rt-multi-thread", "sync", "net", "io-util"] }
+tokio = { version = "=1.53.3", default-features = false, features = ["rt-multi-thread", "sync", "net", "io-util", "io-std", "signal"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 js-sys = "=0.3.106"
@@ -93,3 +96,27 @@ workspace = true
 name = "count_prompt_tokens"
 path = "examples/count_prompt_tokens.rs"
 test = true
+
+[[example]]
+name = "cost_report"
+path = "examples/cost_report.rs"
+test = true
+
+[[example]]
+name = "usage_report"
+path = "examples/usage_report.rs"
+test = true
+
+[[example]]
+name = "tool_report"
+path = "examples/tool_report.rs"
+test = true
+
+[[example]]
+name = "transcript_report"
+path = "examples/transcript_report.rs"
+test = true
+
+[[example]]
+name = "rpc_client_demo"
+path = "examples/rpc_client_demo/main.rs"

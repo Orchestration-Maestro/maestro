@@ -579,13 +579,11 @@ fn parsed_arguments_preserves_object_fallback_and_public_path() {
             maestro_models::arguments::parsed_arguments,
         ] {
             let actual = parse(input);
-            assert_numeric_value(
-                &serde_json::Value::Object(actual.clone()),
-                &row["expected"]["value"],
-            );
-            let keys: Vec<_> = actual.keys().collect();
+            assert_numeric_value(&actual, &row["expected"]["value"]);
+            let members = actual.as_object().expect("recorded object root");
+            let keys: Vec<_> = members.keys().collect();
             assert_eq!(serde_json::to_value(keys).unwrap(), row["expected"]["keys"]);
-            let negative_zero: Vec<_> = actual
+            let negative_zero: Vec<_> = members
                 .iter()
                 .filter_map(|(key, value)| {
                     value
@@ -651,4 +649,66 @@ fn strict_json_projection_preserves_complete_values_without_repair() {
         maestro_models::parse_json_with_repair("\"raw\ncontrol\"").unwrap(),
         json!("raw\ncontrol")
     );
+}
+
+/// One recorded tool-argument root input and its parsed value.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+struct RootRow {
+    /// Original argument text; absent when no text was supplied at all.
+    input: Option<String>,
+    /// Recorded root value.
+    expected: serde_json::Value,
+    /// Recorded sign of the root number.
+    #[serde(default)]
+    negative_zero: bool,
+}
+
+/// Recorded tool-argument root corpus; the validation section belongs to its own reader.
+#[derive(serde::Deserialize)]
+struct RootCorpus {
+    /// Streaming parser rows.
+    parser: Vec<RootRow>,
+}
+
+/// Check one recorded root value and its recorded zero sign.
+fn assert_root_row(row: &RootRow, actual: &serde_json::Value) {
+    assert_numeric_value(actual, &row.expected);
+    match actual.as_f64() {
+        Some(number) => assert_eq!(
+            number == 0.0 && number.is_sign_negative(),
+            row.negative_zero
+        ),
+        None => assert!(!row.negative_zero),
+    }
+}
+
+/// The public streaming parser keeps every recorded root, not only objects.
+#[test]
+fn public_streaming_parser_keeps_recorded_roots() {
+    let corpus: RootCorpus =
+        serde_json::from_str(include_str!("fixtures/tool_argument_roots.json")).unwrap();
+    assert_eq!(corpus.parser.len(), 37);
+    for row in &corpus.parser {
+        let actual = maestro_models::parse_streaming_json(row.input.as_deref());
+        assert_root_row(row, &actual);
+    }
+}
+
+/// Every public parsed-arguments path keeps the recorded root.
+#[test]
+fn parsed_arguments_keeps_every_recorded_root() {
+    let corpus: RootCorpus =
+        serde_json::from_str(include_str!("fixtures/tool_argument_roots.json")).unwrap();
+    assert_eq!(corpus.parser.len(), 37);
+    for row in &corpus.parser {
+        let input = row.input.as_deref().unwrap_or_default();
+        for parse in [
+            maestro_models::parsed_arguments as fn(&str) -> serde_json::Value,
+            maestro_models::arguments::parsed_arguments,
+            maestro_models::arguments::json_parse::parsed_arguments,
+        ] {
+            assert_root_row(row, &parse(input));
+        }
+    }
 }

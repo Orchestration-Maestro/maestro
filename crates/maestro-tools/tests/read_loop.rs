@@ -3,6 +3,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use crate::loop_support;
+use crate::ls_support::posix_spelling;
 use crate::read_support;
 use crate::runtime::run;
 
@@ -50,8 +51,9 @@ fn native_and_supplied_reads_share_the_caller() {
         serde_json::to_value(&supplied.content).unwrap(),
         json!([text_json("supplied bytes")])
     );
+    let log: Vec<_> = ops.log().iter().map(|call| posix_spelling(call)).collect();
     assert_eq!(
-        ops.log(),
+        log,
         [
             "access:/work/rel.txt",
             "mime:/work/rel.txt",
@@ -81,7 +83,7 @@ fn null_details_tool() -> AgentTool {
         definition: maestro_models::Tool {
             name: "nullish".into(),
             description: "explicit null".into(),
-            parameters: json!({"type": "object"}),
+            parameters: json!({"type": "object"}).into(),
         },
         label: "nullish".into(),
         prepare_arguments: None,
@@ -144,7 +146,11 @@ fn wrapped_read_runs_through_raw_agent_loop() {
     assert_eq!(wire[3]["isError"], json!(true));
     assert_eq!(
         wire[3]["content"],
-        json!([text_json("No such file or directory (os error 2)")])
+        json!([text_json(
+            &std::fs::read(dir.path().join("missing.txt"))
+                .unwrap_err()
+                .to_string()
+        )])
     );
     assert!(wire[4].as_object().unwrap().contains_key("details"));
     assert_eq!(wire[4]["details"], Value::Null);

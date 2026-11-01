@@ -394,6 +394,20 @@ fn dropping_live_stdout_closes_the_only_read_end() {
 
 #[cfg(unix)]
 #[test]
+fn shell_setup_runs_when_the_child_replaces_path() {
+    let scratch = Scratch::new().unwrap();
+    let marker = scratch.path().join("setup-ran");
+    let setup = format!("echo ran > '{}'", marker.display());
+    plain(&left_name())
+        .env("PATH", scratch.path())
+        .shell_setup("/bin/bash", setup)
+        .output()
+        .unwrap();
+    assert_eq!(std::fs::read_to_string(&marker).unwrap(), "ran\n");
+}
+
+#[cfg(unix)]
+#[test]
 fn failed_live_start_closes_and_reaps_direct_child() {
     let scratch = Scratch::new().unwrap();
     let pid_file = scratch.path().join("pid");
@@ -402,7 +416,7 @@ fn failed_live_start_closes_and_reaps_direct_child() {
         pid_file.display()
     );
     let result = probe(&left_name(), "live")
-        .shell_setup(setup)
+        .shell_setup("/bin/bash", setup)
         .stdin(Stdio::piped())
         .spawn();
     let error = result.unwrap_err().to_string();
@@ -550,7 +564,7 @@ fn shell_setup_preserves_configuration_and_proves_exec() {
     let marker = scratch.path().join("marker");
     let setup = "echo setup >> \"$MTP_MARKER\"";
     let output = probe(&left_name(), "marker")
-        .shell_setup(setup)
+        .shell_setup("/bin/bash", setup)
         .env("MTP_MARKER", &marker)
         .output()
         .unwrap();
@@ -560,7 +574,7 @@ fn shell_setup_preserves_configuration_and_proves_exec() {
     std::fs::create_dir(&directory).unwrap();
     let output = probe(&left_name(), "cwd")
         .current_dir(&directory)
-        .shell_setup("true")
+        .shell_setup("/bin/bash", "true")
         .env("MTP_VARS", "SHELL_EDIT")
         .env("SHELL_EDIT", "late")
         .output()
@@ -573,7 +587,7 @@ fn shell_setup_preserves_configuration_and_proves_exec() {
     );
     for setup in ["exit 0", "echo setup-diagnostic >&2; exit 3"] {
         let error = probe(&left_name(), "marker")
-            .shell_setup(setup)
+            .shell_setup("/bin/bash", setup)
             .output()
             .unwrap_err();
         assert!(error.to_string().contains(&left_name()), "{error}");
@@ -631,7 +645,7 @@ fn adapter_route_does_not_discard_os_configuration() {
         ("stdout", plain(&name).stdout(Stdio::piped())),
         ("stderr", plain(&name).stderr(Stdio::null())),
         #[cfg(unix)]
-        ("shell_setup", plain(&name).shell_setup("true")),
+        ("shell_setup", plain(&name).shell_setup("/bin/bash", "true")),
     ];
     for (setting, process) in configured {
         let invoked = std::cell::Cell::new(false);
@@ -751,7 +765,7 @@ fn startup_failures_name_selection_and_keep_diagnostics() {
             "echo $$ > '{}'; printf 'invalid startup\\n'; exit 0",
             pid_file.display()
         );
-        let error = this().shell_setup(setup).output().unwrap_err();
+        let error = this().shell_setup("/bin/bash", setup).output().unwrap_err();
         assert!(
             error.to_string().contains("did not start exactly"),
             "{error}"
@@ -771,7 +785,10 @@ fn alone_runs_the_test_once_in_a_fresh_one_test_process() {
             return;
         }
         let arguments: Vec<_> = std::env::args().skip(1).collect();
-        assert_eq!(arguments, ["--exact", &format!("checked_runs::{name}")]);
+        assert_eq!(
+            arguments,
+            ["--exact", &format!("checked_runs::{name}"), "--nocapture"]
+        );
         return;
     }
     let scratch = Scratch::new().unwrap();
@@ -804,6 +821,36 @@ fn alone_reports_the_failing_body_with_its_streams() {
         return;
     }
     panic!("the isolated body failed");
+}
+
+#[test]
+fn alone_passing_body_writes_a_diagnostic() {
+    if std::env::var_os("MTP_ALONE_DIAGNOSES").is_none() {
+        return;
+    }
+    if run_alone("alone_passing_body_writes_a_diagnostic").unwrap() {
+        return;
+    }
+    println!("ALONE-BODY-STDOUT");
+    eprintln!("ALONE-BODY-DIAGNOSTIC");
+}
+
+#[test]
+fn alone_success_forwards_only_the_body_diagnostics() {
+    let output = TestProcess::named("checked_runs::alone_passing_body_writes_a_diagnostic")
+        .unwrap()
+        .nocapture()
+        .env("MTP_ALONE_DIAGNOSES", "1")
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{}", text(&output.stdout));
+    let stderr = text(&output.stderr);
+    assert!(
+        stderr.contains("ALONE-BODY-DIAGNOSTIC")
+            && !stderr.contains("ALONE-BODY-STDOUT")
+            && !stderr.contains("running 1 test"),
+        "{stderr}"
+    );
 }
 
 #[test]
@@ -902,10 +949,14 @@ fn route_outputs(configure: impl Fn(TestProcess) -> TestProcess) -> Vec<String> 
     let mut outputs = vec![text(&captured.stdout), text(&live.stdout), text(&from_file)];
     #[cfg(unix)]
     outputs.push(text(
-        &configure(plain(&name).env("MTP_BEHAVIOR", "cwd").shell_setup("true"))
-            .output()
-            .unwrap()
-            .stdout,
+        &configure(
+            plain(&name)
+                .env("MTP_BEHAVIOR", "cwd")
+                .shell_setup("/bin/bash", "true"),
+        )
+        .output()
+        .unwrap()
+        .stdout,
     ));
     outputs
 }
@@ -999,4 +1050,82 @@ fn argument_invoker_keeps_exact_selection_and_caller_result() {
         });
     assert!(result.is_err());
     assert!(!invoked);
+}
+
+/// Variable that marks a shell-setup child and names the parent's disposable layout.
+#[cfg(unix)]
+const SHELL_ROOT: &str = "MTP_SHELL_ROOT";
+
+/// Run this test once in a child whose `command` the parent prepared over `scratch`, and hand
+/// the child's own `body` the disposable root. The parent asserts the child passed.
+#[cfg(unix)]
+fn in_shell_child(command: impl FnOnce(&Scratch) -> Command, body: impl FnOnce(&Path)) {
+    let Some(root) = std::env::var_os(SHELL_ROOT).map(std::path::PathBuf::from) else {
+        let scratch = Scratch::new().unwrap();
+        let output = command(&scratch)
+            .env(SHELL_ROOT, scratch.path())
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{}", text(&output.stderr));
+        return;
+    };
+    body(&root);
+}
+
+#[cfg(unix)]
+#[test]
+fn shell_setup_refuses_a_relative_interpreter() {
+    let scratch = Scratch::new().unwrap();
+    let marker = scratch.path().join("marker");
+    let error = plain(&left_name())
+        .env("MTP_BEHAVIOR", "marker")
+        .env("MTP_MARKER", &marker)
+        .shell_setup("bash", format!("echo ran > '{}'", marker.display()))
+        .output()
+        .unwrap_err();
+    assert!(error.to_string().contains("not absolute"), "{error}");
+    assert!(
+        !marker.exists(),
+        "the setup ran before the path was refused"
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn shell_setup_reports_a_supplied_interpreter_that_cannot_run() {
+    let scratch = Scratch::new().unwrap();
+    let program = scratch.path().join("bash");
+    std::fs::write(&program, "not a program\n").unwrap();
+    let error = plain(&left_name())
+        .shell_setup(&program, "true")
+        .output()
+        .unwrap_err();
+    assert!(error.to_string().starts_with(&left_name()), "{error}");
+    assert!(std::error::Error::source(&error).is_some());
+}
+
+#[cfg(unix)]
+#[test]
+fn shell_setup_uses_the_supplied_interpreter_when_the_parent_path_is_absent() {
+    let leaf = "shell_setup_uses_the_supplied_interpreter_when_the_parent_path_is_absent";
+    in_shell_child(
+        |_| {
+            let mut command = outer(leaf);
+            command.env_remove("PATH");
+            command
+        },
+        |root| {
+            let empty = root.join("empty-path");
+            std::fs::create_dir(&empty).unwrap();
+            let marker = root.join("marker");
+            plain(&left_name())
+                .env("MTP_BEHAVIOR", "marker")
+                .env("MTP_MARKER", &marker)
+                .env("PATH", &empty)
+                .shell_setup("/bin/bash", "echo setup >> \"$MTP_MARKER\"")
+                .output()
+                .unwrap();
+            assert_eq!(std::fs::read_to_string(&marker).unwrap(), "setup\nleft\n");
+        },
+    );
 }

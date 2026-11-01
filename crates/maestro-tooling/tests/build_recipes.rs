@@ -1,5 +1,6 @@
 #![cfg(test)]
 
+#[cfg(unix)]
 use crate::toolchain_support;
 
 use std::fs;
@@ -141,6 +142,65 @@ fn maestro_package_recipes_select_their_owners() {
 }
 
 #[test]
+fn maestro_test_recipe_installs_the_setup_tool_before_nextest() {
+    let workspace = Workspace::new();
+    fs::create_dir_all(workspace.path().join("crates/maestro-tooling")).unwrap();
+
+    let output = workspace.run("test");
+
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(
+        workspace.log(),
+        "cargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|prepare-test-setup|install|target/test-setup\ncargo nextest|run|--workspace|--locked\ncargo test|--workspace|--locked|--doc\n"
+    );
+}
+
+/// The recipe that docs name before a hand-run nextest stages the setup tool and nothing else.
+#[test]
+fn maestro_prepare_tests_recipe_stages_only_the_setup_tool() {
+    let workspace = Workspace::new();
+    fs::create_dir_all(workspace.path().join("crates/maestro-tooling")).unwrap();
+
+    let output = workspace.run("prepare-tests");
+
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(
+        workspace.log(),
+        "cargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|prepare-test-setup|install|target/test-setup\n"
+    );
+}
+
+/// The check recipe stages the setup tool before any step that could start nextest.
+#[test]
+fn maestro_check_recipe_stages_the_setup_tool_first() {
+    let workspace = Workspace::new();
+    fs::create_dir_all(workspace.path().join("crates/maestro-tooling")).unwrap();
+
+    let output = workspace.run("check");
+
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(
+        workspace.log().starts_with(
+            "cargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|prepare-test-setup|install|target/test-setup\n"
+        ),
+        "{}",
+        workspace.log()
+    );
+}
+
+#[test]
 fn maestro_test_recipes_forward_literal_arguments() {
     for (recipe, selection, doctests) in [
         ("test", "--workspace|--locked", true),
@@ -169,6 +229,24 @@ fn maestro_test_recipes_forward_literal_arguments() {
             format!("cargo nextest|run|{selection}|{suffix}\n")
         };
         assert_eq!(workspace.log(), expected, "{recipe}");
+    }
+}
+
+#[test]
+fn maestro_forwarded_arguments_stay_out_of_recipe_echo() {
+    for recipe in ["models-test", "run-source"] {
+        let workspace = Workspace::new();
+        let output = workspace
+            .command(recipe)
+            .arg("fake-secret-do-not-echo")
+            .env("MAESTRO_COMMAND_OUTPUT", "1")
+            .output()
+            .unwrap();
+        assert!(output.status.success());
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert!(stderr.contains("controlled command stderr"), "{stderr}");
+        assert!(!stderr.contains("fake-secret-do-not-echo"), "{stderr}");
+        assert!(String::from_utf8_lossy(&output.stdout).contains("controlled command stdout"));
     }
 }
 
@@ -250,18 +328,20 @@ fn native_workspace(workspace: &Workspace) {
         "fn main() {}\n",
     )
     .unwrap();
+    // The installed fixture programs carry the host's executable suffix.
+    let suffix = std::env::consts::EXE_SUFFIX;
     fs::rename(
-        workspace.path().join("bin/cargo"),
-        workspace.path().join("bin/cargo-proxy"),
+        workspace.path().join(format!("bin/cargo{suffix}")),
+        workspace.path().join(format!("bin/cargo-proxy{suffix}")),
     )
     .unwrap();
     install_executable(
         Path::new(env!("CARGO")),
-        &workspace.path().join("bin/cargo"),
+        &workspace.path().join(format!("bin/cargo{suffix}")),
     );
     assert!(
-        toolchain_support::command(env!("CARGO"))
-            .current_dir(workspace.path())
+        workspace
+            .toolchain_command(env!("CARGO"))
             .arg("generate-lockfile")
             .status()
             .unwrap()
@@ -369,9 +449,10 @@ fn assert_asset_cleanup(workspace: &Workspace, development: &Path) {
 }
 
 fn prepare_configured_assets(workspace: &Workspace) -> PathBuf {
+    let suffix = std::env::consts::EXE_SUFFIX;
     fs::rename(
-        workspace.path().join("bin/cargo-proxy"),
-        workspace.path().join("bin/cargo"),
+        workspace.path().join(format!("bin/cargo-proxy{suffix}")),
+        workspace.path().join(format!("bin/cargo{suffix}")),
     )
     .unwrap();
     create_prepared_assets(workspace);
@@ -747,8 +828,8 @@ fn prepare_watch_workspace(workspace: &Workspace) {
     ).unwrap();
     fs::write(workspace.path().join("crates/maestro-models/Cargo.toml"), "[package]\nname = 'maestro-models'\nversion = '0.1.0'\nedition = '2024'\n[dependencies]\nmaestro-agent = { path = '../maestro-agent' }\n").unwrap();
     assert!(
-        toolchain_support::command(env!("CARGO"))
-            .current_dir(workspace.path())
+        workspace
+            .toolchain_command(env!("CARGO"))
             .arg("generate-lockfile")
             .status()
             .unwrap()
@@ -761,14 +842,16 @@ fn prepare_watch_workspace(workspace: &Workspace) {
     )
     .unwrap();
     fs::create_dir_all(workspace.path().join("target")).unwrap();
+    let suffix = std::env::consts::EXE_SUFFIX;
     fs::rename(
-        workspace.path().join("bin/cargo-proxy"),
-        workspace.path().join("bin/cargo"),
+        workspace.path().join(format!("bin/cargo-proxy{suffix}")),
+        workspace.path().join(format!("bin/cargo{suffix}")),
     )
     .unwrap();
 }
 
 fn prepare_tooling_owner(workspace: &Workspace) {
+    workspace.use_prepared_sources();
     let source = Path::new(env!("CARGO_MANIFEST_DIR"));
     let root = workspace.path().join("crates/maestro-tooling");
     copy_tree(&source.join("src"), &root.join("src"));
@@ -808,19 +891,25 @@ fn prepare_tooling_owner(workspace: &Workspace) {
         )
         .unwrap();
     }
-    fs::copy(
-        source.join("../../Cargo.toml"),
-        workspace.path().join("Cargo.toml"),
-    )
-    .unwrap();
+    copy_root_manifest(workspace);
     assert!(
-        toolchain_support::command(env!("CARGO"))
-            .current_dir(workspace.path())
+        workspace
+            .toolchain_command(env!("CARGO"))
             .args(["build", "-p", "maestro-tooling", "--bin", "development"])
             .status()
             .unwrap()
             .success()
     );
+}
+
+/// Give the checkout the workspace manifest its tooling build resolves against.
+fn copy_root_manifest(workspace: &Workspace) {
+    fs::copy(
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../Cargo.toml"),
+        workspace.path().join("Cargo.toml"),
+    )
+    .unwrap();
+    workspace.use_plain_dev_profile();
 }
 
 /// Copy local dependency patches from the source manifest into a build fixture.
@@ -839,6 +928,17 @@ fn copy_patched_sources(source: &Path, destination: &Path) {
             }
         }
     }
+}
+
+/// The tooling owner's cold build compiles its dependencies at the plain development profile.
+#[test]
+fn tooling_owner_checkout_builds_dependencies_at_the_plain_dev_profile() {
+    let workspace = Workspace::new();
+    copy_root_manifest(&workspace);
+    let manifest: toml::Table =
+        toml::from_str(&fs::read_to_string(workspace.path().join("Cargo.toml")).unwrap()).unwrap();
+    let packages = manifest["profile"]["dev"]["package"].as_table().unwrap();
+    assert_eq!(packages.keys().collect::<Vec<_>>(), ["*"]);
 }
 
 #[test]
@@ -888,7 +988,11 @@ second = { path = "local/beta" }
     assert!(!destination.path().join("remote").exists());
 }
 
-fn copy_tree(source: &Path, destination: &Path) {
+/// Copy every file beneath a source directory to the matching destination path.
+///
+/// # Errors
+/// Filesystem errors panic so fixture preparation cannot silently omit an input.
+pub fn copy_tree(source: &Path, destination: &Path) {
     fs::create_dir_all(destination).unwrap();
     for entry in fs::read_dir(source).unwrap() {
         let entry = entry.unwrap();
@@ -1166,8 +1270,8 @@ fn assert_native_doctests(workspace: &Workspace) {
             .any(|line| line.contains("PASS") && line.contains("ignored_behavior"))
     );
     assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed; 0 failed"));
-    let output = toolchain_support::command(env!("CARGO"))
-        .current_dir(workspace.path())
+    let output = workspace
+        .toolchain_command(env!("CARGO"))
         .args(["test", "-p", "maestro-models", "--locked", "--doc"])
         .output()
         .unwrap();
@@ -1286,7 +1390,14 @@ fn maestro_source_recipes_preserve_invocation_directory() {
             .arg(workspace.path().join("justfile"))
             .arg(recipe)
             .current_dir(&outside)
-            .args(["", "a space", "'quoted'", "\u{feff}\u{85}\u{2003}"])
+            .args([
+                "",
+                "a space",
+                "'quoted'",
+                "unmatched'quote",
+                "$(exit 91); * $HOME",
+                "\u{feff}\u{85}\u{2003}",
+            ])
             .output()
             .unwrap();
         assert!(
@@ -1299,10 +1410,11 @@ fn maestro_source_recipes_preserve_invocation_directory() {
         fs::read(workspace.path().join("cwd")).unwrap(),
         outside.as_os_str().as_encoded_bytes()
     );
-    let manifest = workspace.path().join("Cargo.toml");
+    // The recipes join the manifest onto the justfile directory with `/` on every host.
+    let manifest = format!("{}/Cargo.toml", workspace.path().display());
     let log = workspace.log();
     for recipe in ["run-source", "run-source-windows"] {
-        assert!(log.contains(&format!("cargo run|--quiet|--locked|--manifest-path|{}|-p|maestro-tooling|--bin|development|--|{recipe}||a space|'quoted'|\u{feff}\u{85}\u{2003}", manifest.display())), "{log}");
+        assert!(log.contains(&format!("cargo run|--quiet|--locked|--manifest-path|{manifest}|-p|maestro-tooling|--bin|development|--|{recipe}||a space|'quoted'|unmatched'quote|$(exit 91); * $HOME|\u{feff}\u{85}\u{2003}")), "{log}");
     }
 }
 
@@ -1441,7 +1553,8 @@ fn maestro_setup_keeps_pins_and_existing_hooks() {
     for stage in ["pre-commit", "pre-merge-commit", "commit-msg"] {
         assert!(workspace.path().join(".git/hooks").join(stage).is_file());
     }
-    fs::remove_file(workspace.path().join("bin/prek")).unwrap();
+    let prek = format!("bin/prek{}", std::env::consts::EXE_SUFFIX);
+    fs::remove_file(workspace.path().join(prek)).unwrap();
     let output = workspace
         .command("--command")
         .args(["prek", "run", "workspace-check"])
@@ -1524,9 +1637,10 @@ fn maestro_recipes_quote_apostrophes_in_checkout_paths() {
             String::from_utf8_lossy(&output.stderr)
         );
     }
+    // The recipes join the manifest onto the justfile directory with `/` on every host.
     assert!(workspace.log().contains(&format!(
-        "--manifest-path|{}",
-        workspace.path().join("Cargo.toml").display()
+        "--manifest-path|{}/Cargo.toml",
+        workspace.path().display()
     )));
 }
 
@@ -1618,7 +1732,8 @@ fn watch_child_transcript_survives_forced_kill() {
         assert_eq!(receive.recv().unwrap(), "watch phase: compiling");
         assert_eq!(receive.recv().unwrap(), "watch phase: ready");
         recipe_support::record("phase: blocked waiting for controller");
-        println!("READY {}", std::process::id());
+        // Separate readiness from libtest's unterminated test-name prefix.
+        println!("\nREADY {}", std::process::id());
         std::io::stdout().flush().unwrap();
         let _ = std::io::stdin().read(&mut [0]).unwrap();
         panic!("controller must kill the blocked test");
@@ -1647,6 +1762,7 @@ fn assert_killed_transcript(directory: Option<&Path>) {
     };
     let mut child = process
         .nocapture()
+        .single_threaded()
         .env("MAESTRO_CAPTURE_CONTROL", "1")
         .stdin(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
@@ -1657,7 +1773,13 @@ fn assert_killed_transcript(directory: Option<&Path>) {
         .by_ref()
         .lines()
         .map(Result::unwrap)
-        .find_map(|line| line.strip_prefix("READY ").map(str::to_owned))
+        .find_map(|line| {
+            assert!(
+                !line.contains("READY ") || line.starts_with("READY "),
+                "readiness marker must start its own line: {line:?}"
+            );
+            line.strip_prefix("READY ").map(str::to_owned)
+        })
         .unwrap();
     assert!(
         Command::new("kill")

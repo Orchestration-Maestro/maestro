@@ -5,13 +5,13 @@ use crate::input_support;
     dead_code,
     reason = "Shared controlled host supports other terminal tests."
 )]
-#[path = "../../../../maestro-test-terminal/tests/support/manual_runtime.rs"]
+#[path = "../../../../maestro-test-terminal/src/manual_runtime.rs"]
 pub mod manual_runtime;
 #[allow(
     dead_code,
     reason = "Shared controlled terminal supports other terminal tests."
 )]
-#[path = "../../../../maestro-test-terminal/tests/support/recording_terminal.rs"]
+#[path = "../../../../maestro-test-terminal/src/recording_terminal.rs"]
 pub mod recording_terminal;
 use maestro_tui::{EditorTheme, SelectListTheme, TUI, TerminalImage};
 use std::rc::Rc;

@@ -32,6 +32,7 @@ fn creates_a_session_over_existing_services() {
             model_registry: Arc::clone(&h.registry),
             resource_loader: Rc::new(create_test_resource_loader(None)),
             diagnostics: Vec::new(),
+            offline: None,
         });
         let manager = maestro_app::SessionManager::in_memory(Some("/elsewhere")).unwrap();
         let created = create_agent_session_from_services(CreateAgentSessionFromServicesOptions {
@@ -90,10 +91,6 @@ fn reaches_the_lower_owners_through_the_root() {
         maestro_app::DEFAULT_MAX_BYTES,
         maestro_tools::DEFAULT_MAX_BYTES
     );
-    assert_eq!(
-        maestro_app::CURRENT_SESSION_VERSION,
-        maestro_session::session_manager::CURRENT_SESSION_VERSION
-    );
     assert_eq!(maestro_app::get_language_from_path("main.rs"), Some("rust"));
     let parsed = maestro_app::strip_frontmatter("---\nname: x\n---\nbody").unwrap();
     assert_eq!(parsed, "body");
@@ -107,11 +104,6 @@ fn reaches_the_lower_owners_through_the_root() {
         },
     );
     assert_eq!(source.path, "<sdk:tool>");
-    assert!(!maestro_app::should_compact(
-        1.0,
-        200_000.0,
-        &maestro_app::DEFAULT_COMPACTION_SETTINGS
-    ));
 }
 
 /// Asserts each name resolves to its declaring owner rather than a copy the root
@@ -135,6 +127,7 @@ fn names_the_session_and_history_records_at_the_root() {
         std::any::type_name::<maestro_app::BranchSummaryResult>(),
         std::any::type_name::<maestro_app::CollectEntriesResult>(),
         std::any::type_name::<maestro_app::CompactionResult>(),
+        std::any::type_name::<maestro_app::GeneratedSummary>(),
         std::any::type_name::<maestro_app::CompactionSettings>(),
         std::any::type_name::<maestro_app::CreateAgentSessionFromServicesOptions>(),
         std::any::type_name::<maestro_app::CreateAgentSessionOptions>(),
@@ -237,10 +230,11 @@ fn names_the_tool_resource_and_theme_operations_at_the_root() {
         std::any::type_name_of_val(&maestro_app::find_turn_start_index),
         std::any::type_name_of_val(&maestro_app::format_size),
         std::any::type_name_of_val(&maestro_app::format_skills_for_prompt),
-        std::any::type_name_of_val(&maestro_app::generate_branch_summary),
+        std::any::type_name_of_val(&maestro_app::generate_branch_summary::<maestro_models::Local>),
         std::any::type_name_of_val(&maestro_app::generate_summary),
+        std::any::type_name_of_val(&maestro_app::generate_summary_with_usage),
         std::any::type_name_of_val(&maestro_app::get_language_from_path),
-        std::any::type_name_of_val(&maestro_app::get_last_assistant_usage),
+        std::any::type_name_of_val(&maestro_app::get_last_assistant_usage::<serde_json::Value>),
         std::any::type_name_of_val(&maestro_app::get_latest_compaction_entry::<serde_json::Value>),
         std::any::type_name_of_val(&maestro_app::get_markdown_theme),
         std::any::type_name_of_val(&maestro_app::get_select_list_theme),

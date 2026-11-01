@@ -57,6 +57,9 @@ impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Driver<'_, C, 
             all_terminate &= result.terminate == Some(true);
             let message = self.execution_end(call, result, is_error).await?;
             results.push(self.artifact(message).await?);
+            if self.aborted() {
+                break;
+            }
         }
         let again = !results.is_empty() && !all_terminate;
         Ok((results, again))
@@ -84,6 +87,9 @@ impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Driver<'_, C, 
                         self.execution_end(call, error_result(error), true).await?,
                     ));
                 }
+            }
+            if self.aborted() {
+                break;
             }
         }
         let mut work: FuturesUnordered<_> = allowed
@@ -142,8 +148,8 @@ impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Driver<'_, C, 
         (index, call): (usize, &mut ToolCall),
     ) -> Result<Prepared<E>, DiagnosticErrorInfo> {
         let mut prepared = self.prepare(response, (index, call))?;
-        if let Some(before) = &self.config.before_tool_call
-            && let Some(result) = before(
+        if let Some(before) = &self.config.before_tool_call {
+            let decision = before(
                 crate::BeforeToolCallContext {
                     assistant_message: response,
                     tool_call: call,
@@ -152,17 +158,30 @@ impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Driver<'_, C, 
                 },
                 self.options.signal.clone(),
             )
-            .await?
-            && result.block
-        {
-            return Err(failure(
-                result
-                    .reason
-                    .filter(|s| !s.is_empty())
-                    .unwrap_or_else(|| "Tool execution was blocked".into()),
-            ));
+            .await?;
+            if self.aborted() {
+                return Err(failure("Operation aborted"));
+            }
+            if let Some(result) = decision.filter(|result| result.block) {
+                return Err(failure(
+                    result
+                        .reason
+                        .filter(|s| !s.is_empty())
+                        .unwrap_or_else(|| "Tool execution was blocked".into()),
+                ));
+            }
+        }
+        if self.aborted() {
+            return Err(failure("Operation aborted"));
         }
         Ok(prepared)
+    }
+    /// Whether the run's signal was aborted.
+    fn aborted(&self) -> bool {
+        self.options
+            .signal
+            .as_ref()
+            .is_some_and(maestro_models::Cancellation::is_aborted)
     }
     /// Retain the first exactly named tool from the current inventory.
     fn lookup(&self, name: &str) -> Option<SharedAgentTool<E>> {
@@ -250,34 +269,32 @@ impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Driver<'_, C, 
             .lookup(&call.name)
             .ok_or_else(|| failure(format!("Tool {} not found", call.name)))?;
         let prepare = read(&tool).prepare_arguments.clone();
-        let arguments = match prepare {
+        let candidate = match prepare {
             Some(prepare) => {
-                let mut raw = serde_json::Value::Object(call.arguments.clone());
+                let mut raw = call.arguments.clone();
                 let prepared = prepare(&mut raw);
-                if let serde_json::Value::Object(arguments) = raw {
-                    call.arguments = arguments;
-                }
+                call.arguments = raw;
                 if let Some(AssistantContent::ToolCall(retained)) =
                     super::write(response).content.get_mut(index)
                 {
                     retained.arguments.clone_from(&call.arguments);
                 }
-                let arguments = serde_json::from_value(prepared?)
-                    .map_err(|error| failure(error.to_string()))?;
-                let candidate = ToolCall {
+                let prepared = prepared?;
+                Some(ToolCall {
                     id: call.id.clone(),
                     name: call.name.clone(),
-                    arguments,
+                    arguments: prepared,
                     thought_signature: call.thought_signature.clone(),
-                };
-                maestro_models::validate_tool_arguments(&read(&tool).definition, &candidate)?
+                })
             }
-            None => maestro_models::validate_tool_arguments(&read(&tool).definition, call)?,
+            None => None,
         };
-        Ok(Prepared {
-            tool,
-            arguments: serde_json::Value::Object(arguments),
-        })
+        let definition = read(&tool).definition.clone();
+        let arguments = maestro_models::validate_tool_arguments(
+            &definition,
+            candidate.as_ref().unwrap_or(call),
+        )?;
+        Ok(Prepared { tool, arguments })
     }
     /// Await execution-end before assigning the tool artifact timestamp.
     async fn execution_end(

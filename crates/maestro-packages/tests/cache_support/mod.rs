@@ -96,6 +96,8 @@ struct Recipe {
     npm_command_after_clone: Option<Vec<String>>,
     /// Initial offline value.
     offline: Option<String>,
+    /// Startup offline selection supplied to the manager.
+    selection: Option<bool>,
     /// Explicit source sequence, including an empty sequence.
     multiple: Option<Vec<String>>,
 }
@@ -181,6 +183,7 @@ fn manager(
     cwd: &str,
     settings: Rc<RefCell<maestro_settings::SettingsManager>>,
     effects: &Rc<support::Effects>,
+    selection: Option<bool>,
 ) -> DefaultPackageManager<support::Controlled> {
     DefaultPackageManager::new(
         PackageManagerOptions {
@@ -192,6 +195,7 @@ fn manager(
         },
         support::Controlled(Rc::clone(effects)),
     )
+    .with_offline(selection)
 }
 /// Replays each selected recipe exactly once.
 pub async fn cases(names: &[&str]) {
@@ -415,7 +419,7 @@ async fn replay_ready(
     let effects = Rc::new(support::Effects::default());
     configure(&r, base, &effects, &settings);
     let events = Rc::new(RefCell::new(Vec::new()));
-    let m = manager(base, base, Rc::clone(&settings), &effects);
+    let m = manager(base, base, Rc::clone(&settings), &effects, r.selection);
     progress(&m, &r, &events);
     let mut sources = r.multiple.clone().unwrap_or_else(|| vec![source(&r)]);
     if r.second == Some(true) {
@@ -425,12 +429,7 @@ async fn replay_ready(
     let first = m.resolve_extension_sources(&sources, scope).await;
     let (actual, error) = match first {
         Ok(v) => (Some(result(v, base)), None),
-        Err(e) => (
-            None,
-            Some(
-                json!({"message":if case.case=="remote_manifest_bad" { assert_eq!(e.kind(),io::ErrorKind::InvalidData); "invalid resource list".to_owned() } else { e.to_string() }}),
-            ),
-        ),
+        Err(e) => (None, Some(json!({"message": e.to_string()}))),
     };
     let mut second = None;
     if error.is_none() {
@@ -449,6 +448,7 @@ async fn replay_ready(
                 &native_support::under(base, "other-cwd").to_string_lossy(),
                 Rc::clone(&settings),
                 &effects,
+                r.selection,
             );
             progress(&next, &r, &events);
             let sources = r.second_manager_ref.as_ref().map_or(sources, |reference| {

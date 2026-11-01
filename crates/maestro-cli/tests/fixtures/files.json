@@ -1,0 +1,298 @@
+[
+  {
+    "operation": "files",
+    "case": "files-181",
+    "input": {
+      "id": "text",
+      "files": [
+        "first.txt"
+      ]
+    },
+    "expected": {
+      "text": "<file name=\"first.txt\">\nHello, world!\n</file>\n",
+      "images": []
+    }
+  },
+  {
+    "operation": "files",
+    "case": "files-182",
+    "input": {
+      "id": "retained_png_default",
+      "files": [
+        "tiny.png"
+      ]
+    },
+    "expected": {
+      "text": "<file name=\"tiny.png\"></file>\n",
+      "images": [
+        {
+          "type": "image",
+          "mimeType": "image/png",
+          "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg=="
+        }
+      ]
+    }
+  },
+  {
+    "operation": "files",
+    "case": "files-183",
+    "input": {
+      "id": "retained_png_disabled",
+      "files": [
+        "tiny.png"
+      ],
+      "options": {
+        "autoResizeImages": false
+      }
+    },
+    "expected": {
+      "text": "<file name=\"tiny.png\"></file>\n",
+      "images": [
+        {
+          "type": "image",
+          "mimeType": "image/png",
+          "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg=="
+        }
+      ]
+    }
+  },
+  {
+    "operation": "files",
+    "case": "files-184",
+    "input": {
+      "id": "ordered_mixed_empty",
+      "files": [
+        "first.txt",
+        "empty.txt",
+        "tiny.png",
+        "last.txt"
+      ]
+    },
+    "expected": {
+      "text": "<file name=\"first.txt\">\nHello, world!\n</file>\n<file name=\"tiny.png\"></file>\n<file name=\"last.txt\">\nlast\n\n</file>\n",
+      "images": [
+        {
+          "type": "image",
+          "mimeType": "image/png",
+          "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg=="
+        }
+      ]
+    }
+  },
+  {
+    "operation": "files",
+    "case": "files-185",
+    "input": {
+      "id": "empty",
+      "files": [
+        "empty.txt"
+      ]
+    },
+    "expected": {
+      "text": "",
+      "images": []
+    }
+  },
+  {
+    "operation": "files",
+    "case": "files-186",
+    "input": {
+      "id": "utf8_replacement_and_bom",
+      "files": [
+        "invalid.txt"
+      ]
+    },
+    "expected": {
+      "text": "<file name=\"invalid.txt\">\n﻿A�B\n</file>\n",
+      "images": []
+    }
+  },
+  {
+    "operation": "files",
+    "case": "files-187",
+    "input": {
+      "id": "unescaped_authored_name",
+      "files": [
+        "quote\".txt"
+      ]
+    },
+    "expected": {
+      "text": "<file name=\"quote\".txt\">\nverbatim\n</file>\n",
+      "images": []
+    }
+  },
+  {
+    "operation": "files",
+    "case": "files-188",
+    "input": {
+      "id": "undecodable_image_omission",
+      "files": [
+        "broken.png"
+      ]
+    },
+    "expected": {
+      "text": "<file name=\"broken.png\">[Image omitted: could not be resized below the inline image size limit.]</file>\n",
+      "images": []
+    }
+  },
+  {
+    "operation": "files",
+    "case": "files-189",
+    "input": {
+      "id": "undecodable_image_disabled",
+      "files": [
+        "broken.png"
+      ],
+      "options": {
+        "autoResizeImages": false
+      }
+    },
+    "expected": {
+      "text": "<file name=\"broken.png\"></file>\n",
+      "images": [
+        {
+          "type": "image",
+          "mimeType": "image/png",
+          "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQAAAAAAAAAAAAAAAAAX8jx0gAAAABJRU5ErkJggg=="
+        }
+      ]
+    }
+  },
+  {
+    "operation": "files",
+    "case": "files-190",
+    "input": {
+      "id": "fitted_dimensions",
+      "files": [
+        "wide.png"
+      ]
+    },
+    "expected": {
+      "text": "<file name=\"wide.png\">[Image: original 2001x1, displayed at 2000x1. Multiply coordinates by 1.00 to map to original image.]</file>\n",
+      "images": [
+        {
+          "type": "image",
+          "mimeType": "image/png",
+          "data": "iVBORw0KGgoAAAANSUhEUgAAB9AAAAABCAYAAACG/TV9AAAAY0lEQVR4Ae3AA6AkWZbG8f937o3IzKdyS2Oubdu2bdu2bdu2bWmMnpZKr54yMyLu+Xa3anqmhztr1a9y1VVXXXXVVVddddVVV1111VVXXXXVVVddddVVV1111VVXXXXVVVfxj5xFAAUiNwiBAAAAAElFTkSuQmCC"
+        }
+      ]
+    }
+  },
+  {
+    "operation": "files",
+    "case": "files-191",
+    "input": {
+      "id": "unfitted_dimensions",
+      "files": [
+        "wide.png"
+      ],
+      "options": {
+        "autoResizeImages": false
+      }
+    },
+    "expected": {
+      "text": "<file name=\"wide.png\"></file>\n",
+      "images": [
+        {
+          "type": "image",
+          "mimeType": "image/png",
+          "data": "iVBORw0KGgoAAAANSUhEUgAAB9EAAAABCAYAAABpP15DAAAAZElEQVR4Ae3AA6AkWZbG8f937o3IzKdyS2Oubdu2bdu2bdu2bWmMnpZKr54yMyLu+Xa3anqmhztr1a9y1VVXXXXVVVddddVVV1111VVXXXXVVVddddVVV1111VVXXXXVVVcB8I+cWQAFxPngSgAAAABJRU5ErkJggg=="
+        }
+      ]
+    }
+  },
+  {
+    "operation": "files",
+    "case": "files-192",
+    "input": {
+      "id": "no_files",
+      "files": []
+    },
+    "expected": {
+      "text": "",
+      "images": []
+    }
+  },
+  {
+    "operation": "files",
+    "case": "files-193",
+    "input": {
+      "id": "omission_continues_in_order",
+      "files": [
+        "first.txt",
+        "tiny.png",
+        "broken.png",
+        "last.txt",
+        "tiny.png"
+      ]
+    },
+    "expected": {
+      "text": "<file name=\"first.txt\">\nHello, world!\n</file>\n<file name=\"tiny.png\"></file>\n<file name=\"broken.png\">[Image omitted: could not be resized below the inline image size limit.]</file>\n<file name=\"last.txt\">\nlast\n\n</file>\n<file name=\"tiny.png\"></file>\n",
+      "images": [
+        {
+          "type": "image",
+          "mimeType": "image/png",
+          "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg=="
+        },
+        {
+          "type": "image",
+          "mimeType": "image/png",
+          "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg=="
+        }
+      ]
+    }
+  },
+  {
+    "operation": "files",
+    "case": "files-194",
+    "input": {
+      "id": "content_over_extension",
+      "files": [
+        "png-as-text.txt",
+        "text-as-png.png"
+      ]
+    },
+    "expected": {
+      "text": "<file name=\"png-as-text.txt\"></file>\n<file name=\"text-as-png.png\">\nplain text\n</file>\n",
+      "images": [
+        {
+          "type": "image",
+          "mimeType": "image/png",
+          "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg=="
+        }
+      ]
+    }
+  },
+  {
+    "operation": "files",
+    "case": "files-195",
+    "input": {
+      "id": "missing",
+      "files": [
+        "missing.txt"
+      ],
+      "styles_enabled": true
+    },
+    "expected": {
+      "status": 1,
+      "stdout": "",
+      "stderr": "\u001b[31mError: File not found: missing.txt\u001b[39m\n"
+    }
+  },
+  {
+    "operation": "files",
+    "case": "files-196",
+    "input": {
+      "id": "missing_plain",
+      "files": [
+        "missing.txt"
+      ],
+      "styles_enabled": false
+    },
+    "expected": {
+      "status": 1,
+      "stdout": "",
+      "stderr": "Error: File not found: missing.txt\n"
+    }
+  }
+]

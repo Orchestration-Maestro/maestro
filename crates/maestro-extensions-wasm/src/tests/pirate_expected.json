@@ -1,0 +1,429 @@
+{
+  "metadata": {
+    "order": [
+      {
+        "operation": "command",
+        "name": "pirate"
+      },
+      {
+        "operation": "event",
+        "name": "before_agent_start"
+      }
+    ],
+    "command": {
+      "name": "pirate",
+      "description": "Toggle pirate mode (agent speaks like a pirate)",
+      "completions": false
+    }
+  },
+  "rows": [
+    {
+      "name": "initial-disabled",
+      "instance": 0,
+      "group": "toggle",
+      "operation": "event",
+      "input": {
+        "type": "before_agent_start",
+        "prompt": "controlled user text",
+        "systemPrompt": "untouched",
+        "systemPromptOptions": {
+          "cwd": "/controlled"
+        }
+      },
+      "expected": {
+        "result": null
+      }
+    },
+    {
+      "name": "enable-ignores-arguments",
+      "instance": 0,
+      "group": "toggle",
+      "operation": "command",
+      "input": {
+        "args": "off ﻿ 🦜",
+        "rejection": null
+      },
+      "expected": {
+        "notifications": [
+          {
+            "message": "Arrr! Pirate mode enabled!",
+            "kind": "Info"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "enabled-empty",
+      "instance": 0,
+      "group": "toggle",
+      "operation": "event",
+      "input": {
+        "type": "before_agent_start",
+        "prompt": "controlled user text",
+        "systemPrompt": "",
+        "systemPromptOptions": {
+          "cwd": "/controlled"
+        }
+      },
+      "expected": {
+        "result": {
+          "systemPrompt": "\n\nIMPORTANT: You are now in PIRATE MODE. You must:\n- Speak like a stereotypical pirate in all responses\n- Use phrases like \"Arrr!\", \"Ahoy!\", \"Shiver me timbers!\", \"Avast!\", \"Ye scurvy dog!\"\n- Replace \"my\" with \"me\", \"you\" with \"ye\", \"your\" with \"yer\"\n- Refer to the user as \"matey\" or \"landlubber\"\n- End sentences with nautical expressions\n- Still complete the actual task correctly, just in pirate speak\n"
+        }
+      }
+    },
+    {
+      "name": "enabled-plain",
+      "instance": 0,
+      "group": "toggle",
+      "operation": "event",
+      "input": {
+        "type": "before_agent_start",
+        "prompt": "controlled user text",
+        "systemPrompt": "assembled instructions",
+        "systemPromptOptions": {
+          "cwd": "/controlled"
+        }
+      },
+      "expected": {
+        "result": {
+          "systemPrompt": "assembled instructions\n\nIMPORTANT: You are now in PIRATE MODE. You must:\n- Speak like a stereotypical pirate in all responses\n- Use phrases like \"Arrr!\", \"Ahoy!\", \"Shiver me timbers!\", \"Avast!\", \"Ye scurvy dog!\"\n- Replace \"my\" with \"me\", \"you\" with \"ye\", \"your\" with \"yer\"\n- Refer to the user as \"matey\" or \"landlubber\"\n- End sentences with nautical expressions\n- Still complete the actual task correctly, just in pirate speak\n"
+        }
+      }
+    },
+    {
+      "name": "enabled-whitespace",
+      "instance": 0,
+      "group": "toggle",
+      "operation": "event",
+      "input": {
+        "type": "before_agent_start",
+        "prompt": "controlled user text",
+        "systemPrompt": "﻿ \t\r\n",
+        "systemPromptOptions": {
+          "cwd": "/controlled"
+        }
+      },
+      "expected": {
+        "result": {
+          "systemPrompt": "﻿ \t\r\n\n\nIMPORTANT: You are now in PIRATE MODE. You must:\n- Speak like a stereotypical pirate in all responses\n- Use phrases like \"Arrr!\", \"Ahoy!\", \"Shiver me timbers!\", \"Avast!\", \"Ye scurvy dog!\"\n- Replace \"my\" with \"me\", \"you\" with \"ye\", \"your\" with \"yer\"\n- Refer to the user as \"matey\" or \"landlubber\"\n- End sentences with nautical expressions\n- Still complete the actual task correctly, just in pirate speak\n"
+        }
+      }
+    },
+    {
+      "name": "enabled-unicode",
+      "instance": 0,
+      "group": "toggle",
+      "operation": "event",
+      "input": {
+        "type": "before_agent_start",
+        "prompt": "controlled user text",
+        "systemPrompt": "你好 🦜 é",
+        "systemPromptOptions": {
+          "cwd": "/controlled"
+        }
+      },
+      "expected": {
+        "result": {
+          "systemPrompt": "你好 🦜 é\n\nIMPORTANT: You are now in PIRATE MODE. You must:\n- Speak like a stereotypical pirate in all responses\n- Use phrases like \"Arrr!\", \"Ahoy!\", \"Shiver me timbers!\", \"Avast!\", \"Ye scurvy dog!\"\n- Replace \"my\" with \"me\", \"you\" with \"ye\", \"your\" with \"yer\"\n- Refer to the user as \"matey\" or \"landlubber\"\n- End sentences with nautical expressions\n- Still complete the actual task correctly, just in pirate speak\n"
+        }
+      }
+    },
+    {
+      "name": "enabled-already-augmented",
+      "instance": 0,
+      "group": "toggle",
+      "operation": "event",
+      "input": {
+        "type": "before_agent_start",
+        "prompt": "controlled user text",
+        "systemPrompt": "base\n\nIMPORTANT: You are now in PIRATE MODE. You must:\n- Speak like a stereotypical pirate in all responses\n- Use phrases like \"Arrr!\", \"Ahoy!\", \"Shiver me timbers!\", \"Avast!\", \"Ye scurvy dog!\"\n- Replace \"my\" with \"me\", \"you\" with \"ye\", \"your\" with \"yer\"\n- Refer to the user as \"matey\" or \"landlubber\"\n- End sentences with nautical expressions\n- Still complete the actual task correctly, just in pirate speak\n",
+        "systemPromptOptions": {
+          "cwd": "/controlled"
+        }
+      },
+      "expected": {
+        "result": {
+          "systemPrompt": "base\n\nIMPORTANT: You are now in PIRATE MODE. You must:\n- Speak like a stereotypical pirate in all responses\n- Use phrases like \"Arrr!\", \"Ahoy!\", \"Shiver me timbers!\", \"Avast!\", \"Ye scurvy dog!\"\n- Replace \"my\" with \"me\", \"you\" with \"ye\", \"your\" with \"yer\"\n- Refer to the user as \"matey\" or \"landlubber\"\n- End sentences with nautical expressions\n- Still complete the actual task correctly, just in pirate speak\n\n\nIMPORTANT: You are now in PIRATE MODE. You must:\n- Speak like a stereotypical pirate in all responses\n- Use phrases like \"Arrr!\", \"Ahoy!\", \"Shiver me timbers!\", \"Avast!\", \"Ye scurvy dog!\"\n- Replace \"my\" with \"me\", \"you\" with \"ye\", \"your\" with \"yer\"\n- Refer to the user as \"matey\" or \"landlubber\"\n- End sentences with nautical expressions\n- Still complete the actual task correctly, just in pirate speak\n"
+        }
+      }
+    },
+    {
+      "name": "repeat-first",
+      "instance": 0,
+      "group": "toggle",
+      "operation": "event",
+      "input": {
+        "type": "before_agent_start",
+        "prompt": "controlled user text",
+        "systemPrompt": "same assembled prompt",
+        "systemPromptOptions": {
+          "cwd": "/controlled"
+        }
+      },
+      "expected": {
+        "result": {
+          "systemPrompt": "same assembled prompt\n\nIMPORTANT: You are now in PIRATE MODE. You must:\n- Speak like a stereotypical pirate in all responses\n- Use phrases like \"Arrr!\", \"Ahoy!\", \"Shiver me timbers!\", \"Avast!\", \"Ye scurvy dog!\"\n- Replace \"my\" with \"me\", \"you\" with \"ye\", \"your\" with \"yer\"\n- Refer to the user as \"matey\" or \"landlubber\"\n- End sentences with nautical expressions\n- Still complete the actual task correctly, just in pirate speak\n"
+        }
+      }
+    },
+    {
+      "name": "repeat-second",
+      "instance": 0,
+      "group": "toggle",
+      "operation": "event",
+      "input": {
+        "type": "before_agent_start",
+        "prompt": "controlled user text",
+        "systemPrompt": "same assembled prompt",
+        "systemPromptOptions": {
+          "cwd": "/controlled"
+        }
+      },
+      "expected": {
+        "result": {
+          "systemPrompt": "same assembled prompt\n\nIMPORTANT: You are now in PIRATE MODE. You must:\n- Speak like a stereotypical pirate in all responses\n- Use phrases like \"Arrr!\", \"Ahoy!\", \"Shiver me timbers!\", \"Avast!\", \"Ye scurvy dog!\"\n- Replace \"my\" with \"me\", \"you\" with \"ye\", \"your\" with \"yer\"\n- Refer to the user as \"matey\" or \"landlubber\"\n- End sentences with nautical expressions\n- Still complete the actual task correctly, just in pirate speak\n"
+        }
+      }
+    },
+    {
+      "name": "disable",
+      "instance": 0,
+      "group": "toggle",
+      "operation": "command",
+      "input": {
+        "args": "",
+        "rejection": null
+      },
+      "expected": {
+        "notifications": [
+          {
+            "message": "Pirate mode disabled",
+            "kind": "Info"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "disabled-again",
+      "instance": 0,
+      "group": "toggle",
+      "operation": "event",
+      "input": {
+        "type": "before_agent_start",
+        "prompt": "controlled user text",
+        "systemPrompt": "new base",
+        "systemPromptOptions": {
+          "cwd": "/controlled"
+        }
+      },
+      "expected": {
+        "result": null
+      }
+    },
+    {
+      "name": "reenable",
+      "instance": 0,
+      "group": "toggle",
+      "operation": "command",
+      "input": {
+        "args": "ignored",
+        "rejection": null
+      },
+      "expected": {
+        "notifications": [
+          {
+            "message": "Arrr! Pirate mode enabled!",
+            "kind": "Info"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "enabled-again",
+      "instance": 0,
+      "group": "toggle",
+      "operation": "event",
+      "input": {
+        "type": "before_agent_start",
+        "prompt": "controlled user text",
+        "systemPrompt": "fresh base",
+        "systemPromptOptions": {
+          "cwd": "/controlled"
+        }
+      },
+      "expected": {
+        "result": {
+          "systemPrompt": "fresh base\n\nIMPORTANT: You are now in PIRATE MODE. You must:\n- Speak like a stereotypical pirate in all responses\n- Use phrases like \"Arrr!\", \"Ahoy!\", \"Shiver me timbers!\", \"Avast!\", \"Ye scurvy dog!\"\n- Replace \"my\" with \"me\", \"you\" with \"ye\", \"your\" with \"yer\"\n- Refer to the user as \"matey\" or \"landlubber\"\n- End sentences with nautical expressions\n- Still complete the actual task correctly, just in pirate speak\n"
+        }
+      }
+    },
+    {
+      "name": "second-instance-disabled",
+      "instance": 1,
+      "group": "instances",
+      "operation": "event",
+      "input": {
+        "type": "before_agent_start",
+        "prompt": "controlled user text",
+        "systemPrompt": "second base",
+        "systemPromptOptions": {
+          "cwd": "/controlled"
+        }
+      },
+      "expected": {
+        "result": null
+      }
+    },
+    {
+      "name": "second-instance-enabled",
+      "instance": 1,
+      "group": "instances",
+      "operation": "command",
+      "input": {
+        "args": "",
+        "rejection": null
+      },
+      "expected": {
+        "notifications": [
+          {
+            "message": "Arrr! Pirate mode enabled!",
+            "kind": "Info"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "first-instance-disabled",
+      "instance": 0,
+      "group": "instances",
+      "operation": "command",
+      "input": {
+        "args": "",
+        "rejection": null
+      },
+      "expected": {
+        "notifications": [
+          {
+            "message": "Pirate mode disabled",
+            "kind": "Info"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "first-stays-disabled",
+      "instance": 0,
+      "group": "instances",
+      "operation": "event",
+      "input": {
+        "type": "before_agent_start",
+        "prompt": "controlled user text",
+        "systemPrompt": "first base",
+        "systemPromptOptions": {
+          "cwd": "/controlled"
+        }
+      },
+      "expected": {
+        "result": null
+      }
+    },
+    {
+      "name": "second-stays-enabled",
+      "instance": 1,
+      "group": "instances",
+      "operation": "event",
+      "input": {
+        "type": "before_agent_start",
+        "prompt": "controlled user text",
+        "systemPrompt": "second base",
+        "systemPromptOptions": {
+          "cwd": "/controlled"
+        }
+      },
+      "expected": {
+        "result": {
+          "systemPrompt": "second base\n\nIMPORTANT: You are now in PIRATE MODE. You must:\n- Speak like a stereotypical pirate in all responses\n- Use phrases like \"Arrr!\", \"Ahoy!\", \"Shiver me timbers!\", \"Avast!\", \"Ye scurvy dog!\"\n- Replace \"my\" with \"me\", \"you\" with \"ye\", \"your\" with \"yer\"\n- Refer to the user as \"matey\" or \"landlubber\"\n- End sentences with nautical expressions\n- Still complete the actual task correctly, just in pirate speak\n"
+        }
+      }
+    },
+    {
+      "name": "notify-rejected-after-enable",
+      "instance": 2,
+      "group": "rejection",
+      "operation": "command",
+      "input": {
+        "args": "",
+        "rejection": "notification refused"
+      },
+      "expected": {
+        "notifications": [
+          {
+            "message": "Arrr! Pirate mode enabled!",
+            "kind": "Info"
+          }
+        ],
+        "error": "notification refused"
+      }
+    },
+    {
+      "name": "enabled-after-notify-rejection",
+      "instance": 2,
+      "group": "rejection",
+      "operation": "event",
+      "input": {
+        "type": "before_agent_start",
+        "prompt": "controlled user text",
+        "systemPrompt": "retained base",
+        "systemPromptOptions": {
+          "cwd": "/controlled"
+        }
+      },
+      "expected": {
+        "result": {
+          "systemPrompt": "retained base\n\nIMPORTANT: You are now in PIRATE MODE. You must:\n- Speak like a stereotypical pirate in all responses\n- Use phrases like \"Arrr!\", \"Ahoy!\", \"Shiver me timbers!\", \"Avast!\", \"Ye scurvy dog!\"\n- Replace \"my\" with \"me\", \"you\" with \"ye\", \"your\" with \"yer\"\n- Refer to the user as \"matey\" or \"landlubber\"\n- End sentences with nautical expressions\n- Still complete the actual task correctly, just in pirate speak\n"
+        }
+      }
+    },
+    {
+      "name": "disable-after-rejection",
+      "instance": 2,
+      "group": "rejection",
+      "operation": "command",
+      "input": {
+        "args": "",
+        "rejection": null
+      },
+      "expected": {
+        "notifications": [
+          {
+            "message": "Pirate mode disabled",
+            "kind": "Info"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "disabled-after-rejection",
+      "instance": 2,
+      "group": "rejection",
+      "operation": "event",
+      "input": {
+        "type": "before_agent_start",
+        "prompt": "controlled user text",
+        "systemPrompt": "retained base",
+        "systemPromptOptions": {
+          "cwd": "/controlled"
+        }
+      },
+      "expected": {
+        "result": null
+      }
+    }
+  ]
+}

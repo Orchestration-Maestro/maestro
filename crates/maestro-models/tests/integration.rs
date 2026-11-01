@@ -8,6 +8,7 @@ use maestro_models::{Model, ModelCompat, ModelCost, ModelInput, ModelThinkingLev
 mod account_message_routing;
 mod account_tool_names;
 mod assistant_publication;
+mod authored_tool_arguments;
 #[path = "support/azure_cases.rs"]
 mod azure_cases;
 #[path = "support/azure_endpoint.rs"]
@@ -68,6 +69,7 @@ mod cloud_model_routes;
 mod cloud_pac_routing;
 mod cloud_profile_credentials;
 mod cloud_proxy_transports;
+mod cloudflare_dispatch;
 mod compatibility_invocation;
 mod content_generation_conversion;
 mod content_generation_invocation;
@@ -92,6 +94,13 @@ mod environment_children;
 mod environment_model_keys;
 #[path = "support/environment_rows.rs"]
 mod environment_rows;
+mod executable_schemas;
+#[allow(
+    dead_code,
+    reason = "Each test binary uses part of the scripted FTP peer."
+)]
+#[path = "support/ftp_server.rs"]
+mod ftp_server;
 mod handoff_tool_ids;
 #[path = "history_handoffs.rs"]
 mod history_handoffs;
@@ -102,6 +111,8 @@ mod invocation_cancellation;
 #[path = "support/json.rs"]
 pub(crate) mod json;
 mod json_boundary_consumers;
+#[path = "support/json_equivalence.rs"]
+mod json_equivalence;
 #[path = "support/key_selection.rs"]
 mod key_selection;
 #[allow(
@@ -141,6 +152,7 @@ mod oauth_admission;
 mod oauth_primitives;
 mod oauth_provider_registry;
 mod offline_model_catalog;
+mod output_budget;
 #[cfg(unix)]
 #[path = "support/profile_credentials.rs"]
 mod profile_credentials;
@@ -184,6 +196,8 @@ mod response_session_surface;
 #[path = "support/response_support.rs"]
 mod response_support;
 mod response_tool_images;
+#[path = "support/root_routes.rs"]
+mod root_routes;
 mod routed_cache_write;
 #[path = "support/runtime.rs"]
 mod runtime;
@@ -193,11 +207,13 @@ mod scripted_model_invocation;
 mod simple_model_options;
 #[path = "support/socks.rs"]
 mod socks;
+mod stream_options;
 mod streamed_arguments;
 mod subscription_accounts;
 #[cfg(target_os = "linux")]
 #[path = "support/tls.rs"]
 mod tls;
+mod tool_argument_roots;
 #[path = "tool_images.rs"]
 mod tool_images;
 #[path = "support/transport.rs"]
@@ -211,3 +227,7 @@ mod cloud_content_invocation;
 
 #[path = "support/content_credentials.rs"]
 mod content_credentials;
+
+mod message_beta_headers;
+
+mod simple_missing_auth;

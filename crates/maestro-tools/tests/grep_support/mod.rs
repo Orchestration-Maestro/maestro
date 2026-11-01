@@ -317,10 +317,9 @@ pub fn check_rows(test: &str) {
         crate::ls_support::assert_rows(&case, &rows, width);
     }
 }
-/// Construct the oracle's native tree, with encoded filenames on Unix.
+/// Construct the ordinary native search tree on every Unix host.
 #[cfg(unix)]
 pub fn tree() -> Scratch {
-    use std::os::unix::ffi::OsStrExt;
     let root = Scratch::new().unwrap();
     for (path, text) in [
         ("example.txt", "first line\nmatch line\nlast line"),
@@ -348,16 +347,26 @@ pub fn tree() -> Scratch {
         root.file(path, text.as_bytes());
     }
     root.file("invalid-content", b"hit\xff\n");
-    root.file("binary", b"needle\0tail\n");
+    // NUL stays on its own line: searcher output varies by host; controlled tests cover inline NUL.
+    root.file("binary", b"needle\n\0tail\n");
     std::os::unix::fs::symlink("kept.txt", root.path().join("linked-file")).unwrap();
     std::os::unix::fs::symlink("a", root.path().join("linked-dir")).unwrap();
-    std::fs::write(
-        root.path()
-            .join(std::ffi::OsStr::from_bytes(b"invalid-\xff")),
-        b"needle\n",
-    )
-    .unwrap();
     root
+}
+/// Add the non-UTF-8 filename only when the host can store its bytes.
+#[cfg(unix)]
+pub fn add_invalid_filename(root: &Scratch) -> bool {
+    use std::os::unix::ffi::OsStrExt;
+    let invalid = std::ffi::OsStr::from_bytes(b"invalid-\xff");
+    if !root.keeps_distinct(&[invalid]).unwrap() {
+        eprintln!(
+            "only invalid-filename assertions need name bytes {:?}",
+            invalid.as_bytes()
+        );
+        return false;
+    }
+    std::fs::write(root.path().join(invalid), b"needle\n").unwrap();
+    true
 }
 /// Run real search through the wrapped factory and preserve absent details.
 #[cfg(unix)]

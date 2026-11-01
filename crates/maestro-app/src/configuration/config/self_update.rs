@@ -4,9 +4,20 @@ use super::installation::{InstallMethod, Installation, detect_install_method};
 use maestro_path::{posix, win32};
 use maestro_process::SpawnSyncError;
 use maestro_text::is_whitespace_scalar;
-use std::{io, path::Path, process::Output};
+use std::{
+    future::Future,
+    io,
+    path::Path,
+    pin::Pin,
+    process::{ExitStatus, Output, Stdio},
+};
 
+mod execute;
 mod native;
+pub use execute::{
+    SelfUpdatePlan, get_self_update_command_from_settings, get_self_update_plan,
+    get_self_update_unavailable_instruction_from_settings, run_self_update,
+};
 pub use native::NativeSelfUpdateOperations;
 
 /// One executable with literal, ordered arguments and a human-readable display.
@@ -51,6 +62,25 @@ pub trait SelfUpdateOperations {
     /// # Errors
     /// Returns the process owner's original error.
     fn run_command_sync(&self, command: &str, args: &[String]) -> Result<Output, SpawnSyncError>;
+    /// Run one selected step with inherited standard streams until it exits.
+    ///
+    /// The default runs the native launcher without a deadline; an adapter that
+    /// already owns child processes replaces it.
+    ///
+    /// # Errors
+    /// Returns executable resolution or native spawn failures unchanged.
+    fn run_command<'a>(
+        &'a self,
+        command: &'a str,
+        args: &'a [String],
+    ) -> Pin<Box<dyn Future<Output = io::Result<ExitStatus>> + 'a>> {
+        Box::pin(async move {
+            let mut child = execute::native_launch(command, args)
+                .with_context(std::iter::empty::<(&str, &str)>(), None)
+                .spawn([Stdio::inherit(), Stdio::inherit(), Stdio::inherit()])?;
+            child.wait().await
+        })
+    }
 }
 
 /// Select Windows or POSIX directory splitting without native path conversion.
@@ -99,26 +129,32 @@ fn inferred_install(context: &SelfUpdateContext<'_>, name: &str) -> Option<(Stri
     (basename(&root, windows) == "node_modules" && basename(&parent, windows) == "lib")
         .then(|| (root, dirname(&parent, windows)))
 }
-/// Construct the display without modifying executable or argument bytes.
-fn step(command: String, args: Vec<String>) -> SelfUpdateCommandStep {
-    let display = std::iter::once(&command)
-        .chain(&args)
+/// Join authored operands with whitespace-containing ones quoted.
+fn command_line(command: &str, args: &[String]) -> String {
+    std::iter::once(command)
+        .chain(args.iter().map(String::as_str))
         .map(|arg| {
             if arg.chars().any(is_whitespace_scalar) {
                 format!("\"{arg}\"")
             } else {
-                arg.clone()
+                arg.to_owned()
             }
         })
         .collect::<Vec<_>>()
-        .join(" ");
+        .join(" ")
+}
+/// Construct the display without modifying executable or argument bytes.
+fn step(command: String, args: Vec<String>) -> SelfUpdateCommandStep {
+    let display = command_line(&command, &args);
     SelfUpdateCommandStep {
         command,
         args,
         display,
     }
 }
-/// Select executable and verbs for one known installation method.
+/// Option every supported package manager accepts to skip package lifecycle scripts.
+const IGNORE_SCRIPTS: &str = "--ignore-scripts";
+/// Selects executable and verbs, disabling lifecycle scripts on installation steps only.
 fn command_for_method(
     context: &SelfUpdateContext<'_>,
     name: &str,
@@ -160,7 +196,7 @@ fn command_for_method(
     if method != InstallMethod::Yarn {
         args.push("-g".into());
     }
-    args.push(update.into());
+    args.extend([IGNORE_SCRIPTS.into(), update.into()]);
     let install = step(command, args);
     Some(match uninstall {
         None => SelfUpdateCommand {

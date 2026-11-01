@@ -1,6 +1,7 @@
 //! Guarded command operations and owned replacement contexts.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
+use crate::context_actions;
 use crate::local_support;
 use crate::model_support;
 use crate::ui_host;
@@ -110,7 +111,7 @@ mod command;
 use command::{Call, Recorder};
 use local_support::local;
 use maestro_extensions::{
-    ExtensionCommandContextActions, ReplacedSessionContext,
+    CommandContextOperations, ExtensionCommandContextActions, ReplacedSessionContext,
     types::{ForkOptions, NewSessionCommandOptions, SwitchSessionOptions},
 };
 use maestro_session::session_manager::{ForkPosition, NavigateTreeOptions, ReadonlySessionManager};
@@ -121,12 +122,12 @@ fn command_options_preserve_absence_and_every_callback() {
     local(async {
         let runner = runner(&Rc::new(RwLock::new(Vec::new())));
         let record = Recorder::default();
-        let actions = record.actions(false);
-        let _: &maestro_extensions::NewSessionHandler = &actions.new_session;
-        let _: &maestro_extensions::ForkHandler = &actions.fork;
-        let _: &maestro_extensions::NavigateTreeHandler = &actions.navigate_tree;
-        let _: &maestro_extensions::SwitchSessionHandler = &actions.switch_session;
-        runner.bind_command_context(Some(actions));
+        let operations = record.operations(false);
+        let _: &maestro_extensions::NewSessionHandler = &operations.new_session;
+        let _: &maestro_extensions::ForkHandler = &operations.fork;
+        let _: &maestro_extensions::NavigateTreeHandler = &operations.navigate_tree;
+        let _: &maestro_extensions::SwitchSessionHandler = &operations.switch_session;
+        runner.bind_command_context(Some(ExtensionCommandContextActions::new(operations)));
         let ctx = runner.create_command_context();
         let setup: Rc<dyn Fn(Rc<RefCell<maestro_session::SessionManager>>) -> TestFuture<()>> =
             Rc::new(|_| panic!("setup must stay with the application"));
@@ -333,21 +334,23 @@ async fn replacement_flow(operation: &'static str) {
         )) as TestFuture<maestro_extensions::types::SessionChangeResult>
     });
     let (new, fork, switch) = (apply.clone(), apply.clone(), apply);
-    old.bind_command_context(Some(ExtensionCommandContextActions {
-        new_session: Rc::new(move |options| {
-            let options = options.unwrap();
-            new(options.setup, options.with_session)
-        }),
-        fork: Rc::new(move |id, options| {
-            assert_eq!(id, "entry-1");
-            fork(None, options.unwrap().with_session)
-        }),
-        switch_session: Rc::new(move |path, options| {
-            assert_eq!(path, "/s.jsonl");
-            switch(None, options.unwrap().with_session)
-        }),
-        ..Default::default()
-    }));
+    old.bind_command_context(Some(ExtensionCommandContextActions::new(
+        CommandContextOperations {
+            new_session: Rc::new(move |options| {
+                let options = options.unwrap();
+                new(options.setup, options.with_session)
+            }),
+            fork: Rc::new(move |id, options| {
+                assert_eq!(id, "entry-1");
+                fork(None, options.unwrap().with_session)
+            }),
+            switch_session: Rc::new(move |path, options| {
+                assert_eq!(path, "/s.jsonl");
+                switch(None, options.unwrap().with_session)
+            }),
+            ..context_actions::silent_command_operations()
+        },
+    )));
     let ctx = old.create_command_context();
     let result = invoke_replacement(&ctx, operation, setup, with).await;
     trace
@@ -663,14 +666,16 @@ fn failure<T: 'static>(index: usize) -> TestFuture<T> {
 fn command_operation_errors_propagate_unchanged() {
     local(async {
         let runner = runner(&Rc::new(RwLock::new(Vec::new())));
-        runner.bind_command_context(Some(ExtensionCommandContextActions {
-            wait_for_idle: Rc::new(|| failure(0)),
-            new_session: Rc::new(|_| failure(1)),
-            fork: Rc::new(|_, _| failure(2)),
-            navigate_tree: Rc::new(|_, _| failure(3)),
-            switch_session: Rc::new(|_, _| failure(4)),
-            reload: Rc::new(|| failure(5)),
-        }));
+        runner.bind_command_context(Some(ExtensionCommandContextActions::new(
+            CommandContextOperations {
+                wait_for_idle: Rc::new(|| failure(0)),
+                new_session: Rc::new(|_| failure(1)),
+                fork: Rc::new(|_, _| failure(2)),
+                navigate_tree: Rc::new(|_, _| failure(3)),
+                switch_session: Rc::new(|_, _| failure(4)),
+                reload: Rc::new(|| failure(5)),
+            },
+        )));
         for (index, result) in all_commands(&runner.create_command_context())
             .await
             .into_iter()
@@ -733,13 +738,15 @@ fn reload_keeps_the_old_command_frame_running_with_a_stale_context() {
         let owner = local_support::loaded("/reload", bus.controller.for_extension());
         let runner = Rc::new(runner(&owner.owners));
         let weak = Rc::downgrade(&runner);
-        runner.bind_command_context(Some(ExtensionCommandContextActions {
-            reload: Rc::new(move || {
-                weak.upgrade().unwrap().invalidate(None);
-                Box::pin(async { Ok(()) })
-            }),
-            ..Default::default()
-        }));
+        runner.bind_command_context(Some(ExtensionCommandContextActions::new(
+            CommandContextOperations {
+                reload: Rc::new(move || {
+                    weak.upgrade().unwrap().invalidate(None);
+                    Box::pin(async { Ok(()) })
+                }),
+                ..context_actions::silent_command_operations()
+            },
+        )));
         owner
             .api
             .register_command(

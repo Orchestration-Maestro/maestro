@@ -316,6 +316,9 @@
                 {
                   "type": "object",
                   "properties": {
+                    "supportsDeveloperRole": {
+                      "type": "boolean"
+                    },
                     "sendSessionIdHeader": {
                       "type": "boolean"
                     },
@@ -331,6 +334,15 @@
                       "type": "boolean"
                     },
                     "supportsLongCacheRetention": {
+                      "type": "boolean"
+                    },
+                    "sendSessionAffinityHeaders": {
+                      "type": "boolean"
+                    },
+                    "supportsCacheControlOnTools": {
+                      "type": "boolean"
+                    },
+                    "allowEmptySignature": {
                       "type": "boolean"
                     }
                   }
@@ -766,6 +778,9 @@
                       {
                         "type": "object",
                         "properties": {
+                          "supportsDeveloperRole": {
+                            "type": "boolean"
+                          },
                           "sendSessionIdHeader": {
                             "type": "boolean"
                           },
@@ -781,6 +796,15 @@
                             "type": "boolean"
                           },
                           "supportsLongCacheRetention": {
+                            "type": "boolean"
+                          },
+                          "sendSessionAffinityHeaders": {
+                            "type": "boolean"
+                          },
+                          "supportsCacheControlOnTools": {
+                            "type": "boolean"
+                          },
+                          "allowEmptySignature": {
                             "type": "boolean"
                           }
                         }
@@ -1196,6 +1220,9 @@
                         {
                           "type": "object",
                           "properties": {
+                            "supportsDeveloperRole": {
+                              "type": "boolean"
+                            },
                             "sendSessionIdHeader": {
                               "type": "boolean"
                             },
@@ -1211,6 +1238,15 @@
                               "type": "boolean"
                             },
                             "supportsLongCacheRetention": {
+                              "type": "boolean"
+                            },
+                            "sendSessionAffinityHeaders": {
+                              "type": "boolean"
+                            },
+                            "supportsCacheControlOnTools": {
+                              "type": "boolean"
+                            },
+                            "allowEmptySignature": {
                               "type": "boolean"
                             }
                           }

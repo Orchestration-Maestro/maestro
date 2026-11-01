@@ -7,6 +7,7 @@ use std::{
 use web_sys::{Document, Node};
 
 /// Page-wide operands shared by mounted content and built-in elements.
+#[derive(Clone)]
 pub struct DomView {
     /// Document receiving mounted roots.
     pub document: Document,
@@ -18,7 +19,15 @@ pub struct DomView {
     pub pack: Rc<maestro_theme::BrandPack>,
     /// Selected brand mode.
     pub mode: maestro_theme::BrandMode,
+    /// Instance-local tool renderers, selected before page-wide registrations.
+    pub tool_renderers: Rc<indexmap::IndexMap<String, crate::tools::types::ToolRendererBinding>>,
 }
+/// Prepared renderer output: owned records on native targets, which have no page.
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) type PreparedContent = Box<dyn Any>;
+/// Prepared renderer output: page content in the browser.
+#[cfg(target_arch = "wasm32")]
+pub(crate) type PreparedContent = Box<dyn DomContent>;
 /// A mounted root and the native resources that live exactly as long as it.
 pub struct DomRoot {
     /// Root node the caller places.
@@ -75,6 +84,19 @@ impl MountedContent {
         parent: &Node,
         view: &DomView,
     ) -> Result<(), ToolUiError> {
+        self.show_before(content, parent, None, view)
+    }
+    /// Like [`Self::show`], but a first root is placed before `before` instead of last.
+    /// # Errors
+    /// Returns the content's failure; a failed replacement keeps the previous root.
+    #[cfg(target_arch = "wasm32")]
+    pub fn show_before(
+        &mut self,
+        content: &dyn DomContent,
+        parent: &Node,
+        before: Option<&Node>,
+        view: &DomView,
+    ) -> Result<(), ToolUiError> {
         let kind = (content as &dyn Any).type_id();
         if let Some((active, key, root)) = &self.active
             && *active == kind
@@ -85,13 +107,19 @@ impl MountedContent {
         let root = content.mount(view)?;
         match &self.active {
             Some((.., old)) => parent.replace_child(&root.node, &old.node),
-            None => parent.append_child(&root.node),
+            None => parent.insert_before(&root.node, before),
         }
-        .map_err(|e| {
-            ToolUiError::Host(crate::browser::attachment_content::browser::host_error(&e))
-        })?;
+        .map_err(|error| ToolUiError::native(&error))?;
         self.active = Some((kind, content.key().map(str::to_owned), root));
         Ok(())
+    }
+    /// Remove the root element from its parent and release its resources.
+    #[cfg(target_arch = "wasm32")]
+    pub fn clear(&mut self) {
+        use wasm_bindgen::JsCast as _;
+        if let Some((.., root)) = self.active.take() {
+            root.node.unchecked_ref::<web_sys::Element>().remove();
+        }
     }
 }
 /// An element property reflected onto one of its attributes.
@@ -102,43 +130,73 @@ pub(crate) enum Property {
     Text(&'static str, &'static str),
     /// A boolean property holding the attribute's presence.
     Flag(&'static str, &'static str),
+    /// A boolean property holding the attribute's absence, for properties that default to true.
+    Unset(&'static str, &'static str),
 }
 /// A property getter callable.
 #[cfg(target_arch = "wasm32")]
-type Getter = wasm_bindgen::closure::Closure<dyn Fn() -> wasm_bindgen::JsValue>;
+pub(crate) type Getter = wasm_bindgen::closure::Closure<dyn Fn() -> wasm_bindgen::JsValue>;
 /// A property setter callable.
 #[cfg(target_arch = "wasm32")]
-type Setter = wasm_bindgen::closure::Closure<dyn Fn(wasm_bindgen::JsValue)>;
+pub(crate) type Setter = wasm_bindgen::closure::Closure<dyn Fn(wasm_bindgen::JsValue)>;
+/// A weak reference to one built-in element, which a callback must not keep alive.
+#[cfg(target_arch = "wasm32")]
+pub(crate) type Link = js_sys::WeakRef<web_sys::HtmlElement>;
 /// Property accessors installed on one element, kept as long as its state.
 #[cfg(target_arch = "wasm32")]
 pub(crate) struct Reflected {
     /// Getter and setter callables, released with the element's state.
     _accessors: Vec<(Getter, Setter)>,
 }
+/// The element behind `link` while it exists.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn live(link: &Link) -> Option<web_sys::HtmlElement> {
+    link.deref()
+}
+/// The element behind `link` while it exists and is still connected.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn connected(link: &Link) -> Option<web_sys::HtmlElement> {
+    live(link).filter(|element| element.is_connected())
+}
+/// Install `get` and `set` as the configurable property `name` of `element`, reporting success.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn install(
+    element: &web_sys::HtmlElement,
+    name: &str,
+    get: &Getter,
+    set: &Setter,
+) -> bool {
+    use wasm_bindgen::JsValue;
+    let descriptor = js_sys::Object::new();
+    for (key, value) in [("get", get.as_ref()), ("set", set.as_ref())] {
+        let _ = js_sys::Reflect::set(&descriptor, &key.into(), value);
+    }
+    let _ = js_sys::Reflect::set(&descriptor, &"configurable".into(), &JsValue::TRUE);
+    js_sys::Reflect::define_property(element, &name.into(), &descriptor).is_ok()
+}
 /// Install accessors for `properties` on `element`, so setting one changes its observed attribute.
 #[cfg(target_arch = "wasm32")]
 fn reflect(element: &web_sys::HtmlElement, properties: &[Property]) -> Reflected {
     use wasm_bindgen::JsValue;
-    let live = |weak: &js_sys::WeakRef<web_sys::HtmlElement>| weak.deref();
     let mut kept = Vec::new();
     for &property in properties {
         let (name, attribute, flag) = match property {
-            Property::Text(name, attribute) => (name, attribute, false),
-            Property::Flag(name, attribute) => (name, attribute, true),
+            Property::Text(name, attribute) => (name, attribute, None),
+            Property::Flag(name, attribute) => (name, attribute, Some(true)),
+            Property::Unset(name, attribute) => (name, attribute, Some(false)),
         };
         let weak = js_sys::WeakRef::new(element);
         let read = weak.clone();
-        let get = Getter::new(move || match live(&read) {
-            Some(element) if flag => element.has_attribute(attribute).into(),
-            Some(element) => element.get_attribute(attribute).unwrap_or_default().into(),
-            None => JsValue::UNDEFINED,
+        let get = Getter::new(move || match (live(&read), flag) {
+            (Some(element), Some(present)) => (element.has_attribute(attribute) == present).into(),
+            (Some(element), None) => element.get_attribute(attribute).unwrap_or_default().into(),
+            (None, _) => JsValue::UNDEFINED,
         });
         let set = Setter::new(move |value: JsValue| {
             let Some(element) = live(&weak) else { return };
-            let text = if flag {
-                value.is_truthy().then(String::new)
-            } else {
-                value.as_string()
+            let text = match flag {
+                Some(present) => (value.is_truthy() == present).then(String::new),
+                None => value.as_string(),
             };
             // Attribute changes on a live element only fail for invalid names, which these are not.
             let _ = match text {
@@ -146,12 +204,7 @@ fn reflect(element: &web_sys::HtmlElement, properties: &[Property]) -> Reflected
                 None => element.remove_attribute(attribute),
             };
         });
-        let descriptor = js_sys::Object::new();
-        for (key, value) in [("get", get.as_ref()), ("set", set.as_ref())] {
-            let _ = js_sys::Reflect::set(&descriptor, &key.into(), value);
-        }
-        let _ = js_sys::Reflect::set(&descriptor, &"configurable".into(), &JsValue::TRUE);
-        if js_sys::Reflect::define_property(element, &name.into(), &descriptor).is_ok() {
+        if install(element, name, &get, &set) {
             kept.push((get, set));
         }
     }
@@ -174,9 +227,55 @@ pub(crate) fn install_styles(view: &DomView) -> Result<(), wasm_bindgen::JsValue
     css.push_str(crate::icons::ICON_STYLES);
     css.push_str(include_str!("components/code_block/code.css"));
     css.push_str(&maestro_theme::highlight_css().map_err(|error| failure(&error))?);
+    css.push_str(include_str!("components/markdown_block/markdown.css"));
+    css.push_str(include_str!("components/messages.css"));
+    css.push_str(include_str!("tools/artifacts/artifact_element.css"));
+    css.push_str(include_str!("tools/artifacts/generic_artifact.css"));
+    css.push_str(include_str!("tools/artifacts/docx_artifact.css"));
+    css.push_str(include_str!("tools/artifacts/html_artifact.css"));
+    css.push_str(include_str!("tools/artifacts/console.css"));
+    css.push_str(include_str!("components/diff.css"));
     css.push_str(include_str!("dom.css"));
+    css.push_str(include_str!("dialogs/dialogs.css"));
+    css.push_str(include_str!("components/message_editor.css"));
+    css.push_str(include_str!("components/agent_interface.css"));
+    css.push_str(include_str!("chat_panel.css"));
     crate::browser::install_stylesheet(&view.document, "maestro-dom-styles", &css)
         .map_err(|error| failure(&error))
+}
+#[cfg(target_arch = "wasm32")]
+thread_local! {
+    /// Operands of the built-in element under construction, which its constructor takes.
+    static CREATING: std::cell::RefCell<Option<Box<dyn Any>>> = const { std::cell::RefCell::new(None) };
+}
+/// Create a `tag` element whose constructor can take `inputs` through [`take_creating`].
+///
+/// The constructor has no argument channel. Operands it leaves untaken are dropped, and a
+/// creation nested inside another restores the outer operands before returning.
+/// # Errors
+/// Returns the browser's creation failure.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn create_with<T: 'static>(
+    document: &Document,
+    tag: &str,
+    inputs: T,
+) -> Result<web_sys::Element, wasm_bindgen::JsValue> {
+    let outer = CREATING.replace(Some(Box::new(inputs)));
+    let created = document.create_element(tag);
+    let untaken = CREATING.replace(outer);
+    drop(untaken);
+    created
+}
+/// Take the operands of the element under construction when they have type `T`.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn take_creating<T: 'static>() -> Option<T> {
+    CREATING.with_borrow_mut(|slot| match slot.take()?.downcast::<T>() {
+        Ok(inputs) => Some(*inputs),
+        Err(other) => {
+            *slot = Some(other);
+            None
+        }
+    })
 }
 /// Define an autonomous element whose constructor callback lives as long as the page.
 ///
@@ -209,4 +308,69 @@ pub(crate) fn define_element<E: custom_element::CustomElement + 'static>(
     window.custom_elements().define(name, &constructor)?;
     CONSTRUCTORS.with(|all| all.borrow_mut().push(closure));
     Ok(())
+}
+/// One small catalog icon inside a span carrying `class`.
+/// # Errors
+/// Returns a missing icon or native creation failure.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn icon(
+    document: &Document,
+    name: &str,
+    class: &str,
+) -> Result<web_sys::Element, ToolUiError> {
+    use crate::browser::attachment_content::browser::{element, host_error};
+    let node = crate::tools::renderer_registry::header::dom::glyph(name)?;
+    let span = element(document, "span", class)?;
+    let svg = crate::icons::icon_dom(&node, crate::icons::IconSize::Sm, None)
+        .map_err(|error| host_error(&error))?;
+    span.append_child(&svg)
+        .map_err(|error| host_error(&error))?;
+    Ok(span)
+}
+/// Parts of an outline glyph: element names with their attributes.
+#[cfg(target_arch = "wasm32")]
+pub(crate) type GlyphParts<'a> = &'a [(&'a str, &'a [(&'a str, &'a str)])];
+/// A decorative stroked glyph of `size` pixels drawn from `parts` in a 24-unit box.
+/// # Errors
+/// Returns a native failure.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn outline_glyph(
+    document: &Document,
+    size: &str,
+    parts: GlyphParts<'_>,
+) -> Result<web_sys::Element, ToolUiError> {
+    use crate::browser::attachment_content::browser::host_error;
+    const SVG: &str = "http://www.w3.org/2000/svg";
+    let svg = document
+        .create_element_ns(Some(SVG), "svg")
+        .map_err(|e| host_error(&e))?;
+    for (name, value) in [
+        ("width", size),
+        ("height", size),
+        ("viewBox", "0 0 24 24"),
+        ("fill", "none"),
+        ("stroke", "currentColor"),
+        ("stroke-width", "2"),
+        ("aria-hidden", "true"),
+    ] {
+        svg.set_attribute(name, value).map_err(|e| host_error(&e))?;
+    }
+    for (tag, attributes) in parts {
+        let node = document
+            .create_element_ns(Some(SVG), tag)
+            .map_err(|e| host_error(&e))?;
+        for (name, value) in *attributes {
+            node.set_attribute(name, value)
+                .map_err(|e| host_error(&e))?;
+        }
+        svg.append_child(&node).map_err(|e| host_error(&e))?;
+    }
+    Ok(svg)
+}
+/// Log a failure of an update that has no visible outcome of its own.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn report(result: Result<(), ToolUiError>) {
+    if let Err(error) = result {
+        web_sys::console::error_1(&error.to_string().into());
+    }
 }

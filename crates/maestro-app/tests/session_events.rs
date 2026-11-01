@@ -22,7 +22,7 @@ use std::{cell::RefCell, rc::Rc, sync::RwLock};
 use tokio::sync::Notify;
 
 /// An extension answering `event` with `answer`, which sees the event.
-fn handling<V: 'static, R: 'static>(
+pub(super) fn handling<V: 'static, R: 'static>(
     event: &'static str,
     answer: impl Fn(&mut V) -> Result<Option<R>, &'static str> + 'static,
 ) -> ExtensionFactory<Local> {
@@ -146,7 +146,7 @@ async fn delivered_queue(queue: fn(&Harness, &str)) -> (Harness, Vec<String>) {
     requested.notified().await;
     queue(&h, "later");
     log_events(&h, "listener", &log);
-    let mirrors = Rc::clone(&h.session);
+    let mirrors = Rc::downgrade(&h.session);
     let seen = Rc::clone(&log);
     drop(h.session.subscribe(Rc::new(move |event| {
         if let AgentSessionEvent::Agent(event) = event
@@ -154,10 +154,13 @@ async fn delivered_queue(queue: fn(&Harness, &str)) -> (Harness, Vec<String>) {
                 message: AgentMessage::User(_),
             } = &*event.read().unwrap()
         {
+            let session = mirrors
+                .upgrade()
+                .expect("the session outlives its listener");
             seen.borrow_mut().push(format!(
                 "mirrors {:?} {:?}",
-                mirrors.get_steering_messages(),
-                mirrors.get_follow_up_messages()
+                session.get_steering_messages(),
+                session.get_follow_up_messages()
             ));
         }
     })));
@@ -254,23 +257,7 @@ fn delivers_extension_events_before_session_listeners() {
 #[test]
 fn replaces_a_finalized_message_before_listeners_and_persistence() {
     on_task_set(|_| async {
-        let extension = handling::<MessageEndEvent, MessageEndEventResult<NativeAgentMessage>>(
-            "message_end",
-            |event| {
-                let AgentMessage::Assistant(answer) = &event.message else {
-                    return Ok(None);
-                };
-                let mut rewritten = answer.read().unwrap().clone();
-                rewritten.content = vec![maestro_models::AssistantContent::Text(TextContent::new(
-                    "rewritten".into(),
-                ))];
-                Ok(Some(MessageEndEventResult {
-                    message: Presence::Present(AgentMessage::Assistant(std::sync::Arc::new(
-                        RwLock::new(rewritten),
-                    ))),
-                }))
-            },
-        );
+        let extension = replacing_text();
         let h = session(vec![extension], vec![Scripted::text("original")]).await;
         let log = Rc::new(RefCell::new(Vec::new()));
         log_events(&h, "listener", &log);
@@ -444,54 +431,65 @@ fn reports_extension_handler_failures_without_stopping_the_queue() {
     });
 }
 
+/// Notifies `ended` once the agent ends, recording whether the session's run was active.
+fn observe_run_at_agent_end(h: &Harness, observed: Rc<RefCell<Option<bool>>>, ended: Rc<Notify>) {
+    let session = Rc::downgrade(&h.session);
+    drop(h.session.agent().subscribe(Rc::new(move |event, _| {
+        let ending = matches!(*event.read().unwrap(), AgentEvent::AgentEnd { .. });
+        if ending && observed.borrow().is_none() {
+            let session = session
+                .upgrade()
+                .expect("the session outlives its listener");
+            *observed.borrow_mut() = Some(session.is_streaming());
+            ended.notify_one();
+        }
+        Box::pin(std::future::ready(Ok(())))
+    })));
+}
+
 #[test]
-fn creates_the_retry_observation_synchronously() {
+fn the_run_is_active_when_the_agent_ends() {
     on_paused_task_set(|_| async {
-        let (reached, release) = (Rc::new(Notify::new()), Rc::new(Notify::new()));
-        let log = Rc::new(RefCell::new(Vec::new()));
-        let busy = gated::<MessageEndEvent, MessageEndEventResult<NativeAgentMessage>>(
-            "message_end",
-            Rc::clone(&reached),
-            Rc::clone(&release),
-            Rc::clone(&log),
-        );
-        let failure = Scripted {
-            error: Some("503 service unavailable".into()),
-            ..Scripted::default()
-        };
-        let h = harness(HarnessOptions {
-            factories: vec![busy],
-            responses: Some(vec![failure, Scripted::text("recovered")]),
-            settings: json!({"retry": {"enabled": true, "maxRetries": 1, "baseDelayMs": 1}}),
-            ..HarnessOptions::default()
-        })
-        .await;
-        let session = Rc::clone(&h.session);
-        let observed = Rc::new(RefCell::new(None));
-        let ended = Rc::new(Notify::new());
-        let (at_end, notify) = (Rc::clone(&observed), Rc::clone(&ended));
-        drop(h.session.agent().subscribe(Rc::new(move |event, _| {
-            let ending = matches!(*event.read().unwrap(), AgentEvent::AgentEnd { .. });
-            if ending && at_end.borrow().is_none() {
-                *at_end.borrow_mut() = Some(session.is_retrying());
-                notify.notify_one();
-            }
-            Box::pin(std::future::ready(Ok(())))
-        })));
-        let running = start_prompt(&h, "question");
-        reached.notified().await;
-        ended.notified().await;
-        assert_eq!(
-            *observed.borrow(),
-            Some(true),
-            "the agent end found the retry open"
-        );
-        assert!(
-            log.borrow().is_empty(),
-            "the queued processing still waited"
-        );
-        release.notify_one();
-        running.await.unwrap().unwrap();
+        for (error, retries) in [("503 service unavailable", 1), ("overloaded_error", 3)] {
+            let (reached, release) = (Rc::new(Notify::new()), Rc::new(Notify::new()));
+            let log = Rc::new(RefCell::new(Vec::new()));
+            let busy = gated::<MessageEndEvent, MessageEndEventResult<NativeAgentMessage>>(
+                "message_end",
+                Rc::clone(&reached),
+                Rc::clone(&release),
+                Rc::clone(&log),
+            );
+            let h = harness(HarnessOptions {
+                factories: vec![busy],
+                responses: Some(vec![Scripted::failure(error), Scripted::text("recovered")]),
+                settings: json!({"retry": {"enabled": true, "maxRetries": retries, "baseDelayMs": 1}}),
+                ..HarnessOptions::default()
+            })
+            .await;
+            let observed = Rc::new(RefCell::new(None));
+            let ended = Rc::new(Notify::new());
+            observe_run_at_agent_end(&h, Rc::clone(&observed), Rc::clone(&ended));
+            let running = start_prompt(&h, "question");
+            reached.notified().await;
+            ended.notified().await;
+            assert_eq!(
+                *observed.borrow(),
+                Some(true),
+                "the agent end found the run active"
+            );
+            assert!(
+                log.borrow().is_empty(),
+                "the queued processing still waited"
+            );
+            assert!(
+                !running.is_finished(),
+                "the prompt still waits for the queued handler"
+            );
+            release.notify_one();
+            running.await.unwrap().unwrap();
+            assert_eq!(h.requests.0.borrow().len(), 2);
+            assert!(!h.session.is_retrying(), "the retry settled");
+        }
     });
 }
 
@@ -613,6 +611,30 @@ fn persists_application_and_llm_messages_at_message_end() {
 }
 
 #[test]
+fn compact_aborts_and_disconnects_before_observation() {
+    on_task_set(|_| async {
+        let h = harness(HarnessOptions::default()).await;
+        let (requested, release) = hold_first_answer(&h, "first", &[]);
+        let running = start_prompt(&h, "first");
+        requested.notified().await;
+        let signal = h.session.agent().signal().unwrap();
+        let log = Rc::new(RefCell::new(Vec::new()));
+        log_events(&h, "listener", &log);
+        let observer = h.session.compact(None);
+        let aborted_at_call = signal.is_aborted();
+        release.notify_one();
+        drop(running.await);
+        let forwarded_ends = log
+            .borrow()
+            .iter()
+            .filter(|line| line.as_str() == "listener:agent_end")
+            .count();
+        drop(observer.await);
+        assert_eq!((aborted_at_call, forwarded_ends), (true, 0));
+    });
+}
+
+#[test]
 fn disconnects_and_reconnects_around_a_manual_compaction() {
     on_task_set(|_| async {
         let h = harness(HarnessOptions::default()).await;
@@ -661,4 +683,175 @@ fn dispose_invalidates_contexts_and_clears_listeners() {
             .unwrap();
         assert_eq!(*log.borrow(), Vec::<String>::new());
     });
+}
+
+/// Replaces a completed text response without changing tool-call messages.
+fn replacing_text() -> ExtensionFactory<Local> {
+    handling::<MessageEndEvent, MessageEndEventResult<NativeAgentMessage>>("message_end", |event| {
+        let AgentMessage::Assistant(answer) = &event.message else {
+            return Ok(None);
+        };
+        if answer
+            .read()
+            .unwrap()
+            .content
+            .iter()
+            .any(|block| matches!(block, maestro_models::AssistantContent::ToolCall(_)))
+        {
+            return Ok(None);
+        }
+        let mut rewritten = answer.read().unwrap().clone();
+        rewritten.content = vec![maestro_models::AssistantContent::Text(TextContent::new(
+            "rewritten".into(),
+        ))];
+        Ok(Some(MessageEndEventResult {
+            message: Presence::Present(AgentMessage::Assistant(std::sync::Arc::new(RwLock::new(
+                rewritten,
+            )))),
+        }))
+    })
+}
+
+/// One independently recorded extension projection.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ArgumentEventCase {
+    /// The projection phase.
+    kind: String,
+    /// Original call arguments.
+    input: Value,
+    /// Complete event apart from its generated call identity.
+    expected: Value,
+}
+
+/// An executable permissive tool recording its arguments and publishing progress.
+fn inspecting_tools(
+    executed: Rc<RefCell<Vec<Value>>>,
+) -> indexmap::IndexMap<String, maestro_agent::SharedAgentTool<Local>> {
+    let tool = maestro_agent::AgentToolRecord::<Local> {
+        definition: maestro_models::Tool {
+            name: "inspect".into(),
+            description: "Inspect the supplied arguments".into(),
+            parameters: json!({}).into(),
+        },
+        description: None,
+        label: "Inspect".into(),
+        prepare_arguments: None,
+        execution_mode: None,
+        execute: Rc::new(move |_, args, _, update| {
+            executed.borrow_mut().push(args);
+            if let Some(update) = update {
+                update(maestro_agent::AgentToolResult {
+                    content: vec![UserBlock::Text(TextContent::new("progress".into()))],
+                    details: Some(json!({"kept": true})),
+                    terminate: None,
+                });
+            }
+            Box::pin(std::future::ready(Ok(maestro_agent::AgentToolResult {
+                content: vec![UserBlock::Text(TextContent::new("finished".into()))],
+                details: Some(json!({"final": true})),
+                terminate: None,
+            })))
+        }),
+    };
+    indexmap::IndexMap::from([("inspect".into(), Rc::new(RwLock::new(tool)))])
+}
+
+#[test]
+fn tool_execution_events_keep_argument_root_values() {
+    on_task_set(|_| async {
+        let cases: Vec<ArgumentEventCase> =
+            serde_json::from_str(include_str!("fixtures/session_tool_argument_roots.json"))
+                .unwrap();
+        assert_eq!(cases.len(), 24);
+        for start in cases.iter().filter(|case| case.kind == "start") {
+            let update = cases
+                .iter()
+                .find(|case| case.kind == "update" && case.input == start.input)
+                .unwrap();
+            check_argument_events(start, update).await;
+        }
+    });
+}
+
+/// Runs one complete session, retaining ordered extension events and the original call.
+async fn check_argument_events(start: &ArgumentEventCase, update: &ArgumentEventCase) {
+    use maestro_extensions::{ToolExecutionStartEvent, ToolExecutionUpdateEvent};
+    let observed = Rc::new(RefCell::new(Vec::new()));
+    let seen = Rc::clone(&observed);
+    let starts = handling::<ToolExecutionStartEvent, ()>("tool_execution_start", move |event| {
+        let mut record = serde_json::to_value(event).unwrap();
+        record["type"] = json!("tool_execution_start");
+        seen.borrow_mut().push(record);
+        Ok(None)
+    });
+    let seen = Rc::clone(&observed);
+    let updates = handling::<ToolExecutionUpdateEvent, ()>("tool_execution_update", move |event| {
+        let mut record = serde_json::to_value(event).unwrap();
+        record["type"] = json!("tool_execution_update");
+        seen.borrow_mut().push(record);
+        Ok(None)
+    });
+    let executed = Rc::new(RefCell::new(Vec::new()));
+    let h = harness(HarnessOptions {
+        factories: vec![starts, updates, replacing_text()],
+        responses: Some(vec![
+            Scripted {
+                tool_calls: vec![("inspect".into(), start.input.clone())],
+                ..Scripted::default()
+            },
+            Scripted::text("original"),
+        ]),
+        base_tools_override: Some(inspecting_tools(Rc::clone(&executed))),
+        ..HarnessOptions::default()
+    })
+    .await;
+    let listeners = Rc::new(RefCell::new(Vec::new()));
+    log_events(&h, "listener", &listeners);
+    prompt(&h, "inspect the arguments").await;
+    h.session.agent().wait_for_idle().await;
+    assert_eq!(
+        executed.borrow().as_slice(),
+        std::slice::from_ref(&start.input)
+    );
+    let call = retained_argument_call(&h);
+    assert_eq!(call.name, "inspect");
+    assert_eq!(call.arguments, start.input);
+    let mut expected_start = start.expected.clone();
+    let mut expected_update = update.expected.clone();
+    expected_start["toolCallId"] = json!(call.id);
+    expected_update["toolCallId"] = json!(call.id);
+    assert_eq!(*observed.borrow(), [expected_start, expected_update]);
+    assert!(
+        listeners
+            .borrow()
+            .contains(&"listener:message_end rewritten".into())
+    );
+    let manager = h.session.session_manager().borrow();
+    assert_eq!(
+        manager.get_entries().last().unwrap()["message"]["content"][0]["text"],
+        "rewritten"
+    );
+}
+
+/// Reads the original assistant call retained by the completed session.
+fn retained_argument_call(h: &Harness) -> maestro_models::ToolCall {
+    h.session
+        .messages()
+        .read()
+        .unwrap()
+        .iter()
+        .find_map(|message| {
+            let AgentMessage::Assistant(message) = message else {
+                return None;
+            };
+            message.read().unwrap().content.iter().find_map(|block| {
+                if let maestro_models::AssistantContent::ToolCall(call) = block {
+                    Some(call.clone())
+                } else {
+                    None
+                }
+            })
+        })
+        .unwrap()
 }

@@ -88,10 +88,9 @@ pub fn parse_frontmatter(content: &str) -> Result<ParsedFrontmatter, Frontmatter
     };
     let start = 3 + normalized[3..].chars().next().map_or(0, char::len_utf8);
     let yaml = normalized.get(start..end).unwrap_or_default();
-    let frontmatter = if yaml.is_empty() {
-        FrontmatterValue::Mapping(Vec::new())
-    } else {
-        composer::compose(yaml)?
+    let frontmatter = match parse_yaml(yaml)? {
+        FrontmatterValue::Null => FrontmatterValue::Mapping(Vec::new()),
+        value => value,
     };
     Ok(ParsedFrontmatter {
         frontmatter,
@@ -108,3 +107,11 @@ pub fn strip_frontmatter(content: &str) -> Result<String, FrontmatterError> {
 }
 
 pub(crate) use maestro_text::is_whitespace_scalar as text_whitespace;
+
+/// Parse one YAML document without extracting a metadata header.
+///
+/// # Errors
+/// Returns the native parser's cause and source coordinates.
+pub fn parse_yaml(content: &str) -> Result<FrontmatterValue, FrontmatterError> {
+    composer::compose(&maestro_text::normalize_to_lf(content))
+}

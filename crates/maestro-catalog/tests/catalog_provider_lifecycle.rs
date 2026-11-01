@@ -105,7 +105,7 @@ fn construction_preserves_global_registries_but_refresh_resets_other_instances()
         let mut value = config.write().unwrap();
         value.name = Some("P".into());
         value.api = Some("instance-api".into());
-        value.oauth = Some(dynamic::oauth("Dynamic OAuth"));
+        value.callbacks.oauth = Some(dynamic::oauth("Dynamic OAuth"));
     }
     dynamic::callback(&config, "first");
     first.register_provider("p", config).unwrap();
@@ -186,7 +186,10 @@ fn registered_oauth_label_precedes_current_global_provider() {
             .register_provider(
                 "p",
                 SharedHandle::new(RwLock::new(ProviderConfigInput {
-                    oauth: Some(dynamic::oauth(name)),
+                    callbacks: maestro_catalog::ProviderCallbacks {
+                        oauth: Some(dynamic::oauth(name)),
+                        ..Default::default()
+                    },
                     ..Default::default()
                 })),
             )
@@ -244,7 +247,7 @@ fn unknown_removal_does_not_reload_or_reset_shared_registries() {
     )
     .unwrap();
     let config = dynamic::config(&["m"]);
-    config.write().unwrap().oauth = Some(dynamic::oauth("retained"));
+    config.write().unwrap().callbacks.oauth = Some(dynamic::oauth("retained"));
     dynamic::callback(&config, "retained");
     registry.register_provider("p", config).unwrap();
     let list = registry.get_all();
@@ -280,7 +283,7 @@ fn immediate_registration_uses_incoming_config_not_merged_config() {
     let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
     let observed = calls.clone();
     let config = dynamic::config(&["first"]);
-    config.write().unwrap().oauth = Some(Arc::new(dynamic::OAuth {
+    config.write().unwrap().callbacks.oauth = Some(Arc::new(dynamic::OAuth {
         calls: None,
         id: "ignored",
         name: "Transform",
@@ -341,7 +344,7 @@ fn failed_transform_keeps_applied_effects_without_upserting_config() {
         let mut config = config.write().unwrap();
         config.name = Some("failed".into());
         config.headers = Some([("X".into(), "new".into())].into());
-        config.oauth = Some(Arc::new(dynamic::OAuth {
+        config.callbacks.oauth = Some(Arc::new(dynamic::OAuth {
             calls: None,
             id: "ignored",
             name: "Dynamic OAuth",
@@ -394,7 +397,7 @@ fn refresh_stops_after_first_replay_failure_with_partial_publication() {
         config.write().unwrap().headers = Some([("X".into(), id.into())].into());
         let fail = fail.clone();
         let calls = calls.clone();
-        config.write().unwrap().oauth = Some(Arc::new(dynamic::OAuth {
+        config.write().unwrap().callbacks.oauth = Some(Arc::new(dynamic::OAuth {
             calls: None,
             id: "ignored",
             name: id,
@@ -459,7 +462,7 @@ fn known_removal_stays_removed_when_survivor_replay_fails() {
     let fail = Arc::new(std::sync::atomic::AtomicBool::new(false));
     let observed = fail.clone();
     let config = dynamic::config(&["m"]);
-    config.write().unwrap().oauth = Some(Arc::new(dynamic::OAuth {
+    config.write().unwrap().callbacks.oauth = Some(Arc::new(dynamic::OAuth {
         calls: None,
         id: "ignored",
         name: "Survivor",
@@ -496,7 +499,10 @@ fn removal_restores_builtin_oauth_and_deletes_custom_provider() {
             .register_provider(
                 id,
                 SharedHandle::new(RwLock::new(ProviderConfigInput {
-                    oauth: Some(dynamic::oauth("Override")),
+                    callbacks: maestro_catalog::ProviderCallbacks {
+                        oauth: Some(dynamic::oauth("Override")),
+                        ..Default::default()
+                    },
                     ..Default::default()
                 })),
             )
@@ -743,7 +749,7 @@ fn failed_same_handle_registration_preserves_prior_alias_edits() {
     {
         let mut config = retained.write().unwrap();
         config.name = Some("alias edit".into());
-        config.oauth = Some(Arc::new(dynamic::OAuth {
+        config.callbacks.oauth = Some(Arc::new(dynamic::OAuth {
             calls: None,
             id: "ignored",
             name: "Failing",
@@ -759,8 +765,39 @@ fn failed_same_handle_registration_preserves_prior_alias_edits() {
     );
     assert_eq!(registry.get_provider_display_name("p"), "alias edit");
     assert_eq!(registry.refresh().unwrap_err().to_string(), "alias failure");
-    retained.write().unwrap().oauth = None;
+    retained.write().unwrap().callbacks.oauth = None;
     registry.refresh().unwrap();
     assert_eq!(registry.get_provider_display_name("p"), "alias edit");
     assert!(registry.find("p", "m").is_some());
+}
+
+#[test]
+fn model_overrides_apply_to_registered_provider_models() {
+    if dynamic::isolated("model_overrides_apply_to_registered_provider_models") {
+        return;
+    }
+    let text = support::Text(Arc::new(std::sync::Mutex::new(Some(
+        r#"{"providers":{"p":{"modelOverrides":{"m":{"name":"Overridden","contextWindow":4242,"headers":{"x-model-override":"enabled"}}}}}}"#.into(),
+    ))));
+    let registry = support::text_registry("models-input", &text, crate::support::values());
+    registry
+        .register_provider("p", dynamic::config(&["m", "other"]))
+        .unwrap();
+    for _ in 0..2 {
+        let model = registry.find("p", "m").unwrap();
+        assert_eq!(model.read().unwrap().name, "Overridden");
+        assert!((model.read().unwrap().context_window - 4242.0).abs() < f64::EPSILON);
+        request_support::success(
+            request_support::run(registry.get_api_key_and_headers(&model)),
+            Some("configured"),
+            &[("x-model-override", "enabled")],
+        );
+        let other = registry.find("p", "other").unwrap();
+        request_support::success(
+            request_support::run(registry.get_api_key_and_headers(&other)),
+            Some("configured"),
+            &[],
+        );
+        registry.refresh().unwrap();
+    }
 }

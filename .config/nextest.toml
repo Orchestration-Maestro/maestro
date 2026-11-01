@@ -1,22 +1,340 @@
 experimental = ["setup-scripts"]
 
+# Every setup entry runs the development tool. The tooling setups serve only `maestro-tooling`
+# tests, whose build always produces the tool in the target directory. The author-component
+# setup also serves other packages, so it runs the tool from `target/test-setup`: a shard finds
+# it in the downloaded bundle, and `just prepare-tests` installs it there first.
+
+[profile.default]
+slow-timeout = { period = "30s", terminate-after = 4 }
+
 [scripts.setup.author-component]
-command = "sh .config/prepare-author-component.sh"
+command = "target/test-setup/development nextest-setup author-component"
 
 [[profile.default.scripts]]
-filter = "package(maestro-extensions-wasm)"
+filter = "package(maestro-extensions-wasm) | package(maestro-extensions-wasmtime) | (package(maestro) & (test(startup_modes::) | test(model_streams::) | test(component_output_stays_between_complete_host_frames) | test(native_io::) | test(/_example::/)))"
 setup = "author-component"
+
+[scripts.setup.fixture-sources]
+command = { command-line = "debug/development nextest-setup fixture-sources", relative-to = "target" }
+
+[[profile.default.scripts]]
+filter = "package(maestro-tooling)"
+setup = "fixture-sources"
+
+# Installs the bundle's browser graph the browser author tests share, or builds it when the run has
+# no bundle, once before the first of them.
+# The cold-start test builds from an empty state on purpose, so nothing is prepared for it.
+# The `browser-author` test group below selects the same tests with the same filter; change
+# the two together.
+[scripts.setup.browser-author]
+command = { command-line = "debug/development nextest-setup browser-author", relative-to = "target" }
+
+[[profile.default.scripts]]
+filter = "package(maestro-tooling) & test(/^browser_author_build::/) & !test(browser_author_bootstraps_from_empty_build_state)"
+setup = "browser-author"
+
+[test-groups.file-trigger]
+max-threads = 1
+
+[[profile.default.overrides]]
+filter = "test(file_trigger_)"
+test-group = "file-trigger"
 
 [test-groups.oauth-callback]
 max-threads = 1
 
 [[profile.default.overrides]]
-filter = "package(maestro-models) & test(/(^|::)oauth_callback::/)"
+filter = "(package(maestro-models) | package(maestro-extensions-wasmtime)) & test(/(^|::)oauth_callback::/)"
 test-group = "oauth-callback"
 
+# Same filter as the `browser-author` setup rule above: the tests that share the prepared target.
 [test-groups.browser-author]
 max-threads = 1
 
 [[profile.default.overrides]]
-filter = "package(maestro-tooling) & test(/^browser_author_build::/)"
+filter = "package(maestro-tooling) & test(/^browser_author_build::/) & !test(browser_author_bootstraps_from_empty_build_state)"
 test-group = "browser-author"
+
+# Every test is flagged slow every 30 seconds and killed at the 120-second hang limit.
+# An exception exists only for a test that needs more than 120 seconds. It keeps
+# the 30-second slow flag, lengthens the kill to whole 30-second periods, and names the
+# issue that removes it. Measured values are whole-test CI maxima unless the comment
+# says the run was killed and the value is a lower bound; diagnostic phase timings
+# come from separate non-coverage runs.
+
+# Diagnostic browser phases: cold vendoring costs 6.859s and the first
+# Cargo/Trunk build 75.636s of 93.593s. Adjacent-lock checks spend 49.324s
+# in their first example check and 124.710s in browser-check (182.239s total).
+# Formatting's browser-check costs 9.848s of 10.575s on the now-warm target;
+# lock acquisition is below 0.001s, not the bottleneck in these serial probes.
+# Retain real cold-build/lock/format assertions while #3589 fixes repeated
+# build work. These phase observations are not replacement CI maxima.
+
+# The cold-start test compiles the native tools and the WebAssembly fixture from an empty target
+# with parallel compiler jobs. It takes every core so that sharing them with other tests does not
+# stretch it past the hang limit.
+[[profile.default.overrides]]
+filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_bootstraps_from_empty_build_state)"
+threads-required = "num-cpus"
+
+# Priorities rank successful whole-test durations above 30s in merge-group
+# run 40795869386, longest first (100 downwards). Other tests keep priority 0.
+# They only order tests within a shard; limits come from the rules above.
+# See docs/development.md#slowest-first-test-order for evidence and refresh steps.
+
+[[profile.default.overrides]]
+filter = "package(=maestro-tooling) & test(=browser_author_build::browser_check_repairs_formatting)"
+priority = 100
+
+[[profile.default.overrides]]
+filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_bootstraps_from_empty_build_state)"
+priority = 99
+
+[[profile.default.overrides]]
+filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_check_preserves_adjacent_locks)"
+priority = 98
+
+[[profile.default.overrides]]
+filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_checks_accept_valid_sources)"
+priority = 97
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasmtime) & test(=component_events::input::component_input_chains_text_preserves_images_and_forwards_sources)"
+priority = 96
+
+[[profile.default.overrides]]
+filter = "package(=maestro-tooling) & test(=browser_author_build::browser_native_checks_keep_inputs_and_refuse_bad_sources)"
+priority = 95
+
+[[profile.default.overrides]]
+filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_preparation_is_route_local)"
+priority = 94
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasmtime) & test(=canonical_theme::canonical_standalone_theme_keeps_live_palette_without_ui)"
+priority = 93
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasmtime) & test(=component_events::component_handler_presence_tracks_registration)"
+priority = 92
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasmtime) & test(=canonical_theme::canonical_theme_strikethrough)"
+priority = 91
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasmtime) & test(=component_events::component_tool_results_consume_prior_content)"
+priority = 90
+
+[[profile.default.overrides]]
+filter = "package(=maestro-models) & test(=browser_build::maestro_browser_environment_has_no_key)"
+priority = 89
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasmtime) & test(=git_checkpoint_example::git_checkpoint_component_requires_checkpoint_ui_and_yes)"
+priority = 88
+
+[[profile.default.overrides]]
+filter = "package(=maestro-tooling) & test(=browser_author_build::browser_assets_follow_relative_selected_identity)"
+priority = 87
+
+[[profile.default.overrides]]
+filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_hook_uses_resolved_configuration_directory)"
+priority = 86
+
+[[profile.default.overrides]]
+filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_trunk_rejects_stale_lock_without_writes)"
+priority = 85
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasmtime) & test(=extension_guide::extension_guide_builds_and_loads_from_a_clean_folder)"
+priority = 84
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasmtime) & test(=canonical_schema::native_registration_and_enumeration_preserve_authored_schema_kinds)"
+priority = 83
+
+[[profile.default.overrides]]
+filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_watch_ignores_generated_outputs_and_keeps_authored_roots)"
+priority = 82
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasm) & test(=tests::trigger_compact_example::trigger_compact_component_matches_host_requests)"
+priority = 81
+
+[[profile.default.overrides]]
+filter = "package(=maestro-test-conventions) & test(=architecture::real_workspace_obeys_crate_rules)"
+priority = 80
+
+[[profile.default.overrides]]
+filter = "package(=maestro-tooling) & test(=browser_author_build::browser_build_emits_wasm_and_prepared_assets)"
+priority = 79
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasm) & test(=tests::shutdown_example::shutdown_component_runs_every_registration)"
+priority = 78
+
+[[profile.default.overrides]]
+filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_included_files_rebuild_without_source_changes)"
+priority = 77
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasm) & test(=tests::preset_example::preset_layers_restore_branch_instructions_without_reapplying_settings)"
+priority = 76
+
+[[profile.default.overrides]]
+filter = "package(=maestro-markdown) & test(=tests::container_depth::repeated_quote_list_resumption_keeps_reference_depth)"
+priority = 75
+
+[[profile.default.overrides]]
+filter = "package(=maestro-tooling) & test(=browser_author_build::browser_build_rejects_missing_or_failing_inputs)"
+priority = 74
+
+[[profile.default.overrides]]
+filter = "package(=maestro-tooling) & test(=browser_author_build::browser_example_development_serves_rebuilt_external_assets)"
+priority = 73
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasm) & test(=tests::protected_paths_example::protected_paths_component_matches_the_hook)"
+priority = 72
+
+[[profile.default.overrides]]
+filter = "package(=maestro-tooling) & test(=build_recipes::maestro_selected_watch_rebuilds_cargo_configuration)"
+priority = 71
+
+[[profile.default.overrides]]
+filter = "package(=maestro-tooling) & test(=browser_author_build::browser_compile_watch_rebuilds_external_identity)"
+priority = 70
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasmtime) & test(=asynchronous_reentry::routed_completion_keeps_its_prefix_and_absent_result)"
+priority = 69
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasm) & test(=tests::notify_example::notify_component_windows_command_is_controlled)"
+priority = 68
+
+[[profile.default.overrides]]
+filter = "package(=maestro-markdown) & test(=tests::container_depth::deep_indented_list_parses_on_a_small_stack)"
+priority = 67
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasm) & test(=tests::permission_gate_example::permission_gate_component_preserves_patterns_and_decisions)"
+priority = 66
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasm) & test(=tests::model_status_example::model_status_component_runs_selection_hook)"
+priority = 65
+
+[[profile.default.overrides]]
+filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_unrelated_workspace_bump_keeps_fixture_lock)"
+priority = 64
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasm) & test(=tests::status_line_example::status_line_component_preserves_count_after_host_rejection)"
+priority = 63
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasm) & test(=tests::snake_example::snake_controls_apply_arrow_and_letter_turns)"
+priority = 62
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasm) & test(=tests::component_driver::message_renderer_example::message_renderer_truncates_numeric_timestamps)"
+priority = 61
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasmtime) & test(=authored_streams::ending_without_a_result_keeps_observation_pending)"
+priority = 60
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasmtime) & test(=git_checkpoint_example::git_checkpoint_component_clears_checkpoints_but_keeps_current_entry)"
+priority = 59
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasmtime) & test(=asynchronous_reentry::routed_retained_setup_runs_its_prefix_before_its_first_poll_returns)"
+priority = 58
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasm) & test(=tests::component_driver::schema_qualification::schema_callbacks_preserve_supplied_errors_on_owning_guest)"
+priority = 57
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasm) & test(=tests::titlebar_spinner_example::titlebar_spinner_component_runs_lifecycle)"
+priority = 56
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasm) & test(=tests::pirate_example::pirate_factories_keep_separate_state)"
+priority = 55
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasm) & test(=tests::space_invaders_example::space_invaders_resume_redraws_current_controls_without_losing_save)"
+priority = 54
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasm) & test(=tests::space_invaders_example::space_invaders_ticks_match_reference_movement_fire_and_collisions)"
+priority = 53
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasmtime) & test(=compilation_cache::component_load_populates_the_user_compilation_cache)"
+priority = 52
+
+[[profile.default.overrides]]
+filter = "package(=maestro-test-conventions) & test(=boundaries::runtime_dependencies_stay_in_the_runtime_adapter)"
+priority = 51
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasm) & test(=tests::questionnaire_example::questionnaire_retains_supplied_question_metadata)"
+priority = 50
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasm) & test(=tests::questionnaire_example::questionnaire_headless_and_empty_return_errors)"
+priority = 49
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasm) & test(=tests::snake_example::snake_ticks_move_grow_turn_and_save_through_session_entries)"
+priority = 48
+
+[[profile.default.overrides]]
+filter = "package(=maestro-test-conventions) & test(=architecture::forbidden_direct_edges_are_rejected)"
+priority = 47
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasmtime) & test(=tests::builtin_operations::builtin_bash_initial_progress_failure_prevents_exec)"
+priority = 46
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasm) & test(=tests::preset_example::preset_startup_flag_is_applied_before_returning_and_overrides_saved_name)"
+priority = 45
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasmtime) & test(=factory::tests::faulted_store_drops_once_only_after_the_last_admission_ends)"
+priority = 44
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasmtime) & test(=tests::builtin_factories::builtin_factory_construction_is_lazy_and_fresh)"
+priority = 43
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasm) & test(=tests::snake_example::snake_headless_command_requires_interactive_mode)"
+priority = 42
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasmtime) & test(=tests::builtin_operations::builtin_read_options_preserve_reverse_operations)"
+priority = 41
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasmtime) & test(=tests::builtin_operations::builtin_mutations_release_after_error_and_alias_paths)"
+priority = 40
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasmtime) & test(=tests::builtin_operations::builtin_find_callbacks_receive_pattern_root_ignore_and_limit)"
+priority = 39
+
+[[profile.default.overrides]]
+filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_projection_failure_prevents_dependent_build)"
+priority = 38
+
+[[profile.default.overrides]]
+filter = "package(=maestro-extensions-wasm) & test(=tests::preset_example::preset_cycles_restore_original_settings_and_persist_cleared_branch_state)"
+priority = 37

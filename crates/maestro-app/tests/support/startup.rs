@@ -245,7 +245,7 @@ fn invoke(name: &str, cwd: &Path, envs: &[(&str, &str)], limit: Option<u64>) -> 
     let lines = if let Some(limit) = limit {
         let output = TestProcess::current(name)
             .unwrap()
-            .shell_setup("trap '' XFSZ")
+            .shell_setup("/bin/bash", "trap '' XFSZ")
             .env("STARTUP_FILE_LIMIT", limit.to_string())
             .nocapture()
             .single_threaded()
@@ -323,7 +323,7 @@ pub fn run(name: &str) {
     if std::env::var_os("STARTUP_CORPUS_CHILD").is_none() {
         let output = TestProcess::current(name)
             .unwrap()
-            .shell_setup("umask 002")
+            .shell_setup("/bin/bash", "umask 002")
             .nocapture()
             .single_threaded()
             .env("STARTUP_CORPUS_CHILD", "1")

@@ -310,7 +310,12 @@ async fn operation(
 ) -> Result<OAuthCredentials, OAuthError> {
     match mode {
         Mode::Exchange => {
-            exchange::exchange(input.clone(), input.clone(), input, fetch, clock).await
+            let grant = exchange::Grant {
+                code: input.clone(),
+                state: input.clone(),
+                redirect_uri: "http://localhost:53692/callback".into(),
+            };
+            exchange::exchange(grant, input, fetch, clock).await
         }
         Mode::Refresh => exchange::refresh(input, fetch, clock).await,
     }
@@ -699,6 +704,9 @@ struct Interaction {
 }
 #[cfg(not(target_arch = "wasm32"))]
 impl crate::OAuthLoginCallbacks for Interaction {
+    fn callback_presence(&self) -> (bool, bool, bool) {
+        (true, self.manual.lock().unwrap().is_some(), true)
+    }
     fn on_auth(&self, _: crate::OAuthAuthInfo) -> Result<(), OAuthError> {
         self.phase("auth")
     }
@@ -710,7 +718,10 @@ impl crate::OAuthLoginCallbacks for Interaction {
             prompt.message,
             "Paste the authorization code or full redirect URL:"
         );
-        assert_eq!(prompt.placeholder.as_deref(), Some(super::REDIRECT_URI));
+        assert_eq!(
+            prompt.placeholder.as_deref(),
+            Some("http://localhost:53692/callback")
+        );
         assert_eq!(prompt.allow_empty, None);
         let answer = self.prompt.clone();
         let result = self.phase("prompt");
@@ -773,7 +784,8 @@ fn pkce() -> crate::Pkce {
 #[cfg(not(target_arch = "wasm32"))]
 /// Owned listener seam whose stopped witness follows shutdown observation.
 fn listener() -> super::native::CallbackServer {
-    let server = super::native::CallbackServer::new();
+    let mut server = super::native::CallbackServer::new();
+    server.port = Some(53692);
     let stop = server.stop.clone();
     let stopped = server.stopped.clone();
     tokio::spawn(async move {
@@ -851,7 +863,14 @@ fn prompt_fallback_validates_code_and_state() {
             let handle: crate::OAuthCallbacks = callbacks;
             let result = super::select_code(&handle, &pkce(), &server).await;
             match expected {
-                Ok(code) => assert_eq!(result.unwrap(), (code.into(), "verifier".into())),
+                Ok(code) => assert_eq!(
+                    result.unwrap(),
+                    exchange::Grant {
+                        code: code.into(),
+                        state: "verifier".into(),
+                        redirect_uri: "http://localhost:53692/callback".into(),
+                    }
+                ),
                 Err(error) => assert_eq!(result.unwrap_err().to_string(), error),
             }
         }
@@ -895,6 +914,33 @@ fn login_callbacks_run_in_source_order_and_fail_cleanly() {
                 assert_eq!(result.unwrap_err().to_string(), format!("{phase} failed"));
             }
         }
+    });
+}
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn sign_in_continues_with_pasted_input_when_no_port_binds() {
+    run(async {
+        let callbacks = Interaction::new(None, "pasted", "");
+        let redirects = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let seen = redirects.clone();
+        let fetch: Fetch = Arc::new(move |request| {
+            let body: serde_json::Value = serde_json::from_slice(&request.body).unwrap();
+            seen.lock().unwrap().push(body["redirect_uri"].clone());
+            success_fetch()(request)
+        });
+        let credentials = super::login_with(
+            callbacks.clone(),
+            fetch,
+            || Ok(pkce()),
+            |state| super::callback::bind_with(state, |_| Some("192.0.2.1".into())),
+        )
+        .await
+        .unwrap();
+        assert_eq!(credentials.access, "access");
+        assert_eq!(
+            *redirects.lock().unwrap(),
+            [serde_json::json!("http://localhost:53692/callback")]
+        );
     });
 }
 #[cfg(not(target_arch = "wasm32"))]
@@ -1409,6 +1455,73 @@ mod oauth_callback {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
+    /// Hands the announced authorization address to the test and never prompts.
+    struct Announced {
+        /// Receives the address once.
+        sender: std::sync::Mutex<Option<tokio::sync::oneshot::Sender<String>>>,
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    impl crate::OAuthLoginCallbacks for Announced {
+        fn on_auth(&self, info: crate::OAuthAuthInfo) -> Result<(), OAuthError> {
+            if let Some(sender) = self.sender.lock().unwrap().take() {
+                let _ = sender.send(info.url);
+            }
+            Ok(())
+        }
+        fn on_prompt(&self, _: crate::OAuthPrompt) -> crate::BoxFuture<Result<String, OAuthError>> {
+            panic!("the callback listener answers, not a prompt")
+        }
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn sign_in_falls_back_when_the_preferred_port_is_taken() {
+        run(sign_in_falls_back_when_the_preferred_port_is_taken_flow());
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    async fn sign_in_falls_back_when_the_preferred_port_is_taken_flow() {
+        let _permit = NATIVE_PORT.acquire().await.unwrap();
+        let _occupant = native_probe("127.0.0.1");
+        let (sender, announced) = tokio::sync::oneshot::channel();
+        let callbacks: crate::OAuthCallbacks = Arc::new(Announced {
+            sender: std::sync::Mutex::new(Some(sender)),
+        });
+        let browser = async {
+            let address = url::Url::parse(&announced.await.unwrap()).unwrap();
+            let pair = |name: &str| {
+                address
+                    .query_pairs()
+                    .find(|(key, _)| key == name)
+                    .unwrap()
+                    .1
+                    .into_owned()
+            };
+            let redirect = url::Url::parse(&pair("redirect_uri")).unwrap();
+            let port = redirect.port().unwrap();
+            assert_ne!(port, 53692);
+            let mut peer = tokio::net::TcpStream::connect(("127.0.0.1", port))
+                .await
+                .unwrap();
+            let request = format!(
+                "GET /callback?code=granted&state={} HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n",
+                pair("state")
+            );
+            write_native(&mut peer, request.as_bytes()).await;
+            assert!(native_response(&mut peer).await.starts_with("HTTP/1.1 200"));
+            redirect
+        };
+        let (credentials, redirect) = tokio::join!(
+            super::super::login_anthropic(callbacks, Some(success_fetch())),
+            browser
+        );
+        assert_eq!(credentials.unwrap().access, "access");
+        assert_eq!(redirect.path(), "/callback");
+        assert_eq!(redirect.host_str(), Some("localhost"));
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn callback_host_changes_bind_only() {
         run(callback_host_changes_bind_only_flow());
@@ -1427,7 +1540,7 @@ mod oauth_callback {
                 super::super::native::callback_host(input.map(str::to_owned)),
                 expected
             );
-            let info = super::super::auth_info(&pkce());
+            let info = super::super::auth_info(&pkce(), "http://localhost:53692/callback");
             let url = url::Url::parse(&info.url).unwrap();
             assert_eq!(
                 url.query_pairs()
@@ -1447,7 +1560,8 @@ mod oauth_callback {
                 |listener| Box::pin(listener.accept()),
             )
             .await;
-            if expected == " " {
+            // A host without the second loopback address refuses that bind like a malformed one.
+            if expected == " " || std::net::TcpListener::bind((expected, 0)).is_err() {
                 assert!(result.is_err());
                 continue;
             }

@@ -1812,3 +1812,46 @@ async fn recorded_publication_events(
     }
     events
 }
+
+/// A reconstructed call keeps the proxy's truthy fallback for each root kind.
+#[test]
+fn proxy_argument_roots_keep_their_source_fallback() {
+    support::run_io(proxy_argument_roots_keep_their_source_fallback_case());
+}
+/// Drive the scenario of `proxy_argument_roots_keep_their_source_fallback` on the test runtime.
+async fn proxy_argument_roots_keep_their_source_fallback_case() {
+    let start = line(r#"{"type":"toolcall_start","contentIndex":0,"id":"c","toolName":"t"}"#);
+    for (delta, expected) in [
+        ("null", json!({})),
+        ("false", json!({})),
+        ("0", json!({})),
+        (r#"\""#, json!({})),
+        ("42", json!(42)),
+        ("true", json!(true)),
+        (r#"\"text\""#, json!("text")),
+        ("[1,1]", json!([1, 1])),
+        (r#"{\"q\":1}"#, json!({"q": 1})),
+    ] {
+        let lines = [
+            start.clone(),
+            line(&format!(
+                r#"{{"type":"toolcall_delta","contentIndex":0,"delta":"{delta}"}}"#
+            )),
+            line(r#"{"type":"toolcall_end","contentIndex":0}"#),
+            terminal(),
+        ];
+        let run = run_lines(&lines).await;
+        assert_eq!(
+            run.events[0],
+            json!({"type": "toolcall_start", "contentIndex": 0})
+        );
+        assert_eq!(
+            run.events[1],
+            json!({"type": "toolcall_delta", "contentIndex": 0, "delta": delta.replace("\\\"", "\"")}),
+            "{delta}"
+        );
+        let tool = json!({"type": "toolCall", "id": "c", "name": "t", "arguments": expected});
+        assert_eq!(run.message()["content"], json!([tool]), "{delta}");
+        assert_eq!(run.events[2]["toolCall"], tool, "{delta}");
+    }
+}

@@ -3,11 +3,12 @@ use super::{
     DefaultPackageManager, InstalledSourceScope, PackageOperations,
     sources::{self, Source},
 };
+use maestro_resources::paths::package_home_directory;
 use maestro_settings::{PackageSource, Settings};
 use serde_json::Value;
 use std::io;
 impl<O: PackageOperations> DefaultPackageManager<O> {
-    /// Appends a source or replaces the first matching identity when its pin changes.
+    /// Appends a source or replaces the first matching identity when its normalized spelling differs.
     /// # Errors
     /// Returns consumed settings, borrow or local resolution failures.
     pub(super) fn add_source(
@@ -15,20 +16,27 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         source: &str,
         scope: Option<InstalledSourceScope>,
     ) -> io::Result<bool> {
-        self.record_source(
-            source,
-            scope,
-            super::acquisition::SourceAcquisition::Prepared,
-        )
+        self.record_source(source, scope)
     }
     /// Edits only the first matching entry, preserving unread raw fields and list order.
     pub(super) fn record_source(
         &self,
         source: &str,
         scope: Option<InstalledSourceScope>,
-        acquisition: super::acquisition::SourceAcquisition,
     ) -> io::Result<bool> {
         let scope = scope.unwrap_or(InstalledSourceScope::User);
+        let Some(entries) = self.source_addition(source, scope)? else {
+            return Ok(false);
+        };
+        self.write(scope, entries)?;
+        Ok(true)
+    }
+    /// Derives the exact source addition without publishing it.
+    pub(super) fn source_addition(
+        &self,
+        source: &str,
+        scope: InstalledSourceScope,
+    ) -> io::Result<Option<Vec<PackageSource>>> {
         let snapshot = self.snapshot(scope)?;
         let normalized = self.normalize_source(source, scope)?;
         let mut entries = packages(snapshot)?;
@@ -38,10 +46,8 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             if !self.matches(stored, source, scope)? {
                 continue;
             }
-            if acquisition == super::acquisition::SourceAcquisition::CurrentGit
-                || same_pin(stored, source)
-            {
-                return Ok(false);
+            if stored == normalized {
+                return Ok(None);
             }
             found = Some(index);
             break;
@@ -56,9 +62,9 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         } else {
             entries.push(Value::String(normalized));
         }
-        let next = entries.into_iter().map(PackageSource::Unknown).collect();
-        self.write(scope, next)?;
-        Ok(true)
+        Ok(Some(
+            entries.into_iter().map(PackageSource::Unknown).collect(),
+        ))
     }
     /// Removes every matching entry after examining the complete selected list.
     /// # Errors
@@ -69,6 +75,18 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         scope: Option<InstalledSourceScope>,
     ) -> io::Result<bool> {
         let scope = scope.unwrap_or(InstalledSourceScope::User);
+        let Some(entries) = self.source_removal(source, scope)? else {
+            return Ok(false);
+        };
+        self.write(scope, entries)?;
+        Ok(true)
+    }
+    /// Derives the exact source removal without publishing it.
+    pub(super) fn source_removal(
+        &self,
+        source: &str,
+        scope: InstalledSourceScope,
+    ) -> io::Result<Option<Vec<PackageSource>>> {
         let entries = packages(self.snapshot(scope)?)?;
         let mut next = Vec::new();
         let mut changed = false;
@@ -79,10 +97,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
                 next.push(PackageSource::Unknown(entry));
             }
         }
-        if changed {
-            self.write(scope, next)?;
-        }
-        Ok(changed)
+        Ok(changed.then_some(next))
     }
     /// Lists original rows in user-then-project order with per-row content lookup.
     /// # Errors
@@ -213,24 +228,24 @@ fn package_rows(snapshot: &Settings) -> io::Result<&[Value]> {
     }
 }
 
-/// Compares parsed pins without normalizing authored source spellings.
-fn same_pin(stored: &str, input: &str) -> bool {
-    match (sources::parse(stored), sources::parse(input)) {
-        (Source::Npm { spec: a, .. }, Source::Npm { spec: b, .. }) => a == b,
-        (Source::Git(a), Source::Git(b)) => a.r#ref == b.r#ref,
-        _ => true,
-    }
-}
-
 /// Keeps the source kind separate from its identity string.
 pub(super) fn identity<'a>(source: &'a str, base: &str) -> io::Result<Identity<'a>> {
     Ok(match sources::parse(source) {
         Source::Local(path) => Identity::Local(super::paths::resolve_local(
             path,
             base,
-            super::operations::home_dir,
+            package_home_directory,
         )?),
         Source::Git(git) => Identity::Git(git.host, git.path),
         Source::Npm { name, .. } => Identity::Npm(name),
+    })
+}
+
+/// Projects the same kind-specific identity used by precedence selection.
+pub(super) fn identity_text(source: &str, base: &str) -> io::Result<String> {
+    Ok(match identity(source, base)? {
+        Identity::Npm(name) => format!("npm:{name}"),
+        Identity::Git(host, path) => format!("git:{host}/{path}"),
+        Identity::Local(path) => format!("local:{path}"),
     })
 }

@@ -1,27 +1,20 @@
 //! JSONL and HTML exports of the session.
 #![cfg(not(target_arch = "wasm32"))]
+use crate::support::export_fixtures::{Recording, environment, published};
 use crate::support::session_harness::{
-    Harness, HarnessOptions, assistant, build_tree, corpus, free_to_change, harness, on_task_set,
-    sdk_definition, sdk_tools, tool_definition, user,
+    Harness, HarnessOptions, as_recorded, assistant, build_tree, corpus, free_to_change, harness,
+    on_task_set, sdk_definition, sdk_tools, tool_definition, user,
 };
 use base64::Engine as _;
 use maestro_app::AgentSession;
 use maestro_app::configuration::config::get_theme_directories;
-use maestro_export::{ExportAsset, ExportOperations, NativeExportOperations};
+use maestro_export::NativeExportOperations;
 use maestro_models::Local;
 use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
-use maestro_theme::{
-    ColorMode, LiveTheme, Theme, ThemeDirectories, ThemeError, ThemeExportColors, ThemeOptions,
-    ThemeState,
-};
-use maestro_tools::ToolRenderEnvironment;
-use maestro_tui::{TerminalImage, components::Text, tui::ComponentHandle};
+use maestro_theme::{LiveTheme, ThemeDirectories, ThemeState};
+use maestro_tui::{components::Text, tui::ComponentHandle};
 use serde_json::{Value, json};
-use std::{cell::RefCell, io, rc::Rc};
-
-#[path = "../../maestro-test-terminal/tests/support/manual_runtime.rs"]
-#[allow(dead_code)]
-mod manual_runtime;
+use std::{cell::RefCell, rc::Rc};
 
 /// Writes JSONL to a nested missing directory and checks the recorded lines.
 #[test]
@@ -33,7 +26,10 @@ fn jsonl_export_writes_header_and_linear_branch() {
         let names = build_tree(&mut h.session.session_manager().borrow_mut());
         let nested = format!("{root}/exports/deep/branch.jsonl");
         let path = h.session.export_to_jsonl(Some(&nested)).unwrap();
-        assert_eq!(path.replace(&root, "$ROOT"), expected["returned"]);
+        assert_eq!(
+            as_recorded(json!(path), &[(&root, "$ROOT")]),
+            expected["returned"]
+        );
         let text = std::fs::read_to_string(&path).unwrap();
         assert_eq!(text.ends_with('\n'), expected["endsWithNewline"]);
         assert_eq!(json!(text.split('\n').count() - 1), expected["lineCount"]);
@@ -48,7 +44,7 @@ fn jsonl_export_writes_header_and_linear_branch() {
         assert_eq!(header["id"], h.session.session_id());
         header["id"] = json!("$SESSION");
         header["timestamp"] = json!("$ISO");
-        header["cwd"] = json!(header["cwd"].as_str().unwrap().replace(&root, "$ROOT"));
+        header["cwd"] = as_recorded(header["cwd"].clone(), &[(&root, "$ROOT")]);
         header["keys"] = json!(keys);
         assert_eq!(header, expected["header"]);
         let name = |id: &Value| {
@@ -83,45 +79,16 @@ fn jsonl_export_default_name_uses_process_directory() {
         let path = path.unwrap();
         let stamp =
             regex::Regex::new(r"session-\d{4}-\d\d-\d\dT\d\d-\d\d-\d\d-\d{3}Z\.jsonl$").unwrap();
-        let named = stamp
-            .replace(&path, regex::NoExpand("session-$STAMP.jsonl"))
-            .replace(&root, "$ROOT");
-        assert_eq!(named, expected["defaultName"]);
+        let named = stamp.replace(&path, regex::NoExpand("session-$STAMP.jsonl"));
+        assert_eq!(
+            as_recorded(json!(named), &[(&root, "$ROOT")]),
+            expected["defaultName"]
+        );
         assert_eq!(
             std::path::Path::new(&path).exists(),
             expected["defaultExists"]
         );
     });
-}
-
-/// Export assets whose template is the payload alone, with recorded theme lookups.
-#[derive(Default)]
-struct Recording {
-    /// Theme names passed to color lookups.
-    themes: RefCell<Vec<Option<String>>>,
-}
-
-impl ExportOperations for Recording {
-    fn app_name(&self) -> &'static str {
-        "maestro"
-    }
-    fn read_asset(&self, asset: ExportAsset) -> io::Result<String> {
-        Ok(if asset == ExportAsset::Template {
-            "{{SESSION_DATA}}".into()
-        } else {
-            String::new()
-        })
-    }
-    fn get_resolved_theme_colors(
-        &self,
-        theme: Option<&str>,
-    ) -> Result<Vec<(String, String)>, ThemeError> {
-        self.themes.borrow_mut().push(theme.map(str::to_owned));
-        Ok(vec![("userMessageBg".into(), "#343541".into())])
-    }
-    fn get_theme_export_colors(&self, _: Option<&str>) -> ThemeExportColors {
-        ThemeExportColors::default()
-    }
 }
 
 /// The decoded payload of the document written at `path`.
@@ -178,23 +145,6 @@ async fn painted_harness(root: &str) -> Harness {
 /// The diagnostic a theme failure becomes at a renderer boundary.
 fn themed(error: &maestro_theme::ThemeError) -> maestro_models::DiagnosticErrorInfo {
     maestro_models::DiagnosticErrorInfo::error(error.to_string())
-}
-
-/// A plain theme published as the host publishes one.
-fn published() -> LiveTheme {
-    let theme = Theme::new([], [], ColorMode::Color256, ThemeOptions::default()).unwrap();
-    LiveTheme::from_theme(Rc::new(theme))
-}
-
-/// A rendering environment over `live_theme`.
-fn environment(live_theme: LiveTheme) -> Rc<ToolRenderEnvironment> {
-    Rc::new(ToolRenderEnvironment {
-        runtime: Rc::new(manual_runtime::ManualRuntime::default()),
-        readme_path: String::new(),
-        live_theme,
-        highlighter: Rc::new(maestro_theme::SyntectHighlighter::new().unwrap()),
-        terminal_image: TerminalImage::default(),
-    })
 }
 
 /// `e<position>` of the entry `id` in the session.
@@ -288,7 +238,10 @@ fn html_export_carries_prompt_tools_and_theme() {
             .session
             .export_to_html(Some(&output), &operations, environment(published()))
             .unwrap();
-        assert_eq!(path.replace(&root, "$ROOT"), expected["returned"]);
+        assert_eq!(
+            as_recorded(json!(path), &[(&root, "$ROOT")]),
+            expected["returned"]
+        );
         let data = payload(&path);
         let manager = h.session.session_manager().borrow();
         let position = |id: &Value| entry_position(&manager, id);

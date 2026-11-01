@@ -6,7 +6,7 @@
 )]
 use super::documents::{Answer, ask};
 use super::scenario::Driver;
-use serde_json::json;
+use serde_json::{Value, json};
 
 /// Prepared lists, settings and file categories remain independent.
 async fn preparations(driver: &mut impl Driver) -> Result<(), String> {
@@ -318,4 +318,73 @@ fn assert_shared_member_order(encoded: &serde_json::Value) {
             "settings"
         ]
     );
+}
+
+/// All opaque entry fields roundtrip arbitrary semantic JSON inside real event delivery.
+async fn opaque_entry_payloads(driver: &mut impl Driver) -> Result<(), String> {
+    for payload in [
+        Some(json!({"z": {"b": [false, null, "Ω"]}, "a": 1})),
+        Some(json!([null, true, {"z": 1, "a": 2}])),
+        Some(json!(2.5)),
+        Some(json!(9_007_199_254_740_993_u64)),
+        Some(json!("literal \"text\"")),
+        Some(Value::Null),
+        None,
+    ] {
+        let mut event = super::documents::document("session_before_compact");
+        let entries = opaque_entries(payload.as_ref());
+        event["branchEntries"] = json!(entries);
+        let compact =
+            json!({"type":"session_compact", "compactionEntry": entries[1], "fromExtension": true});
+        let tree = json!({"type":"session_tree", "newLeafId": null, "oldLeafId": null,
+            "summaryEntry": entries[2], "fromExtension": false});
+        for event in [event, compact, tree] {
+            assert_eq!(
+                ask(driver, &event, &json!({})).await?,
+                Answer::returned(&event, None)
+            );
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn maestro_session_entry_payloads_roundtrip_arbitrary_json() -> Result<(), String> {
+    on_both_adapters!(opaque_entry_payloads)
+}
+
+/// Builds all four source entry shapes with the same independently selected payload.
+pub(super) fn opaque_entries(payload: Option<&Value>) -> Vec<Value> {
+    let mut entries = Vec::new();
+    for (kind, field) in [
+        ("custom", "data"),
+        ("compaction", "details"),
+        ("branch_summary", "details"),
+        ("custom_message", "details"),
+    ] {
+        let mut entry = json!({"type":kind,"id":"root","parentId":null,"timestamp":"literal"});
+        match kind {
+            "custom" => entry["customType"] = json!("state"),
+            "compaction" => {
+                entry["summary"] = json!("summary");
+                entry["firstKeptEntryId"] = json!("keep");
+                entry["tokensBefore"] = json!(2.5);
+            }
+            "branch_summary" => {
+                entry["fromId"] = json!("root");
+                entry["summary"] = json!("summary");
+            }
+            "custom_message" => {
+                entry["customType"] = json!("state");
+                entry["content"] = json!("content");
+                entry["display"] = json!(true);
+            }
+            _ => unreachable!(),
+        }
+        if let Some(payload) = payload {
+            entry[field] = payload.clone();
+        }
+        entries.push(entry);
+    }
+    entries
 }

@@ -116,11 +116,37 @@ pub fn parse_timestamp_millis(text: &str) -> Option<i64> {
     }
     NaiveDateTime::parse_from_str(text, "%Y-%m-%dT%H:%M:%S%.f")
         .ok()
-        .and_then(|date| match Local.from_local_datetime(&date) {
-            chrono::LocalResult::Ambiguous(a, b) => Some(a.min(b)),
-            result => result.single(),
-        })
-        .map(|date| date.timestamp_millis())
+        .and_then(local_timestamp_millis)
+}
+
+/// Resolve a local date-time to epoch milliseconds.
+///
+/// A repeated local time selects the earlier instant. A skipped local time uses
+/// the offset in force before the transition, so it resolves past the gap.
+#[must_use]
+pub fn local_timestamp_millis(value: NaiveDateTime) -> Option<i64> {
+    match Local.from_local_datetime(&value) {
+        chrono::LocalResult::Single(date) => Some(date.timestamp_millis()),
+        chrono::LocalResult::Ambiguous(earlier, later) => {
+            Some(earlier.timestamp_millis().min(later.timestamp_millis()))
+        }
+        chrono::LocalResult::None => {
+            Some(value.and_utc().timestamp_millis() - gap_offset_millis(value))
+        }
+    }
+}
+
+/// The offset a zone applies before the transition that skips `reading`, in milliseconds.
+///
+/// The first probe reads the offset at the reading taken as UTC, the second the
+/// offset one probe earlier. A forward transition makes the earlier one the
+/// offset in force before it, so the smaller of the two applies.
+fn gap_offset_millis(reading: NaiveDateTime) -> i64 {
+    let first = Local.offset_from_utc_datetime(&reading);
+    let first_seconds = i64::from(first.local_minus_utc());
+    let second =
+        Local.offset_from_utc_datetime(&(reading - chrono::Duration::seconds(first_seconds)));
+    i64::from(second.local_minus_utc().min(first.local_minus_utc())) * 1_000
 }
 
 /// Retain injected content, visibility and details with a parsed timestamp.
@@ -298,17 +324,10 @@ pub(crate) fn project_summary(
                     Some("text") => {
                         Some(<&str>::deserialize(&block["text"]).map(SummaryBlock::Text))
                     }
-                    Some("thinking") => {
-                        Some(<&str>::deserialize(&block["thinking"]).map(SummaryBlock::Thinking))
-                    }
                     Some("toolCall") => Some((|| {
                         Ok(SummaryBlock::Tool(
                             <&str>::deserialize(&block["name"])?,
-                            block["arguments"].as_object().ok_or_else(|| {
-                                <serde_json::Error as serde::de::Error>::custom(
-                                    "expected arguments object",
-                                )
-                            })?,
+                            &block["arguments"],
                         ))
                     })()),
                     _ => None,

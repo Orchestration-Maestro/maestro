@@ -25,7 +25,7 @@ impl ConfigValueOperations for UnusedCommands {
 
 /// Credential command handle for selector fixtures.
 pub fn no_commands() -> ConfigValues {
-    Arc::new(UnusedCommands)
+    SharedHandle::new(UnusedCommands)
 }
 
 /// Every accepted environment authentication route, excluded from each child.

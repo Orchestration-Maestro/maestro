@@ -124,7 +124,9 @@ current shared `Model`, ordered `ScopedModel` records, initial search and
 
 The picker starts scoped when scoped records exist, otherwise all. Scoped order,
 duplicates and missing models are retained; registry matches use refreshed
-handles. All models put current provider/ID matches first, followed by stable
+handles. Current-model comparisons recognize shared handles without reading their
+descriptor; independent descriptors use their live provider and ID.
+All models put current provider/ID matches first, followed by stable
 locale provider order. Search uses IDs, providers and their combinations, not
 model names, with [shared fuzzy ranking](../terminal/completion.md#shared-fuzzy-ranking).
 Filtering clamps the existing selection. Switching scope retains the query.
@@ -152,7 +154,8 @@ owning update. The [toolkit](../terminal/components.md) owns wrapping and cursor
 `SettingsSelectorComponent::new` takes a `SettingsConfig`, `SettingsCallbacks`,
 `LiveTheme` and a borrowed `maestro_tui::TerminalImage`. Boolean policies are
 grouped into `SessionSettings` (auto-compact, quiet startup and skill commands),
-`BehaviorSettings` (hidden thinking, collapsed changelog and install telemetry)
+`BehaviorSettings` (hidden thinking, collapsed changelog, install telemetry and the
+HTTP idle timeout in milliseconds)
 and `TerminalDisplaySettings` (hardware cursor, clear on shrink and terminal
 progress). Image display, auto-resize and blocking are direct boolean fields;
 image width, editor padding and autocomplete height are supplied `f64` fields.
@@ -166,18 +169,22 @@ This returns the same retained `SettingsList` handle, independently of the
 `Container` chrome. The searchable main view shows at most ten rows in this
 order: auto-compact, show images, image width, auto-resize images, block images,
 skill commands, hardware cursor, editor padding, autocomplete max items, clear
-on shrink, terminal progress, steering mode, follow-up mode, transport, hidden
-thinking, collapsed changelog, quiet startup, install telemetry, double-escape
-action, tree filter, warnings, thinking level and theme. Show images and image
-width appear only when the supplied terminal supports inline images, giving 23
-rows with image support and 21 without. Support is sampled once at construction;
+on shrink, terminal progress, steering mode, follow-up mode, transport, HTTP idle
+timeout, hidden thinking, collapsed changelog, quiet startup, install telemetry,
+double-escape action, tree filter, warnings, thinking level and theme. Show
+images and image width appear only when the supplied terminal supports inline
+images, giving 24 rows with image support and 22 without. Support is sampled once at construction;
 changing capabilities affects new panels, not retained ones. The toolkit owns
 [settings search and list rendering](../terminal/components.md).
 
 Numeric initial values keep their supplied value and shortest decimal spelling,
 including negative zero displayed as `0` and nonfinite values. Activation cycles
 image width through `60`, `80`, `120`, editor padding through `0`–`3`, and
-autocomplete height through `3`, `5`, `7`, `10`, `15`, `20`. An unmatched value
+autocomplete height through `3`, `5`, `7`, `10`, `15`, `20`, and the HTTP idle
+timeout through `30 sec`, `1 min`, `2 min`, `5 min` and `disabled` (reported as
+`30000`, `60000`, `120000`, `300000` and `0` milliseconds; an unmatched value
+displays as its seconds). Interactive mode saves the chosen limit and
+shows `HTTP idle timeout: <label>` in the transcript. An unmatched value
 advances to the first choice. These fixed decimal choices report `f64` values;
 boolean choices report `bool` values.
 
@@ -211,18 +218,21 @@ provider-name/browser effects. Default names come from
 wins; a present title override wins even when empty.
 
 `show_auth` replaces content with linked URL, click hint and optional nonempty
-instructions. Native launch uses `open`, `explorer.exe` or `xdg-open`, passing
+instructions. Both rows come from the toolkit's `hyperlink`, on every terminal:
+the URL in the accent colour links to itself, and the dim hint, `Cmd+click to
+open` on macOS and `Ctrl+click to open` elsewhere, links to the URL. Native launch uses `open`, `explorer.exe` or `xdg-open`, passing
 one literal URL argument through the [shared process owner](../tools-process.md).
 Startup and exit failures are silent; the dialog never waits for browser exit.
 Browser embeddings provide their own launcher.
 
-`show_manual_input` appends and retains entered text. `show_prompt` appends,
-optionally shows an example and resets text. Both install an owned
+`show_manual_input` and `show_prompt` append a row and an input that starts empty;
+`show_prompt` also optionally shows an example. Both install an owned
 `LoginInputFuture` eagerly, before requesting rendering. Submission returns the
-exact text once. Dropping an observer does not cancel the dialog; replacing or
+exact text once and freezes the row: the input is replaced by a plain `> value` row, so
+earlier answers stay visible and unchanged while a later prompt is active. Dropping an observer does not cancel the dialog; replacing or
 dropping its sender settles the old observer as `LoginDialogError::Cancelled`.
 Information replaces visible rows, while waiting and progress append. None of
-these updates discards a pending input or its retained text.
+these updates discards a pending input or the text typed into it.
 
 Live cancel bindings win before child input dispatch. Cancellation aborts the
 shared signal, rejects pending input with `Login cancelled`, then reports
@@ -331,3 +341,24 @@ notifications. The required legacy input bridge discards that error without
 inventing a fallback path. List and composed `try_render` propagate theme or
 child failures; legacy render returns no rows on failure, never a partial frame.
 Displayed tabs use the toolkit's [tab expansion](../terminal/text.md#measuring).
+
+# Presented lifecycles
+
+The configuration and session selectors are also run from the command line.
+`maestro-cli` owns `select_config` and `select_session`, which take the prepared
+options, the frame writer and the factory that builds the chat component, so the
+frontend never imports these widgets. The presentation focuses the handle the
+component retains, starts the frame writer, and settles exactly once: a close, a
+cancellation or a failed presentation stops what it already started, which is
+the writer and, for the configuration presentation, the theme watch. The
+explicit-exit notification ends the process after those effects. A repeated
+notification after the first settles nothing.
+
+The records both fronts hand a component live in
+`maestro_app::presentation_data::input_selectors`: the presented handles, the
+configuration options and callbacks with their factory, and the session
+loaders, request, callbacks and factory. `maestro-chat` re-exports the records
+its widgets consume, and `maestro-cli` re-exports `ConfigSelectorOptions` while
+importing the rest from that application path, so one declaration states what
+each caller supplies. The chat widget keeps its own differently shaped
+`ConfigSelectorOptions`, and session discovery keeps its own progress callback.

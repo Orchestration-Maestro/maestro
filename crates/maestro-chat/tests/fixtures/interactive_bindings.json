@@ -1,0 +1,730 @@
+[
+  {
+    "test": "runtime_settings_follow_the_current_session_without_crossing_policies",
+    "input": {
+      "op": "settings",
+      "padding": 0,
+      "max": 5,
+      "hardware": false,
+      "clear": true,
+      "hidden": true,
+      "compact": false
+    },
+    "expected": {
+      "calls": [
+        "session",
+        [
+          "compact",
+          false
+        ],
+        [
+          "cwd",
+          "/controlled"
+        ],
+        [
+          "hardware",
+          false
+        ],
+        [
+          "clear",
+          true
+        ],
+        [
+          "padding",
+          0
+        ],
+        [
+          "max",
+          5
+        ]
+      ],
+      "hidden": true
+    }
+  },
+  {
+    "test": "runtime_settings_follow_the_current_session_without_crossing_policies",
+    "input": {
+      "op": "settings",
+      "padding": 0,
+      "max": 5,
+      "hardware": true,
+      "clear": true,
+      "hidden": true,
+      "compact": false
+    },
+    "expected": {
+      "calls": [
+        "session",
+        [
+          "compact",
+          false
+        ],
+        [
+          "cwd",
+          "/controlled"
+        ],
+        [
+          "hardware",
+          true
+        ],
+        [
+          "clear",
+          true
+        ],
+        [
+          "padding",
+          0
+        ],
+        [
+          "max",
+          5
+        ]
+      ],
+      "hidden": true
+    }
+  },
+  {
+    "test": "runtime_settings_follow_the_current_session_without_crossing_policies",
+    "input": {
+      "op": "settings",
+      "padding": 0,
+      "max": 5,
+      "hardware": true,
+      "clear": false,
+      "hidden": true,
+      "compact": false
+    },
+    "expected": {
+      "calls": [
+        "session",
+        [
+          "compact",
+          false
+        ],
+        [
+          "cwd",
+          "/controlled"
+        ],
+        [
+          "hardware",
+          true
+        ],
+        [
+          "clear",
+          false
+        ],
+        [
+          "padding",
+          0
+        ],
+        [
+          "max",
+          5
+        ]
+      ],
+      "hidden": true
+    }
+  },
+  {
+    "test": "runtime_settings_follow_the_current_session_without_crossing_policies",
+    "input": {
+      "op": "settings",
+      "padding": 3,
+      "max": 9,
+      "hardware": true,
+      "clear": false,
+      "hidden": false,
+      "compact": true
+    },
+    "expected": {
+      "calls": [
+        "session",
+        [
+          "compact",
+          true
+        ],
+        [
+          "cwd",
+          "/controlled"
+        ],
+        [
+          "hardware",
+          true
+        ],
+        [
+          "clear",
+          false
+        ],
+        [
+          "padding",
+          3
+        ],
+        [
+          "max",
+          9
+        ]
+      ],
+      "hidden": false
+    }
+  },
+  {
+    "test": "runtime_settings_propagate_hardware_cursor_errors",
+    "input": {
+      "op": "settings",
+      "padding": 0,
+      "max": 5,
+      "hardware": false,
+      "clear": true,
+      "hidden": true,
+      "compact": false,
+      "failHardware": true
+    },
+    "expected": {
+      "calls": [
+        "session",
+        [
+          "compact",
+          false
+        ],
+        [
+          "cwd",
+          "/controlled"
+        ],
+        [
+          "hardware",
+          false
+        ]
+      ],
+      "hidden": true,
+      "error": "cursor rejected"
+    }
+  },
+  {
+    "test": "session_rebinding_unsubscribes_before_settings_binding_and_subscription",
+    "input": {
+      "op": "rebind",
+      "subscription": false,
+      "fail": null
+    },
+    "expected": {
+      "calls": [
+        "applyRuntimeSettings",
+        "bindCurrentSessionExtensions",
+        "subscribeToAgent",
+        "updateAvailableProviderCount",
+        "updateEditorBorderColor",
+        "updateTerminalTitle"
+      ],
+      "unsubscribeCleared": true
+    }
+  },
+  {
+    "test": "session_rebinding_stops_at_each_failed_phase",
+    "input": {
+      "op": "rebind",
+      "subscription": false,
+      "fail": "applyRuntimeSettings"
+    },
+    "expected": {
+      "calls": [
+        "applyRuntimeSettings"
+      ],
+      "unsubscribeCleared": true,
+      "error": "failed applyRuntimeSettings"
+    }
+  },
+  {
+    "test": "session_rebinding_stops_at_each_failed_phase",
+    "input": {
+      "op": "rebind",
+      "subscription": false,
+      "fail": "bindCurrentSessionExtensions"
+    },
+    "expected": {
+      "calls": [
+        "applyRuntimeSettings",
+        "bindCurrentSessionExtensions"
+      ],
+      "unsubscribeCleared": true,
+      "error": "failed bindCurrentSessionExtensions"
+    }
+  },
+  {
+    "test": "session_rebinding_stops_at_each_failed_phase",
+    "input": {
+      "op": "rebind",
+      "subscription": false,
+      "fail": "updateAvailableProviderCount"
+    },
+    "expected": {
+      "calls": [
+        "applyRuntimeSettings",
+        "bindCurrentSessionExtensions",
+        "subscribeToAgent",
+        "updateAvailableProviderCount"
+      ],
+      "unsubscribeCleared": true,
+      "error": "failed updateAvailableProviderCount"
+    }
+  },
+  {
+    "test": "session_rebinding_stops_at_each_failed_phase",
+    "input": {
+      "op": "rebind",
+      "subscription": false,
+      "fail": "updateEditorBorderColor"
+    },
+    "expected": {
+      "calls": [
+        "applyRuntimeSettings",
+        "bindCurrentSessionExtensions",
+        "subscribeToAgent",
+        "updateAvailableProviderCount",
+        "updateEditorBorderColor"
+      ],
+      "unsubscribeCleared": true,
+      "error": "failed updateEditorBorderColor"
+    }
+  },
+  {
+    "test": "session_rebinding_stops_at_each_failed_phase",
+    "input": {
+      "op": "rebind",
+      "subscription": false,
+      "fail": "updateTerminalTitle"
+    },
+    "expected": {
+      "calls": [
+        "applyRuntimeSettings",
+        "bindCurrentSessionExtensions",
+        "subscribeToAgent",
+        "updateAvailableProviderCount",
+        "updateEditorBorderColor",
+        "updateTerminalTitle"
+      ],
+      "unsubscribeCleared": true,
+      "error": "failed updateTerminalTitle"
+    }
+  },
+  {
+    "test": "session_rebinding_unsubscribes_before_settings_binding_and_subscription",
+    "input": {
+      "op": "rebind",
+      "subscription": true,
+      "fail": null
+    },
+    "expected": {
+      "calls": [
+        "unsubscribe",
+        "applyRuntimeSettings",
+        "bindCurrentSessionExtensions",
+        "subscribeToAgent",
+        "updateAvailableProviderCount",
+        "updateEditorBorderColor",
+        "updateTerminalTitle"
+      ],
+      "unsubscribeCleared": true
+    }
+  },
+  {
+    "test": "session_rebinding_stops_at_each_failed_phase",
+    "input": {
+      "op": "rebind",
+      "subscription": true,
+      "fail": "applyRuntimeSettings"
+    },
+    "expected": {
+      "calls": [
+        "unsubscribe",
+        "applyRuntimeSettings"
+      ],
+      "unsubscribeCleared": true,
+      "error": "failed applyRuntimeSettings"
+    }
+  },
+  {
+    "test": "session_rebinding_stops_at_each_failed_phase",
+    "input": {
+      "op": "rebind",
+      "subscription": true,
+      "fail": "bindCurrentSessionExtensions"
+    },
+    "expected": {
+      "calls": [
+        "unsubscribe",
+        "applyRuntimeSettings",
+        "bindCurrentSessionExtensions"
+      ],
+      "unsubscribeCleared": true,
+      "error": "failed bindCurrentSessionExtensions"
+    }
+  },
+  {
+    "test": "session_rebinding_stops_at_each_failed_phase",
+    "input": {
+      "op": "rebind",
+      "subscription": true,
+      "fail": "updateAvailableProviderCount"
+    },
+    "expected": {
+      "calls": [
+        "unsubscribe",
+        "applyRuntimeSettings",
+        "bindCurrentSessionExtensions",
+        "subscribeToAgent",
+        "updateAvailableProviderCount"
+      ],
+      "unsubscribeCleared": true,
+      "error": "failed updateAvailableProviderCount"
+    }
+  },
+  {
+    "test": "session_rebinding_stops_at_each_failed_phase",
+    "input": {
+      "op": "rebind",
+      "subscription": true,
+      "fail": "updateEditorBorderColor"
+    },
+    "expected": {
+      "calls": [
+        "unsubscribe",
+        "applyRuntimeSettings",
+        "bindCurrentSessionExtensions",
+        "subscribeToAgent",
+        "updateAvailableProviderCount",
+        "updateEditorBorderColor"
+      ],
+      "unsubscribeCleared": true,
+      "error": "failed updateEditorBorderColor"
+    }
+  },
+  {
+    "test": "session_rebinding_stops_at_each_failed_phase",
+    "input": {
+      "op": "rebind",
+      "subscription": true,
+      "fail": "updateTerminalTitle"
+    },
+    "expected": {
+      "calls": [
+        "unsubscribe",
+        "applyRuntimeSettings",
+        "bindCurrentSessionExtensions",
+        "subscribeToAgent",
+        "updateAvailableProviderCount",
+        "updateEditorBorderColor",
+        "updateTerminalTitle"
+      ],
+      "unsubscribeCleared": true,
+      "error": "failed updateTerminalTitle"
+    }
+  },
+  {
+    "test": "session_binding_waits_for_extensions_before_completion_shortcuts_resources_and_notices",
+    "input": {
+      "op": "binding",
+      "fail": null
+    },
+    "expected": {
+      "calls": [
+        "bind",
+        "themes",
+        "autocomplete",
+        "shortcuts",
+        "resources",
+        "notices"
+      ],
+      "uiForwarded": true
+    }
+  },
+  {
+    "test": "session_binding_waits_for_extensions_before_completion_shortcuts_resources_and_notices",
+    "input": {
+      "op": "binding",
+      "fail": "bind"
+    },
+    "expected": {
+      "calls": [
+        "bind"
+      ],
+      "uiForwarded": true,
+      "error": "failed bind"
+    }
+  },
+  {
+    "test": "session_binding_waits_for_extensions_before_completion_shortcuts_resources_and_notices",
+    "input": {
+      "op": "binding",
+      "fail": "resources"
+    },
+    "expected": {
+      "calls": [
+        "bind",
+        "themes",
+        "autocomplete",
+        "shortcuts",
+        "resources"
+      ],
+      "uiForwarded": true,
+      "error": "failed resources"
+    }
+  },
+  {
+    "test": "session_binding_waits_for_extensions_before_completion_shortcuts_resources_and_notices",
+    "input": {
+      "op": "binding",
+      "fail": "notices"
+    },
+    "expected": {
+      "calls": [
+        "bind",
+        "themes",
+        "autocomplete",
+        "shortcuts",
+        "resources",
+        "notices"
+      ],
+      "uiForwarded": true,
+      "error": "failed notices"
+    }
+  },
+  {
+    "test": "session_binding_forwards_native_shutdown_and_extension_errors",
+    "input": {
+      "op": "bound-shutdown",
+      "streaming": false,
+      "before": false
+    },
+    "expected": {
+      "calls": [
+        "shutdown"
+      ],
+      "requested": true
+    }
+  },
+  {
+    "test": "session_binding_forwards_native_shutdown_and_extension_errors",
+    "input": {
+      "op": "bound-shutdown",
+      "streaming": false,
+      "before": true
+    },
+    "expected": {
+      "calls": [
+        "shutdown"
+      ],
+      "requested": true
+    }
+  },
+  {
+    "test": "session_binding_forwards_native_shutdown_and_extension_errors",
+    "input": {
+      "op": "bound-shutdown",
+      "streaming": true,
+      "before": false
+    },
+    "expected": {
+      "calls": [],
+      "requested": true
+    }
+  },
+  {
+    "test": "session_binding_forwards_native_shutdown_and_extension_errors",
+    "input": {
+      "op": "bound-shutdown",
+      "streaming": true,
+      "before": true
+    },
+    "expected": {
+      "calls": [],
+      "requested": true
+    }
+  },
+  {
+    "test": "session_binding_forwards_native_shutdown_and_extension_errors",
+    "input": {
+      "op": "bound-shutdown-transition",
+      "before": false,
+      "after": true
+    },
+    "expected": {
+      "calls": [],
+      "requested": true
+    }
+  },
+  {
+    "test": "session_binding_forwards_native_shutdown_and_extension_errors",
+    "input": {
+      "op": "bound-shutdown-transition",
+      "before": true,
+      "after": false
+    },
+    "expected": {
+      "calls": [
+        "shutdown"
+      ],
+      "requested": true
+    }
+  },
+  {
+    "test": "session_binding_forwards_native_shutdown_and_extension_errors",
+    "input": {
+      "op": "bound-error",
+      "stack": null
+    },
+    "expected": {
+      "calls": [
+        {
+          "extensionPath": "/extensions/bound",
+          "error": "binding failure"
+        }
+      ]
+    }
+  },
+  {
+    "test": "session_binding_forwards_native_shutdown_and_extension_errors",
+    "input": {
+      "op": "bound-error",
+      "stack": "head\n  frame"
+    },
+    "expected": {
+      "calls": [
+        {
+          "extensionPath": "/extensions/bound",
+          "error": "binding failure",
+          "stack": "head\n  frame"
+        }
+      ]
+    }
+  },
+  {
+    "test": "extension_errors_keep_the_heading_and_trimmed_stack_tail",
+    "input": {
+      "op": "extension-error",
+      "stack": null
+    },
+    "expected": {
+      "lines": [
+        " @error@Extension \"/extensions/a\" error: failure\u001b[39m                                       "
+      ],
+      "texts": [
+        "@error@Extension \"/extensions/a\" error: failure\u001b[39m"
+      ],
+      "children": 1,
+      "renderRequested": true
+    }
+  },
+  {
+    "test": "extension_errors_keep_the_heading_and_trimmed_stack_tail",
+    "input": {
+      "op": "extension-error",
+      "stack": ""
+    },
+    "expected": {
+      "lines": [
+        " @error@Extension \"/extensions/a\" error: failure\u001b[39m                                       "
+      ],
+      "texts": [
+        "@error@Extension \"/extensions/a\" error: failure\u001b[39m"
+      ],
+      "children": 1,
+      "renderRequested": true
+    }
+  },
+  {
+    "test": "extension_errors_keep_the_heading_and_trimmed_stack_tail",
+    "input": {
+      "op": "extension-error",
+      "stack": "head"
+    },
+    "expected": {
+      "lines": [
+        " @error@Extension \"/extensions/a\" error: failure\u001b[39m                                       "
+      ],
+      "texts": [
+        "@error@Extension \"/extensions/a\" error: failure\u001b[39m"
+      ],
+      "children": 1,
+      "renderRequested": true
+    }
+  },
+  {
+    "test": "extension_errors_keep_the_heading_and_trimmed_stack_tail",
+    "input": {
+      "op": "extension-error",
+      "stack": "head\n at first \n at second"
+    },
+    "expected": {
+      "lines": [
+        " @error@Extension \"/extensions/a\" error: failure\u001b[39m                                       ",
+        " @dim@  at first\u001b[39m                                                                     ",
+        " @dim@  at second\u001b[39m                                                                    "
+      ],
+      "texts": [
+        "@error@Extension \"/extensions/a\" error: failure\u001b[39m",
+        "@dim@  at first\u001b[39m\n@dim@  at second\u001b[39m"
+      ],
+      "children": 2,
+      "renderRequested": true
+    }
+  },
+  {
+    "test": "extension_errors_keep_the_heading_and_trimmed_stack_tail",
+    "input": {
+      "op": "extension-error",
+      "stack": "head\n"
+    },
+    "expected": {
+      "lines": [
+        " @error@Extension \"/extensions/a\" error: failure\u001b[39m                                       ",
+        " @dim@  \u001b[39m                                                                             "
+      ],
+      "texts": [
+        "@error@Extension \"/extensions/a\" error: failure\u001b[39m",
+        "@dim@  \u001b[39m"
+      ],
+      "children": 2,
+      "renderRequested": true
+    }
+  },
+  {
+    "test": "extension_errors_keep_the_heading_and_trimmed_stack_tail",
+    "input": {
+      "op": "extension-error",
+      "stack": "head\n ﻿frame﻿ \nframe"
+    },
+    "expected": {
+      "lines": [
+        " @error@Extension \"/extensions/a\" error: failure\u001b[39m                                       ",
+        " @dim@  frame\u001b[39m                                                                        ",
+        " @dim@  frame\u001b[39m                                                                        "
+      ],
+      "texts": [
+        "@error@Extension \"/extensions/a\" error: failure\u001b[39m",
+        "@dim@  frame\u001b[39m\n@dim@  frame\u001b[39m"
+      ],
+      "children": 2,
+      "renderRequested": true
+    }
+  },
+  {
+    "test": "extension_errors_keep_the_heading_and_trimmed_stack_tail",
+    "input": {
+      "op": "extension-error",
+      "stack": "head\r\n  界\r\n"
+    },
+    "expected": {
+      "lines": [
+        " @error@Extension \"/extensions/a\" error: failure\u001b[39m                                       ",
+        " @dim@  界\u001b[39m                                                                           ",
+        " @dim@  \u001b[39m                                                                             "
+      ],
+      "texts": [
+        "@error@Extension \"/extensions/a\" error: failure\u001b[39m",
+        "@dim@  界\u001b[39m\n@dim@  \u001b[39m"
+      ],
+      "children": 2,
+      "renderRequested": true
+    }
+  }
+]

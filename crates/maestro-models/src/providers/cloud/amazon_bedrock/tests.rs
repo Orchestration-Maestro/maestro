@@ -1,4 +1,4 @@
-//! Unit tests for the proxy choice and the configuration decisions.
+//! Unit tests for the proxy choice, the configuration decisions and the request payload.
 #![cfg(not(target_arch = "wasm32"))]
 
 use url::Url;
@@ -299,12 +299,36 @@ fn proxy_choice_follows_the_variables_and_exclusions() -> Result<(), Box<dyn std
 }
 
 #[test]
+fn ftp_source_admits_the_prefixed_script_url() {
+    let destination = Url::parse("http://origin.example/").unwrap();
+    let source = "pac+ftp://proxy.example/script.pac";
+    let selected = environment(&[("HTTP_PROXY", source)])
+        .proxy_for(&destination)
+        .unwrap()
+        .unwrap();
+    assert_eq!(selected.as_str(), source);
+    assert_eq!(
+        selected.as_str().strip_prefix("pac+"),
+        Some("ftp://proxy.example/script.pac")
+    );
+    let unprefixed = environment(&[("HTTP_PROXY", "ftp://proxy.example/script.pac")])
+        .proxy_for(&destination)
+        .unwrap_err();
+    assert!(unprefixed.contains("Unsupported protocol"), "{unprefixed}");
+    let unadmitted = environment(&[("HTTP_PROXY", "pac+gopher://proxy.example/script")])
+        .proxy_for(&destination)
+        .unwrap_err();
+    assert!(unadmitted.contains("Unsupported protocol"), "{unadmitted}");
+}
+
+#[test]
 fn pac_sources_admit_exactly_the_supported_protocols() {
     let destination = Url::parse("http://origin.example/").unwrap();
     for source in [
         "pac+data:,function%20FindProxyForURL()%7Breturn%20'DIRECT'%7D",
         "pac+data://,script",
         "pac+file:///script.pac",
+        "pac+ftp://proxy.example/script.pac",
         "pac+http://proxy.example/script.pac",
         "pac+https://proxy.example/script.pac",
     ] {
@@ -556,4 +580,108 @@ fn replace_socks_scheme(value: &str, scheme: Option<&str>) -> String {
                 .replace("socks://", &format!("{scheme}://"))
         },
     )
+}
+
+/// The payload for `messages` sent to `model` with `options` and an empty environment.
+fn payload_for(
+    model: &Model,
+    messages: &serde_json::Value,
+    options: &BedrockOptions,
+) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+    let context: crate::Context =
+        serde_json::from_value(serde_json::json!({ "messages": messages }))?;
+    super::request::payload(model, context, options, &environment(&[]))
+        .map_err(|failure| failure.message.into())
+}
+
+#[test]
+fn blank_required_text_is_replaced_by_the_placeholder() -> Result<(), Box<dyn std::error::Error>> {
+    let model = european_model()?;
+    let mut uncached = BedrockOptions::default();
+    uncached.common.cache_retention = Some(crate::CacheRetention::None);
+    let payload = payload_for(
+        &model,
+        &serde_json::json!([
+            {"role": "user", "content": "   ", "timestamp": 1},
+            {"role": "user", "content": [{"type": "text", "text": ""}], "timestamp": 2},
+            {"role": "user", "content": [
+                {"type": "text", "text": ""},
+                {"type": "text", "text": "hello"},
+            ], "timestamp": 3},
+        ]),
+        &uncached,
+    )?;
+    assert_eq!(
+        payload["messages"],
+        serde_json::json!([
+            {"role": "user", "content": [{"text": "<empty>"}]},
+            {"role": "user", "content": [{"text": "<empty>"}]},
+            {"role": "user", "content": [{"text": "hello"}]},
+        ])
+    );
+    Ok(())
+}
+
+#[test]
+fn blank_tool_result_text_is_replaced_by_the_placeholder() -> Result<(), Box<dyn std::error::Error>>
+{
+    let model = european_model()?;
+    let payload = payload_for(
+        &model,
+        &serde_json::json!([{
+            "role": "toolResult",
+            "toolCallId": "tool-1",
+            "toolName": "tool",
+            "content": [{"type": "text", "text": " "}],
+            "isError": false,
+            "timestamp": 1,
+        }]),
+        &BedrockOptions::default(),
+    )?;
+    assert_eq!(
+        payload["messages"][0]["content"][0]["toolResult"]["content"],
+        serde_json::json!([{"text": "<empty>"}])
+    );
+    Ok(())
+}
+
+#[test]
+fn claude_requests_default_max_tokens_to_the_model_cap() -> Result<(), Box<dyn std::error::Error>> {
+    let claude = european_model()?;
+    let history = serde_json::json!([{"role": "user", "content": "hi", "timestamp": 1}]);
+    let payload = payload_for(&claude, &history, &BedrockOptions::default())?;
+    assert_eq!(
+        payload["inferenceConfig"]["maxTokens"].as_f64(),
+        Some(claude.max_tokens)
+    );
+    let mut explicit = BedrockOptions::default();
+    explicit.common.max_tokens = Some(77.0);
+    let payload = payload_for(&claude, &history, &explicit)?;
+    assert_eq!(payload["inferenceConfig"]["maxTokens"].as_f64(), Some(77.0));
+    let other = get_model("amazon-bedrock", "amazon.nova-lite-v1:0").ok_or("nova is missing")?;
+    let payload = payload_for(&other, &history, &BedrockOptions::default())?;
+    assert!(payload["inferenceConfig"].get("maxTokens").is_none());
+    Ok(())
+}
+
+#[test]
+fn opus_4_8_and_sonnet_5_think_adaptively() -> Result<(), Box<dyn std::error::Error>> {
+    let history = serde_json::json!([{"role": "user", "content": "hi", "timestamp": 1}]);
+    let options = BedrockOptions {
+        reasoning: Some(crate::ThinkingLevel::High),
+        ..BedrockOptions::default()
+    };
+    for id in ["anthropic.claude-opus-4-8", "anthropic.claude-sonnet-5"] {
+        let model = Model {
+            id: id.into(),
+            name: id.into(),
+            reasoning: true,
+            ..european_model()?
+        };
+        let payload = payload_for(&model, &history, &options)?;
+        let fields = &payload["additionalModelRequestFields"];
+        assert_eq!(fields["thinking"]["type"], "adaptive", "{id}");
+        assert!(fields.get("anthropic_beta").is_none(), "{id}");
+    }
+    Ok(())
 }

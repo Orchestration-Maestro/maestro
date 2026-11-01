@@ -61,26 +61,6 @@ impl AttachmentHost for Host {
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = bool>>> {
         unreachable!("unexpected clipboard operation")
     }
-    fn capture_focus(
-        &self,
-    ) -> Result<
-        Option<std::rc::Rc<maestro_web::browser::attachment_content::FocusTarget>>,
-        AttachmentHostError,
-    > {
-        unreachable!("no dialog focus in this adapter")
-    }
-    fn restore_focus(
-        &self,
-        _: std::rc::Rc<maestro_web::browser::attachment_content::FocusTarget>,
-    ) -> Result<maestro_web::browser::timer::Timer, AttachmentHostError> {
-        unreachable!("no dialog focus in this adapter")
-    }
-    fn dialog_bounds(&self, _: egui::Id, _: [&str; 2]) -> Result<egui::Rect, AttachmentHostError> {
-        unreachable!("no dialog measurement in this adapter")
-    }
-    fn native_key(&self, _: &web_sys::KeyboardEvent, _: &egui::Context) {
-        unreachable!("no native dialog key in this adapter")
-    }
 
     fn download_bytes(
         &self,
@@ -126,9 +106,6 @@ impl AttachmentHost for Host {
     fn remove(&self, _: egui::Id) {
         unreachable!()
     }
-    fn take_escape(&self) -> bool {
-        unreachable!()
-    }
     fn timer(
         &self,
         _: i32,
@@ -140,7 +117,7 @@ impl AttachmentHost for Host {
     fn spawn_local(&self, _: std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>) {
         unreachable!()
     }
-    fn download(&self, _: Rc<RefCell<maestro_web::Attachment>>) -> Result<(), AttachmentHostError> {
+    fn download(&self, _: maestro_web::SharedAttachment) -> Result<(), AttachmentHostError> {
         unreachable!()
     }
 }

@@ -37,3 +37,6 @@ pub use models::*;
 pub type ThinkingLevelMap = indexmap::IndexMap<ModelThinkingLevel, Option<String>>;
 /// Retained live assistant message shared by partial and terminal observations.
 pub type SharedAssistantMessage = std::sync::Arc<std::sync::RwLock<AssistantMessage>>;
+
+mod options;
+pub use options::*;

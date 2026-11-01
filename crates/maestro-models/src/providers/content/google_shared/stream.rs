@@ -9,7 +9,7 @@ use serde_json::value::RawValue;
 
 use super::wire::{self, nullable};
 use super::{is_thinking_part, map_stop_reason, retain_thought_signature};
-use crate::providers::json_text::{compact_object, is_truthy, member};
+use crate::providers::json_text::{compact_json, is_truthy, member};
 use crate::providers::selected_fields::native;
 use crate::records::diagnostics::timestamp_now;
 use crate::{
@@ -267,7 +267,7 @@ impl<'a> Reducer<'a> {
             ),
         };
         let arguments = wire::arguments(call.arguments)?;
-        let delta = compact_object(&arguments).map_err(|error| native(&error))?;
+        let delta = compact_json(&arguments).map_err(|error| native(&error))?;
         self.call_ids.insert(id.clone());
         let call = ToolCall {
             id,
@@ -297,10 +297,11 @@ impl<'a> Reducer<'a> {
         Ok(())
     }
 
-    /// Record the outcome a declared finish reason stands for; a call in the message wins.
+    /// Record the outcome a declared finish reason stands for; a call in the message turns a
+    /// normal stop into tool use but never hides a length or error stop.
     fn finish(&self, reason: &str) -> Result<(), DiagnosticErrorInfo> {
         let mut stop_reason = map_stop_reason(reason)?;
-        if !self.call_ids.is_empty() {
+        if !self.call_ids.is_empty() && stop_reason == StopReason::Stop {
             stop_reason = StopReason::ToolUse;
         }
         self.change(|message| message.stop_reason = stop_reason);

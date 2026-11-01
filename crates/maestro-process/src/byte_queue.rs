@@ -34,6 +34,17 @@ impl Writes {
         }
     }
 
+    /// Removes the unconsumed front bytes without replaying an accepted prefix.
+    pub fn take_front(&mut self) -> Option<Vec<u8>> {
+        let mut bytes = self.pending.pop_front()?;
+        let offset = std::mem::take(&mut self.offset);
+        if offset != 0 {
+            bytes.drain(..offset);
+        }
+        self.remaining -= bytes.len();
+        Some(bytes)
+    }
+
     /// Reports whether the terminal has retained output.
     #[must_use]
     pub fn is_empty(&self) -> bool {
@@ -98,3 +109,6 @@ impl Writes {
         WriteStatus::Complete
     }
 }
+
+#[cfg(test)]
+mod tests;

@@ -15,8 +15,7 @@ use futures_core::Stream;
 use futures_util::FutureExt;
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{
-    AssistantMessageEvent, AssistantMessageEventStream, DiagnosticErrorInfo, JsonObject,
-    SharedAssistantMessage,
+    AssistantMessageEvent, AssistantMessageEventStream, DiagnosticErrorInfo, SharedAssistantMessage,
 };
 #[cfg(not(target_arch = "wasm32"))]
 use responses::Script;
@@ -133,6 +132,12 @@ fn maestro_responses_events_insert_final_only_tool() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
+fn maestro_responses_events_open_unmatched_final_items() -> TestResult {
+    event_rows("maestro_responses_events_open_unmatched_final_items", 2)
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
 fn maestro_responses_events_map_completion_status() -> TestResult {
     event_rows("maestro_responses_events_map_completion_status", 10)?;
     for (status, error) in [
@@ -232,6 +237,12 @@ fn maestro_responses_events_ignore_unknown_events() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
+fn maestro_responses_events_keep_items_by_output_index() -> TestResult {
+    event_rows("maestro_responses_events_keep_items_by_output_index", 1)
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
 fn maestro_responses_events_keep_current_item_order() -> TestResult {
     event_rows("maestro_responses_events_keep_current_item_order", 2)
 }
@@ -250,8 +261,8 @@ fn maestro_responses_events_read_last_duplicate_fields() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_responses_events_require_object_arguments() -> TestResult {
-    event_rows("maestro_responses_events_require_object_arguments", 6)
+fn maestro_responses_events_keep_argument_roots() -> TestResult {
+    event_rows("maestro_responses_events_keep_argument_roots", 6)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -306,7 +317,7 @@ fn maestro_responses_events_skip_unread_deep_values() -> TestResult {
 #[cfg(not(target_arch = "wasm32"))]
 /// The arguments the reducer keeps for a call whose arguments arrive as `text`, streamed
 /// before the final item.
-fn arguments_kept(text: &str) -> TestResult<JsonObject> {
+fn arguments_kept(text: &str) -> TestResult<serde_json::Value> {
     let added = json!({"type": "response.output_item.added", "item": {"type": "function_call",
         "id": "fc_1", "call_id": "c", "name": "lookup", "arguments": ""}});
     let delta = json!({"type": "response.function_call_arguments.delta", "delta": text});
@@ -335,7 +346,7 @@ fn maestro_responses_events_preserve_argument_boundaries() -> TestResult {
             };
             let arguments = arguments_kept(&text)?;
             if depth > 127 {
-                assert!(arguments.is_empty(), "{depth} containers, closed {closed}");
+                assert_eq!(arguments, json!({}), "{depth} containers, closed {closed}");
                 continue;
             }
             let (mut containers, mut child) = (1, arguments.get("x"));
@@ -470,7 +481,7 @@ fn maestro_responses_events_share_live_output() -> TestResult {
 fn maestro_responses_events_ignore_malformed_unselected_fields() -> TestResult {
     event_rows(
         "maestro_responses_events_ignore_malformed_unselected_fields",
-        33,
+        31,
     )?;
     let events = [
         r#"{"type":"future.event","delta":"\ud800","response":{"id":"\ud800"}}"#,
@@ -1051,7 +1062,7 @@ fn maestro_responses_events_reject_nonnumeric_usage() -> TestResult {
         json!([
             run.message.usage.input,
             run.message.usage.output,
-            run.message.usage.total_tokens,
+            run.message.usage.total_tokens.present().copied().unwrap(),
             run.message.usage.cache_read
         ]),
         json!([0.0, 0.0, 0.0, 0.0])
@@ -1084,7 +1095,10 @@ fn maestro_responses_events_reject_nonnumeric_usage() -> TestResult {
             let (actual, expected) = match key {
                 "input_tokens" => (json!(counts.input), json!(expected)),
                 "output_tokens" => (json!(counts.output), json!(expected)),
-                "total_tokens" => (json!(counts.total_tokens), json!(expected)),
+                "total_tokens" => (
+                    json!(counts.total_tokens.present().copied().unwrap()),
+                    json!(expected),
+                ),
                 _ => (
                     json!([counts.input, counts.cache_read]),
                     json!([-expected, expected]),

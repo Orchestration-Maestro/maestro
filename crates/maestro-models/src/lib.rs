@@ -23,8 +23,9 @@ mod catalog;
 pub mod catalog_generation;
 mod options;
 pub use options::{
-    AdjustedMaxTokens, adjust_max_tokens_for_thinking, build_base_options, build_base_options_for,
-    clamp_reasoning, is_context_overflow, reasoning_from_thinking_level,
+    AdjustedMaxTokens, ESTIMATED_IMAGE_CHARS, adjust_max_tokens_for_thinking, build_base_options,
+    build_base_options_for, clamp_reasoning, is_context_overflow, reasoning_from_thinking_level,
+    tokens_for_chars, utf16_units,
 };
 /// Conversation adaptation for the destination model.
 mod projection;
@@ -43,7 +44,9 @@ pub use providers::chat::openai_completions::{
 pub use providers::cloud::amazon_bedrock::{BedrockOptions, BedrockThinkingDisplay};
 pub use providers::content::google::{GoogleOptions, stream_google, stream_google_for};
 pub use providers::content::google_shared::GoogleThinkingLevel;
-pub use providers::http::{Fetch, FetchError, HttpBody, HttpRequest, HttpResponse, default_fetch};
+pub use providers::http::{
+    Fetch, FetchError, HttpBody, HttpRequest, HttpResponse, default_fetch, fetch_optional_body,
+};
 pub use providers::messages::anthropic::{
     AnthropicClient, AnthropicEffort, AnthropicOptions, AnthropicRequestOptions,
     AnthropicThinkingDisplay, stream_anthropic, stream_anthropic_for,
@@ -67,8 +70,8 @@ pub use records::diagnostics::{
     append_assistant_message_diagnostic, create_assistant_message_diagnostic,
     extract_diagnostic_error, format_thrown_value, timestamp_now,
 };
-pub use records::event_stream::EventStream;
 pub use records::event_stream::create_assistant_message_event_stream;
+pub use records::event_stream::{AssistantMessageEventStreamPort, EventStream};
 pub use records::hash::short_hash;
 pub use records::headers::headers_to_record;
 pub use records::session_resources::{
@@ -133,5 +136,13 @@ pub use providers::content::google_vertex::{
     stream_simple_google_vertex, stream_simple_google_vertex_for,
 };
 
+/// Shared extension event inventory for concrete native adapters.
+pub use maestro_request::extension_event_table;
 /// Shared extension events and assembled prompt records.
 pub use maestro_request::{extension_events, system_prompt};
+
+/// Shared parameter-schema records and their declared node kinds.
+pub use maestro_request::parameter_schema::{
+    Base, ParameterSchema, Refinement, SchemaCallback, SchemaCode, SchemaCodeSource, SchemaKind,
+    SchemaNode, transport as schema_transport,
+};

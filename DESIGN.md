@@ -44,8 +44,8 @@ The approved Forge identity governs presentation, not interaction. Read the
 [identity guide](docs/identity.md) and [brand pack](assets/brand/brand.json)
 for normative values, voice, mark geometry and contrast requirements.
 This inventory records existing terminal widgets and the browser components
-to be ported; it does not implement those browser components. Screen layouts,
-wording and behaviour remain unchanged.
+to be ported; it does not implement those browser components. Screen layouts
+and behaviour remain unchanged.
 
 ## Colors
 
@@ -251,7 +251,7 @@ content are not brand colours.
 | CalculateRenderer, GetCurrentTimeRenderer | Shared tool header; successful output embedded in its muted caption, error output error below it; no expansion toggle |
 | JavaScript REPL renderer | Shared collapsible tool header; code mono, console text/error by result, returned attachments child-owned |
 | ExtractDocument renderer | Shared collapsible tool header; URL/metadata muted; nonempty successful extracted text in CodeBlock mono, nonempty error output in error ConsoleBlock |
-| ArtifactsPanel | Background/text, tab-bar border; active tab accent text and underline, inactive tab muted with text hover and transparent underline; active artifact supplies header controls/content; close control keeps hover/focus treatment; collapsed or empty panel hidden; overlay has no side border and uses transparent modal admission; full-viewport dim/blur composition is deferred to [#1145](https://github.com/Orchestration-Maestro/maestro/issues/1145), inline uses border; no own busy/error outcome |
+| ArtifactsPanel | Background/text, tab-bar border; active tab accent text and underline, inactive tab muted with text hover and transparent underline; active artifact supplies header controls/content; close control keeps hover/focus treatment; collapsed or empty panel hidden; overlay has no side border and uses transparent modal admission; the chat screen's overlay fills the viewport above the shared dialog backdrop, inline uses border; no own busy/error outcome |
 | ArtifactElement | Nonvisual base contract for content/header controls; concrete artifact owns presentation |
 | ArtifactPill | Text filename on panel/border; hover panel and pointer only when a panel is supplied; no selected/loading/error state |
 | Artifacts tool renderer | Shared tool header, collapsible where details exist; code mono, diff additions success/removals error, error text/console error; file pills child-owned |
@@ -280,6 +280,6 @@ The decorative mark has an accessible title from the pack wordmark.
 ## Do's and Don'ts
 
 - Do resolve brand values through the selected pack and link the owning rules.
-- Do preserve the established layout, wording and interaction states.
+- Do preserve the established layout and interaction states.
 - Don't add colours, generated ramps, interpolated text, new motion or controls.
 - Don't treat this inventory as evidence of shipped browser/application UI.

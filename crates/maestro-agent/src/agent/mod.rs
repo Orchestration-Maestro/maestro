@@ -2,8 +2,10 @@
 use crate::types::{AgentExecution, Threaded};
 use crate::types::{AgentMessage, CustomAgentMessages, QueueMode, StreamFn};
 use crate::{
-    AfterToolCall, BeforeToolCall, ConvertToLlm, GetApiKey, ToolExecutionMode, TransformContext,
+    AfterToolCall, BeforeToolCall, ConvertToLlm, GetApiKey, PrepareNextTurn, ToolExecutionMode,
+    TransformContext,
 };
+use maestro_listeners::Listeners;
 use maestro_models::{OnPayload, OnResponse, ThinkingBudgets, Transport};
 use std::sync::Mutex;
 /// Prompt normalization and owned execution.
@@ -39,6 +41,8 @@ pub struct AgentOptions<
     pub before_tool_call: Option<BeforeToolCall<C, E>>,
     /// Executed tool hook captured at admission.
     pub after_tool_call: Option<AfterToolCall<C, E>>,
+    /// Next-turn preparation captured at admission.
+    pub prepare_next_turn: Option<PrepareNextTurn<C, E>>,
     /// Provider session identifier captured at admission.
     pub session_id: Option<String>,
     /// Transport preference captured at admission.
@@ -71,6 +75,7 @@ impl<C: CustomAgentMessages, E: AgentExecution> Default for AgentOptions<C, E> {
             on_response: None,
             before_tool_call: None,
             after_tool_call: None,
+            prepare_next_turn: None,
             session_id: None,
             transport: None,
             max_retry_delay_ms: None,
@@ -99,6 +104,8 @@ pub struct Agent<C: CustomAgentMessages = crate::NoCustomMessages, E: AgentExecu
     pub before_tool_call: RwLock<Option<BeforeToolCall<C, E>>>,
     /// Executed tool hook for subsequently admitted runs.
     pub after_tool_call: RwLock<Option<AfterToolCall<C, E>>>,
+    /// Next-turn preparation for subsequently admitted runs.
+    pub prepare_next_turn: RwLock<Option<PrepareNextTurn<C, E>>>,
     /// Provider session identifier for subsequently admitted runs.
     pub session_id: RwLock<Option<String>>,
     /// Transport preference for subsequently admitted runs.
@@ -116,7 +123,7 @@ pub struct Agent<C: CustomAgentMessages = crate::NoCustomMessages, E: AgentExecu
     /// Reserved run and independent completion observers.
     active: Mutex<Option<execution::ActiveRun>>,
     /// Live callback registrations.
-    listeners: Mutex<maestro_models::records::listeners::Listeners<listeners::AgentListener<C, E>>>,
+    listeners: Mutex<Listeners<listeners::AgentListener<C, E>>>,
     /// Replacement stream captured at run admission.
     pub stream_fn: RwLock<Option<StreamFn<E>>>,
     /// Caller execution facility that retains submitted work independently.
@@ -149,6 +156,7 @@ impl<C: CustomAgentMessages, E: AgentExecution> Agent<C, E> {
             on_response: RwLock::new(options.on_response),
             before_tool_call: RwLock::new(options.before_tool_call),
             after_tool_call: RwLock::new(options.after_tool_call),
+            prepare_next_turn: RwLock::new(options.prepare_next_turn),
             session_id: RwLock::new(options.session_id),
             transport: RwLock::new(options.transport.unwrap_or(Transport::Auto)),
             max_retry_delay_ms: RwLock::new(options.max_retry_delay_ms),
@@ -160,7 +168,7 @@ impl<C: CustomAgentMessages, E: AgentExecution> Agent<C, E> {
             get_api_key: RwLock::new(options.get_api_key),
             thinking_budgets: RwLock::new(options.thinking_budgets),
             active: Mutex::new(None),
-            listeners: Mutex::new(maestro_models::records::listeners::Listeners::default()),
+            listeners: Mutex::new(Listeners::default()),
             stream_fn: RwLock::new(options.stream_fn),
             spawn: RwLock::new(options.spawn),
             follow_up: RwLock::new(VecDeque::new()),

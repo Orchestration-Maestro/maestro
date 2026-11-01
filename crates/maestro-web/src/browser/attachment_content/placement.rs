@@ -8,17 +8,7 @@ pub(super) fn clip_path(
     surface: &AttachmentSurface<'_>,
     css_pixels_per_point: (f64, f64),
 ) -> String {
-    let paint_rect = if matches!(surface.content, super::AttachmentContent::Input { .. }) {
-        let outset_css_pixels = 3.;
-        let outset_points = egui::vec2(
-            super::points(outset_css_pixels / css_pixels_per_point.0),
-            super::points(outset_css_pixels / css_pixels_per_point.1),
-        );
-        surface.rect.expand2(outset_points)
-    } else {
-        surface.rect
-    };
-    paint_clip_path(surface, paint_rect, css_pixels_per_point)
+    paint_clip_path(surface, surface.rect, css_pixels_per_point)
 }
 
 /// Clip reading decoration to finite canvas/ancestor bounds, not its viewport.

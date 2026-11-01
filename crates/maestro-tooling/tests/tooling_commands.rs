@@ -1,5 +1,7 @@
 #![cfg(test)]
 
+#[cfg(unix)]
+use crate::recipe_support;
 use crate::recipe_support::write_input;
 use crate::toolchain_support;
 
@@ -254,9 +256,12 @@ fn child_toolchain_keeps_parent_counters_while_building_wasm() {
     )
     .unwrap();
     let binary = compile_toolchain_probe(&fixture);
+    let home = fixture.root.path().join("cargo-home");
+    fs::remove_dir_all(&home).unwrap();
     let profile = fixture.root.path().join("parent.profraw");
     let parent = Command::new(&binary)
         .current_dir(fixture.root.path())
+        .env("CARGO_HOME", &home)
         .env("MAESTRO_PROBE_CARGO", env!("CARGO"))
         .env("CARGO_TARGET_DIR", fixture.root.path().join("target"))
         .env("RUSTFLAGS", "-C instrument-coverage")
@@ -276,17 +281,32 @@ fn child_toolchain_keeps_parent_counters_while_building_wasm() {
             .join("target/wasm32-unknown-unknown/debug/libwasm_child.rlib")
             .is_file()
     );
+    assert!(
+        home.join(".package-cache").is_file(),
+        "the probe's wasm build must use the private Cargo home"
+    );
     assert_profile_counters(&profile);
+}
+
+/// Generate a fixture's lock file with its Cargo state kept in a private home.
+fn generate_private_lock(root: &Path) {
+    assert!(
+        toolchain_support::fixture_command(env!("CARGO"), root, None)
+            .unwrap()
+            .arg("generate-lockfile")
+            .status()
+            .unwrap()
+            .success()
+    );
+    assert!(
+        root.join("cargo-home/.package-cache").is_file(),
+        "lock generation must use a private Cargo home"
+    );
 }
 
 /// Compile an instrumented parent independently of the integration runner's instrumentation.
 fn compile_toolchain_probe(fixture: &Fixture) -> PathBuf {
-    let lock = toolchain_support::command(env!("CARGO"))
-        .current_dir(fixture.root.path())
-        .arg("generate-lockfile")
-        .output()
-        .unwrap();
-    assert!(lock.status.success());
+    generate_private_lock(fixture.root.path());
     fs::write(
         fixture.root.path().join("toolchain_support.rs"),
         include_str!("fixtures/toolchain_support.rs"),
@@ -381,7 +401,7 @@ fn main() {
     }
     if env::args().nth(1).as_deref() != Some("format") {
         if let Some(root) = env::var_os("MAESTRO_CHECK_INDEX") {
-            for name in ["a space.rs", "line\nbreak.rs", "-dash.rs"] {
+            for name in ["a space.rs", "line\nbreak.rs", "-dash.rs"].into_iter().filter(|name| !(cfg!(windows) && name.contains('\n'))) {
                 let output = std::process::Command::new("git").current_dir(&root).args(["show", &format!(":{name}")]).output().unwrap();
                 assert!(output.status.success());
                 assert_eq!(output.stdout, b"formatted");
@@ -389,7 +409,7 @@ fn main() {
         }
     }
     if let Some(format) = env::var_os("MAESTRO_FORMAT_ROOT") {
-        for name in ["a space.rs", "line\nbreak.rs", "-dash.rs", "unrelated.rs"] {
+        for name in ["a space.rs", "line\nbreak.rs", "-dash.rs", "unrelated.rs"].into_iter().filter(|name| !(cfg!(windows) && name.contains('\n'))) {
             fs::write(PathBuf::from(&format).join(name), "formatted").unwrap();
         }
     }
@@ -1192,32 +1212,6 @@ fn standalone_inputs(source: &Path, package: &Path) {
     package_inputs(package);
 }
 
-/// The shipped examples and their index page, as authors write them.
-fn shipped_examples() -> [(&'static str, &'static str); 5] {
-    [
-        (
-            "examples/extensions/hello.rs",
-            include_str!("../../../examples/extensions/hello.rs"),
-        ),
-        (
-            "examples/extensions/shutdown_command.rs",
-            include_str!("../../../examples/extensions/shutdown_command.rs"),
-        ),
-        (
-            "examples/extensions/prompt_customizer.rs",
-            include_str!("../../../examples/extensions/prompt_customizer.rs"),
-        ),
-        (
-            "examples/extensions/with-deps/main.rs",
-            include_str!("../../../examples/extensions/with-deps/main.rs"),
-        ),
-        (
-            "examples/extensions/README.md",
-            include_str!("../../../examples/extensions/README.md"),
-        ),
-    ]
-}
-
 /// Write the package-level inputs the standalone layout copies.
 fn package_inputs(package: &Path) {
     for (name, bytes) in [
@@ -1229,9 +1223,7 @@ fn package_inputs(package: &Path) {
     ] {
         write_input(package, name, bytes);
     }
-    for (name, bytes) in shipped_examples() {
-        write_input(package, name, bytes);
-    }
+    crate::build_recipes::copy_tree(&repository_examples(), &package.join("examples"));
 }
 
 /// Assert that a viewer directory with no entries copies as an empty export directory in a fresh
@@ -1397,14 +1389,7 @@ fn maestro_standalone_assets_preserve_recursive_layout() {
         "[workspace]\nmembers = ['assets-source']\nresolver = '3'\n",
     )
     .unwrap();
-    assert!(
-        toolchain_support::command(env!("CARGO"))
-            .arg("generate-lockfile")
-            .current_dir(fixture.root.path())
-            .status()
-            .unwrap()
-            .success()
-    );
+    generate_private_lock(fixture.root.path());
     let args = [
         "copy-binary-assets".into(),
         source.clone().into_os_string(),
@@ -1433,9 +1418,7 @@ fn maestro_standalone_assets_preserve_recursive_layout() {
     ] {
         assert_eq!(fs::read(destination.join(name)).unwrap(), bytes.as_bytes());
     }
-    for (name, bytes) in shipped_examples() {
-        assert_eq!(fs::read(destination.join(name)).unwrap(), bytes.as_bytes());
-    }
+    assert_example_tree(&repository_examples(), &destination.join("examples"));
     assert_empty_viewer_copy(&fixture, &source, &package);
     fs::write(
         source.join("Cargo.toml"),
@@ -1497,6 +1480,31 @@ fn split_inputs(fixture: &Fixture) -> (PathBuf, PathBuf, PathBuf, PathBuf) {
     (source, package, metadata, viewer)
 }
 
+/// Locate the repository's authored examples from this crate's manifest directory.
+fn repository_examples() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../examples")
+}
+
+/// Assert every source file reaches the matching destination path byte for byte.
+fn assert_example_tree(source: &Path, destination: &Path) {
+    for entry in fs::read_dir(source).unwrap() {
+        let entry = entry.unwrap();
+        let destination = destination.join(entry.file_name());
+        if entry.file_type().unwrap().is_dir() {
+            assert_example_tree(&entry.path(), &destination);
+        } else {
+            assert_eq!(
+                fs::read(&destination).unwrap_or_else(|error| {
+                    panic!("cannot read {}: {error}", destination.display())
+                }),
+                fs::read(entry.path()).unwrap(),
+                "{}",
+                destination.display()
+            );
+        }
+    }
+}
+
 #[test]
 fn maestro_package_assets_come_from_the_package_directory() {
     #[cfg(unix)]
@@ -1545,6 +1553,7 @@ fn maestro_package_assets_come_from_the_package_directory() {
     );
     assert!(!destination.join("docs/crate.md").exists());
     assert!(!destination.join("examples/crate.txt").exists());
+    assert_example_tree(&repository_examples(), &destination.join("examples"));
 }
 
 #[test]
@@ -1584,8 +1593,16 @@ fn remove_input(path: &Path) {
 
 /// Assert that a failed copy names the input it could not read.
 fn assert_names_input(error: &io::Error, input: &Path) {
+    // Windows reads `/` and `\` as the same separator.
+    let spelled = |text: String| {
+        if cfg!(windows) {
+            text.replace('\\', "/")
+        } else {
+            text
+        }
+    };
     assert!(
-        error.to_string().contains(&input.display().to_string()),
+        spelled(error.to_string()).contains(&spelled(input.display().to_string())),
         "{error} does not name {}",
         input.display()
     );
@@ -1885,7 +1902,7 @@ fn maestro_asset_errors_keep_prior_copies() {
     );
     assert!(!destination.join("core/export-html/template.js").exists());
     fs::write(source.join("src/core/export-html/template.css"), "css").unwrap();
-    let image = source.join("src/modes/interactive/assets/mark.png");
+    let image = source.join("src/modes/interactive/assets").join("mark.png");
     fs::remove_file(&image).unwrap();
     assert!(
         tooling::copy_assets::copy(&source, &destination, tooling::copy_assets::Layout::Library)
@@ -2167,13 +2184,13 @@ fn run_driver(fixture: &Fixture, test: &str, operation: &str) -> TestProcess {
         .env("PATH", fixture_path(fixture))
 }
 
-/// The fixture's controlled tool directory ahead of this process's `PATH`.
-fn fixture_path(fixture: &Fixture) -> String {
-    format!(
-        "{}:{}",
-        fixture.root.path().display(),
-        std::env::var("PATH").unwrap()
-    )
+/// The fixture's controlled tool directory ahead of this process's `PATH`, joined with the
+/// host's list separator.
+fn fixture_path(fixture: &Fixture) -> std::ffi::OsString {
+    let inherited = std::env::var_os("PATH").unwrap();
+    let entries =
+        std::iter::once(fixture.root.path().to_path_buf()).chain(std::env::split_paths(&inherited));
+    std::env::join_paths(entries).unwrap()
 }
 
 /// Resolve an executable through this process's `PATH`.
@@ -2257,9 +2274,33 @@ fn maestro_hook_fixtures_exclude_ambient_credentials() {
                 &[],
             )
             .envs(
-                ["RUSTUP_HOME", "CARGO_HOME", "RUSTUP_AUTO_INSTALL"]
-                    .into_iter()
-                    .filter_map(|key| std::env::var_os(key).map(|value| (key, value))),
+                // The child compiles a fixture, which on Windows needs the system locations
+                // its linker discovery and temporary files read.
+                [
+                    "RUSTUP_HOME",
+                    "CARGO_HOME",
+                    "RUSTUP_AUTO_INSTALL",
+                    "SYSTEMDRIVE",
+                    "COMSPEC",
+                    "PATHEXT",
+                    "PROGRAMDATA",
+                    "PROGRAMFILES",
+                    "PROGRAMFILES(X86)",
+                    "PROGRAMW6432",
+                    "COMMONPROGRAMFILES",
+                    "COMMONPROGRAMFILES(X86)",
+                    "COMMONPROGRAMW6432",
+                    "NUMBER_OF_PROCESSORS",
+                    "PROCESSOR_ARCHITECTURE",
+                    "OS",
+                    "USERPROFILE",
+                    "APPDATA",
+                    "LOCALAPPDATA",
+                    "TEMP",
+                    "TMP",
+                ]
+                .into_iter()
+                .filter_map(|key| std::env::var_os(key).map(|value| (key, value))),
             )
             .env("SYNTHETIC_TEST_API_KEY", "secret-value")
             .env("PATH", std::env::var_os("PATH").unwrap())
@@ -2284,21 +2325,21 @@ fn maestro_hook_fixtures_exclude_ambient_credentials() {
 fn assert_hook_restages_only_captured_paths(driver: &str) {
     let fixture = Fixture::new();
     git(fixture.root.path(), &["init", "--quiet"]);
-    for name in ["a space.rs", "line\nbreak.rs", "-dash.rs", "unrelated.rs"] {
+    // Windows refuses a line break in a name, so there only the other spellings are staged.
+    let names: Vec<&str> = ["a space.rs", "line\nbreak.rs", "-dash.rs"]
+        .into_iter()
+        .filter(|name| !(cfg!(windows) && name.contains('\n')))
+        .collect();
+    let add = [&["add", "--"][..], &names].concat();
+    for name in names.iter().chain(&["unrelated.rs"]) {
         fs::write(fixture.root.path().join(name), "old").unwrap();
     }
-    git(
-        fixture.root.path(),
-        &["add", "--", "a space.rs", "line\nbreak.rs", "-dash.rs"],
-    );
+    git(fixture.root.path(), &add);
     stage_deleted_path(fixture.root.path());
-    for name in ["a space.rs", "line\nbreak.rs", "-dash.rs"] {
+    for name in &names {
         fs::write(fixture.root.path().join(name), "staged").unwrap();
     }
-    git(
-        fixture.root.path(),
-        &["add", "--", "a space.rs", "line\nbreak.rs", "-dash.rs"],
-    );
+    git(fixture.root.path(), &add);
     let output = run_hook(&fixture, driver)
         .env("MAESTRO_ACTIVE_SMOKE", "true")
         .env("MAESTRO_FORMAT_ROOT", fixture.root.path())
@@ -2312,7 +2353,7 @@ fn assert_hook_restages_only_captured_paths(driver: &str) {
         String::from_utf8_lossy(&output.stderr)
     );
     assert_commands_exclude_canary(&fixture);
-    for name in ["a space.rs", "line\nbreak.rs", "-dash.rs"] {
+    for name in &names {
         let output = git(fixture.root.path(), &["show", &format!(":{name}")]);
         assert_eq!(output.stdout, b"formatted");
     }
@@ -2489,6 +2530,46 @@ fn maestro_hook_selects_extra_steps_from_original_paths() {
 
 #[cfg(unix)]
 #[test]
+fn consumer_workspace_cargo_state_stays_beside_the_checkout() {
+    let scratch = Scratch::new().unwrap();
+    let workspace = consumer_workspace(scratch.path());
+    let home = scratch.path().join("cargo-home");
+    assert!(
+        home.join(".package-cache").is_file(),
+        "lock generation must use a private Cargo home"
+    );
+    fs::remove_dir_all(&home).unwrap();
+    let metadata = consumer_cargo(
+        &workspace,
+        &["metadata", "--offline", "--format-version", "1"],
+    );
+    assert!(metadata.status.success());
+    assert!(
+        home.join(".package-cache").is_file(),
+        "consumer Cargo runs must use the private Cargo home"
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn consumer_workspace_never_reaches_the_shared_cargo_home() {
+    if !recipe_support::without_shared_cargo_home() {
+        recipe_support::rerun_without_shared_cargo_home(
+            "consumer_workspace_never_reaches_the_shared_cargo_home",
+        );
+        return;
+    }
+    let scratch = Scratch::new().unwrap();
+    let workspace = consumer_workspace(scratch.path());
+    let metadata = consumer_cargo(
+        &workspace,
+        &["metadata", "--offline", "--format-version", "1"],
+    );
+    assert!(metadata.status.success());
+}
+
+#[cfg(unix)]
+#[test]
 fn maestro_hook_checks_only_selected_packages() {
     drive();
     let scratch = Scratch::new().unwrap();
@@ -2496,12 +2577,19 @@ fn maestro_hook_checks_only_selected_packages() {
     let leaf = workspace.join("leaf/src/lib.rs");
     fs::write(&leaf, LEAF_SOURCE.replace("    7", "    8")).unwrap();
     git(&workspace, &["add", "--", "leaf/src/lib.rs"]);
+    let home = scratch.path().join("cargo-home");
+    // The hook's own Cargo runs must recreate the private home the workspace setup left.
+    let _ = fs::remove_dir_all(&home);
     let output = run_consumer_hook("maestro_hook_checks_only_selected_packages", &workspace);
     assert!(
         output.status.success(),
         "{}\n{}",
         stdout(&output),
         String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(
+        home.join(".package-cache").is_file(),
+        "the hook's Cargo runs must use the private Cargo home"
     );
     let text = stdout(&output);
     assert!(text.contains("Selected crates: leaf, caller\n"), "{text}");
@@ -3000,8 +3088,7 @@ fn consumer_workspace(root: &Path) -> PathBuf {
         workspace.join("justfile"),
     )
     .unwrap();
-    let lock = toolchain_support::command("cargo")
-        .current_dir(&workspace)
+    let lock = consumer_toolchain(&workspace)
         .args(["generate-lockfile", "--offline"])
         .output()
         .unwrap();
@@ -3119,6 +3206,10 @@ fn consumer_hook_command(test: &str, workspace: &Path) -> TestProcess {
         .env("MAESTRO_RECEIPT", workspace.join("receipt"))
         .env("CARGO_TARGET_DIR", workspace.join("target"))
         .env(
+            "CARGO_HOME",
+            toolchain_support::home(workspace.parent().unwrap()),
+        )
+        .env(
             "PATH",
             format!(
                 "{}:{}",
@@ -3132,11 +3223,20 @@ fn consumer_hook_command(test: &str, workspace: &Path) -> TestProcess {
     command
 }
 
+/// Start a native toolchain command in the consumer workspace, with Cargo state kept beside the
+/// checkout and outside its repository.
+#[cfg(unix)]
+fn consumer_toolchain(workspace: &Path) -> Command {
+    let mut command =
+        toolchain_support::fixture_command("cargo", workspace.parent().unwrap(), None).unwrap();
+    command.current_dir(workspace);
+    command
+}
+
 /// Run one native Cargo command inside the consumer workspace.
 #[cfg(unix)]
 fn consumer_cargo(workspace: &Path, args: &[&str]) -> Output {
-    toolchain_support::command("cargo")
-        .current_dir(workspace)
+    consumer_toolchain(workspace)
         .env("CARGO_TARGET_DIR", workspace.join("target"))
         .args(args)
         .output()
@@ -3229,8 +3329,7 @@ fn maestro_hook_scoped_docs_still_deny_missing_documentation() {
     )
     .unwrap();
     git(&workspace, &["add", "--", "caller/src/lib.rs"]);
-    let control = toolchain_support::command("cargo")
-        .current_dir(&workspace)
+    let control = consumer_toolchain(&workspace)
         .env("CARGO_TARGET_DIR", workspace.join("target"))
         .env("RUSTDOCFLAGS", "-D warnings -D missing_docs")
         .args(["doc", "-p", "leaf", "--no-deps", "--locked"])
@@ -3274,64 +3373,781 @@ fn maestro_hook_scoped_docs_still_deny_missing_documentation() {
     );
 }
 
+/// The files the test build's author preparation is checked against.
+#[cfg(unix)]
+const AUTHOR_SETUP_SOURCES: [&str; 8] = [
+    "crates/maestro-extensions-wasm/examples/prepare_author_component.rs",
+    "crates/maestro-extensions-wasm/src/tests/build.rs",
+    "crates/maestro-extensions-wasm/src/tests/build/cargo.rs",
+    "crates/maestro-tooling/src/example_files.rs",
+    "crates/maestro-tooling/src/example_files/components.rs",
+    "crates/maestro-tooling/src/example_files/preparation.rs",
+    "crates/maestro-extensions-wasm/Cargo.toml",
+    "Cargo.lock",
+];
+
+/// Gives `path` the modification time `time`.
+#[cfg(unix)]
+fn set_modified(path: &Path, time: std::time::SystemTime) {
+    fs::File::options()
+        .write(true)
+        .open(path)
+        .unwrap()
+        .set_modified(time)
+        .unwrap();
+}
+
+/// Gives `path` the modification time `age` ago.
+#[cfg(unix)]
+fn set_age(path: &Path, age: std::time::Duration) {
+    set_modified(path, std::time::SystemTime::now() - age);
+}
+
+/// Lays out a profile directory with a built example, a fake Cargo that rebuilds it and every
+/// source an hour old. Returns the profile directory and the example.
+#[cfg(unix)]
+fn author_setup_checkout(root: &Path) -> (std::path::PathBuf, std::path::PathBuf) {
+    use std::os::unix::fs::PermissionsExt;
+    let profile = root.join("target/debug");
+    fs::create_dir_all(profile.join("deps")).unwrap();
+    fs::create_dir_all(profile.join("examples")).unwrap();
+    for source in AUTHOR_SETUP_SOURCES {
+        let path = root.join(source);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::File::create(&path).unwrap();
+        set_age(&path, std::time::Duration::from_secs(3600));
+    }
+    let example = profile.join("examples/prepare_author_component");
+    fs::write(&example, "#!/bin/sh\necho example\n").unwrap();
+    fs::write(
+        root.join("cargo"),
+        "#!/bin/sh\necho cargo \"$@\"\nprintf '#!/bin/sh\\necho example\\n' > target/debug/examples/prepare_author_component\nchmod +x target/debug/examples/prepare_author_component\n",
+    )
+    .unwrap();
+    for path in [&example, &root.join("cargo")] {
+        fs::set_permissions(path, fs::Permissions::from_mode(0o755)).unwrap();
+    }
+    (profile, example)
+}
+
 /// Run the test build's author preparation only while it is newer than its sources.
 #[cfg(unix)]
 #[test]
 fn author_setup_runs_the_built_example_only_while_fresh() {
-    use std::os::unix::fs::PermissionsExt;
     use std::time::{Duration, SystemTime};
     let scratch = Scratch::new().unwrap();
     let root = scratch.path();
-    let profile = root.join("target/debug");
-    fs::create_dir_all(profile.join("deps")).unwrap();
-    fs::create_dir_all(profile.join("examples")).unwrap();
-    let sources = [
-        "crates/maestro-extensions-wasm/examples/prepare_author_component.rs",
-        "crates/maestro-extensions-wasm/src/tests/build.rs",
-        "crates/maestro-extensions-wasm/Cargo.toml",
-        "Cargo.lock",
-    ];
-    let earlier = SystemTime::now() - Duration::from_secs(3600);
-    for source in sources {
-        let path = root.join(source);
-        fs::create_dir_all(path.parent().unwrap()).unwrap();
-        fs::File::create(path)
-            .unwrap()
-            .set_modified(earlier)
-            .unwrap();
-    }
-    let example = profile.join("examples/prepare_author_component");
-    for (path, name) in [(&example, "example"), (&root.join("cargo"), "cargo")] {
-        fs::write(path, format!("#!/bin/sh\necho {name} \"$@\"\n")).unwrap();
-        fs::set_permissions(path, fs::Permissions::from_mode(0o755)).unwrap();
-    }
+    let (profile, example) = author_setup_checkout(root);
     let run = || run_author_setup(root, &profile);
     assert_eq!(run(), "example\n");
-    for source in sources {
-        let file = fs::File::options()
-            .write(true)
-            .open(root.join(source))
-            .unwrap();
-        file.set_modified(SystemTime::now() + Duration::from_secs(60))
-            .unwrap();
-        assert!(run().starts_with("cargo run "), "{source}");
-        file.set_modified(earlier).unwrap();
+    for source in AUTHOR_SETUP_SOURCES {
+        set_modified(
+            &root.join(source),
+            SystemTime::now() + Duration::from_secs(60),
+        );
+        assert!(run().starts_with("cargo build "), "{source}");
+        set_age(&root.join(source), Duration::from_secs(3600));
     }
     fs::remove_file(&example).unwrap();
-    assert!(run().starts_with("cargo run "));
+    assert!(run().starts_with("cargo build "));
 }
 
-/// Run the author setup script from `root` with `profile` as nextest's artifact directory.
+/// Record the example's linked library, `age` old, beside its current and older hashed builds.
+/// Returns the older build's path.
 #[cfg(unix)]
-fn run_author_setup(root: &Path, profile: &Path) -> String {
-    let output = Command::new("sh")
-        .arg(
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.config/prepare-author-component.sh"),
-        )
+fn example_builds_on_library(
+    root: &Path,
+    profile: &Path,
+    age: std::time::Duration,
+) -> std::path::PathBuf {
+    use std::os::unix::fs::PermissionsExt;
+    fs::write(
+        root.join("Cargo.lock"),
+        "[[package]]\nname = \"maestro-extensions-wasm\"\ndependencies = [\n \"maestro-request\",\n]\n\n[[package]]\nname = \"maestro-request\"\n",
+    )
+    .unwrap();
+    set_age(
+        &root.join("Cargo.lock"),
+        std::time::Duration::from_secs(3600),
+    );
+    let information = "prepare_author_component: crates/maestro-extensions-wasm/examples/prepare_author_component.rs\n";
+    let copy = profile.join("examples/prepare_author_component-1");
+    fs::write(&copy, "#!/bin/sh\necho copy\n").unwrap();
+    fs::set_permissions(&copy, fs::Permissions::from_mode(0o755)).unwrap();
+    fs::hard_link(
+        profile.join("examples/prepare_author_component"),
+        profile.join("examples/prepare_author_component-a1"),
+    )
+    .unwrap();
+    for (target, name, hash, dependencies) in [
+        (
+            "maestro-extensions-wasm-1",
+            "example-prepare_author_component",
+            10,
+            vec![("maestro_request", 21)],
+        ),
+        (
+            "maestro-extensions-wasm-a1",
+            "example-prepare_author_component",
+            11,
+            vec![("maestro_request", 21)],
+        ),
+        ("maestro-request-1", "lib-maestro_request", 21, vec![]),
+    ] {
+        cargo_fingerprint(profile, target, name, hash, &dependencies);
+    }
+    for name in ["prepare_author_component.d", "prepare_author_component-1.d"] {
+        fs::write(profile.join("examples").join(name), information).unwrap();
+    }
+    let library = profile.join("deps/libmaestro_request-1.rlib");
+    fs::write(&library, b"").unwrap();
+    set_age(&library, age);
+    copy
+}
+
+/// Write the dependency records and little-endian hash Cargo leaves for one compiled target.
+#[cfg(unix)]
+pub(super) fn cargo_fingerprint(
+    profile: &Path,
+    target: &str,
+    name: &str,
+    hash: u64,
+    dependencies: &[(&str, u64)],
+) {
+    let directory = profile.join(".fingerprint").join(target);
+    fs::create_dir_all(&directory).unwrap();
+    let dependencies: Vec<_> = dependencies
+        .iter()
+        .map(|(name, hash)| serde_json::json!([0, name, false, hash]))
+        .collect();
+    fs::write(
+        directory.join(name),
+        hash.to_le_bytes()
+            .map(|byte| format!("{byte:02x}"))
+            .concat(),
+    )
+    .unwrap();
+    fs::write(
+        directory.join(format!("{name}.json")),
+        serde_json::to_vec(&serde_json::json!({"deps": dependencies})).unwrap(),
+    )
+    .unwrap();
+}
+
+/// A newer build of a linked crate under another hash does not outdate the consumer.
+#[cfg(unix)]
+#[test]
+fn author_setup_ignores_unlinked_builds_of_a_consumers_library() {
+    use std::time::{Duration, SystemTime};
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    let (profile, example) = author_setup_checkout(root);
+    example_builds_on_library(root, &profile, Duration::from_mins(30));
+    let consumer = profile.join("deps/integration-b1");
+    fs::copy(&example, &consumer).unwrap();
+    cargo_fingerprint(
+        &profile,
+        "maestro-extensions-wasmtime-b1",
+        "test-integration-test-integration",
+        12,
+        &[("maestro_request", 21)],
+    );
+    let old = SystemTime::now() - Duration::from_mins(20);
+    set_modified(&consumer, old);
+    set_age(&example, Duration::from_mins(10));
+    let unrelated = profile.join("deps/libmaestro_request-2.rlib");
+    fs::write(&unrelated, b"").unwrap();
+    cargo_fingerprint(
+        &profile,
+        "maestro-request-2",
+        "lib-maestro_request",
+        22,
+        &[],
+    );
+
+    assert_eq!(run_author_setup(root, &profile), "example\n");
+    assert_eq!(
+        fs::metadata(&consumer).unwrap().modified().unwrap(),
+        fs::metadata(&example).unwrap().modified().unwrap()
+    );
+}
+
+/// A library the example builds on, rebuilt after the example, outdates it as well, and
+/// only a rebuild of the example brings its code up to date.
+#[cfg(unix)]
+#[test]
+fn author_setup_rebuilds_an_example_that_a_library_has_outdated() {
+    use std::time::Duration;
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    let (profile, example) = author_setup_checkout(root);
+    example_builds_on_library(root, &profile, Duration::from_mins(15));
+    set_age(&example, Duration::from_mins(30));
+    let output = run_author_setup(root, &profile);
+    assert!(output.starts_with("cargo build "), "{output}");
+    assert!(output.ends_with("example\n"), "{output}");
+}
+
+/// Cargo leaves a copy of the example under each older hash, which no library rebuild
+/// updates, so only the example the launcher runs decides whether it needs a rebuild.
+#[cfg(unix)]
+#[test]
+fn author_setup_ignores_an_outdated_copy_of_the_example_under_an_older_hash() {
+    use std::time::Duration;
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    let (profile, example) = author_setup_checkout(root);
+    let copy = example_builds_on_library(root, &profile, Duration::from_mins(15));
+    set_age(&copy, Duration::from_mins(30));
+    set_age(&example, Duration::from_mins(5));
+    assert_eq!(run_author_setup(root, &profile), "example\n");
+}
+
+/// Without fingerprints, setup conservatively counts check-only metadata. When Cargo leaves
+/// the example as it is, setup logs the fact and still runs it.
+#[cfg(unix)]
+#[test]
+fn author_setup_continues_when_cargo_keeps_an_outdated_example() {
+    use std::time::Duration;
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    let (profile, example) = author_setup_checkout(root);
+    example_builds_on_library(root, &profile, Duration::from_mins(15));
+    set_age(&example, Duration::from_mins(10));
+    fs::remove_dir_all(profile.join(".fingerprint")).unwrap();
+    let check_only = profile.join("deps/libmaestro_request-2.rmeta");
+    fs::write(&check_only, b"").unwrap();
+    set_age(&check_only, Duration::from_mins(1));
+    fs::write(root.join("cargo"), "#!/bin/sh\necho cargo \"$@\"\n").unwrap();
+    let output = author_setup(root, &profile);
+    let (printed, logged) = (stdout(&output), String::from_utf8_lossy(&output.stderr));
+    assert!(output.status.success(), "{logged}");
+    assert!(printed.starts_with("cargo build "), "{printed}");
+    assert!(printed.ends_with("example\n"), "{printed}");
+    assert!(logged.contains("Cargo kept the setup example"), "{logged}");
+}
+
+/// Build a dependency-free workspace with a transitive library and an author example. The
+/// transitive library's build script has its own file name, which names its Cargo crate.
+fn cache_fixture(root: &Path) {
+    toolchain_support::declare_toolchain(root, include_str!("../../../rust-toolchain.toml"))
+        .unwrap();
+    for (path, text) in [
+        (
+            "Cargo.toml",
+            "[workspace]\nmembers=['app','middle','leaf']\nresolver='3'\n",
+        ),
+        (
+            "app/Cargo.toml",
+            "[package]\nname='app'\nversion='0.0.0'\nedition='2024'\n[dependencies]\nmiddle={path='../middle'}\n[features]\nother=['middle/other']\n",
+        ),
+        (
+            "app/src/main.rs",
+            "fn main() { println!(\"{}\", middle::value()); }",
+        ),
+        (
+            "app/examples/prepare_author_component.rs",
+            "fn main() { println!(\"{}\", middle::value()); }",
+        ),
+        (
+            "middle/Cargo.toml",
+            "[package]\nname='middle'\nversion='0.0.0'\nedition='2024'\n[dependencies]\naliased_leaf={package='leaf',path='../leaf'}\n[features]\nother=['aliased_leaf/other']\n",
+        ),
+        (
+            "middle/src/lib.rs",
+            "pub fn value() -> u32 { aliased_leaf::value() }",
+        ),
+        (
+            "leaf/Cargo.toml",
+            "[package]\nname='leaf'\nversion='0.0.0'\nedition='2024'\nbuild='build/main.rs'\n[features]\nother=[]\n",
+        ),
+        ("leaf/build/main.rs", "fn main() {}"),
+        ("leaf/src/lib.rs", "pub fn value() -> u32 { 42 }"),
+    ] {
+        write_input(root, path, text);
+    }
+    cache_cargo(root, &["generate-lockfile", "--offline"]);
+    cache_cargo(
+        root,
+        &[
+            "build",
+            "--offline",
+            "--locked",
+            "-p",
+            "app",
+            "--bins",
+            "--examples",
+        ],
+    );
+}
+
+/// Run Cargo with fixture-local state and build outputs.
+fn cache_cargo(root: &Path, args: &[&str]) {
+    let result = toolchain_support::fixture_command(env!("CARGO"), root, None)
+        .unwrap()
+        .env("CARGO_TARGET_DIR", root.join("target"))
+        .args(args)
+        .output()
+        .unwrap();
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+}
+
+/// Give all initial build outputs a fixed time before introducing an unrelated build.
+fn age_cache_outputs(profile: &Path) {
+    use std::time::{Duration, UNIX_EPOCH};
+    for folder in [profile, &profile.join("deps"), &profile.join("examples")] {
+        for entry in fs::read_dir(folder).unwrap() {
+            let path = entry.unwrap().path();
+            if path.is_file() {
+                fs::File::options()
+                    .write(true)
+                    .open(path)
+                    .unwrap()
+                    .set_modified(UNIX_EPOCH + Duration::from_secs(100))
+                    .unwrap();
+            }
+        }
+    }
+}
+
+/// The pinned Cargo layout identifies exact transitive builds after another package selection.
+#[test]
+fn cache_normalization_reads_the_pinned_cargo_builds() {
+    use std::time::{Duration, UNIX_EPOCH};
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path();
+    cache_fixture(root);
+    let profile = root.join("target/debug");
+    age_cache_outputs(&profile);
+    cache_cargo(
+        root,
+        &[
+            "build",
+            "--offline",
+            "--locked",
+            "-p",
+            "leaf",
+            "--features",
+            "other",
+        ],
+    );
+    let example = profile.join("examples").join(format!(
+        "prepare_author_component{}",
+        std::env::consts::EXE_SUFFIX
+    ));
+    let expected = UNIX_EPOCH + Duration::from_secs(200);
+    fs::File::options()
+        .write(true)
+        .open(&example)
+        .unwrap()
+        .set_modified(expected)
+        .unwrap();
+
+    let result = Command::new(env!("CARGO_BIN_EXE_development"))
+        .args(["nextest-setup", "normalize-component-cache"])
+        .arg(&profile)
+        .env_remove("TEST_ARCHIVE")
+        .output()
+        .unwrap();
+
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    let consumer = profile.join(format!("app{}", std::env::consts::EXE_SUFFIX));
+    assert_eq!(
+        fs::metadata(consumer).unwrap().modified().unwrap(),
+        expected
+    );
+}
+
+/// A build script's run is no linked library build, whatever file Cargo names it after, so the
+/// consumers of a library with one share the example's time.
+#[test]
+fn cache_normalization_skips_build_scripts_named_after_their_file() {
+    use std::time::{Duration, UNIX_EPOCH};
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path();
+    cache_fixture(root);
+    let profile = root.join("target/debug");
+    age_cache_outputs(&profile);
+    let example = profile.join("examples").join(format!(
+        "prepare_author_component{}",
+        std::env::consts::EXE_SUFFIX
+    ));
+    fs::File::options()
+        .write(true)
+        .open(example)
+        .unwrap()
+        .set_modified(UNIX_EPOCH + Duration::from_secs(200))
+        .unwrap();
+
+    let result = Command::new(env!("CARGO_BIN_EXE_development"))
+        .args(["nextest-setup", "normalize-component-cache"])
+        .arg(&profile)
+        .env_remove("TEST_ARCHIVE")
+        .output()
+        .unwrap();
+
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    let modified = |name: &str| {
+        fs::metadata(profile.join(name))
+            .unwrap()
+            .modified()
+            .unwrap()
+    };
+    let suffix = std::env::consts::EXE_SUFFIX;
+    assert_eq!(
+        modified(&format!("app{suffix}")),
+        modified(&format!("examples/prepare_author_component{suffix}"))
+    );
+}
+
+/// Rebuilding an exact linked library keeps its existing consumers stale.
+#[test]
+fn cache_normalization_keeps_consumers_of_newer_linked_builds_stale() {
+    use std::time::{Duration, UNIX_EPOCH};
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path();
+    cache_fixture(root);
+    let profile = root.join("target/debug");
+    age_cache_outputs(&profile);
+    let source = root.join("leaf/src/lib.rs");
+    fs::write(&source, fs::read(&source).unwrap()).unwrap();
+    cache_cargo(root, &["build", "--offline", "--locked", "-p", "leaf"]);
+
+    let result = Command::new(env!("CARGO_BIN_EXE_development"))
+        .args(["nextest-setup", "normalize-component-cache"])
+        .arg(&profile)
+        .env_remove("TEST_ARCHIVE")
+        .output()
+        .unwrap();
+
+    assert_eq!(
+        result.status.code(),
+        Some(3),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    let consumer = profile.join(format!("app{}", std::env::consts::EXE_SUFFIX));
+    assert_eq!(
+        fs::metadata(consumer).unwrap().modified().unwrap(),
+        UNIX_EPOCH + Duration::from_secs(100)
+    );
+}
+
+/// Cleaning libraries before another feature build leaves their older consumers stale.
+#[test]
+fn cache_normalization_keeps_consumers_of_replaced_builds_stale() {
+    use std::time::{Duration, UNIX_EPOCH};
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path();
+    cache_fixture(root);
+    let profile = root.join("target/debug");
+    age_cache_outputs(&profile);
+    fs::write(root.join("leaf/src/lib.rs"), "pub fn value() -> u32 { 43 }").unwrap();
+    cache_cargo(
+        root,
+        &[
+            "clean",
+            "--offline",
+            "--locked",
+            "-p",
+            "middle",
+            "-p",
+            "leaf",
+        ],
+    );
+    cache_cargo(
+        root,
+        &[
+            "build",
+            "--offline",
+            "--locked",
+            "-p",
+            "app",
+            "--examples",
+            "--features",
+            "other",
+        ],
+    );
+    let example = profile.join("examples").join(format!(
+        "prepare_author_component{}",
+        std::env::consts::EXE_SUFFIX
+    ));
+    let fresh = fs::metadata(example).unwrap().modified().unwrap();
+
+    let result = Command::new(env!("CARGO_BIN_EXE_development"))
+        .args(["nextest-setup", "normalize-component-cache"])
+        .arg(&profile)
+        .env_remove("TEST_ARCHIVE")
+        .output()
+        .unwrap();
+
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    let consumer = profile.join(format!("app{}", std::env::consts::EXE_SUFFIX));
+    assert_eq!(
+        fs::metadata(consumer).unwrap().modified().unwrap(),
+        UNIX_EPOCH + Duration::from_secs(100)
+    );
+    assert!(fresh > UNIX_EPOCH + Duration::from_secs(100));
+}
+
+/// Run the author setup from `root` with `profile` as nextest's artifact directory.
+#[cfg(unix)]
+fn author_setup(root: &Path, profile: &Path) -> Output {
+    Command::new(env!("CARGO_BIN_EXE_development"))
+        .args(["nextest-setup", "author-component"])
         .current_dir(root)
+        .env_remove("TEST_PREPARE_OUTPUT")
+        .env_remove("TEST_ARCHIVE")
         .env("NEXTEST_LD_LIBRARY_PATH", profile)
         .env("NEXTEST_DYLD_FALLBACK_LIBRARY_PATH", profile)
         .env("CARGO", root.join("cargo"))
+        .env_remove("TEST_ARCHIVE")
+        .output()
+        .unwrap()
+}
+
+/// Run the author setup, which must succeed, and return what it printed.
+#[cfg(unix)]
+fn run_author_setup(root: &Path, profile: &Path) -> String {
+    let output = author_setup(root, profile);
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    stdout(&output)
+}
+
+/// Independent source files supply their own index rows without a second inventory.
+#[test]
+fn example_index_discovers_independent_additions() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let folder = root.path().join("examples/extensions");
+    example_checkout(root.path());
+    fs::create_dir_all(folder.join("nested")).unwrap();
+    let readme = folder.join("README.md");
+    fs::write(
+        folder.join("zebra.rs"),
+        "//! Zebra | tool.\nfn factory() {}\n",
+    )
+    .unwrap();
+    fs::write(
+        folder.join("alpha.rs"),
+        "//! Alpha command\n//! with a continuation.\n\nfn factory() {}\n",
+    )
+    .unwrap();
+    fs::write(folder.join("nested/helper.rs"), "//! A helper.\n").unwrap();
+    fs::write(folder.join("nested.md"), "# Nested usage\n").unwrap();
+    fs::write(folder.join("alpha.md"), "# Alpha usage\n\nDetails.\n").unwrap();
+    let cargo = Path::new("unused-cargo");
+    assert_eq!(
+        tooling::run(&["example-index".into()], cargo, root.path()).unwrap(),
+        std::process::ExitCode::SUCCESS
+    );
+    let rendered = fs::read_to_string(&readme).unwrap();
+    assert_eq!(
+        rendered,
+        "Before\n<!-- example-index:start -->\n| File | Provides |\n| --- | --- |\n| `alpha.md` | Alpha usage |\n| `alpha.rs` | Alpha command with a continuation. |\n| `nested.md` | Nested usage |\n| `nested/helper.rs` | A helper. |\n| `zebra.rs` | Zebra \\| tool. |\n<!-- example-index:end -->\nAfter\n"
+    );
+    assert!(
+        tooling::run(
+            &["example-index".into(), "--check".into()],
+            cargo,
+            root.path()
+        )
+        .is_ok()
+    );
+    fs::write(folder.join("beta.rs"), "//! Beta command.\n").unwrap();
+    assert!(
+        tooling::run(
+            &["example-index".into(), "--check".into()],
+            cargo,
+            root.path()
+        )
+        .is_err()
+    );
+    assert_eq!(fs::read_to_string(&readme).unwrap(), rendered);
+}
+
+/// Write a checkout with stale generated regions and an untouched preparation program.
+fn example_checkout(root: &Path) {
+    let folder = root.join("examples/extensions");
+    let local = root.join("crates/maestro-extensions-wasm/examples");
+    fs::create_dir_all(&folder).unwrap();
+    fs::create_dir_all(&local).unwrap();
+    fs::write(
+        folder.join("README.md"),
+        "Before\n<!-- example-index:start -->\nold\n<!-- example-index:end -->\nAfter\n",
+    )
+    .unwrap();
+    fs::write(
+        root.join("crates/maestro-extensions-wasm/Cargo.toml"),
+        "[package]\n# example-index:start\nold\n# example-index:end\n\n[dependencies]\n",
+    )
+    .unwrap();
+    fs::write(
+        local.join("prepare_author_component.rs"),
+        "//! Prepare.\n// example-index:start\nold\n// example-index:end\nfn main() {}\n",
+    )
+    .unwrap();
+}
+
+/// Run the generator, in check mode when `check` is set.
+fn example_index(root: &Path, check: bool) -> std::io::Result<std::process::ExitCode> {
+    let mut args = vec!["example-index".into()];
+    if check {
+        args.push("--check".into());
+    }
+    tooling::run(&args, Path::new("unused-cargo"), root)
+}
+
+/// Example sources supply manifest targets without rewriting runtime preparation.
+#[test]
+fn example_index_renders_targets() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let folder = root.path().join("examples/extensions");
+    let local = root.path().join("crates/maestro-extensions-wasm/examples");
+    example_checkout(root.path());
+    fs::create_dir_all(folder.join("with-deps")).unwrap();
+    fs::create_dir_all(folder.join("zebra")).unwrap();
+    let marker = "// maestro-component:";
+    fs::write(
+        folder.join("zebra.rs"),
+        format!("//! Zebra.\n{marker} MAESTRO_ZEBRA_COMPONENT\n"),
+    )
+    .unwrap();
+    fs::write(folder.join("zebra/view.rs"), "//! Zebra view.\n").unwrap();
+    fs::write(folder.join("alpha.rs"), "//! Alpha.\n").unwrap();
+    fs::write(folder.join("alpha.md"), "# Alpha usage\n").unwrap();
+    fs::write(
+        folder.join("with-deps/main.rs"),
+        format!("//! Dependencies.\n{marker} MAESTRO_DEPS_COMPONENT\n"),
+    )
+    .unwrap();
+    fs::write(
+        local.join("bridge.rs"),
+        format!("//! Bridge.\n{marker} MAESTRO_CONTEXT_COMPONENT\nfn f() {{}}\n"),
+    )
+    .unwrap();
+    fs::write(local.join("plain.rs"), "//! Plain.\n").unwrap();
+    example_index(root.path(), false).unwrap();
+    let manifest = root
+        .path()
+        .join("crates/maestro-extensions-wasm/Cargo.toml");
+    let prepare = local.join("prepare_author_component.rs");
+    let rendered = (
+        fs::read_to_string(&manifest).unwrap(),
+        fs::read_to_string(&prepare).unwrap(),
+    );
+    assert_eq!(
+        rendered.0,
+        "[package]\n# example-index:start\n[[example]]\nname = \"alpha\"\npath = \"../../examples/extensions/alpha.rs\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"bridge\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"plain\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"with_deps\"\npath = \"../../examples/extensions/with-deps/main.rs\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"zebra\"\npath = \"../../examples/extensions/zebra.rs\"\ncrate-type = [\"cdylib\"]\n# example-index:end\n\n[dependencies]\n"
+    );
+    assert_eq!(
+        rendered.1,
+        "//! Prepare.\n// example-index:start\nold\n// example-index:end\nfn main() {}\n"
+    );
+    example_index(root.path(), true).unwrap();
+    fs::write(local.join("plain.rs"), "//! Plain.\n").unwrap();
+    fs::write(local.join("added.rs"), "//! Added.\n").unwrap();
+    assert!(example_index(root.path(), true).is_err());
+    assert_eq!(
+        (
+            fs::read_to_string(&manifest).unwrap(),
+            fs::read_to_string(&prepare).unwrap()
+        ),
+        rendered
+    );
+}
+
+/// The tracked repository index is exactly the table rendered from its files.
+#[test]
+fn shipped_example_index_matches_documentation() {
+    let checkout = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    tooling::run(
+        &["example-index".into(), "--check".into()],
+        Path::new("unused-cargo"),
+        &checkout,
+    )
+    .unwrap();
+}
+
+/// Two new example test files enter the same generated module inventory independently.
+#[test]
+fn example_test_modules_discover_independent_additions() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    for name in ["zebra_example.rs", "alpha_example.rs", "helper.rs"] {
+        fs::write(root.path().join(name), "// test fixture\n").unwrap();
+    }
+    let declarations = crate::example_test_modules::generate(root.path()).unwrap();
+    assert!(declarations.contains("mod alpha_example;"));
+    assert!(declarations.contains("mod zebra_example;"));
+    assert!(!declarations.contains("mod helper;"));
+    assert!(
+        declarations.find("alpha_example").unwrap() < declarations.find("zebra_example").unwrap()
+    );
+    assert!(!declarations.contains("#[path"));
+}
+
+/// Discovered modules retain ordinary nested-module lookup when compiled and run.
+#[test]
+fn example_test_modules_resolve_nested_modules() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let tests = root.path().join("tests");
+    fs::create_dir_all(tests.join("nested_example")).unwrap();
+    fs::create_dir(root.path().join("generated")).unwrap();
+    fs::write(
+        tests.join("nested_example.rs"),
+        "mod child; pub(super) fn value() -> u8 { child::value() }",
+    )
+    .unwrap();
+    fs::write(
+        tests.join("nested_example/child.rs"),
+        "pub(super) fn value() -> u8 { 42 }",
+    )
+    .unwrap();
+    let generated = root.path().join("generated/modules.rs");
+    fs::write(
+        &generated,
+        crate::example_test_modules::generate(&tests).unwrap(),
+    )
+    .unwrap();
+    fs::write(
+        root.path().join("tests.rs"),
+        format!(
+            "include!({generated:?}); example_tests!(); pub fn value() -> u8 {{ nested_example::value() }}"
+        ),
+    )
+    .unwrap();
+    let main = root.path().join("main.rs");
+    fs::write(
+        &main,
+        "mod tests; fn main() { assert_eq!(tests::value(), 42); }",
+    )
+    .unwrap();
+    let executable = root
+        .path()
+        .join(format!("nested{}", std::env::consts::EXE_SUFFIX));
+    let output = toolchain_support::command("rustc")
+        .arg(&main)
+        .arg("-o")
+        .arg(&executable)
         .output()
         .unwrap();
     assert!(
@@ -3339,5 +4155,232 @@ fn run_author_setup(root: &Path, profile: &Path) -> String {
         "{}",
         String::from_utf8_lossy(&output.stderr)
     );
-    stdout(&output)
+    assert!(Command::new(executable).status().unwrap().success());
+}
+
+/// A source-only addition supplies its build target, environment and setup selection.
+#[test]
+fn example_components_discover_source_only_additions() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    fs::create_dir(root.path().join("helpers")).unwrap();
+    fs::write(root.path().join("helpers/unmarked.rs"), "//! Helper.\n").unwrap();
+    let prepare = || {
+        let mut builds = Vec::new();
+        let entries =
+            tooling::example_files::prepare(&[root.path().to_path_buf()], |name, environment| {
+                builds.push((name.to_owned(), environment.to_owned()));
+                Ok(PathBuf::from(format!("/components/{name}.wasm")))
+            })
+            .unwrap();
+        (builds, entries)
+    };
+    assert_eq!(prepare(), (Vec::new(), String::new()));
+    fs::write(
+        root.path().join("fixture_example.rs"),
+        "//! Fixture.\n// maestro-component: MAESTRO_FIXTURE_COMPONENT\n",
+    )
+    .unwrap();
+    assert_eq!(
+        prepare(),
+        (
+            vec![(
+                "fixture_example".to_owned(),
+                "MAESTRO_FIXTURE_COMPONENT".to_owned()
+            )],
+            "MAESTRO_FIXTURE_COMPONENT=/components/fixture_example.wasm\n".to_owned()
+        )
+    );
+    let config: toml::Value =
+        toml::from_str(include_str!("../../../.config/nextest.toml")).unwrap();
+    let filter = config["profile"]["default"]["scripts"][0]["filter"]
+        .as_str()
+        .unwrap();
+    assert!(filter.contains("test(/_example::/)"), "{filter}");
+    assert!(!filter.contains("qna_example::"), "{filter}");
+}
+
+/// Invalid environment markers never reach the component builder.
+#[test]
+fn example_components_reject_invalid_markers() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    for variable in [
+        "OTHER_FIXTURE_COMPONENT",
+        "MAESTRO_FIXTURE",
+        "MAESTRO_fixture_COMPONENT",
+        "MAESTRO_FIXTURE=VALUE_COMPONENT",
+        "MAESTRO_FIXTURE COMPONENT",
+    ] {
+        fs::write(
+            root.path().join("fixture.rs"),
+            format!("// maestro-component: {variable}\n"),
+        )
+        .unwrap();
+        let mut builds = Vec::new();
+        let error =
+            tooling::example_files::prepare(&[root.path().to_path_buf()], |name, environment| {
+                builds.push((name.to_owned(), environment.to_owned()));
+                Ok(PathBuf::from("/components/fixture.wasm"))
+            })
+            .unwrap_err();
+        assert_eq!(
+            error.to_string(),
+            format!("invalid component variable: {variable}")
+        );
+        assert!(builds.is_empty(), "{builds:?}");
+    }
+}
+
+/// A repeated variable is rejected before its second build, even across files.
+#[test]
+fn example_components_reject_duplicate_markers() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    for name in ["first", "second"] {
+        fs::write(
+            root.path().join(format!("{name}.rs")),
+            "// maestro-component: MAESTRO_FIXTURE_COMPONENT\n",
+        )
+        .unwrap();
+    }
+    let mut builds = Vec::new();
+    let error =
+        tooling::example_files::prepare(&[root.path().to_path_buf()], |name, environment| {
+            builds.push((name.to_owned(), environment.to_owned()));
+            Ok(PathBuf::from(format!("/components/{name}.wasm")))
+        })
+        .unwrap_err();
+    assert_eq!(
+        error.to_string(),
+        "duplicate component variable: MAESTRO_FIXTURE_COMPONENT"
+    );
+    assert_eq!(
+        builds,
+        [("first".to_owned(), "MAESTRO_FIXTURE_COMPONENT".to_owned())]
+    );
+}
+
+/// Builder failures retain their error and stop preparation before later targets.
+#[test]
+fn example_components_propagate_builder_failure() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    for (name, variable) in [
+        ("first", "MAESTRO_FIRST_COMPONENT"),
+        ("second", "MAESTRO_SECOND_COMPONENT"),
+        ("third", "MAESTRO_THIRD_COMPONENT"),
+    ] {
+        fs::write(
+            root.path().join(format!("{name}.rs")),
+            format!("// maestro-component: {variable}\n"),
+        )
+        .unwrap();
+    }
+    let mut builds = Vec::new();
+    let error =
+        tooling::example_files::prepare(&[root.path().to_path_buf()], |name, environment| {
+            builds.push((name.to_owned(), environment.to_owned()));
+            if name == "second" {
+                Err(std::io::Error::new(
+                    std::io::ErrorKind::PermissionDenied,
+                    "fixture build refused",
+                ))
+            } else {
+                Ok(PathBuf::from(format!("/components/{name}.wasm")))
+            }
+        })
+        .unwrap_err();
+    assert_eq!(error.kind(), std::io::ErrorKind::PermissionDenied);
+    assert_eq!(error.to_string(), "fixture build refused");
+    assert_eq!(
+        builds,
+        [
+            ("first".to_owned(), "MAESTRO_FIRST_COMPONENT".to_owned()),
+            ("second".to_owned(), "MAESTRO_SECOND_COMPONENT".to_owned()),
+        ]
+    );
+}
+
+/// Fixed exports cannot be replaced by a source marker or reach the builder.
+#[test]
+fn example_components_reject_reserved_variables() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    for variable in ["MAESTRO_AUTHOR_COMPONENT", "MAESTRO_CONTEXT_COMPONENT"] {
+        fs::write(
+            root.path().join("fixture.rs"),
+            format!("// maestro-component: {variable}\n"),
+        )
+        .unwrap();
+        let error = tooling::example_files::prepare(&[root.path().to_path_buf()], |_, _| {
+            panic!("reserved variable reached the builder")
+        })
+        .unwrap_err();
+        assert_eq!(
+            error.to_string(),
+            format!("duplicate component variable: {variable}")
+        );
+    }
+}
+
+/// Component exports remain unique across the local and shipped roots.
+#[test]
+fn example_components_reject_cross_root_duplicates() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let folders = [root.path().join("local"), root.path().join("shipped")];
+    for folder in &folders {
+        fs::create_dir(folder).unwrap();
+        fs::write(
+            folder.join("fixture.rs"),
+            "// maestro-component: MAESTRO_FIXTURE_COMPONENT\n",
+        )
+        .unwrap();
+    }
+    let mut builds = 0;
+    let error = tooling::example_files::prepare(&folders, |_, _| {
+        builds += 1;
+        Ok(PathBuf::from("/components/fixture.wasm"))
+    })
+    .unwrap_err();
+    assert_eq!(
+        error.to_string(),
+        "duplicate component variable: MAESTRO_FIXTURE_COMPONENT"
+    );
+    assert_eq!(builds, 1);
+}
+
+/// Marked directory entry points use the same target as the generated manifest.
+#[test]
+fn example_components_prepare_directory_targets() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    fs::create_dir(root.path().join("with-deps")).unwrap();
+    fs::write(
+        root.path().join("with-deps/main.rs"),
+        "// maestro-component: MAESTRO_DIRECTORY_COMPONENT\n",
+    )
+    .unwrap();
+    let entries =
+        tooling::example_files::prepare(&[root.path().to_path_buf()], |name, variable| {
+            assert_eq!(name, "with_deps");
+            assert_eq!(variable, "MAESTRO_DIRECTORY_COMPONENT");
+            Ok(PathBuf::from(format!("/components/{name}.wasm")))
+        })
+        .unwrap();
+    assert_eq!(
+        entries,
+        "MAESTRO_DIRECTORY_COMPONENT=/components/with_deps.wasm\n"
+    );
+}
+
+/// A top-level main source retains its file-stem target rather than its root name.
+#[test]
+fn example_components_prepare_top_level_main() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    fs::write(
+        root.path().join("main.rs"),
+        "// maestro-component: MAESTRO_MAIN_COMPONENT\n",
+    )
+    .unwrap();
+    let entries = tooling::example_files::prepare(&[root.path().to_path_buf()], |name, _| {
+        assert_eq!(name, "main");
+        Ok(PathBuf::from("/components/main.wasm"))
+    })
+    .unwrap();
+    assert_eq!(entries, "MAESTRO_MAIN_COMPONENT=/components/main.wasm\n");
 }

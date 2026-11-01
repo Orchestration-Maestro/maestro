@@ -19,18 +19,19 @@ and typed parameter fields at the top level, for example:
 }
 ```
 
-`RpcCommand` currently contains the 92 workspace commands. The established 29
-session commands, their responses, session events and extension UI records join
-this same family with the [shared RPC frontend delivery](https://github.com/Orchestration-Maestro/maestro/issues/256),
-when their application payload owners are available. There is no placeholder
-session record set or second command registry here. Frontends consume contracts
-through application re-exports when their consumers are delivered.
+`RpcCommand` contains the 92 workspace commands, and `Request` defaults to it. The
+application composes them with the 29 session commands under the same `type` tag in
+`maestro_app::rpc_types::RpcCommand`, which also owns the session responses, session
+events and extension dialog records; see the [JSONL protocol](rpc.md). Both
+response families write their envelope through `rpc_types::serialize_rpc_response`.
+There is no second command registry here. Frontends consume contracts through
+application re-exports.
 
 `RpcResponse` carries the original `command` and optional correlation `id`,
 `type: "response"`, and a boolean `success`. A successful workspace operation
 has typed `data`. A workspace failure has a string `error` and an open string
-`code`, preserving machine-readable failure kinds without parsing prose. Session
-failures will retain their established shape without a workspace `code` field.
+`code`, so a client reads the failure kind without parsing prose. Session
+failures keep their established shape without a workspace `code` field.
 Old `method`/`params` requests and result/error-object envelopes are not supported.
 Unknown command types and malformed known parameters fail deserialization;
 unknown members on domain records are ignored.

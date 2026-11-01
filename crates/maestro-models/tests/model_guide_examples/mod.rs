@@ -32,7 +32,8 @@ fn weather_tool() -> maestro_models::Tool {
         parameters: serde_json::json!({"type": "object", "properties": {
             "location": {"type": "string", "minLength": 1},
             "units": {"type": "string", "enum": ["celsius", "fahrenheit"], "default": "celsius"}
-        }, "required": ["location"]}),
+        }, "required": ["location"]})
+        .into(),
     }
 }
 

@@ -103,3 +103,83 @@ fn http_status_text_no_phrase_fallback() {
 }
 
 mod pac;
+
+#[test]
+fn http_request_keeps_absent_and_empty_bodies() {
+    use crate::HttpRequest;
+    let client = reqwest::Client::new();
+    for body in [None, Some(Vec::new()), Some(vec![0, 255, 226, 130, 172])] {
+        let request: HttpRequest<Option<Vec<u8>>> = HttpRequest {
+            method: "POST".into(),
+            url: "http://127.0.0.1/literal%20path#fragment".into(),
+            headers: indexmap::IndexMap::from([("X-Supplied".into(), " \tvalue\t ".into())]),
+            body: body.clone(),
+            signal: None,
+        };
+        let prepared = super::prepare(&client, request).unwrap();
+        assert_eq!(
+            prepared.body().and_then(reqwest::Body::as_bytes),
+            body.as_deref()
+        );
+        assert_eq!(prepared.headers()["x-supplied"], "value");
+        assert_eq!(prepared.url().as_str(), "http://127.0.0.1/literal%20path");
+    }
+    let existing: HttpRequest = HttpRequest {
+        method: "POST".into(),
+        url: "http://127.0.0.1/".into(),
+        headers: indexmap::IndexMap::new(),
+        body: Vec::new(),
+        signal: None,
+    };
+    assert_eq!(
+        super::prepare(&client, existing)
+            .unwrap()
+            .body()
+            .unwrap()
+            .as_bytes(),
+        Some([].as_slice())
+    );
+}
+
+#[test]
+fn optional_http_body_reaches_the_native_endpoint() {
+    use crate::{HttpRequest, tests::loopback};
+    crate::tests::runtime::run(async {
+        for method in ["GET", "POST"] {
+            for body in [None, Some(Vec::new()), Some(vec![0, 255, 226, 130, 172])] {
+                let server = loopback::serve(
+                    "HTTP/1.1 299 Supplied\r\nContent-Length: 3\r\nX-Native: retained\r\nConnection: close\r\n\r\n",
+                    vec![loopback::Step::Write(vec![0, 255, 1])],
+                ).unwrap();
+                let response = crate::fetch_optional_body(HttpRequest {
+                    method: method.into(),
+                    url: format!("{}/literal%20path?x=1&x=2#fragment", server.url),
+                    headers: indexmap::IndexMap::from([(
+                        "X-Supplied".into(),
+                        " \tvalue\t ".into(),
+                    )]),
+                    body: body.clone(),
+                    signal: None,
+                })
+                .await
+                .unwrap();
+                assert_eq!(response.status, 299);
+                assert_eq!(response.status_text, "Supplied");
+                assert_eq!(response.headers["x-native"], "retained");
+                assert_eq!(
+                    crate::providers::http::collect_body(response.body)
+                        .await
+                        .unwrap(),
+                    [0, 255, 1]
+                );
+                let seen = server.finish().unwrap();
+                assert_eq!(
+                    seen.request_line,
+                    format!("{method} /literal%20path?x=1&x=2 HTTP/1.1")
+                );
+                assert_eq!(seen.header_octets("x-supplied"), Some(b"value".as_slice()));
+                assert_eq!(seen.body, body.unwrap_or_default());
+            }
+        }
+    });
+}

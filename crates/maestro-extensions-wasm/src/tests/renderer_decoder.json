@@ -248,28 +248,60 @@
     "name": "details-false",
     "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":\"x\",\"display\":true,\"timestamp\":1.25,\"details\":false}",
     "native": {
-      "error": "invalid type: boolean `false`, expected a string at line 1 column 95"
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": "x",
+        "display": true,
+        "timestamp": 1.25,
+        "details": false
+      },
+      "negative_zero": false
     }
   },
   {
     "name": "details-0",
     "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":\"x\",\"display\":true,\"timestamp\":1.25,\"details\":0}",
     "native": {
-      "error": "invalid type: integer `0`, expected a string at line 1 column 91"
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": "x",
+        "display": true,
+        "timestamp": 1.25,
+        "details": 0
+      },
+      "negative_zero": false
     }
   },
   {
     "name": "details-[]",
     "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":\"x\",\"display\":true,\"timestamp\":1.25,\"details\":[]}",
     "native": {
-      "error": "invalid type: sequence, expected a string at line 1 column 90"
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": "x",
+        "display": true,
+        "timestamp": 1.25,
+        "details": []
+      },
+      "negative_zero": false
     }
   },
   {
     "name": "details-{}",
     "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":\"x\",\"display\":true,\"timestamp\":1.25,\"details\":{}}",
     "native": {
-      "error": "invalid type: map, expected a string at line 1 column 90"
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": "x",
+        "display": true,
+        "timestamp": 1.25,
+        "details": {}
+      },
+      "negative_zero": false
     }
   },
   {

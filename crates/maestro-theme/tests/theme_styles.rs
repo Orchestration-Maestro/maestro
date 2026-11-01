@@ -49,6 +49,9 @@ fn decorate(style: &str, text: &str, enabled: bool) -> String {
         "underline" => Theme::underline(text, enabled),
         "inverse" => Theme::inverse(text, enabled),
         "strikethrough" => Theme::strikethrough(text, enabled),
+        "green" => Theme::green(text, enabled),
+        "dim" => Theme::dim(text, enabled),
+        "gray" => Theme::gray(text, enabled),
         other => panic!("unknown style {other}"),
     }
 }
@@ -84,6 +87,47 @@ fn decorations_keep_empty_and_disabled_text() {
         "\x1b[38;5;1mx\x1b[39m"
     );
     assert_eq!(Theme::bold("x", true), "\x1b[1mx\x1b[22m");
+}
+
+#[test]
+fn package_decorations_keep_dim_and_green_boundaries() {
+    let cases = records(
+        include_str!("fixtures/package_decorations.json"),
+        &["enabled", "expected", "style", "text"],
+    );
+    for case in &cases {
+        let style = case["style"].as_str().unwrap();
+        let enabled = case["enabled"].as_bool().unwrap();
+        assert_eq!(
+            decorate(style, case["text"].as_str().unwrap(), enabled),
+            case["expected"].as_str().unwrap(),
+            "{case}"
+        );
+    }
+    assert_eq!(cases.len(), 24);
+}
+
+#[test]
+fn startup_decorators_keep_dim_gray_and_nested_resets() {
+    let cases = records(
+        include_str!("fixtures/startup_decorations.json"),
+        &["enabled", "expected", "style", "text"],
+    );
+    for case in &cases {
+        let style = case["style"].as_str().unwrap();
+        let enabled = case["enabled"].as_bool().unwrap();
+        assert_eq!(
+            decorate(style, case["text"].as_str().unwrap(), enabled),
+            case["expected"].as_str().unwrap(),
+            "{case}"
+        );
+    }
+    assert_eq!(cases.len(), 12);
+    assert_eq!(
+        Theme::gray("scope", true),
+        "\x1b[90mscope\x1b[39m",
+        "the model scope hint keeps the bright-black foreground"
+    );
 }
 
 #[test]
@@ -362,4 +406,47 @@ fn toolkit_paint_preserves_missing_and_live_theme_fallbacks() {
     let retained = get_editor_theme(live);
     state.set_theme_instance(theme(100)).unwrap();
     assert_eq!((retained.border_color)("x"), "\x1b[38;5;104mx\x1b[39m");
+}
+
+/// One recorded diagnostic foreground case.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct DiagnosticCase {
+    /// The recorded case group.
+    operation: String,
+    /// The recorded case name.
+    case: String,
+    /// The recorded style and its text.
+    input: DiagnosticInput,
+    /// The complete recorded output.
+    expected: String,
+}
+
+/// The recorded style kind, text and enablement.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct DiagnosticInput {
+    /// The recorded foreground name.
+    kind: String,
+    /// The recorded text.
+    text: String,
+    /// Whether the foreground is enabled.
+    enabled: bool,
+}
+
+#[test]
+fn diagnostic_foregrounds_preserve_resets_and_line_breaks() {
+    let cases: Vec<DiagnosticCase> =
+        serde_json::from_str(include_str!("fixtures/diagnostic_styles.json")).unwrap();
+    for case in &cases {
+        assert_eq!(case.operation, "diagnostic_styles", "{}", case.case);
+        let input = &case.input;
+        let actual = match input.kind.as_str() {
+            "red" => Theme::red(&input.text, input.enabled),
+            "yellow" => Theme::yellow(&input.text, input.enabled),
+            other => panic!("unknown foreground {other}"),
+        };
+        assert_eq!(actual, case.expected, "{}", case.case);
+    }
+    assert_eq!(cases.len(), 20);
 }

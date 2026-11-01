@@ -1,14 +1,71 @@
 //! The host side of the extension world as the adapter logic sees it.
 
+use crate::bindings::maestro::extension::host::CompactionData;
 use crate::bindings::maestro::extension::session::{NewSessionCommandData, SessionChangeResult};
 use crate::types::{ExtensionFuture, ExtensionResult};
-use crate::{FlagOptions, FlagValue};
+use crate::{
+    ExtensionWidgetOptions, FlagOptions, FlagValue, NotificationType, WorkingIndicatorOptions,
+};
+
+use super::tools::ToolListing;
+
+/// Credential and constructor declarations on the same canonical import trait.
+#[macro_use]
+mod credentials;
+
+/// Catalog declarations on the same canonical import trait.
+#[macro_use]
+mod catalog;
+
+/// Built-in constructors declared on the same canonical import trait.
+#[macro_use]
+mod builtin_tools;
+
+/// Native helper declarations on the same canonical import trait.
+#[macro_use]
+mod native_helpers;
+/// Custom component and overlay declarations on the same canonical import trait.
+#[macro_use]
+mod overlays;
+
+/// Declarations of the capabilities lent to component factories on the same import trait.
+#[macro_use]
+mod factories;
+
+/// The callbacks one tool registers beside its metadata.
+pub struct ToolCallbacks<'a, C> {
+    /// Optional argument preparation.
+    pub prepare: Option<&'a C>,
+    /// Execution.
+    pub execute: &'a C,
+    /// Optional call renderer.
+    pub render_call: Option<&'a C>,
+    /// Optional result renderer.
+    pub render_result: Option<&'a C>,
+}
+
+/// Optional operands of one dialog, each absent unless the author supplied it.
+pub struct Dialog<'a, S> {
+    /// Host signal that dismisses the dialog.
+    pub signal: Option<&'a S>,
+    /// Caller milliseconds, unchanged.
+    pub timeout: Option<f64>,
+}
+
+/// Optional retained OAuth implementation with its label and callback-server metadata.
+pub type ProviderOAuth<'a, C> = Option<(&'a C, &'a str, Option<bool>)>;
+
+/// Optional streaming and OAuth capabilities of the same provider registration.
+pub type ProviderRegistration<'a, C> = (Option<&'a C>, ProviderOAuth<'a, C>);
 
 /// The host's imports and resources at the wire level: the generated bindings inside a
 /// component, an in-process host where the same logic runs natively.
 ///
 /// Owner handles are released by dropping them. Each method stands for one host call.
-pub trait Imports: Clone + 'static {
+pub trait Imports: super::native_imports::NativeImports + Clone + 'static {
+    builtin_tool_imports!();
+    native_helper_imports!();
+    credential_imports!();
     /// Forwards fork through the owned host capability.
     fn fork<'a>(
         &'a self,
@@ -29,6 +86,7 @@ pub trait Imports: Clone + 'static {
         &'a self,
         context: &'a Self::CommandContext,
         path: &'a str,
+        options: Option<()>,
         with_session: Option<&'a Self::Callback>,
     ) -> ExtensionFuture<'a, SessionChangeResult>;
     /// Forwards reload through the owned host capability.
@@ -153,8 +211,16 @@ pub trait Imports: Clone + 'static {
     fn set_label(&self, entry_id: &str, label: Option<&str>) -> ExtensionResult<()>;
     /// Forwards the ordinary action.
     fn get_active_tools(&self) -> ExtensionResult<Vec<String>>;
+    /// Invoke one foreign method while driving synchronous same-instance reentry.
+    fn schema_invoke(
+        &self,
+        callback: &Self::Callback,
+        operation: crate::bindings::maestro::extension::host::SchemaOperation,
+        node: &Self::JsonNode,
+        path: &str,
+    ) -> crate::schema_code::SchemaResult<String>;
     /// Forwards the ordinary action.
-    fn get_all_tools(&self) -> ExtensionResult<String>;
+    fn get_all_tools(&self) -> ExtensionResult<ToolListing<Self::Callback>>;
     /// Forwards the ordinary action.
     fn set_active_tools(&self, tool_names: &[String]) -> ExtensionResult<()>;
     /// Forwards the ordinary action.
@@ -163,13 +229,20 @@ pub trait Imports: Clone + 'static {
     fn get_thinking_level(&self) -> ExtensionResult<String>;
     /// Forwards the ordinary action.
     fn set_thinking_level(&self, level: &str) -> ExtensionResult<()>;
+    /// Sends ordinary call data with an optional borrowed signal.
+    fn call<'a>(
+        &'a self,
+        operation: &'a str,
+        data: String,
+        signal: Option<&'a Self::Signal>,
+    ) -> ExtensionFuture<'a, String>;
     /// Selects a supplied model.
     fn set_model(&self, model: String) -> ExtensionFuture<'_, bool>;
     /// Starts a compaction on the supplied context.
     fn compact(
         &self,
         context: &Self::Context,
-        instructions: Option<&str>,
+        instructions: Option<&CompactionData>,
         complete: Option<&Self::Callback>,
         error: Option<&Self::Callback>,
     ) -> ExtensionResult<()>;
@@ -177,7 +250,7 @@ pub trait Imports: Clone + 'static {
     fn command_compact(
         &self,
         context: &Self::CommandContext,
-        instructions: Option<&str>,
+        instructions: Option<&CompactionData>,
         complete: Option<&Self::Callback>,
         error: Option<&Self::Callback>,
     ) -> ExtensionResult<()>;
@@ -186,6 +259,36 @@ pub trait Imports: Clone + 'static {
     type Subscription: 'static;
     /// Callback-scoped emission resource.
     type Emitter: 'static;
+    /// A borrowed, invocation-local JSON value capability.
+    type JsonNode: 'static;
+    /// Inspect the kind without copying the value.
+    fn json_kind(
+        &self,
+        node: &Self::JsonNode,
+        path: &str,
+    ) -> ExtensionResult<Option<crate::schema_code::JsonKind>>;
+    /// Read a value explicitly requested by the author.
+    fn json_read(&self, node: &Self::JsonNode, path: &str) -> ExtensionResult<Option<String>>;
+    /// Enumerate keys without encoding their values.
+    fn json_keys(&self, node: &Self::JsonNode, path: &str) -> ExtensionResult<Vec<String>>;
+    /// Assign one container member.
+    fn json_set(
+        &self,
+        node: &Self::JsonNode,
+        path: &str,
+        key: &str,
+        value: &str,
+    ) -> ExtensionResult<()>;
+    /// Delete one container member.
+    fn json_delete(&self, node: &Self::JsonNode, path: &str, key: &str) -> ExtensionResult<()>;
+    /// Replace an array range.
+    fn json_splice(
+        &self,
+        node: &Self::JsonNode,
+        path: &str,
+        range: (u32, u32),
+        values: &[String],
+    ) -> ExtensionResult<Vec<String>>;
     /// Registers a bus listener or returns the host rejection.
     fn event_on(
         &self,
@@ -212,8 +315,51 @@ pub trait Imports: Clone + 'static {
 
     /// Owner handle of a host-owned callback identity.
     type Callback: 'static;
+    /// Registers the borrowed callback identity on the supplied native path.
+    fn watch(&self, path: String, listener: &Self::Callback) -> ExtensionResult<Self::Watcher>;
     /// Independently retained theme owner.
     type Theme: 'static;
+    /// Reads the theme name.
+    fn theme_name(&self, theme: &Self::Theme) -> ExtensionResult<Option<String>>;
+    /// Reads the theme file path.
+    fn theme_source_path(&self, theme: &Self::Theme) -> ExtensionResult<Option<String>>;
+    /// Reads the theme provenance document.
+    fn theme_source_info(&self, theme: &Self::Theme) -> ExtensionResult<Option<String>>;
+    /// Replaces the theme provenance document, or clears it.
+    fn theme_set_source_info(
+        &self,
+        theme: &Self::Theme,
+        source: Option<&str>,
+    ) -> ExtensionResult<()>;
+    /// Applies a foreground color.
+    fn theme_fg(&self, theme: &Self::Theme, color: &str, text: &str) -> ExtensionResult<String>;
+    /// Applies a background color.
+    fn theme_bg(&self, theme: &Self::Theme, color: &str, text: &str) -> ExtensionResult<String>;
+    /// Applies bold styling.
+    fn theme_bold(&self, theme: &Self::Theme, text: &str) -> ExtensionResult<String>;
+    /// Applies italic styling.
+    fn theme_italic(&self, theme: &Self::Theme, text: &str) -> ExtensionResult<String>;
+    /// Applies underline styling.
+    fn theme_underline(&self, theme: &Self::Theme, text: &str) -> ExtensionResult<String>;
+    /// Applies inverse styling.
+    fn theme_inverse(&self, theme: &Self::Theme, text: &str) -> ExtensionResult<String>;
+    /// Applies strikethrough styling.
+    fn theme_strikethrough(&self, theme: &Self::Theme, text: &str) -> ExtensionResult<String>;
+    /// Reads a foreground escape.
+    fn theme_get_fg_ansi(&self, theme: &Self::Theme, color: &str) -> ExtensionResult<String>;
+    /// Reads a background escape.
+    fn theme_get_bg_ansi(&self, theme: &Self::Theme, color: &str) -> ExtensionResult<String>;
+    /// Colors text with the border color of a thinking level.
+    fn theme_thinking_border(
+        &self,
+        theme: &Self::Theme,
+        level: &str,
+        text: &str,
+    ) -> ExtensionResult<String>;
+    /// Colors text with the shell mode border color.
+    fn theme_bash_mode_border(&self, theme: &Self::Theme, text: &str) -> ExtensionResult<String>;
+    /// Reads the color depth.
+    fn theme_get_color_mode(&self, theme: &Self::Theme) -> ExtensionResult<crate::ColorMode>;
     /// Registers a renderer against its host callback identity.
     fn register_message_renderer(
         &self,
@@ -226,8 +372,6 @@ pub trait Imports: Clone + 'static {
     type BashOutput: 'static;
     /// Delivers one uninterpreted output chunk.
     fn bash_output(&self, output: &Self::BashOutput, bytes: &[u8]) -> ExtensionResult<()>;
-    /// Host-owned cancellation flag.
-    type Signal: 'static;
     /// Context with the live capabilities every callback receives.
     type Context: 'static;
     /// Context that also has the session-replacing operations.
@@ -238,6 +382,8 @@ pub trait Imports: Clone + 'static {
     /// Asks the host for a fresh identity: its key, which the owner handle and every borrow
     /// of it share, and the owner handle.
     fn new_callback(&self) -> (u32, Self::Callback);
+    /// Read the stable key of an owned or borrowed callback identity.
+    fn callback_id(&self, callback: &Self::Callback) -> u32;
 
     /// Registers a handler for an event name.
     ///
@@ -263,6 +409,8 @@ pub trait Imports: Clone + 'static {
         description: Option<&str>,
         handler: &Self::Callback,
     ) -> ExtensionResult<()>;
+    /// Offers one JSON load-time input to the original host registration owner.
+    fn contribute_load_time(&self, contributions: &str) -> ExtensionResult<()>;
     /// Forwards flag options unchanged.
     fn register_flag(&self, name: &str, options: &FlagOptions) -> ExtensionResult<()>;
     /// Returns the host-resolved value.
@@ -275,8 +423,8 @@ pub trait Imports: Clone + 'static {
     fn register_tool(
         &self,
         metadata: &str,
-        prepare: Option<&Self::Callback>,
-        execute: &Self::Callback,
+        callbacks: ToolCallbacks<'_, Self::Callback>,
+        schemas: &[(String, &Self::Callback)],
     ) -> ExtensionResult<()>;
 
     /// Delivers a partial output to a progress resource.
@@ -291,8 +439,21 @@ pub trait Imports: Clone + 'static {
     /// Returns the host's message when it rejects the entry.
     fn append_entry(&self, custom_type: &str, data: Option<&str>) -> ExtensionResult<()>;
 
+    /// Creates one independently owned cancellation for a pending operation.
+    fn new_signal(&self) -> ExtensionResult<Self::Signal>;
+    /// Aborts the supplied native cancellation without selecting a current context.
+    fn signal_abort(&self, signal: &Self::Signal) -> ExtensionResult<()>;
     /// Whether the operation was cancelled.
     fn aborted(&self, signal: &Self::Signal) -> bool;
+    /// Registers a callback the host runs once when `signal` is cancelled.
+    ///
+    /// # Errors
+    /// Returns the host's message when it rejects the registration.
+    fn signal_subscribe(
+        &self,
+        signal: &Self::Signal,
+        listener: &Self::Callback,
+    ) -> ExtensionResult<Self::Subscription>;
 
     /// The working directory of the session an ordinary context is bound to.
     ///
@@ -314,7 +475,7 @@ pub trait Imports: Clone + 'static {
     fn new_session<'a>(
         &'a self,
         context: &'a Self::CommandContext,
-        data: NewSessionCommandData,
+        data: Option<NewSessionCommandData>,
         setup: Option<&'a Self::Callback>,
         with_session: Option<&'a Self::Callback>,
     ) -> ExtensionFuture<'a, SessionChangeResult>;
@@ -379,29 +540,159 @@ pub trait Imports: Clone + 'static {
     /// The label timestamp retained by this node.
     fn node_label_timestamp(&self, resource: &Self::Node) -> ExtensionResult<Option<String>>;
 
+    overlay_imports!();
+    factory_imports!();
     /// Independently owned host capability.
     type Ui: 'static;
     /// Independently owned host capability.
     type Registry: 'static;
-    /// Forwards the corresponding host capability call.
-    fn registry_get_all(&self, resource: &Self::Registry) -> ExtensionResult<String>;
-    /// Forwards the corresponding host capability call.
-    fn registry_get_available(&self, resource: &Self::Registry) -> ExtensionResult<String>;
-    /// Forwards the corresponding host capability call.
-    fn registry_find(
-        &self,
-        resource: &Self::Registry,
-        provider: &str,
-        model_id: &str,
-    ) -> ExtensionResult<Option<String>>;
-    /// Forwards the corresponding host capability call.
-    fn registry_get_api_key_and_headers<'a>(
-        &'a self,
-        resource: &'a Self::Registry,
-        model: String,
-    ) -> ExtensionFuture<'a, crate::ResolvedRequestAuth>;
+    catalog_imports!();
     /// Forwards the corresponding host capability call.
     fn ui(&self, context: &Self::Context) -> ExtensionResult<Self::Ui>;
+    /// Forwards one notification with its optional severity.
+    fn ui_notify(
+        &self,
+        resource: &Self::Ui,
+        message: &str,
+        kind: Option<NotificationType>,
+    ) -> ExtensionResult<()>;
+    /// Forwards the text of one status key, or its clearing.
+    fn ui_set_status(
+        &self,
+        resource: &Self::Ui,
+        key: &str,
+        text: Option<&str>,
+    ) -> ExtensionResult<()>;
+    /// Forwards the working message, or its reset.
+    fn ui_set_working_message(
+        &self,
+        resource: &Self::Ui,
+        message: Option<&str>,
+    ) -> ExtensionResult<()>;
+    /// Forwards the working loader row visibility.
+    fn ui_set_working_visible(&self, resource: &Self::Ui, visible: bool) -> ExtensionResult<()>;
+    /// Forwards the working indicator options, or their reset.
+    fn ui_set_working_indicator(
+        &self,
+        resource: &Self::Ui,
+        options: Option<WorkingIndicatorOptions>,
+    ) -> ExtensionResult<()>;
+    /// Forwards the hidden-thinking label, or its reset.
+    fn ui_set_hidden_thinking_label(
+        &self,
+        resource: &Self::Ui,
+        label: Option<&str>,
+    ) -> ExtensionResult<()>;
+    /// Forwards the fixed lines and options of one widget, or its removal.
+    fn ui_set_widget(
+        &self,
+        resource: &Self::Ui,
+        key: &str,
+        content: Option<&[String]>,
+        options: Option<ExtensionWidgetOptions>,
+    ) -> ExtensionResult<()>;
+    /// Forwards the footer factory, which the host may run before answering, or its removal.
+    fn ui_set_footer(
+        &self,
+        resource: &Self::Ui,
+        factory: Option<&Self::Callback>,
+    ) -> ExtensionResult<()>;
+    /// Forwards the header factory, which the host may run before answering, or its removal.
+    fn ui_set_header(
+        &self,
+        resource: &Self::Ui,
+        factory: Option<&Self::Callback>,
+    ) -> ExtensionResult<()>;
+    /// Forwards the factory of one widget, which the host may run before answering.
+    fn ui_set_widget_factory(
+        &self,
+        resource: &Self::Ui,
+        key: &str,
+        factory: &Self::Callback,
+        options: Option<ExtensionWidgetOptions>,
+    ) -> ExtensionResult<()>;
+    /// Forwards the terminal title.
+    fn ui_set_title(&self, resource: &Self::Ui, title: &str) -> ExtensionResult<()>;
+    /// Forwards text the host editor receives as a paste.
+    fn ui_paste_to_editor(&self, resource: &Self::Ui, text: &str) -> ExtensionResult<()>;
+    /// Forwards the replacement text of the host editor.
+    fn ui_set_editor_text(&self, resource: &Self::Ui, text: &str) -> ExtensionResult<()>;
+    /// Reads the host editor's current text.
+    fn ui_get_editor_text(&self, resource: &Self::Ui) -> ExtensionResult<String>;
+    /// Forwards the editor factory, which the host runs before answering, or its removal.
+    fn ui_set_editor_component(
+        &self,
+        resource: &Self::Ui,
+        factory: Option<&Self::Callback>,
+    ) -> ExtensionResult<()>;
+    /// Reads the current editor factory.
+    fn ui_get_editor_component(&self, ui: &Self::Ui) -> ExtensionResult<super::CurrentFactory>;
+    /// Forwards a provider factory, which the host runs before answering.
+    fn ui_add_autocomplete_provider(
+        &self,
+        resource: &Self::Ui,
+        factory: &Self::Callback,
+    ) -> ExtensionResult<()>;
+    /// Reads the UI's live theme.
+    fn ui_theme(&self, resource: &Self::Ui) -> ExtensionResult<Self::Theme>;
+    /// Lists every available theme.
+    fn ui_get_all_themes(&self, resource: &Self::Ui) -> ExtensionResult<Vec<crate::ThemeInfo>>;
+    /// Loads a theme by name without selecting it.
+    fn ui_get_theme(&self, resource: &Self::Ui, name: &str)
+    -> ExtensionResult<Option<Self::Theme>>;
+    /// Selects a theme by name.
+    fn ui_set_theme_name(
+        &self,
+        resource: &Self::Ui,
+        name: &str,
+    ) -> ExtensionResult<crate::ThemeSetResult>;
+    /// Selects a retained host theme.
+    fn ui_set_theme(
+        &self,
+        resource: &Self::Ui,
+        theme: &Self::Theme,
+    ) -> ExtensionResult<crate::ThemeSetResult>;
+    /// Reads whether tool output is expanded.
+    fn ui_get_tools_expanded(&self, resource: &Self::Ui) -> ExtensionResult<bool>;
+    /// Forwards the tool output expansion.
+    fn ui_set_tools_expanded(&self, resource: &Self::Ui, expanded: bool) -> ExtensionResult<()>;
+    /// Adds the terminal input listener under `handler`, returning its host remover.
+    fn ui_on_terminal_input(
+        &self,
+        resource: &Self::Ui,
+        handler: &Self::Callback,
+    ) -> ExtensionResult<Self::Subscription>;
+    /// Forwards a selector with its ordered options.
+    fn ui_select<'a>(
+        &'a self,
+        resource: &'a Self::Ui,
+        title: String,
+        options: Vec<String>,
+        dialog: Dialog<'a, Self::Signal>,
+    ) -> ExtensionFuture<'a, Option<String>>;
+    /// Forwards a confirmation request.
+    fn ui_confirm<'a>(
+        &'a self,
+        resource: &'a Self::Ui,
+        title: String,
+        message: String,
+        dialog: Dialog<'a, Self::Signal>,
+    ) -> ExtensionFuture<'a, bool>;
+    /// Forwards a one-line input request with its optional placeholder.
+    fn ui_input<'a>(
+        &'a self,
+        resource: &'a Self::Ui,
+        title: String,
+        placeholder: Option<String>,
+        dialog: Dialog<'a, Self::Signal>,
+    ) -> ExtensionFuture<'a, Option<String>>;
+    /// Forwards a multi-line editor request with its optional prefilled text.
+    fn ui_editor<'a>(
+        &'a self,
+        resource: &'a Self::Ui,
+        title: String,
+        prefill: Option<String>,
+    ) -> ExtensionFuture<'a, Option<String>>;
     /// Forwards the corresponding host capability call.
     fn has_ui(&self, context: &Self::Context) -> ExtensionResult<bool>;
     /// Forwards the corresponding host capability call.

@@ -73,7 +73,7 @@ pub fn create_grep_tool_definition<C: 'static $($bound)*>(
         tools_manager,
     });
     ToolDefinition {
-        definition: Tool { name: "grep".into(), description: "Search file contents for a pattern. Returns matching lines with file paths and line numbers. Respects .gitignore. Output is truncated to 100 matches or 50KB (whichever is hit first). Long lines are truncated to 500 chars.".into(), parameters: json!({"type":"object","required":["pattern"],"properties": {
+        definition: Tool { name: "grep".into(), description: "Search file contents for a pattern. Returns matching lines with file paths and line numbers. Respects .gitignore. Output is truncated to 100 matches or 50KB (whichever is hit first). Long lines are truncated to 500 chars.".into(), parameters: maestro_models::ParameterSchema::authored(json!({"type":"object","required":["pattern"],"properties": {
             "pattern":{"type":"string","description":"Search pattern (regex or literal string)"},
             "path":{"type":"string","description":"Directory or file to search (default: current directory)"},
             "glob":{"type":"string","description":"Filter files by glob pattern, e.g. '*.ts' or '**/*.spec.ts'"},
@@ -81,7 +81,7 @@ pub fn create_grep_tool_definition<C: 'static $($bound)*>(
             "literal":{"type":"boolean","description":"Treat pattern as literal string instead of regex (default: false)"},
             "context":{"type":"number","description":"Number of lines to show before and after each match (default: 0)"},
             "limit":{"type":"number","description":"Maximum number of matches to return (default: 100)"}
-        }}) }, label: "grep".into(), prompt_snippet: Some("Search file contents for patterns (respects .gitignore)".into()), prompt_guidelines: None, render_shell: None, prepare_arguments: None, execution_mode: None,
+        }}), [("".to_owned(), maestro_models::SchemaKind::Object), ("/properties/pattern".to_owned(), maestro_models::SchemaKind::String), ("/properties/path".to_owned(), maestro_models::SchemaKind::String), ("/properties/glob".to_owned(), maestro_models::SchemaKind::String), ("/properties/ignoreCase".to_owned(), maestro_models::SchemaKind::Boolean), ("/properties/literal".to_owned(), maestro_models::SchemaKind::Boolean), ("/properties/context".to_owned(), maestro_models::SchemaKind::Number), ("/properties/limit".to_owned(), maestro_models::SchemaKind::Number)]) }, label: "grep".into(), prompt_snippet: Some("Search file contents for patterns (respects .gitignore)".into()), prompt_guidelines: None, render_shell: None, prepare_arguments: None, execution_mode: None,
         execute: $ptr::new(move |_id, input, signal, _update, _context| {
             let searcher = Arc::clone(&searcher);
             Box::pin(async move { searcher.search(input, signal).await })

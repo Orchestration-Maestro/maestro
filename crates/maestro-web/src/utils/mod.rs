@@ -9,3 +9,7 @@ pub(crate) mod base64;
 
 #[cfg(target_arch = "wasm32")]
 pub(crate) mod clipboard;
+
+/// Browser-local token kept in local storage.
+#[cfg(target_arch = "wasm32")]
+pub mod auth_token;

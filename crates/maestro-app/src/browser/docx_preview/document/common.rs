@@ -66,30 +66,7 @@ pub fn convert_boolean(value: Option<&str>, default_value: Option<bool>) -> Opti
     }
 }
 
-/// Read a signed integer prefix with optional hexadecimal notation.
-pub(crate) fn integer_prefix(value: &str, radix: u32) -> f64 {
-    let value = value.trim_start_matches(is_whitespace_scalar);
-    let (sign, value) = if let Some(rest) = value.strip_prefix('-') {
-        (-1.0, rest)
-    } else {
-        (1.0, value.strip_prefix('+').unwrap_or(value))
-    };
-    let (radix, value) = if let Some(rest) = value
-        .strip_prefix("0x")
-        .or_else(|| value.strip_prefix("0X"))
-    {
-        (16, rest)
-    } else {
-        (radix, value)
-    };
-    let mut digits = value.chars().map_while(|c| c.to_digit(radix)).peekable();
-    if digits.peek().is_none() {
-        return f64::NAN;
-    }
-    sign * digits.fold(0.0, |total, digit| {
-        total * f64::from(radix) + f64::from(digit)
-    })
-}
+pub(crate) use crate::utils::numbers::integer_prefix;
 
 /// Read a decimal floating-point prefix, including an exponent when complete.
 pub(crate) fn float_prefix(value: &str) -> f64 {

@@ -100,7 +100,7 @@ fn retained_catalog_handles_track_edits_and_survive_reload() {
     );
     old.write().unwrap().reverse();
     assert!(Arc::ptr_eq(
-        &registry.get_all().read().unwrap()[969],
+        &registry.get_all().read().unwrap()[977],
         &first
     ));
     let mut inserted = get_model(&provider, &id).unwrap();
@@ -194,7 +194,10 @@ impl OAuthProviderInterface for Modifier {
     ) -> BoxFuture<Result<OAuthCredentials, OAuthError>> {
         Box::pin(async { panic!("unexpected refresh") })
     }
-    fn get_api_key<'a>(&self, _: &'a OAuthCredentials) -> Result<&'a str, OAuthError> {
+    fn get_api_key<'a>(
+        &self,
+        _: &'a OAuthCredentials,
+    ) -> Result<std::borrow::Cow<'a, str>, OAuthError> {
         panic!("unexpected key resolution")
     }
     fn modify_models<'m>(
@@ -262,6 +265,7 @@ fn oauth_transforms_run_in_registration_order_for_stored_tokens() {
     auth.set(
         ids[2],
         AuthCredential::ApiKey(ApiKeyCredential {
+            env: None,
             key: "unused".into(),
         }),
     );

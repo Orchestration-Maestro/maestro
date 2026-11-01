@@ -50,13 +50,12 @@ fn native_update_probes_capture_only_helper_output() {
         .unwrap()
         .unwrap();
     assert_eq!(selected.command, configured[0]);
-    assert_eq!(
-        selected.args,
-        [configured[1].as_str(), "install", "-g", "new-agent"]
-    );
+    let alias = configured[1].as_str();
+    let expect = |verb, package| [alias, verb, "-g", "--ignore-scripts", package];
+    assert_eq!(selected.args, expect("install", "new-agent"));
     assert_eq!(
         selected.steps.unwrap()[0].args,
-        [configured[1].as_str(), "uninstall", "-g", "agent"]
+        [alias, "uninstall", "-g", "agent"]
     );
     let failed = vec![configured[0].clone(), "fail".into()];
     let error = get_self_update_command(&context, "agent", Some(&failed), None).unwrap_err();
@@ -273,4 +272,33 @@ impl SelfUpdateOperations for WindowsQuery {
             stderr: Vec::new(),
         })
     }
+}
+
+#[cfg(windows)]
+#[test]
+fn windows_update_steps_receive_literal_arguments() {
+    use crate::support::run_io;
+    use maestro_app::configuration::config::NativeSelfUpdateOperations;
+    use std::fs;
+    let scratch = Scratch::new().unwrap();
+    let report = scratch.path().join("arguments.txt");
+    let shim = scratch.path().join("shim.cmd");
+    // The shim reports the operands it received: `%~2` without its own quoting
+    // and `%3` exactly as written, which tells an empty operand from none.
+    let script = format!(
+        "@echo off\r\n(echo second=\"[%~2]\"\r\necho marker=%3) > \"{}\"\r\n",
+        report.display()
+    );
+    fs::write(&shim, script).unwrap();
+    let command = shim.to_str().unwrap().to_owned();
+    let args = ["--prefix".to_owned(), r"C:\R&D".to_owned(), String::new()];
+    let status = run_io(NativeSelfUpdateOperations.run_command(&command, &args)).unwrap();
+    assert!(status.success());
+    assert_eq!(
+        fs::read_to_string(&report)
+            .unwrap()
+            .lines()
+            .collect::<Vec<_>>(),
+        [r#"second="[C:\R&D]""#, "marker=\"\""]
+    );
 }

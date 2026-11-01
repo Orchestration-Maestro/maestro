@@ -74,14 +74,8 @@ pub fn build_system_prompt(options: &BuildSystemPromptOptions) -> io::Result<Str
 /// call for, the trimmed caller guidelines, then the two standing ones.
 fn guidelines(options: &BuildSystemPromptOptions, tools: &[&str]) -> String {
     let has = |name: &str| tools.contains(&name);
-    let searches = has("grep") || has("find") || has("ls");
-    let exploration = match (has("bash"), searches) {
-        (true, false) => Some("Use bash for file operations like ls, rg, find"),
-        (true, true) => Some(
-            "Prefer grep/find/ls tools over bash for file exploration (faster, respects .gitignore)",
-        ),
-        (false, _) => None,
-    };
+    let exploration = (has("bash") && !["grep", "find", "ls"].into_iter().any(has))
+        .then_some("Use bash for file operations like ls, rg, find");
     let extra = options
         .prompt_guidelines
         .present()
@@ -91,7 +85,8 @@ fn guidelines(options: &BuildSystemPromptOptions, tools: &[&str]) -> String {
         .filter(|guideline| !guideline.is_empty());
     let mut seen = HashSet::new();
     exploration
-        .into_iter()
+        .iter()
+        .copied()
         .chain(extra)
         .chain([
             "Be concise in your responses",
@@ -138,8 +133,9 @@ Maestro documentation (read only when the user asks about maestro itself, its SD
 - Main documentation: {readme}
 - Additional docs: {docs}
 - Examples: {examples} (extensions, custom tools, SDK)
-- When asked about: extensions (docs/extensions.md, examples/extensions/), themes (docs/themes.md), skills (docs/skills.md), prompt templates (docs/prompt-templates.md), TUI components (docs/tui.md), keybindings (docs/keybindings.md), SDK integrations (docs/sdk.md), custom providers (docs/custom-provider.md), adding models (docs/models.md), maestro packages (docs/packages.md)
+- When reading maestro docs or examples, resolve docs/... under Additional docs and examples/... under Examples, not the current working directory
+- When asked about: extensions (docs/extensions.md, examples/extensions/), themes (docs/theme.md), skills (docs/resources/skills.md), prompt templates (docs/resources/prompt-templates.md), TUI components (docs/terminal/components.md), keybindings (docs/terminal/keybindings.md), SDK integrations (docs/application/sdk.md), custom providers (docs/extensions/guest_streams.md), adding models (docs/catalog.md), maestro packages (docs/packages.md)
 - When working on maestro topics, read the docs and examples, and follow .md cross-references before implementing
-- Always read maestro .md files completely and follow links to related docs (e.g., tui.md for TUI API details)"
+- Always read maestro .md files completely and follow links to related docs (e.g., docs/terminal/components.md for TUI API details)"
     ))
 }

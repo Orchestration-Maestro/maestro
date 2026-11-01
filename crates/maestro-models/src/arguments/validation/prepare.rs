@@ -8,7 +8,7 @@ use super::{
     check::{is_schema, schema_array, schema_map},
     collections::dependency_map,
     diagnostics,
-    references::{self, Context, Location},
+    references::{self, Context, Root},
 };
 
 /// Unicode expressions of one schema, keyed by their pattern source.
@@ -39,10 +39,10 @@ enum Step<'a> {
 /// A target is expanded once for each set of live anchor bindings that reaches it, because a
 /// dynamic reference selects its target from those bindings. Each pattern source is built once
 /// and shared by every schema that declares it.
-pub(super) fn prepare<'a>(root: &Location<'a>) -> Result<Patterns<'a>, regress::Error> {
+pub(super) fn prepare<'a>(root: &Root<'_, 'a>) -> Result<Patterns<'a>, regress::Error> {
     let mut patterns = HashMap::new();
     let mut built: Vec<Context<'a>> = Vec::new();
-    let mut steps = vec![Step::Target(Context::root(root.clone()))];
+    let mut steps = vec![Step::Target(Context::root(root.location.clone()))];
     while let Some(step) = steps.pop() {
         match step {
             Step::Pattern(source) => {
@@ -167,7 +167,7 @@ impl<'a> Expansion<'_, 'a> {
 }
 
 /// Steps building the schema a context applies, in the order its keywords build.
-fn expand<'a>(root: &Location<'a>, context: &Context<'a>) -> Vec<Step<'a>> {
+fn expand<'a>(root: &Root<'_, 'a>, context: &Context<'a>) -> Vec<Step<'a>> {
     let mut build = Expansion {
         context,
         schema: context.location.schema,

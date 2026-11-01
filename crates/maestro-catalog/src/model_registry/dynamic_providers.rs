@@ -47,7 +47,7 @@ impl ModelRegistry {
             }
             if let Some(definitions) = config.models.as_ref().filter(|models| !models.is_empty()) {
                 state.replace_models(provider, &config, definitions);
-                config.oauth.clone()
+                config.callbacks.oauth.clone()
             } else if nonempty(config.base_url.as_deref()).is_some() || config.headers.is_some() {
                 state.override_models(provider, config.base_url.as_deref());
                 None
@@ -122,10 +122,16 @@ impl ModelRegistry {
                 replace_defined(&mut retained.base_url, incoming.base_url.as_ref()),
                 replace_defined(&mut retained.api_key, incoming.api_key.as_ref()),
                 replace_defined(&mut retained.api, incoming.api.as_ref()),
-                replace_defined(&mut retained.stream_simple, incoming.stream_simple.as_ref()),
+                replace_defined(
+                    &mut retained.callbacks.stream_simple,
+                    incoming.callbacks.stream_simple.as_ref(),
+                ),
                 replace_defined(&mut retained.headers, incoming.headers.as_ref()),
                 replace_defined(&mut retained.auth_header, incoming.auth_header.as_ref()),
-                replace_defined(&mut retained.oauth, incoming.oauth.as_ref()),
+                replace_defined(
+                    &mut retained.callbacks.oauth,
+                    incoming.callbacks.oauth.as_ref(),
+                ),
                 replace_defined(&mut retained.models, incoming.models.as_ref()),
             )
         };
@@ -137,6 +143,7 @@ fn install_operations(provider: &str, config: &SharedHandle<RwLock<ProviderConfi
     let oauth = config
         .read()
         .unwrap_or_else(PoisonError::into_inner)
+        .callbacks
         .oauth
         .clone();
     if let Some(inner) = oauth {
@@ -147,7 +154,7 @@ fn install_operations(provider: &str, config: &SharedHandle<RwLock<ProviderConfi
     }
     let callback = {
         let config = config.read().unwrap_or_else(PoisonError::into_inner);
-        config.stream_simple.as_ref().map(|callback| {
+        config.callbacks.stream_simple.as_ref().map(|callback| {
             (
                 config.api.clone().unwrap_or_default(),
                 SharedHandle::clone(callback),
@@ -166,32 +173,30 @@ fn install_operations(provider: &str, config: &SharedHandle<RwLock<ProviderConfi
         );
     }
 }
-impl ProviderModelInput {
-    /// Copy supplied metadata into its retained descriptor, leaving headers in request storage.
-    fn descriptor(&self, provider: &str, config: &ProviderConfigInput) -> Model {
-        Model {
-            id: self.id.clone(),
-            name: self.name.clone(),
-            provider: provider.into(),
-            api: nonempty(self.api.as_deref())
-                .or(nonempty(config.api.as_deref()))
-                .unwrap_or_default()
-                .into(),
-            base_url: self
-                .base_url
-                .as_ref()
-                .or(config.base_url.as_ref())
-                .cloned()
-                .unwrap_or_default(),
-            reasoning: self.reasoning,
-            thinking_level_map: self.thinking_level_map.clone(),
-            input: self.input.clone(),
-            cost: self.cost.clone(),
-            context_window: self.context_window,
-            max_tokens: self.max_tokens,
-            headers: None,
-            compat: self.compat.clone(),
-        }
+/// Copy supplied metadata into its retained descriptor, leaving headers in request storage.
+fn descriptor(model: &ProviderModelInput, provider: &str, config: &ProviderConfigInput) -> Model {
+    Model {
+        id: model.id.clone(),
+        name: model.name.clone(),
+        provider: provider.into(),
+        api: nonempty(model.api.as_deref())
+            .or(nonempty(config.api.as_deref()))
+            .unwrap_or_default()
+            .into(),
+        base_url: model
+            .base_url
+            .as_ref()
+            .or(config.base_url.as_ref())
+            .cloned()
+            .unwrap_or_default(),
+        reasoning: model.reasoning,
+        thinking_level_map: model.thinking_level_map.clone(),
+        input: model.input.clone(),
+        cost: model.cost.clone(),
+        context_window: model.context_window,
+        max_tokens: model.max_tokens,
+        headers: None,
+        compat: model.compat.clone(),
     }
 }
 /// Return replaced ownership to retire it after releasing configuration guards.
@@ -239,16 +244,30 @@ impl CatalogState {
             .collect();
         for definition in definitions {
             let identity = (provider.into(), definition.id.clone());
-            if let Some(headers) = super::composition::ordered(definition.headers.clone())
-                .filter(|headers| !headers.is_empty())
+            let overridden = self
+                .model_overrides
+                .get(provider)
+                .and_then(|overrides| overrides.get(&definition.id))
+                .cloned();
+            let mut headers = definition.headers.clone();
+            if let Some(extra) = overridden
+                .as_ref()
+                .and_then(|fields| fields.headers.clone())
+            {
+                headers.get_or_insert_default().extend(extra);
+            }
+            if let Some(headers) =
+                super::composition::ordered(headers).filter(|headers| !headers.is_empty())
             {
                 self.model_headers.insert(identity, headers);
             } else {
                 self.model_headers.remove(&identity);
             }
-            models.push(Arc::new(RwLock::new(
-                definition.descriptor(provider, config),
-            )));
+            let mut model = descriptor(definition, provider, config);
+            if let Some(fields) = overridden {
+                super::composition::apply(&mut model, fields);
+            }
+            models.push(Arc::new(RwLock::new(model)));
         }
         self.models = Arc::new(RwLock::new(models));
     }

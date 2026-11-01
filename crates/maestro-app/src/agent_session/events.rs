@@ -1,36 +1,56 @@
 //! The agent-event dispatch: one ordered queue that tells the extensions, then the session
-//! listeners, persists finished messages and decides on retry and compaction.
+//! listeners and persists finished messages.
+use super::held::heard_while_held;
 use super::state::{Gate, SharedAgentEvent, thrown};
 use super::{AgentSession, AgentSessionEvent};
 use crate::utils::lock::{read, write};
 use futures_util::FutureExt;
 use maestro_agent::{AgentEvent, AgentListener, AgentMessage};
 use maestro_extensions::{
-    AgentEndEvent, AgentStartEvent, ExtensionRunner, MessageEndEvent, MessageStartEvent,
-    MessageUpdateEvent, NativeAgentMessage, ToolExecutionEndEvent, ToolExecutionStartEvent,
-    ToolExecutionUpdateEvent, TurnEndEvent, TurnStartEvent,
+    AgentEndEvent, AgentStartEvent, ExtensionExecution, ExtensionRunner, MessageEndEvent,
+    MessageStartEvent, MessageUpdateEvent, NativeAgentMessage, ToolExecutionEndEvent,
+    ToolExecutionStartEvent, ToolExecutionUpdateEvent, TurnEndEvent, TurnStartEvent,
 };
 use maestro_models::{
-    AssistantMessage, DiagnosticErrorInfo, Local, StopReason, UserContent, UserMessage,
-    timestamp_now,
+    DiagnosticErrorInfo, Local, StopReason, UserContent, UserMessage, timestamp_now,
 };
 use maestro_session::messages::CustomAgentMessages;
 use std::rc::{Rc, Weak};
 use std::sync::Arc;
 
-/// The session's one agent listener: it opens the retry observation of a failed run at once,
-/// then queues the event for ordered processing.
+/// The session's one agent listener: it queues each event for ordered processing.
 pub(super) fn agent_listener(
     session: &Weak<AgentSession<Local>>,
 ) -> AgentListener<CustomAgentMessages, Local> {
     let session = Weak::clone(session);
     Rc::new(move |event, _signal| {
         if let Some(session) = session.upgrade() {
-            session.create_retry_gate_for_agent_end(&read(&event));
             session.enqueue_agent_event(event);
         }
         Box::pin(std::future::ready(Ok(())))
     })
+}
+
+impl<E: ExtensionExecution> AgentSession<E> {
+    /// Released once every queued agent event is processed; absent when none is queued.
+    pub(super) fn agent_event_queue(&self) -> Option<Gate> {
+        self.state.borrow().agent_event_drain.clone()
+    }
+
+    /// Tells the session listeners about `event`, the one place they are told of any. With
+    /// `holdUncheckedText` set, an event that carries assistant text, thinking or partial tool
+    /// output reaches them without it, or not at all, until the message or tool result is
+    /// complete.
+    pub(super) fn emit_agent_event(&self, event: SharedAgentEvent) {
+        let heard = if self.settings_manager.borrow().get_hold_unchecked_text() {
+            heard_while_held(&event)
+        } else {
+            Some(event)
+        };
+        if let Some(heard) = heard {
+            self.emit(&AgentSessionEvent::Agent(heard));
+        }
+    }
 }
 
 impl AgentSession<Local> {
@@ -64,31 +84,8 @@ impl AgentSession<Local> {
         next
     }
 
-    /// Released once every queued agent event is processed; absent when none is queued.
-    pub(super) fn agent_event_queue(&self) -> Option<Gate> {
-        self.state.borrow().agent_event_drain.clone()
-    }
-
-    /// Opens the retry observation when a run ends on a response a retry recovers, before
-    /// the queued processing of that end.
-    fn create_retry_gate_for_agent_end(&self, event: &AgentEvent<CustomAgentMessages>) {
-        let AgentEvent::AgentEnd { messages } = event else {
-            return;
-        };
-        if self.state.borrow().retry_gate.is_some()
-            || !self.settings_manager.borrow().get_retry_settings().enabled
-        {
-            return;
-        }
-        let last = super::state::last_assistant_message(messages);
-        if last.is_some_and(|last| self.is_retryable_error(&read(&last))) {
-            self.create_retry_gate();
-        }
-    }
-
     /// Processes one agent event: removes a delivered queued text, tells the extensions,
-    /// then the listeners, persists a finished message and, at the run's end, retries or
-    /// compacts.
+    /// then the listeners and persists a finished message.
     async fn process_agent_event(
         self: &Rc<Self>,
         event: &SharedAgentEvent,
@@ -105,36 +102,24 @@ impl AgentSession<Local> {
             self.remove_delivered_text(&text);
         }
         self.emit_extension_event(event).await?;
-        self.emit(&AgentSessionEvent::Agent(Arc::clone(event)));
-        let (finished, run_ended) = match &*read(event) {
-            AgentEvent::MessageEnd { message } => (Some(message.clone()), false),
-            AgentEvent::AgentEnd { .. } => (None, true),
-            _ => (None, false),
+        self.emit_agent_event(Arc::clone(event));
+        let (finished, turn) = match &*read(event) {
+            AgentEvent::MessageEnd { message } => (Some(message.clone()), None),
+            AgentEvent::TurnEnd {
+                message,
+                tool_results,
+            } => (None, Some((Arc::clone(message), tool_results.clone()))),
+            _ => (None, None),
         };
         if let Some(message) = finished {
             self.persist_finished_message(&message)?;
         }
-        let last = run_ended
-            .then(|| self.state.borrow_mut().last_assistant_message.take())
-            .flatten();
-        if let Some(last) = last {
-            let last = read(&last).clone();
-            self.retry_or_compact(&last).await?;
+        if let Some((message, tool_results)) = turn {
+            // A message kept for the turn's end goes right after the turn's tool results, so
+            // it cannot land between a tool call and its result.
+            self.flush_pending_custom_messages(Some((&message, &tool_results)))?;
         }
         Ok(())
-    }
-
-    /// Retries a recoverable failure; otherwise releases the retry observers and checks
-    /// compaction.
-    async fn retry_or_compact(
-        self: &Rc<Self>,
-        message: &AssistantMessage,
-    ) -> Result<(), DiagnosticErrorInfo> {
-        if self.is_retryable_error(message) && self.handle_retryable_error(message).await? {
-            return Ok(());
-        }
-        self.resolve_retry();
-        self.check_compaction(message, true).await
     }
 
     /// Removes `text` from the steering mirror, else from the follow-up mirror, and
@@ -166,19 +151,7 @@ impl AgentSession<Local> {
         message: &NativeAgentMessage,
     ) -> Result<(), DiagnosticErrorInfo> {
         match message {
-            AgentMessage::Custom(custom) => {
-                if let CustomAgentMessages::Custom(custom) = &*read(custom) {
-                    self.session_manager
-                        .borrow_mut()
-                        .append_custom_message_entry(
-                            &custom.custom_type,
-                            custom.content.clone(),
-                            custom.display,
-                            custom.details.clone(),
-                        )
-                        .map_err(thrown)?;
-                }
-            }
+            AgentMessage::Custom(_) => self.store_custom_message(message)?,
             AgentMessage::User(_) | AgentMessage::Assistant(_) | AgentMessage::ToolResult(_) => {
                 let record = serde_json::to_value(message).map_err(thrown)?;
                 self.session_manager
@@ -294,7 +267,7 @@ async fn emit_untracked_event(
             let mut start = ToolExecutionStartEvent {
                 tool_call_id: tool_call.id,
                 tool_name: tool_call.name,
-                args: serde_json::Value::Object(tool_call.arguments),
+                args: tool_call.arguments,
             };
             runner.emit(&mut start).await
         }
@@ -305,7 +278,7 @@ async fn emit_untracked_event(
             let mut update = ToolExecutionUpdateEvent {
                 tool_call_id: tool_call.id,
                 tool_name: tool_call.name,
-                args: serde_json::Value::Object(tool_call.arguments),
+                args: tool_call.arguments,
                 partial_result: serde_json::to_value(partial_result).map_err(thrown)?,
             };
             runner.emit(&mut update).await

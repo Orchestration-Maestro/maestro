@@ -1,12 +1,13 @@
 //! Compile-time callback affinity for owned agent execution.
 use super::{
-    AfterToolCallContext, AfterToolCallResult, AgentEvent, AgentLoopConfigRecord, AgentMessage,
-    AgentToolResult, AgentToolUpdateCallback, BeforeToolCallContext, BeforeToolCallResult,
-    ConvertToLlm, CustomAgentMessages, ExecuteTool, ShouldStopAfterTurnContext,
+    AfterToolCallContext, AfterToolCallResult, AgentEvent, AgentLoopConfigRecord,
+    AgentLoopTurnUpdate, AgentMessage, AgentToolResult, AgentToolUpdateCallback,
+    BeforeToolCallContext, BeforeToolCallResult, ConvertToLlm, CustomAgentMessages, ExecuteTool,
+    PrepareNextTurnContext, ShouldStopAfterTurnContext,
 };
 use maestro_models::{
     AssistantMessageEventStream, Cancellation, Context, DiagnosticErrorInfo, Message, Model,
-    ProviderStreamOptions, SimpleStreamOptions,
+    ProviderStreamOptions, SchemaCodeSource, SimpleStreamOptions,
 };
 use maestro_models::{Local, Threaded};
 use std::{future::Future, rc::Rc, sync::Arc};
@@ -15,6 +16,25 @@ type CallbackFuture<'a, E, T> =
     <E as maestro_models::Execution>::Future<'a, Result<T, DiagnosticErrorInfo>>;
 /// Agent callback signatures for the lower-owned execution representation.
 pub trait AgentExecution: maestro_models::ProviderExecution {
+    /// Executable annotations follow storage affinity; threaded defaults keep only data.
+    type SchemaCode: maestro_models::SchemaCodeSource + Clone + Default;
+    /// Project retained metadata into local invocation without calling author code.
+    fn local_definition(
+        definition: &maestro_models::Tool<Self::SchemaCode>,
+    ) -> maestro_models::Tool<maestro_models::SchemaCode> {
+        maestro_models::Tool {
+            name: definition.name.clone(),
+            description: definition.description.clone(),
+            parameters: definition.parameters.data().with_code(
+                definition
+                    .parameters
+                    .code()
+                    .schema_code()
+                    .cloned()
+                    .unwrap_or_default(),
+            ),
+        }
+    }
     /// A retained observation future with no borrowed operation data.
     type ObservationFuture: Future<Output = Result<(), DiagnosticErrorInfo>> + Unpin + 'static;
     /// A live model-facing tool description.
@@ -46,6 +66,12 @@ pub trait AgentExecution: maestro_models::ProviderExecution {
         + ?Sized;
     /// The borrowed turn-stopping callable.
     type Stop<C: CustomAgentMessages>: for<'a> Fn(ShouldStopAfterTurnContext<'a, C, Self>) -> CallbackFuture<'a, Self, bool>
+        + ?Sized;
+    /// The borrowed next-turn preparation callable.
+    type PrepareNextTurn<C: CustomAgentMessages>: for<'a> Fn(
+            PrepareNextTurnContext<'a, C, Self>,
+            Option<Cancellation>,
+        ) -> CallbackFuture<'a, Self, Option<AgentLoopTurnUpdate<C, Self>>>
         + ?Sized;
     /// The queued-input polling callable.
     type Poll<C: CustomAgentMessages>: Fn() -> CallbackFuture<'static, Self, Vec<AgentMessage<C>>>
@@ -99,9 +125,10 @@ pub trait AgentExecution: maestro_models::ProviderExecution {
 }
 /// One declaration template; only pointer and auto-trait bounds differ.
 macro_rules! family {
- ($mode:ty,$ptr:ident, [$($bound:tt)*], $submission:expr, $dispatch:expr) => {
+ ($mode:ty,$ptr:ident, [$($bound:tt)*], $code:ty, $submission:expr, $dispatch:expr) => {
 
 impl AgentExecution for $mode {
+    type SchemaCode = $code;
     type ObservationFuture = <Self as maestro_models::Execution>::Future<'static,Result<(),DiagnosticErrorInfo>>;
     type Description = dyn Fn() -> Result<String, DiagnosticErrorInfo> $($bound)*;
     type Update<D> = dyn Fn(AgentToolResult<D>) $($bound)*;
@@ -125,6 +152,11 @@ impl AgentExecution for $mode {
         ) -> CallbackFuture<'a, Self, Option<AfterToolCallResult>>
         $($bound)*;
     type Stop<C: CustomAgentMessages> = dyn for<'a> Fn(ShouldStopAfterTurnContext<'a, C, Self>) -> CallbackFuture<'a, Self, bool>
+        $($bound)*;
+    type PrepareNextTurn<C: CustomAgentMessages> = dyn for<'a> Fn(
+            PrepareNextTurnContext<'a, C, Self>,
+            Option<Cancellation>,
+        ) -> CallbackFuture<'a, Self, Option<AgentLoopTurnUpdate<C, Self>>>
         $($bound)*;
     type Poll<C: CustomAgentMessages> =
         dyn Fn() -> CallbackFuture<'static, Self, Vec<AgentMessage<C>>> $($bound)*;
@@ -198,6 +230,7 @@ family!(
     Local,
     Rc,
     [],
+    maestro_models::SchemaCode,
     |spawn: crate::AgentSpawner<Local>| Rc::new(move |task| {
         spawn(task);
         true
@@ -210,9 +243,16 @@ family!(
     )
 );
 #[cfg(not(target_arch = "wasm32"))]
-family!(Threaded,Arc,[+ Send + Sync], |_spawn| None, threaded_provider_stream);
+family!(Threaded,Arc,[+ Send + Sync], (), |_spawn| None, threaded_provider_stream);
 #[cfg(target_arch = "wasm32")]
-family!(Threaded, Rc, [], |_spawn| None, threaded_provider_stream);
+family!(
+    Threaded,
+    Rc,
+    [],
+    (),
+    |_spawn| None,
+    threaded_provider_stream
+);
 /// Preserve the ordinary provider default unless an override was supplied.
 fn threaded_provider_stream(
     model: Model,

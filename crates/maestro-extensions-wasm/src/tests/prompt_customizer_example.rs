@@ -3,7 +3,7 @@ use serde_json::Value;
 
 use super::controlled::Controlled;
 use super::documents::Answer;
-use crate::component_adapter::{Capabilities, Exports, release};
+use crate::component_adapter::{Capabilities, release};
 use crate::{Extension, ExtensionAPI, ExtensionFuture};
 
 #[path = "../../../../examples/extensions/prompt_customizer.rs"]
@@ -33,9 +33,7 @@ fn released(host: &Controlled, key: u32) {
 #[test]
 fn prompt_guidance_uses_supplied_tools_and_skills() -> Result<(), String> {
     super::block_on(async {
-        let host = Controlled::default();
-        let exports = Exports::new(host.clone());
-        exports.start::<PromptCustomizer>().await?;
+        let (host, exports) = super::example_support::start::<PromptCustomizer>().await?;
         let key = host.observed().callback("event before_agent_start")?;
         for row in corpus()["rows"].as_array().unwrap() {
             let event = &row["event"];
@@ -64,10 +62,7 @@ fn prompt_guidance_uses_supplied_tools_and_skills() -> Result<(), String> {
 /// The built single-copy example produces the same guidance across the component interface.
 #[test]
 fn prompt_guidance_component_matches_supplied_options() -> Result<(), String> {
-    let path = super::build::example_component("prompt_customizer")?;
-    let (engine, component) = super::build::compile(&path).map_err(|error| error.to_string())?;
-    let mut harness = super::block_on(super::host::Harness::from_compiled(&engine, &component))
-        .map_err(|error| error.to_string())?;
+    let mut harness = super::host::Harness::example("prompt_customizer")?;
     let key = harness
         .callback("event before_agent_start")
         .map_err(|error| error.to_string())?;

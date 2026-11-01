@@ -6,7 +6,7 @@ use maestro_agent::{Agent, AgentEvent};
 use maestro_catalog::{ModelRegistry, ScopedModel};
 use maestro_extensions::{
     ExtensionCommandContextActions, ExtensionErrorListener, ExtensionExecution, ExtensionRunner,
-    ExtensionUIContext, InputSource, SessionStartEvent, types::ShutdownHandler,
+    ExtensionUIContextBinding, InputSource, SessionStartEvent, types::ShutdownHandler,
 };
 use maestro_models::{ImageContent, Local, Model, ModelThinkingLevel};
 use maestro_session::{
@@ -23,7 +23,8 @@ use std::{
 };
 
 /// What started a compaction.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "lowercase")]
 pub enum CompactionReason {
     /// Requested by the user.
     Manual,
@@ -33,10 +34,14 @@ pub enum CompactionReason {
     Overflow,
 }
 
-/// An agent event or a session event.
+/// An agent event or a session event, written as one record with its snake-case `type`.
+#[derive(Clone, serde::Serialize)]
+#[serde(
+    tag = "type",
+    rename_all = "snake_case",
+    rename_all_fields = "camelCase"
+)]
 pub enum AgentSessionEvent {
-    /// An agent event, as the agent delivered it.
-    Agent(Arc<RwLock<AgentEvent<CustomAgentMessages>>>),
     /// The pending steering and follow-up texts changed.
     QueueUpdate {
         /// Pending steering texts.
@@ -52,6 +57,7 @@ pub enum AgentSessionEvent {
     /// The session name changed.
     SessionInfoChanged {
         /// The name now in effect.
+        #[serde(skip_serializing_if = "Option::is_none")]
         name: Option<String>,
     },
     /// The effective thinking level changed.
@@ -64,12 +70,14 @@ pub enum AgentSessionEvent {
         /// What started it.
         reason: CompactionReason,
         /// The stored result, absent when it was aborted or failed.
+        #[serde(skip_serializing_if = "Option::is_none")]
         result: Option<CompactionResult>,
         /// Whether it was aborted.
         aborted: bool,
         /// Whether the failed prompt is retried.
         will_retry: bool,
         /// The failure message.
+        #[serde(skip_serializing_if = "Option::is_none")]
         error_message: Option<String>,
     },
     /// A retry of a failed response is scheduled.
@@ -90,8 +98,12 @@ pub enum AgentSessionEvent {
         /// The last attempt.
         attempt: u32,
         /// The final failure.
+        #[serde(skip_serializing_if = "Option::is_none")]
         final_error: Option<String>,
     },
+    /// An agent event, as the agent delivered it.
+    #[serde(untagged)]
+    Agent(Arc<RwLock<AgentEvent<CustomAgentMessages>>>),
 }
 
 /// Hears whether a prompt passed its preflight, once per prompt.
@@ -122,7 +134,7 @@ pub struct QueueTexts {
 }
 
 /// Hears each cleaned output chunk of a direct shell command as it arrives.
-pub type BashChunkCallback = Box<dyn FnMut(&str) + Send>;
+pub type BashChunkCallback = Box<dyn FnMut(&str)>;
 
 /// How a direct shell command runs and is recorded.
 #[derive(Clone, Default)]
@@ -130,7 +142,7 @@ pub struct BashRunOptions {
     /// Whether the recorded output is kept out of the model context; absent is not recorded.
     pub exclude_from_context: Option<bool>,
     /// The operations that run the command; absent means the local shell.
-    pub operations: Option<Arc<dyn maestro_tools::BashOperations>>,
+    pub operations: Option<Rc<dyn maestro_tools::BashOperations<Local>>>,
 }
 
 /// A session listener.
@@ -184,9 +196,11 @@ pub type ToolDefinitionHandle<E = Local> =
 #[derive(Clone, Default)]
 pub struct ExtensionBindings {
     /// The user interface extensions draw on.
-    pub ui_context: Option<ExtensionUIContext>,
+    pub ui_context: Option<ExtensionUIContextBinding>,
     /// The session operations behind command contexts.
     pub command_context_actions: Option<ExtensionCommandContextActions>,
+    /// Handles an extension's request to abort; absent, the session aborts its own run.
+    pub abort_handler: Option<Rc<dyn Fn()>>,
     /// Requests a graceful shutdown.
     pub shutdown_handler: Option<ShutdownHandler>,
     /// Hears extension failures.
@@ -204,6 +218,8 @@ pub enum CycleDirection {
 }
 
 /// The model selected by cycling.
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ModelCycleResult {
     /// The selected model.
     pub model: Arc<RwLock<Model>>,
@@ -214,7 +230,8 @@ pub struct ModelCycleResult {
 }
 
 /// Token totals of a session.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SessionStatsTokens {
     /// Input tokens.
     pub input: f64,
@@ -229,9 +246,11 @@ pub struct SessionStatsTokens {
 }
 
 /// Session statistics.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SessionStats {
     /// The session file, absent in memory.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub session_file: Option<String>,
     /// The session identity.
     pub session_id: String,
@@ -250,6 +269,7 @@ pub struct SessionStats {
     /// Total cost.
     pub cost: f64,
     /// Context usage, absent without a context window.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub context_usage: Option<maestro_extensions::ContextUsage>,
 }
 
@@ -267,7 +287,8 @@ pub struct NavigateTreeResult {
 }
 
 /// A user message a session can be forked from.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ForkMessage {
     /// The message entry.
     pub entry_id: String,

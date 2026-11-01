@@ -61,7 +61,7 @@ pub fn spawn(
 
 /// Builds the native command once from its owned launch policy.
 fn native_command(description: PtyCommand) -> Command {
-    let mut command = Command::new(description.program);
+    let mut command = crate::command(description.program).into_std();
     if let Some(argv0) = description.argv0 {
         use std::os::unix::process::CommandExt;
         command.arg0(argv0);

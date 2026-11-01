@@ -22,7 +22,8 @@ impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Driver<'_, C, 
         };
         let messages = (self.config.convert_to_llm)(history).await?;
         let mut options = self.config.options.clone();
-        let provider = read(&self.config.model).provider.clone();
+        options.reasoning = self.reasoning;
+        let provider = read(&self.model).provider.clone();
         if let Some(resolve) = &self.config.get_api_key
             && let Some(key) = resolve(provider).await?.filter(|key| !key.is_empty())
         {
@@ -32,7 +33,7 @@ impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Driver<'_, C, 
             options.thinking_budgets = Some(read(budgets).clone());
         }
         options.common.signal = self.options.signal.clone();
-        let model = read(&self.config.model).clone();
+        let model = read(&self.model).clone();
         let tools = self
             .context
             .tools
@@ -161,6 +162,8 @@ pub fn tool_definitions<E: crate::AgentExecution>(
         .collect();
     definitions
         .into_iter()
-        .map(|(tool, description)| AgentToolRecord::<E>::resolve_definition(tool, description))
+        .map(|(tool, description)| {
+            AgentToolRecord::<E>::resolve_definition(tool, description).map(|tool| tool.data())
+        })
         .collect()
 }

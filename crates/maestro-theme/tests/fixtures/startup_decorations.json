@@ -1,0 +1,74 @@
+[
+  {
+    "enabled": false,
+    "style": "gray",
+    "text": "",
+    "expected": ""
+  },
+  {
+    "enabled": false,
+    "style": "gray",
+    "text": "line",
+    "expected": "line"
+  },
+  {
+    "enabled": false,
+    "style": "gray",
+    "text": "line\n",
+    "expected": "line\n"
+  },
+  {
+    "enabled": false,
+    "style": "gray",
+    "text": "a\r\nb",
+    "expected": "a\r\nb"
+  },
+  {
+    "enabled": false,
+    "style": "gray",
+    "text": "a\u001b[22mb\u001b[39mc",
+    "expected": "a\u001b[22mb\u001b[39mc"
+  },
+  {
+    "enabled": false,
+    "style": "gray",
+    "text": "  ",
+    "expected": "  "
+  },
+  {
+    "enabled": true,
+    "style": "gray",
+    "text": "",
+    "expected": ""
+  },
+  {
+    "enabled": true,
+    "style": "gray",
+    "text": "line",
+    "expected": "\u001b[90mline\u001b[39m"
+  },
+  {
+    "enabled": true,
+    "style": "gray",
+    "text": "line\n",
+    "expected": "\u001b[90mline\u001b[39m\n\u001b[90m\u001b[39m"
+  },
+  {
+    "enabled": true,
+    "style": "gray",
+    "text": "a\r\nb",
+    "expected": "\u001b[90ma\u001b[39m\r\n\u001b[90mb\u001b[39m"
+  },
+  {
+    "enabled": true,
+    "style": "gray",
+    "text": "a\u001b[22mb\u001b[39mc",
+    "expected": "\u001b[90ma\u001b[22mb\u001b[39m\u001b[90mc\u001b[39m"
+  },
+  {
+    "enabled": true,
+    "style": "gray",
+    "text": "  ",
+    "expected": "\u001b[90m  \u001b[39m"
+  }
+]

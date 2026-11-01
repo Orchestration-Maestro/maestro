@@ -3,7 +3,7 @@
 use std::{collections::BTreeMap, rc::Rc};
 
 use percent_encoding::percent_decode_str;
-use serde_json::Value;
+use serde_json::{Map, Value};
 use url::Url;
 
 use super::{
@@ -238,6 +238,19 @@ impl<'a> Context<'a> {
     }
 }
 
+/// The checked schema's root together with the definitions a conversion made visible.
+pub(super) struct Root<'d, 'a> {
+    /// Location of the checked schema itself.
+    pub location: Location<'a>,
+    /// Definition frames, outermost first, a `$ref` names before it is resolved.
+    pub definitions: &'d [&'a Map<String, Value>],
+}
+
+/// The definition a name names in the supplied frames, the innermost declaration first.
+pub(super) fn definition<'a>(frames: &[&'a Map<String, Value>], name: &str) -> Option<&'a Value> {
+    frames.iter().rev().find_map(|frame| frame.get(name))
+}
+
 #[derive(Clone, Copy)]
 /// Reference keyword whose target selection differs.
 enum ReferenceKind {
@@ -252,7 +265,7 @@ enum ReferenceKind {
 
 /// Targets of the reference keywords the context's schema applies, in application order;
 /// `None` marks a reference that offline resolution cannot satisfy.
-pub(super) fn targets<'a>(root: &Location<'a>, context: &Context<'a>) -> Vec<Option<Location<'a>>> {
+pub(super) fn targets<'a>(root: &Root<'_, 'a>, context: &Context<'a>) -> Vec<Option<Location<'a>>> {
     [
         ("$ref", ReferenceKind::Ref),
         ("$recursiveRef", ReferenceKind::Recursive),
@@ -267,7 +280,7 @@ pub(super) fn targets<'a>(root: &Location<'a>, context: &Context<'a>) -> Vec<Opt
 }
 
 /// Schedule all reference keywords through the shared offline resolver.
-pub(super) fn instructions<'a>(root: &Location<'a>, job: &Job<'a>) -> Vec<Instruction<'a>> {
+pub(super) fn instructions<'a>(root: &Root<'_, 'a>, job: &Job<'a>) -> Vec<Instruction<'a>> {
     /// Rejecting target schema used when offline resolution fails.
     const FALSE: Value = Value::Bool(false);
     targets(root, &job.context)
@@ -281,14 +294,28 @@ pub(super) fn instructions<'a>(root: &Location<'a>, job: &Job<'a>) -> Vec<Instru
 }
 
 /// Resolve a reference from the context's resource, applying the keyword's search rule.
+///
+/// A `$ref` naming a definition the conversion made visible is that definition, checked from
+/// the referring location; any other reference is resolved in the document.
 fn target<'a>(
-    root: &Location<'a>,
+    root: &Root<'_, 'a>,
     context: &Context<'a>,
     kind: ReferenceKind,
     reference: &str,
 ) -> Option<Location<'a>> {
+    if matches!(kind, ReferenceKind::Ref)
+        && let Some(found) = definition(root.definitions, reference)
+    {
+        return Some(context.location.child(found));
+    }
     let resource = &context.location.resource;
     let joined = |base: &Resource<'a>| base.uri.as_ref()?.join(reference).ok();
+    if let Some(fragment) = fragment_pointer(reference)
+        && let Some(found) =
+            super::schema::resolve::r#ref::from_value(&context.location.resource_root(), &fragment)
+    {
+        return Some(found);
+    }
     let target = match kind {
         ReferenceKind::Recursive
             if resource.schema.get("$recursiveAnchor") == Some(&Value::Bool(true)) =>
@@ -297,13 +324,24 @@ fn target<'a>(
             resolve(search, &joined(&search.resource)?)
         }
         ReferenceKind::Ref | ReferenceKind::Dynamic if !reference.starts_with('#') => {
-            resolve(root, &joined(resource)?)
+            resolve(&root.location, &joined(resource)?)
         }
         _ => resolve(&context.location.resource_root(), &joined(resource)?),
     }?;
     Some(match kind {
         ReferenceKind::Dynamic => overridden(&context.scope, target, reference),
         _ => target,
+    })
+}
+
+/// The document pointer a local reference names, decoded, when it names one.
+fn fragment_pointer(reference: &str) -> Option<String> {
+    let fragment = reference.strip_prefix('#')?;
+    fragment.starts_with('/').then(|| {
+        percent_decode_str(fragment)
+            .decode_utf8()
+            .map(std::borrow::Cow::into_owned)
+            .unwrap_or_default()
     })
 }
 
@@ -329,7 +367,7 @@ fn identifier(schema: &Value) -> Option<&str> {
 }
 
 /// Child nodes of an object or array in canonical traversal order.
-fn children(schema: &Value) -> Vec<&Value> {
+pub(super) fn children(schema: &Value) -> Vec<&Value> {
     match schema {
         Value::Object(object) => diagnostics::entries(object)
             .into_iter()
@@ -386,7 +424,7 @@ fn matched<'a>(
     }
     if fragment.starts_with('/')
         && is_root
-        && let Some(found) = pointer(node, fragment)
+        && let Some(found) = super::schema::resolve::r#ref::pointer(node, fragment)
     {
         return Some(found);
     }
@@ -394,29 +432,4 @@ fn matched<'a>(
         .iter()
         .any(|key| node.schema.get(key).and_then(Value::as_str) == Some(fragment))
         .then(|| node.clone())
-}
-
-/// Traverse decoded pointer segments, entering each crossed resource once.
-fn pointer<'a>(start: &Location<'a>, fragment: &str) -> Option<Location<'a>> {
-    let mut location = start.clone();
-    for segment in fragment.strip_prefix('/')?.split('/') {
-        let key = segment.replace("~1", "/").replace("~0", "~");
-        if matches!(key.as_str(), "__proto__" | "constructor" | "prototype") {
-            return None;
-        }
-        let next = match location.schema {
-            Value::Object(object) => object.get(&key)?,
-            Value::Array(array) => {
-                if !key.bytes().all(|byte| byte.is_ascii_digit())
-                    || (key != "0" && key.starts_with('0'))
-                {
-                    return None;
-                }
-                array.get(key.parse::<usize>().ok()?)?
-            }
-            _ => return None,
-        };
-        location = location.child(next);
-    }
-    Some(location)
 }

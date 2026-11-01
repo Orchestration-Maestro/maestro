@@ -4,6 +4,9 @@ use super::{
     CapturedChild, SpawnSyncError, Termination, WaitOptions, capture, fill, wait_for_child_process,
 };
 use super::{OutputMode, SpawnSyncOptions};
+use children::async_command;
+use maestro_test_process::HARNESS_START;
+use maestro_test_process::child::{collect_output, harness};
 use std::io::Read;
 use std::{
     cell::Cell,
@@ -20,6 +23,8 @@ use std::{
 use tokio::io::{AsyncRead, AsyncReadExt, ReadBuf};
 use tokio::net::TcpListener;
 use tokio::process::Command;
+
+pub(super) mod children;
 
 /// A reader that hands the consumer exactly one chunk per read.
 struct Chunks<'a>(std::vec::IntoIter<&'a [u8]>);
@@ -479,49 +484,38 @@ fn streamed_failure_preserves_prior_bytes_without_replay() {
     });
 }
 
-/// A child that reports `READY`, answers each termination signal with `T` while
-/// ignoring it, and exits on any byte. A helper thread takes the blocked signal with
-/// `sigwait`: a handler would not run if the signal arrived just before `recv` blocks.
-const STUBBORN: &str = r"
-import signal, socket, sys, threading
-s = socket.create_connection(('127.0.0.1', int(sys.argv[1])))
-signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGTERM})
-def answer():
-    while signal.sigwait({signal.SIGTERM}): s.sendall(b'T')
-threading.Thread(target=answer, daemon=True).start()
-s.sendall(b'READY')
-s.recv(1)
-";
-
-/// A [`STUBBORN`] command connecting back to a fresh listener.
-fn stubborn_command() -> (Command, std::net::TcpListener) {
+/// A [`children::stubborn`] command connecting back to a fresh listener, with `variables`
+/// added to its environment.
+fn stubborn_command_with(variables: &[(&str, &str)]) -> (Command, std::net::TcpListener) {
     let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
-    let mut command = Command::new("python3");
-    command
-        .args([
-            "-c",
-            STUBBORN,
-            &listener.local_addr().unwrap().port().to_string(),
-        ])
-        .kill_on_drop(true);
+    let port = listener.local_addr().unwrap().port().to_string();
+    let mut all = vec![("CHILD_PORT", port.as_str())];
+    all.extend_from_slice(variables);
+    let mut command = async_command(children::stubborn, &all);
+    command.kill_on_drop(true);
     (command, listener)
 }
 
-/// Blocks until a [`STUBBORN`] child reports `READY`, returning its socket.
+/// A [`children::stubborn`] command connecting back to a fresh listener.
+fn stubborn_command() -> (Command, std::net::TcpListener) {
+    stubborn_command_with(&[])
+}
+
+/// Blocks until a [`children::stubborn`] child reports `READY`, returning its socket.
 fn stubborn_ready(listener: &std::net::TcpListener) -> std::net::TcpStream {
     let (mut socket, _) = listener.accept().unwrap();
     socket.read_exact(&mut [0; 5]).unwrap();
     socket
 }
 
-/// Starts a [`STUBBORN`] child and returns it with its connected socket.
+/// Starts a [`children::stubborn`] child and returns it with its connected socket.
 fn stubborn() -> (CapturedChild, std::net::TcpStream) {
     let (mut command, listener) = stubborn_command();
     let child = CapturedChild::spawn(&mut command).unwrap();
     (child, stubborn_ready(&listener))
 }
 
-/// Blocks until a [`STUBBORN`] child answers a termination signal it received.
+/// Blocks until a [`children::stubborn`] child answers a termination signal it received.
 fn read_signal_answer(socket: &mut std::net::TcpStream) {
     let mut answer = [0; 1];
     socket.read_exact(&mut answer).unwrap();
@@ -655,23 +649,6 @@ fn sync_capture_uses_each_callers_timeout() {
     });
 }
 
-/// A descendant retains both output descriptors until the control socket releases it.
-const INHERITED_OUTPUT: &str = r"
-import os, socket, sys
-os.write(1, b'prefix'); os.write(2, b'diag')
-gone, alive = os.pipe()
-if os.fork(): os._exit(0)
-os.close(alive); os.read(gone, 1); os.close(gone)
-s = socket.create_connection(('127.0.0.1', int(sys.argv[1])))
-if s.recv(1):
-    result = b''
-    for fd in (1, 2):
-        try: os.write(fd, b'tail'); result += b'writable'
-        except BrokenPipeError: result += b'closed'
-    s.sendall(result)
-s.close(); os._exit(0)
-";
-
 #[test]
 fn capture_timeout_closes_inherited_stdout_after_direct_child_exit() {
     use std::{error::Error, io::Write};
@@ -695,12 +672,8 @@ fn capture_timeout_closes_inherited_stdout_after_direct_child_exit() {
     let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
 
     paused_runtime().block_on(async {
-        let mut command = Command::new("python3");
-        command.args([
-            "-c",
-            INHERITED_OUTPUT,
-            &listener.local_addr().unwrap().port().to_string(),
-        ]);
+        let port = listener.local_addr().unwrap().port().to_string();
+        let mut command = async_command(children::inherited_output, &[("CHILD_PORT", &port)]);
         let timeout = Duration::from_secs(5);
         let started = tokio::time::Instant::now();
         let mut run = Box::pin(capture(
@@ -735,20 +708,47 @@ fn capture_timeout_closes_inherited_stdout_after_direct_child_exit() {
 }
 
 #[test]
+fn linked_descendant_keeps_its_link_until_the_parent_ends() {
+    use std::io::{BufRead, BufReader, Write};
+    let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+    let port = listener.local_addr().unwrap().port().to_string();
+    let mut command = children::command(children::link_holder, &[("CHILD_PORT", &port)]);
+    command
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped());
+    let collected = collect_output(command.spawn().unwrap(), &listener).unwrap();
+
+    let (holder, _) = listener.accept().unwrap();
+    let (mut probe, _) = listener.accept().unwrap();
+    let mut holder = BufReader::new(holder);
+    let mut line = String::new();
+    holder.read_line(&mut line).unwrap();
+    assert_eq!(line, "linked\n");
+    probe.write_all(b"p").unwrap();
+    let mut state = [0];
+    probe.read_exact(&mut state).unwrap();
+    // Release before assertions so a wrong result cannot strand the holder.
+    holder.get_mut().write_all(b"!").unwrap();
+    let output = collected.join().unwrap().unwrap();
+
+    assert_eq!(&state, b"H");
+    assert!(output.status.success());
+}
+
+#[test]
 fn stream_callback_can_abort_the_same_wait() {
     runtime().block_on(async {
-        let mut command = Command::new("python3");
-        command.args([
-            "-c",
-            "import os,signal; os.write(1,b'prefix'); signal.pause()",
-        ]);
+        let mut command = async_command(children::prefix_then_wait, &[]);
         let mut child = CapturedChild::spawn(&mut command).unwrap();
         let (tx, rx) = tokio::sync::oneshot::channel();
         let mut tx = Some(tx);
         let mut bytes = Vec::new();
         let mut sink = |_, chunk: &[u8]| {
             bytes.extend_from_slice(chunk);
-            tx.take().unwrap().send(()).unwrap();
+            if bytes.ends_with(b"prefix") {
+                tx.take().unwrap().send(()).unwrap();
+            }
         };
         let output = wait_for_child_process(
             &mut child,
@@ -761,50 +761,35 @@ fn stream_callback_can_abort_the_same_wait() {
         )
         .await
         .unwrap();
-        assert_eq!(bytes, b"prefix");
+        assert_eq!(bytes, harness(b"prefix"));
         assert!(!output.status.success());
         assert!(output.stdout.is_empty());
     });
 }
-
-/// Child that reports readiness before leaving its input unread.
-const INPUT_HOLD: &str = r"
-import os, socket, sys
-exited = sys.argv[2] == 'True'
-pid = os.getpid()
-if exited:
-    gone, alive = os.pipe()
-    if os.fork(): os._exit(0)
-    os.close(alive); os.read(gone, 1); os.close(gone)
-    os.close(1); os.close(2)
-s = socket.create_connection(('127.0.0.1', int(sys.argv[1])))
-s.sendall(str(pid).encode() + b'\n')
-s.recv(1)
-";
 
 #[test]
 fn capture_overflow_drops_inherited_stdin() {
     use std::io::Write;
     runtime().block_on(async {
         let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
-        let script = format!(
-            "{}\nos.write(1, b'overflow')\nos.close(1); os.close(2)\ns.recv(1)\ns.sendall(b'done')",
-            INPUT_HOLD.replace("    os.close(1); os.close(2)\n", "")
+        let port = listener.local_addr().unwrap().port().to_string();
+        let mut command = async_command(
+            children::input_hold,
+            &[
+                ("CHILD_PORT", &port),
+                ("CHILD_EXITED", "1"),
+                ("CHILD_OVERFLOW", "1"),
+            ],
         );
-        let mut command = Command::new("python3");
-        command.args([
-            "-c",
-            &script,
-            &listener.local_addr().unwrap().port().to_string(),
-            "True",
-        ]);
         // The orphan holds stdin without reading it; its readiness follows parent exit.
         let input = vec![b'x'; 4_194_304];
         let timeout = Duration::from_secs(5);
+        // Parent and orphan each write the start prologue; past both, only the released orphan's
+        // finished write trips the limit, so the capture never closes a pipe the orphan writes.
         let mut run = Box::pin(capture(
             &mut command,
             SpawnSyncOptions::Capture {
-                max_buffer_bytes: Some(1),
+                max_buffer_bytes: Some(2 * HARNESS_START.len()),
                 stdout: OutputMode::Capture,
                 input: Some(&input),
                 timeout: Some(timeout),
@@ -815,6 +800,11 @@ fn capture_overflow_drops_inherited_stdin() {
         let (mut socket, _) = listener.accept().unwrap();
         let mut pid = String::new();
         std::io::BufRead::read_line(&mut std::io::BufReader::new(&socket), &mut pid).unwrap();
+        tokio::task::yield_now().await;
+        assert!(
+            is_pending(&mut run).await,
+            "both start prologues stay within the limit"
+        );
         socket.write_all(b"!").unwrap();
         let result = run.await;
         socket.write_all(b"!").unwrap();
@@ -829,20 +819,25 @@ fn capture_overflow_drops_inherited_stdin() {
     });
 }
 
+/// A [`children::input_hold`] command that connects to `port` and, when `exited`, leaves
+/// its holder behind after ending.
+fn held_input_command(port: &str, exited: bool) -> Command {
+    let mut variables = vec![("CHILD_PORT", port)];
+    if exited {
+        variables.push(("CHILD_EXITED", "1"));
+    }
+    async_command(children::input_hold, &variables)
+}
+
 #[test]
 fn capture_input_deadline_reaps_the_ready_child() {
     paused_runtime().block_on(async {
-        for (exited, operand) in [(false, "False"), (true, "True")] {
+        for exited in [false, true] {
             for timeout in [Duration::from_secs(5), Duration::from_secs(10)] {
                 let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
 
-                let mut command = Command::new("python3");
-                command.args([
-                    "-c",
-                    INPUT_HOLD,
-                    &listener.local_addr().unwrap().port().to_string(),
-                    operand,
-                ]);
+                let port = listener.local_addr().unwrap().port().to_string();
+                let mut command = held_input_command(&port, exited);
                 let input = vec![b'x'; 4_194_304];
                 let mut run = Box::pin(capture(
                     &mut command,
@@ -888,9 +883,11 @@ fn capture_without_limit_waits_for_the_release() {
     paused_runtime().block_on(async {
         for timeout in [None, Some(Duration::ZERO)] {
             let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
-            let mut command = Command::new("python3");
-            let script = format!("{STUBBORN}\nimport os\nos.write(1, sys.stdin.buffer.read() + b' complete')\nos.write(2, b'diag')");
-            command.args(["-c", &script, &listener.local_addr().unwrap().port().to_string()]);
+            let port = listener.local_addr().unwrap().port().to_string();
+            let mut command = async_command(
+                children::stubborn,
+                &[("CHILD_PORT", &port), ("CHILD_AFTER", "echo")],
+            );
             let mut run = Box::pin(capture(
                 &mut command,
                 SpawnSyncOptions::Capture {
@@ -908,7 +905,7 @@ fn capture_without_limit_waits_for_the_release() {
             socket.write_all(b"!").unwrap();
             let output = run.await.unwrap();
             assert!(output.status.success());
-            assert_eq!(output.stdout, b"input complete");
+            assert_eq!(output.stdout, harness(b"input complete"));
             assert_eq!(output.stderr, b"diag");
         }
     });
@@ -929,7 +926,7 @@ fn signal_lists_share_native_signal_validation() {
     use std::{
         io::{BufRead, BufReader},
         os::unix::process::ExitStatusExt,
-        process::{Command, Stdio},
+        process::Stdio,
     };
     if maestro_test_process::run_alone("signal_lists_share_native_signal_validation").unwrap() {
         return;
@@ -948,13 +945,17 @@ fn signal_lists_share_native_signal_validation() {
         (Signal::Terminate, 15),
         (Signal::Kill, 9),
     ] {
-        let mut child=Command::new("/usr/bin/python3").args(["-c","import signal,sys; signal.signal(signal.SIGHUP,signal.SIG_DFL); signal.signal(signal.SIGTERM,signal.SIG_DFL); print('ready',flush=True); sys.stdin.read()"])
-            .stdin(Stdio::piped()).stdout(Stdio::piped()).spawn().unwrap();
-        let mut marker = String::new();
-        BufReader::new(child.stdout.take().unwrap())
-            .read_line(&mut marker)
+        let mut child = children::command(children::ready_then_wait, &[])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()
             .unwrap();
-        assert_eq!(marker, "ready\n");
+        let mut output = BufReader::new(child.stdout.take().unwrap());
+        let mut marker = String::new();
+        while marker != "ready\n" {
+            marker.clear();
+            assert_ne!(output.read_line(&mut marker).unwrap(), 0);
+        }
         assert!(process_exists(child.id()));
         signal_processes(&[0, u32::MAX, i32::MAX.unsigned_abs(), child.id()], signal);
         assert_eq!(child.wait().unwrap().signal(), Some(number));

@@ -1,8 +1,10 @@
 //! Shared integration-test executable.
 #![cfg(test)]
+mod application_message_encoding;
 
 mod application_message_records;
 mod branch_summary;
+mod compaction_context;
 mod compaction_preparation;
 mod context_projection;
 mod converter_binding;
@@ -19,6 +21,8 @@ mod session_tree;
 mod subprocess;
 mod summary_generation;
 mod summary_text;
+mod summary_usage;
+mod tool_argument_roots;
 /// Recorded corpus support shared by the test modules.
 mod support {
     /// Branch scenarios.
@@ -45,3 +49,7 @@ mod support {
     /// Full value comparison.
     pub mod value;
 }
+
+mod session_storage;
+
+mod session_storage_process;

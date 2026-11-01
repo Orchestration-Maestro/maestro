@@ -3,6 +3,7 @@
 use super::chunk::RawUsage;
 use crate::providers::json_text::or_zero;
 use crate::{Model, Usage, UsageCost, calculate_cost};
+use maestro_request::presence::Presence;
 
 /// A count raised to zero when it is zero or less; not-a-number stays not-a-number.
 fn nonnegative(count: f64) -> f64 {
@@ -34,7 +35,7 @@ pub(super) fn parse_usage(raw: &RawUsage, model: &Model) -> Usage {
         output,
         cache_read,
         cache_write,
-        total_tokens: input + output + cache_read + cache_write,
+        total_tokens: Presence::Present(input + output + cache_read + cache_write),
         cost: UsageCost {
             input: 0.0,
             output: 0.0,

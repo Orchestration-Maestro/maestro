@@ -180,12 +180,6 @@ pub struct UnusedDiff {
 pub fn unused_diffs() -> Vec<UnusedDiff> {
     serde_json::from_str(include_str!("../fixtures/artifact_unused_diff.json")).unwrap()
 }
-#[cfg(target_arch = "wasm32")]
-pub mod browser;
-#[cfg(target_arch = "wasm32")]
-pub mod ownership;
-#[cfg(target_arch = "wasm32")]
-pub mod pills;
 
 /// Recorded `CodeDomain` observations.
 #[derive(Deserialize)]
@@ -215,17 +209,6 @@ pub fn code_domains() -> Vec<CodeDomain> {
     strict_record::<CodeInput>(&valid[0]["input"], &["phase"]);
     serde_json::from_str(include_str!("../fixtures/artifact_code_domains.json")).unwrap()
 }
-
-#[cfg(target_arch = "wasm32")]
-pub mod diff;
-#[cfg(target_arch = "wasm32")]
-pub mod lifecycle;
-
-#[cfg(target_arch = "wasm32")]
-pub mod composed;
-
-#[cfg(target_arch = "wasm32")]
-pub mod styles;
 
 #[cfg(target_arch = "wasm32")]
 pub(crate) mod browser_records;

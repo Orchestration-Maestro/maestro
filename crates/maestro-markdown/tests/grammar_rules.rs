@@ -5,8 +5,7 @@ use maestro_markdown::{
 };
 use serde::Deserialize;
 
-#[path = "grammar_rules/observations.rs"]
-mod observations;
+use crate::observations;
 
 /// Compare an existing grammar family with its independently recorded targets.
 fn check(group: &str, count: usize) {

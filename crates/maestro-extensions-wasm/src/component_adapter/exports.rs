@@ -6,9 +6,9 @@ use std::rc::Rc;
 use serde::Serialize;
 
 use super::callbacks;
-use super::contexts;
 use super::host_api::Host;
 use super::imports::Imports;
+use super::{contexts, signals};
 use crate::bindings::exports::maestro::extension::guest::{Decision, Encoded};
 use crate::loader::Extension;
 use crate::types::{
@@ -127,7 +127,7 @@ impl<I: Imports> Exports<I> {
         let Capabilities { ctx, signal } = resources;
         let data = EventData::decode(&event).map_err(|error| error.to_string())?;
         let kind = discriminant(&data);
-        let signal = signal.map(|signal| contexts::signal(&self.imports, signal));
+        let signal = signal.map(|signal| signals::signal(&self.imports, signal));
         let mut event = data.attach(signal)?;
         let mut decision = match callbacks::find::<ExtensionHandler>(handler) {
             Ok(handler) => handler(&mut event, contexts::context(&self.imports, ctx)).await,

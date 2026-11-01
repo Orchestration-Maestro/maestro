@@ -72,7 +72,7 @@ DNS uses the supplied asynchronous runtime while that worker waits. Existing
 off, `std`, MIT OR Apache-2.0) validates dated ranges. No source rewriting or additional HTTP client is used.
 
 `if-addrs =0.15.0` (defaults off, `link-local`, MIT OR BSD-3-Clause, used under MIT)
-reads native interface addresses only after the local-address reachability probe
+reads native interface addresses only after the standard-library UDP route lookup
 fails. The feature preserves link-local addresses rather than filtering them.
 The dependency owns platform-specific system calls; the caller uses its safe API.
 Linux interface order was exercised; macOS and Windows were inspected, not run.
@@ -85,6 +85,18 @@ The lockfile adds 40 package identities for the interpreter and interface adapte
 all offering MIT; no existing identity is removed. The interface adapter accounts
 for one new identity, `if-addrs`; its platform dependencies were already locked.
 All three direct declarations are native-only.
+
+FTP script sources add no FTP dependency: `maestro-models` serves the plain-FTP subset
+its source loader uses, over the already-locked Tokio socket, clock and I/O facilities,
+`regex =1.13.1` for DOS and Unix listing recognition and `chrono =0.4.45` for
+machine-listing instants. That subset is connecting and greeting, logging in, selecting
+binary and file-structure settings, preparing an extended or classic passive data
+connection, reading the modification time, listing one directory and downloading one
+file. Each connection keeps its own byte-activity window and one sender frames every
+command, so a password never reaches a diagnostic. The implementation is native-only, so
+the browser build gains nothing. The earlier client dependency removed `suppaftp`,
+`lazy-regex =3.6.2` and `lazy-regex-proc_macros =3.6.2` from the lockfile and added no
+package identity.
 
 ## Native credentials
 

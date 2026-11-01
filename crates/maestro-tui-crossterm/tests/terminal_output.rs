@@ -167,7 +167,7 @@ fn native_progress_repeats_one_keepalive_until_clear() {
 fn native_stop_clears_active_progress_before_input_modes() {
     isolated!(&[], || {
         let rig = Rig::paused();
-        let feed = pipe_input();
+        let _feed = pipe_input();
         let output = pipe_output();
         rig.run(async {
             let (inputs, resizes) = (Inputs::default(), Resizes::default());
@@ -175,8 +175,7 @@ fn native_stop_clears_active_progress_before_input_modes() {
             terminal
                 .start(inputs.callback(), resizes.callback())
                 .unwrap();
-            feed.send(b"\x1b[?1u");
-            output.written(&format!("{START_BYTES}\x1b[>7u")).await;
+            output.written(START_BYTES).await;
             terminal.set_progress(true).unwrap();
             output.written(PROGRESS_ACTIVE).await;
             terminal.stop().unwrap();
@@ -373,8 +372,9 @@ fn write_around_other_output() {
         terminal.stop().unwrap();
     });
     terminal.write("second").unwrap();
-    let expected =
-        format!("first\x1b[?25l\x1b]0;t\x07{PROGRESS_CLEAR}{START_BYTES}\x1b[?2004lsecond");
+    let expected = format!(
+        "first\x1b[?25l\x1b]0;t\x07{PROGRESS_CLEAR}{START_BYTES}\x1b[?25h\x1b[?2004l\x1b[<usecond"
+    );
     assert_eq!(output.take(), expected);
     drop(output);
     let failure = terminal.write("lost").unwrap_err();
@@ -630,12 +630,10 @@ fn native_output_stop_and_drop_drain_before_modes() {
     for case in 0..2 {
         isolated!(case, &[], || {
             let rig = Rig::paused();
-            let input = pipe_input();
+            let _input = pipe_input();
             let output = pipe_output();
             rig.run(async {
                 let mut terminal = queued_terminal(&rig, &output).await;
-                input.send(b"\x1b[?1u");
-                output.written("\x1b[>7u").await;
                 let data = "d".repeat(2 * 1024 * 1024);
                 terminal.write(&data).unwrap();
                 support::until(|| terminal.pending_output_bytes() < data.len()).await;
@@ -660,13 +658,12 @@ fn native_output_stop_and_drop_drain_before_modes() {
 fn native_output_session_bytes_stay_identical() {
     isolated!(&[], || {
         let rig = Rig::paused();
-        let input = pipe_input();
+        let _input = pipe_input();
         let output = pipe_output();
         rig.run(async {
             let mut terminal = ProcessTerminal::new(rig.local());
             terminal.start(Box::new(|_| {}), Box::new(|| {})).unwrap();
-            input.send(b"\x1b[?1u");
-            output.written(&format!("{START_BYTES}\x1b[>7u")).await;
+            output.written(START_BYTES).await;
             terminal.write("first🦀first").unwrap();
             terminal.move_by(0).unwrap();
             terminal.move_by(-2).unwrap();
@@ -740,7 +737,7 @@ fn native_output_restores_output_flags() {
             if case >= 4 {
                 rustix::stdio::dup2_stdin(stdout()).unwrap();
             }
-            let original = fcntl_getfl(stdout()).unwrap();
+            let original = support::stdout_flags();
             let flags = if case % 2 == 0 {
                 original
             } else {
@@ -751,13 +748,16 @@ fn native_output_restores_output_flags() {
                 let mut terminal = queued_terminal(&rig, &output).await;
                 assert!(fcntl_getfl(stdout()).unwrap().contains(OFlags::NONBLOCK));
                 terminal.write("flags").unwrap();
+                // Some hosts' drain of a terminal waits until its reader takes this output.
+                let reader = Capture(output.0.try_clone().unwrap());
+                let collector = collect_bytes(reader, "flags\x1b[?2004l\x1b[<u".len());
                 if case % 4 < 2 {
                     terminal.stop().unwrap();
                 } else {
                     drop(terminal);
                 }
-                assert_eq!(fcntl_getfl(stdout()).unwrap(), flags);
-                assert_eq!(output.take(), "flags\x1b[?2004l");
+                assert_eq!(support::stdout_flags(), flags);
+                assert_eq!(collector.join().unwrap(), b"flags\x1b[?2004l\x1b[<u");
             });
         });
     }
@@ -794,7 +794,9 @@ fn native_output_restart_keeps_pending_bytes() {
             assert!(terminal.pending_output_bytes() > 0);
             terminal.start(Box::new(|_| {}), Box::new(|| {})).unwrap();
             terminal.write("new").unwrap();
-            let expected = format!("{data}{START_BYTES}new\x1b[?2004l");
+            // The restart requests the flags again, so the stop pops both requests.
+            let expected =
+                format!("{data}\x1b[?2004h\x1b[>7u\x1b[?u\x1b[cnew\x1b[?2004l\x1b[<u\x1b[<u");
             let collector = collect_bytes(output, expected.len());
             terminal.stop().unwrap();
             assert_eq!(collector.join().unwrap(), expected.as_bytes());
@@ -848,7 +850,10 @@ fn native_output_log_records_accepted_explicit_writes() {
             assert_eq!(fs::read_to_string(&path).unwrap(), "explicit");
             assert!(terminal.pending_output_bytes() > 0);
             terminal.stop().unwrap();
-            assert_eq!(output.take(), "explicit\x1b]0;unlogged\x07\x1b[?2004l");
+            assert_eq!(
+                output.take(),
+                "explicit\x1b]0;unlogged\x07\x1b[?2004l\x1b[<u"
+            );
             drop(output);
             assert!(terminal.write("refused").is_err());
             assert_eq!(fs::read_to_string(path).unwrap(), "explicit");
@@ -857,4 +862,145 @@ fn native_output_log_records_accepted_explicit_writes() {
     if let Some(dir) = prepared {
         drop(dir);
     }
+}
+
+/// Requires the actual returned writer to be transferable without sharing the local queue.
+fn send_sync<T: Send + Sync>(_: &T) {}
+
+#[test]
+fn native_output_writer_orders_cross_thread_bytes() {
+    isolated!(&[], || {
+        use std::io::Write;
+        let rig = Rig::paused();
+        let _input = pipe_input();
+        let output = pipe_output();
+        rig.run(async {
+            let mut terminal = queued_terminal(&rig, &output).await;
+            let mut writer = terminal.output_writer().unwrap();
+            send_sync(&writer);
+            let mut foreign = writer.clone();
+            terminal.write("frame-a").unwrap();
+            std::thread::spawn(move || {
+                assert_eq!(foreign.write(&[]).unwrap(), 0);
+                foreign.write_all(b"\0\xff\x1b[31m").unwrap();
+                foreign.flush().unwrap();
+            })
+            .join()
+            .unwrap();
+            terminal.write("frame-b").unwrap();
+            writer.write_all(b"tail").unwrap();
+            let expected = b"frame-a\0\xff\x1b[31mframe-btail\x1b[?2004l\x1b[<u";
+            let collector = collect_bytes(output, expected.len());
+            terminal.stop().unwrap();
+            assert_eq!(collector.join().unwrap(), expected);
+        });
+    });
+}
+
+#[test]
+fn native_output_writer_drains_then_closes_admission() {
+    isolated!(0, &[], || {
+        use std::io::Write;
+        let rig = Rig::paused();
+        let _input = pipe_input();
+        let output = pipe_output();
+        let flags = support::stdout_flags();
+        rig.run(async {
+            let mut terminal = queued_terminal(&rig, &output).await;
+            let mut writer = terminal.output_writer().unwrap();
+            let data = "a".repeat(2 * 1024 * 1024);
+            terminal.write(&data).unwrap();
+            writer.write_all(b"\xff\0external").unwrap();
+            support::until(|| terminal.pending_output_bytes() < data.len()).await;
+            assert!(terminal.pending_output_bytes() > 0);
+            let mut expected = data.into_bytes();
+            expected.extend_from_slice(b"\xff\0external\x1b[?2004l\x1b[<u");
+            let collector = collect_bytes(output, expected.len());
+            terminal.stop().unwrap();
+            assert_eq!(support::stdout_flags(), flags);
+            assert_eq!(collector.join().unwrap(), expected);
+            assert!(terminal.output_writer().is_none());
+            assert_closed_writer(&mut writer);
+            let next = pipe_output();
+            terminal.start(Box::new(|_| {}), Box::new(|| {})).unwrap();
+            let mut fresh = terminal.output_writer().unwrap();
+            fresh.write_all(b"fresh").unwrap();
+            assert_eq!(
+                writer.write(b"old").unwrap_err().kind(),
+                std::io::ErrorKind::BrokenPipe
+            );
+            terminal.stop().unwrap();
+            assert_eq!(next.take(), format!("{START_BYTES}fresh\x1b[?2004l\x1b[<u"));
+        });
+    });
+    isolated!(1, &[], || {
+        use std::io::Write;
+        let rig = Rig::paused();
+        let _input = pipe_input();
+        let output = pipe_output();
+        rig.run(async {
+            let mut terminal = queued_terminal(&rig, &output).await;
+            let mut writer = terminal.output_writer().unwrap();
+            drop(output);
+            writer.write_all(b"failure").unwrap();
+            support::until(|| terminal.pending_output_bytes() == 0).await;
+            assert_eq!(
+                writer.write(b"lost").unwrap_err().kind(),
+                std::io::ErrorKind::BrokenPipe
+            );
+            assert_eq!(
+                terminal.stop().unwrap_err().kind(),
+                std::io::ErrorKind::BrokenPipe
+            );
+        });
+    });
+}
+
+#[test]
+fn native_output_writer_keeps_synchronous_destinations() {
+    isolated!(&[], || {
+        let rig = Rig::paused();
+        let _input = pipe_input();
+        let output = pipe_output();
+        let mut terminal = ProcessTerminal::new(rig.local());
+        assert!(terminal.output_writer().is_none());
+        terminal.write("stopped").unwrap();
+        assert_eq!(output.take(), "stopped");
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let path = scratch.path().join("regular");
+        let file = fs::File::create(&path).unwrap();
+        rustix::stdio::dup2_stdout(&file).unwrap();
+        rig.run(async {
+            terminal.start(Box::new(|_| {}), Box::new(|| {})).unwrap();
+            assert!(terminal.output_writer().is_none());
+            terminal.write("synchronous").unwrap();
+            assert_eq!(
+                fs::read_to_string(&path).unwrap(),
+                format!("{START_BYTES}synchronous")
+            );
+            terminal.stop().unwrap();
+            assert!(terminal.output_writer().is_none());
+        });
+        assert_eq!(
+            fs::read_to_string(&path).unwrap(),
+            format!("{START_BYTES}synchronous\x1b[?2004l\x1b[<u")
+        );
+    });
+}
+
+/// Verifies closure for ordinary, empty and flush admission without writing more bytes.
+fn assert_closed_writer(writer: &mut maestro_tui_crossterm::terminal::output::OutputWriter) {
+    use std::io::Write;
+    assert_eq!(
+        writer.write(b"lost").unwrap_err().kind(),
+        std::io::ErrorKind::BrokenPipe
+    );
+    assert_eq!(
+        writer.write(&[]).unwrap_err().kind(),
+        std::io::ErrorKind::BrokenPipe
+    );
+    assert_eq!(
+        writer.flush().unwrap_err().kind(),
+        std::io::ErrorKind::BrokenPipe
+    );
 }

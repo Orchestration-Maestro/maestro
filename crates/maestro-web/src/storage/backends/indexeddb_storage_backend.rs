@@ -53,6 +53,8 @@ impl Drop for RequestTeardown {
 mod tests;
 
 #[cfg(target_arch = "wasm32")]
+pub(crate) use browser::storage_support;
+#[cfg(target_arch = "wasm32")]
 pub use browser::{IndexedDBStorageBackend, IndexedDBStorageTransaction};
 
 /// Native request handles and their callback lifetimes.

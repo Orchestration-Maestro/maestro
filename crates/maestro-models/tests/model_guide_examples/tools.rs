@@ -119,7 +119,7 @@ fn check_validation_inputs(invalid: &maestro_models::ToolCall) -> TestResult {
         "Validation failed for tool \"get_weather\":\n  - units: must be equal to one of the allowed values\n\nReceived arguments:\n{\n  \"location\": \"London\",\n  \"units\": \"kelvin\"\n}"
     );
     let missing = maestro_models::ToolCall {
-        arguments: maestro_models::JsonObject::default(),
+        arguments: maestro_models::JsonObject::default().into(),
         ..invalid.clone()
     };
     assert_eq!(

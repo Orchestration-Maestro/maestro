@@ -6,6 +6,7 @@ mod contexts;
 mod dispatch;
 pub use dispatch::{RunnerEmitEvent, emit_session_shutdown_event};
 mod errors;
+pub(crate) use errors::event_error;
 pub use errors::retained_diagnostic;
 mod input;
 mod registration;
@@ -16,11 +17,12 @@ mod tool_hooks;
 mod transforms;
 mod ui;
 use crate::{
-    ErrorReporter, ExtensionExecution,
-    types::{ExtensionCollection, ExtensionRuntime, ExtensionUIContext, read},
+    ErrorReporter, ExtensionCommandContextActions, ExtensionExecution,
+    types::{ActivityGuard, ExtensionCollection, ExtensionRuntime, ExtensionUIContext, read},
 };
 pub(crate) use binding::ContextBinding;
 pub use binding::ExtensionRunnerSession;
+use maestro_listeners::Listeners;
 use maestro_models::Threaded;
 use maestro_resources::ResourceDiagnostic;
 use maestro_theme::LiveTheme;
@@ -35,11 +37,7 @@ pub struct ExtensionRunner<E: ExtensionExecution = Threaded> {
     /// Shared action runtime.
     runtime: E::Shared<ExtensionRuntime<E>>,
     /// Live attributed error observers.
-    error_listeners: Rc<
-        RefCell<
-            maestro_models::records::listeners::Listeners<crate::types::ExtensionErrorListener>,
-        >,
-    >,
+    error_listeners: Rc<RefCell<Listeners<crate::types::ExtensionErrorListener>>>,
     /// Current extension load order.
     extensions: ExtensionCollection<E>,
     /// State shared with this runner's contexts.
@@ -63,18 +61,18 @@ impl<E: ExtensionExecution> ExtensionRunner<E> {
         warning_reporter: ErrorReporter<E>,
         theme: LiveTheme,
     ) -> Self {
-        let state = Arc::clone(&runtime.state);
         let no_ui = ExtensionUIContext::no_ui(theme);
         Self {
             extensions,
             runtime,
             error_listeners: Rc::default(),
             binding: Rc::new(ContextBinding {
-                runtime: state,
+                activity: ActivityGuard::default(),
                 session,
                 actions: RefCell::default(),
-                command_actions: RefCell::default(),
-                ui: RefCell::new(no_ui.clone()),
+                command_actions: RefCell::new(ExtensionCommandContextActions::unbound()),
+                ui: RefCell::new(no_ui.clone().into()),
+                ui_error_reporter: RefCell::default(),
                 no_ui,
             }),
             warning_reporter,

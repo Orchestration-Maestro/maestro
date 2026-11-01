@@ -1,0 +1,17 @@
+.maestro-artifact-console { border-top: 1px solid var(--maestro-color-border); padding: .5rem; }
+.maestro-artifact-console-header { display: flex; align-items: center; gap: .5rem; width: 100%; }
+.maestro-artifact-summary { display: flex; align-items: center; gap: .5rem; flex: 1; text-align: left; font-size: .875rem; line-height: 1.25rem; color: var(--maestro-color-muted); }
+.maestro-artifact-summary:hover { color: var(--maestro-color-text); }
+.maestro-artifact-console button { cursor: pointer; transition: color .15s, background-color .15s; }
+.maestro-artifact-logs { max-height: 12rem; overflow-y: auto; margin-top: .5rem; font-size: .75rem; line-height: 1rem; font-family: var(--maestro-type-mono-font); }
+.maestro-artifact-logs > div + div { margin-top: .25rem; }
+.maestro-artifact-log { color: var(--maestro-color-muted); }
+.maestro-artifact-error { color: var(--maestro-color-error); }
+.maestro-artifact-summary { border: 0; background: transparent; padding: 0; font-family: var(--maestro-type-body-font); }
+.maestro-artifact-console button:focus-visible { outline: 2px solid var(--maestro-color-accent); outline-offset: 2px; }
+
+.maestro-artifact-follow { border: 0; padding: .25rem; border-radius: var(--maestro-radii-control); background: transparent; color: var(--maestro-color-text); }
+.maestro-artifact-follow[aria-pressed="true"] { background: var(--maestro-color-accent); color: var(--maestro-color-on-accent); }
+.maestro-artifact-follow[aria-pressed="false"]:hover { background: var(--maestro-color-panel); }
+.maestro-artifact-console copy-button .maestro-button { background: transparent; }
+.maestro-artifact-console copy-button .maestro-button:hover { background: var(--maestro-color-accent); color: var(--maestro-color-on-accent); }

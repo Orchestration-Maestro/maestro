@@ -1,0 +1,4841 @@
+[
+  {
+    "id": "allOf-ftt-fast",
+    "schema": {
+      "allOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c0",
+            "put": {
+              "c0": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c1",
+            "put": {
+              "c1": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c2",
+            "put": {
+              "c2": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "c0": true,
+      "c1": true,
+      "c2": true
+    },
+    "errors": [
+      "  - root: reject c0"
+    ]
+  },
+  {
+    "id": "allOf-ttf-fast",
+    "schema": {
+      "allOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c0",
+            "put": {
+              "c0": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c1",
+            "put": {
+              "c1": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c2",
+            "put": {
+              "c2": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "c0": true,
+      "c1": true,
+      "c2": true
+    },
+    "errors": [
+      "  - root: reject c2"
+    ]
+  },
+  {
+    "id": "allOf-fff-fast",
+    "schema": {
+      "allOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c0",
+            "put": {
+              "c0": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c1",
+            "put": {
+              "c1": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c2",
+            "put": {
+              "c2": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "c0": true,
+      "c1": true,
+      "c2": true
+    },
+    "errors": [
+      "  - root: reject c0",
+      "  - root: reject c1",
+      "  - root: reject c2"
+    ]
+  },
+  {
+    "id": "allOf-tff-fast",
+    "schema": {
+      "allOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c0",
+            "put": {
+              "c0": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c1",
+            "put": {
+              "c1": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c2",
+            "put": {
+              "c2": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "c0": true,
+      "c1": true,
+      "c2": true
+    },
+    "errors": [
+      "  - root: reject c1",
+      "  - root: reject c2"
+    ]
+  },
+  {
+    "id": "anyOf-ftt-fast",
+    "schema": {
+      "anyOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c0",
+            "put": {
+              "c0": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c1",
+            "put": {
+              "c1": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c2",
+            "put": {
+              "c2": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "c0": true,
+      "c1": true
+    },
+    "errors": []
+  },
+  {
+    "id": "anyOf-ttf-fast",
+    "schema": {
+      "anyOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c0",
+            "put": {
+              "c0": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c1",
+            "put": {
+              "c1": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c2",
+            "put": {
+              "c2": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "c0": true
+    },
+    "errors": []
+  },
+  {
+    "id": "anyOf-fff-fast",
+    "schema": {
+      "anyOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c0",
+            "put": {
+              "c0": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c1",
+            "put": {
+              "c1": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c2",
+            "put": {
+              "c2": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "c0": true,
+      "c1": true,
+      "c2": true
+    },
+    "errors": [
+      "  - root: reject c0",
+      "  - root: reject c1",
+      "  - root: reject c2",
+      "  - root: must match a schema in anyOf"
+    ]
+  },
+  {
+    "id": "anyOf-tff-fast",
+    "schema": {
+      "anyOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c0",
+            "put": {
+              "c0": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c1",
+            "put": {
+              "c1": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c2",
+            "put": {
+              "c2": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "c0": true
+    },
+    "errors": []
+  },
+  {
+    "id": "oneOf-ftt-fast",
+    "schema": {
+      "oneOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c0",
+            "put": {
+              "c0": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c1",
+            "put": {
+              "c1": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c2",
+            "put": {
+              "c2": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "c0": true,
+      "c1": true,
+      "c2": true
+    },
+    "errors": [
+      "  - root: must match exactly one schema in oneOf"
+    ]
+  },
+  {
+    "id": "oneOf-ttf-fast",
+    "schema": {
+      "oneOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c0",
+            "put": {
+              "c0": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c1",
+            "put": {
+              "c1": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c2",
+            "put": {
+              "c2": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "c0": true,
+      "c1": true,
+      "c2": true
+    },
+    "errors": [
+      "  - root: must match exactly one schema in oneOf"
+    ]
+  },
+  {
+    "id": "oneOf-fff-fast",
+    "schema": {
+      "oneOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c0",
+            "put": {
+              "c0": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c1",
+            "put": {
+              "c1": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c2",
+            "put": {
+              "c2": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "c0": true,
+      "c1": true,
+      "c2": true
+    },
+    "errors": [
+      "  - root: reject c0",
+      "  - root: reject c1",
+      "  - root: reject c2",
+      "  - root: must match exactly one schema in oneOf"
+    ]
+  },
+  {
+    "id": "oneOf-tff-fast",
+    "schema": {
+      "oneOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c0",
+            "put": {
+              "c0": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c1",
+            "put": {
+              "c1": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c2",
+            "put": {
+              "c2": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "c0": true,
+      "c1": true,
+      "c2": true
+    },
+    "errors": []
+  },
+  {
+    "id": "allOf-ftt-marks",
+    "schema": {
+      "allOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c0",
+            "put": {
+              "c0": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c1",
+            "put": {
+              "c1": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c2",
+            "put": {
+              "c2": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      ],
+      "unevaluatedProperties": true
+    },
+    "input": {},
+    "working": {
+      "c0": true,
+      "c1": true,
+      "c2": true
+    },
+    "errors": [
+      "  - root: reject c0"
+    ]
+  },
+  {
+    "id": "allOf-ttf-marks",
+    "schema": {
+      "allOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c0",
+            "put": {
+              "c0": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c1",
+            "put": {
+              "c1": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c2",
+            "put": {
+              "c2": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        }
+      ],
+      "unevaluatedProperties": true
+    },
+    "input": {},
+    "working": {
+      "c0": true,
+      "c1": true,
+      "c2": true
+    },
+    "errors": [
+      "  - root: reject c2"
+    ]
+  },
+  {
+    "id": "allOf-fff-marks",
+    "schema": {
+      "allOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c0",
+            "put": {
+              "c0": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c1",
+            "put": {
+              "c1": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c2",
+            "put": {
+              "c2": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        }
+      ],
+      "unevaluatedProperties": true
+    },
+    "input": {},
+    "working": {
+      "c0": true,
+      "c1": true,
+      "c2": true
+    },
+    "errors": [
+      "  - root: reject c0",
+      "  - root: reject c1",
+      "  - root: reject c2"
+    ]
+  },
+  {
+    "id": "allOf-tff-marks",
+    "schema": {
+      "allOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c0",
+            "put": {
+              "c0": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c1",
+            "put": {
+              "c1": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c2",
+            "put": {
+              "c2": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        }
+      ],
+      "unevaluatedProperties": true
+    },
+    "input": {},
+    "working": {
+      "c0": true,
+      "c1": true,
+      "c2": true
+    },
+    "errors": [
+      "  - root: reject c1",
+      "  - root: reject c2"
+    ]
+  },
+  {
+    "id": "anyOf-ftt-marks",
+    "schema": {
+      "anyOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c0",
+            "put": {
+              "c0": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c1",
+            "put": {
+              "c1": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c2",
+            "put": {
+              "c2": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      ],
+      "unevaluatedProperties": true
+    },
+    "input": {},
+    "working": {
+      "c0": true,
+      "c1": true,
+      "c2": true
+    },
+    "errors": []
+  },
+  {
+    "id": "anyOf-ttf-marks",
+    "schema": {
+      "anyOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c0",
+            "put": {
+              "c0": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c1",
+            "put": {
+              "c1": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c2",
+            "put": {
+              "c2": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        }
+      ],
+      "unevaluatedProperties": true
+    },
+    "input": {},
+    "working": {
+      "c0": true,
+      "c1": true,
+      "c2": true
+    },
+    "errors": []
+  },
+  {
+    "id": "anyOf-fff-marks",
+    "schema": {
+      "anyOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c0",
+            "put": {
+              "c0": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c1",
+            "put": {
+              "c1": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c2",
+            "put": {
+              "c2": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        }
+      ],
+      "unevaluatedProperties": true
+    },
+    "input": {},
+    "working": {
+      "c0": true,
+      "c1": true,
+      "c2": true
+    },
+    "errors": [
+      "  - root: reject c0",
+      "  - root: reject c1",
+      "  - root: reject c2",
+      "  - root: must match a schema in anyOf"
+    ]
+  },
+  {
+    "id": "anyOf-tff-marks",
+    "schema": {
+      "anyOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c0",
+            "put": {
+              "c0": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c1",
+            "put": {
+              "c1": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c2",
+            "put": {
+              "c2": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        }
+      ],
+      "unevaluatedProperties": true
+    },
+    "input": {},
+    "working": {
+      "c0": true,
+      "c1": true,
+      "c2": true
+    },
+    "errors": []
+  },
+  {
+    "id": "oneOf-ftt-marks",
+    "schema": {
+      "oneOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c0",
+            "put": {
+              "c0": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c1",
+            "put": {
+              "c1": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c2",
+            "put": {
+              "c2": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      ],
+      "unevaluatedProperties": true
+    },
+    "input": {},
+    "working": {
+      "c0": true,
+      "c1": true,
+      "c2": true
+    },
+    "errors": [
+      "  - root: must match exactly one schema in oneOf"
+    ]
+  },
+  {
+    "id": "oneOf-ttf-marks",
+    "schema": {
+      "oneOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c0",
+            "put": {
+              "c0": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c1",
+            "put": {
+              "c1": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c2",
+            "put": {
+              "c2": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        }
+      ],
+      "unevaluatedProperties": true
+    },
+    "input": {},
+    "working": {
+      "c0": true,
+      "c1": true,
+      "c2": true
+    },
+    "errors": [
+      "  - root: must match exactly one schema in oneOf"
+    ]
+  },
+  {
+    "id": "oneOf-fff-marks",
+    "schema": {
+      "oneOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c0",
+            "put": {
+              "c0": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c1",
+            "put": {
+              "c1": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c2",
+            "put": {
+              "c2": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        }
+      ],
+      "unevaluatedProperties": true
+    },
+    "input": {},
+    "working": {
+      "c0": true,
+      "c1": true,
+      "c2": true
+    },
+    "errors": [
+      "  - root: reject c0",
+      "  - root: reject c1",
+      "  - root: reject c2",
+      "  - root: must match exactly one schema in oneOf"
+    ]
+  },
+  {
+    "id": "oneOf-tff-marks",
+    "schema": {
+      "oneOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c0",
+            "put": {
+              "c0": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c1",
+            "put": {
+              "c1": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "c2",
+            "put": {
+              "c2": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        }
+      ],
+      "unevaluatedProperties": true
+    },
+    "input": {},
+    "working": {
+      "c0": true,
+      "c1": true,
+      "c2": true
+    },
+    "errors": []
+  },
+  {
+    "id": "not-False",
+    "schema": {
+      "not": {
+        "type": "object",
+        "x-effect": {
+          "label": "negative",
+          "put": {
+            "negative": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      }
+    },
+    "input": {},
+    "working": {
+      "negative": true
+    },
+    "errors": [
+      "  - root: must not be valid"
+    ]
+  },
+  {
+    "id": "not-True",
+    "schema": {
+      "not": {
+        "type": "object",
+        "x-effect": {
+          "label": "negative",
+          "put": {
+            "negative": true
+          },
+          "remove": [],
+          "reject": true,
+          "toggle": false
+        }
+      }
+    },
+    "input": {},
+    "working": {
+      "negative": true
+    },
+    "errors": []
+  },
+  {
+    "id": "if-False-False",
+    "schema": {
+      "if": {
+        "type": "object",
+        "x-effect": {
+          "label": "condition",
+          "put": {
+            "condition": true
+          },
+          "remove": [],
+          "reject": true,
+          "toggle": false
+        }
+      },
+      "then": {
+        "type": "object",
+        "x-effect": {
+          "label": "then",
+          "put": {
+            "then": true
+          },
+          "remove": [],
+          "reject": true,
+          "toggle": false
+        }
+      },
+      "else": {
+        "type": "object",
+        "x-effect": {
+          "label": "else",
+          "put": {
+            "else": true
+          },
+          "remove": [],
+          "reject": true,
+          "toggle": false
+        }
+      }
+    },
+    "input": {},
+    "working": {
+      "condition": true,
+      "else": true
+    },
+    "errors": [
+      "  - root: reject else",
+      "  - root: must match \"else\" schema"
+    ]
+  },
+  {
+    "id": "if-False-True",
+    "schema": {
+      "if": {
+        "type": "object",
+        "x-effect": {
+          "label": "condition",
+          "put": {
+            "condition": true
+          },
+          "remove": [],
+          "reject": true,
+          "toggle": false
+        }
+      },
+      "then": {
+        "type": "object",
+        "x-effect": {
+          "label": "then",
+          "put": {
+            "then": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      },
+      "else": {
+        "type": "object",
+        "x-effect": {
+          "label": "else",
+          "put": {
+            "else": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      }
+    },
+    "input": {},
+    "working": {
+      "condition": true,
+      "else": true
+    },
+    "errors": []
+  },
+  {
+    "id": "if-True-False",
+    "schema": {
+      "if": {
+        "type": "object",
+        "x-effect": {
+          "label": "condition",
+          "put": {
+            "condition": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      },
+      "then": {
+        "type": "object",
+        "x-effect": {
+          "label": "then",
+          "put": {
+            "then": true
+          },
+          "remove": [],
+          "reject": true,
+          "toggle": false
+        }
+      },
+      "else": {
+        "type": "object",
+        "x-effect": {
+          "label": "else",
+          "put": {
+            "else": true
+          },
+          "remove": [],
+          "reject": true,
+          "toggle": false
+        }
+      }
+    },
+    "input": {},
+    "working": {
+      "condition": true,
+      "then": true
+    },
+    "errors": [
+      "  - root: must match \"then\" schema"
+    ]
+  },
+  {
+    "id": "if-True-True",
+    "schema": {
+      "if": {
+        "type": "object",
+        "x-effect": {
+          "label": "condition",
+          "put": {
+            "condition": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      },
+      "then": {
+        "type": "object",
+        "x-effect": {
+          "label": "then",
+          "put": {
+            "then": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      },
+      "else": {
+        "type": "object",
+        "x-effect": {
+          "label": "else",
+          "put": {
+            "else": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      }
+    },
+    "input": {},
+    "working": {
+      "condition": true,
+      "then": true
+    },
+    "errors": []
+  },
+  {
+    "id": "if-absent-branches",
+    "schema": {
+      "if": {
+        "type": "object",
+        "x-effect": {
+          "label": "condition",
+          "put": {
+            "condition": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      }
+    },
+    "input": {},
+    "working": {
+      "condition": true
+    },
+    "errors": []
+  },
+  {
+    "id": "contains-empty-31",
+    "schema": {
+      "type": "array",
+      "contains": {
+        "type": "object",
+        "x-effect": {
+          "label": "seen",
+          "put": {
+            "seen": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      }
+    },
+    "input": [],
+    "working": [],
+    "errors": [
+      "  - root: must contain at least 1 valid item"
+    ]
+  },
+  {
+    "id": "contains-empty-32",
+    "schema": {
+      "type": "array",
+      "contains": {
+        "type": "object",
+        "x-effect": {
+          "label": "seen",
+          "put": {
+            "seen": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      },
+      "minContains": 0
+    },
+    "input": [],
+    "working": [],
+    "errors": []
+  },
+  {
+    "id": "contains-empty-33",
+    "schema": {
+      "type": "array",
+      "contains": {
+        "type": "object",
+        "x-effect": {
+          "label": "seen",
+          "put": {
+            "seen": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      },
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "input": [],
+    "working": [],
+    "errors": [
+      "  - root: must contain at least 1 valid item"
+    ]
+  },
+  {
+    "id": "contains-empty-34",
+    "schema": {
+      "type": "array",
+      "contains": {
+        "type": "object",
+        "x-effect": {
+          "label": "seen",
+          "put": {
+            "seen": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      },
+      "maxContains": 0
+    },
+    "input": [],
+    "working": [],
+    "errors": [
+      "  - root: must contain at least 1 valid item"
+    ]
+  },
+  {
+    "id": "contains-first-35",
+    "schema": {
+      "type": "array",
+      "contains": {
+        "type": "object",
+        "x-effect": {
+          "label": "seen",
+          "put": {
+            "seen": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      }
+    },
+    "input": [
+      {},
+      {}
+    ],
+    "working": [
+      {
+        "seen": true
+      },
+      {}
+    ],
+    "errors": []
+  },
+  {
+    "id": "contains-first-36",
+    "schema": {
+      "type": "array",
+      "contains": {
+        "type": "object",
+        "x-effect": {
+          "label": "seen",
+          "put": {
+            "seen": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      },
+      "minContains": 0
+    },
+    "input": [
+      {},
+      {}
+    ],
+    "working": [
+      {
+        "seen": true
+      },
+      {
+        "seen": true
+      }
+    ],
+    "errors": []
+  },
+  {
+    "id": "contains-first-37",
+    "schema": {
+      "type": "array",
+      "contains": {
+        "type": "object",
+        "x-effect": {
+          "label": "seen",
+          "put": {
+            "seen": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      },
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "input": [
+      {},
+      {}
+    ],
+    "working": [
+      {
+        "seen": true
+      },
+      {
+        "seen": true
+      }
+    ],
+    "errors": [
+      "  - root: must contain at most 1 valid item"
+    ]
+  },
+  {
+    "id": "contains-first-38",
+    "schema": {
+      "type": "array",
+      "contains": {
+        "type": "object",
+        "x-effect": {
+          "label": "seen",
+          "put": {
+            "seen": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      },
+      "maxContains": 0
+    },
+    "input": [
+      {},
+      {}
+    ],
+    "working": [
+      {
+        "seen": true
+      },
+      {
+        "seen": true
+      }
+    ],
+    "errors": [
+      "  - root: must contain at most 0 valid items"
+    ]
+  },
+  {
+    "id": "contains-later-39",
+    "schema": {
+      "type": "array",
+      "contains": {
+        "type": "object",
+        "x-effect": {
+          "label": "seen",
+          "put": {
+            "seen": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      }
+    },
+    "input": [
+      0,
+      {}
+    ],
+    "working": [
+      0,
+      {
+        "seen": true
+      }
+    ],
+    "errors": []
+  },
+  {
+    "id": "contains-later-40",
+    "schema": {
+      "type": "array",
+      "contains": {
+        "type": "object",
+        "x-effect": {
+          "label": "seen",
+          "put": {
+            "seen": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      },
+      "minContains": 0
+    },
+    "input": [
+      0,
+      {}
+    ],
+    "working": [
+      0,
+      {
+        "seen": true
+      }
+    ],
+    "errors": []
+  },
+  {
+    "id": "contains-later-41",
+    "schema": {
+      "type": "array",
+      "contains": {
+        "type": "object",
+        "x-effect": {
+          "label": "seen",
+          "put": {
+            "seen": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      },
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "input": [
+      0,
+      {}
+    ],
+    "working": [
+      0,
+      {
+        "seen": true
+      }
+    ],
+    "errors": []
+  },
+  {
+    "id": "contains-later-42",
+    "schema": {
+      "type": "array",
+      "contains": {
+        "type": "object",
+        "x-effect": {
+          "label": "seen",
+          "put": {
+            "seen": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      },
+      "maxContains": 0
+    },
+    "input": [
+      0,
+      {}
+    ],
+    "working": [
+      0,
+      {
+        "seen": true
+      }
+    ],
+    "errors": [
+      "  - root: must contain at most 0 valid items"
+    ]
+  },
+  {
+    "id": "contains-none-43",
+    "schema": {
+      "type": "array",
+      "contains": {
+        "type": "object",
+        "x-effect": {
+          "label": "seen",
+          "put": {
+            "seen": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      }
+    },
+    "input": [
+      0,
+      1
+    ],
+    "working": [
+      0,
+      1
+    ],
+    "errors": [
+      "  - root: must contain at least 1 valid item"
+    ]
+  },
+  {
+    "id": "contains-none-44",
+    "schema": {
+      "type": "array",
+      "contains": {
+        "type": "object",
+        "x-effect": {
+          "label": "seen",
+          "put": {
+            "seen": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      },
+      "minContains": 0
+    },
+    "input": [
+      0,
+      1
+    ],
+    "working": [
+      0,
+      1
+    ],
+    "errors": []
+  },
+  {
+    "id": "contains-none-45",
+    "schema": {
+      "type": "array",
+      "contains": {
+        "type": "object",
+        "x-effect": {
+          "label": "seen",
+          "put": {
+            "seen": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      },
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "input": [
+      0,
+      1
+    ],
+    "working": [
+      0,
+      1
+    ],
+    "errors": [
+      "  - root: must contain at least 1 valid item"
+    ]
+  },
+  {
+    "id": "contains-none-46",
+    "schema": {
+      "type": "array",
+      "contains": {
+        "type": "object",
+        "x-effect": {
+          "label": "seen",
+          "put": {
+            "seen": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      },
+      "maxContains": 0
+    },
+    "input": [
+      0,
+      1
+    ],
+    "working": [
+      0,
+      1
+    ],
+    "errors": [
+      "  - root: must contain at least 1 valid item"
+    ]
+  },
+  {
+    "id": "contains-rejection-edits",
+    "schema": {
+      "contains": {
+        "type": "object",
+        "x-effect": {
+          "label": "seen",
+          "put": {
+            "seen": true
+          },
+          "remove": [],
+          "reject": true,
+          "toggle": false
+        }
+      }
+    },
+    "input": [
+      {},
+      {}
+    ],
+    "working": [
+      {
+        "seen": true
+      },
+      {
+        "seen": true
+      }
+    ],
+    "errors": [
+      "  - root: must contain at least 1 valid item"
+    ]
+  },
+  {
+    "id": "minContains-without-contains",
+    "schema": {
+      "minContains": 0,
+      "allOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "tail",
+            "put": {
+              "tail": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "tail": true
+    },
+    "errors": []
+  },
+  {
+    "id": "maxContains-without-contains",
+    "schema": {
+      "maxContains": 0,
+      "allOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "tail",
+            "put": {
+              "tail": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "tail": true
+    },
+    "errors": []
+  },
+  {
+    "id": "dependencies-add",
+    "schema": {
+      "dependencies": {
+        "a": {
+          "type": "object",
+          "x-effect": {
+            "label": "first",
+            "put": {
+              "b": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        "b": {
+          "type": "object",
+          "x-effect": {
+            "label": "second",
+            "put": {
+              "second": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      },
+      "minProperties": 2
+    },
+    "input": {
+      "a": true
+    },
+    "working": {
+      "a": true,
+      "b": true,
+      "second": true
+    },
+    "errors": []
+  },
+  {
+    "id": "dependencies-remove",
+    "schema": {
+      "dependencies": {
+        "a": {
+          "type": "object",
+          "x-effect": {
+            "label": "first",
+            "put": {},
+            "remove": [
+              "b"
+            ],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        "b": {
+          "type": "object",
+          "x-effect": {
+            "label": "second",
+            "put": {
+              "second": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      },
+      "minProperties": 2
+    },
+    "input": {
+      "a": true,
+      "b": true
+    },
+    "working": {
+      "a": true
+    },
+    "errors": [
+      "  - root: must not have fewer than 2 properties"
+    ]
+  },
+  {
+    "id": "dependencies-reject",
+    "schema": {
+      "dependencies": {
+        "a": {
+          "type": "object",
+          "x-effect": {
+            "label": "first",
+            "put": {},
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        },
+        "b": {
+          "type": "object",
+          "x-effect": {
+            "label": "second",
+            "put": {
+              "second": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      },
+      "minProperties": 2
+    },
+    "input": {
+      "a": true
+    },
+    "working": {
+      "a": true
+    },
+    "errors": [
+      "  - root: reject first",
+      "  - root: must not have fewer than 2 properties"
+    ]
+  },
+  {
+    "id": "dependentSchemas-add",
+    "schema": {
+      "dependentSchemas": {
+        "a": {
+          "type": "object",
+          "x-effect": {
+            "label": "first",
+            "put": {
+              "b": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        "b": {
+          "type": "object",
+          "x-effect": {
+            "label": "second",
+            "put": {
+              "second": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      },
+      "minProperties": 2
+    },
+    "input": {
+      "a": true
+    },
+    "working": {
+      "a": true,
+      "b": true,
+      "second": true
+    },
+    "errors": []
+  },
+  {
+    "id": "dependentSchemas-remove",
+    "schema": {
+      "dependentSchemas": {
+        "a": {
+          "type": "object",
+          "x-effect": {
+            "label": "first",
+            "put": {},
+            "remove": [
+              "b"
+            ],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        "b": {
+          "type": "object",
+          "x-effect": {
+            "label": "second",
+            "put": {
+              "second": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      },
+      "minProperties": 2
+    },
+    "input": {
+      "a": true,
+      "b": true
+    },
+    "working": {
+      "a": true
+    },
+    "errors": [
+      "  - root: must not have fewer than 2 properties"
+    ]
+  },
+  {
+    "id": "dependentSchemas-reject",
+    "schema": {
+      "dependentSchemas": {
+        "a": {
+          "type": "object",
+          "x-effect": {
+            "label": "first",
+            "put": {},
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        },
+        "b": {
+          "type": "object",
+          "x-effect": {
+            "label": "second",
+            "put": {
+              "second": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      },
+      "minProperties": 2
+    },
+    "input": {
+      "a": true
+    },
+    "working": {
+      "a": true
+    },
+    "errors": [
+      "  - root: reject first",
+      "  - root: must not have fewer than 2 properties"
+    ]
+  },
+  {
+    "id": "dependencies-required",
+    "schema": {
+      "dependencies": {
+        "a": [
+          "b",
+          "c"
+        ]
+      },
+      "allOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "tail",
+            "put": {
+              "tail": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": {
+      "a": true
+    },
+    "working": {
+      "a": true,
+      "tail": true
+    },
+    "errors": [
+      "  - root: must have properties b, c when property a is present"
+    ]
+  },
+  {
+    "id": "dependentRequired-required",
+    "schema": {
+      "dependentRequired": {
+        "a": [
+          "b",
+          "c"
+        ]
+      },
+      "allOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "tail",
+            "put": {
+              "tail": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": {
+      "a": true
+    },
+    "working": {
+      "a": true,
+      "tail": true
+    },
+    "errors": [
+      "  - root: must have properties b, c when property a is present"
+    ]
+  },
+  {
+    "id": "dependentRequired-after-edit",
+    "schema": {
+      "dependencies": {
+        "a": {
+          "x-effect": {
+            "label": "first",
+            "put": {
+              "b": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      },
+      "dependentRequired": {
+        "a": [
+          "b"
+        ]
+      },
+      "allOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "tail",
+            "put": {
+              "tail": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": {
+      "a": true
+    },
+    "working": {
+      "a": true,
+      "b": true,
+      "tail": true
+    },
+    "errors": []
+  },
+  {
+    "id": "properties-False",
+    "schema": {
+      "properties": {
+        "a": {
+          "type": "object",
+          "x-effect": {
+            "label": "first",
+            "put": {
+              "first": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        "b": {
+          "type": "object",
+          "x-effect": {
+            "label": "second",
+            "put": {
+              "second": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      }
+    },
+    "input": {
+      "a": {},
+      "b": {}
+    },
+    "working": {
+      "a": {
+        "first": true
+      },
+      "b": {
+        "second": true
+      }
+    },
+    "errors": []
+  },
+  {
+    "id": "properties-True",
+    "schema": {
+      "properties": {
+        "a": {
+          "type": "object",
+          "x-effect": {
+            "label": "first",
+            "put": {
+              "first": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        },
+        "b": {
+          "type": "object",
+          "x-effect": {
+            "label": "second",
+            "put": {
+              "second": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      }
+    },
+    "input": {
+      "a": {},
+      "b": {}
+    },
+    "working": {
+      "a": {
+        "first": true
+      },
+      "b": {
+        "second": true
+      }
+    },
+    "errors": [
+      "  - a: reject first"
+    ]
+  },
+  {
+    "id": "patternProperties-False",
+    "schema": {
+      "patternProperties": {
+        "^a": {
+          "type": "object",
+          "x-effect": {
+            "label": "first",
+            "put": {
+              "first": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        "^b": {
+          "type": "object",
+          "x-effect": {
+            "label": "second",
+            "put": {
+              "second": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      }
+    },
+    "input": {
+      "a": {},
+      "b": {}
+    },
+    "working": {
+      "a": {
+        "first": true
+      },
+      "b": {
+        "second": true
+      }
+    },
+    "errors": []
+  },
+  {
+    "id": "patternProperties-True",
+    "schema": {
+      "patternProperties": {
+        "^a": {
+          "type": "object",
+          "x-effect": {
+            "label": "first",
+            "put": {
+              "first": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        },
+        "^b": {
+          "type": "object",
+          "x-effect": {
+            "label": "second",
+            "put": {
+              "second": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      }
+    },
+    "input": {
+      "a": {},
+      "b": {}
+    },
+    "working": {
+      "a": {
+        "first": true
+      },
+      "b": {
+        "second": true
+      }
+    },
+    "errors": [
+      "  - a: reject first"
+    ]
+  },
+  {
+    "id": "properties-absent",
+    "schema": {
+      "properties": {
+        "a": {
+          "type": "object",
+          "x-effect": {
+            "label": "first",
+            "put": {
+              "first": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        "absent": {
+          "type": "object",
+          "x-effect": {
+            "label": "absent",
+            "put": {
+              "absent": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      }
+    },
+    "input": {
+      "a": {}
+    },
+    "working": {
+      "a": {
+        "first": true
+      }
+    },
+    "errors": []
+  },
+  {
+    "id": "properties-numeric-order",
+    "schema": {
+      "properties": {
+        "2": {
+          "type": "object",
+          "x-effect": {
+            "label": "two",
+            "put": {
+              "two": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        "10": {
+          "type": "object",
+          "x-effect": {
+            "label": "ten",
+            "put": {
+              "ten": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        "z": {
+          "type": "object",
+          "x-effect": {
+            "label": "last",
+            "put": {
+              "last": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      }
+    },
+    "input": {
+      "2": {},
+      "10": {},
+      "z": {}
+    },
+    "working": {
+      "2": {
+        "two": true
+      },
+      "10": {
+        "ten": true
+      },
+      "z": {
+        "last": true
+      }
+    },
+    "errors": []
+  },
+  {
+    "id": "additionalProperties-False",
+    "schema": {
+      "properties": {
+        "known": {}
+      },
+      "additionalProperties": {
+        "type": "object",
+        "x-effect": {
+          "label": "extra",
+          "put": {
+            "extra": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      }
+    },
+    "input": {
+      "known": {},
+      "a": {},
+      "b": {}
+    },
+    "working": {
+      "known": {},
+      "a": {
+        "extra": true
+      },
+      "b": {
+        "extra": true
+      }
+    },
+    "errors": []
+  },
+  {
+    "id": "additionalProperties-True",
+    "schema": {
+      "properties": {
+        "known": {}
+      },
+      "additionalProperties": {
+        "type": "object",
+        "x-effect": {
+          "label": "extra",
+          "put": {
+            "extra": true
+          },
+          "remove": [],
+          "reject": true,
+          "toggle": false
+        }
+      }
+    },
+    "input": {
+      "known": {},
+      "a": {},
+      "b": {}
+    },
+    "working": {
+      "known": {},
+      "a": {
+        "extra": true
+      },
+      "b": {
+        "extra": true
+      }
+    },
+    "errors": [
+      "  - root: must not have additional properties"
+    ]
+  },
+  {
+    "id": "unevaluatedProperties-False",
+    "schema": {
+      "properties": {
+        "known": {}
+      },
+      "unevaluatedProperties": {
+        "type": "object",
+        "x-effect": {
+          "label": "extra",
+          "put": {
+            "extra": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      }
+    },
+    "input": {
+      "known": {},
+      "a": {},
+      "b": {}
+    },
+    "working": {
+      "known": {},
+      "a": {
+        "extra": true
+      },
+      "b": {
+        "extra": true
+      }
+    },
+    "errors": []
+  },
+  {
+    "id": "unevaluatedProperties-True",
+    "schema": {
+      "properties": {
+        "known": {}
+      },
+      "unevaluatedProperties": {
+        "type": "object",
+        "x-effect": {
+          "label": "extra",
+          "put": {
+            "extra": true
+          },
+          "remove": [],
+          "reject": true,
+          "toggle": false
+        }
+      }
+    },
+    "input": {
+      "known": {},
+      "a": {},
+      "b": {}
+    },
+    "working": {
+      "known": {},
+      "a": {
+        "extra": true
+      },
+      "b": {
+        "extra": true
+      }
+    },
+    "errors": [
+      "  - root: must not have unevaluated properties"
+    ]
+  },
+  {
+    "id": "additionalProperties-pattern-neighbor",
+    "schema": {
+      "properties": {
+        "known": {}
+      },
+      "patternProperties": {
+        "^p": {
+          "type": "object",
+          "x-effect": {
+            "label": "pattern",
+            "put": {
+              "pattern": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      },
+      "additionalProperties": {
+        "type": "object",
+        "x-effect": {
+          "label": "extra",
+          "put": {
+            "extra": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      }
+    },
+    "input": {
+      "known": {},
+      "p": {},
+      "a": {}
+    },
+    "working": {
+      "known": {},
+      "p": {
+        "pattern": true
+      },
+      "a": {
+        "extra": true
+      }
+    },
+    "errors": []
+  },
+  {
+    "id": "propertyNames-success",
+    "schema": {
+      "propertyNames": {
+        "x-effect": {
+          "label": "name",
+          "put": {},
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      }
+    },
+    "input": {
+      "a": {},
+      "b": {}
+    },
+    "working": {
+      "a": {},
+      "b": {}
+    },
+    "errors": []
+  },
+  {
+    "id": "propertyNames-failure",
+    "schema": {
+      "propertyNames": {
+        "x-effect": {
+          "label": "name",
+          "put": {},
+          "remove": [],
+          "reject": true,
+          "toggle": false
+        }
+      },
+      "allOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "tail",
+            "put": {
+              "tail": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": {
+      "a": {},
+      "b": {}
+    },
+    "working": {
+      "a": {},
+      "b": {},
+      "tail": true
+    },
+    "errors": [
+      "  - root: property names a, b are invalid"
+    ]
+  },
+  {
+    "id": "items-False",
+    "schema": {
+      "items": {
+        "type": "object",
+        "x-effect": {
+          "label": "item",
+          "put": {
+            "item": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      }
+    },
+    "input": [
+      {},
+      {}
+    ],
+    "working": [
+      {
+        "item": true
+      },
+      {
+        "item": true
+      }
+    ],
+    "errors": []
+  },
+  {
+    "id": "items-True",
+    "schema": {
+      "items": {
+        "type": "object",
+        "x-effect": {
+          "label": "item",
+          "put": {
+            "item": true
+          },
+          "remove": [],
+          "reject": true,
+          "toggle": false
+        }
+      }
+    },
+    "input": [
+      {},
+      {}
+    ],
+    "working": [
+      {
+        "item": true
+      },
+      {
+        "item": true
+      }
+    ],
+    "errors": [
+      "  - 0: reject item",
+      "  - 1: reject item"
+    ]
+  },
+  {
+    "id": "prefixItems-False",
+    "schema": {
+      "prefixItems": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "first",
+            "put": {
+              "first": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "second",
+            "put": {
+              "second": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": [
+      {},
+      {}
+    ],
+    "working": [
+      {
+        "first": true
+      },
+      {
+        "second": true
+      }
+    ],
+    "errors": []
+  },
+  {
+    "id": "prefixItems-True",
+    "schema": {
+      "prefixItems": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "first",
+            "put": {
+              "first": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "second",
+            "put": {
+              "second": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": [
+      {},
+      {}
+    ],
+    "working": [
+      {
+        "first": true
+      },
+      {
+        "second": true
+      }
+    ],
+    "errors": [
+      "  - 0: reject first"
+    ]
+  },
+  {
+    "id": "additionalItems-False",
+    "schema": {
+      "additionalItems": {
+        "type": "object",
+        "x-effect": {
+          "label": "item",
+          "put": {
+            "item": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      },
+      "items": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "prefix",
+            "put": {
+              "prefix": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": [
+      {},
+      {}
+    ],
+    "working": [
+      {
+        "prefix": true
+      },
+      {
+        "item": true
+      }
+    ],
+    "errors": []
+  },
+  {
+    "id": "additionalItems-True",
+    "schema": {
+      "additionalItems": {
+        "type": "object",
+        "x-effect": {
+          "label": "item",
+          "put": {
+            "item": true
+          },
+          "remove": [],
+          "reject": true,
+          "toggle": false
+        }
+      },
+      "items": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "prefix",
+            "put": {
+              "prefix": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": [
+      {},
+      {}
+    ],
+    "working": [
+      {
+        "prefix": true
+      },
+      {
+        "item": true
+      }
+    ],
+    "errors": [
+      "  - 1: reject item"
+    ]
+  },
+  {
+    "id": "unevaluatedItems-False",
+    "schema": {
+      "unevaluatedItems": {
+        "type": "object",
+        "x-effect": {
+          "label": "item",
+          "put": {
+            "item": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      },
+      "prefixItems": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "prefix",
+            "put": {
+              "prefix": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": [
+      {},
+      {}
+    ],
+    "working": [
+      {
+        "prefix": true
+      },
+      {
+        "item": true
+      }
+    ],
+    "errors": []
+  },
+  {
+    "id": "unevaluatedItems-True",
+    "schema": {
+      "unevaluatedItems": {
+        "type": "object",
+        "x-effect": {
+          "label": "item",
+          "put": {
+            "item": true
+          },
+          "remove": [],
+          "reject": true,
+          "toggle": false
+        }
+      },
+      "prefixItems": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "prefix",
+            "put": {
+              "prefix": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": [
+      {},
+      {}
+    ],
+    "working": [
+      {
+        "prefix": true
+      },
+      {
+        "item": true
+      }
+    ],
+    "errors": [
+      "  - root: must not have unevaluated items"
+    ]
+  },
+  {
+    "id": "tuple-items-short",
+    "schema": {
+      "items": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "first",
+            "put": {
+              "first": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "second",
+            "put": {
+              "second": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": [
+      {}
+    ],
+    "working": [
+      {
+        "first": true
+      }
+    ],
+    "errors": []
+  },
+  {
+    "id": "tuple-items-failure",
+    "schema": {
+      "items": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "first",
+            "put": {
+              "first": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        },
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "second",
+            "put": {
+              "second": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": [
+      {},
+      {}
+    ],
+    "working": [
+      {
+        "first": true
+      },
+      {
+        "second": true
+      }
+    ],
+    "errors": [
+      "  - 0: reject first"
+    ]
+  },
+  {
+    "id": "homogeneous-items-after-prefix",
+    "schema": {
+      "items": {
+        "type": "object",
+        "x-effect": {
+          "label": "tail",
+          "put": {
+            "tail": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      },
+      "prefixItems": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "head",
+            "put": {
+              "head": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": [
+      {},
+      {}
+    ],
+    "working": [
+      {
+        "head": true
+      },
+      {
+        "tail": true
+      }
+    ],
+    "errors": []
+  },
+  {
+    "id": "additionalItems-inert",
+    "schema": {
+      "additionalItems": {
+        "type": "object",
+        "x-effect": {
+          "label": "ignored",
+          "put": {
+            "ignored": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      },
+      "items": {}
+    },
+    "input": [
+      {},
+      {}
+    ],
+    "working": [
+      {},
+      {}
+    ],
+    "errors": []
+  },
+  {
+    "id": "unevaluatedProperties-composed",
+    "schema": {
+      "anyOf": [
+        {
+          "properties": {
+            "a": {
+              "type": "object",
+              "x-effect": {
+                "label": "a",
+                "put": {
+                  "a": true
+                },
+                "remove": [],
+                "reject": false,
+                "toggle": false
+              }
+            }
+          }
+        },
+        {
+          "properties": {
+            "b": {
+              "type": "object",
+              "x-effect": {
+                "label": "b",
+                "put": {
+                  "b": true
+                },
+                "remove": [],
+                "reject": false,
+                "toggle": false
+              }
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": {
+        "type": "object",
+        "x-effect": {
+          "label": "extra",
+          "put": {
+            "extra": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      }
+    },
+    "input": {
+      "a": {},
+      "b": {},
+      "c": {}
+    },
+    "working": {
+      "a": {
+        "a": true
+      },
+      "b": {
+        "b": true
+      },
+      "c": {
+        "extra": true
+      }
+    },
+    "errors": []
+  },
+  {
+    "id": "unevaluatedItems-composed",
+    "schema": {
+      "anyOf": [
+        {
+          "prefixItems": [
+            {
+              "type": "object",
+              "x-effect": {
+                "label": "a",
+                "put": {
+                  "a": true
+                },
+                "remove": [],
+                "reject": false,
+                "toggle": false
+              }
+            }
+          ]
+        },
+        {
+          "prefixItems": [
+            {},
+            {
+              "type": "object",
+              "x-effect": {
+                "label": "b",
+                "put": {
+                  "b": true
+                },
+                "remove": [],
+                "reject": false,
+                "toggle": false
+              }
+            }
+          ]
+        }
+      ],
+      "unevaluatedItems": {
+        "type": "object",
+        "x-effect": {
+          "label": "extra",
+          "put": {
+            "extra": true
+          },
+          "remove": [],
+          "reject": false,
+          "toggle": false
+        }
+      }
+    },
+    "input": [
+      {},
+      {},
+      {}
+    ],
+    "working": [
+      {
+        "a": true
+      },
+      {
+        "b": true
+      },
+      {
+        "extra": true
+      }
+    ],
+    "errors": []
+  },
+  {
+    "id": "type-invalid",
+    "schema": {
+      "allOf": [
+        {
+          "x-effect": {
+            "label": "producer",
+            "put": {
+              "v": 7
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "properties": {
+            "v": {
+              "type": "string",
+              "x-effect": {
+                "label": "scalar",
+                "put": {},
+                "remove": [],
+                "reject": false,
+                "toggle": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "v": 7
+    },
+    "errors": [
+      "  - v: must be string"
+    ]
+  },
+  {
+    "id": "type-valid",
+    "schema": {
+      "allOf": [
+        {
+          "x-effect": {
+            "label": "producer",
+            "put": {
+              "v": 7
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "properties": {
+            "v": {
+              "x-effect": {
+                "label": "scalar",
+                "put": {},
+                "remove": [],
+                "reject": false,
+                "toggle": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "v": 7
+    },
+    "errors": []
+  },
+  {
+    "id": "maxLength-invalid",
+    "schema": {
+      "allOf": [
+        {
+          "x-effect": {
+            "label": "producer",
+            "put": {
+              "v": "xx"
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "properties": {
+            "v": {
+              "maxLength": 1,
+              "x-effect": {
+                "label": "scalar",
+                "put": {},
+                "remove": [],
+                "reject": false,
+                "toggle": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "v": "xx"
+    },
+    "errors": [
+      "  - v: must not have more than 1 characters"
+    ]
+  },
+  {
+    "id": "maxLength-valid",
+    "schema": {
+      "allOf": [
+        {
+          "x-effect": {
+            "label": "producer",
+            "put": {
+              "v": "xx"
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "properties": {
+            "v": {
+              "x-effect": {
+                "label": "scalar",
+                "put": {},
+                "remove": [],
+                "reject": false,
+                "toggle": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "v": "xx"
+    },
+    "errors": []
+  },
+  {
+    "id": "minLength-invalid",
+    "schema": {
+      "allOf": [
+        {
+          "x-effect": {
+            "label": "producer",
+            "put": {
+              "v": "x"
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "properties": {
+            "v": {
+              "minLength": 2,
+              "x-effect": {
+                "label": "scalar",
+                "put": {},
+                "remove": [],
+                "reject": false,
+                "toggle": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "v": "x"
+    },
+    "errors": [
+      "  - v: must not have fewer than 2 characters"
+    ]
+  },
+  {
+    "id": "minLength-valid",
+    "schema": {
+      "allOf": [
+        {
+          "x-effect": {
+            "label": "producer",
+            "put": {
+              "v": "x"
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "properties": {
+            "v": {
+              "x-effect": {
+                "label": "scalar",
+                "put": {},
+                "remove": [],
+                "reject": false,
+                "toggle": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "v": "x"
+    },
+    "errors": []
+  },
+  {
+    "id": "format-invalid",
+    "schema": {
+      "allOf": [
+        {
+          "x-effect": {
+            "label": "producer",
+            "put": {
+              "v": "bad"
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "properties": {
+            "v": {
+              "format": "email",
+              "x-effect": {
+                "label": "scalar",
+                "put": {},
+                "remove": [],
+                "reject": false,
+                "toggle": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "v": "bad"
+    },
+    "errors": [
+      "  - v: must match format \"email\""
+    ]
+  },
+  {
+    "id": "format-valid",
+    "schema": {
+      "allOf": [
+        {
+          "x-effect": {
+            "label": "producer",
+            "put": {
+              "v": "bad"
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "properties": {
+            "v": {
+              "x-effect": {
+                "label": "scalar",
+                "put": {},
+                "remove": [],
+                "reject": false,
+                "toggle": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "v": "bad"
+    },
+    "errors": []
+  },
+  {
+    "id": "pattern-invalid",
+    "schema": {
+      "allOf": [
+        {
+          "x-effect": {
+            "label": "producer",
+            "put": {
+              "v": "b"
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "properties": {
+            "v": {
+              "pattern": "^a$",
+              "x-effect": {
+                "label": "scalar",
+                "put": {},
+                "remove": [],
+                "reject": false,
+                "toggle": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "v": "b"
+    },
+    "errors": [
+      "  - v: must match pattern \"^a$\""
+    ]
+  },
+  {
+    "id": "pattern-valid",
+    "schema": {
+      "allOf": [
+        {
+          "x-effect": {
+            "label": "producer",
+            "put": {
+              "v": "b"
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "properties": {
+            "v": {
+              "x-effect": {
+                "label": "scalar",
+                "put": {},
+                "remove": [],
+                "reject": false,
+                "toggle": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "v": "b"
+    },
+    "errors": []
+  },
+  {
+    "id": "exclusiveMaximum-invalid",
+    "schema": {
+      "allOf": [
+        {
+          "x-effect": {
+            "label": "producer",
+            "put": {
+              "v": 2
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "properties": {
+            "v": {
+              "exclusiveMaximum": 2,
+              "x-effect": {
+                "label": "scalar",
+                "put": {},
+                "remove": [],
+                "reject": false,
+                "toggle": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "v": 2
+    },
+    "errors": [
+      "  - v: must be < 2"
+    ]
+  },
+  {
+    "id": "exclusiveMaximum-valid",
+    "schema": {
+      "allOf": [
+        {
+          "x-effect": {
+            "label": "producer",
+            "put": {
+              "v": 2
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "properties": {
+            "v": {
+              "x-effect": {
+                "label": "scalar",
+                "put": {},
+                "remove": [],
+                "reject": false,
+                "toggle": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "v": 2
+    },
+    "errors": []
+  },
+  {
+    "id": "exclusiveMinimum-invalid",
+    "schema": {
+      "allOf": [
+        {
+          "x-effect": {
+            "label": "producer",
+            "put": {
+              "v": 2
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "properties": {
+            "v": {
+              "exclusiveMinimum": 2,
+              "x-effect": {
+                "label": "scalar",
+                "put": {},
+                "remove": [],
+                "reject": false,
+                "toggle": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "v": 2
+    },
+    "errors": [
+      "  - v: must be > 2"
+    ]
+  },
+  {
+    "id": "exclusiveMinimum-valid",
+    "schema": {
+      "allOf": [
+        {
+          "x-effect": {
+            "label": "producer",
+            "put": {
+              "v": 2
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "properties": {
+            "v": {
+              "x-effect": {
+                "label": "scalar",
+                "put": {},
+                "remove": [],
+                "reject": false,
+                "toggle": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "v": 2
+    },
+    "errors": []
+  },
+  {
+    "id": "maximum-invalid",
+    "schema": {
+      "allOf": [
+        {
+          "x-effect": {
+            "label": "producer",
+            "put": {
+              "v": 2
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "properties": {
+            "v": {
+              "maximum": 1,
+              "x-effect": {
+                "label": "scalar",
+                "put": {},
+                "remove": [],
+                "reject": false,
+                "toggle": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "v": 2
+    },
+    "errors": [
+      "  - v: must be <= 1"
+    ]
+  },
+  {
+    "id": "maximum-valid",
+    "schema": {
+      "allOf": [
+        {
+          "x-effect": {
+            "label": "producer",
+            "put": {
+              "v": 2
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "properties": {
+            "v": {
+              "x-effect": {
+                "label": "scalar",
+                "put": {},
+                "remove": [],
+                "reject": false,
+                "toggle": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "v": 2
+    },
+    "errors": []
+  },
+  {
+    "id": "minimum-invalid",
+    "schema": {
+      "allOf": [
+        {
+          "x-effect": {
+            "label": "producer",
+            "put": {
+              "v": 1
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "properties": {
+            "v": {
+              "minimum": 2,
+              "x-effect": {
+                "label": "scalar",
+                "put": {},
+                "remove": [],
+                "reject": false,
+                "toggle": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "v": 1
+    },
+    "errors": [
+      "  - v: must be >= 2"
+    ]
+  },
+  {
+    "id": "minimum-valid",
+    "schema": {
+      "allOf": [
+        {
+          "x-effect": {
+            "label": "producer",
+            "put": {
+              "v": 1
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "properties": {
+            "v": {
+              "x-effect": {
+                "label": "scalar",
+                "put": {},
+                "remove": [],
+                "reject": false,
+                "toggle": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "v": 1
+    },
+    "errors": []
+  },
+  {
+    "id": "multipleOf-invalid",
+    "schema": {
+      "allOf": [
+        {
+          "x-effect": {
+            "label": "producer",
+            "put": {
+              "v": 3
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "properties": {
+            "v": {
+              "multipleOf": 2,
+              "x-effect": {
+                "label": "scalar",
+                "put": {},
+                "remove": [],
+                "reject": false,
+                "toggle": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "v": 3
+    },
+    "errors": [
+      "  - v: must be multiple of 2"
+    ]
+  },
+  {
+    "id": "multipleOf-valid",
+    "schema": {
+      "allOf": [
+        {
+          "x-effect": {
+            "label": "producer",
+            "put": {
+              "v": 3
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "properties": {
+            "v": {
+              "x-effect": {
+                "label": "scalar",
+                "put": {},
+                "remove": [],
+                "reject": false,
+                "toggle": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "v": 3
+    },
+    "errors": []
+  },
+  {
+    "id": "const-invalid",
+    "schema": {
+      "allOf": [
+        {
+          "x-effect": {
+            "label": "producer",
+            "put": {
+              "v": 2
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "properties": {
+            "v": {
+              "const": 1,
+              "x-effect": {
+                "label": "scalar",
+                "put": {},
+                "remove": [],
+                "reject": false,
+                "toggle": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "v": 2
+    },
+    "errors": [
+      "  - v: must be equal to constant"
+    ]
+  },
+  {
+    "id": "const-valid",
+    "schema": {
+      "allOf": [
+        {
+          "x-effect": {
+            "label": "producer",
+            "put": {
+              "v": 2
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "properties": {
+            "v": {
+              "x-effect": {
+                "label": "scalar",
+                "put": {},
+                "remove": [],
+                "reject": false,
+                "toggle": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "v": 2
+    },
+    "errors": []
+  },
+  {
+    "id": "enum-invalid",
+    "schema": {
+      "allOf": [
+        {
+          "x-effect": {
+            "label": "producer",
+            "put": {
+              "v": 2
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "properties": {
+            "v": {
+              "enum": [
+                1
+              ],
+              "x-effect": {
+                "label": "scalar",
+                "put": {},
+                "remove": [],
+                "reject": false,
+                "toggle": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "v": 2
+    },
+    "errors": [
+      "  - v: must be equal to one of the allowed values"
+    ]
+  },
+  {
+    "id": "enum-valid",
+    "schema": {
+      "allOf": [
+        {
+          "x-effect": {
+            "label": "producer",
+            "put": {
+              "v": 2
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        },
+        {
+          "properties": {
+            "v": {
+              "x-effect": {
+                "label": "scalar",
+                "put": {},
+                "remove": [],
+                "reject": false,
+                "toggle": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "v": 2
+    },
+    "errors": []
+  },
+  {
+    "id": "required-failure",
+    "schema": {
+      "required": [
+        "missing"
+      ],
+      "allOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "tail",
+            "put": {
+              "tail": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "tail": true
+    },
+    "errors": [
+      "  - missing: must have required properties missing"
+    ]
+  },
+  {
+    "id": "minProperties-failure",
+    "schema": {
+      "minProperties": 2,
+      "allOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "tail",
+            "put": {
+              "tail": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "tail": true
+    },
+    "errors": [
+      "  - root: must not have fewer than 2 properties"
+    ]
+  },
+  {
+    "id": "maxProperties-failure",
+    "schema": {
+      "maxProperties": 0,
+      "allOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "tail",
+            "put": {
+              "tail": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": {
+      "a": true
+    },
+    "working": {
+      "a": true,
+      "tail": true
+    },
+    "errors": [
+      "  - root: must not have more than 0 properties"
+    ]
+  },
+  {
+    "id": "minItems-failure",
+    "schema": {
+      "minItems": 2,
+      "allOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "tail",
+            "put": {
+              "tail": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": [],
+    "working": [],
+    "errors": [
+      "  - root: must not have fewer than 2 items",
+      "  - root: must be object"
+    ]
+  },
+  {
+    "id": "maxItems-failure",
+    "schema": {
+      "maxItems": 0,
+      "allOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "tail",
+            "put": {
+              "tail": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": [
+      1
+    ],
+    "working": [
+      1
+    ],
+    "errors": [
+      "  - root: must not have more than 0 items",
+      "  - root: must be object"
+    ]
+  },
+  {
+    "id": "uniqueItems-failure",
+    "schema": {
+      "uniqueItems": true,
+      "allOf": [
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "tail",
+            "put": {
+              "tail": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": [
+      1,
+      1
+    ],
+    "working": [
+      1,
+      1
+    ],
+    "errors": [
+      "  - root: must not have duplicate items",
+      "  - root: must be object"
+    ]
+  },
+  {
+    "id": "$ref-callback",
+    "schema": {
+      "$defs": {
+        "inner": {
+          "type": "object",
+          "x-effect": {
+            "label": "referenced",
+            "put": {
+              "referenced": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      },
+      "$ref": "#/$defs/inner"
+    },
+    "input": {},
+    "working": {
+      "referenced": true
+    },
+    "errors": []
+  },
+  {
+    "id": "$recursiveRef-callback",
+    "schema": {
+      "$defs": {
+        "inner": {
+          "type": "object",
+          "x-effect": {
+            "label": "referenced",
+            "put": {
+              "referenced": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      },
+      "$recursiveRef": "#/$defs/inner"
+    },
+    "input": {},
+    "working": {
+      "referenced": true
+    },
+    "errors": []
+  },
+  {
+    "id": "$dynamicRef-callback",
+    "schema": {
+      "$defs": {
+        "inner": {
+          "type": "object",
+          "x-effect": {
+            "label": "referenced",
+            "put": {
+              "referenced": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      },
+      "$dynamicRef": "#/$defs/inner"
+    },
+    "input": {},
+    "working": {
+      "referenced": true
+    },
+    "errors": []
+  },
+  {
+    "id": "callback-error-order",
+    "schema": {
+      "properties": {
+        "a": {
+          "type": "object",
+          "x-effect": {
+            "label": "first",
+            "put": {
+              "first": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        },
+        "b": {
+          "type": "object",
+          "x-effect": {
+            "label": "second",
+            "put": {
+              "second": true
+            },
+            "remove": [],
+            "reject": true,
+            "toggle": false
+          }
+        }
+      }
+    },
+    "input": {
+      "a": {},
+      "b": {}
+    },
+    "working": {
+      "a": {
+        "first": true
+      },
+      "b": {
+        "second": true
+      }
+    },
+    "errors": [
+      "  - a: reject first",
+      "  - b: reject second"
+    ]
+  },
+  {
+    "id": "boolean-True",
+    "schema": {
+      "allOf": [
+        true,
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "tail",
+            "put": {
+              "tail": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "tail": true
+    },
+    "errors": []
+  },
+  {
+    "id": "boolean-False",
+    "schema": {
+      "allOf": [
+        false,
+        {
+          "type": "object",
+          "x-effect": {
+            "label": "tail",
+            "put": {
+              "tail": true
+            },
+            "remove": [],
+            "reject": false,
+            "toggle": false
+          }
+        }
+      ]
+    },
+    "input": {},
+    "working": {
+      "tail": true
+    },
+    "errors": [
+      "  - root: schema is false"
+    ]
+  }
+]

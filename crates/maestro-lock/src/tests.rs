@@ -9,7 +9,7 @@ fn retry_returns_success_at_each_boundary() {
     for success_at in [1, 2, 9, 10] {
         let mut attempts = 0;
         let mut waits = Vec::new();
-        let result = retry_contended(
+        let result = retry_contended::<()>(
             || {
                 attempts += 1;
                 if attempts == success_at {
@@ -30,7 +30,7 @@ fn retry_returns_success_at_each_boundary() {
 fn retry_exhausts_on_tenth_contention() {
     let mut attempts = 0;
     let mut waits = Vec::new();
-    let result = retry_contended(
+    let result = retry_contended::<()>(
         || {
             attempts += 1;
             if attempts == 11 {
@@ -52,7 +52,7 @@ fn retry_preserves_non_contention_failure() {
         let mut attempts = 0;
         let mut waits = Vec::new();
         let payload = std::sync::Arc::new(17);
-        let result = retry_contended(
+        let result = retry_contended::<()>(
             || {
                 attempts += 1;
                 if attempts == failure_at {

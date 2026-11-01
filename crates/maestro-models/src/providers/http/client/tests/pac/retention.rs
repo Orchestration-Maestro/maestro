@@ -1,6 +1,7 @@
 //! Re-reading unchanged code preserves globals even without cache validators.
 
 use super::{Route, configured_fetch, request};
+use crate::tests::ftp_server;
 use crate::tests::loopback;
 use std::sync::{Arc, mpsc};
 
@@ -99,5 +100,41 @@ fn source_bytes_use_lossy_utf8_and_preserve_byte_order_marks() {
             .err()
             .unwrap();
         assert!(error.to_string().contains("VALUE �\u{feff}END"), "{error}");
+    });
+}
+
+#[test]
+fn pac_ftp_unchanged_source_keeps_compiled_globals() {
+    crate::tests::runtime::run(async {
+        let code = |marker: &str| {
+            format!("let n=0;function FindProxyForURL(){{return '{marker} '+(++n)}}")
+        };
+        let scenario = |modification, marker: &str| ftp_server::Scenario {
+            modification,
+            transfer: ftp_server::Transfer::body(code(marker).into_bytes()),
+            ..ftp_server::Scenario::default()
+        };
+        let peer = ftp_server::serve(vec![
+            scenario(ftp_server::Modification::Instant("20240101120000"), "FIRST"),
+            scenario(ftp_server::Modification::Instant("20240101120000"), "FIRST"),
+            scenario(
+                ftp_server::Modification::Instant("20240101120001"),
+                "SECOND",
+            ),
+        ])
+        .unwrap();
+        let source = url::Url::parse(&format!("pac+ftp://{}/script.pac", peer.address())).unwrap();
+        let fetch = configured_fetch(Route {
+            proxy: Some(Arc::new(move |_| Ok(Some(source.clone())))),
+            ..Route::default()
+        });
+        for expected in ["FIRST 1", "FIRST 2", "SECOND 1"] {
+            let error = fetch(request("http://unused.invalid/".into()))
+                .await
+                .err()
+                .unwrap();
+            assert!(error.to_string().contains(expected), "{error}");
+        }
+        peer.finish().unwrap();
     });
 }

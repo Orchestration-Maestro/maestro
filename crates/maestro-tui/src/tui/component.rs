@@ -58,7 +58,7 @@ impl FocusFlag {
     pub fn set(&self, focused: bool) {
         self.focused.set(focused);
         for target in &self.targets {
-            target.focus_flag().set(focused);
+            target.set_focused(focused);
         }
     }
 }
@@ -69,6 +69,11 @@ pub trait Focusable {
     /// component. A focused component is expected to emit [`CURSOR_MARKER`] when it
     /// renders.
     fn focus_flag(&self) -> &FocusFlag;
+
+    /// Assigns focus synchronously; components may also forward the change to their owner.
+    fn set_focused(&self, focused: bool) {
+        self.focus_flag().set(focused);
+    }
 }
 
 /// A unit of terminal output laid out for a viewport width.

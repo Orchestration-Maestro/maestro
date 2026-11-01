@@ -22,7 +22,8 @@ use {
 };
 
 /// Capture current reporting policy and return owned request work without spawning it.
-/// The request ends at response headers; its outcome is discarded.
+/// The request ends at response headers; its outcome is discarded. `offline` is the
+/// caller's startup selection, or `MAESTRO_OFFLINE` when absent.
 #[cfg(not(target_arch = "wasm32"))]
 #[must_use]
 pub fn report_install_telemetry(
@@ -30,8 +31,10 @@ pub fn report_install_telemetry(
     settings_manager: &SettingsManager,
     service_origin: &str,
     fetch: Option<Fetch>,
+    offline: Option<bool>,
 ) -> BoxFuture<()> {
-    if std::env::var("MAESTRO_OFFLINE").is_ok_and(|v| !v.is_empty())
+    if offline
+        .unwrap_or_else(|| super::flag_is_set(std::env::var("MAESTRO_OFFLINE").ok().as_deref()))
         || !is_install_telemetry_enabled(
             settings_manager,
             std::env::var("MAESTRO_TELEMETRY").ok().as_deref(),

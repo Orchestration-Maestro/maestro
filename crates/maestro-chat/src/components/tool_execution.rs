@@ -2,19 +2,21 @@
 use maestro_app::{
     DiagnosticErrorInfo, ToolRenderContext, ToolRenderEnvironment, ToolRenderPhase,
     ToolRenderResultLike, ToolRenderResultOptions, ToolRenderShell, ToolRendererBinding,
-    ToolRendererState, UserBlock, convert_to_png, get_text_output, pretty_json,
+    ToolRendererState, UserBlock, expand_hint, get_text_output, pretty_json,
 };
 use maestro_theme::{Theme, ThemeBg, ThemeColor};
-use maestro_tui::{
-    Box as Frame, Component, Container, Image, ImageOptions, ImageProtocol, ImageTheme, Spacer,
-    Text, tui::ComponentHandle,
-};
+use maestro_tui::{Box as Frame, Component, Container, Spacer, Text, tui::ComponentHandle};
 use serde_json::Value;
 use std::{
     cell::{Cell, RefCell},
     collections::{HashMap, HashSet},
     rc::Rc,
 };
+
+mod images;
+
+/// Lines a collapsed fallback result shows before its expand hint.
+const FALLBACK_PREVIEW_LINES: usize = 10;
 
 /// Initial image display policies.
 pub struct ToolExecutionOptions {
@@ -89,6 +91,8 @@ struct Row {
     container: Container,
     /// Chosen inner shell, even after removal from outer children.
     shell: Shell,
+    /// The blank row added before the shell, which an empty self-rendered shell omits.
+    spacer: ComponentHandle,
     /// Stable constructor inputs; mutable arguments live separately.
     params: ToolExecutionParams,
     /// Raw arguments retained without read-only value copies.
@@ -143,12 +147,14 @@ impl ToolExecutionComponent {
         } else {
             Shell::Default(Rc::new(Frame::new(1, 1, None)))
         };
+        let spacer: ComponentHandle = Rc::new(Spacer::new(1));
         let row = Rc::new_cyclic(|weak: &std::rc::Weak<Row>| {
             let weak = weak.clone();
             let invalidate: Rc<dyn Fn()> = Rc::new(move || Row::request(&weak));
             Row {
                 container: Container::new(),
                 shell,
+                spacer: Rc::clone(&spacer),
                 args: RefCell::new(args),
                 result: RefCell::default(),
                 phase: Cell::new(ToolRenderPhase {
@@ -169,7 +175,7 @@ impl ToolExecutionComponent {
                 params,
             }
         });
-        row.container.add_child(Rc::new(Spacer::new(1)));
+        row.container.add_child(spacer);
         let child: ComponentHandle = match &row.shell {
             Shell::Default(c) => c.clone(),
             Shell::SelfRendered(c) => c.clone(),
@@ -371,16 +377,34 @@ impl Row {
         }
         Ok(())
     }
-    /// Builds the text fallback only when a result callback is absent or failed.
+    /// Builds the text fallback only when a result callback is absent or failed: every line
+    /// when expanded, otherwise the first lines and an expand hint counting the rest.
     fn result_fallback(&self) -> Result<Option<ComponentHandle>, DiagnosticErrorInfo> {
         let text = self.text()?;
         if text.is_empty() {
             return Ok(None);
         }
-        let text = self
-            .theme()?
-            .fg(&ThemeColor::ToolOutput, &text)
-            .map_err(|e| DiagnosticErrorInfo::error(e.to_string()))?;
+        let theme = self.theme()?;
+        let lines: Vec<&str> = text.split('\n').collect();
+        let shown = if self.expanded.get() {
+            lines.len()
+        } else {
+            lines.len().min(FALLBACK_PREVIEW_LINES)
+        };
+        let mut text = lines[..shown]
+            .iter()
+            .map(|line| theme.fg(&ThemeColor::ToolOutput, line))
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|e| DiagnosticErrorInfo::error(e.to_string()))?
+            .join("\n");
+        let remaining = lines.len() - shown;
+        if remaining > 0 {
+            text += &expand_hint(
+                &format!("{remaining} more lines"),
+                &theme,
+                &self.params.environment.live_theme,
+            )?;
+        }
         Ok(Some(Rc::new(Text::new(text, 0, 0, None))))
     }
     /// Samples the live theme at the consuming callback or fallback boundary.
@@ -436,118 +460,33 @@ impl Row {
         drop(old);
         Ok(())
     }
-    /// Converts current non-PNG payloads once per successful authored identity.
-    fn convert_images(&self, result: &ToolExecutionResult) -> Result<(), DiagnosticErrorInfo> {
-        if self
-            .params
-            .environment
-            .terminal_image
-            .get_capabilities()
-            .images
-            != Some(ImageProtocol::Kitty)
-        {
-            return Ok(());
-        }
-        for block in &result.content {
-            let UserBlock::Image(image) = block else {
-                continue;
-            };
-            if image.data.is_empty() || image.mime_type.is_empty() || image.mime_type == "image/png"
-            {
-                continue;
-            }
-            if self
-                .converted
-                .borrow()
-                .get(&image.data)
-                .is_some_and(|formats| formats.contains_key(&image.mime_type))
-            {
-                continue;
-            }
-            if let Some(converted) = convert_to_png(&image.data, &image.mime_type) {
-                self.converted
-                    .borrow_mut()
-                    .entry(image.data.clone())
-                    .or_default()
-                    .insert(image.mime_type.clone(), converted);
-                self.rebuild()?;
-                (self.params.request_render)();
-            }
-        }
-        Ok(())
-    }
-    /// Replaces inline children without changing caller additions or outer aliases.
-    fn rebuild_images(&self) {
-        let old = self.images.take();
-        for child in old {
-            self.container.remove_child(&child);
-        }
-        let terminal = &self.params.environment.terminal_image;
-        let Some(protocol) = terminal.get_capabilities().images else {
-            return;
-        };
-        if !self.show_images.get() {
-            return;
-        }
-        let result = self.result.borrow().clone();
-        let Some(result) = result else {
-            return;
-        };
-        for block in &result.content {
-            let UserBlock::Image(image) = block else {
-                continue;
-            };
-            if image.data.is_empty() || image.mime_type.is_empty() {
-                continue;
-            }
-            let Some(child) = self.image(image, protocol) else {
-                continue;
-            };
-            let children: [ComponentHandle; 2] = [Rc::new(Spacer::new(1)), child];
-            for child in children {
-                self.container.add_child(child.clone());
-                self.images.borrow_mut().push(child);
-            }
-        }
-    }
-    /// Builds an inline child after releasing the conversion cache borrow.
-    fn image(
+    /// Renders the children in order, walking them as `Container` does. A self-rendered
+    /// shell whose content draws nothing omits the row's own blank row, so with no images
+    /// the row takes no space.
+    fn rows<E>(
         &self,
-        image: &maestro_app::ImageContent,
-        protocol: ImageProtocol,
-    ) -> Option<Rc<Image>> {
-        let (data, mime) = {
-            let converted = self.converted.borrow();
-            let converted = converted
-                .get(&image.data)
-                .and_then(|formats| formats.get(&image.mime_type));
-            let (data, mime) =
-                converted.map_or((&image.data, &image.mime_type), |c| (&c.data, &c.mime_type));
-            if protocol == ImageProtocol::Kitty && mime != "image/png" {
-                return None;
-            }
-            (data.clone(), mime.clone())
+        width: usize,
+        mut render: impl FnMut(&dyn Component, usize) -> Result<Vec<String>, E>,
+    ) -> Result<Vec<String>, E> {
+        let Shell::SelfRendered(content) = &self.shell else {
+            return render(&self.container, width);
         };
-        let theme = self.params.environment.live_theme.clone();
-        let child = Rc::new(Image::new(
-            data,
-            mime,
-            ImageTheme {
-                fallback_color: Box::new(move |text| {
-                    maestro_theme::paint(theme.get().ok().as_deref(), &ThemeColor::ToolOutput, text)
-                }),
-            },
-            ImageOptions {
-                max_width_cells: Some(
-                    format!("{:.0}", self.image_width.get().floor().max(1.0))
-                        .parse()
-                        .unwrap_or(u32::MAX),
-                ),
-                ..Default::default()
-            },
-            self.params.environment.terminal_image.clone(),
-        ));
-        Some(child)
+        let content: ComponentHandle = content.clone();
+        let mut rendered = Vec::new();
+        let mut empty = false;
+        for child in self.container.walk() {
+            let lines = render(child.as_ref(), width)?;
+            if std::ptr::addr_eq(Rc::as_ptr(&child), Rc::as_ptr(&content)) {
+                empty = lines.is_empty();
+            }
+            let spacer = std::ptr::addr_eq(Rc::as_ptr(&child), Rc::as_ptr(&self.spacer));
+            rendered.push((spacer, lines));
+        }
+        Ok(rendered
+            .into_iter()
+            .filter(|(spacer, _)| !(empty && *spacer))
+            .flat_map(|(_, lines)| lines)
+            .collect())
     }
     /// Invalidates before rebuilding, retaining failures for fallible rendering.
     fn invalidate(&self) {
@@ -566,13 +505,17 @@ impl std::ops::Deref for ToolExecutionComponent {
 }
 impl Component for ToolExecutionComponent {
     fn render(&self, width: usize) -> Vec<String> {
-        self.0.container.render(width)
+        self.0
+            .rows(width, |child, width| {
+                Ok::<_, std::convert::Infallible>(child.render(width))
+            })
+            .unwrap_or_else(|never| match never {})
     }
     fn try_render(&self, width: usize) -> Result<Vec<String>, Box<dyn std::error::Error>> {
         if let Some(error) = self.0.error.borrow().clone() {
             return Err(Box::new(error));
         }
-        self.0.container.try_render(width)
+        self.0.rows(width, Component::try_render)
     }
     fn invalidate(&self) {
         self.0.invalidate();

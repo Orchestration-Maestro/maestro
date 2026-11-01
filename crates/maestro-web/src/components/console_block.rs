@@ -3,7 +3,7 @@ use crate::components::code_block::ReadingUiError;
 use crate::{
     I18n,
     browser::attachment_content::{
-        self, AttachmentHost, ReadingContent,
+        self, AttachmentHost, AttachmentHostError, ReadingContent,
         reading::controlled::{ControlledReading, ReadingHeight},
     },
     components::{code_block, copy_button::CopyButton},
@@ -12,7 +12,14 @@ use std::{
     cell::RefCell,
     rc::{Rc, Weak},
 };
+
 mod browser;
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod dom;
+#[cfg(target_arch = "wasm32")]
+mod nodes;
+#[cfg(target_arch = "wasm32")]
+pub(crate) use nodes::scroll_bottom;
 
 /// Console output's semantic color.
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
@@ -36,13 +43,16 @@ struct Prepared {
     copied: bool,
 }
 /// Console body and its independent retained platform lifetime.
+///
+/// [`ConsoleBlock::default`] mounts as native page content through
+/// [`DomContent`](crate::dom::DomContent); [`ConsoleBlock::new`] draws on a canvas host.
 pub struct ConsoleBlock {
     /// Literal output, never parsed as markup or encoded text.
     pub content: String,
     /// Selected semantic text color.
     pub variant: ConsoleVariant,
-    /// Replaceable native effects.
-    host: Rc<dyn AttachmentHost>,
+    /// Replaceable native effects; native page content supplies none.
+    host: Option<Rc<dyn AttachmentHost>>,
     /// Stable native surface identity.
     id: egui::Id,
     /// Successfully published native operands.
@@ -54,13 +64,22 @@ pub struct ConsoleBlock {
     /// Shared canvas copy control and restoring timer.
     copy: Option<CopyButton>,
 }
+impl Default for ConsoleBlock {
+    fn default() -> Self {
+        Self::with_host(None)
+    }
+}
 impl ConsoleBlock {
     /// Start with empty ordinary output using the supplied platform.
     #[must_use]
     pub fn new(host: Rc<dyn AttachmentHost>) -> Self {
+        Self::with_host(Some(host))
+    }
+    /// Start with empty ordinary output and the platform a caller supplies, if any.
+    fn with_host(host: Option<Rc<dyn AttachmentHost>>) -> Self {
         Self {
             content: String::new(),
-            variant: ConsoleVariant::Default,
+            variant: ConsoleVariant::default(),
             host,
             id: attachment_content::identity(),
             prepared: None,
@@ -68,6 +87,12 @@ impl ConsoleBlock {
             mounted: Rc::default(),
             copy: None,
         }
+    }
+    /// The platform effects a canvas drawing retains.
+    /// # Errors
+    /// Returns the failure of a console constructed as native page content.
+    fn retained_host(&self) -> Result<&Rc<dyn AttachmentHost>, ReadingUiError> {
+        self.host.as_ref().ok_or_else(missing_host)
     }
     /// Draw the native console and its canvas copy control.
     /// # Errors
@@ -79,9 +104,10 @@ impl ConsoleBlock {
         presentation: &maestro_theme::BrandPresentation<'_>,
         modal: Option<egui::Id>,
     ) -> Result<egui::Response, ReadingUiError> {
+        let host = Rc::clone(self.retained_host()?);
         let mut copy = match self.copy.take() {
             Some(copy) => copy,
-            None => CopyButton::new(Rc::clone(&self.host), i18n)?,
+            None => CopyButton::new(host, i18n)?,
         };
         let result = self.draw(ui, &mut copy, (i18n, presentation, modal));
         self.copy = Some(copy);
@@ -144,7 +170,7 @@ impl ConsoleBlock {
         let result = ControlledReading {
             intrinsic_width: false,
             height: ReadingHeight::Flow,
-            host: self.host.as_ref(),
+            host: self.retained_host()?.as_ref(),
             id: self.id,
             content: reading,
             sizes: &[control],
@@ -165,6 +191,12 @@ impl ConsoleBlock {
 }
 impl Drop for ConsoleBlock {
     fn drop(&mut self) {
-        self.host.remove(self.id);
+        if let Some(host) = &self.host {
+            host.remove(self.id);
+        }
     }
+}
+/// The failure of drawing a console that retained no platform effects.
+fn missing_host() -> ReadingUiError {
+    ReadingUiError::Host(AttachmentHostError::Host("Missing console host".into()))
 }

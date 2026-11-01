@@ -89,6 +89,7 @@ impl Subscription {
 ///     Box::pin(async move { emitter.emit("later", serde_json::Value::Null) })
 /// }
 /// ```
+#[derive(Clone, Copy)]
 pub struct CallbackEmitter<'a>(&'a dyn CallbackEmitterPort);
 impl<'a> CallbackEmitter<'a> {
     /// Borrows an alternate callback adapter.

@@ -84,13 +84,13 @@ pub fn create_ls_tool_definition<C: 'static $($bound)*>(
         definition: Tool {
             name: "ls".into(),
             description,
-            parameters: json!({
+            parameters: maestro_models::ParameterSchema::authored(json!({
                 "type": "object",
                 "properties": {
                     "path": {"type": "string", "description": "Directory to list (default: current directory)"},
                     "limit": {"type": "number", "description": "Maximum number of entries to return (default: 500)"},
                 },
-            }),
+            }), [("".to_owned(), maestro_models::SchemaKind::Object), ("/properties/path".to_owned(), maestro_models::SchemaKind::String), ("/properties/limit".to_owned(), maestro_models::SchemaKind::Number)]),
         },
         label: "ls".into(),
         prompt_snippet: Some("List directory contents".into()),

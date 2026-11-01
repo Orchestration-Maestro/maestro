@@ -33,9 +33,13 @@ edge.
 
 A local run cannot be submitted to a thread-safe task facility. Its caller must
 supply a local task facility instead. In return, synchronous UI callbacks operate
-on the real UI objects without a dispatcher, thread-local registry or unsafe
-thread-safety assertion. Typed aliases retain existing SDK struct-literal and
-explicit message-type call syntax.
+on the real UI objects without a general dispatcher, thread-local registry or
+unsafe thread-safety assertion. Component execution alone uses typed requests
+between local domain owners and the thread-safe component Store. The Store keeps
+request endpoints and resource identities, not local contexts or UI objects.
+Synchronous callbacks pump these requests on the calling thread; nested component
+calls use the active Store accessor. Typed aliases retain existing SDK
+struct-literal and explicit message-type call syntax.
 
 Payload and response hooks follow the invocation family: local hooks and futures
 may retain single-thread objects, while default SDK hooks remain thread-safe on

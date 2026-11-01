@@ -147,18 +147,20 @@ fn sound_none_never_selects_a_configured_or_fallback_path() {
 #[test]
 fn sound_unsupported_extension_reports_fallback() {
     let config: SoundConfig = serde_json::from_value(json!({"path":"missing.wav"})).unwrap();
+    let root = std::path::Path::new("agent-root");
     assert_eq!(
-        config.diagnostics(std::path::Path::new("agent-root")),
-        [
-            "unsupported sound file format: multiplexer.sound.path = missing.wav resolves to agent-root/missing.wav; expected an mp3 file; using default sound"
-        ]
+        config.diagnostics(root),
+        [format!(
+            "unsupported sound file format: multiplexer.sound.path = missing.wav resolves to {}; expected an mp3 file; using default sound",
+            root.join("missing.wav").display()
+        )]
     );
 }
 
 #[test]
 fn sound_file_diagnostics_distinguish_missing_and_directory() {
-    let root = std::env::temp_dir().join(format!("maestro-daemon-sound-{}", std::process::id()));
-    std::fs::create_dir(&root).unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path();
     std::fs::create_dir(root.join("directory.mp3")).unwrap();
     std::fs::write(root.join("valid.MP3"), b"controlled sound bytes").unwrap();
     let config: SoundConfig = serde_json::from_value(
@@ -166,7 +168,7 @@ fn sound_file_diagnostics_distinguish_missing_and_directory() {
     )
     .unwrap();
     assert_eq!(
-        config.diagnostics(&root),
+        config.diagnostics(root),
         [
             format!(
                 "missing sound file: multiplexer.sound.path = missing.mp3 resolves to {}; using default sound",
@@ -178,7 +180,4 @@ fn sound_file_diagnostics_distinguish_missing_and_directory() {
             ),
         ]
     );
-    std::fs::remove_file(root.join("valid.MP3")).unwrap();
-    std::fs::remove_dir(root.join("directory.mp3")).unwrap();
-    std::fs::remove_dir(root).unwrap();
 }

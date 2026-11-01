@@ -2,24 +2,42 @@
 
 `maestro-ipc` uses `interprocess =2.4.2` on Unix with default features disabled.
 No Tokio or asynchronous feature is enabled. It uses the Apache-2.0 licence option.
+It also uses the already-locked `rustix =1.1.5` on Unix with default features
+disabled and `std` and `net` enabled, under the MIT OR Apache-2.0 licence.
+`rustix` supplies the bounded connection attempts and the named native
+not-a-socket error code that separates a non-socket entry from a wrong-protocol
+connection failure; it adds no package identity or version, because
+the shared native feature unifier already activates it.
+
+The already-locked `socket2 =0.6.5`, with default features disabled, creates
+unconnected Unix streams with close-on-exec protection on every Unix platform,
+including Apple targets. It uses the MIT OR Apache-2.0 licence. The IPC owner
+retains its absolute-deadline retry loop: a full Unix accept queue must not count
+as a successful connection merely because the descriptor is writable.
 
 The locked dependency closure is:
 
 | Package | Version | Licence |
 |---|---|---|
 | interprocess | 2.4.2 | Apache-2.0 |
+| socket2 | 0.6.5 | MIT OR Apache-2.0 |
+| bitflags | 2.13.2 | MIT OR Apache-2.0 |
 | doctest-file | 1.1.1 | 0BSD |
+| errno | 0.3.14 | MIT OR Apache-2.0 |
 | libc | 0.2.190 | MIT OR Apache-2.0 |
+| linux-raw-sys | 0.12.1 | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT |
 | recvmsg | 1.0.0 | 0BSD |
 | widestring | 1.2.1 | MIT OR Apache-2.0 |
 | windows-sys | 0.61.2 | MIT OR Apache-2.0 |
 | windows-link | 0.2.1 | MIT |
 
 `recvmsg`, `widestring`, `windows-sys` and `windows-link` are inactive Windows
-branches of this closure. Exact 0BSD permissions for doctest-file and recvmsg are
-recorded in the shared-CI configuration. The leaf adds no production dependency
-on another domain crate. Native tests use the existing checked test-process owner;
-the native feature-unifier dependency remains API-free.
+branches of this closure. `linux-raw-sys` and `errno` are the two backends of
+`rustix`, and a target builds one of them. Exact 0BSD permissions for
+doctest-file and recvmsg are recorded in the shared-CI configuration. The leaf
+adds no production dependency on another domain crate. Native tests use the
+existing checked test-process owner; the native feature-unifier dependency remains
+API-free.
 
 See [workspace sockets](../workspace-daemon.md#sockets) for the public operations.
 

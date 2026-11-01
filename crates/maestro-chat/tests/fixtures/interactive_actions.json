@@ -1,0 +1,1055 @@
+[
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": false,
+      "text": ""
+    },
+    "expected": {
+      "shell": false,
+      "border": "\u2501"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": false,
+      "text": "!"
+    },
+    "expected": {
+      "shell": true,
+      "border": "@bashMode@\u2501\u001b[39m"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": false,
+      "text": " !run"
+    },
+    "expected": {
+      "shell": true,
+      "border": "@bashMode@\u2501\u001b[39m"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": false,
+      "text": "\t\r\n!run"
+    },
+    "expected": {
+      "shell": true,
+      "border": "@bashMode@\u2501\u001b[39m"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": false,
+      "text": "\ufeff!run"
+    },
+    "expected": {
+      "shell": true,
+      "border": "@bashMode@\u2501\u001b[39m"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": false,
+      "text": "\u00a0!run"
+    },
+    "expected": {
+      "shell": true,
+      "border": "@bashMode@\u2501\u001b[39m"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": false,
+      "text": "\u0085!run"
+    },
+    "expected": {
+      "shell": false,
+      "border": "\u2501"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": false,
+      "text": "\u200b!run"
+    },
+    "expected": {
+      "shell": false,
+      "border": "\u2501"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": false,
+      "text": "x!"
+    },
+    "expected": {
+      "shell": false,
+      "border": "\u2501"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": false,
+      "text": " ! !"
+    },
+    "expected": {
+      "shell": true,
+      "border": "@bashMode@\u2501\u001b[39m"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": false,
+      "text": "ordinary"
+    },
+    "expected": {
+      "shell": false,
+      "border": "\u2501"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": true,
+      "text": ""
+    },
+    "expected": {
+      "shell": false,
+      "border": "@thinkingOff@\u2501\u001b[39m"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": true,
+      "text": "!"
+    },
+    "expected": {
+      "shell": true,
+      "border": "\u2501"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": true,
+      "text": " !run"
+    },
+    "expected": {
+      "shell": true,
+      "border": "\u2501"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": true,
+      "text": "\t\r\n!run"
+    },
+    "expected": {
+      "shell": true,
+      "border": "\u2501"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": true,
+      "text": "\ufeff!run"
+    },
+    "expected": {
+      "shell": true,
+      "border": "\u2501"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": true,
+      "text": "\u00a0!run"
+    },
+    "expected": {
+      "shell": true,
+      "border": "\u2501"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": true,
+      "text": "\u0085!run"
+    },
+    "expected": {
+      "shell": false,
+      "border": "@thinkingOff@\u2501\u001b[39m"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": true,
+      "text": "\u200b!run"
+    },
+    "expected": {
+      "shell": false,
+      "border": "@thinkingOff@\u2501\u001b[39m"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": true,
+      "text": "x!"
+    },
+    "expected": {
+      "shell": false,
+      "border": "@thinkingOff@\u2501\u001b[39m"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": true,
+      "text": " ! !"
+    },
+    "expected": {
+      "shell": true,
+      "border": "\u2501"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": true,
+      "text": "ordinary"
+    },
+    "expected": {
+      "shell": false,
+      "border": "@thinkingOff@\u2501\u001b[39m"
+    }
+  },
+  {
+    "test": "thinking_cycle_refreshes_only_after_a_supported_selection",
+    "input": {
+      "op": "thinking",
+      "level": null
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Current model does not support thinking\u001b[39m                                                            "
+      ]
+    }
+  },
+  {
+    "test": "thinking_cycle_refreshes_only_after_a_supported_selection",
+    "input": {
+      "op": "thinking",
+      "level": "off"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Thinking level: off\u001b[39m                                                                                "
+      ]
+    }
+  },
+  {
+    "test": "thinking_cycle_refreshes_only_after_a_supported_selection",
+    "input": {
+      "op": "thinking",
+      "level": "minimal"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Thinking level: minimal\u001b[39m                                                                            "
+      ]
+    }
+  },
+  {
+    "test": "thinking_cycle_refreshes_only_after_a_supported_selection",
+    "input": {
+      "op": "thinking",
+      "level": "low"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Thinking level: low\u001b[39m                                                                                "
+      ]
+    }
+  },
+  {
+    "test": "thinking_cycle_refreshes_only_after_a_supported_selection",
+    "input": {
+      "op": "thinking",
+      "level": "medium"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Thinking level: medium\u001b[39m                                                                             "
+      ]
+    }
+  },
+  {
+    "test": "thinking_cycle_refreshes_only_after_a_supported_selection",
+    "input": {
+      "op": "thinking",
+      "level": "high"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Thinking level: high\u001b[39m                                                                               "
+      ]
+    }
+  },
+  {
+    "test": "thinking_cycle_refreshes_only_after_a_supported_selection",
+    "input": {
+      "op": "thinking",
+      "level": "xhigh"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Thinking level: xhigh\u001b[39m                                                                              "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_distinguishes_scope_and_available_exhaustion",
+    "input": {
+      "op": "model-none",
+      "scoped": false,
+      "direction": "forward"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Only one model available\u001b[39m                                                                           "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_distinguishes_scope_and_available_exhaustion",
+    "input": {
+      "op": "model-none",
+      "scoped": false,
+      "direction": "backward"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Only one model available\u001b[39m                                                                           "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_distinguishes_scope_and_available_exhaustion",
+    "input": {
+      "op": "model-none",
+      "scoped": true,
+      "direction": "forward"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Only one model in scope\u001b[39m                                                                            "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_distinguishes_scope_and_available_exhaustion",
+    "input": {
+      "op": "model-none",
+      "scoped": true,
+      "direction": "backward"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Only one model in scope\u001b[39m                                                                            "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_uses_the_selected_name_thinking_and_direction",
+    "input": {
+      "op": "model-selected",
+      "direction": "forward",
+      "reasoning": false,
+      "level": "off",
+      "name": ""
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Switched to model-id\u001b[39m                                                                               "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_uses_the_selected_name_thinking_and_direction",
+    "input": {
+      "op": "model-selected",
+      "direction": "forward",
+      "reasoning": false,
+      "level": "off",
+      "name": "Display model"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Switched to Display model\u001b[39m                                                                          "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_uses_the_selected_name_thinking_and_direction",
+    "input": {
+      "op": "model-selected",
+      "direction": "forward",
+      "reasoning": false,
+      "level": "high",
+      "name": ""
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Switched to model-id\u001b[39m                                                                               "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_uses_the_selected_name_thinking_and_direction",
+    "input": {
+      "op": "model-selected",
+      "direction": "forward",
+      "reasoning": false,
+      "level": "high",
+      "name": "Display model"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Switched to Display model\u001b[39m                                                                          "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_uses_the_selected_name_thinking_and_direction",
+    "input": {
+      "op": "model-selected",
+      "direction": "forward",
+      "reasoning": true,
+      "level": "off",
+      "name": ""
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Switched to model-id\u001b[39m                                                                               "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_uses_the_selected_name_thinking_and_direction",
+    "input": {
+      "op": "model-selected",
+      "direction": "forward",
+      "reasoning": true,
+      "level": "off",
+      "name": "Display model"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Switched to Display model\u001b[39m                                                                          "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_uses_the_selected_name_thinking_and_direction",
+    "input": {
+      "op": "model-selected",
+      "direction": "forward",
+      "reasoning": true,
+      "level": "high",
+      "name": ""
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Switched to model-id (thinking: high)\u001b[39m                                                              "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_uses_the_selected_name_thinking_and_direction",
+    "input": {
+      "op": "model-selected",
+      "direction": "forward",
+      "reasoning": true,
+      "level": "high",
+      "name": "Display model"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Switched to Display model (thinking: high)\u001b[39m                                                         "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_uses_the_selected_name_thinking_and_direction",
+    "input": {
+      "op": "model-selected",
+      "direction": "backward",
+      "reasoning": false,
+      "level": "off",
+      "name": ""
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Switched to model-id\u001b[39m                                                                               "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_uses_the_selected_name_thinking_and_direction",
+    "input": {
+      "op": "model-selected",
+      "direction": "backward",
+      "reasoning": false,
+      "level": "off",
+      "name": "Display model"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Switched to Display model\u001b[39m                                                                          "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_uses_the_selected_name_thinking_and_direction",
+    "input": {
+      "op": "model-selected",
+      "direction": "backward",
+      "reasoning": false,
+      "level": "high",
+      "name": ""
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Switched to model-id\u001b[39m                                                                               "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_uses_the_selected_name_thinking_and_direction",
+    "input": {
+      "op": "model-selected",
+      "direction": "backward",
+      "reasoning": false,
+      "level": "high",
+      "name": "Display model"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Switched to Display model\u001b[39m                                                                          "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_uses_the_selected_name_thinking_and_direction",
+    "input": {
+      "op": "model-selected",
+      "direction": "backward",
+      "reasoning": true,
+      "level": "off",
+      "name": ""
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Switched to model-id\u001b[39m                                                                               "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_uses_the_selected_name_thinking_and_direction",
+    "input": {
+      "op": "model-selected",
+      "direction": "backward",
+      "reasoning": true,
+      "level": "off",
+      "name": "Display model"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Switched to Display model\u001b[39m                                                                          "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_uses_the_selected_name_thinking_and_direction",
+    "input": {
+      "op": "model-selected",
+      "direction": "backward",
+      "reasoning": true,
+      "level": "high",
+      "name": ""
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Switched to model-id (thinking: high)\u001b[39m                                                              "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_uses_the_selected_name_thinking_and_direction",
+    "input": {
+      "op": "model-selected",
+      "direction": "backward",
+      "reasoning": true,
+      "level": "high",
+      "name": "Display model"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@Switched to Display model (thinking: high)\u001b[39m                                                         "
+      ]
+    }
+  },
+  {
+    "test": "model_cycle_renders_failures_without_success_effects",
+    "input": {
+      "op": "model-error"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @error@Error: cycle refused\u001b[39m                                                                               ",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "external_edit_without_configuration_warns_without_native_work",
+    "input": {
+      "op": "external-missing"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @warning@Warning: No editor configured. Set $VISUAL or $EDITOR environment variable.\u001b[39m                        "
+      ]
+    }
+  },
+  {
+    "test": "external_edit_uses_expanded_text_and_preserves_the_exit_contract",
+    "input": {
+      "op": "external",
+      "content": "",
+      "status": 0,
+      "stored": "[paste #1 +13 lines]",
+      "expanded": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n"
+    },
+    "expected": {
+      "text": "",
+      "handoff": {
+        "args": [
+          "--wait"
+        ],
+        "text": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n",
+        "mode": 384
+      }
+    }
+  },
+  {
+    "test": "external_edit_uses_expanded_text_and_preserves_the_exit_contract",
+    "input": {
+      "op": "external",
+      "content": "",
+      "status": 7,
+      "stored": "[paste #1 +13 lines]",
+      "expanded": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n"
+    },
+    "expected": {
+      "text": "[paste #1 +13 lines]",
+      "handoff": {
+        "args": [
+          "--wait"
+        ],
+        "text": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n",
+        "mode": 384
+      }
+    }
+  },
+  {
+    "test": "external_edit_uses_expanded_text_and_preserves_the_exit_contract",
+    "input": {
+      "op": "external",
+      "content": "new",
+      "status": 0,
+      "stored": "[paste #1 +13 lines]",
+      "expanded": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n"
+    },
+    "expected": {
+      "text": "new",
+      "handoff": {
+        "args": [
+          "--wait"
+        ],
+        "text": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n",
+        "mode": 384
+      }
+    }
+  },
+  {
+    "test": "external_edit_uses_expanded_text_and_preserves_the_exit_contract",
+    "input": {
+      "op": "external",
+      "content": "new",
+      "status": 7,
+      "stored": "[paste #1 +13 lines]",
+      "expanded": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n"
+    },
+    "expected": {
+      "text": "[paste #1 +13 lines]",
+      "handoff": {
+        "args": [
+          "--wait"
+        ],
+        "text": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n",
+        "mode": 384
+      }
+    }
+  },
+  {
+    "test": "external_edit_uses_expanded_text_and_preserves_the_exit_contract",
+    "input": {
+      "op": "external",
+      "content": "new\n",
+      "status": 0,
+      "stored": "[paste #1 +13 lines]",
+      "expanded": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n"
+    },
+    "expected": {
+      "text": "new",
+      "handoff": {
+        "args": [
+          "--wait"
+        ],
+        "text": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n",
+        "mode": 384
+      }
+    }
+  },
+  {
+    "test": "external_edit_uses_expanded_text_and_preserves_the_exit_contract",
+    "input": {
+      "op": "external",
+      "content": "new\n",
+      "status": 7,
+      "stored": "[paste #1 +13 lines]",
+      "expanded": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n"
+    },
+    "expected": {
+      "text": "[paste #1 +13 lines]",
+      "handoff": {
+        "args": [
+          "--wait"
+        ],
+        "text": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n",
+        "mode": 384
+      }
+    }
+  },
+  {
+    "test": "external_edit_uses_expanded_text_and_preserves_the_exit_contract",
+    "input": {
+      "op": "external",
+      "content": "new\n\n",
+      "status": 0,
+      "stored": "[paste #1 +13 lines]",
+      "expanded": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n"
+    },
+    "expected": {
+      "text": "new\n",
+      "handoff": {
+        "args": [
+          "--wait"
+        ],
+        "text": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n",
+        "mode": 384
+      }
+    }
+  },
+  {
+    "test": "external_edit_uses_expanded_text_and_preserves_the_exit_contract",
+    "input": {
+      "op": "external",
+      "content": "new\n\n",
+      "status": 7,
+      "stored": "[paste #1 +13 lines]",
+      "expanded": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n"
+    },
+    "expected": {
+      "text": "[paste #1 +13 lines]",
+      "handoff": {
+        "args": [
+          "--wait"
+        ],
+        "text": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n",
+        "mode": 384
+      }
+    }
+  },
+  {
+    "test": "external_edit_uses_expanded_text_and_preserves_the_exit_contract",
+    "input": {
+      "op": "external",
+      "content": "new\r\n",
+      "status": 0,
+      "stored": "[paste #1 +13 lines]",
+      "expanded": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n"
+    },
+    "expected": {
+      "text": "new\n",
+      "handoff": {
+        "args": [
+          "--wait"
+        ],
+        "text": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n",
+        "mode": 384
+      }
+    }
+  },
+  {
+    "test": "external_edit_uses_expanded_text_and_preserves_the_exit_contract",
+    "input": {
+      "op": "external",
+      "content": "new\r\n",
+      "status": 7,
+      "stored": "[paste #1 +13 lines]",
+      "expanded": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n"
+    },
+    "expected": {
+      "text": "[paste #1 +13 lines]",
+      "handoff": {
+        "args": [
+          "--wait"
+        ],
+        "text": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n",
+        "mode": 384
+      }
+    }
+  },
+  {
+    "test": "external_edit_uses_expanded_text_and_preserves_the_exit_contract",
+    "input": {
+      "op": "external",
+      "content": "new\r",
+      "status": 0,
+      "stored": "[paste #1 +13 lines]",
+      "expanded": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n"
+    },
+    "expected": {
+      "text": "new\n",
+      "handoff": {
+        "args": [
+          "--wait"
+        ],
+        "text": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n",
+        "mode": 384
+      }
+    }
+  },
+  {
+    "test": "external_edit_uses_expanded_text_and_preserves_the_exit_contract",
+    "input": {
+      "op": "external",
+      "content": "new\r",
+      "status": 7,
+      "stored": "[paste #1 +13 lines]",
+      "expanded": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n"
+    },
+    "expected": {
+      "text": "[paste #1 +13 lines]",
+      "handoff": {
+        "args": [
+          "--wait"
+        ],
+        "text": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n",
+        "mode": 384
+      }
+    }
+  },
+  {
+    "test": "external_edit_uses_expanded_text_and_preserves_the_exit_contract",
+    "input": {
+      "op": "external",
+      "content": "\u754c\ninside\n",
+      "status": 0,
+      "stored": "[paste #1 +13 lines]",
+      "expanded": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n"
+    },
+    "expected": {
+      "text": "\u754c\ninside",
+      "handoff": {
+        "args": [
+          "--wait"
+        ],
+        "text": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n",
+        "mode": 384
+      }
+    }
+  },
+  {
+    "test": "external_edit_uses_expanded_text_and_preserves_the_exit_contract",
+    "input": {
+      "op": "external",
+      "content": "\u754c\ninside\n",
+      "status": 7,
+      "stored": "[paste #1 +13 lines]",
+      "expanded": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n"
+    },
+    "expected": {
+      "text": "[paste #1 +13 lines]",
+      "handoff": {
+        "args": [
+          "--wait"
+        ],
+        "text": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n",
+        "mode": 384
+      }
+    }
+  },
+  {
+    "test": "clipboard_paste_keeps_image_bytes_and_inserts_at_the_cursor",
+    "input": {
+      "op": "paste",
+      "type": "image/png"
+    },
+    "expected": {
+      "bytes": [
+        0,
+        255,
+        128,
+        10
+      ],
+      "extension": "png",
+      "text": "left<image-path>right",
+      "mode": 384
+    }
+  },
+  {
+    "test": "clipboard_paste_keeps_image_bytes_and_inserts_at_the_cursor",
+    "input": {
+      "op": "paste",
+      "type": "image/jpeg"
+    },
+    "expected": {
+      "bytes": [
+        0,
+        255,
+        128,
+        10
+      ],
+      "extension": "jpg",
+      "text": "left<image-path>right",
+      "mode": 384
+    }
+  },
+  {
+    "test": "clipboard_paste_keeps_image_bytes_and_inserts_at_the_cursor",
+    "input": {
+      "op": "paste",
+      "type": "image/webp"
+    },
+    "expected": {
+      "bytes": [
+        0,
+        255,
+        128,
+        10
+      ],
+      "extension": "webp",
+      "text": "left<image-path>right",
+      "mode": 384
+    }
+  },
+  {
+    "test": "clipboard_paste_keeps_image_bytes_and_inserts_at_the_cursor",
+    "input": {
+      "op": "paste",
+      "type": "image/gif"
+    },
+    "expected": {
+      "bytes": [
+        0,
+        255,
+        128,
+        10
+      ],
+      "extension": "gif",
+      "text": "left<image-path>right",
+      "mode": 384
+    }
+  },
+  {
+    "test": "clipboard_absence_is_silent_and_does_not_edit",
+    "input": {
+      "op": "paste-none"
+    },
+    "expected": {
+      "text": "before"
+    }
+  }
+]

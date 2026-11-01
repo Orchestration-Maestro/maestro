@@ -8,8 +8,10 @@ mod self_update;
 #[cfg(not(target_arch = "wasm32"))]
 pub use self_update::{
     NativeSelfUpdateOperations, SelfUpdateCommand, SelfUpdateCommandStep, SelfUpdateContext,
-    SelfUpdateOperations, get_self_update_command, get_self_update_unavailable_instruction,
-    get_update_instruction,
+    SelfUpdateOperations, SelfUpdatePlan, get_self_update_command,
+    get_self_update_command_from_settings, get_self_update_plan,
+    get_self_update_unavailable_instruction, get_self_update_unavailable_instruction_from_settings,
+    get_update_instruction, run_self_update,
 };
 
 use std::sync::LazyLock;

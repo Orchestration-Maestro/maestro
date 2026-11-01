@@ -12,6 +12,7 @@ maestro-markdown = { path = "../maestro-markdown" }
 maestro-text = { path = "../maestro-text" }
 maestro-path = { path = "../maestro-path" }
 maestro-cancellation = { path = "../maestro-cancellation" }
+maestro-listeners.workspace = true
 maestro-resources = { path = "../maestro-resources" }
 base64 = { version = "=0.23.1", default-features = false, features = ["std"] }
 rand = "=0.10.3"

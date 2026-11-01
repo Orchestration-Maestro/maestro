@@ -334,6 +334,37 @@ fn runner_invalidation_keeps_the_first_message_including_empty() {
     }
 }
 
+#[test]
+fn a_later_runner_over_an_invalidated_runtime_keeps_its_contexts_active() {
+    local(async {
+        let bus = LocalBus::new();
+        let owner = loaded("/shared", bus.controller.for_extension());
+        let retired = served_with("/retired", &owner.owners, &owner.runtime);
+        let retired_ctx = retired.runner.create_context();
+        retired.runner.invalidate(None);
+        let replacement = served_with("/replacement", &owner.owners, &owner.runtime);
+        let bound = model("replacement");
+        let reader = Arc::clone(&bound);
+        replacement
+            .runner
+            .bind_core(
+                <maestro_models::Local as maestro_extensions::ExtensionExecution>::unbound_actions(
+                ),
+                reading(move || Some(Arc::clone(&reader)), true),
+                maestro_extensions::types::ProviderActions::default(),
+            )
+            .unwrap();
+        let ctx = replacement.runner.create_command_context();
+        assert_eq!(errors(&ctx), vec![None; 14]);
+        assert!(same_model(ctx.model().unwrap(), &bound));
+        assert_eq!(ctx.cwd().unwrap(), "/replacement");
+        ctx.wait_for_idle().await.unwrap();
+        assert_eq!(retired_ctx.cwd().unwrap_err().to_string(), STALE);
+        let late = owner.api.register_flag("late".into(), flag());
+        assert_eq!(late.unwrap_err().to_string(), STALE);
+    });
+}
+
 /// Fails with the marker naming `operation`.
 fn fail<T>(operation: &'static str) -> Result<T, EventError> {
     Err(Box::new(Marker(operation)))

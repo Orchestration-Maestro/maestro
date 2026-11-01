@@ -14,13 +14,16 @@ pub struct PdfArtifact {
     /// Complete original encoded content.
     content: String,
     /// Caller platform effects.
-    host: Rc<dyn AttachmentHost>,
+    host: Option<Rc<dyn AttachmentHost>>,
     /// Stable native surface identity.
     id: egui::Id,
     /// Owned document and completed pages.
     pdf: pdf::Pdf,
     /// Body preparation awaits changed original content.
     changed: bool,
+    /// Explicit assignment identity for native failed retries.
+    #[cfg(target_arch = "wasm32")]
+    assignment: Rc<()>,
     /// Latched artifact load diagnostic.
     failure: Option<String>,
     /// Native error presentation, not error policy.
@@ -34,6 +37,10 @@ impl PdfArtifact {
     /// Start with empty fields using the supplied native host.
     #[must_use]
     pub fn new(host: Rc<dyn AttachmentHost>) -> Self {
+        Self::with_host(Some(host))
+    }
+    /// Create document storage independently of retained effects.
+    fn with_host(host: Option<Rc<dyn AttachmentHost>>) -> Self {
         Self {
             filename: String::new(),
             content: String::new(),
@@ -41,6 +48,8 @@ impl PdfArtifact {
             id: attachment_content::identity(),
             pdf: pdf::Pdf::default(),
             changed: false,
+            #[cfg(target_arch = "wasm32")]
+            assignment: Rc::new(()),
             failure: None,
             error: error::Error::default(),
             context: None,
@@ -72,16 +81,14 @@ impl PdfArtifact {
         }
     }
 }
-impl ArtifactElement for PdfArtifact {
-    fn set_visibility(
-        &mut self,
-        visible: bool,
-        modal: Option<egui::Id>,
-    ) -> Result<(), ArtifactUiError> {
-        self.host.set_retained_visibility(self.id, visible, modal)?;
-        self.visible = visible;
-        Ok(())
+impl Default for PdfArtifact {
+    /// Empty host-free PDF content.
+    fn default() -> Self {
+        Self::with_host(None)
     }
+}
+impl ArtifactElement for PdfArtifact {
+    super::retained::artifact_visibility!(visible);
     fn filename(&self) -> &str {
         &self.filename
     }
@@ -93,6 +100,10 @@ impl ArtifactElement for PdfArtifact {
         &self.content
     }
     fn set_content(&mut self, content: String) {
+        #[cfg(target_arch = "wasm32")]
+        {
+            self.assignment = Rc::new(());
+        }
         if self.content == content && self.failure.is_none() {
             return;
         }
@@ -114,7 +125,7 @@ impl ArtifactElement for PdfArtifact {
         download_button::draw(
             ui,
             view,
-            self.host.as_ref(),
+            super::retained::host(self.host.as_ref())?.as_ref(),
             &self.filename,
             ("application/pdf", &bytes),
         )
@@ -127,7 +138,7 @@ impl ArtifactElement for PdfArtifact {
         self.prepare(ui);
         if let Some(message) = &self.failure {
             self.error.present(
-                self.host.as_ref(),
+                super::retained::host(self.host.as_ref())?.as_ref(),
                 ui,
                 (self.id, None, true),
                 (
@@ -143,7 +154,7 @@ impl ArtifactElement for PdfArtifact {
                 .allocate_space(ui.available_size().max(egui::Vec2::ZERO))
                 .1;
             self.pdf.present(
-                self.host.as_ref(),
+                super::retained::host(self.host.as_ref())?.as_ref(),
                 ui,
                 (self.id, rect, None, true),
                 view.presentation,
@@ -154,6 +165,13 @@ impl ArtifactElement for PdfArtifact {
 }
 impl Drop for PdfArtifact {
     fn drop(&mut self) {
-        self.host.remove(self.id);
+        if let Some(host) = &self.host {
+            host.remove(self.id);
+        }
     }
 }
+
+#[cfg(target_arch = "wasm32")]
+mod dom;
+#[cfg(target_arch = "wasm32")]
+pub(crate) use dom::define;

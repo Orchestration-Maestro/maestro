@@ -32,22 +32,133 @@ pub struct CompactOptions {
     /// Optional error callback supplied to the host.
     pub on_error: Option<CompactionError>,
 }
-pub use crate::bindings::maestro::extension::host::ContextUsage;
+pub use crate::bindings::maestro::extension::host::{
+    ContextUsage, ExtensionWidgetOptions, NotificationType, TerminalInputResult, WidgetPlacement,
+    WorkingIndicatorOptions,
+};
 use crate::{Model, ModelRegistry, ReadonlySessionManager};
-/// Retained opaque UI capability supplied by the host.
-pub trait ExtensionUIContextPort {}
 /// UI capability; clones share its host owner.
 #[derive(Clone)]
 pub struct ExtensionUIContext {
     /// Independently retained host capability.
-    _port: Rc<dyn ExtensionUIContextPort>,
+    port: Rc<dyn ExtensionUIContextPort>,
 }
 impl ExtensionUIContext {
     /// Wraps the supplied UI capability.
     #[must_use]
     pub fn new(port: Rc<dyn ExtensionUIContextPort>) -> Self {
-        Self { _port: port }
+        Self { port }
     }
+}
+
+port! {
+    /// Requests to the independently retained host UI; each method forwards one request and
+    /// resolves to the host's message when the host rejects it.
+    ExtensionUIContextPort for ExtensionUIContext via port {
+        /// Shows a notification with an optional severity.
+        fn notify(message: &str, kind: Option<NotificationType>) -> ();
+        /// Sets the text of one status key, or clears that key.
+        fn set_status(key: &str, text: Option<&str>) -> ();
+        /// Sets the working message, or restores the host default.
+        fn set_working_message(message: Option<&str>) -> ();
+        /// Shows or hides the working loader row.
+        fn set_working_visible(visible: bool) -> ();
+        /// Configures the working indicator, or restores the host default.
+        fn set_working_indicator(options: Option<WorkingIndicatorOptions>) -> ();
+        /// Sets the hidden-thinking label, or restores the host default.
+        fn set_hidden_thinking_label(label: Option<&str>) -> ();
+        /// Sets the fixed lines of one widget, or removes it.
+        fn set_widget(
+            key: &str,
+            content: Option<&[String]>,
+            options: Option<ExtensionWidgetOptions>,
+        ) -> ();
+        /// Shows the component `factory` builds under one key; the host disposes the widget it
+        /// replaces first, and removing the key goes through `set_widget`.
+        fn set_widget_factory(
+            key: &str,
+            factory: crate::ComponentFactory,
+            options: Option<ExtensionWidgetOptions>,
+        ) -> ();
+        /// Replaces the footer with the component `factory` builds, or restores the host's
+        /// footer; the host disposes the footer it replaces first.
+        fn set_footer(factory: Option<crate::FooterFactory>) -> ();
+        /// Replaces the header with the component `factory` builds, or restores the host's
+        /// header; the host disposes the header it replaces first.
+        fn set_header(factory: Option<crate::ComponentFactory>) -> ();
+        /// Sets the terminal title.
+        fn set_title(title: &str) -> ();
+        /// Pastes literal text into the host editor through its paste handling.
+        fn paste_to_editor(text: &str) -> ();
+        /// Replaces the host editor's text.
+        fn set_editor_text(text: &str) -> ();
+        /// Reads the host editor's current text.
+        fn get_editor_text() -> String;
+        /// Replaces the host editor with the editor `factory` builds, or restores the host's
+        /// editor; the factory runs before the request returns.
+        fn set_editor_component(factory: Option<crate::EditorFactory>) -> ();
+        /// The current editor factory, or `None` while the host's own editor is in use.
+        fn get_editor_component() -> Option<crate::EditorFactory>;
+        /// Stacks `factory` on the current completion provider; the host keeps it for later
+        /// rebuilds and runs it before the request returns.
+        fn add_autocomplete_provider(factory: crate::AutocompleteProviderFactory) -> ();
+        /// Adds a raw terminal input listener; dropping the subscription keeps it.
+        fn on_terminal_input(handler: TerminalInputHandler) -> crate::Subscription;
+        /// The UI's live theme; it observes later selections.
+        fn theme() -> crate::Theme;
+        /// Every available theme, in the host's order.
+        fn get_all_themes() -> Vec<crate::ThemeInfo>;
+        /// Loads a theme by name without selecting it.
+        fn get_theme(name: &str) -> Option<crate::Theme>;
+        /// Selects a theme by name or a retained host theme.
+        fn set_theme(theme: crate::ThemeSelection) -> crate::ThemeSetResult;
+        /// Reads whether tool output is expanded.
+        fn get_tools_expanded() -> bool;
+        /// Expands or collapses tool output.
+        fn set_tools_expanded(expanded: bool) -> ();
+    }
+    owned {
+        /// Shows a custom component until its host accepts closing it.
+        fn custom_component(factory: crate::CustomComponentFactory, options: Option<crate::CustomUIOptions>) -> ();
+        /// Shows a selector and resolves to the chosen option, or to `None` on dismissal.
+        fn select(
+            title: String,
+            options: Vec<String>,
+            opts: Option<ExtensionUIDialogOptions>
+        ) -> Option<String>;
+        /// Asks for confirmation and resolves to `false` on dismissal.
+        fn confirm(
+            title: String,
+            message: String,
+            opts: Option<ExtensionUIDialogOptions>
+        ) -> bool;
+        /// Reads one line and resolves to `None` on dismissal.
+        fn input(
+            title: String,
+            placeholder: Option<String>,
+            opts: Option<ExtensionUIDialogOptions>
+        ) -> Option<String>;
+        /// Reads several lines and resolves to `None` on dismissal.
+        fn editor(title: String, prefill: Option<String>) -> Option<String>;
+    }
+}
+
+/// A raw terminal input listener with callback-scoped emission; `None` leaves the input as it
+/// is.
+pub type TerminalInputHandler = Rc<
+    dyn for<'a> Fn(
+        &str,
+        crate::CallbackEmitter<'a>,
+    ) -> ExtensionResult<Option<TerminalInputResult>>,
+>;
+
+/// Options of a dialog, forwarded without choosing host defaults.
+#[derive(Clone, Default)]
+pub struct ExtensionUIDialogOptions {
+    /// Dismisses the dialog when aborted; it stays retained after the dialog returns.
+    pub signal: Option<AbortSignal>,
+    /// Milliseconds before the host dismisses the dialog, passed to it unchanged.
+    pub timeout: Option<f64>,
 }
 use std::fmt;
 use std::ops::Deref;
@@ -56,28 +167,74 @@ use std::rc::Rc;
 use super::extension_result::{ExtensionFuture, ExtensionResult};
 use crate::bindings::maestro::extension::session::{NewSessionCommandData, SessionChangeResult};
 
+/// A synchronous cancellation notification with callback-scoped emission.
+pub type AbortListener = Rc<dyn for<'a> Fn(crate::CallbackEmitter<'a>) -> ExtensionResult<()>>;
+
 /// Host capability reporting whether an operation was cancelled.
 pub trait SignalPort {
     /// Whether the operation was cancelled.
     fn aborted(&self) -> bool;
+    /// Registers `listener` to run once when the operation is cancelled.
+    ///
+    /// # Errors
+    /// Returns the host rejection; a rejected listener is not retained.
+    fn subscribe(&self, listener: AbortListener) -> ExtensionResult<crate::Subscription>;
 }
 
 /// Cancellation flag of an operation. Clones share the host flag and may outlive the
 /// callback that received them.
 #[derive(Clone)]
-pub struct AbortSignal(Rc<dyn SignalPort>);
+pub struct AbortSignal {
+    /// Cancellation observations supplied by the signal's owner.
+    port: Rc<dyn SignalPort>,
+    /// Original host resource, retained when the host supplied this signal.
+    #[cfg(any(test, target_arch = "wasm32"))]
+    host: Option<Rc<dyn std::any::Any>>,
+}
 
 impl AbortSignal {
     /// Wraps the host's flag.
     #[must_use]
     pub fn new(port: Rc<dyn SignalPort>) -> Self {
-        Self(port)
+        Self {
+            port,
+            #[cfg(any(test, target_arch = "wasm32"))]
+            host: None,
+        }
+    }
+
+    /// Keeps a supplied host resource available for later operations.
+    #[cfg(any(test, target_arch = "wasm32"))]
+    pub(crate) fn supplied<P: SignalPort + 'static>(port: Rc<P>) -> Self {
+        Self {
+            port: port.clone(),
+            host: Some(port),
+        }
+    }
+
+    /// Recovers the retained host resource without creating another signal.
+    #[cfg(any(test, target_arch = "wasm32"))]
+    pub(crate) fn host<P: 'static>(&self) -> Option<Rc<P>> {
+        self.host.clone()?.downcast().ok()
     }
 
     /// Whether the operation was cancelled when this is called.
     #[must_use]
     pub fn aborted(&self) -> bool {
-        self.0.aborted()
+        self.port.aborted()
+    }
+
+    /// Registers `listener` to run once when the operation is cancelled.
+    ///
+    /// Host signals invoke the listener synchronously on their local owner; an abort
+    /// from another thread wakes that owner. A listener registered after cancellation
+    /// never runs; read [`AbortSignal::aborted`] first.
+    /// Dropping the returned subscription keeps the listener; unsubscribe to remove it.
+    ///
+    /// # Errors
+    /// Returns the host rejection; a rejected listener is not retained.
+    pub fn subscribe(&self, listener: AbortListener) -> ExtensionResult<crate::Subscription> {
+        self.port.subscribe(listener)
     }
 }
 

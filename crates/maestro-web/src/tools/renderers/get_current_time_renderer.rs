@@ -1,5 +1,5 @@
 //! Current-time result cards without clock or timezone operations.
-use super::card_content::{Body, Caption, CardContent, field, state};
+use super::card_content::{Body, Caption, CardContent, CardOutput, field, state};
 use crate::tools::{
     renderer_registry::get_text_output,
     types::{ToolRenderResult, ToolRenderer, ToolResultMessageView, ToolUiError},
@@ -7,13 +7,13 @@ use crate::tools::{
 use maestro_app::JsonObject;
 /// Stateless current-time result renderer; it reads no clock.
 pub struct GetCurrentTimeRenderer;
-impl<D> ToolRenderer<JsonObject, D> for GetCurrentTimeRenderer {
+impl<D, C: CardOutput> ToolRenderer<JsonObject, D, C> for GetCurrentTimeRenderer {
     fn render(
         &self,
         params: Option<&JsonObject>,
         result: Option<ToolResultMessageView<'_, D>>,
         _is_streaming: bool,
-    ) -> Result<ToolRenderResult, ToolUiError> {
+    ) -> Result<ToolRenderResult<C>, ToolUiError> {
         let state = state(result.as_ref());
         let timezone = field(params, "timezone")?;
         let (key, mut suffix) = if let Some(timezone) = timezone {

@@ -38,6 +38,21 @@ pub(super) fn mount(
     document: &web_sys::Document,
     body: &Rc<RefCell<Body>>,
 ) -> Result<ReadingRoot, AttachmentHostError> {
+    let root = nodes(document, body)?;
+    Ok(ReadingRoot {
+        frame_style: "",
+        decoration: None,
+        element: root.node.unchecked_into(),
+        slots: vec![],
+        owner: root.owner,
+        commit: None,
+    })
+}
+/// Build the native image independently of a retained placement.
+pub(super) fn nodes(
+    document: &web_sys::Document,
+    body: &Rc<RefCell<Body>>,
+) -> Result<crate::dom::DomRoot, AttachmentHostError> {
     let root = element(document, "div", "maestro-image-artifact")?;
     if body.borrow().svg {
         root.set_class_name("maestro-image-artifact maestro-svg-artifact");
@@ -71,12 +86,8 @@ pub(super) fn mount(
         )
     };
     sync(&body.borrow()).map_err(|error| host_error(&error))?;
-    Ok(ReadingRoot {
-        frame_style: "",
-        decoration: None,
-        element: root,
-        slots: vec![],
+    Ok(crate::dom::DomRoot {
+        node: root.into(),
         owner: listener.map(|listener| Box::new(listener) as Box<dyn std::any::Any>),
-        commit: None,
     })
 }

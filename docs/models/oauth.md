@@ -6,6 +6,13 @@ and refresh, and response-account `login_openai_codex`,
 `refresh_openai_codex_token` and `OPENAI_CODEX_OAUTH_PROVIDER`,
 and GitHub Copilot device login and refresh.
 
+A terminal frontend reads this metadata through `maestro-app`, which re-exports
+`get_providers`, `DEFAULT_MODEL_PER_PROVIDER`, `BUILT_IN_PROVIDER_DISPLAY_NAMES`,
+`OAuthSelectPrompt` and `OAuthSelectOption` at its root. The two provider tables
+are the catalog's own, and the prompt records are the ones `maestro-models`
+defines, so a frontend selects a model and presents an authorization prompt
+without keeping copies.
+
 `OAuthCredentials` carries token strings, an expiry number in Unix epoch
 milliseconds and flattened provider extension fields. It does not validate
 credentials or persist them. Prompt and authorization records omit absent
@@ -33,6 +40,12 @@ must resolve before the page's colors, fonts and mark; failures return diagnosti
 messages rather than a fallback palette. Replacing these assets changes the identity
 at build time; there is no runtime asset loader or network font acquisition.
 
+Native `OAuthLoginCallbacks::callback_presence()` reports progress, manual-code
+and selection presence in that order, without starting callbacks or futures.
+Its default declares all three absent. Implementers that supply optional methods
+also override this query. The guest callback record derives the same flags from
+its optional fields. A supplied selector returning `None` is still present.
+
 ## Provider registry
 
 The registry starts with `anthropic`, `github-copilot` and `openai-codex`, in that
@@ -42,6 +55,11 @@ built-in implementation or removes a custom entry; unknown IDs are ignored.
 `reset_oauth_providers` restores the original roster and order.
 `get_oauth_provider` looks up an exact ID; `get_oauth_providers` returns an ordered
 membership snapshot whose handles share provider state.
+
+`OAuthProviderInterface::get_api_key` returns `Cow<'a, str>`. Built-in providers
+borrow the access field; custom providers may return a computed, owned key that
+is not present in their credentials. Callers that retain the key use
+`into_owned()`, so an already owned result is not copied.
 
 `refresh_oauth_token` delegates one refresh without checking expiry or extracting
 a key. `get_oauth_api_key` selects a provider, returns `None` for missing supplied
@@ -118,10 +136,13 @@ waiting. Manual work remains independently owned even after a browser winner or
 the loss of all observation handles.
 
 Login binds a native listener at `127.0.0.1:53692`; a nonempty
-`MAESTRO_OAUTH_CALLBACK_HOST` changes only its binding host. A binding that
-conflicts with the configured address makes login return a native binding error
-before interaction callbacks run. The redirect remains
-`http://localhost:53692/callback`. A browser binding attempt returns
+`MAESTRO_OAUTH_CALLBACK_HOST` changes only its binding host. When port 53692
+cannot be bound, login binds any free port on the same host instead. If that
+also fails, login continues without a listener: the wait for a callback is already
+cancelled, so the manual-input callback or the prompt supplies the code. The redirect
+address is `http://localhost:` followed by the bound port, or `53692` when no port is
+bound, and `/callback`; the authorization address, the prompt placeholder and the token
+exchange all name that address. A browser binding attempt returns
 `Anthropic OAuth requires a native callback listener`; importing the library,
 PKCE, pages and refresh do not require that listener. Interaction is supplied by
 library callbacks: this library does not open a browser or provide a UI.

@@ -10,10 +10,11 @@ repository.workspace = true
 maestro-app = { path = "../maestro-app" }
 maestro-tui = { path = "../maestro-tui" }
 maestro-theme = { path = "../maestro-theme" }
+maestro-path = { path = "../maestro-path" }
 indexmap = "=2.14.2"
 serde_json.workspace = true
 ryu-js.workspace = true
-tokio = { version = "=1.53.3", default-features = false, features = ["sync"] }
+tokio = { version = "=1.53.3", default-features = false, features = ["macros", "sync"] }
 chrono = { version = "=0.4.45", default-features = false, features = ["std", "clock"] }
 regress = { version = "=0.12.0", features = ["prohibit-unsafe"] }
 
@@ -22,16 +23,30 @@ serde.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
-maestro-path = { path = "../maestro-path" }
-tokio = { version = "=1.53.3", default-features = false, features = ["process"] }
+tokio = { version = "=1.53.3", default-features = false, features = ["io-util", "macros", "process"] }
+uuid = { version = "=1.27.0", default-features = false, features = ["std", "v4"] }
 
 [[test]]
 name = "integration"
 path = "tests/integration.rs"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+futures-util = { workspace = true, features = ["async-await"] }
+maestro-models = { path = "../maestro-models" }
+maestro-tui-crossterm = { path = "../maestro-tui-crossterm" }
 maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
 
 [lints]
 workspace = true
+
+[target.'cfg(unix)'.dependencies]
+rustix = { version = "=1.1.5", default-features = false, features = ["std"] }
+
+[target.'cfg(unix)'.dev-dependencies]
+rustix = { version = "=1.1.5", default-features = false, features = ["std", "process", "stdio", "pipe"] }
+
+[[example]]
+name = "rpc_extension_ui"
+path = "../../examples/rpc_extension_ui.rs"
+test = true

@@ -8525,10 +8525,13 @@
       "second": true
     },
     "expected": {
-      "result": null,
-      "error": {
-        "message": "invalid resource list"
+      "result": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
       },
+      "error": null,
       "secondResult": null,
       "commands": [
         {
@@ -8537,6 +8540,16 @@
           "args": [
             "install",
             "pkg",
+            "--prefix",
+            "$ROOT/temp/maestro-extensions/npm/f35b2129"
+          ]
+        },
+        {
+          "mode": "run",
+          "command": "npm",
+          "args": [
+            "install",
+            "second",
             "--prefix",
             "$ROOT/temp/maestro-extensions/npm/f35b2129"
           ]
@@ -8550,6 +8563,11 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/prompt.md": "new",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/skill.md": "new",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/theme.json": "new",
+        "temp/maestro-extensions/npm/f35b2129/node_modules/second/entry.ts": "new",
+        "temp/maestro-extensions/npm/f35b2129/node_modules/second/package.json": "{\"maestro\":{\"extensions\":[7]}}",
+        "temp/maestro-extensions/npm/f35b2129/node_modules/second/prompt.md": "new",
+        "temp/maestro-extensions/npm/f35b2129/node_modules/second/skill.md": "new",
+        "temp/maestro-extensions/npm/f35b2129/node_modules/second/theme.json": "new",
         "temp/maestro-extensions/npm/f35b2129/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
       }
     }
@@ -9300,5 +9318,267 @@
         "temp/maestro-extensions/npm/f35b2129/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
       }
     }
+  },
+  {
+    "case": "git_selection_offline",
+    "recipe": {
+      "kind": "git",
+      "scope": "temporary",
+      "existing": true,
+      "selection": true
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "https://github.com/team/repo",
+              "scope": "temporary",
+              "origin": "package",
+              "baseDir": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+            }
+          }
+        ],
+        "skills": [
+          {
+            "path": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md",
+            "enabled": true,
+            "metadata": {
+              "source": "https://github.com/team/repo",
+              "scope": "temporary",
+              "origin": "package",
+              "baseDir": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+            }
+          }
+        ],
+        "prompts": [
+          {
+            "path": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md",
+            "enabled": true,
+            "metadata": {
+              "source": "https://github.com/team/repo",
+              "scope": "temporary",
+              "origin": "package",
+              "baseDir": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+            }
+          }
+        ],
+        "themes": [
+          {
+            "path": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json",
+            "enabled": true,
+            "metadata": {
+              "source": "https://github.com/team/repo",
+              "scope": "temporary",
+              "origin": "package",
+              "baseDir": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+            }
+          }
+        ]
+      },
+      "error": null,
+      "secondResult": null,
+      "commands": [],
+      "events": [],
+      "files": {
+        "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/entry.ts": "old",
+        "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/package.json": "{\"version\":\"1.0.0\",\"maestro\":{\"extensions\":[\"entry.ts\"],\"skills\":[\"skill.md\"],\"prompts\":[\"prompt.md\"],\"themes\":[\"theme.json\"]}}",
+        "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "old",
+        "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "old",
+        "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "old"
+      }
+    },
+    "target": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+  },
+  {
+    "case": "git_selection_online",
+    "recipe": {
+      "kind": "git",
+      "scope": "temporary",
+      "existing": true,
+      "changed": true,
+      "selection": false
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "https://github.com/team/repo",
+              "scope": "temporary",
+              "origin": "package",
+              "baseDir": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+            }
+          }
+        ],
+        "skills": [
+          {
+            "path": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md",
+            "enabled": true,
+            "metadata": {
+              "source": "https://github.com/team/repo",
+              "scope": "temporary",
+              "origin": "package",
+              "baseDir": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+            }
+          }
+        ],
+        "prompts": [
+          {
+            "path": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md",
+            "enabled": true,
+            "metadata": {
+              "source": "https://github.com/team/repo",
+              "scope": "temporary",
+              "origin": "package",
+              "baseDir": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+            }
+          }
+        ],
+        "themes": [
+          {
+            "path": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json",
+            "enabled": true,
+            "metadata": {
+              "source": "https://github.com/team/repo",
+              "scope": "temporary",
+              "origin": "package",
+              "baseDir": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+            }
+          }
+        ]
+      },
+      "error": null,
+      "secondResult": null,
+      "commands": [
+        {
+          "mode": "capture",
+          "command": "git",
+          "args": [
+            "rev-parse",
+            "--abbrev-ref",
+            "@{upstream}"
+          ],
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo",
+          "timeoutMs": 10000
+        },
+        {
+          "mode": "capture",
+          "command": "git",
+          "args": [
+            "rev-parse",
+            "@{upstream}"
+          ],
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo",
+          "timeoutMs": 10000
+        },
+        {
+          "mode": "run",
+          "command": "git",
+          "args": [
+            "fetch",
+            "--prune",
+            "--no-tags",
+            "origin",
+            "+refs/heads/main:refs/remotes/origin/main"
+          ],
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+        },
+        {
+          "mode": "capture",
+          "command": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo",
+          "timeoutMs": 10000
+        },
+        {
+          "mode": "capture",
+          "command": "git",
+          "args": [
+            "rev-parse",
+            "@{upstream}"
+          ],
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo",
+          "timeoutMs": 10000
+        },
+        {
+          "mode": "capture",
+          "command": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo",
+          "timeoutMs": 10000
+        },
+        {
+          "mode": "capture",
+          "command": "git",
+          "args": [
+            "rev-parse",
+            "--symbolic-full-name",
+            "HEAD"
+          ],
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo",
+          "timeoutMs": 10000
+        },
+        {
+          "mode": "run",
+          "command": "git",
+          "args": [
+            "reset",
+            "--hard",
+            "@{upstream}"
+          ],
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+        },
+        {
+          "mode": "run",
+          "command": "git",
+          "args": [
+            "clean",
+            "-fdx"
+          ],
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+        },
+        {
+          "mode": "run",
+          "command": "npm",
+          "args": [
+            "install",
+            "--omit=dev"
+          ],
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "pull",
+          "source": "https://github.com/team/repo",
+          "message": "Refreshing https://github.com/team/repo..."
+        },
+        {
+          "type": "complete",
+          "action": "pull",
+          "source": "https://github.com/team/repo"
+        }
+      ],
+      "files": {
+        "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/entry.ts": "refreshed",
+        "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/package.json": "{\"version\":\"1.0.0\",\"maestro\":{\"extensions\":[\"entry.ts\"],\"skills\":[\"skill.md\"],\"prompts\":[\"prompt.md\"],\"themes\":[\"theme.json\"]}}",
+        "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "refreshed",
+        "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "refreshed",
+        "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "refreshed"
+      }
+    },
+    "target": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
   }
 ]

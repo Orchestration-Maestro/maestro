@@ -8,8 +8,8 @@ use maestro_web::{
     tools::types::ToolUiError,
 };
 use serde_json::Value;
-use std::rc::Rc;
-use wasm_bindgen::{JsCast as _, JsValue};
+use std::{cell::RefCell, rc::Rc};
+use wasm_bindgen::{JsCast as _, JsValue, closure::Closure};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Document, Element, HtmlElement, Node};
 
@@ -43,6 +43,19 @@ pub(crate) fn view() -> Rc<DomView> {
         highlighter: Rc::new(maestro_theme::SyntectHighlighter::new().unwrap()),
         pack: Rc::new(crate::brand::pack("brand.json").unwrap()),
         mode: maestro_theme::BrandMode::Dark,
+        tool_renderers: Rc::default(),
+    })
+}
+/// Replace only localization, keeping the supplied document, syntax engine and brand operands.
+pub(crate) fn localized_view(view: &DomView, language: &str) -> Rc<DomView> {
+    let i18n = I18n::new(Rc::new(crate::support::Host {
+        stored: Some(language.to_owned()).into(),
+        ..crate::support::Host::default()
+    }))
+    .unwrap();
+    Rc::new(DomView {
+        i18n: Rc::new(i18n),
+        ..view.clone()
     })
 }
 /// The isolated-frame document served beside the page, which carries no page policy.
@@ -98,6 +111,16 @@ pub(crate) async fn until(module: &JsValue, target: &Node, ready: impl Fn() -> b
     while !ready() {
         call(module, "changed", &js_sys::Array::of1(target)).await;
     }
+}
+/// A meter reading the UTF-16 code units that changes below `target` published since its
+/// previous reading, outside elements matching a nonempty `skip` selector.
+pub(crate) async fn published(module: &JsValue, target: &Node, skip: &str) -> impl Fn() -> f64 {
+    let measure = call(module, "written", &js_sys::Array::of1(&skip.into())).await;
+    let take: js_sys::Function = call(module, "recorder", &js_sys::Array::of2(target, &measure))
+        .await
+        .dyn_into()
+        .unwrap();
+    move || take.call0(&JsValue::NULL).unwrap().as_f64().unwrap()
 }
 /// Call a driver binding the harness exposes on the page.
 pub(crate) async fn driver(name: &str, argument: &str) -> JsValue {
@@ -156,4 +179,110 @@ impl DomContent for Text {
         root.node.set_text_content(Some(self.0));
         Ok(())
     }
+}
+/// A CSS `rgb(...)` value for a `#rrggbb` brand color.
+pub(crate) fn rgb(hex: &str) -> String {
+    let channel = |at: usize| u8::from_str_radix(&hex[at..at + 2], 16).unwrap();
+    format!("rgb({}, {}, {})", channel(1), channel(3), channel(5))
+}
+/// One computed style property of an element.
+pub(crate) fn computed(element: &Element, property: &str) -> String {
+    web_sys::window()
+        .unwrap()
+        .get_computed_style(element)
+        .unwrap()
+        .unwrap()
+        .get_property_value(property)
+        .unwrap()
+}
+
+/// Outcome of a stubbed clipboard write.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Clipboard {
+    /// The write succeeds at once.
+    Accept,
+    /// The page refuses the write.
+    Refuse,
+    /// The write succeeds when the test settles it.
+    Defer,
+}
+/// A stubbed page clipboard recording each written text.
+pub(crate) struct Recorded {
+    /// Texts written so far.
+    texts: Rc<RefCell<Vec<String>>>,
+    /// Settlements of deferred writes, oldest last.
+    settlements: Rc<RefCell<Vec<js_sys::Function>>>,
+    /// The installed write, which stays reachable while this recorder lives.
+    _write: Closure<dyn Fn(String) -> js_sys::Promise>,
+}
+impl Recorded {
+    /// Replace the page clipboard with a recorder settling each write by `outcome`.
+    pub(crate) fn install(outcome: Clipboard) -> Self {
+        let texts: Rc<RefCell<Vec<String>>> = Rc::default();
+        let settlements: Rc<RefCell<Vec<js_sys::Function>>> = Rc::default();
+        let (recorded, deferred) = (Rc::clone(&texts), Rc::clone(&settlements));
+        let write = Closure::<dyn Fn(String) -> js_sys::Promise>::new(move |text: String| {
+            recorded.borrow_mut().push(text);
+            match outcome {
+                Clipboard::Accept => js_sys::Promise::resolve(&JsValue::UNDEFINED),
+                Clipboard::Refuse => js_sys::Promise::reject(&JsValue::from_str("refused")),
+                Clipboard::Defer => js_sys::Promise::new(&mut |resolve, _reject| {
+                    deferred.borrow_mut().push(resolve);
+                }),
+            }
+        });
+        let navigator = web_sys::window().unwrap().navigator();
+        let clipboard = js_sys::Reflect::get(&navigator, &"clipboard".into()).unwrap();
+        js_sys::Reflect::set(&clipboard, &"writeText".into(), write.as_ref()).unwrap();
+        Self {
+            texts,
+            settlements,
+            _write: write,
+        }
+    }
+    /// The texts written so far.
+    pub(crate) fn texts(&self) -> Vec<String> {
+        self.texts.borrow().clone()
+    }
+    /// Settle the oldest deferred write.
+    pub(crate) fn settle(&self) {
+        let next = self.settlements.borrow_mut().pop();
+        if let Some(resolve) = next {
+            resolve.call0(&JsValue::UNDEFINED).unwrap();
+        }
+    }
+}
+/// Wait for `count` animation frames.
+pub(crate) async fn frames(page: &JsValue, count: u32) {
+    call(page, "frames", &js_sys::Array::of1(&JsValue::from(count))).await;
+}
+/// The selected text and whether `root` holds the selection.
+pub(crate) async fn selection(page: &JsValue, root: &Element) -> (String, bool) {
+    let pair = js_sys::Array::from(&call(page, "selection", &js_sys::Array::of1(root)).await);
+    (
+        pair.get(0).as_string().unwrap(),
+        pair.get(1).as_bool().unwrap(),
+    )
+}
+
+/// One required descendant, reporting the missing selector.
+pub(crate) fn select(node: &Node, selector: &str) -> Element {
+    node.unchecked_ref::<Element>()
+        .query_selector(selector)
+        .unwrap()
+        .unwrap_or_else(|| panic!("missing {selector}"))
+}
+/// Whether `element` holds the page focus.
+pub(crate) fn focused(element: &Element) -> bool {
+    document()
+        .active_element()
+        .is_some_and(|active| active.is_same_node(Some(element)))
+}
+/// The disclosure button of a collapsible tool header row, absent from a plain header.
+pub(crate) fn disclosure(header: &Node) -> Option<HtmlElement> {
+    header
+        .unchecked_ref::<Element>()
+        .query_selector(":scope > button.maestro-tool-chevron")
+        .unwrap()
+        .map(wasm_bindgen::JsCast::unchecked_into)
 }

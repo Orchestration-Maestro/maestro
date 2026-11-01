@@ -1,0 +1,2040 @@
+[
+  {
+    "test": "loaded_resources_use_compact_defaults",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "quiet": false,
+        "verbose": false,
+        "expanded": false
+      },
+      "force": false,
+      "skills": [
+        {
+          "filePath": "/work/SKILL.md",
+          "name": "commit"
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "@dim@  commit\u001b[39m                                                                                                                                                                                                                    ",
+        ""
+      ],
+      "expanded": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /work/SKILL.md\u001b[39m                                                                                                                                                                                                          ",
+        ""
+      ],
+      "collapsed": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "@dim@  commit\u001b[39m                                                                                                                                                                                                                    ",
+        ""
+      ],
+      "children": 2
+    }
+  },
+  {
+    "test": "loaded_resources_expand_each_retained_section",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "quiet": false,
+        "verbose": false,
+        "expanded": true
+      },
+      "force": false,
+      "skills": [
+        {
+          "filePath": "/work/SKILL.md",
+          "name": "commit"
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /work/SKILL.md\u001b[39m                                                                                                                                                                                                          ",
+        ""
+      ],
+      "expanded": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /work/SKILL.md\u001b[39m                                                                                                                                                                                                          ",
+        ""
+      ],
+      "collapsed": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "@dim@  commit\u001b[39m                                                                                                                                                                                                                    ",
+        ""
+      ],
+      "children": 2
+    }
+  },
+  {
+    "test": "loaded_resources_use_compact_defaults",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "quiet": false,
+        "verbose": false,
+        "expanded": false
+      },
+      "force": true,
+      "skills": [
+        {
+          "filePath": "/work/SKILL.md",
+          "name": "commit"
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "@dim@  commit\u001b[39m                                                                                                                                                                                                                    ",
+        ""
+      ],
+      "expanded": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /work/SKILL.md\u001b[39m                                                                                                                                                                                                          ",
+        ""
+      ],
+      "collapsed": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "@dim@  commit\u001b[39m                                                                                                                                                                                                                    ",
+        ""
+      ],
+      "children": 2
+    }
+  },
+  {
+    "test": "loaded_resources_expand_each_retained_section",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "quiet": false,
+        "verbose": false,
+        "expanded": true
+      },
+      "force": true,
+      "skills": [
+        {
+          "filePath": "/work/SKILL.md",
+          "name": "commit"
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /work/SKILL.md\u001b[39m                                                                                                                                                                                                          ",
+        ""
+      ],
+      "expanded": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /work/SKILL.md\u001b[39m                                                                                                                                                                                                          ",
+        ""
+      ],
+      "collapsed": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "@dim@  commit\u001b[39m                                                                                                                                                                                                                    ",
+        ""
+      ],
+      "children": 2
+    }
+  },
+  {
+    "test": "verbose_resources_override_quiet_startup",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "quiet": false,
+        "verbose": true,
+        "expanded": false
+      },
+      "force": false,
+      "skills": [
+        {
+          "filePath": "/work/SKILL.md",
+          "name": "commit"
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /work/SKILL.md\u001b[39m                                                                                                                                                                                                          ",
+        ""
+      ],
+      "expanded": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /work/SKILL.md\u001b[39m                                                                                                                                                                                                          ",
+        ""
+      ],
+      "collapsed": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "@dim@  commit\u001b[39m                                                                                                                                                                                                                    ",
+        ""
+      ],
+      "children": 2
+    }
+  },
+  {
+    "test": "verbose_resources_override_quiet_startup",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "quiet": false,
+        "verbose": true,
+        "expanded": true
+      },
+      "force": false,
+      "skills": [
+        {
+          "filePath": "/work/SKILL.md",
+          "name": "commit"
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /work/SKILL.md\u001b[39m                                                                                                                                                                                                          ",
+        ""
+      ],
+      "expanded": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /work/SKILL.md\u001b[39m                                                                                                                                                                                                          ",
+        ""
+      ],
+      "collapsed": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "@dim@  commit\u001b[39m                                                                                                                                                                                                                    ",
+        ""
+      ],
+      "children": 2
+    }
+  },
+  {
+    "test": "verbose_resources_override_quiet_startup",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "quiet": false,
+        "verbose": true,
+        "expanded": false
+      },
+      "force": true,
+      "skills": [
+        {
+          "filePath": "/work/SKILL.md",
+          "name": "commit"
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /work/SKILL.md\u001b[39m                                                                                                                                                                                                          ",
+        ""
+      ],
+      "expanded": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /work/SKILL.md\u001b[39m                                                                                                                                                                                                          ",
+        ""
+      ],
+      "collapsed": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "@dim@  commit\u001b[39m                                                                                                                                                                                                                    ",
+        ""
+      ],
+      "children": 2
+    }
+  },
+  {
+    "test": "verbose_resources_override_quiet_startup",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "quiet": false,
+        "verbose": true,
+        "expanded": true
+      },
+      "force": true,
+      "skills": [
+        {
+          "filePath": "/work/SKILL.md",
+          "name": "commit"
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /work/SKILL.md\u001b[39m                                                                                                                                                                                                          ",
+        ""
+      ],
+      "expanded": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /work/SKILL.md\u001b[39m                                                                                                                                                                                                          ",
+        ""
+      ],
+      "collapsed": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "@dim@  commit\u001b[39m                                                                                                                                                                                                                    ",
+        ""
+      ],
+      "children": 2
+    }
+  },
+  {
+    "test": "quiet_resources_require_force",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "quiet": true,
+        "verbose": false,
+        "expanded": false
+      },
+      "force": false,
+      "skills": [
+        {
+          "filePath": "/work/SKILL.md",
+          "name": "commit"
+        }
+      ]
+    },
+    "expected": {
+      "before": [],
+      "expanded": [],
+      "collapsed": [],
+      "children": 0
+    }
+  },
+  {
+    "test": "quiet_resources_require_force",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "quiet": true,
+        "verbose": false,
+        "expanded": true
+      },
+      "force": false,
+      "skills": [
+        {
+          "filePath": "/work/SKILL.md",
+          "name": "commit"
+        }
+      ]
+    },
+    "expected": {
+      "before": [],
+      "expanded": [],
+      "collapsed": [],
+      "children": 0
+    }
+  },
+  {
+    "test": "quiet_resources_require_force",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "quiet": true,
+        "verbose": false,
+        "expanded": false
+      },
+      "force": true,
+      "skills": [
+        {
+          "filePath": "/work/SKILL.md",
+          "name": "commit"
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "@dim@  commit\u001b[39m                                                                                                                                                                                                                    ",
+        ""
+      ],
+      "expanded": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /work/SKILL.md\u001b[39m                                                                                                                                                                                                          ",
+        ""
+      ],
+      "collapsed": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "@dim@  commit\u001b[39m                                                                                                                                                                                                                    ",
+        ""
+      ],
+      "children": 2
+    }
+  },
+  {
+    "test": "quiet_resources_require_force",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "quiet": true,
+        "verbose": false,
+        "expanded": true
+      },
+      "force": true,
+      "skills": [
+        {
+          "filePath": "/work/SKILL.md",
+          "name": "commit"
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /work/SKILL.md\u001b[39m                                                                                                                                                                                                          ",
+        ""
+      ],
+      "expanded": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /work/SKILL.md\u001b[39m                                                                                                                                                                                                          ",
+        ""
+      ],
+      "collapsed": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "@dim@  commit\u001b[39m                                                                                                                                                                                                                    ",
+        ""
+      ],
+      "children": 2
+    }
+  },
+  {
+    "test": "verbose_resources_override_quiet_startup",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "quiet": true,
+        "verbose": true,
+        "expanded": false
+      },
+      "force": false,
+      "skills": [
+        {
+          "filePath": "/work/SKILL.md",
+          "name": "commit"
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /work/SKILL.md\u001b[39m                                                                                                                                                                                                          ",
+        ""
+      ],
+      "expanded": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /work/SKILL.md\u001b[39m                                                                                                                                                                                                          ",
+        ""
+      ],
+      "collapsed": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "@dim@  commit\u001b[39m                                                                                                                                                                                                                    ",
+        ""
+      ],
+      "children": 2
+    }
+  },
+  {
+    "test": "verbose_resources_override_quiet_startup",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "quiet": true,
+        "verbose": true,
+        "expanded": true
+      },
+      "force": false,
+      "skills": [
+        {
+          "filePath": "/work/SKILL.md",
+          "name": "commit"
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /work/SKILL.md\u001b[39m                                                                                                                                                                                                          ",
+        ""
+      ],
+      "expanded": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /work/SKILL.md\u001b[39m                                                                                                                                                                                                          ",
+        ""
+      ],
+      "collapsed": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "@dim@  commit\u001b[39m                                                                                                                                                                                                                    ",
+        ""
+      ],
+      "children": 2
+    }
+  },
+  {
+    "test": "verbose_resources_override_quiet_startup",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "quiet": true,
+        "verbose": true,
+        "expanded": false
+      },
+      "force": true,
+      "skills": [
+        {
+          "filePath": "/work/SKILL.md",
+          "name": "commit"
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /work/SKILL.md\u001b[39m                                                                                                                                                                                                          ",
+        ""
+      ],
+      "expanded": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /work/SKILL.md\u001b[39m                                                                                                                                                                                                          ",
+        ""
+      ],
+      "collapsed": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "@dim@  commit\u001b[39m                                                                                                                                                                                                                    ",
+        ""
+      ],
+      "children": 2
+    }
+  },
+  {
+    "test": "verbose_resources_override_quiet_startup",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "quiet": true,
+        "verbose": true,
+        "expanded": true
+      },
+      "force": true,
+      "skills": [
+        {
+          "filePath": "/work/SKILL.md",
+          "name": "commit"
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /work/SKILL.md\u001b[39m                                                                                                                                                                                                          ",
+        ""
+      ],
+      "expanded": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /work/SKILL.md\u001b[39m                                                                                                                                                                                                          ",
+        ""
+      ],
+      "collapsed": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "@dim@  commit\u001b[39m                                                                                                                                                                                                                    ",
+        ""
+      ],
+      "children": 2
+    }
+  },
+  {
+    "test": "empty_resources_do_not_add_chat_children",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "expanded": false
+      }
+    },
+    "expected": {
+      "before": [],
+      "expanded": [],
+      "collapsed": [],
+      "children": 0
+    }
+  },
+  {
+    "test": "empty_resources_do_not_add_chat_children",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "expanded": true
+      }
+    },
+    "expected": {
+      "before": [],
+      "expanded": [],
+      "collapsed": [],
+      "children": 0
+    }
+  },
+  {
+    "test": "context_resources_keep_discovery_order_and_relative_paths",
+    "input": {
+      "op": "listing",
+      "cwd": "/home/user/Development/maestro",
+      "context": [
+        {
+          "path": "/home/user/.maestro/agent/AGENTS.md"
+        },
+        {
+          "path": "/home/user/Development/maestro/AGENTS.md"
+        },
+        {
+          "path": "/outside/AGENTS.md"
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  ~/.maestro/agent/AGENTS.md, AGENTS.md, /outside/AGENTS.md\u001b[39m                                                                                                                                                                 ",
+        ""
+      ],
+      "expanded": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  ~/.maestro/agent/AGENTS.md\u001b[39m                                                                                                                                                                                                ",
+        "@dim@  ~/Development/maestro/AGENTS.md\u001b[39m                                                                                                                                                                                           ",
+        "@dim@  /outside/AGENTS.md\u001b[39m                                                                                                                                                                                                        ",
+        ""
+      ],
+      "collapsed": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  ~/.maestro/agent/AGENTS.md, AGENTS.md, /outside/AGENTS.md\u001b[39m                                                                                                                                                                 ",
+        ""
+      ],
+      "children": 3
+    }
+  },
+  {
+    "test": "loaded_resources_use_compact_defaults",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "quiet": false,
+        "verbose": false,
+        "expanded": false
+      },
+      "force": false,
+      "cwd": "/home/user/Development/maestro",
+      "context": [
+        {
+          "path": "/home/user/Development/maestro/AGENTS.md"
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  AGENTS.md\u001b[39m                                                                                                                                                                                                                 ",
+        ""
+      ],
+      "expanded": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  ~/Development/maestro/AGENTS.md\u001b[39m                                                                                                                                                                                           ",
+        ""
+      ],
+      "collapsed": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  AGENTS.md\u001b[39m                                                                                                                                                                                                                 ",
+        ""
+      ],
+      "children": 3
+    }
+  },
+  {
+    "test": "quiet_resources_require_force",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "quiet": true,
+        "verbose": false,
+        "expanded": false
+      },
+      "force": false,
+      "cwd": "/home/user/Development/maestro",
+      "context": [
+        {
+          "path": "/home/user/Development/maestro/AGENTS.md"
+        }
+      ]
+    },
+    "expected": {
+      "before": [],
+      "expanded": [],
+      "collapsed": [],
+      "children": 0
+    }
+  },
+  {
+    "test": "verbose_resources_override_quiet_startup",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "quiet": true,
+        "verbose": true,
+        "expanded": false
+      },
+      "force": false,
+      "cwd": "/home/user/Development/maestro",
+      "context": [
+        {
+          "path": "/home/user/Development/maestro/AGENTS.md"
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  ~/Development/maestro/AGENTS.md\u001b[39m                                                                                                                                                                                           ",
+        ""
+      ],
+      "expanded": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  ~/Development/maestro/AGENTS.md\u001b[39m                                                                                                                                                                                           ",
+        ""
+      ],
+      "collapsed": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  AGENTS.md\u001b[39m                                                                                                                                                                                                                 ",
+        ""
+      ],
+      "children": 3
+    }
+  },
+  {
+    "test": "quiet_resources_require_force",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "quiet": true,
+        "verbose": false,
+        "expanded": false
+      },
+      "force": true,
+      "cwd": "/home/user/Development/maestro",
+      "context": [
+        {
+          "path": "/home/user/Development/maestro/AGENTS.md"
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  AGENTS.md\u001b[39m                                                                                                                                                                                                                 ",
+        ""
+      ],
+      "expanded": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  ~/Development/maestro/AGENTS.md\u001b[39m                                                                                                                                                                                           ",
+        ""
+      ],
+      "collapsed": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  AGENTS.md\u001b[39m                                                                                                                                                                                                                 ",
+        ""
+      ],
+      "children": 3
+    }
+  },
+  {
+    "test": "quiet_resources_require_force",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "quiet": true,
+        "verbose": false,
+        "expanded": true
+      },
+      "force": true,
+      "cwd": "/home/user/Development/maestro",
+      "context": [
+        {
+          "path": "/home/user/Development/maestro/AGENTS.md"
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  ~/Development/maestro/AGENTS.md\u001b[39m                                                                                                                                                                                           ",
+        ""
+      ],
+      "expanded": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  ~/Development/maestro/AGENTS.md\u001b[39m                                                                                                                                                                                           ",
+        ""
+      ],
+      "collapsed": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  AGENTS.md\u001b[39m                                                                                                                                                                                                                 ",
+        ""
+      ],
+      "children": 3
+    }
+  },
+  {
+    "test": "loaded_resources_keep_heading_roles_and_section_spacing",
+    "input": {
+      "op": "listing",
+      "context": [
+        {
+          "path": "/context-only"
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  /context-only\u001b[39m                                                                                                                                                                                                             ",
+        ""
+      ],
+      "expanded": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  /context-only\u001b[39m                                                                                                                                                                                                             ",
+        ""
+      ],
+      "collapsed": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  /context-only\u001b[39m                                                                                                                                                                                                             ",
+        ""
+      ],
+      "children": 3
+    }
+  },
+  {
+    "test": "loaded_resource_sections_retain_content_across_redraws",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "expanded": true
+      },
+      "context": [
+        {
+          "path": "/work/\u001b[7m \u001b[27m.md"
+        }
+      ],
+      "width": 40
+    },
+    "expected": {
+      "before": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                               ",
+        "@dim@  /work/\u001b[7m \u001b[27m.md\u001b[39m                            ",
+        ""
+      ],
+      "expanded": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                               ",
+        "@dim@  /work/\u001b[7m \u001b[27m.md\u001b[39m                            ",
+        ""
+      ],
+      "collapsed": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                               ",
+        "@dim@  /work/\u001b[7m \u001b[27m.md\u001b[39m                            ",
+        ""
+      ],
+      "children": 3
+    }
+  },
+  {
+    "test": "loaded_resources_expand_each_retained_section",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "expanded": true
+      },
+      "cwd": "/home/user/Development/maestro",
+      "context": [
+        {
+          "path": "/home/user/.maestro/agent/AGENTS.md"
+        },
+        {
+          "path": "/home/user/Development/maestro/AGENTS.md"
+        },
+        {
+          "path": "/outside/AGENTS.md"
+        }
+      ],
+      "skills": [
+        {
+          "filePath": "/work/SKILL.md",
+          "name": "commit"
+        }
+      ],
+      "templates": [
+        {
+          "filePath": "/work/a.md",
+          "name": "review"
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  ~/.maestro/agent/AGENTS.md\u001b[39m                                                                                                                                                                                                ",
+        "@dim@  ~/Development/maestro/AGENTS.md\u001b[39m                                                                                                                                                                                           ",
+        "@dim@  /outside/AGENTS.md\u001b[39m                                                                                                                                                                                                        ",
+        "",
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /work/SKILL.md\u001b[39m                                                                                                                                                                                                          ",
+        "",
+        "@mdHeading@[Prompts]\u001b[39m                                                                                                                                                                                                                   ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /review\u001b[39m                                                                                                                                                                                                                 ",
+        ""
+      ],
+      "expanded": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  ~/.maestro/agent/AGENTS.md\u001b[39m                                                                                                                                                                                                ",
+        "@dim@  ~/Development/maestro/AGENTS.md\u001b[39m                                                                                                                                                                                           ",
+        "@dim@  /outside/AGENTS.md\u001b[39m                                                                                                                                                                                                        ",
+        "",
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /work/SKILL.md\u001b[39m                                                                                                                                                                                                          ",
+        "",
+        "@mdHeading@[Prompts]\u001b[39m                                                                                                                                                                                                                   ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /review\u001b[39m                                                                                                                                                                                                                 ",
+        ""
+      ],
+      "collapsed": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  ~/.maestro/agent/AGENTS.md, AGENTS.md, /outside/AGENTS.md\u001b[39m                                                                                                                                                                 ",
+        "",
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "@dim@  commit\u001b[39m                                                                                                                                                                                                                    ",
+        "",
+        "@mdHeading@[Prompts]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  /review\u001b[39m                                                                                                                                                                                                                   ",
+        ""
+      ],
+      "children": 7
+    }
+  },
+  {
+    "test": "context_resources_resolve_lexically_without_touching_files",
+    "input": {
+      "op": "context",
+      "cwd": "/work/project",
+      "path": ".",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "."
+    }
+  },
+  {
+    "test": "context_resources_resolve_lexically_without_touching_files",
+    "input": {
+      "op": "context",
+      "cwd": "/work/project",
+      "path": "nested/../AGENTS.md",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "AGENTS.md"
+    }
+  },
+  {
+    "test": "context_resources_resolve_lexically_without_touching_files",
+    "input": {
+      "op": "context",
+      "cwd": "/work/project",
+      "path": "./界/../a.md",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "a.md"
+    }
+  },
+  {
+    "test": "context_resources_resolve_lexically_without_touching_files",
+    "input": {
+      "op": "context",
+      "cwd": "/work/project",
+      "path": "../AGENTS.md",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "/work/AGENTS.md"
+    }
+  },
+  {
+    "test": "context_resources_resolve_lexically_without_touching_files",
+    "input": {
+      "op": "context",
+      "cwd": "/work/project",
+      "path": "/outside/file",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "/outside/file"
+    }
+  },
+  {
+    "test": "context_resources_resolve_lexically_without_touching_files",
+    "input": {
+      "op": "context",
+      "cwd": "/work/project",
+      "path": "..notes/a",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "/work/project/..notes/a"
+    }
+  },
+  {
+    "test": "context_resources_resolve_lexically_without_touching_files",
+    "input": {
+      "op": "context",
+      "cwd": "/work/project",
+      "path": "x/../../y",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "/work/y"
+    }
+  },
+  {
+    "test": "context_resources_resolve_lexically_without_touching_files",
+    "input": {
+      "op": "context",
+      "cwd": "/work/project",
+      "path": "",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "."
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "/home/user",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "~"
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "/home/user/child",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "~/child"
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "/home/user-sibling/a",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "/home/user-sibling/a"
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "/outside/a",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "/outside/a"
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "relative",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "relative"
+    }
+  },
+  {
+    "test": "package_resources_shorten_from_roots_before_legacy_fallbacks",
+    "input": {
+      "op": "short",
+      "path": "/pkg/skills/a.md",
+      "sourceInfo": {
+        "source": "npm:pkg",
+        "scope": "project",
+        "baseDir": "/pkg"
+      },
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "skills/a.md"
+    }
+  },
+  {
+    "test": "package_resources_shorten_from_roots_before_legacy_fallbacks",
+    "input": {
+      "op": "short",
+      "path": "/pkg",
+      "sourceInfo": {
+        "source": "npm:pkg",
+        "scope": "project",
+        "baseDir": "/pkg"
+      },
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "/pkg"
+    }
+  },
+  {
+    "test": "package_resources_shorten_from_roots_before_legacy_fallbacks",
+    "input": {
+      "op": "short",
+      "path": "/pkg/../outside/a.md",
+      "sourceInfo": {
+        "source": "git:host/a/b",
+        "scope": "project",
+        "baseDir": "/pkg"
+      },
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "/pkg/../outside/a.md"
+    }
+  },
+  {
+    "test": "package_resources_shorten_from_roots_before_legacy_fallbacks",
+    "input": {
+      "op": "short",
+      "path": "/pkg/..notes/a.md",
+      "sourceInfo": {
+        "source": "npm:pkg",
+        "scope": "project",
+        "baseDir": "/pkg"
+      },
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "/pkg/..notes/a.md"
+    }
+  },
+  {
+    "test": "package_resources_shorten_from_roots_before_legacy_fallbacks",
+    "input": {
+      "op": "short",
+      "path": "/cache/node_modules/@scope/name/skills/a.md",
+      "sourceInfo": {
+        "source": "npm:@scope/name",
+        "scope": "project"
+      },
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "skills/a.md"
+    }
+  },
+  {
+    "test": "package_resources_shorten_from_roots_before_legacy_fallbacks",
+    "input": {
+      "op": "short",
+      "path": "/cache/node_modules/name/skills/a.md",
+      "sourceInfo": {
+        "source": "npm:name",
+        "scope": "project"
+      },
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "a.md"
+    }
+  },
+  {
+    "test": "package_resources_shorten_from_roots_before_legacy_fallbacks",
+    "input": {
+      "op": "short",
+      "path": "/cache/git/host/repo/skills/a.md",
+      "sourceInfo": {
+        "source": "git:host/repo",
+        "scope": "project"
+      },
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "skills/a.md"
+    }
+  },
+  {
+    "test": "package_resources_shorten_from_roots_before_legacy_fallbacks",
+    "input": {
+      "op": "short",
+      "path": "/cache/node_modules/name/skills/a.md",
+      "sourceInfo": {
+        "source": "local",
+        "scope": "project"
+      },
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "/cache/node_modules/name/skills/a.md"
+    }
+  },
+  {
+    "test": "package_resources_shorten_from_roots_before_legacy_fallbacks",
+    "input": {
+      "op": "short",
+      "path": "/pkg/a.md",
+      "sourceInfo": {
+        "source": "npm:pkg",
+        "scope": "project",
+        "baseDir": ""
+      },
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "/pkg/a.md"
+    }
+  },
+  {
+    "test": "package_resources_shorten_from_roots_before_legacy_fallbacks",
+    "input": {
+      "op": "short",
+      "path": "/pkg/a.md",
+      "sourceInfo": null,
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "/pkg/a.md"
+    }
+  },
+  {
+    "test": "package_resources_shorten_from_roots_before_legacy_fallbacks",
+    "input": {
+      "op": "short",
+      "path": "C:\\pkg\\a.md",
+      "sourceInfo": {
+        "source": "npm:pkg",
+        "scope": "project",
+        "baseDir": "C:\\pkg"
+      },
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "C:\\pkg\\a.md"
+    }
+  },
+  {
+    "test": "resource_scopes_keep_project_user_path_order",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "expanded": true
+      },
+      "skills": [
+        {
+          "filePath": "/z",
+          "name": "z",
+          "sourceInfo": {
+            "source": "local",
+            "scope": "project"
+          }
+        },
+        {
+          "filePath": "/a",
+          "name": "a",
+          "sourceInfo": {
+            "source": "local",
+            "scope": "project"
+          }
+        },
+        {
+          "filePath": "/u",
+          "name": "u",
+          "sourceInfo": {
+            "source": "local",
+            "scope": "user"
+          }
+        },
+        {
+          "filePath": "/t",
+          "name": "t",
+          "sourceInfo": {
+            "source": "cli",
+            "scope": "user"
+          }
+        },
+        {
+          "filePath": "/tp",
+          "name": "tp",
+          "sourceInfo": {
+            "source": "local",
+            "scope": "temporary"
+          }
+        },
+        {
+          "filePath": "/pkg/z",
+          "name": "pz",
+          "sourceInfo": {
+            "source": "npm:z",
+            "scope": "project",
+            "baseDir": "/pkg"
+          }
+        },
+        {
+          "filePath": "/pkg/a",
+          "name": "pa",
+          "sourceInfo": {
+            "source": "npm:a",
+            "scope": "project",
+            "baseDir": "/pkg"
+          }
+        },
+        {
+          "filePath": "/pkg/a",
+          "name": "pa2",
+          "sourceInfo": {
+            "source": "npm:a",
+            "scope": "project",
+            "baseDir": "/pkg"
+          }
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /a\u001b[39m                                                                                                                                                                                                                      ",
+        "@dim@    /z\u001b[39m                                                                                                                                                                                                                      ",
+        "    @mdLink@npm:a\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@      a\u001b[39m                                                                                                                                                                                                                     ",
+        "@dim@      a\u001b[39m                                                                                                                                                                                                                     ",
+        "    @mdLink@npm:z\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@      z\u001b[39m                                                                                                                                                                                                                     ",
+        "  @accent@user\u001b[39m                                                                                                                                                                                                                      ",
+        "@dim@    /u\u001b[39m                                                                                                                                                                                                                      ",
+        "  @accent@path\u001b[39m                                                                                                                                                                                                                      ",
+        "@dim@    /t\u001b[39m                                                                                                                                                                                                                      ",
+        "@dim@    /tp\u001b[39m                                                                                                                                                                                                                     ",
+        ""
+      ],
+      "expanded": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /a\u001b[39m                                                                                                                                                                                                                      ",
+        "@dim@    /z\u001b[39m                                                                                                                                                                                                                      ",
+        "    @mdLink@npm:a\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@      a\u001b[39m                                                                                                                                                                                                                     ",
+        "@dim@      a\u001b[39m                                                                                                                                                                                                                     ",
+        "    @mdLink@npm:z\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@      z\u001b[39m                                                                                                                                                                                                                     ",
+        "  @accent@user\u001b[39m                                                                                                                                                                                                                      ",
+        "@dim@    /u\u001b[39m                                                                                                                                                                                                                      ",
+        "  @accent@path\u001b[39m                                                                                                                                                                                                                      ",
+        "@dim@    /t\u001b[39m                                                                                                                                                                                                                      ",
+        "@dim@    /tp\u001b[39m                                                                                                                                                                                                                     ",
+        ""
+      ],
+      "collapsed": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "@dim@  a, pa, pa2, pz, t, tp, u, z\u001b[39m                                                                                                                                                                                               ",
+        ""
+      ],
+      "children": 2
+    }
+  },
+  {
+    "test": "resource_groups_keep_stable_locale_order",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "expanded": true
+      },
+      "skills": [
+        {
+          "filePath": "/z",
+          "name": "z",
+          "sourceInfo": {
+            "source": "local",
+            "scope": "project"
+          }
+        },
+        {
+          "filePath": "/a",
+          "name": "a",
+          "sourceInfo": {
+            "source": "local",
+            "scope": "project"
+          }
+        },
+        {
+          "filePath": "/u",
+          "name": "u",
+          "sourceInfo": {
+            "source": "local",
+            "scope": "user"
+          }
+        },
+        {
+          "filePath": "/t",
+          "name": "t",
+          "sourceInfo": {
+            "source": "cli",
+            "scope": "user"
+          }
+        },
+        {
+          "filePath": "/tp",
+          "name": "tp",
+          "sourceInfo": {
+            "source": "local",
+            "scope": "temporary"
+          }
+        },
+        {
+          "filePath": "/pkg/z",
+          "name": "pz",
+          "sourceInfo": {
+            "source": "npm:z",
+            "scope": "project",
+            "baseDir": "/pkg"
+          }
+        },
+        {
+          "filePath": "/pkg/a",
+          "name": "pa",
+          "sourceInfo": {
+            "source": "npm:a",
+            "scope": "project",
+            "baseDir": "/pkg"
+          }
+        },
+        {
+          "filePath": "/pkg/a",
+          "name": "pa2",
+          "sourceInfo": {
+            "source": "npm:a",
+            "scope": "project",
+            "baseDir": "/pkg"
+          }
+        },
+        {
+          "filePath": "/A",
+          "name": "A"
+        },
+        {
+          "filePath": "/á",
+          "name": "á"
+        },
+        {
+          "filePath": "/a",
+          "name": "a2"
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /a\u001b[39m                                                                                                                                                                                                                      ",
+        "@dim@    /a\u001b[39m                                                                                                                                                                                                                      ",
+        "@dim@    /A\u001b[39m                                                                                                                                                                                                                      ",
+        "@dim@    /á\u001b[39m                                                                                                                                                                                                                      ",
+        "@dim@    /z\u001b[39m                                                                                                                                                                                                                      ",
+        "    @mdLink@npm:a\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@      a\u001b[39m                                                                                                                                                                                                                     ",
+        "@dim@      a\u001b[39m                                                                                                                                                                                                                     ",
+        "    @mdLink@npm:z\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@      z\u001b[39m                                                                                                                                                                                                                     ",
+        "  @accent@user\u001b[39m                                                                                                                                                                                                                      ",
+        "@dim@    /u\u001b[39m                                                                                                                                                                                                                      ",
+        "  @accent@path\u001b[39m                                                                                                                                                                                                                      ",
+        "@dim@    /t\u001b[39m                                                                                                                                                                                                                      ",
+        "@dim@    /tp\u001b[39m                                                                                                                                                                                                                     ",
+        ""
+      ],
+      "expanded": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /a\u001b[39m                                                                                                                                                                                                                      ",
+        "@dim@    /a\u001b[39m                                                                                                                                                                                                                      ",
+        "@dim@    /A\u001b[39m                                                                                                                                                                                                                      ",
+        "@dim@    /á\u001b[39m                                                                                                                                                                                                                      ",
+        "@dim@    /z\u001b[39m                                                                                                                                                                                                                      ",
+        "    @mdLink@npm:a\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@      a\u001b[39m                                                                                                                                                                                                                     ",
+        "@dim@      a\u001b[39m                                                                                                                                                                                                                     ",
+        "    @mdLink@npm:z\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@      z\u001b[39m                                                                                                                                                                                                                     ",
+        "  @accent@user\u001b[39m                                                                                                                                                                                                                      ",
+        "@dim@    /u\u001b[39m                                                                                                                                                                                                                      ",
+        "  @accent@path\u001b[39m                                                                                                                                                                                                                      ",
+        "@dim@    /t\u001b[39m                                                                                                                                                                                                                      ",
+        "@dim@    /tp\u001b[39m                                                                                                                                                                                                                     ",
+        ""
+      ],
+      "collapsed": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "@dim@  a, A, á, a2, pa, pa2, pz, t, tp, u, z\u001b[39m                                                                                                                                                                                     ",
+        ""
+      ],
+      "children": 2
+    }
+  },
+  {
+    "test": "compact_resource_labels_use_ecmascript_space_rules",
+    "input": {
+      "op": "listing",
+      "skills": [
+        {
+          "filePath": "/p/0",
+          "name": "﻿ alpha ﻿"
+        },
+        {
+          "filePath": "/p/1",
+          "name": "beta"
+        },
+        {
+          "filePath": "/p/2",
+          "name": " \t "
+        },
+        {
+          "filePath": "/p/3",
+          "name": "same"
+        },
+        {
+          "filePath": "/p/4",
+          "name": "same"
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "@dim@  beta, alpha, same, same\u001b[39m                                                                                                                                                                                                   ",
+        ""
+      ],
+      "expanded": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /p/0\u001b[39m                                                                                                                                                                                                                    ",
+        "@dim@    /p/1\u001b[39m                                                                                                                                                                                                                    ",
+        "@dim@    /p/2\u001b[39m                                                                                                                                                                                                                    ",
+        "@dim@    /p/3\u001b[39m                                                                                                                                                                                                                    ",
+        "@dim@    /p/4\u001b[39m                                                                                                                                                                                                                    ",
+        ""
+      ],
+      "collapsed": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "@dim@  beta, alpha, same, same\u001b[39m                                                                                                                                                                                                   ",
+        ""
+      ],
+      "children": 2
+    }
+  },
+  {
+    "test": "prompt_resources_use_session_templates_and_last_path_lookup",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "expanded": true
+      },
+      "loaderTemplates": [
+        {
+          "filePath": "/loader.md",
+          "name": "NOT_SELECTED"
+        }
+      ],
+      "templates": [
+        {
+          "filePath": "/same",
+          "name": "earlier"
+        },
+        {
+          "filePath": "/same",
+          "name": "later"
+        },
+        {
+          "filePath": "/pkg/a",
+          "name": "pkg",
+          "sourceInfo": {
+            "source": "npm:pkg",
+            "scope": "user",
+            "baseDir": "/pkg"
+          }
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "@mdHeading@[Prompts]\u001b[39m                                                                                                                                                                                                                   ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /later\u001b[39m                                                                                                                                                                                                                  ",
+        "@dim@    /later\u001b[39m                                                                                                                                                                                                                  ",
+        "  @accent@user\u001b[39m                                                                                                                                                                                                                      ",
+        "    @mdLink@npm:pkg\u001b[39m                                                                                                                                                                                                                 ",
+        "@dim@      /pkg\u001b[39m                                                                                                                                                                                                                  ",
+        ""
+      ],
+      "expanded": [
+        "@mdHeading@[Prompts]\u001b[39m                                                                                                                                                                                                                   ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /later\u001b[39m                                                                                                                                                                                                                  ",
+        "@dim@    /later\u001b[39m                                                                                                                                                                                                                  ",
+        "  @accent@user\u001b[39m                                                                                                                                                                                                                      ",
+        "    @mdLink@npm:pkg\u001b[39m                                                                                                                                                                                                                 ",
+        "@dim@      /pkg\u001b[39m                                                                                                                                                                                                                  ",
+        ""
+      ],
+      "collapsed": [
+        "@mdHeading@[Prompts]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  /earlier, /later, /pkg\u001b[39m                                                                                                                                                                                                    ",
+        ""
+      ],
+      "children": 2
+    }
+  },
+  {
+    "test": "loaded_resources_keep_heading_roles_and_section_spacing",
+    "input": {
+      "op": "listing",
+      "context": [
+        {
+          "path": "/context"
+        }
+      ],
+      "skills": [
+        {
+          "filePath": "/work/SKILL.md",
+          "name": "commit"
+        }
+      ],
+      "templates": [
+        {
+          "filePath": "/prompt",
+          "name": "ask"
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  /context\u001b[39m                                                                                                                                                                                                                  ",
+        "",
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "@dim@  commit\u001b[39m                                                                                                                                                                                                                    ",
+        "",
+        "@mdHeading@[Prompts]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  /ask\u001b[39m                                                                                                                                                                                                                      ",
+        ""
+      ],
+      "expanded": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  /context\u001b[39m                                                                                                                                                                                                                  ",
+        "",
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /work/SKILL.md\u001b[39m                                                                                                                                                                                                          ",
+        "",
+        "@mdHeading@[Prompts]\u001b[39m                                                                                                                                                                                                                   ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@    /ask\u001b[39m                                                                                                                                                                                                                    ",
+        ""
+      ],
+      "collapsed": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  /context\u001b[39m                                                                                                                                                                                                                  ",
+        "",
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                                                                                                                    ",
+        "@dim@  commit\u001b[39m                                                                                                                                                                                                                    ",
+        "",
+        "@mdHeading@[Prompts]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  /ask\u001b[39m                                                                                                                                                                                                                      ",
+        ""
+      ],
+      "children": 7
+    }
+  },
+  {
+    "test": "loaded_resource_sections_retain_content_across_redraws",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "expanded": true
+      },
+      "skills": [
+        {
+          "filePath": "/work/\u001b[7m \u001b[27m.md",
+          "name": "\u001b[7m \u001b[27m"
+        }
+      ],
+      "width": 40
+    },
+    "expected": {
+      "before": [
+        "@mdHeading@[Skills]\u001b[39m                                ",
+        "  @accent@project\u001b[39m                               ",
+        "@dim@    /work/\u001b[7m \u001b[27m.md\u001b[39m                          ",
+        ""
+      ],
+      "expanded": [
+        "@mdHeading@[Skills]\u001b[39m                                ",
+        "  @accent@project\u001b[39m                               ",
+        "@dim@    /work/\u001b[7m \u001b[27m.md\u001b[39m                          ",
+        ""
+      ],
+      "collapsed": [
+        "@mdHeading@[Skills]\u001b[39m                                ",
+        "@dim@  \u001b[7m \u001b[27m\u001b[39m                                     ",
+        ""
+      ],
+      "children": 2
+    }
+  },
+  {
+    "test": "resource_section_heading_refreshes_on_toggle_without_restyling_body",
+    "input": {
+      "op": "theme-toggle",
+      "skills": [
+        {
+          "filePath": "/work/SKILL.md",
+          "name": "commit"
+        }
+      ],
+      "width": 120
+    },
+    "expected": {
+      "before": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                ",
+        "@dim@  commit\u001b[39m                                                                                                                ",
+        ""
+      ],
+      "noToggle": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                ",
+        "@dim@  commit\u001b[39m                                                                                                                ",
+        ""
+      ],
+      "expanded": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                ",
+        "  @accent@project\u001b[39m                                                                                                               ",
+        "@dim@    /work/SKILL.md\u001b[39m                                                                                                      ",
+        ""
+      ],
+      "collapsed": [
+        "@mdHeading@[Skills]\u001b[39m                                                                                                                ",
+        "@dim@  commit\u001b[39m                                                                                                                ",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "resource_section_heading_refreshes_on_toggle_without_restyling_body",
+    "input": {
+      "op": "theme-toggle",
+      "context": [
+        {
+          "path": "/context-theme"
+        }
+      ],
+      "width": 120
+    },
+    "expected": {
+      "before": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                               ",
+        "@dim@  /context-theme\u001b[39m                                                                                                        ",
+        ""
+      ],
+      "noToggle": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                               ",
+        "@dim@  /context-theme\u001b[39m                                                                                                        ",
+        ""
+      ],
+      "expanded": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                               ",
+        "@dim@  /context-theme\u001b[39m                                                                                                        ",
+        ""
+      ],
+      "collapsed": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                               ",
+        "@dim@  /context-theme\u001b[39m                                                                                                        ",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "resource_home_lookup_preserves_absent_and_supplied_home_and_corrects_empty_prefix",
+    "input": {
+      "op": "native-home",
+      "mode": "supplied",
+      "path": "/tmp/supplied-home/file"
+    },
+    "expected": {
+      "value": "~/file"
+    }
+  },
+  {
+    "test": "resource_home_lookup_preserves_absent_and_supplied_home_and_corrects_empty_prefix",
+    "input": {
+      "op": "native-home",
+      "mode": "empty",
+      "path": "/tmp/supplied-home/file"
+    },
+    "expected": {
+      "value": "/tmp/supplied-home/file"
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "/tmp/supplied-home/file",
+      "home": "/"
+    },
+    "expected": {
+      "value": "/tmp/supplied-home/file"
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "/",
+      "home": "/"
+    },
+    "expected": {
+      "value": "/"
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "//server/share",
+      "home": "/"
+    },
+    "expected": {
+      "value": "//server/share"
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "relative/file",
+      "home": "/"
+    },
+    "expected": {
+      "value": "relative/file"
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "",
+      "home": "/"
+    },
+    "expected": {
+      "value": ""
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "/tmp/supplied-home/file",
+      "home": ""
+    },
+    "expected": {
+      "value": "/tmp/supplied-home/file"
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "",
+      "home": ""
+    },
+    "expected": {
+      "value": ""
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "/home/user/file",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "~/file"
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "/home/username/file",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "/home/username/file"
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "/tmp/file",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "/tmp/file"
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "relative/file",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "relative/file"
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": ""
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "/home/élève/文書",
+      "home": "/home/élève"
+    },
+    "expected": {
+      "value": "~/文書"
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "/home/user/file",
+      "home": "/home/user/"
+    },
+    "expected": {
+      "value": "~/file"
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "/home/user/a/../file",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "~/a/../file"
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "/home/user/",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "~/"
+    }
+  }
+]

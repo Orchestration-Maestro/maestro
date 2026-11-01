@@ -78,7 +78,7 @@ impl Environment {
         }
         match parsed.scheme() {
             "http" | "https" | "socks" | "socks4" | "socks4a" | "socks5" | "socks5h"
-            | "pac+data" | "pac+file" | "pac+http" | "pac+https" => Ok(Some(parsed)),
+            | "pac+data" | "pac+file" | "pac+ftp" | "pac+http" | "pac+https" => Ok(Some(parsed)),
             _ => Err(format!("Unsupported protocol for proxy URL: {proxy}")),
         }
     }

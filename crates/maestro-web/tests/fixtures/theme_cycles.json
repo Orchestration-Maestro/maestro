@@ -1,0 +1,602 @@
+[
+  {
+    "stored": null,
+    "includeSystem": false,
+    "colorScheme": "light",
+    "steps": [
+      {
+        "theme": "system",
+        "stored": null,
+        "dark": false,
+        "icon": "Monitor"
+      },
+      {
+        "theme": "dark",
+        "stored": "dark",
+        "dark": true,
+        "icon": "Moon"
+      },
+      {
+        "theme": "light",
+        "stored": "light",
+        "dark": false,
+        "icon": "Sun"
+      }
+    ]
+  },
+  {
+    "stored": null,
+    "includeSystem": true,
+    "colorScheme": "light",
+    "steps": [
+      {
+        "theme": "system",
+        "stored": null,
+        "dark": false,
+        "icon": "Monitor"
+      },
+      {
+        "theme": "light",
+        "stored": "light",
+        "dark": false,
+        "icon": "Sun"
+      },
+      {
+        "theme": "dark",
+        "stored": "dark",
+        "dark": true,
+        "icon": "Moon"
+      }
+    ]
+  },
+  {
+    "stored": "",
+    "includeSystem": false,
+    "colorScheme": "light",
+    "steps": [
+      {
+        "theme": "system",
+        "stored": "",
+        "dark": false,
+        "icon": "Monitor"
+      },
+      {
+        "theme": "dark",
+        "stored": "dark",
+        "dark": true,
+        "icon": "Moon"
+      },
+      {
+        "theme": "light",
+        "stored": "light",
+        "dark": false,
+        "icon": "Sun"
+      }
+    ]
+  },
+  {
+    "stored": "",
+    "includeSystem": true,
+    "colorScheme": "light",
+    "steps": [
+      {
+        "theme": "system",
+        "stored": "",
+        "dark": false,
+        "icon": "Monitor"
+      },
+      {
+        "theme": "light",
+        "stored": "light",
+        "dark": false,
+        "icon": "Sun"
+      },
+      {
+        "theme": "dark",
+        "stored": "dark",
+        "dark": true,
+        "icon": "Moon"
+      }
+    ]
+  },
+  {
+    "stored": "system",
+    "includeSystem": false,
+    "colorScheme": "light",
+    "steps": [
+      {
+        "theme": "system",
+        "stored": "system",
+        "dark": false,
+        "icon": "Monitor"
+      },
+      {
+        "theme": "dark",
+        "stored": "dark",
+        "dark": true,
+        "icon": "Moon"
+      },
+      {
+        "theme": "light",
+        "stored": "light",
+        "dark": false,
+        "icon": "Sun"
+      }
+    ]
+  },
+  {
+    "stored": "system",
+    "includeSystem": true,
+    "colorScheme": "light",
+    "steps": [
+      {
+        "theme": "system",
+        "stored": "system",
+        "dark": false,
+        "icon": "Monitor"
+      },
+      {
+        "theme": "light",
+        "stored": "light",
+        "dark": false,
+        "icon": "Sun"
+      },
+      {
+        "theme": "dark",
+        "stored": "dark",
+        "dark": true,
+        "icon": "Moon"
+      }
+    ]
+  },
+  {
+    "stored": "light",
+    "includeSystem": false,
+    "colorScheme": "light",
+    "steps": [
+      {
+        "theme": "light",
+        "stored": "light",
+        "dark": false,
+        "icon": "Sun"
+      },
+      {
+        "theme": "dark",
+        "stored": "dark",
+        "dark": true,
+        "icon": "Moon"
+      },
+      {
+        "theme": "light",
+        "stored": "light",
+        "dark": false,
+        "icon": "Sun"
+      }
+    ]
+  },
+  {
+    "stored": "light",
+    "includeSystem": true,
+    "colorScheme": "light",
+    "steps": [
+      {
+        "theme": "light",
+        "stored": "light",
+        "dark": false,
+        "icon": "Sun"
+      },
+      {
+        "theme": "dark",
+        "stored": "dark",
+        "dark": true,
+        "icon": "Moon"
+      },
+      {
+        "theme": "system",
+        "stored": null,
+        "dark": false,
+        "icon": "Monitor"
+      }
+    ]
+  },
+  {
+    "stored": "dark",
+    "includeSystem": false,
+    "colorScheme": "light",
+    "steps": [
+      {
+        "theme": "dark",
+        "stored": "dark",
+        "dark": true,
+        "icon": "Moon"
+      },
+      {
+        "theme": "light",
+        "stored": "light",
+        "dark": false,
+        "icon": "Sun"
+      },
+      {
+        "theme": "dark",
+        "stored": "dark",
+        "dark": true,
+        "icon": "Moon"
+      }
+    ]
+  },
+  {
+    "stored": "dark",
+    "includeSystem": true,
+    "colorScheme": "light",
+    "steps": [
+      {
+        "theme": "dark",
+        "stored": "dark",
+        "dark": true,
+        "icon": "Moon"
+      },
+      {
+        "theme": "system",
+        "stored": null,
+        "dark": false,
+        "icon": "Monitor"
+      },
+      {
+        "theme": "light",
+        "stored": "light",
+        "dark": false,
+        "icon": "Sun"
+      }
+    ]
+  },
+  {
+    "stored": "custom",
+    "includeSystem": false,
+    "colorScheme": "light",
+    "steps": [
+      {
+        "theme": "custom",
+        "stored": "custom",
+        "dark": false,
+        "icon": null
+      },
+      {
+        "theme": "light",
+        "stored": "light",
+        "dark": false,
+        "icon": "Sun"
+      },
+      {
+        "theme": "dark",
+        "stored": "dark",
+        "dark": true,
+        "icon": "Moon"
+      }
+    ]
+  },
+  {
+    "stored": "custom",
+    "includeSystem": true,
+    "colorScheme": "light",
+    "steps": [
+      {
+        "theme": "custom",
+        "stored": "custom",
+        "dark": false,
+        "icon": null
+      },
+      {
+        "theme": "light",
+        "stored": "light",
+        "dark": false,
+        "icon": "Sun"
+      },
+      {
+        "theme": "dark",
+        "stored": "dark",
+        "dark": true,
+        "icon": "Moon"
+      }
+    ]
+  },
+  {
+    "stored": null,
+    "includeSystem": false,
+    "colorScheme": "dark",
+    "steps": [
+      {
+        "theme": "system",
+        "stored": null,
+        "dark": true,
+        "icon": "Monitor"
+      },
+      {
+        "theme": "dark",
+        "stored": "dark",
+        "dark": true,
+        "icon": "Moon"
+      },
+      {
+        "theme": "light",
+        "stored": "light",
+        "dark": false,
+        "icon": "Sun"
+      }
+    ]
+  },
+  {
+    "stored": null,
+    "includeSystem": true,
+    "colorScheme": "dark",
+    "steps": [
+      {
+        "theme": "system",
+        "stored": null,
+        "dark": true,
+        "icon": "Monitor"
+      },
+      {
+        "theme": "light",
+        "stored": "light",
+        "dark": false,
+        "icon": "Sun"
+      },
+      {
+        "theme": "dark",
+        "stored": "dark",
+        "dark": true,
+        "icon": "Moon"
+      }
+    ]
+  },
+  {
+    "stored": "",
+    "includeSystem": false,
+    "colorScheme": "dark",
+    "steps": [
+      {
+        "theme": "system",
+        "stored": "",
+        "dark": true,
+        "icon": "Monitor"
+      },
+      {
+        "theme": "dark",
+        "stored": "dark",
+        "dark": true,
+        "icon": "Moon"
+      },
+      {
+        "theme": "light",
+        "stored": "light",
+        "dark": false,
+        "icon": "Sun"
+      }
+    ]
+  },
+  {
+    "stored": "",
+    "includeSystem": true,
+    "colorScheme": "dark",
+    "steps": [
+      {
+        "theme": "system",
+        "stored": "",
+        "dark": true,
+        "icon": "Monitor"
+      },
+      {
+        "theme": "light",
+        "stored": "light",
+        "dark": false,
+        "icon": "Sun"
+      },
+      {
+        "theme": "dark",
+        "stored": "dark",
+        "dark": true,
+        "icon": "Moon"
+      }
+    ]
+  },
+  {
+    "stored": "system",
+    "includeSystem": false,
+    "colorScheme": "dark",
+    "steps": [
+      {
+        "theme": "system",
+        "stored": "system",
+        "dark": true,
+        "icon": "Monitor"
+      },
+      {
+        "theme": "dark",
+        "stored": "dark",
+        "dark": true,
+        "icon": "Moon"
+      },
+      {
+        "theme": "light",
+        "stored": "light",
+        "dark": false,
+        "icon": "Sun"
+      }
+    ]
+  },
+  {
+    "stored": "system",
+    "includeSystem": true,
+    "colorScheme": "dark",
+    "steps": [
+      {
+        "theme": "system",
+        "stored": "system",
+        "dark": true,
+        "icon": "Monitor"
+      },
+      {
+        "theme": "light",
+        "stored": "light",
+        "dark": false,
+        "icon": "Sun"
+      },
+      {
+        "theme": "dark",
+        "stored": "dark",
+        "dark": true,
+        "icon": "Moon"
+      }
+    ]
+  },
+  {
+    "stored": "light",
+    "includeSystem": false,
+    "colorScheme": "dark",
+    "steps": [
+      {
+        "theme": "light",
+        "stored": "light",
+        "dark": false,
+        "icon": "Sun"
+      },
+      {
+        "theme": "dark",
+        "stored": "dark",
+        "dark": true,
+        "icon": "Moon"
+      },
+      {
+        "theme": "light",
+        "stored": "light",
+        "dark": false,
+        "icon": "Sun"
+      }
+    ]
+  },
+  {
+    "stored": "light",
+    "includeSystem": true,
+    "colorScheme": "dark",
+    "steps": [
+      {
+        "theme": "light",
+        "stored": "light",
+        "dark": false,
+        "icon": "Sun"
+      },
+      {
+        "theme": "dark",
+        "stored": "dark",
+        "dark": true,
+        "icon": "Moon"
+      },
+      {
+        "theme": "system",
+        "stored": null,
+        "dark": true,
+        "icon": "Monitor"
+      }
+    ]
+  },
+  {
+    "stored": "dark",
+    "includeSystem": false,
+    "colorScheme": "dark",
+    "steps": [
+      {
+        "theme": "dark",
+        "stored": "dark",
+        "dark": true,
+        "icon": "Moon"
+      },
+      {
+        "theme": "light",
+        "stored": "light",
+        "dark": false,
+        "icon": "Sun"
+      },
+      {
+        "theme": "dark",
+        "stored": "dark",
+        "dark": true,
+        "icon": "Moon"
+      }
+    ]
+  },
+  {
+    "stored": "dark",
+    "includeSystem": true,
+    "colorScheme": "dark",
+    "steps": [
+      {
+        "theme": "dark",
+        "stored": "dark",
+        "dark": true,
+        "icon": "Moon"
+      },
+      {
+        "theme": "system",
+        "stored": null,
+        "dark": true,
+        "icon": "Monitor"
+      },
+      {
+        "theme": "light",
+        "stored": "light",
+        "dark": false,
+        "icon": "Sun"
+      }
+    ]
+  },
+  {
+    "stored": "custom",
+    "includeSystem": false,
+    "colorScheme": "dark",
+    "steps": [
+      {
+        "theme": "custom",
+        "stored": "custom",
+        "dark": false,
+        "icon": null
+      },
+      {
+        "theme": "light",
+        "stored": "light",
+        "dark": false,
+        "icon": "Sun"
+      },
+      {
+        "theme": "dark",
+        "stored": "dark",
+        "dark": true,
+        "icon": "Moon"
+      }
+    ]
+  },
+  {
+    "stored": "custom",
+    "includeSystem": true,
+    "colorScheme": "dark",
+    "steps": [
+      {
+        "theme": "custom",
+        "stored": "custom",
+        "dark": false,
+        "icon": null
+      },
+      {
+        "theme": "light",
+        "stored": "light",
+        "dark": false,
+        "icon": "Sun"
+      },
+      {
+        "theme": "dark",
+        "stored": "dark",
+        "dark": true,
+        "icon": "Moon"
+      }
+    ]
+  }
+]

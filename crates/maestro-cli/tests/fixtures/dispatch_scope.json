@@ -1,0 +1,107 @@
+[
+  {
+    "input": [
+      {
+        "model": {
+          "id": "alpha"
+        }
+      }
+    ],
+    "expected": "\u001b[2mModel scope: alpha \u001b[90m(Ctrl+P to cycle)\u001b[39m\u001b[22m"
+  },
+  {
+    "input": [
+      {
+        "model": {
+          "id": "alpha"
+        },
+        "thinkingLevel": "off"
+      },
+      {
+        "model": {
+          "id": "beta"
+        },
+        "thinkingLevel": "high"
+      }
+    ],
+    "expected": "\u001b[2mModel scope: alpha:off, beta:high \u001b[90m(Ctrl+P to cycle)\u001b[39m\u001b[22m"
+  },
+  {
+    "input": [
+      {
+        "model": {
+          "id": "a,b"
+        }
+      },
+      {
+        "model": {
+          "id": "a,b"
+        }
+      },
+      {
+        "model": {
+          "id": "λ:中"
+        },
+        "thinkingLevel": "low"
+      }
+    ],
+    "expected": "\u001b[2mModel scope: a,b, a,b, λ:中:low \u001b[90m(Ctrl+P to cycle)\u001b[39m\u001b[22m"
+  },
+  {
+    "input": [
+      {
+        "model": {
+          "id": ""
+        }
+      },
+      {
+        "model": {
+          "id": "literal\nname"
+        },
+        "thinkingLevel": "minimal"
+      }
+    ],
+    "expected": "\u001b[2mModel scope: , literal\u001b[22m\n\u001b[2mname:minimal \u001b[90m(Ctrl+P to cycle)\u001b[39m\u001b[22m"
+  },
+  {
+    "input": [
+      {
+        "model": {
+          "id": "same"
+        },
+        "thinkingLevel": "off"
+      },
+      {
+        "model": {
+          "id": "same"
+        },
+        "thinkingLevel": "minimal"
+      },
+      {
+        "model": {
+          "id": "same"
+        },
+        "thinkingLevel": "low"
+      },
+      {
+        "model": {
+          "id": "same"
+        },
+        "thinkingLevel": "medium"
+      },
+      {
+        "model": {
+          "id": "same"
+        },
+        "thinkingLevel": "high"
+      },
+      {
+        "model": {
+          "id": "same"
+        },
+        "thinkingLevel": "xhigh"
+      }
+    ],
+    "expected": "\u001b[2mModel scope: same:off, same:minimal, same:low, same:medium, same:high, same:xhigh \u001b[90m(Ctrl+P to cycle)\u001b[39m\u001b[22m"
+  }
+]

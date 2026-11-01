@@ -254,7 +254,8 @@ fn echo_tool() -> maestro_agent::SharedAgentTool {
             "type": "object",
             "properties": {"text": {"type": "string"}},
             "required": ["text"]
-        }),
+        })
+        .into(),
     };
     let text = |text: String| UserBlock::Text(TextContent::new(text));
     let mut tool = AgentTool::typed(
@@ -286,11 +287,10 @@ fn echo_tool() -> maestro_agent::SharedAgentTool {
 /// An assistant turn calling `echo` twice with the legacy `message` field.
 fn two_echo_calls() -> FauxResponseStep {
     let call = |id: &str, text: &str| {
-        let arguments = json!({"message": text}).as_object().unwrap().clone();
         let options = maestro_models::FauxToolCallOptions {
             id: Some(id.into()),
         };
-        let call = maestro_models::faux_tool_call("echo", arguments, options);
+        let call = maestro_models::faux_tool_call("echo", json!({"message": text}), options);
         maestro_models::AssistantContent::ToolCall(call)
     };
     let options = FauxAssistantMessageOptions {
@@ -413,7 +413,7 @@ fn flaky_tool(runs: &Arc<Mutex<u32>>) -> maestro_agent::SharedAgentTool {
     let definition = Tool {
         name: "flaky".into(),
         description: "Fail on demand".into(),
-        parameters: json!({"type": "object", "properties": {"text": {"type": "string"}}}),
+        parameters: json!({"type": "object", "properties": {"text": {"type": "string"}}}).into(),
     };
     let tool = AgentTool::typed(
         definition,
@@ -447,7 +447,6 @@ async fn guide_tool_failures_become_error_results_case() {
     let mut registered = Registered::default();
     let faux = registered.add(RegisterFauxProviderOptions::default());
     let call = |id: &str, arguments: serde_json::Value| {
-        let arguments = arguments.as_object().unwrap().clone();
         let options = maestro_models::FauxToolCallOptions {
             id: Some(id.into()),
         };

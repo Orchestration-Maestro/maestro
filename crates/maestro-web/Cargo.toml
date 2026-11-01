@@ -10,6 +10,10 @@ repository.workspace = true
 name = "integration"
 path = "tests/integration.rs"
 
+[[example]]
+name = "chat"
+crate-type = ["cdylib"]
+
 [dependencies]
 tokio = { version = "=1.53.3", default-features = false, features = ["sync"] }
 base64 = { version = "=0.23.1", default-features = false, features = ["std"] }
@@ -21,7 +25,7 @@ serde.workspace = true
 serde_json.workspace = true
 ryu-js.workspace = true
 num-traits.workspace = true
-web-sys = { version = "=0.3.106", features = ["DocumentFragment", "NodeList", "CssStyleDeclaration", "DomTokenList", "WebSocket", "BinaryType", "DomParser", "SupportedType", "ResizeObserver", "Window", "HtmlIFrameElement", "MessageEvent", "Navigator", "Storage", "Location", "console", "Document", "Node", "Element", "SvgElement", "HtmlElement", "HtmlAnchorElement", "Blob", "BlobPropertyBag", "Url", "MediaQueryList", "HtmlCanvasElement", "DomRect", "HtmlInputElement", "HtmlTextAreaElement", "Event", "EventTarget", "KeyboardEvent", "DomException", "DomStringList", "IdbDatabase", "IdbFactory", "IdbIndex", "IdbIndexParameters", "IdbObjectStore", "IdbObjectStoreParameters", "IdbOpenDbRequest", "IdbRequest", "IdbTransaction", "IdbTransactionMode", "IdbKeyRange", "IdbCursor", "IdbCursorWithValue", "IdbCursorDirection", "StorageManager", "StorageEstimate", "CustomElementRegistry", "HtmlButtonElement", "Response", "SvgGraphicsElement", "SvgRect", "Text"] }
+web-sys = { version = "=0.3.106", features = ["DocumentFragment", "NodeList", "CssStyleDeclaration", "DomTokenList", "WebSocket", "BinaryType", "DomParser", "SupportedType", "ResizeObserver", "Window", "HtmlIFrameElement", "MessageEvent", "Navigator", "Storage", "Location", "console", "Document", "Node", "Element", "SvgElement", "HtmlElement", "HtmlAnchorElement", "Blob", "BlobPropertyBag", "Url", "MediaQueryList", "HtmlCanvasElement", "DomRect", "HtmlInputElement", "HtmlTextAreaElement", "Event", "EventTarget", "KeyboardEvent", "DomException", "DomStringList", "IdbDatabase", "IdbFactory", "IdbIndex", "IdbIndexParameters", "IdbObjectStore", "IdbObjectStoreParameters", "IdbOpenDbRequest", "IdbRequest", "IdbTransaction", "IdbTransactionMode", "IdbKeyRange", "IdbCursor", "IdbCursorWithValue", "IdbCursorDirection", "StorageManager", "StorageEstimate", "CustomElementRegistry", "CustomEvent", "CustomEventInit", "HtmlButtonElement", "Response", "SvgGraphicsElement", "SvgRect", "Text", "File", "FileList", "MouseEvent", "DragEvent", "DataTransfer", "DataTransferItem", "DataTransferItemList", "ClipboardEvent", "HtmlSelectElement", "History", "UrlSearchParams", "Crypto"] }
 indexmap = { version = "=2.14.2", features = ["serde"] }
 egui = { version = "=0.36.2", default-features = false }
 usvg = { version = "=0.48.1", default-features = false }
@@ -29,6 +33,7 @@ resvg = { version = "=0.48.1", default-features = false }
 katex = { package = "katex-rs", version = "=0.3.0", default-features = false }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
+chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
 wasm-bindgen = "=0.2.129"
 wasm-bindgen-futures = "=0.4.79"
 js-sys = "=0.3.106"

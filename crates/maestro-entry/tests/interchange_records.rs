@@ -3,8 +3,8 @@
 use maestro_entry::compaction::{CompactionPreparation, CompactionSettings};
 use maestro_entry::session_manager::{
     BranchSummaryEntry, CompactionEntry, CustomEntry, CustomMessageEntry, LabelEntry,
-    ModelChangeEntry, SessionContext, SessionContextModel, SessionHeader, SessionInfoEntry,
-    SessionMessageEntry, ThinkingLevelChangeEntry,
+    ModelChangeEntry, NavigateTreeOptions, NewSessionOptions, SessionContext, SessionContextModel,
+    SessionHeader, SessionInfoEntry, SessionMessageEntry, ThinkingLevelChangeEntry,
 };
 use maestro_request::presence::Presence;
 use serde::{Serialize, de::DeserializeOwned};
@@ -60,6 +60,29 @@ fn round<T: DeserializeOwned + Serialize>(text: &str, id: &str) {
     let record: T = serde_json::from_str(text).unwrap();
     let expected: Value = serde_json::from_str(text).unwrap();
     same(&serde_json::to_value(&record).unwrap(), &expected, id);
+}
+
+#[test]
+fn session_operation_options_decode_without_losing_presence() {
+    for (text, parent) in [
+        ("{}", Presence::Missing),
+        (r#"{"parentSession":null}"#, Presence::Null),
+        (
+            r#"{"parentSession":"  parent  "}"#,
+            Presence::Present("  parent  ".into()),
+        ),
+    ] {
+        let options: NewSessionOptions<Presence<String>> = serde_json::from_str(text).unwrap();
+        assert_eq!(options.id, None);
+        assert_eq!(options.parent_session, parent);
+    }
+    let guest: NewSessionOptions<Option<String>> = serde_json::from_str("{}").unwrap();
+    assert_eq!(guest.parent_session, None);
+    let options: NavigateTreeOptions = serde_json::from_str(r#"{"summarize":false,"customInstructions":" focus ","replaceInstructions":true,"label":""}"#).unwrap();
+    assert_eq!(options.summarize, Some(false));
+    assert_eq!(options.custom_instructions.as_deref(), Some(" focus "));
+    assert_eq!(options.replace_instructions, Some(true));
+    assert_eq!(options.label.as_deref(), Some(""));
 }
 
 #[test]

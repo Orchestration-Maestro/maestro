@@ -70,7 +70,7 @@ fn definition(name: &str, log: &Arc<Mutex<Vec<Seen>>>) -> ToolDefinition<u32, Ar
         definition: Tool {
             name: name.into(),
             description: "Transform input".into(),
-            parameters: json!({"type": "object"}),
+            parameters: json!({"type": "object"}).into(),
         },
         label: "Transform".into(),
         prompt_snippet: Some("snippet".into()),
@@ -128,7 +128,7 @@ fn wrapper_forwards_metadata_preparation_progress_and_fresh_context() {
     let tool = wrap_tool_definition(source, Some(counting_factory()));
     assert_eq!(tool.definition.name, "transform");
     assert_eq!(tool.definition.description, "Transform input");
-    assert_eq!(tool.definition.parameters, json!({"type": "object"}));
+    assert_eq!(*tool.definition.parameters, json!({"type": "object"}));
     assert_eq!(tool.label, "Transform");
     assert_eq!(tool.execution_mode, Some(ToolExecutionMode::Parallel));
     assert!(Arc::ptr_eq(
@@ -256,7 +256,7 @@ fn agent_tool(log: &Arc<Mutex<Vec<Call>>>, prepare: &PrepareArguments) -> AgentT
         definition: Tool {
             name: "transform".into(),
             description: "Transform input".into(),
-            parameters: json!({"type": "object"}),
+            parameters: json!({"type": "object"}).into(),
         },
         label: "Transform".into(),
         prepare_arguments: Some(Arc::clone(prepare)),
@@ -403,7 +403,7 @@ fn render_definition(
         definition: Tool {
             name: "render".into(),
             description: String::new(),
-            parameters: Value::Null,
+            parameters: Value::Null.into(),
         },
         label: "render".into(),
         prompt_snippet: None,

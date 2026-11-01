@@ -49,8 +49,11 @@ function observedBrowser(observe) {
     assert(options.args.includes('--force-device-scale-factor=1.25'));
     const browser = await chromium.launch(options);
     const original = browser.newPage.bind(browser);
+    let pageIndex = -1;
     browser.newPage = async (...args) => {
-      assert.deepEqual(args, [{deviceScaleFactor: 1.25}]);
+      const expected = {deviceScaleFactor: 1.25};
+      if (all[pageIndex++] === 'tile_dom_remove_does_not_open_and_uses_current_callback') expected.hasTouch = true;
+      assert.deepEqual(args, [expected]);
       const page = await original(...args);
       await observe(page, browser);
       return page;
@@ -65,8 +68,19 @@ test('inventory_rejects_empty_or_invalid_names', () => {
   }
   const selected = runner.validateInventory(inventory);
   assert.equal(selected.execution.length, 26);
-  assert.equal(selected.loading.length, 19);
-  assert.equal(selected.contributions.length, 49);
+  assert.equal(selected.loading.length, 49);
+  assert.equal(selected.contributions.length, 194);
+});
+
+test('loading_exports_receive_the_page_module_import', async t => {
+  const root = fixture(t, {[inventory.loading.at(-1)]: `
+    if (location.pathname !== '/') throw Error('loading page required');
+    const importModule = arguments[0];
+    if (typeof importModule !== 'function') throw Error('loading export missing module import');
+    const helper = await importModule('/helper.js');
+    if (helper.answer !== 'helper-ok') throw Error('wrong imported helper');
+  `});
+  assert.equal((await execute(root)).at(-1), `COMPLETE ${all.length}/${all.length}`);
 });
 
 test('inventory_requires_every_callable_export', async t => {
@@ -102,14 +116,14 @@ test('exports_run_serially_in_fresh_pages', async t => {
   assert.equal(seen.length, 2, 'only inventory and the pending first export');
   release();
   const lines = await running;
-  assert.equal(seen.length, 95, 'inventory page plus 94 fresh assertion pages');
-  assert.equal(new Set(seen).size, 95);
+  assert.equal(seen.length, all.length + 1, 'inventory page plus a fresh page per assertion');
+  assert.equal(new Set(seen).size, all.length + 1);
   assert.deepEqual(lines.filter(line => line.startsWith('START ')).map(line => line.split(' ')[2]), all);
   assert.deepEqual(lines.filter(line => line.startsWith('PASS ')).map(line => line.split(' ')[2]), all);
   assert(lines.includes('FAMILY execution 26/26'));
-  assert(lines.includes('FAMILY loading 19/19'));
-  assert(lines.includes('FAMILY contributions 49/49'));
-  assert.equal(lines.at(-1), 'COMPLETE 94/94');
+  assert(lines.includes('FAMILY loading 49/49'));
+  assert(lines.includes(`FAMILY contributions ${inventory.contributions.length}/${inventory.contributions.length}`));
+  assert.equal(lines.at(-1), `COMPLETE ${all.length}/${all.length}`);
 });
 
 test('assertion_failures_keep_sync_and_async_errors', async t => {
@@ -134,7 +148,7 @@ test('unexpected_page_errors_fail', async t => {
 
 test('expected_policy_error_matches_once', async t => {
   const root = fixture(t);
-  assert.equal((await execute(root)).at(-1), 'COMPLETE 94/94');
+  assert.equal((await execute(root)).at(-1), `COMPLETE ${all.length}/${all.length}`);
 });
 
 test('expected_policy_error_is_required', async t => {
@@ -318,6 +332,26 @@ test('tool_versions_must_match_the_supplied_contract', t => {
   assert.equal(runner.tools(), chromium);
 });
 
+// The authored wasm exports of one existing browser source module.
+function sourceExports(file) {
+  const source = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
+  return [...source.matchAll(/#\[(?:wasm_bindgen::prelude::)?wasm_bindgen\]\npub (?:async )?fn (\w+)\(/g)].map(match => match[1]);
+}
+
+test('inventory_matches_authored_exports', () => {
+  const documentOverlay = sourceExports('native_attachment_browser.rs')
+    .filter(name => name === 'overlay_dom_documents_keep_resources_and_sheet_state');
+  for (const family of ['execution', 'loading']) {
+    const source = fs.readFileSync(path.join(__dirname, `../sandbox_${family}_browser.rs`), 'utf8');
+    const names = [...source.matchAll(/pub async fn (\w+)\(\)/g)].map(match => match[1]);
+    if (family === 'loading') names.push(...sourceExports('native_document_artifacts_browser.rs'), ...sourceExports('native_html_artifact_browser.rs'), ...sourceExports('sample_sessions_browser.rs'), ...documentOverlay, ...sourceExports('native_remaining_artifacts_browser.rs'));
+    assert.deepEqual(inventory[family], names);
+  }
+  const contributions = ["dom_content_browser.rs", "contributions_browser.rs", "native_markdown_browser.rs", "native_thinking_browser.rs", "native_artifact_controls_browser.rs", "native_attachment_browser.rs", "native_messages_browser.rs", "native_tool_browser.rs", "native_simple_artifacts_browser.rs", "native_console_browser.rs", "custom_provider_card_browser.rs", "native_artifact_console_browser.rs", "document_tool_cards_browser.rs", "native_transcript_browser.rs", "message_tool_arguments.rs", "message_renderers_browser.rs", "message_errors.rs", "tool_renderers_browser/page.rs", "tool_renderer_support/lifetimes.rs", "dialogs_browser.rs", "provider_dialogs_browser.rs", "settings_dialogs_browser.rs", "message_editor_browser.rs", "agent_interface_browser.rs", "theme_toggle_browser.rs", "chat_panel_browser.rs", "chat_example_browser.rs"]
+    .flatMap(sourceExports).filter(name => !documentOverlay.includes(name));
+  assert.deepEqual(inventory.contributions.toSorted(), contributions.toSorted());
+});
+
 test('packaging_keeps_linked_modules_and_locked_sources', t => {
   const checkout = path.resolve(__dirname, '../../../..');
   assert.doesNotMatch(fs.readFileSync(path.join(__dirname, 'run.cjs'), 'utf8'), /\btimeout\b/, 'build commands carry no deadline');
@@ -367,15 +401,6 @@ test('packaging_keeps_linked_modules_and_locked_sources', t => {
       fs.readFileSync(path.join(path.dirname(dependency.manifest_path), ...linked)), file);
   }
   assert(bindings.includes('snippets/'), 'bindings reference packaged modules');
-  for (const family of ['execution', 'loading']) {
-    const source = fs.readFileSync(path.join(__dirname, `../sandbox_${family}_browser.rs`), 'utf8');
-    const names = [...source.matchAll(/pub async fn (\w+)\(\)/g)].map(match => match[1]);
-    assert.deepEqual(inventory[family], names);
-  }
-  const contributions = ['dom_content_browser.rs', 'contributions_browser.rs']
-    .map(file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8'))
-    .flatMap(source => [...source.matchAll(/#\[wasm_bindgen\]\npub (?:async )?fn (\w+)\(/g)].map(match => match[1]));
-  assert.deepEqual(inventory.contributions, contributions);
   for (const file of ['package.json', 'contributions/page.json', 'frames/card.html', 'modules/a/module.js', 'modules/a/module_bg.wasm', 'modules/b/module.js', 'modules/b/module_bg.wasm']) {
     assert(fs.existsSync(path.join(root, 'package', file)), file);
   }
@@ -468,7 +493,7 @@ test('sandbox_inspection_ignores_detached_unrelated_frames', async t => {
       assert(lines.includes(`PHASE ${first} waiting for pointer-done ${sandboxId}; frame about:srcdoc`));
       assert(lines.includes(`PHASE ${first} click returned ${sandboxId}`));
     }
-    assert.equal(lines.at(-1), 'COMPLETE 94/94');
+    assert.equal(lines.at(-1), `COMPLETE ${all.length}/${all.length}`);
   }
 });
 
@@ -721,7 +746,7 @@ window.prepareDelivery = async function(nested, svg) {
     }, setup, {shared, log: line => lines.push(line)});
     if (scenario === 'control') {
       await running;
-      assert.equal(lines.at(-1), 'COMPLETE 94/94');
+      assert.equal(lines.at(-1), `COMPLETE ${all.length}/${all.length}`);
       assert.equal(lines.filter(line => line === `PHASE ${first} click returned ${sandboxId}`).length, 1);
     } else {
       await assert.rejects(running, error => {
@@ -773,7 +798,7 @@ test('sandbox_click_bypasses_containing_page_coordinate_dispatch', async t => {
     });
     assert.equal(parentDispatches, 0, 'isolated target uses its own native input session');
     assert.equal(lines.filter(line => line === `PHASE ${first} click returned ${sandboxId}`).length, 1);
-    assert.equal(lines.at(-1), 'COMPLETE 45/45');
+    assert.equal(lines.at(-1), `COMPLETE ${all.length}/${all.length}`);
   }
 });
 
@@ -807,7 +832,7 @@ test('sandbox_click_cleans_selected_session_after_native_operations', async t =>
       };
       return inspect();
     });
-    if (outcome === 'success') assert.equal((await running).at(-1), 'COMPLETE 45/45');
+    if (outcome === 'success') assert.equal((await running).at(-1), `COMPLETE ${all.length}/${all.length}`);
     else await assert.rejects(running, error => { assert(error.cause.message.includes(sentinel)); return true; });
     assert.equal(created, outcome === 'create' ? 0 : 1, outcome);
     assert.equal(detached, created, outcome + ' releases every acquired native session');

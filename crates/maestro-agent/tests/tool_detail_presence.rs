@@ -59,7 +59,7 @@ fn definition() -> Tool {
     Tool {
         name: "echo".into(),
         description: String::new(),
-        parameters: json!({"type":"object"}),
+        parameters: json!({"type":"object"}).into(),
     }
 }
 /// A typed tool whose details follow `typed_result` and which reports every state as progress when supplied an observer.
@@ -163,7 +163,7 @@ fn calls(ids: &[&str]) -> maestro_models::SharedAssistantMessage {
             AssistantContent::ToolCall(ToolCall {
                 id: (*id).into(),
                 name: "echo".into(),
-                arguments: maestro_models::JsonObject::new(),
+                arguments: maestro_models::JsonObject::new().into(),
                 thought_signature: None,
             })
         })

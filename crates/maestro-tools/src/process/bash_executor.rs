@@ -6,20 +6,23 @@ use crate::output::{
     truncate::{DEFAULT_MAX_BYTES, TruncationOptions, truncate_tail},
 };
 use crate::utils::shell::sanitize_binary_output;
-use maestro_models::Cancellation;
+use maestro_models::{Cancellation, Local, Threaded};
 use maestro_text::Utf8Stream;
 use std::{collections::VecDeque, io::Write};
 
+/// Selected direct output and its execution status.
+pub type BashResult = maestro_tool::bash_executor::BashResult<Option<f64>, Option<String>>;
+/// Both execution families use the same output and settlement algorithm.
+macro_rules! executor {
+    ($mode:ty, [$($bound:tt)*], [$($shared:tt)*]) => {
 /// Optional cleaned-output callback and cancellation signal.
 #[derive(Default)]
 pub struct BashExecutorOptions<'a> {
     /// Receives each cleaned raw chunk synchronously, including empty chunks.
-    pub on_chunk: Option<&'a mut (dyn FnMut(&str) + Send)>,
+    pub on_chunk: Option<&'a mut (dyn FnMut(&str) + 'a $($bound)*)>,
     /// The signal forwarded unchanged to the operation.
     pub signal: Option<&'a Cancellation>,
 }
-/// Selected direct output and its execution status.
-pub type BashResult = maestro_tool::bash_executor::BashResult<Option<f64>, Option<String>>;
 /// Invoke the supplied operation with literal operands and direct output policy.
 ///
 /// # Errors
@@ -27,7 +30,7 @@ pub type BashResult = maestro_tool::bash_executor::BashResult<Option<f64>, Optio
 pub async fn execute_bash_with_operations(
     command: &str,
     cwd: &str,
-    operations: &dyn BashOperations,
+    operations: &(dyn BashOperations<$mode> $($bound)* $($shared)* + '_),
     mut options: BashExecutorOptions<'_>,
 ) -> Result<BashResult, BashError> {
     let mut state = Output::default();
@@ -66,6 +69,19 @@ pub async fn execute_bash_with_operations(
     closed?;
     Ok(result)
 }
+    };
+}
+executor!(Threaded, [+ Send], [+ Sync]);
+
+/// Caller-local direct execution with the same sanitization and artifact policy.
+pub mod local {
+    use super::{
+        BashError, BashExecOptions, BashOperations, BashResult, Cancellation, Local, Output,
+        close_artifact,
+    };
+    executor!(Local, [], []);
+}
+
 /// Direct policy state; artifact contents differ from raw tool-output artifacts.
 #[derive(Default)]
 struct Output {
@@ -88,11 +104,11 @@ struct Output {
 }
 impl Output {
     /// Decode caller-owned initial BOM policy and strip escapes before storing text.
-    fn accept(
+    fn accept<S: FnMut(&str) + ?Sized>(
         &mut self,
         text: &str,
         finalizing: bool,
-        callback: &mut Option<&mut (dyn FnMut(&str) + Send)>,
+        callback: &mut Option<&mut S>,
     ) -> Result<(), BashError> {
         let text = if !self.started && !text.is_empty() {
             self.started = true;
@@ -111,10 +127,10 @@ impl Output {
         Ok(())
     }
     /// Spill on raw overflow, then evict whole oldest chunks by UTF-16 units.
-    fn store(
+    fn store<S: FnMut(&str) + ?Sized>(
         &mut self,
         text: String,
-        callback: &mut Option<&mut (dyn FnMut(&str) + Send)>,
+        callback: &mut Option<&mut S>,
     ) -> Result<(), BashError> {
         if self.raw_bytes > DEFAULT_MAX_BYTES {
             self.spill()?;
@@ -149,11 +165,11 @@ impl Output {
         Ok(())
     }
     /// Flush decoder and escape carry before shared tail selection.
-    fn settle(
+    fn settle<S: FnMut(&str) + ?Sized>(
         &mut self,
         exit_code: Option<f64>,
         signal: Option<&Cancellation>,
-        callback: &mut Option<&mut (dyn FnMut(&str) + Send)>,
+        callback: &mut Option<&mut S>,
     ) -> Result<BashResult, BashError> {
         let rest = self.decoder.finish();
         self.accept(&rest, true, callback)?;

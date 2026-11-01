@@ -13,9 +13,10 @@ reserve. The saved preferences decide whether it happens automatically, how many
 tokens stay free (`reserveTokens`, 16384 by default) and how much recent
 conversation survives (`keepRecentTokens`, 20000 by default).
 
-`compact(custom_instructions)` stops a waiting retry, stops the running turn and
-waits for the agent to settle, then records the running compaction and announces
-`compaction_start` with reason `manual`. It takes the model's credentials, which
+Calling `compact(custom_instructions)` disconnects session event forwarding,
+stops a waiting retry and requests cancellation of the running turn before the
+returned future is polled. It waits for the agent to settle, then records the
+running compaction and announces `compaction_start` with reason `manual`. It takes the model's credentials, which
 fails with the usual missing-key message, prepares the branch and stores the
 result. A branch whose newest entry is already a compaction fails with `Already
 compacted`; one with no cut point fails with `Nothing to compact (session too
@@ -26,6 +27,11 @@ as the handlers left it, so a handler that edits the preparation changes what
 the summarizer reads. The compaction is appended, the agent history is rebuilt
 from the session context, and the entry just stored reaches `session_compact`
 before the result returns.
+
+An extension context starts compaction through `CompactOptions`. If compaction
+fails, or its `on_complete` callback returns an error, the session passes the
+error to `on_error` when supplied. Completion callback errors keep their original
+error value.
 
 Every outcome announces `compaction_end`, and the compaction still counts as
 running while its listeners run. A refusal reports its message after `Compaction
@@ -79,11 +85,18 @@ turn and waits for the agent to settle.
 A prompt returns after its run and, when a retry is in flight, after the retry
 and the agent settle. A successful response after retries announces
 `auto_retry_end` with success `true`; its listeners still read the completed
-attempt from `retry_attempt()`, which returns to 0 afterwards. Dropping the
+attempt from `retry_attempt()`, which returns to 0 afterwards. A final non-retryable
+error after retries announces the same event with success `false`, the current
+attempt and the final error, then resets the counter before checking compaction.
+Exhausting the retry limit still emits only one failure event; a first non-retryable
+error emits none. Dropping the
 prompt never aborts the retry. `is_retrying()` reports a retry in flight and
 `retry_attempt()` the attempts it has made. `auto_retry_enabled()`,
 `set_auto_retry_enabled`, `auto_compaction_enabled()` and
 `set_auto_compaction_enabled` read and write the saved preferences.
+
+[Retry settlement and delivered events](retries.md) follows a prompt through the
+retry, the tool loop and the event order its listeners observe.
 
 ## Events
 
@@ -103,7 +116,7 @@ subscribes is safe.
 A retry wait, a compaction and a tree navigation run as the session's own work
 on its task facility, so these methods take the session behind an `Rc`.
 The returned future only watches the result. Dropping it leaves the work
-running to its normal end: it still announces its end event and clears its
+running to its normal end, even when the manual compaction result was never polled: it still announces its end event and clears its
 running flag. Only `abort()`, `abort_retry()`, `abort_compaction()` and
 `abort_branch_summary()` stop the work. The task facility is the agent's own.
 An agent supplied without one gets `tokio::task::spawn_local`, and the session's

@@ -371,6 +371,7 @@ fn config(input: &Arc<Input>, observations: Arc<Mutex<Observations>>) -> AgentLo
         before_tool_call: None,
         after_tool_call: None,
         should_stop_after_turn: None,
+        prepare_next_turn: None,
         get_steering_messages: None,
         get_follow_up_messages: None,
         tool_execution: Some(maestro_agent::ToolExecutionMode::Sequential),
@@ -467,7 +468,7 @@ fn install_tools(
             definition: Tool {
                 name: "echo".into(),
                 description: "Echo".into(),
-                parameters: schema(),
+                parameters: schema().into(),
             },
             label: "Echo".into(),
             prepare_arguments: None,
@@ -502,7 +503,7 @@ fn tool(input: Arc<Input>, observed: Arc<Mutex<Observations>>) -> SharedAgentToo
         definition: Tool {
             name: "echo".into(),
             description: "Echo".into(),
-            parameters: schema(),
+            parameters: schema().into(),
         },
         label: "Echo".into(),
         prepare_arguments: preparation,

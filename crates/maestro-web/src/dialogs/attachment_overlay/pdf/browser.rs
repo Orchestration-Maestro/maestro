@@ -45,6 +45,21 @@ pub(super) fn mount(
     pages: &Rc<RefCell<Pages>>,
     padded: bool,
 ) -> Result<ReadingRoot, AttachmentHostError> {
+    Ok(ReadingRoot {
+        frame_style: "",
+        decoration: None,
+        commit: None,
+        owner: None,
+        element: root(document, pages, padded)?,
+        slots: vec![],
+    })
+}
+/// Build the shared page root independently of its placement owner.
+pub(super) fn root(
+    document: &web_sys::Document,
+    pages: &Rc<RefCell<Pages>>,
+    padded: bool,
+) -> Result<web_sys::Element, AttachmentHostError> {
     let root = document
         .create_element("section")
         .map_err(|e| host_error(&e))?;
@@ -64,12 +79,5 @@ pub(super) fn mount(
     root.append_child(&style).map_err(|e| host_error(&e))?;
     pages.borrow_mut().root = Some(root.clone());
     sync(&pages.borrow())?;
-    Ok(ReadingRoot {
-        frame_style: "",
-        decoration: None,
-        commit: None,
-        owner: None,
-        element: root,
-        slots: vec![],
-    })
+    Ok(root)
 }

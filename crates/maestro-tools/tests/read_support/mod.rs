@@ -19,6 +19,18 @@ use std::sync::{
 
 pub use maestro_test_directory::Scratch;
 
+/// Transport counting acquisition attempts, which never succeeds.
+///
+/// Only the unix search-program tests consume it, so other hosts would see it unused.
+#[cfg(unix)]
+pub fn counting_fetch(calls: &Arc<AtomicUsize>) -> maestro_models::Fetch {
+    let calls = Arc::clone(calls);
+    Arc::new(move |_| {
+        calls.fetch_add(1, Ordering::SeqCst);
+        Box::pin(async { Err(maestro_models::FetchError::Aborted) })
+    })
+}
+
 /// Native fixture spellings callers need on top of the shared directory owner.
 pub trait Fixture {
     /// The directory as text.

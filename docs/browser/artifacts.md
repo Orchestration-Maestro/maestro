@@ -1,5 +1,61 @@
 # Artifact panels and views
 
+## Native bodies and headers
+
+On browser targets, text, image, Markdown, SVG, PDF, spreadsheet, generic,
+Word and HTML artifacts implement `DomContent`. Construct a format with
+`default`, set its original filename/content, and mount its body through the
+supplied `DomView`. Mount `get_header_buttons(&DomView)` separately. Keep both
+returned roots alive while their nodes are in use, and call `update` after editing
+the format's fields. Native placement needs no attachment host or retained surface.
+
+The shared page loader registers `text-artifact`, `image-artifact`,
+`markdown-artifact`, `svg-artifact`, `pdf-artifact`, `excel-artifact`,
+`generic-artifact`, `docx-artifact` and `html-artifact`. Their `filename`
+property reflects the filename attribute. Supply original source through the
+unreflected `content` property; a content attribute does not replace it.
+`artifact-console` similarly accepts its raw `logs` property.
+
+Text and SVG source scroll long lines; Markdown source wraps. Preview/source
+switches retain the existing regions, native selection and scrolling. Image errors
+use the shared fallback. PDF bodies advance through cancellable native animation
+frames; successful pages survive empty content and reconnection. Spreadsheet
+bodies reuse the shared workbook renderer, native sheet buttons and independent
+table scrolling. Neither format adds a parser, worker or overlay layer.
+
+## Native panel
+
+`ArtifactsPanel::default()` implements `DomContent` as an `artifacts-panel`
+element. `panel.application(&view)` returns its retained
+`maestro_app::browser::tools::artifacts::LocalArtifactsPanel`. Execute tools,
+reconstruct history, replace runtime providers and read logs through that existing
+application interface. The native adapter owns no second copy of command,
+selection or replay policy.
+
+The panel keeps one controller and element per literal filename. Commands update
+that controller in place. Switching tabs, collapsing and reconnecting preserve
+body roots and view state; deleting a file releases its placement. A panel's
+placement key keeps another panel instance's application state separate.
+`get_native_artifact_element(filename)` returns the installed
+`Rc<RefCell<NativeArtifact>>`, or `None` if absent. Its public variants expose the
+concrete format; `filename`, `content` and `get_header_buttons` read that same live
+owner. An independently mounted header controls the panel's existing body.
+Release controller borrows before executing application commands.
+
+`set_on_open`, `set_on_artifacts_change` and `set_on_close` retain caller
+notifications. `set_sandbox_url_provider` supplies the address of the next HTML
+load. The panel is plain page content. Its containing screen owns responsive
+placement and shared dialog/backdrop composition; setting `overlay` does not add
+a second modal shell. Close notifies the caller without deleting its files.
+
+The artifact module and crate root re-export `Artifact`, `ArtifactsParams`,
+`ArtifactsPanel` and `NativeArtifact`. Concrete formats keep their documented
+public paths. The application remains the owner of the artifact records and tool
+parameters. Browser log readers use `Rc`;
+native application log readers keep their `Arc` and thread-safety bounds.
+
+## Retained interfaces
+
 `maestro_web::tools::artifacts::create_artifact_element` constructs an owned
 `Box<dyn maestro_web::ArtifactElement>` for text, images, Markdown, SVG, PDF, spreadsheets or an unrecognized filename suffix.
 Other recognized specialized formats return a presentation error until their
@@ -27,13 +83,29 @@ the body. MIME selection uses the last literal dot-delimited segment with Unicod
 lowercase, not path normalization or a MIME database. The native byte operation
 preserves the literal name and selected bytes.
 
+The header's download control and the preview/source selection are also
+component-owned native controls: `components::download_button::dom::download_button`
+and `DomContent for PreviewCodeToggle` publish them as page content. The generic
+file body also mounts natively through `DomContent for GenericArtifact`, and its
+independent header is `GenericArtifact::get_header_buttons(view: &DomView)`. The
+Word body, the HTML body and the artifact console have separate native interfaces
+described below.
+
+A mounted native body owns its `<section class="maestro-generic-artifact">` nodes,
+so an update rewrites only the changed filename and guidance text. The header owns
+only its controlled row and the download activation behind it: dropping the
+returned root detaches that activation even while the caller keeps the node in the
+document. Both roots take their nodes from `dom::DomView` and reach no host
+surface, so mounting them publishes nothing and draws nothing through the retained
+canvas. `dom.rs` installs the artifact header row and generic body rules with the
+page stylesheet for mounted page content.
+
 `GenericArtifact` is also available through its module for direct construction.
 Its initial filename and content are empty. Caller-supplied packs and localization
 apply on each draw; there is no global theme or new runtime.
 
-The [local application caller](../application/artifacts.md) can retain a supplied
-presentation adapter that owns these views. This library does not install an
-incomplete application presentation implementation.
+The [local application caller](../application/artifacts.md) also accepts a supplied
+presentation adapter for retained placement.
 
 ## Retained panel
 
@@ -47,8 +119,8 @@ panel.connected_callback(&caller)?;
 panel.render(ui, &caller, view)?;
 ```
 
-The embedding presentation delegates its view upsert, show and removal callbacks
-to this panel. The library does not install a production presentation adapter.
+The embedding retained presentation delegates its view upsert, show and removal
+callbacks to this panel.
 Tabs use record filenames in insertion order; clicking one calls the application's
 `show_artifact`, not its host-open notification. Tab labels collapse HTML spaces,
 tabs and line breaks into a single line; selection and downloads keep the original
@@ -80,19 +152,10 @@ children; retained panel placement does not change that ownership rule.
 
 Inline layout reserves a left border outside the native body. Both layouts reserve
 the tab-bar divider outside that body. Overlay uses viewport geometry and toolkit modal
-input admission with transparent backdrop paint. **The full-viewport dimmed and
-blurred backdrop is not yet composed**; [#1145](https://github.com/Orchestration-Maestro/maestro/issues/1145)
-owns it. The target dims and blurs the underlying application, while the panel's
-header, tabs and content stay sharp and interactive. No canvas-fill blur substitute
-or partial content-only dimming is included.
-
-## Remaining viewers
-
-Specialized viewers remain in
-[#797](https://github.com/Orchestration-Maestro/maestro/issues/797) and
-[#819](https://github.com/Orchestration-Maestro/maestro/issues/819).
-HTML runtime-provider composition remains in
-[#753](https://github.com/Orchestration-Maestro/maestro/issues/753).
+input admission with transparent backdrop paint; it composes no dimmed or blurred
+backdrop. The native panel gets that backdrop from the
+[chat screen](components.md#chat-screen), which dims and blurs the application
+behind it while the panel's header, tabs and content stay sharp and interactive.
 
 ## PDF artifacts
 
@@ -120,14 +183,15 @@ styles page chrome and error text, not document pixels.
 
 `tools::artifacts::excel_artifact::ExcelArtifact` shares modern workbook/table
 preparation with attachment previews. Sheets keep workbook order; multiple sheets
-have canvas tabs above selectable native tables. A failed sheet in a mixed XLSX
+have native tabs above selectable tables in direct DOM placement and toolkit tabs
+in retained placement. A failed sheet in a mixed XLSX
 workbook retains its tab and shows the shared selectable error panel instead of a
 table; readable siblings remain available. The localized error heading updates in
 place. All-corrupt workbooks retain the whole-view error. Keyboard traversal includes offscreen
 tabs and reveals the focused tab; clipped pointer hits do not select a sheet.
 Workbook links use the live accent role, including visited links. Table bodies retain their nodes
-and independent scrolling across tab switches. The native registry owns placement;
-the feature root keeps bounded height while the registry measures control slots.
+and independent scrolling across tab switches. The direct body bounds its table viewport. Retained placement uses the existing
+registry and its control measurements.
 No spreadsheet timer or worker is installed.
 
 The original-byte header uses the same complete decoder as other artifact headers.
@@ -232,3 +296,100 @@ Reading or Control preparation error. `Error::source` retains the original cause
 for code/Markdown rendering and localized copy or preview/source controls. Rust
 callers must update error paths and nested Host/Presentation matches; messages,
 retained views and recovery remain unchanged.
+
+## Native Word body
+
+On browser targets, `tools::artifacts::docx_artifact::DocxArtifact` implements
+`DomContent` directly. Create it with `new` or `default`, set its public `filename`
+and call `set_content` with the original base64 document. Mount its body and its
+independent `get_header_buttons(&DomView)` root separately. This direct interface
+does not install a Word viewer in the retained panel factory.
+
+The body reuses the document renderer with page width ignored and the other
+renderer defaults retained. Pages have white backgrounds, black text and 2em
+padding in both brand modes. Surrounding chrome uses the supplied brand roles.
+The body and header use the same complete original-byte decoder; the header saves
+with the Word document MIME type. A rejected header does not prevent mounting a
+body that displays the reached diagnostic.
+
+Call `update` after editing fields. Equal successful content and filename-only
+updates preserve page nodes. Empty content keeps a successful document, but
+clears a failed body. Assigning failed content again retries rendering and keeps
+the diagnostic if it fails again. Each mounted root owns its document URLs and
+pending shape sizing; replacement or root release drops those resources without
+affecting siblings. Errors share the attachment preview's literal node builder.
+The [shared Word renderer](../application/document-formats.md#word-page-rendering)
+still owns document parsing and safe link output.
+
+## Native artifact console
+
+On browser targets, `tools::artifacts::console::Console` mounts directly through
+`DomContent`. Create it with `new` or `default`, append `LogEntry` records to its
+shared `logs` collection, then call `append` to publish the new lines, or `update`
+after any other change.
+`LogType::Log` and `LogType::Error` select the label and text role;
+`BrowserSandboxValue` retains each native operand without a JSON conversion.
+
+The console starts collapsed with following enabled. Its summary counts errors
+when any are present, otherwise all lines. Expanded rows are selectable literal
+text in a viewport bounded by 12rem. Arrays and other native iterables paint their
+children in order; null and undefined paint no value. Ordinary objects are text,
+never host templates. An active iterable cycle contributes no further text, while
+a completed shared iterable contributes again at its next occurrence.
+
+Copy uses whole-value native String conversion, not the flattened painted text.
+It writes ordered `[log] value` and `[error] value` lines separated by newlines,
+through the [shared copy control](transcript.md). The console builds that text
+only when someone activates the control; a new line writes just its own row and
+the summary count. That control owns clipboard writes and two-second icon-only
+success feedback. Following scrolls every expanded update to the bottom, including
+unchanged updates; disabling it preserves manual scroll. Collapse removes the
+auxiliary controls without resetting the following selection.
+
+An update may replace the log handle or use another console and localization.
+Subsequent controls use those current operands, and unchanged positional rows,
+selection and keyboard focus survive. Each mounted root owns its subscriptions;
+releasing one does not release a sibling. The loader registers `artifact-console`,
+whose unreflected `logs` property uses these same raw operands. The HTML body below
+mounts the console directly.
+
+## Native HTML artifact
+
+On browser targets, `HtmlArtifact` mounts as an `html-artifact` element through
+`DomContent`. Create it with `new` or `default`, set `filename`,
+`runtime_providers` and `sandbox_url_provider`, and assign source with
+`set_content`. `content` returns the source unchanged.
+
+The body keeps two regions in place: a preview with the isolated frame and, while
+there are logs, the artifact console; and a highlighted source listing. Connecting
+the element creates the frame adapter, publishes it in `sandbox_iframe_ref` and
+loads a nonempty source once. A changed source clears the logs and, while
+connected, loads again. Equal or empty assignments, arriving logs and updates
+from the same artifact never load. `execute_content` loads any source while
+connected, even an empty one.
+Loads read the current providers in order. A configured address replaces the
+frame's address; without one the frame keeps its own. Each load appends the
+completion signal after the whole source, so authored scripts, comments and
+attributes stay intact. In an empty document the signal runs in the head.
+
+Detaching the element removes the frame and its route and empties
+`sandbox_iframe_ref`. Reconnecting loads again through the same adapter, and
+dropping the mounted root releases it. An `update` from another artifact moves the
+frame to that artifact and loads its source if it is changed and nonempty. The
+`filename` attribute names the sandbox of the next load; a `content` attribute is
+ignored. The unreflected `content` property assigns the body's original source.
+
+Only messages whose `type` is `"console"` become log lines, in arrival order and
+with their raw text; only the `"error"` method marks an error line. `get_logs`
+returns `[log] text` and `[error] text` lines with whole-value text. With no logs it
+returns the localized `No logs for {filename}` guidance, with the first placeholder
+replaced by the literal filename.
+
+`get_header_buttons(&DomView)` returns an independent row: preview/source
+selection, reload, copy and download. Copy and download keep the source the header
+was built with. Download saves UTF-8 bytes as `text/html` under the literal
+filename: the standalone document prepared through the connected frame, otherwise
+the original source. Selection and reload act on the body the artifact last
+mounted or updated. Reload clears the logs and loads that body's source again.
+Switching between preview and source keeps the frame, the listing, its selection
+and its scroll position.

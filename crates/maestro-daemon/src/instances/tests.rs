@@ -278,8 +278,8 @@ fn default_daemon_cannot_be_deleted() {
 #[test]
 #[cfg(unix)]
 fn daemon_listing_skips_reserved_default_directory() {
-    let root = std::env::temp_dir().join(format!("maestro-instance-list-{}", std::process::id()));
-    std::fs::create_dir_all(&root).unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path();
     for name in ["z", "a", "default", "bad name"] {
         std::fs::create_dir_all(root.join("daemons").join(name)).unwrap();
     }
@@ -303,7 +303,6 @@ fn daemon_listing_skips_reserved_default_directory() {
         entries[1].session_dir,
         format!("{}/daemons/a", root.display())
     );
-    std::fs::remove_dir_all(root).unwrap();
 }
 
 #[test]

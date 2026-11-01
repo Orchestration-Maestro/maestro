@@ -233,24 +233,48 @@ fn retained(
             }
             _ => return Err("unknown signal operation".into()),
         }
-    } else {
-        match request.method.as_str() {
-            "retain" => {
-                let ui = ctx.ui()?;
-                kept.borrow_mut().uis.push(ui);
-            }
-            "alias" => {
-                let ui = kept.borrow().uis.first().cloned().ok_or("missing UI")?;
-                kept.borrow_mut().uis.push(ui);
-            }
-            "pop" => {
-                let old = kept.borrow_mut().uis.pop();
-                drop(old);
-            }
-            _ => return Err("unknown UI operation".into()),
-        }
+    } else if let Some(answer) = retained_ui(kept, request, ctx)? {
+        return Ok(answer);
     }
     Ok(json!("done"))
+}
+/// Retain, clone, drop or call through an opaque UI owner, by its retained index, returning
+/// what a read request answered. A drop names its index in the arguments and takes the last
+/// owner without one.
+fn retained_ui(
+    kept: &RefCell<Kept>,
+    request: &Request,
+    ctx: &ExtensionContext,
+) -> ExtensionResult<Option<Value>> {
+    match request.method.as_str() {
+        "retain" => kept.borrow_mut().uis.push(ctx.ui()?),
+        "alias" => {
+            let ui = kept.borrow().uis.first().cloned().ok_or("missing UI")?;
+            kept.borrow_mut().uis.push(ui);
+        }
+        "pop" => {
+            let count = kept.borrow().uis.len();
+            let index = request.args.first().and_then(Value::as_u64).map_or_else(
+                || count.saturating_sub(1),
+                |index| usize::try_from(index).unwrap_or(usize::MAX),
+            );
+            let old = (index < count).then(|| kept.borrow_mut().uis.remove(index));
+            drop(old);
+        }
+        "call" => {
+            let index = request
+                .args
+                .get(1)
+                .and_then(Value::as_u64)
+                .map_or(0, |index| usize::try_from(index).unwrap_or(usize::MAX));
+            let ui = kept.borrow().uis.get(index).cloned().ok_or("missing UI")?;
+            let call = serde_json::from_value(request.args.first().cloned().ok_or("missing call")?)
+                .map_err(|error| error.to_string())?;
+            return super::ui_author::perform(&ui, &call);
+        }
+        _ => return Err("unknown UI operation".into()),
+    }
+    Ok(None)
 }
 /// Query or manage an independently retained catalog.
 async fn catalog(
@@ -300,7 +324,9 @@ async fn catalog(
                 model.cost.input = f64::INFINITY;
             }
             match registry.get_api_key_and_headers(model).await? {
-                ResolvedRequestAuth::Ok { api_key, headers } => Ok(
+                ResolvedRequestAuth::Ok {
+                    api_key, headers, ..
+                } => Ok(
                     json!({"apiKey":api_key,"headers":headers.map(|h|h.into_iter().collect::<Vec<_>>())}),
                 ),
                 ResolvedRequestAuth::Error { error } => Ok(json!({"error":error})),
@@ -339,7 +365,9 @@ fn register_compaction(api: &ExtensionAPI) -> ExtensionResult<()> {
                     && let Presence::Present(compaction) = &mut result.compaction
                 {
                     compaction.details = Presence::Present(
-                        json!({"leaf":leaf,"models":names,"branchEntries":branch}).to_string(),
+                        json!({"leaf":leaf,"models":names,"branchEntries":branch})
+                            .to_string()
+                            .into(),
                     );
                 }
                 Ok(Some(result))

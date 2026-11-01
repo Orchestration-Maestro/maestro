@@ -2,7 +2,7 @@
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::support;
 use maestro_web::{
-    ArtifactElement, AttachmentOverlay, I18n,
+    ArtifactElement, I18n,
     browser::attachment_content::*,
     tools::artifacts::{artifact_element::ArtifactView, create_artifact_element},
 };
@@ -33,7 +33,7 @@ pub struct Host {
     /// Controlled save failure.
     pub fail_download: Cell<bool>,
     /// Original record handles reaching save.
-    pub downloads: RefCell<Vec<Rc<RefCell<maestro_web::Attachment>>>>,
+    pub downloads: RefCell<Vec<maestro_web::SharedAttachment>>,
 }
 impl Host {
     /// Bind the actual canvas document and retain per-test state.
@@ -83,25 +83,6 @@ impl AttachmentHost for Host {
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = bool>>> {
         self.native.copy_to_clipboard(text, mode)
     }
-    fn capture_focus(&self) -> Result<Option<Rc<FocusTarget>>, AttachmentHostError> {
-        self.native.capture_focus()
-    }
-    fn restore_focus(
-        &self,
-        target: Rc<FocusTarget>,
-    ) -> Result<maestro_web::browser::timer::Timer, AttachmentHostError> {
-        self.native.restore_focus(target)
-    }
-    fn dialog_bounds(
-        &self,
-        id: egui::Id,
-        dimensions: [&str; 2],
-    ) -> Result<egui::Rect, AttachmentHostError> {
-        self.native.dialog_bounds(id, dimensions)
-    }
-    fn native_key(&self, event: &web_sys::KeyboardEvent, context: &egui::Context) {
-        self.native.native_key(event, context);
-    }
 
     fn set_retained_visibility(
         &self,
@@ -133,9 +114,6 @@ impl AttachmentHost for Host {
     fn hover_capable(&self) -> Result<bool, AttachmentHostError> {
         self.native.hover_capable()
     }
-    fn take_escape(&self) -> bool {
-        self.native.take_escape()
-    }
     fn timer(
         &self,
         ms: i32,
@@ -147,7 +125,7 @@ impl AttachmentHost for Host {
     fn spawn_local(&self, f: std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>) {
         self.native.spawn_local(f);
     }
-    fn download(&self, a: Rc<RefCell<maestro_web::Attachment>>) -> Result<(), AttachmentHostError> {
+    fn download(&self, a: maestro_web::SharedAttachment) -> Result<(), AttachmentHostError> {
         self.downloads.borrow_mut().push(a.clone());
         if self.fail_download.get() {
             return Err(AttachmentHostError::Host("save failure".into()));
@@ -176,8 +154,6 @@ pub struct View {
     pub i18n: I18n,
     /// Body viewport in canvas points.
     pub size: egui::Vec2,
-    /// Overlay screen geometry independent of the artifact body.
-    pub overlay_size: egui::Vec2,
     /// Physical density for projection.
     pub density: f32,
 }
@@ -200,7 +176,6 @@ impl View {
             mode: maestro_theme::BrandMode::Dark,
             size: egui::vec2(400., 300.),
             density: 1.,
-            overlay_size: egui::vec2(800., 600.),
             i18n: I18n::new(Rc::new(support::Host::default())).unwrap(),
         }
     }
@@ -235,86 +210,6 @@ impl View {
         });
         output.textures_delta.clear();
         output
-    }
-    /// Draw the public overlay and retain its actual control positions.
-    /// # Panics
-    /// Panics when the overlay fails.
-    pub fn overlay(&self, overlay: &mut AttachmentOverlay, events: Vec<egui::Event>) {
-        self.try_overlay(overlay, events).unwrap();
-    }
-    /// Preserve a reached failure without skipping end-of-frame cleanup.
-    /// # Errors
-    /// Returns the overlay's own failure after the frame ends.
-    /// # Panics
-    /// Panics when the presentation or the label projection fails.
-    pub fn try_overlay(
-        &self,
-        overlay: &mut AttachmentOverlay,
-        events: Vec<egui::Event>,
-    ) -> Result<bool, maestro_web::dialogs::attachment_overlay::AttachmentUiError> {
-        let mut input = egui::RawInput {
-            screen_rect: Some(egui::Rect::from_min_size(
-                egui::Pos2::ZERO,
-                self.overlay_size,
-            )),
-            events,
-            ..Default::default()
-        };
-        input
-            .viewports
-            .get_mut(&egui::ViewportId::ROOT)
-            .unwrap()
-            .native_pixels_per_point = Some(self.density);
-        self.context.begin_pass(input);
-        let result = overlay.render(
-            &self.context,
-            &self.i18n,
-            &self.pack.presentation(self.mode).unwrap(),
-        );
-        let mut out = self.context.end_pass();
-        out.textures_delta.clear();
-        // Save actual control positions from the painter, never native text echoes.
-        let labels: Vec<_> = out
-            .shapes
-            .iter()
-            .filter_map(|s| {
-                if let egui::Shape::Text(t) = &s.shape {
-                    Some((
-                        t.galley.job.text.clone(),
-                        t.pos.x,
-                        t.pos.y,
-                        t.galley.size().x,
-                        t.galley.size().y,
-                    ))
-                } else {
-                    None
-                }
-            })
-            .collect();
-        js_sys::Reflect::set(
-            &js_sys::global(),
-            &"labels".into(),
-            &js_sys::JSON::parse(&serde_json::to_string(&labels).unwrap()).unwrap(),
-        )
-        .unwrap();
-        result
-    }
-    /// Click the canvas-owned mode at its painted label.
-    /// # Panics
-    /// Panics when no painted label matches or the overlay fails.
-    pub fn toggle(&self, overlay: &mut AttachmentOverlay, label: &str) {
-        let position = js(&format!(
-            "(()=>{{const l=labels.find(l=>l[0]==={});return [l[1]+l[3]/2,l[2]+l[4]/2]}})()",
-            serde_json::to_string(label).unwrap()
-        ));
-        let array = js_sys::Array::from(&position);
-        self.overlay(
-            overlay,
-            click(egui::pos2(
-                num_traits::cast(array.get(0).as_f64().unwrap()).unwrap(),
-                num_traits::cast(array.get(1).as_f64().unwrap()).unwrap(),
-            )),
-        );
     }
 }
 pub use crate::support::pointer::click;

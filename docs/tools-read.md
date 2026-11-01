@@ -11,13 +11,16 @@ mutation queue are described in [file-changing tools](tools-edit.md).
 and accounting. `TruncationOptions::default()` independently selects 2000
 newline-separated entries and 51200 UTF-8 bytes. Explicit zero stays zero;
 `usize::MAX` leaves the corresponding budget unbounded for native-sized text.
-A final newline adds an empty entry. CR, BOM, NUL, tabs and ANSI bytes remain text.
+A final newline terminates the last line without adding an empty entry; empty text
+has zero lines. CR, BOM, NUL, tabs and ANSI bytes remain text.
 
 `truncate_head` keeps complete leading entries. An oversized first entry returns
 empty content with `first_line_exceeds_limit`, even with a zero line quota.
 `truncate_tail` keeps trailing entries, or a UTF-8-aligned suffix when the final
-entry alone exceeds the byte budget. That partial entry reports byte truncation.
-A zero line quota selects no entries; a zero byte quota can retain an empty
+line alone exceeds the byte budget. That partial line reports byte truncation. When
+a newline ends the oversized line, the suffix uses the full byte budget and omits
+the newline. An omitted final newline reports bytes, not lines, when no line was
+omitted. A zero line quota selects no entries; a zero byte quota can retain an empty
 partial tail entry. Consequently `output_lines` is not necessarily the split
 count of the returned text.
 
@@ -60,6 +63,14 @@ finish flushes pending UTF-8 once without closing the artifact. Raw decoding use
 the shared [streaming text primitive](text.md). Snapshots observe
 selected decoded text without finishing decoding; selection is owned by
 [`output::truncate`](../crates/maestro-tools/src/output/truncate.rs).
+
+Streamed line counts include completed lines plus one nonempty open line. Empty
+streams have zero lines. For 4,000 newline-terminated lines, bash retains lines
+2001 through 4000 and reports `[Showing lines 2001-4000 of 4000. Full output: <path>]`.
+
+A snapshot drops a leading fragment of a trimmed line only when more text follows its
+newline; a fragment that is the whole retained tail is the end of an oversized line and
+stays. A bash tail notice names the oversized line itself when output ends with a newline.
 
 Overflow artifacts preserve original bytes, including invalid UTF-8 and an initial
 BOM that the display decoder removes. A snapshot path identifies an artifact;
@@ -193,7 +204,8 @@ Its optional error observation is supplied by the rendering host. Conversion fro
 execution result supplies no error flag. `str` returns a borrowed string, an empty string for
 an absent or null value and nothing for any other type. `shorten_path` (native only) shows
 the home directory as `~` for a path equal to it or below it and leaves a sibling whose
-name merely starts with the home path unchanged; it reads the home directory through
+name merely starts with the home path unchanged; a home directory that is empty or `/`
+abbreviates nothing, so the path stays as given. It reads the home directory through
 [`expand_path`](../crates/maestro-tools/src/path_utils.rs) only for a present path.
 `replace_tabs` turns every TAB into three spaces and `normalize_display_text` removes every
 carriage return. The tool paths forward to the [text leaf](text.md)'s terminal cleaners.
@@ -207,13 +219,14 @@ with the error color.
 [`keybinding_hints`](../crates/maestro-tools/src/keybinding_hints.rs) reads the current
 keybinding registry: `key_text` joins an action's keys with `/` in registry order,
 `key_hint` and `raw_key_hint` follow them with a space and the description, styling the
-keys dim and the description muted with the published theme.
+keys dim and the description muted with the published theme. `expand_hint`, on every
+target, follows the muted count of hidden lines with the live expand key and a muted
+closing parenthesis. The bash preview uses the same framing through `plain_expand_hint`
+when a deferred hint cannot resolve its theme.
 
 The crate-private [`output::render_parts`](../crates/maestro-tools/src/output/render_parts.rs) is shared by the native tool renderers: `into_text`
 (reuse the row's previous `Text`, or make one), `paint` and `themed` (style text, carrying a
-theme failure to the caller), `num` and `float` (number spelling) and `expand_hint` (the count
-of hidden lines followed by the live expand key). The bash preview uses the same
-framing through `plain_expand_hint` when a deferred hint cannot resolve its theme. The crate-private `utils::diagnostics` holds
+theme failure to the caller) and `num` and `float` (number spelling). The crate-private `utils::diagnostics` holds
 the failure records and the cancellation guard that every native tool's operations share.
 
 ## Read tool
@@ -265,9 +278,10 @@ against no directory, so nothing in its spelling comes from one. A directory the
 file system holds under the written spelling keeps it for absolute paths too.
 
 The signal is checked before each of the three operations and watched while one is
-pending. An abort seen there settles the read with `Operation aborted`, and a
-later operation does not start. A started operating-system call is not
-interrupted.
+pending, including image processing. An abort settles the read with `Operation
+aborted` immediately, and a later operation does not start. A started
+operating-system call or blocking-pool resize is not interrupted; it finishes in
+the background.
 
 Text is decoded lossily as UTF-8, split on LF with trailing empty entries kept,
 and selected with `offset` (one-based) and `limit`, both finite numbers handled
@@ -284,8 +298,11 @@ A detected image becomes `Read image file [<mime>]`, then the delegated dimensio
 note, then a note when the active model (read from `ReadContext::model` after
 detection) lacks image input, and an image block. Fitting uses the image helpers
 above; `auto_resize_images: false` sends the original bytes, and an image that
-cannot be fitted yields only the text with the omission line. Native detection
-uses the [MIME sniff](#inline-image-preparation) and ignores extensions.
+cannot be fitted yields only the text with the omission line. Base64 encoding, decoding,
+resizing and re-encoding run on the runtime's blocking pool, so a large image never
+stalls the terminal loop or other tasks. An abort does not wait for that blocking
+work to finish. Native detection uses the [MIME sniff](#inline-image-preparation)
+and ignores extensions.
 
 ## Read rendering
 

@@ -57,8 +57,8 @@ pub fn registry(
 impl Events {
     /// Name confirmation.
     pub fn select(&self) -> Rc<dyn Fn(&str)> {
-        let events = self.clone();
-        Rc::new(move |value| events.push("select", Some(Value::from(value))))
+        let record = self.record::<String>("select");
+        Rc::new(move |value| record(value.to_owned()))
     }
     /// Theme preview.
     pub fn preview(&self) -> Rc<dyn Fn(&str)> {

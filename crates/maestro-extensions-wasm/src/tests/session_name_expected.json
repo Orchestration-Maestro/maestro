@@ -1,0 +1,462 @@
+{
+  "metadata": {
+    "name": "session-name",
+    "description": "Set or show session name (usage: /session-name [new name])",
+    "completions": false
+  },
+  "records": [
+    {
+      "name": "plain",
+      "input": {
+        "args": "Release notes",
+        "current": null,
+        "reject": null
+      },
+      "expected": {
+        "calls": [
+          {
+            "operation": "set",
+            "value": "Release notes"
+          },
+          {
+            "operation": "notify",
+            "message": "Session named: Release notes",
+            "kind": "info"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "outer_ascii",
+      "input": {
+        "args": " \t Release notes \r\n",
+        "current": null,
+        "reject": null
+      },
+      "expected": {
+        "calls": [
+          {
+            "operation": "set",
+            "value": "Release notes"
+          },
+          {
+            "operation": "notify",
+            "message": "Session named: Release notes",
+            "kind": "info"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "nbsp",
+      "input": {
+        "args": " Named ",
+        "current": null,
+        "reject": null
+      },
+      "expected": {
+        "calls": [
+          {
+            "operation": "set",
+            "value": "Named"
+          },
+          {
+            "operation": "notify",
+            "message": "Session named: Named",
+            "kind": "info"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "interior",
+      "input": {
+        "args": " alpha  beta\nnext ",
+        "current": "old",
+        "reject": null
+      },
+      "expected": {
+        "calls": [
+          {
+            "operation": "set",
+            "value": "alpha  beta\nnext"
+          },
+          {
+            "operation": "notify",
+            "message": "Session named: alpha  beta\nnext",
+            "kind": "info"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "unicode",
+      "input": {
+        "args": "  日本語 🚀  ",
+        "current": null,
+        "reject": null
+      },
+      "expected": {
+        "calls": [
+          {
+            "operation": "set",
+            "value": "日本語 🚀"
+          },
+          {
+            "operation": "notify",
+            "message": "Session named: 日本語 🚀",
+            "kind": "info"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "bom_name",
+      "input": {
+        "args": "﻿Named﻿",
+        "current": null,
+        "reject": null
+      },
+      "expected": {
+        "calls": [
+          {
+            "operation": "set",
+            "value": "﻿Named﻿"
+          },
+          {
+            "operation": "notify",
+            "message": "Session named: ﻿Named﻿",
+            "kind": "info"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "nel_name",
+      "input": {
+        "args": "Named",
+        "current": null,
+        "reject": null
+      },
+      "expected": {
+        "calls": [
+          {
+            "operation": "set",
+            "value": "Named"
+          },
+          {
+            "operation": "notify",
+            "message": "Session named: Named",
+            "kind": "info"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "bom_only",
+      "input": {
+        "args": "﻿",
+        "current": "old",
+        "reject": null
+      },
+      "expected": {
+        "calls": [
+          {
+            "operation": "set",
+            "value": "﻿"
+          },
+          {
+            "operation": "notify",
+            "message": "Session named: ﻿",
+            "kind": "info"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "nel_only",
+      "input": {
+        "args": "",
+        "current": "old",
+        "reject": null
+      },
+      "expected": {
+        "calls": [
+          {
+            "operation": "get"
+          },
+          {
+            "operation": "notify",
+            "message": "Session: old",
+            "kind": "info"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "empty_absent",
+      "input": {
+        "args": "",
+        "current": null,
+        "reject": null
+      },
+      "expected": {
+        "calls": [
+          {
+            "operation": "get"
+          },
+          {
+            "operation": "notify",
+            "message": "No session name set",
+            "kind": "info"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "blank_absent",
+      "input": {
+        "args": " \t\r\n",
+        "current": null,
+        "reject": null
+      },
+      "expected": {
+        "calls": [
+          {
+            "operation": "get"
+          },
+          {
+            "operation": "notify",
+            "message": "No session name set",
+            "kind": "info"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "blank_empty",
+      "input": {
+        "args": "\t",
+        "current": "",
+        "reject": null
+      },
+      "expected": {
+        "calls": [
+          {
+            "operation": "get"
+          },
+          {
+            "operation": "notify",
+            "message": "No session name set",
+            "kind": "info"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "empty_named",
+      "input": {
+        "args": "",
+        "current": "Current name",
+        "reject": null
+      },
+      "expected": {
+        "calls": [
+          {
+            "operation": "get"
+          },
+          {
+            "operation": "notify",
+            "message": "Session: Current name",
+            "kind": "info"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "blank_named",
+      "input": {
+        "args": "  ",
+        "current": "Current name",
+        "reject": null
+      },
+      "expected": {
+        "calls": [
+          {
+            "operation": "get"
+          },
+          {
+            "operation": "notify",
+            "message": "Session: Current name",
+            "kind": "info"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "current_whitespace",
+      "input": {
+        "args": "",
+        "current": "  kept  ",
+        "reject": null
+      },
+      "expected": {
+        "calls": [
+          {
+            "operation": "get"
+          },
+          {
+            "operation": "notify",
+            "message": "Session:   kept  ",
+            "kind": "info"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "current_unicode",
+      "input": {
+        "args": "",
+        "current": "日本語 🚀",
+        "reject": null
+      },
+      "expected": {
+        "calls": [
+          {
+            "operation": "get"
+          },
+          {
+            "operation": "notify",
+            "message": "Session: 日本語 🚀",
+            "kind": "info"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "externally_changed_first",
+      "input": {
+        "args": "",
+        "current": "first",
+        "reject": null
+      },
+      "expected": {
+        "calls": [
+          {
+            "operation": "get"
+          },
+          {
+            "operation": "notify",
+            "message": "Session: first",
+            "kind": "info"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "externally_changed_second",
+      "input": {
+        "args": "",
+        "current": "second",
+        "reject": null
+      },
+      "expected": {
+        "calls": [
+          {
+            "operation": "get"
+          },
+          {
+            "operation": "notify",
+            "message": "Session: second",
+            "kind": "info"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "registration_rejected",
+      "input": {
+        "args": "",
+        "current": null,
+        "reject": "register"
+      },
+      "expected": {
+        "calls": [],
+        "error": "supplied host refusal Ω"
+      }
+    },
+    {
+      "name": "write_rejected",
+      "input": {
+        "args": " new ",
+        "current": "old",
+        "reject": "set"
+      },
+      "expected": {
+        "calls": [
+          {
+            "operation": "set",
+            "value": "new"
+          }
+        ],
+        "error": "supplied host refusal Ω"
+      }
+    },
+    {
+      "name": "read_rejected",
+      "input": {
+        "args": "",
+        "current": null,
+        "reject": "get"
+      },
+      "expected": {
+        "calls": [
+          {
+            "operation": "get"
+          }
+        ],
+        "error": "supplied host refusal Ω"
+      }
+    },
+    {
+      "name": "notify_rejected",
+      "input": {
+        "args": " new ",
+        "current": "old",
+        "reject": "notify"
+      },
+      "expected": {
+        "calls": [
+          {
+            "operation": "set",
+            "value": "new"
+          },
+          {
+            "operation": "notify",
+            "message": "Session named: new",
+            "kind": "info"
+          }
+        ],
+        "error": "supplied host refusal Ω"
+      }
+    }
+  ]
+}

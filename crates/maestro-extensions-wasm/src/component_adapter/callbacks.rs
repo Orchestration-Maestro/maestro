@@ -91,13 +91,52 @@ kinds! {
         CompactionComplete(crate::CompactionComplete),
         CompactionError(crate::CompactionError),
         Listener(crate::EventListener),
+        Watch(super::io::WatchCallback),
         Command(CommandHandler),
         Completion(crate::ArgumentCompletions),
         Shortcut(crate::ShortcutHandler),
         Prepare(crate::PrepareArguments),
         Tool(crate::ToolExecute),
+        Component(crate::Component),
+        Bash(crate::BashOperations),
+        Read(crate::ReadOperations),
+        Write(crate::WriteOperations),
+        Edit(crate::EditOperations),
+        Find(crate::FindOperations),
+        Ls(crate::LsOperations),
+        Grep(crate::GrepOperations),
+        Schema(crate::schema_code::Handler),
+        CredentialBackend(std::rc::Rc<dyn crate::AuthStorageBackend>),
+        CredentialFallback(crate::FallbackResolver),
+        OAuthCallbacks(std::rc::Rc<super::oauth::Interaction>),
+        OAuthProvider(std::rc::Rc<dyn crate::OAuthProviderInterface>),
+        TerminalInput(crate::TerminalInputHandler),
+        ComponentFactory(crate::ComponentFactory),
+        CustomFactory(crate::CustomComponentFactory),
+        ComponentExpansion(crate::ComponentExpansionHandler),
+        ToolRenderCall(crate::ToolRenderCall),
+        ToolRenderResult(crate::ToolRenderResult),
+        ToolRow(std::rc::Rc<crate::types::ToolRow>),
+        FooterFactory(crate::FooterFactory),
+        BranchChange(crate::BranchChangeListener),
+        Style(crate::Style),
+        Highlight(crate::Highlight),
+        Widget(std::rc::Rc<super::lists::WidgetHandler>),
+        EditorFactory(crate::EditorFactory),
+        Editor(std::rc::Rc<dyn crate::EditorComponent>),
+        ProviderFactory(crate::AutocompleteProviderFactory),
+        Provider(std::rc::Rc<dyn crate::AutocompleteProvider>),
+        StreamValue(super::streams::Value),
+        ProviderStream(crate::StreamFunction<crate::StreamOptionsInput>),
+        AssistantStream(crate::AssistantMessageEventStream),
+        ModelPayload(crate::OnPayload),
+        ModelResponse(crate::OnResponse),
+        StreamClassifier(super::streams::Classifier),
+        StreamExtractor(super::streams::Extractor),
     }
     once {
+        Abort(crate::AbortListener),
+        CustomFuture(crate::ExtensionFuture<'static, crate::ExtensionComponent>),
         WithSession(WithSession),
         Setup(crate::SetupSession),
         Tail(crate::ExtensionFuture<'static, ()>),
@@ -128,9 +167,65 @@ pub(super) struct Identity<I: Imports> {
 }
 
 impl<I: Imports> Identity<I> {
+    /// Key of the identity.
+    pub(super) fn id(&self) -> u32 {
+        self.id
+    }
+
     /// Asks the host for a fresh identity.
     pub(super) fn new(imports: &I) -> Self {
         let (id, handle) = imports.new_callback();
+        Self { handle, id }
+    }
+
+    /// Hands the identity handle to the host while the object stays in this table.
+    pub(super) fn transfer(self, object: impl Stored) -> I::Callback {
+        let Self { handle, id } = self;
+        insert(
+            id,
+            Entry {
+                kind: object.wrap(),
+                _owner: None,
+            },
+        );
+        handle
+    }
+
+    /// Makes a closure callable under this identity while the request announcing it is
+    /// still with the host, which may call it before answering.
+    pub(super) fn stage(&self, closure: impl Stored) {
+        insert(
+            self.id,
+            Entry {
+                kind: closure.wrap(),
+                _owner: None,
+            },
+        );
+    }
+
+    /// Keeps a staged closure until the host releases it, or withdraws it when the host
+    /// rejected its request.
+    pub(super) fn settle(self, accepted: bool) {
+        let Self { handle, id } = self;
+        if !accepted {
+            release(id);
+            return;
+        }
+        let staged = TABLE.with_borrow_mut(|table| table.remove(&id));
+        if let Some(Entry { kind, .. }) = staged {
+            insert(
+                id,
+                Entry {
+                    kind,
+                    _owner: Some(Box::new(handle)),
+                },
+            );
+        }
+    }
+
+    /// Adopt a fresh host-supplied identity for a retained originating callback.
+    pub(super) fn from_handle(imports: &I, handle: I::Callback) -> Self {
+        let id = imports.callback_id(&handle);
         Self { handle, id }
     }
 
@@ -160,6 +255,12 @@ pub(super) struct Scoped<I: Imports> {
 }
 
 impl<I: Imports> Scoped<I> {
+    /// Adopt an already retained local identity and release it on every exit path.
+    pub(super) fn from_handle(imports: &I, handle: I::Callback) -> Self {
+        let id = imports.callback_id(&handle);
+        Self { handle, id }
+    }
+
     /// Registers a closure that lives only for one operation.
     pub(super) fn new(imports: &I, closure: impl Stored) -> Self {
         let Identity { handle, id } = Identity::<I>::new(imports);

@@ -431,8 +431,7 @@ fn capture_retains_restored_agent_session() {
 }
 
 #[cfg(unix)]
-#[path = "support/launch.rs"]
-mod launch;
+use crate::support::launch;
 
 #[test]
 #[cfg(unix)]
@@ -460,7 +459,7 @@ fn with_history(name: &str, count: usize) {
     if maestro_test_process::run_alone(name).unwrap() {
         return;
     }
-    maestro_test_process::TestProcess::named("setup_entry")
+    maestro_test_process::TestProcess::named("daemon_capture::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()

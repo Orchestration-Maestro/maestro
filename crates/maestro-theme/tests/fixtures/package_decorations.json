@@ -1,0 +1,146 @@
+[
+  {
+    "enabled": false,
+    "style": "dim",
+    "text": "",
+    "expected": ""
+  },
+  {
+    "enabled": false,
+    "style": "dim",
+    "text": "line",
+    "expected": "line"
+  },
+  {
+    "enabled": false,
+    "style": "dim",
+    "text": "line\n",
+    "expected": "line\n"
+  },
+  {
+    "enabled": false,
+    "style": "dim",
+    "text": "a\r\nb",
+    "expected": "a\r\nb"
+  },
+  {
+    "enabled": false,
+    "style": "dim",
+    "text": "a\u001b[22mb\u001b[39mc",
+    "expected": "a\u001b[22mb\u001b[39mc"
+  },
+  {
+    "enabled": false,
+    "style": "dim",
+    "text": "  ",
+    "expected": "  "
+  },
+  {
+    "enabled": false,
+    "style": "green",
+    "text": "",
+    "expected": ""
+  },
+  {
+    "enabled": false,
+    "style": "green",
+    "text": "line",
+    "expected": "line"
+  },
+  {
+    "enabled": false,
+    "style": "green",
+    "text": "line\n",
+    "expected": "line\n"
+  },
+  {
+    "enabled": false,
+    "style": "green",
+    "text": "a\r\nb",
+    "expected": "a\r\nb"
+  },
+  {
+    "enabled": false,
+    "style": "green",
+    "text": "a\u001b[22mb\u001b[39mc",
+    "expected": "a\u001b[22mb\u001b[39mc"
+  },
+  {
+    "enabled": false,
+    "style": "green",
+    "text": "  ",
+    "expected": "  "
+  },
+  {
+    "enabled": true,
+    "style": "dim",
+    "text": "",
+    "expected": ""
+  },
+  {
+    "enabled": true,
+    "style": "dim",
+    "text": "line",
+    "expected": "\u001b[2mline\u001b[22m"
+  },
+  {
+    "enabled": true,
+    "style": "dim",
+    "text": "line\n",
+    "expected": "\u001b[2mline\u001b[22m\n\u001b[2m\u001b[22m"
+  },
+  {
+    "enabled": true,
+    "style": "dim",
+    "text": "a\r\nb",
+    "expected": "\u001b[2ma\u001b[22m\r\n\u001b[2mb\u001b[22m"
+  },
+  {
+    "enabled": true,
+    "style": "dim",
+    "text": "a\u001b[22mb\u001b[39mc",
+    "expected": "\u001b[2ma\u001b[22m\u001b[2mb\u001b[39mc\u001b[22m"
+  },
+  {
+    "enabled": true,
+    "style": "dim",
+    "text": "  ",
+    "expected": "\u001b[2m  \u001b[22m"
+  },
+  {
+    "enabled": true,
+    "style": "green",
+    "text": "",
+    "expected": ""
+  },
+  {
+    "enabled": true,
+    "style": "green",
+    "text": "line",
+    "expected": "\u001b[32mline\u001b[39m"
+  },
+  {
+    "enabled": true,
+    "style": "green",
+    "text": "line\n",
+    "expected": "\u001b[32mline\u001b[39m\n\u001b[32m\u001b[39m"
+  },
+  {
+    "enabled": true,
+    "style": "green",
+    "text": "a\r\nb",
+    "expected": "\u001b[32ma\u001b[39m\r\n\u001b[32mb\u001b[39m"
+  },
+  {
+    "enabled": true,
+    "style": "green",
+    "text": "a\u001b[22mb\u001b[39mc",
+    "expected": "\u001b[32ma\u001b[22mb\u001b[39m\u001b[32mc\u001b[39m"
+  },
+  {
+    "enabled": true,
+    "style": "green",
+    "text": "  ",
+    "expected": "\u001b[32m  \u001b[39m"
+  }
+]

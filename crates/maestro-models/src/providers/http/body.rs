@@ -4,7 +4,10 @@ use super::{FetchError, HttpBody};
 use futures_util::StreamExt;
 
 /// Read every body chunk, leaving classification and cancellation with the caller.
-pub(crate) async fn collect_body(mut body: HttpBody) -> Result<Vec<u8>, FetchError> {
+///
+/// # Errors
+/// Returns the original body-stream failure after any bytes already received.
+pub async fn collect_body(mut body: HttpBody) -> Result<Vec<u8>, FetchError> {
     let mut bytes = Vec::new();
     while let Some(chunk) = body.next().await {
         bytes.extend(chunk?);

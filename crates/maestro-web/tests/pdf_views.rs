@@ -1,7 +1,6 @@
 //! PDF artifact and attachment public behavior.
 #![cfg(test)]
 use crate::artifact_support;
-use crate::attachment_support;
 use crate::session_header_support;
 use base64::Engine as _;
 use maestro_web::tools::artifacts::create_artifact_element;
@@ -92,32 +91,6 @@ fn encoded(name: &str) -> String {
     )
 }
 
-#[test]
-fn pdf_preview_advances_once_per_frame_without_reopening() {
-    use attachment_support::{Content, Frame, Host, attachment};
-    use maestro_web::browser::attachment_content::ReadingPhase;
-    let record = attachment();
-    record.borrow_mut().mime_type = "application/pdf".into();
-    record.borrow_mut().content = encoded("synthetic-multipage.pdf");
-    let host = Rc::new(Host::default());
-    let mut overlay = maestro_web::AttachmentOverlay::open(record, None, host.clone());
-    let mut frame = Frame::default();
-    frame.overlay(&mut overlay, vec![]).unwrap();
-    let Content::Reading(first, ReadingPhase::Publish) =
-        host.surfaces.borrow().last().unwrap().content.clone()
-    else {
-        panic!("PDF not admitted as reading content")
-    };
-
-    assert!(frame.ctx.has_requested_repaint());
-    for _ in 0..4 {
-        frame.overlay(&mut overlay, vec![]).unwrap();
-        assert!(
-            matches!(&host.surfaces.borrow().last().unwrap().content,Content::Reading(current,ReadingPhase::Publish) if Rc::ptr_eq(current,&first))
-        );
-    }
-}
-
 use crate::pdf_support;
 #[test]
 fn pdf_download_and_render_share_complete_original_bytes() {
@@ -138,43 +111,6 @@ fn pdf_download_and_render_share_complete_original_bytes() {
             }
         }
         let _ = row.overlay; // Raw outcomes are consumed by the decoder unit witness.
-    }
-}
-
-#[test]
-fn pdf_overlay_keeps_raw_base64_admission() {
-    use attachment_support::{Content, Frame, Host, attachment};
-    for (input, success) in [
-        (encoded("synthetic-multipage.pdf"), true),
-        (
-            format!(
-                "data:application/pdf;base64,{}",
-                encoded("synthetic-multipage.pdf")
-            ),
-            false,
-        ),
-        ("hello!".into(), false),
-    ] {
-        let record = attachment();
-        record.borrow_mut().mime_type = "application/pdf".into();
-        record.borrow_mut().content = input;
-        let host = Rc::new(Host::default());
-        let mut overlay = maestro_web::AttachmentOverlay::open(record, None, host.clone());
-        let mut frame = Frame::default();
-        frame.overlay(&mut overlay, vec![]).unwrap();
-        assert_eq!(!host.surfaces.borrow().is_empty(), success);
-        frame.overlay(&mut overlay, vec![]).unwrap();
-        assert!(matches!(
-            host.surfaces.borrow().last().unwrap().content,
-            Content::Reading(..)
-        ));
-        assert!(
-            !host
-                .surfaces
-                .borrow()
-                .iter()
-                .any(|s| matches!(s.content, Content::Text(..)))
-        );
     }
 }
 
@@ -243,109 +179,6 @@ fn pdf_edits_cancel_old_pages_before_replacement() {
     assert_eq!(
         host.downloads.borrow().last().unwrap().2,
         include_bytes!("../../maestro-app/tests/fixtures/pdf/synthetic-wide.pdf")
-    );
-}
-
-#[test]
-fn pdf_text_toggle_and_close_cancel_unfinished_pages() {
-    use attachment_support::{Content, Frame, Host, attachment, click};
-    let record = attachment();
-    record.borrow_mut().mime_type = "application/pdf".into();
-    record.borrow_mut().content = encoded("synthetic-multipage.pdf");
-    let host = Rc::new(Host::default());
-    let effects = host.clone();
-    let mut overlay = maestro_web::AttachmentOverlay::open(
-        record.clone(),
-        Some(Rc::new(move || {
-            effects.effects.borrow_mut().push("callback".into());
-        })),
-        host.clone(),
-    );
-    let mut frame = Frame::default();
-    frame.overlay(&mut overlay, vec![]).unwrap();
-    let first = match &host.surfaces.borrow().last().unwrap().content {
-        Content::Reading(r, _) => r.clone(),
-        _ => panic!("missing pages"),
-    };
-    frame.overlay(&mut overlay, vec![]).unwrap();
-    let pos = frame.label("Text").center();
-    frame.overlay(&mut overlay, click(pos)).unwrap();
-    record.borrow_mut().extracted_text = Some("live alias".into());
-    frame.overlay(&mut overlay, vec![]).unwrap();
-    assert!(
-        matches!(&host.surfaces.borrow().last().unwrap().content,Content::Text(t,_) if t=="live alias")
-    );
-    let pos = frame.label("PDF").center();
-    frame.overlay(&mut overlay, click(pos)).unwrap();
-    assert!(
-        matches!(&host.surfaces.borrow().last().unwrap().content,Content::Reading(r,_) if !Rc::ptr_eq(r,&first))
-    );
-    record.borrow_mut().mime_type = "text/plain".into();
-    frame.overlay(&mut overlay, vec![]).unwrap();
-    record.borrow_mut().mime_type = "application/pdf".into();
-    frame.overlay(&mut overlay, vec![]).unwrap();
-    let before = host.surfaces.borrow().len();
-    frame
-        .overlay(
-            &mut overlay,
-            vec![egui::Event::Key {
-                key: egui::Key::Escape,
-                physical_key: None,
-                pressed: true,
-                repeat: false,
-                modifiers: egui::Modifiers::NONE,
-            }],
-        )
-        .unwrap();
-    assert!(!frame.overlay(&mut overlay, vec![]).unwrap());
-    assert_eq!(host.surfaces.borrow().len(), before);
-    let effects = host.effects.borrow();
-    let n = effects.iter().position(|e| e == "callback").unwrap();
-    assert!(effects[n + 1].starts_with("remove:"));
-}
-
-#[test]
-fn pdf_load_failures_keep_controls_and_recover_on_authorized_change() {
-    use attachment_support::{Content, Frame, Host, attachment, click};
-    let record = attachment();
-    record.borrow_mut().mime_type = "application/pdf".into();
-    record.borrow_mut().content = encoded("synthetic-wide.pdf");
-    let host = Rc::new(Host::default());
-    *host.fail.borrow_mut() = Some("preview failure".into());
-    let mut overlay = maestro_web::AttachmentOverlay::open(record.clone(), None, host.clone());
-    let mut frame = Frame::default();
-    frame.overlay(&mut overlay, vec![]).unwrap();
-    frame.overlay(&mut overlay, vec![]).unwrap();
-    let count = host
-        .surfaces
-        .borrow()
-        .iter()
-        .filter(|s| !matches!(s.content, Content::Reading(..)))
-        .count();
-    record.borrow_mut().content = encoded("synthetic-tall.pdf");
-    frame.overlay(&mut overlay, vec![]).unwrap();
-    assert_eq!(
-        host.surfaces
-            .borrow()
-            .iter()
-            .filter(|s| !matches!(s.content, Content::Reading(..)))
-            .count(),
-        count
-    );
-    let error = match &host.surfaces.borrow().last().unwrap().content {
-        Content::Reading(r, _) => r.clone(),
-        _ => panic!("missing error surface"),
-    };
-    let pos = frame.label("Text").center();
-    frame.overlay(&mut overlay, click(pos)).unwrap();
-    assert!(matches!(
-        host.surfaces.borrow().last().unwrap().content,
-        Content::Text(..)
-    ));
-    let pos = frame.label("PDF").center();
-    frame.overlay(&mut overlay, click(pos)).unwrap();
-    assert!(
-        matches!(&host.surfaces.borrow().last().unwrap().content,Content::Reading(r,_) if !Rc::ptr_eq(r,&error))
     );
 }
 

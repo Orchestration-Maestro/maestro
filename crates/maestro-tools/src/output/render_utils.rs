@@ -109,6 +109,9 @@ pub fn str(value: Option<&Value>) -> Option<&str> {
 
 /// Show the home directory as `~`, for `path` equal to it or below it; absent text is empty.
 ///
+/// A home directory that is empty or the root directory abbreviates nothing, so `path` is
+/// shown as given.
+///
 /// # Errors
 /// Returns the home lookup failure when `path` is present.
 #[cfg(not(target_arch = "wasm32"))]
@@ -117,12 +120,7 @@ pub fn shorten_path(path: Option<&str>) -> std::io::Result<String> {
         return Ok(String::new());
     };
     let home = crate::path_utils::expand_path("~")?;
-    let below = path.strip_prefix(&home).filter(|rest| {
-        rest.is_empty()
-            || rest.starts_with(std::path::is_separator)
-            || home.ends_with(std::path::is_separator)
-    });
-    Ok(below.map_or_else(|| path.to_owned(), |rest| format!("~{rest}")))
+    Ok(maestro_path::shorten_home(path, &home))
 }
 
 /// Replace every TAB with three spaces.
