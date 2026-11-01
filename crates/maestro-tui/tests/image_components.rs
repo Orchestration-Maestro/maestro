@@ -376,3 +376,120 @@ fn apply_image_action(image: &mut Image, terminal: &TerminalImage, action: Optio
         _ => {}
     }
 }
+
+/// A Kitty terminal with `cells`, a home of `/srv/u` and the hyperlink capability `links`.
+fn fitted_terminal(cells: CellDimensions, images: bool, links: bool) -> TerminalImage {
+    let terminal = TerminalImage::new(|key| (key == "HOME").then(|| "/srv/u".to_owned()), || 7);
+    terminal.set_capabilities(TerminalCapabilities {
+        images: images.then_some(ImageProtocol::Kitty),
+        true_color: true,
+        hyperlinks: links,
+    });
+    terminal.set_cell_dimensions(cells);
+    terminal
+}
+
+/// The image `width_px`×`height_px` with `options`, styled as plain text.
+fn fitted_image(
+    terminal: &TerminalImage,
+    (width_px, height_px): (u32, u32),
+    options: ImageOptions,
+) -> Image {
+    Image::new(
+        "AAAA".to_owned(),
+        "image/png".to_owned(),
+        ImageTheme {
+            fallback_color: Box::new(str::to_owned),
+        },
+        ImageOptions {
+            dimensions: Some(ImageDimensions {
+                width_px,
+                height_px,
+            }),
+            ..options
+        },
+        terminal.clone(),
+    )
+}
+
+#[test]
+fn portrait_images_fit_a_square_pixel_box() {
+    let cells = CellDimensions {
+        width_px: 10,
+        height_px: 20,
+    };
+    let terminal = fitted_terminal(cells, true, false);
+    let narrow = ImageOptions {
+        max_width_cells: Some(10),
+        ..ImageOptions::default()
+    };
+    let lines = fitted_image(&terminal, (10, 100), narrow).render(12);
+    assert_eq!(lines.len(), 5);
+    assert!(lines[4].contains(",c=1,r=5"), "{:?}", lines[4]);
+    terminal.set_cell_dimensions(CellDimensions {
+        width_px: 9,
+        height_px: 18,
+    });
+    let lines = fitted_image(&terminal, (400, 1600), ImageOptions::default()).render(80);
+    assert_eq!(lines.len(), 30);
+    assert!(lines[29].contains(",c=15,r=30"), "{:?}", lines[29]);
+}
+
+#[test]
+fn image_fallback_is_one_line_bounded_by_the_render_width() {
+    let cells = CellDimensions::default();
+    let terminal = fitted_terminal(cells, false, false);
+    let image = fitted_image(&terminal, (8, 6), ImageOptions::default());
+    let lines = image.render(10);
+    assert_eq!(lines.len(), 1);
+    assert_eq!(maestro_tui::visible_width(&lines[0]), 10, "{:?}", lines[0]);
+    assert!(
+        maestro_text::terminal::strip_ansi(&lines[0])
+            .unwrap()
+            .ends_with("...")
+    );
+    assert_eq!(image.render(0), vec![String::new()]);
+}
+
+#[cfg(unix)]
+#[test]
+fn image_fallback_shortens_home_and_links_absolute_names() {
+    let cells = CellDimensions::default();
+    let named = |terminal: &TerminalImage, name: &str, size| {
+        let options = ImageOptions {
+            filename: Some(name.to_owned()),
+            ..ImageOptions::default()
+        };
+        fitted_image(terminal, size, options).render(200)[0]
+            .trim_end()
+            .to_owned()
+    };
+    let plain = fitted_terminal(cells, false, false);
+    assert_eq!(
+        named(&plain, "/srv/u/shot.png", (1280, 720)),
+        "[Image: ~/shot.png [image/png] 1280x720]"
+    );
+    assert_eq!(
+        named(&plain, "/srv/u2/x.png", (1, 1)),
+        "[Image: /srv/u2/x.png [image/png] 1x1]"
+    );
+    let linked = fitted_terminal(cells, false, true);
+    assert_eq!(
+        named(&linked, "/srv/u/shot.png", (1280, 720)),
+        format!(
+            "[Image: {} [image/png] 1280x720]",
+            hyperlink("~/shot.png", "file:///srv/u/shot.png")
+        )
+    );
+    assert_eq!(
+        named(&linked, "/srv/u/a b.png", (1, 1)),
+        format!(
+            "[Image: {} [image/png] 1x1]",
+            hyperlink("~/a b.png", "file:///srv/u/a%20b.png")
+        )
+    );
+    assert_eq!(
+        named(&linked, "clankolas.png", (1, 1)),
+        "[Image: clankolas.png [image/png] 1x1]"
+    );
+}
