@@ -41,10 +41,10 @@ pub(super) async fn edit_file(
 ) -> Result<AgentToolResult<EditToolDetails>, DiagnosticErrorInfo> {
     let signal = signal.as_ref();
     check_aborted(signal)?;
-    operations
-        .access(absolute.clone())
-        .await
-        .map_err(|error| failure(&access_failure(&input.path, error).error))?;
+    if let Err(error) = operations.access(absolute.clone()).await {
+        check_aborted(signal)?;
+        return Err(failure(&access_failure(&input.path, error).error));
+    }
     check_aborted(signal)?;
     let bytes = operations.read_file(absolute.clone()).await?;
     check_aborted(signal)?;
