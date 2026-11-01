@@ -803,7 +803,7 @@ fn update_cards(test: &str) {
 }
 
 /// Builds the same mode setup used by startup, selecting the recorded theme, on a terminal
-/// without link support whatever terminal runs the tests.
+/// without link support, whichever terminal runs the tests.
 fn update_world(directory: &std::path::Path, palette: String) -> World {
     let world = Setup {
         configure: Box::new(move |settings| {
