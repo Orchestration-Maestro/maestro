@@ -32,12 +32,12 @@ enum Platform {
 /// Select the platform's workspace home from supplied environment observations.
 fn select_home(
     platform: Platform,
-    environment: impl Fn(&str) -> Option<std::ffi::OsString>,
+    mut environment: impl FnMut(&str) -> Option<std::ffi::OsString>,
 ) -> Option<PathBuf> {
     if platform == Platform::Unix {
         return environment("HOME").map(PathBuf::from);
     }
-    let usable = |key| environment(key).filter(|value| !value.is_empty() && value != "~");
+    let mut usable = |key| environment(key).filter(|value| !value.is_empty() && value != "~");
     if let Some(profile) = usable("USERPROFILE") {
         return Some(profile.into());
     }

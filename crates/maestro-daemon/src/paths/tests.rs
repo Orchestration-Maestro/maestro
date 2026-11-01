@@ -88,3 +88,16 @@ fn windows_workspace_paths_use_the_selected_home() {
         }
     }
 }
+
+/// Mutable observations are read sequentially until a usable home is found.
+#[test]
+fn home_selection_accepts_mutable_observations() {
+    let mut observed = Vec::new();
+    let home = select_home(Platform::Windows, |key| {
+        observed.push(key.to_owned());
+        (key == "HOME").then(|| "home".into())
+    });
+
+    assert_eq!(home, Some(PathBuf::from("home")));
+    assert_eq!(observed, ["USERPROFILE", "HOMEDRIVE", "HOMEPATH", "HOME"]);
+}
