@@ -5088,6 +5088,92 @@
     }
   },
   {
+    "test": "capability_environment_precedence_and_color_values",
+    "rule": "workspace pane {\"TERM_PROGRAM\":\"maestro\",\"KITTY_WINDOW_ID\":\"1\",\"COLORTERM\":\"truecolor\",\"TERM\":\"xterm-256color\"}",
+    "symbol": "detectCapabilities",
+    "args": [],
+    "environment": {
+      "TERM_PROGRAM": "maestro",
+      "KITTY_WINDOW_ID": "1",
+      "COLORTERM": "truecolor",
+      "TERM": "xterm-256color"
+    },
+    "case": "pane-001",
+    "expected": {
+      "images": null,
+      "trueColor": true,
+      "hyperlinks": true
+    }
+  },
+  {
+    "test": "capability_environment_precedence_and_color_values",
+    "rule": "workspace pane {\"TERM_PROGRAM\":\"Maestro\",\"KITTY_WINDOW_ID\":\"1\",\"COLORTERM\":\"truecolor\",\"TERM\":\"xterm-256color\"}",
+    "symbol": "detectCapabilities",
+    "args": [],
+    "environment": {
+      "TERM_PROGRAM": "Maestro",
+      "KITTY_WINDOW_ID": "1",
+      "COLORTERM": "truecolor",
+      "TERM": "xterm-256color"
+    },
+    "case": "pane-002",
+    "expected": {
+      "images": null,
+      "trueColor": true,
+      "hyperlinks": true
+    }
+  },
+  {
+    "test": "capability_environment_precedence_and_color_values",
+    "rule": "workspace pane {\"TERM_PROGRAM\":\"maestro\",\"KITTY_WINDOW_ID\":\"1\"}",
+    "symbol": "detectCapabilities",
+    "args": [],
+    "environment": {
+      "TERM_PROGRAM": "maestro",
+      "KITTY_WINDOW_ID": "1"
+    },
+    "case": "pane-003",
+    "expected": {
+      "images": null,
+      "trueColor": false,
+      "hyperlinks": true
+    }
+  },
+  {
+    "test": "capability_environment_precedence_and_color_values",
+    "rule": "workspace pane {\"TERM_PROGRAM\":\"maestro\",\"TMUX\":\"/x\",\"COLORTERM\":\"truecolor\"}",
+    "symbol": "detectCapabilities",
+    "args": [],
+    "environment": {
+      "TERM_PROGRAM": "maestro",
+      "TMUX": "/x",
+      "COLORTERM": "truecolor"
+    },
+    "case": "pane-004",
+    "expected": {
+      "images": null,
+      "trueColor": true,
+      "hyperlinks": false
+    }
+  },
+  {
+    "test": "capability_environment_precedence_and_color_values",
+    "rule": "workspace pane {\"TERM_PROGRAM\":\"maestro\",\"TERM\":\"screen-256color\",\"COLORTERM\":\"truecolor\"}",
+    "symbol": "detectCapabilities",
+    "args": [],
+    "environment": {
+      "TERM_PROGRAM": "maestro",
+      "TERM": "screen-256color",
+      "COLORTERM": "truecolor"
+    },
+    "case": "pane-005",
+    "expected": {
+      "images": null,
+      "trueColor": true,
+      "hyperlinks": false
+    }
+  },
+  {
     "test": "gif_versions_and_header_boundaries",
     "rule": "16-bit maxima",
     "symbol": "getGifDimensions",
