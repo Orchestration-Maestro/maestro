@@ -183,11 +183,11 @@ image width through `60`, `80`, `120`, editor padding through `0`–`3`, and
 autocomplete height through `3`, `5`, `7`, `10`, `15`, `20`, and the HTTP idle
 timeout through `30 sec`, `1 min`, `2 min`, `5 min` and `disabled` (reported as
 `30000`, `60000`, `120000`, `300000` and `0` milliseconds; an unmatched value
-displays as its seconds). Interactive mode admits the chosen limit before saving it
-and showing `HTTP idle timeout: <label>` in the transcript. A refused or invalid
-limit keeps the saved value and reports the error without announcing success.
-An unmatched value advances to the first choice. These fixed decimal choices report `f64` values;
-boolean choices report `bool` values.
+displays as its seconds). Interactive mode admits the chosen limit before
+saving it and showing `HTTP idle timeout: <label>` in the transcript. A refused
+or invalid limit keeps the saved value and reports the error without announcing
+success. An unmatched value advances to the first choice. These fixed decimal
+choices report `f64` values; boolean choices report `bool` values.
 
 Preference callbacks return `true` when accepted and `false` when refused. A refusal
 restores the previous main-list value or warning snapshot; a refused theme commit
