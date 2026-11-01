@@ -3627,7 +3627,7 @@ fn author_setup_continues_when_cargo_keeps_an_outdated_example() {
     assert!(logged.contains("Cargo kept the setup example"), "{logged}");
 }
 
-/// Write a dependency-free workspace with a transitive library and an author example.
+/// Build a dependency-free workspace with a transitive library and an author example.
 fn cache_fixture(root: &Path) {
     toolchain_support::declare_toolchain(root, include_str!("../../../rust-toolchain.toml"))
         .unwrap();
@@ -3638,7 +3638,7 @@ fn cache_fixture(root: &Path) {
         ),
         (
             "app/Cargo.toml",
-            "[package]\nname='app'\nversion='0.0.0'\nedition='2024'\n[dependencies]\nmiddle={path='../middle'}\n",
+            "[package]\nname='app'\nversion='0.0.0'\nedition='2024'\n[dependencies]\nmiddle={path='../middle'}\n[features]\nother=['middle/other']\n",
         ),
         (
             "app/src/main.rs",
@@ -3650,7 +3650,7 @@ fn cache_fixture(root: &Path) {
         ),
         (
             "middle/Cargo.toml",
-            "[package]\nname='middle'\nversion='0.0.0'\nedition='2024'\n[dependencies]\naliased_leaf={package='leaf',path='../leaf'}\n",
+            "[package]\nname='middle'\nversion='0.0.0'\nedition='2024'\n[dependencies]\naliased_leaf={package='leaf',path='../leaf'}\n[features]\nother=['aliased_leaf/other']\n",
         ),
         (
             "middle/src/lib.rs",
@@ -3664,6 +3664,19 @@ fn cache_fixture(root: &Path) {
     ] {
         write_input(root, path, text);
     }
+    cache_cargo(root, &["generate-lockfile", "--offline"]);
+    cache_cargo(
+        root,
+        &[
+            "build",
+            "--offline",
+            "--locked",
+            "-p",
+            "app",
+            "--bins",
+            "--examples",
+        ],
+    );
 }
 
 /// Run Cargo with fixture-local state and build outputs.
@@ -3706,19 +3719,6 @@ fn cache_normalization_reads_the_pinned_cargo_builds() {
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let root = scratch.path();
     cache_fixture(root);
-    cache_cargo(root, &["generate-lockfile", "--offline"]);
-    cache_cargo(
-        root,
-        &[
-            "build",
-            "--offline",
-            "--locked",
-            "-p",
-            "app",
-            "--bins",
-            "--examples",
-        ],
-    );
     let profile = root.join("target/debug");
     age_cache_outputs(&profile);
     cache_cargo(
@@ -3762,6 +3762,67 @@ fn cache_normalization_reads_the_pinned_cargo_builds() {
         fs::metadata(consumer).unwrap().modified().unwrap(),
         expected
     );
+}
+
+/// Cleaning libraries before another feature build leaves their older consumers stale.
+#[test]
+fn cache_normalization_keeps_consumers_of_replaced_builds_stale() {
+    use std::time::{Duration, UNIX_EPOCH};
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path();
+    cache_fixture(root);
+    let profile = root.join("target/debug");
+    age_cache_outputs(&profile);
+    fs::write(root.join("leaf/src/lib.rs"), "pub fn value() -> u32 { 43 }").unwrap();
+    cache_cargo(
+        root,
+        &[
+            "clean",
+            "--offline",
+            "--locked",
+            "-p",
+            "middle",
+            "-p",
+            "leaf",
+        ],
+    );
+    cache_cargo(
+        root,
+        &[
+            "build",
+            "--offline",
+            "--locked",
+            "-p",
+            "app",
+            "--examples",
+            "--features",
+            "other",
+        ],
+    );
+    let example = profile.join("examples").join(format!(
+        "prepare_author_component{}",
+        std::env::consts::EXE_SUFFIX
+    ));
+    let fresh = fs::metadata(example).unwrap().modified().unwrap();
+
+    let result = Command::new(env!("CARGO_BIN_EXE_development"))
+        .args(["nextest-setup", "normalize-component-cache"])
+        .arg(&profile)
+        .env_remove("TEST_ARCHIVE")
+        .output()
+        .unwrap();
+
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    let consumer = profile.join(format!("app{}", std::env::consts::EXE_SUFFIX));
+    assert_eq!(
+        fs::metadata(consumer).unwrap().modified().unwrap(),
+        UNIX_EPOCH + Duration::from_secs(100)
+    );
+    assert!(fresh > UNIX_EPOCH + Duration::from_secs(100));
 }
 
 /// Run the author setup from `root` with `profile` as nextest's artifact directory.

@@ -807,9 +807,12 @@ length and contents, so copied and hard-linked outputs work alike. Identical twi
 with different dependency records fail rather than select an uncertain build.
 A library's own test binary does not depend on that library's separate output.
 Without an executable fingerprint, normalization conservatively treats any newer
-library output as an input. A present but malformed or unresolved record fails
-setup with a diagnostic. These records follow the pinned Cargo toolchain; a real
-Cargo fixture exercises their layout in the tooling tests.
+library output as an input. If a recorded dependency build no longer exists,
+its consumer stays stale. This can happen after cleaning dependency packages
+and rebuilding with another feature selection while older consumers remain.
+A malformed present record fails setup with a diagnostic. These records follow
+the pinned Cargo toolchain; real Cargo fixtures exercise their layout and
+rebuild behavior in the tooling tests.
 A run from a nextest archive (`TEST_ARCHIVE` set) skips the fingerprint check,
 because nextest never rebuilds archived executables. A skipped test binary compiles
 its components itself on first use. A skipped example would warm code that no test

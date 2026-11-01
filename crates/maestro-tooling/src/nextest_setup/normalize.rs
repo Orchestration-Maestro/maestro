@@ -56,7 +56,7 @@ pub(super) fn archive_signalled() -> bool {
 /// Run the normalization the command line asks for, with the exit status it reports.
 ///
 /// # Errors
-/// Returns a directory without executables, unusable Cargo records or a failed read or write.
+/// Returns a directory without executables, malformed Cargo records or a failed read or write.
 pub(super) fn run(directory: &Path, archived: bool) -> io::Result<ExitCode> {
     Ok(match normalize(directory, archived)? {
         Outcome::Normalized => ExitCode::SUCCESS,
@@ -80,7 +80,7 @@ pub(super) enum Outcome {
 /// archived run has no outdated executable.
 ///
 /// # Errors
-/// Returns a directory without executables, unusable Cargo records or a failed read or write.
+/// Returns a directory without executables, malformed Cargo records or a failed read or write.
 pub(super) fn normalize(directory: &Path, archived: bool) -> io::Result<Outcome> {
     let fingerprints = if archived {
         Fingerprints::default()
@@ -223,7 +223,9 @@ fn outdated(
     let Some(record) = executable_fingerprint(artifact, fingerprints)? else {
         return Ok(newest_library.is_some_and(|newest| newest > modified));
     };
-    let linked = linked_libraries(record, fingerprints)?;
+    let Some(linked) = linked_libraries(record, fingerprints)? else {
+        return Ok(true);
+    };
     Ok(libraries.iter().any(|library| {
         let stem = Path::new(&library.name)
             .file_stem()
@@ -237,7 +239,7 @@ fn outdated(
 /// Cargo's dependencies, including their compiled-build fingerprints.
 #[derive(Debug, serde::Deserialize, PartialEq, Eq)]
 struct Fingerprint {
-    /// Package identity, crate name, public-dependency marker and little-endian build hash.
+    /// Package identity, dependency alias, public marker and compiled-build fingerprint.
     deps: Vec<(u64, String, bool, u64)>,
 }
 
@@ -393,11 +395,11 @@ fn same_contents(left: &Path, right: &Path) -> io::Result<bool> {
     Ok(true)
 }
 
-/// Resolve direct and transitive dependencies to exact library output stems.
+/// Resolve linked outputs, or return `None` when a recorded dependency build no longer exists.
 fn linked_libraries(
     record: Fingerprint,
     fingerprints: &Fingerprints,
-) -> io::Result<HashSet<String>> {
+) -> io::Result<Option<HashSet<String>>> {
     let mut linked = HashSet::new();
     let mut pending = record.deps;
     let mut seen = HashSet::new();
@@ -406,11 +408,9 @@ fn linked_libraries(
         if alias == "build_script_build" || !seen.insert(hash) {
             continue;
         }
-        let records = fingerprints.libraries.get(&hash).ok_or_else(|| {
-            io::Error::other(format!(
-                "cannot resolve Cargo dependency {alias} with fingerprint {hash}"
-            ))
-        })?;
+        let Some(records) = fingerprints.libraries.get(&hash) else {
+            return Ok(None);
+        };
         for path in records {
             let directory = path.parent().map(file_name).unwrap_or_default();
             let (_, metadata) = directory.rsplit_once('-').ok_or_else(|| {
@@ -425,7 +425,7 @@ fn linked_libraries(
             pending.extend(read_fingerprint(path)?.deps);
         }
     }
-    Ok(linked)
+    Ok(Some(linked))
 }
 
 /// Decode the eight bytes Cargo writes as little-endian hexadecimal text.

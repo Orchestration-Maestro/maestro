@@ -349,11 +349,11 @@ fn cache_normalization_keeps_binaries_with_newer_transitive_linked_builds() {
     assert_eq!(fs::metadata(anchor).unwrap().modified().unwrap(), at(200));
 }
 
-/// Present but unusable Cargo records must fail rather than change executable times.
+/// Malformed Cargo records must fail rather than change executable times.
 #[cfg(unix)]
 #[test]
 fn cache_normalization_rejects_invalid_fingerprint_records() {
-    for failure in ["json", "hash", "missing"] {
+    for failure in ["json", "hash"] {
         let scratch = Scratch::new().unwrap();
         let profile = scratch.path().join("target/debug");
         let deps = profile.join("deps");
@@ -368,7 +368,6 @@ fn cache_normalization_rejects_invalid_fingerprint_records() {
             )
             .unwrap(),
             "hash" => fs::write(directory.join("alpha-1/lib-alpha"), b"not a fingerprint").unwrap(),
-            "missing" => fs::remove_dir_all(directory.join("alpha-1")).unwrap(),
             _ => unreachable!(),
         }
 
