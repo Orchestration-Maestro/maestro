@@ -324,9 +324,22 @@ mod entry {
         );
     }
 
+    /// How the explicit session argument selects its fixture.
+    #[derive(Clone, Copy, Debug)]
+    enum RefusalSelection {
+        /// Open an authored file path.
+        Path,
+        /// Match a listed session by its local identifier.
+        Local,
+    }
+
     /// A non-session path or a listed session whose entry identity prevents opening.
-    fn session_refusal(e: &Entry, file: &str, local_match: bool) -> (String, String, String) {
-        if local_match {
+    fn session_refusal(
+        e: &Entry,
+        file: &str,
+        selection: RefusalSelection,
+    ) -> (String, String, String) {
+        if matches!(selection, RefusalSelection::Local) {
             let content = format!(
                 "{}\n{{\"type\":\"custom\",\"id\":false}}\n",
                 json!({"type":"session","version":3,"id":"selected-id","cwd":e.commands.cwd})
@@ -351,15 +364,18 @@ mod entry {
         run(
             "entry::session_open_errors_are_reported_with_run_styles",
             |local| async move {
-                for (styles, local_match) in
-                    [(false, false), (true, false), (false, true), (true, true)]
-                {
+                for (styles, selection) in [
+                    (false, RefusalSelection::Path),
+                    (true, RefusalSelection::Path),
+                    (false, RefusalSelection::Local),
+                    (true, RefusalSelection::Local),
+                ] {
                     let e = Entry::new();
                     e.styles.set(styles);
                     let directory = format!("{}/selected", e.commands.cwd);
                     std::fs::create_dir_all(&directory).unwrap();
                     let file = format!("{directory}/broken.jsonl");
-                    let (content, argument, error) = session_refusal(&e, &file, local_match);
+                    let (content, argument, error) = session_refusal(&e, &file, selection);
                     std::fs::write(&file, &content).unwrap();
                     let status = e
                         .run(

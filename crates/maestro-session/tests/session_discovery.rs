@@ -118,6 +118,8 @@ fn discovery_created_dates_preserve_invalid_observations() {
         "invalid_created",
         "null_created",
         "numeric_created",
+        "boolean_created",
+        "out_of_range_created",
     ]);
 }
 

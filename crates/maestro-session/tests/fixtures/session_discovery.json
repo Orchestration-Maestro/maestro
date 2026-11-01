@@ -334,6 +334,52 @@
   }
  },
  {
+  "name": "boolean_created",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":true,\"cwd\":\"/project\"}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1,
+   "modified": 1893456000000,
+   "messageCount": 0,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
+  "name": "out_of_range_created",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":9000000000000000.0,\"cwd\":\"/project\"}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": {
+    "invalid": true
+   },
+   "modified": 1893456000000,
+   "messageCount": 0,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
   "name": "parent_null",
   "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\",\"parentSession\":null}\n",
   "mtime": 1893456000000,
