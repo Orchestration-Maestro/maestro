@@ -1,5 +1,5 @@
 //! Flavor-independent witnesses of the `~` parse and of the concatenating expansion.
-use super::{Tilde, expand_tilde, parse};
+use super::{Separators, Tilde, expand_tilde, parse};
 use std::io;
 
 /// Expands `path` over a fixed home.
@@ -17,25 +17,29 @@ fn unread() -> io::Result<String> {
 #[test]
 fn parse_reads_three_forms() {
     let rows = [
-        ("~", false, Tilde::Home),
-        ("~/", false, Tilde::Below("")),
-        ("~/x", false, Tilde::Below("x")),
-        ("~//x", false, Tilde::Below("/x")),
-        ("~/../x", false, Tilde::Below("../x")),
-        ("~x", false, Tilde::Other),
-        ("~user/x", false, Tilde::Other),
-        (r"~\x", false, Tilde::Other),
-        ("./~", false, Tilde::Other),
-        ("a~/x", false, Tilde::Other),
-        ("", false, Tilde::Other),
-        ("~", true, Tilde::Home),
-        (r"~\x", true, Tilde::Below("x")),
-        ("~/x", true, Tilde::Below("x")),
-        (r"~\\x", true, Tilde::Below(r"\x")),
-        (r"~x\y", true, Tilde::Other),
+        ("~", Separators::Slash, Tilde::Home),
+        ("~/", Separators::Slash, Tilde::Below("")),
+        ("~/x", Separators::Slash, Tilde::Below("x")),
+        ("~//x", Separators::Slash, Tilde::Below("/x")),
+        ("~/../x", Separators::Slash, Tilde::Below("../x")),
+        ("~x", Separators::Slash, Tilde::Other),
+        ("~user/x", Separators::Slash, Tilde::Other),
+        (r"~\x", Separators::Slash, Tilde::Other),
+        ("./~", Separators::Slash, Tilde::Other),
+        ("a~/x", Separators::Slash, Tilde::Other),
+        ("", Separators::Slash, Tilde::Other),
+        ("~", Separators::Windows, Tilde::Home),
+        (r"~\x", Separators::Windows, Tilde::Below("x")),
+        ("~/x", Separators::Windows, Tilde::Below("x")),
+        (r"~\\x", Separators::Windows, Tilde::Below(r"\x")),
+        (r"~x\y", Separators::Windows, Tilde::Other),
     ];
-    for (written, windows, expected) in rows {
-        assert_eq!(parse(written, windows), expected, "{written:?} {windows}");
+    for (written, separators, expected) in rows {
+        assert_eq!(
+            parse(written, matches!(separators, Separators::Windows)),
+            expected,
+            "{written:?} {separators:?}"
+        );
     }
 }
 
@@ -106,4 +110,33 @@ fn home_is_read_only_for_the_expanded_forms() {
         let error = expand_tilde(written, unread).unwrap_err();
         assert_eq!(error.to_string(), "the home directory was read");
     }
+}
+
+/// Native Windows paths accept either separator and retain the home text.
+#[test]
+fn native_windows_expansion_keeps_its_separator_rules() {
+    let rows = [
+        (r"~\", r"C:\h", Some(r"C:\h")),
+        ("~/", r"C:\h", Some(r"C:\h")),
+        (r"~\x", r"C:\h", Some(r"C:\h\x")),
+        (r"~/a\b/c", r"C:\h", Some(r"C:\h\a\b\c")),
+        (r"~\\x//y", r"C:\h", Some(r"C:\h\x\y")),
+        (r"~\x", r"C:\h\\", Some(r"C:\h\\x")),
+        (r"~\x", "C:/h/", Some("C:/h/x")),
+        (r"~\..\x", r"C:\h", Some(r"C:\h\..\x")),
+        (r"~\x", "", Some(r"\x")),
+        (r"~x\y", r"C:\h", None),
+    ];
+    for (written, home, expected) in rows {
+        let expanded = super::expand(
+            written,
+            true,
+            || Ok::<_, io::Error>(home.to_owned()),
+            String::push_str,
+        )
+        .unwrap();
+        assert_eq!(expanded.as_deref(), expected, "{written:?} over {home:?}");
+    }
+    let error = super::expand(r"~\x", true, unread, String::push_str).unwrap_err();
+    assert_eq!(error.to_string(), "the home directory was read");
 }

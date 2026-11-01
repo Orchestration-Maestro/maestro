@@ -16,6 +16,16 @@ pub enum Tilde<'a> {
     Other,
 }
 
+/// Which separators introduce a path below the home.
+#[cfg(test)]
+#[derive(Clone, Copy, Debug)]
+enum Separators {
+    /// Only a forward slash introduces the suffix.
+    Slash,
+    /// Either Windows separator introduces the suffix.
+    Windows,
+}
+
 /// Reads a leading `~` of `path` in the compile target's flavor.
 #[must_use]
 pub fn parse_tilde(path: &str) -> Tilde<'_> {
