@@ -155,10 +155,10 @@ impl Events {
     fn push(&self, name: &str, value: Value) {
         self.0.borrow_mut().push(vec![name.into(), value]);
     }
-    /// Boolean callback.
-    fn boolean(&self, name: &'static str) -> Rc<dyn Fn(bool)> {
+    /// Callback recording each value under `name`.
+    fn record<T: Into<Value> + 'static>(&self, name: &'static str) -> Rc<dyn Fn(T)> {
         let events = self.clone();
-        Rc::new(move |value| events.push(name, value.into()))
+        Rc::new(move |value: T| events.push(name, value.into()))
     }
     /// Numeric callback for finite chosen values.
     fn numeric(&self, name: &'static str) -> Rc<dyn Fn(f64)> {
@@ -170,8 +170,8 @@ impl Events {
     }
     /// Text callback.
     fn text(&self, name: &'static str) -> Rc<dyn Fn(&str)> {
-        let events = self.clone();
-        Rc::new(move |value| events.push(name, value.into()))
+        let record = self.record::<String>(name);
+        Rc::new(move |value| record(value.to_owned()))
     }
     /// Every constructor notification.
     pub fn callbacks(&self, preview: bool) -> SettingsCallbacks {
@@ -184,17 +184,17 @@ impl Events {
         let warnings = self.clone();
         let cancel = self.clone();
         SettingsCallbacks {
-            on_auto_compact_change: self.boolean("AutoCompact"),
-            on_show_images_change: self.boolean("ShowImages"),
+            on_auto_compact_change: self.record("AutoCompact"),
+            on_show_images_change: self.record("ShowImages"),
             on_image_width_cells_change: self.numeric("ImageWidthCells"),
-            on_auto_resize_images_change: self.boolean("AutoResizeImages"),
-            on_block_images_change: self.boolean("BlockImages"),
-            on_enable_skill_commands_change: self.boolean("EnableSkillCommands"),
-            on_show_hardware_cursor_change: self.boolean("ShowHardwareCursor"),
+            on_auto_resize_images_change: self.record("AutoResizeImages"),
+            on_block_images_change: self.record("BlockImages"),
+            on_enable_skill_commands_change: self.record("EnableSkillCommands"),
+            on_show_hardware_cursor_change: self.record("ShowHardwareCursor"),
             on_editor_padding_x_change: self.numeric("EditorPaddingX"),
             on_autocomplete_max_visible_change: self.numeric("AutocompleteMaxVisible"),
-            on_clear_on_shrink_change: self.boolean("ClearOnShrink"),
-            on_show_terminal_progress_change: self.boolean("ShowTerminalProgress"),
+            on_clear_on_shrink_change: self.record("ClearOnShrink"),
+            on_show_terminal_progress_change: self.record("ShowTerminalProgress"),
 
             on_steering_mode_change: Rc::new(move |value: MessageDeliveryMode| {
                 steering.push("SteeringMode", value.as_str().into());
@@ -210,9 +210,9 @@ impl Events {
             }),
             on_theme_change: self.text("Theme"),
             on_theme_preview: preview.then(|| self.text("preview")),
-            on_hide_thinking_block_change: self.boolean("HideThinkingBlock"),
-            on_collapse_changelog_change: self.boolean("CollapseChangelog"),
-            on_enable_install_telemetry_change: self.boolean("EnableInstallTelemetry"),
+            on_hide_thinking_block_change: self.record("HideThinkingBlock"),
+            on_collapse_changelog_change: self.record("CollapseChangelog"),
+            on_enable_install_telemetry_change: self.record("EnableInstallTelemetry"),
             on_http_idle_timeout_ms_change: self.numeric("HttpIdleTimeoutMs"),
             on_double_escape_action_change: Rc::new(move |value: DoubleEscapeAction| {
                 action.push("DoubleEscapeAction", value.as_str().into());
@@ -220,7 +220,7 @@ impl Events {
             on_tree_filter_mode_change: Rc::new(move |value: TreeFilterMode| {
                 filter.push("TreeFilterMode", value.as_str().into());
             }),
-            on_quiet_startup_change: self.boolean("QuietStartup"),
+            on_quiet_startup_change: self.record("QuietStartup"),
             on_warnings_change: Rc::new(move |value: WarningSettings| {
                 let keys: Vec<_> = value.0.keys().cloned().collect();
                 warnings.0.borrow_mut().push(vec![

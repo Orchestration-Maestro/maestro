@@ -63,6 +63,9 @@ pub(crate) use crate::brand;
 #[cfg(target_arch = "wasm32")]
 pub mod reading_paint;
 
+/// Primary-button pointer input shared by canvas witnesses.
+pub mod pointer;
+
 /// Shared recorded tool operands.
 pub mod tool_input;
 

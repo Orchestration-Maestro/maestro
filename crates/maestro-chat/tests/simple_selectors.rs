@@ -96,7 +96,7 @@ fn image_choices_render_and_report_both_boolean_values() {
         let events = Events::default();
         let selector = maestro_chat::ShowImagesSelectorComponent::new(
             query.current,
-            events.images(),
+            events.record("select"),
             events.cancel(),
             live,
         );

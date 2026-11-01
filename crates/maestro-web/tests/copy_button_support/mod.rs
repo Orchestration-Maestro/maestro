@@ -60,18 +60,7 @@ impl Canvas {
         self.host.run_work();
     }
 }
-#[must_use]
-pub fn pointer(pos: egui::Pos2, pressed: bool) -> Vec<egui::Event> {
-    vec![
-        egui::Event::PointerMoved(pos),
-        egui::Event::PointerButton {
-            pos,
-            button: egui::PointerButton::Primary,
-            pressed,
-            modifiers: egui::Modifiers::NONE,
-        },
-    ]
-}
+pub use crate::support::pointer::pointer;
 #[must_use]
 pub fn copied(output: &egui::FullOutput, canvas: &Canvas) -> bool {
     canvas

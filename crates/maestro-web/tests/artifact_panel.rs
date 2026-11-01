@@ -179,7 +179,11 @@ fn close_labels(harness: &Harness, output: &egui::FullOutput) -> Vec<String> {
         .unwrap();
     let activated = harness
         .frame
-        .draw_panel(&harness.panel, &harness.caller, click_events(close))
+        .draw_panel(
+            &harness.panel,
+            &harness.caller,
+            support::pointer::click(close),
+        )
         .unwrap();
     activated
         .platform_output
@@ -350,7 +354,11 @@ fn assert_visible(
     assert_eq!(visible, [published]);
     harness
         .frame
-        .draw_panel(&harness.panel, caller, click_events(control(&output, 1)))
+        .draw_panel(
+            &harness.panel,
+            caller,
+            support::pointer::click(control(&output, 1)),
+        )
         .unwrap();
     assert_eq!(
         [harness.host.downloads.borrow().last().unwrap().0.clone()],
@@ -569,13 +577,13 @@ fn artifact_panel_modes_use_toolkit_modal_admission() {
     );
     assert_eq!(harness.host.overlays.borrow().len(), 1);
     let pos = egui::pos2(40., 16.);
-    assert!(!draw_underlying(&harness, click_events(pos)).0);
+    assert!(!draw_underlying(&harness, support::pointer::click(pos)).0);
     assert!(!output.shapes.iter().any(|shape| matches!(&shape.shape,egui::Shape::Rect(rect) if rect.fill == egui::Color32::from_black_alpha(100))));
     harness.panel.set_overlay(false);
     draw_underlying(&harness, vec![]);
     draw_underlying(&harness, vec![]);
     assert!(harness.host.overlays.borrow().is_empty());
-    assert!(draw_underlying(&harness, click_events(pos)).0);
+    assert!(draw_underlying(&harness, support::pointer::click(pos)).0);
     harness.panel.set_overlay(true);
     harness.draw().unwrap();
     harness.panel.disconnected_callback().unwrap();
@@ -614,25 +622,6 @@ fn draw_underlying(harness: &Harness, events: Vec<egui::Event>) -> (bool, egui::
     );
     output.textures_delta.clear();
     (clicked, output)
-}
-
-/// One bounded pointer activation, without a timer or input-policy substitute.
-fn click_events(pos: egui::Pos2) -> Vec<egui::Event> {
-    vec![
-        egui::Event::PointerMoved(pos),
-        egui::Event::PointerButton {
-            pos,
-            button: egui::PointerButton::Primary,
-            pressed: true,
-            modifiers: egui::Modifiers::NONE,
-        },
-        egui::Event::PointerButton {
-            pos,
-            button: egui::PointerButton::Primary,
-            pressed: false,
-            modifiers: egui::Modifiers::NONE,
-        },
-    ]
 }
 
 /// Accessible close titles use exact shipped translations and observe live dictionary edits.

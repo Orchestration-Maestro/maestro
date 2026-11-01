@@ -498,6 +498,25 @@ An unmatched ordinary-test filter fails rather than passing an empty selection.
 Use direct `cargo test --doc` for doctest-only runs and direct `cargo nextest run`
 for runner-only flags or target selection. `tui-test-ansi` runs only nextest.
 
+### Shared test support
+
+Keep one owner for a reusable fixture inside its crate. When unit and integration
+tests need the same fixture, put it in `tests/support/` and include that file from
+both test programs. A test-only self alias lets the file name its owning crate
+consistently in either program; it adds no production export.
+
+For example, the models tests include
+[`oauth_admission.rs`](../crates/maestro-models/tests/support/oauth_admission.rs)
+from `src/tests.rs` and `tests/integration.rs`. Each program keeps its own registry
+admission lock and resets its registry on entry and drop. The same layout owns
+native peer reads, process readiness polling and image-enabled terminal fixtures.
+Helpers used only by sibling unit modules stay beside those tests, as the daemon's
+terminal fixture does. Chat callback recorders and web pointer events likewise
+stay in their existing integration-test support modules.
+
+Use the shared fixture without changing the caller's assertions or adding a
+production feature for test access.
+
 ### Slowest-first test order
 
 The 64 tests that took more than 30 seconds in the baseline merge group have

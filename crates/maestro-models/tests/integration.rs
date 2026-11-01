@@ -145,6 +145,10 @@ mod model_stream_lifetimes;
 #[path = "model_streaming.rs"]
 mod model_streaming;
 mod model_thinking_levels;
+#[path = "support/native_peer.rs"]
+mod native_peer;
+#[path = "support/oauth_admission.rs"]
+mod oauth_admission;
 mod oauth_primitives;
 mod oauth_provider_registry;
 mod offline_model_catalog;

@@ -167,9 +167,9 @@ pub struct ImageInput {
     pub current: bool,
 }
 impl Events {
-    /// Boolean confirmation.
-    pub fn images(&self) -> Rc<dyn Fn(bool)> {
+    /// Callback recording each value under `name`.
+    pub fn record<T: Into<Value> + 'static>(&self, name: &'static str) -> Rc<dyn Fn(T)> {
         let events = self.clone();
-        Rc::new(move |value| events.push("select", Some(Value::from(value))))
+        Rc::new(move |value: T| events.push(name, Some(value.into())))
     }
 }

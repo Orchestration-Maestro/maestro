@@ -3,6 +3,8 @@ use super::callback::{AuthorizationCode, parse_authorization_input};
 #[cfg(not(target_arch = "wasm32"))]
 use super::{callback::route, exchange};
 #[cfg(not(target_arch = "wasm32"))]
+use crate::tests::native_peer::read_peer;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::tests::runtime::run;
 #[cfg(not(target_arch = "wasm32"))]
 use crate::{
@@ -1310,25 +1312,12 @@ async fn write_native(peer: &mut tokio::net::TcpStream, mut bytes: &[u8]) {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-/// Read native response bytes or the peer's orderly EOF.
-async fn read_native(peer: &mut tokio::net::TcpStream, bytes: &mut [u8]) -> usize {
-    loop {
-        peer.readable().await.unwrap();
-        match peer.try_read(bytes) {
-            Ok(count) => return count,
-            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {}
-            Err(error) => panic!("{error}"),
-        }
-    }
-}
-
-#[cfg(not(target_arch = "wasm32"))]
 /// Read the response set closed by the native peer's EOF.
 async fn native_response(peer: &mut tokio::net::TcpStream) -> String {
     let mut response = Vec::new();
     loop {
         let mut bytes = [0; 1024];
-        let count = read_native(peer, &mut bytes).await;
+        let count = read_peer(peer, &mut bytes).await;
         if count == 0 {
             break;
         }

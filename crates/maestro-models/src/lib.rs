@@ -119,6 +119,9 @@ pub use providers::response_sessions::openai_codex_responses::{
 pub use providers::json_text::compact_json;
 
 #[cfg(test)]
+extern crate self as maestro_models;
+
+#[cfg(test)]
 pub mod tests;
 
 pub use maestro_request::tool_info::ToolInfo;

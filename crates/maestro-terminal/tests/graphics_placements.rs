@@ -1,14 +1,7 @@
 //! Renderer projection exercised through terminal input.
 
+use super::support::kitty_terminal::kitty_terminal as terminal;
 use maestro_terminal::{Terminal, kitty::graphics::placements::KittyImageFormat};
-
-/// A terminal with enabled images and known cell pixels.
-fn terminal() -> Terminal {
-    let mut terminal = Terminal::new(10, 5, 100_000).unwrap();
-    terminal.enable_kitty_graphics();
-    terminal.resize(10, 5, 8, 16).unwrap();
-    terminal
-}
 
 #[test]
 fn inline_rgba_images_expose_their_placement() {

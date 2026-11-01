@@ -2,6 +2,9 @@
 
 use std::{cell::RefCell, collections::HashMap};
 
+#[path = "../tests/support/kitty_terminal.rs"]
+pub(crate) mod kitty_terminal;
+
 /// Work observed by the unit-test program at the operation that performs it.
 #[derive(Debug, Default)]
 pub(crate) struct Work {
