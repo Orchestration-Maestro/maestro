@@ -515,7 +515,7 @@ async fn input_hooks_chain_text_and_keep_missing_or_null_images_case() {
         let mut images = initial;
         assert!(matches!(
             runner
-                .emit_input("original", &mut images, InputSource::Rpc)
+                .emit_input("original", &mut images, InputSource::Rpc, None)
                 .await
                 .unwrap(),
             InputEventResult::Continue
@@ -545,7 +545,7 @@ async fn input_source_and_handled_verdict_control_later_handlers_case() {
         install_handled_input(&loaded, source, &trace);
         assert!(matches!(
             runner
-                .emit_input("original", &mut Presence::Missing, source)
+                .emit_input("original", &mut Presence::Missing, source, None)
                 .await
                 .unwrap(),
             InputEventResult::Handled
@@ -924,7 +924,7 @@ async fn input_chain_case(answers: Vec<Option<Value>>, expected: Value) {
     }
     let mut images = Presence::Present(vec![image("original")]);
     let result = runner
-        .emit_input("original", &mut images, InputSource::Interactive)
+        .emit_input("original", &mut images, InputSource::Interactive, None)
         .await
         .unwrap();
     assert_eq!(serde_json::to_value(result).unwrap(), expected);
@@ -958,7 +958,7 @@ async fn input_image_intent_case(explicit: bool, initial: Vec<maestro_models::Im
         .unwrap();
     let mut images = Presence::Present(initial.clone());
     let result = runner
-        .emit_input("same", &mut images, InputSource::Interactive)
+        .emit_input("same", &mut images, InputSource::Interactive, None)
         .await
         .unwrap();
     if explicit {

@@ -3,12 +3,16 @@
 use super::prompting::{custom_message, split_command, user_message};
 use super::state::thrown;
 use super::{AgentSession, AgentSessionEvent, PromptOptions, QueueTexts};
-use crate::utils::lock::write;
-use maestro_agent::{AgentEvent, PromptInput};
+use crate::utils::lock::{read, write};
+use maestro_agent::{AgentEvent, AgentMessage, PromptInput};
 use maestro_extensions::{ExtensionExecution, InputSource, NativeAgentMessage};
-use maestro_models::{DiagnosticErrorInfo, ImageContent, UserBlock, UserContent};
+use maestro_models::{
+    DiagnosticErrorInfo, ImageContent, SharedAssistantMessage, ToolResultMessage, UserBlock,
+    UserContent,
+};
 use maestro_session::messages::{
-    CustomMessageInput, MessageDelivery, SendMessageOptions, SendUserMessageOptions,
+    CustomAgentMessages, CustomMessageInput, MessageDelivery, SendMessageOptions,
+    SendUserMessageOptions,
 };
 use std::rc::Rc;
 use std::sync::{Arc, RwLock};
@@ -43,62 +47,115 @@ impl<E: ExtensionExecution> AgentSession<E> {
     }
 
     /// Sends a custom message: kept for the next prompt when `deliver_as` asks for it,
-    /// otherwise queued while a response streams (steering unless follow-up is asked for),
-    /// otherwise sent as a new turn when `trigger_turn` is set, otherwise appended to the
-    /// history and the session with its own start and end announced.
+    /// otherwise, while a run is active, queued (steering unless follow-up is asked for) or,
+    /// when `trigger_turn` is false, kept until the current turn ends; otherwise sent as a new
+    /// run when `trigger_turn` is set, otherwise appended to the history and the session with
+    /// its own start and end announced.
     ///
     /// # Errors
-    /// Returns the agent's failure of a triggered turn or the session history's failure.
+    /// Returns the failure of a triggered run or the session history's failure.
     pub async fn send_custom_message(
-        &self,
+        self: &Rc<Self>,
         message: CustomMessageInput,
         options: SendMessageOptions,
     ) -> Result<(), DiagnosticErrorInfo> {
+        let message = custom_message(message);
         if matches!(options.deliver_as, Some(MessageDelivery::NextTurn)) {
-            let message = custom_message(message);
             self.state
                 .borrow_mut()
                 .pending_next_turn_messages
                 .push(message);
+        } else if self.is_streaming() && options.trigger_turn == Some(false) {
+            self.state
+                .borrow_mut()
+                .pending_custom_messages
+                .push(message);
         } else if self.is_streaming() {
-            let message = custom_message(message);
             if matches!(options.deliver_as, Some(MessageDelivery::FollowUp)) {
                 self.agent.follow_up(message);
             } else {
                 self.agent.steer(message);
             }
         } else if options.trigger_turn == Some(true) {
-            let message = custom_message(message);
-            self.agent.prompt(PromptInput::Message(message)).await?;
+            let session = Rc::clone(self);
+            self.start_operation(
+                async move { session.run_agent(PromptInput::Message(message)).await },
+            )
+            .await
+            .map_err(thrown)??;
         } else {
-            self.append_custom_message(message)?;
+            self.append_custom_message(&message, None)?;
         }
         Ok(())
     }
 
-    /// Appends a custom message to the history and the session, then announces its start
-    /// and end.
-    fn append_custom_message(&self, input: CustomMessageInput) -> Result<(), DiagnosticErrorInfo> {
-        let message = custom_message(input.clone());
-        write(&self.messages()).push(message.clone());
-        self.session_manager
-            .borrow_mut()
-            .append_custom_message_entry(
-                &input.custom_type,
-                input.content,
-                input.display,
-                input.details,
-            )
-            .map_err(thrown)?;
+    /// Appends a custom message to the history, at `index` or at the end, and to the session,
+    /// then announces its start and end.
+    fn append_custom_message(
+        &self,
+        message: &NativeAgentMessage,
+        index: Option<usize>,
+    ) -> Result<(), DiagnosticErrorInfo> {
+        {
+            let history = self.messages();
+            let mut history = write(&history);
+            let at = index.map_or(history.len(), |index| index.min(history.len()));
+            history.insert(at, message.clone());
+        }
+        self.store_custom_message(message)?;
         for event in [
             AgentEvent::MessageStart {
                 message: message.clone(),
             },
-            AgentEvent::MessageEnd { message },
+            AgentEvent::MessageEnd {
+                message: message.clone(),
+            },
         ] {
             self.emit_agent_event(Arc::new(RwLock::new(event)));
         }
         Ok(())
+    }
+
+    /// Records the custom messages kept while a run was active, in the order they arrived:
+    /// right after the tool results of the turn `turn` names, or at the end of the history.
+    pub(super) fn flush_pending_custom_messages(
+        &self,
+        turn: Option<(&SharedAssistantMessage, &[ToolResultMessage])>,
+    ) -> Result<(), DiagnosticErrorInfo> {
+        let pending = std::mem::take(&mut self.state.borrow_mut().pending_custom_messages);
+        let first = turn.and_then(|(response, results)| {
+            let history = self.messages();
+            turn_end_index(&read(&history), response, results)
+        });
+        pending
+            .iter()
+            .enumerate()
+            .try_for_each(|(offset, message)| {
+                self.append_custom_message(message, first.map(|index| index + offset))
+            })
+    }
+
+    /// Stores a custom message as a session entry; any other message is left alone.
+    pub(super) fn store_custom_message(
+        &self,
+        message: &NativeAgentMessage,
+    ) -> Result<(), DiagnosticErrorInfo> {
+        let AgentMessage::Custom(custom) = message else {
+            return Ok(());
+        };
+        let CustomAgentMessages::Custom(custom) = &*read(custom) else {
+            return Ok(());
+        };
+        self.session_manager
+            .borrow_mut()
+            .append_custom_message_entry(
+                &custom.custom_type,
+                custom.content.clone(),
+                custom.display,
+                custom.details.clone(),
+            )
+            .map(drop)
+            .map_err(thrown)
     }
 
     /// Sends a user message, which always starts a turn: block content becomes its text
@@ -221,4 +278,24 @@ impl<E: ExtensionExecution> AgentSession<E> {
              when not streaming."
         )))
     }
+}
+
+/// The history index right after the tool results of the turn that `response` began, or
+/// absent when the turn's response is not in the history.
+fn turn_end_index(
+    history: &[NativeAgentMessage],
+    response: &SharedAssistantMessage,
+    results: &[ToolResultMessage],
+) -> Option<usize> {
+    let start = history.iter().position(
+        |message| matches!(message, AgentMessage::Assistant(reply) if Arc::ptr_eq(reply, response)),
+    )?;
+    let settled = history[start + 1..]
+        .iter()
+        .take_while(|message| {
+            matches!(message, AgentMessage::ToolResult(result)
+                if results.iter().any(|known| known.tool_call_id == read(result).tool_call_id))
+        })
+        .count();
+    Some(start + 1 + settled)
 }

@@ -770,3 +770,34 @@ fn failed_same_handle_registration_preserves_prior_alias_edits() {
     assert_eq!(registry.get_provider_display_name("p"), "alias edit");
     assert!(registry.find("p", "m").is_some());
 }
+
+#[test]
+fn model_overrides_apply_to_registered_provider_models() {
+    if dynamic::isolated("model_overrides_apply_to_registered_provider_models") {
+        return;
+    }
+    let text = support::Text(Arc::new(std::sync::Mutex::new(Some(
+        r#"{"providers":{"p":{"modelOverrides":{"m":{"name":"Overridden","contextWindow":4242,"headers":{"x-model-override":"enabled"}}}}}}"#.into(),
+    ))));
+    let registry = support::text_registry("models-input", &text, crate::support::values());
+    registry
+        .register_provider("p", dynamic::config(&["m", "other"]))
+        .unwrap();
+    for _ in 0..2 {
+        let model = registry.find("p", "m").unwrap();
+        assert_eq!(model.read().unwrap().name, "Overridden");
+        assert!((model.read().unwrap().context_window - 4242.0).abs() < f64::EPSILON);
+        request_support::success(
+            request_support::run(registry.get_api_key_and_headers(&model)),
+            Some("configured"),
+            &[("x-model-override", "enabled")],
+        );
+        let other = registry.find("p", "other").unwrap();
+        request_support::success(
+            request_support::run(registry.get_api_key_and_headers(&other)),
+            Some("configured"),
+            &[],
+        );
+        registry.refresh().unwrap();
+    }
+}

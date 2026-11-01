@@ -18,6 +18,10 @@ pub mod run_tests;
 
 /// Locked browser-author preparation and native dispatch.
 mod browser_author;
+/// The locked packages and the dependency graph between them.
+mod cargo_lock;
+/// The source files a dependency file names.
+mod dep_info;
 /// Source-owned example discovery and component preparation.
 pub mod example_files;
 
@@ -85,11 +89,7 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
         Some("clean-assets") => {
             for owner in ["app", "binary"] {
                 let path = asset_directory(owner, cargo)?;
-                match std::fs::remove_dir_all(path) {
-                    Ok(()) => {}
-                    Err(error) if error.kind() == io::ErrorKind::NotFound => {}
-                    Err(error) => return Err(error),
-                }
+                test_setup::remove_directory(&path)?;
             }
             Ok(ExitCode::SUCCESS)
         }

@@ -16,9 +16,13 @@ API; request processing and payload hooks still receive the original descriptor.
 
 ## Conversation input
 
+Message roles and content kinds are closed typed records. JSON model invocations
+reject an unknown role or content block during decoding, before provider conversion.
+
 History first passes through the [shared projection](../conversation-projection.md). User content keeps
-its text and block order. Blank assistant text and thinking are skipped; retained text is not
-trimmed. Claude thinking without a nonblank signature becomes plain text; other models send
+its text and block order. Blank user and tool-result text is dropped, and a turn or result left
+without content holds the placeholder `<empty>`. Blank assistant text and thinking are skipped;
+retained text is not trimmed. Claude thinking without a nonblank signature becomes plain text; other models send
 reasoning text without a signature. Consecutive tool results become one user turn, preserving
 result order and error or success status.
 
@@ -35,9 +39,12 @@ converted turn only when it is a user turn. Long retention adds `ttl: "1h"`.
 `AWS_BEDROCK_FORCE_CACHE=1` enables cache points only when neither the identifier nor the name,
 including their separator-normalized forms, contains `claude`.
 
-Thinking settings apply only to reasoning Claude models. Opus 4.6/4.7 and Sonnet 4.6 candidates
-use adaptive thinking with mapped effort; Opus 4.7 preserves native extra-high effort before
-consulting the descriptor map. Other Claude candidates use fixed budgets from
+A Claude request without an explicit `max_tokens` sends the model's advertised cap as
+`inferenceConfig.maxTokens`; other Bedrock models send none unless asked.
+
+Thinking settings apply only to reasoning Claude models. Opus 4.6 to 4.8, Sonnet 4.6 and Sonnet 5
+candidates use adaptive thinking with mapped effort; Opus 4.7 preserves native extra-high effort
+before consulting the descriptor map. Other Claude candidates use fixed budgets from
 [`ThinkingBudgets`](../model-options.md), with interleaved thinking enabled unless explicitly
 false. Display defaults to summarized; a government region selected from the option or
 region environment variables, or a government model identifier, omits the display. The
@@ -47,6 +54,12 @@ endpoint and profile region do not determine that display decision.
 `SimpleStreamOptions`, resolves [base options and token budgets](../model-options.md), adjusts
 fixed-budget Claude token limits and the selected budget slot, then calls `stream_bedrock`.
 Adaptive Claude and other models do not receive that adjustment.
+
+The catalog generator also marks Messages models whose case-sensitive IDs contain
+`opus-4-6`, `opus-4.6`, `opus-4-7`, `opus-4.7`, `opus-4-8`, `opus-4.8`, `sonnet-4-6`,
+`sonnet-4.6`, `sonnet-5` or `sonnet.5` with `forceAdaptiveThinking: true`, retaining their
+other compatibility settings. The [Messages adapter](messages.md#thinking) sends adaptive
+thinking and mapped effort for these models without a thinking budget or interleaved-thinking beta.
 
 Text, thinking and tool-call updates reduce into the shared assistant message. Generic
 `stream`, `stream_simple`, `complete` and `complete_simple` dispatch through the bundled

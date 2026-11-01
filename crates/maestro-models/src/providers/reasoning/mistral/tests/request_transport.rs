@@ -39,6 +39,29 @@ fn request_send_resolves_header_case_and_affinity() {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
+fn request_timeout_setting_is_checked_like_every_other_request() {
+    crate::tests::runtime::run(async {
+        for (timeout_ms, message) in [
+            (-1.0, "timeout must be a positive integer"),
+            (1.5, "timeout must be an integer"),
+            (f64::NAN, "timeout must be an integer"),
+            (f64::INFINITY, "timeout must be an integer"),
+        ] {
+            let failure = super::request_lifetime::try_prepared(
+                crate::default_fetch(),
+                None,
+                Some(timeout_ms),
+            )
+            .await
+            .err()
+            .unwrap();
+            assert_eq!(failure.message, message, "timeout {timeout_ms}");
+        }
+    });
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
 fn request_send_has_one_attempt_and_signal_dependent_deadline() {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()

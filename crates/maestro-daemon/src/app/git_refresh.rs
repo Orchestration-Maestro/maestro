@@ -225,12 +225,10 @@ impl<C: FnMut() -> u128> App<C> {
     }
 }
 
-/// Git's user-level configuration files for the process environment.
+/// Git's user-level files from `HOME` and `XDG_CONFIG_HOME` as set, without account fallback.
 fn git_config_environment() -> ConfigEnvironment {
     let home = std::env::var_os("HOME").map(PathBuf::from);
-    let xdg = std::env::var_os("XDG_CONFIG_HOME")
-        .filter(|value| !value.is_empty())
-        .map(PathBuf::from);
+    let xdg = std::env::var_os("XDG_CONFIG_HOME").map(PathBuf::from);
     ConfigEnvironment::from_variables(xdg.as_deref(), home.as_deref())
 }
 

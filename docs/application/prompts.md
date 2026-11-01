@@ -58,6 +58,19 @@ The base prompt is the system prompt construction built, or the one
 A failure supplied by an extension handler or listener, by shell operations or by a
 credential lookup keeps its name, code and stack when the session returns it.
 
+## Default system prompt
+
+The documentation section says:
+
+> - When reading maestro docs or examples, resolve docs/... under Additional docs and examples/... under Examples, not the current working directory
+
+Documentation and example paths use the directories named in that section, not
+the session's working directory.
+
+With `bash` selected and none of `grep`, `find` or `ls`, the exploration guideline
+is `- Use bash for file operations like ls, rg, find`. When any of those search
+tools is selected, or `bash` is absent, no exploration guideline is emitted.
+
 ## Queues
 
 `steer` and `follow_up` queue a user message on the agent after skill and template

@@ -63,13 +63,13 @@ pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
 
 /// Reads the original accepted state and drains its own error queue.
 fn add_reads<T: WasiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
-    add_read(
+    add_routed(
         host,
         "[method]auth-storage.list",
         Request::List,
         resource::<T, Endpoint>,
     )?;
-    add_read(
+    add_routed(
         host,
         "[method]auth-storage.get-all",
         Request::All,
@@ -81,7 +81,7 @@ fn add_reads<T: WasiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtim
         Request::Errors,
         resource::<T, Endpoint>,
     )?;
-    add_operand(
+    add_routed_operand(
         host,
         "[method]auth-storage.get",
         Request::Get,

@@ -23,9 +23,10 @@
         "args": [
           "install",
           "-g",
+          "--ignore-scripts",
           "@old/agent"
         ],
-        "display": "pnpm install -g @old/agent"
+        "display": "pnpm install -g --ignore-scripts @old/agent"
       }
     },
     "trace": [
@@ -79,9 +80,10 @@
         "args": [
           "install",
           "-g",
+          "--ignore-scripts",
           "@old/agent"
         ],
-        "display": "pnpm install -g @old/agent"
+        "display": "pnpm install -g --ignore-scripts @old/agent"
       }
     },
     "trace": [
@@ -143,9 +145,10 @@
         "args": [
           "global",
           "add",
+          "--ignore-scripts",
           "@old/agent"
         ],
-        "display": "yarn global add @old/agent"
+        "display": "yarn global add --ignore-scripts @old/agent"
       }
     },
     "trace": [
@@ -199,9 +202,10 @@
         "args": [
           "global",
           "add",
+          "--ignore-scripts",
           "@old/agent"
         ],
-        "display": "yarn global add @old/agent"
+        "display": "yarn global add --ignore-scripts @old/agent"
       }
     },
     "trace": [
@@ -255,9 +259,10 @@
         "args": [
           "install",
           "-g",
+          "--ignore-scripts",
           "@old/agent"
         ],
-        "display": "bun install -g @old/agent"
+        "display": "bun install -g --ignore-scripts @old/agent"
       }
     },
     "trace": [

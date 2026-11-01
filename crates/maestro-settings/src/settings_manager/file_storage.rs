@@ -90,7 +90,11 @@ impl FileSettingsStorage {
         if lock.is_none() {
             lock = Some(Lock::acquire(path)?);
         }
-        fs::write(path, next)?;
+        let replacement = maestro_lock::Replace {
+            through_symlinks: true,
+            creation_mode: None,
+        };
+        maestro_lock::replace(path, next.as_bytes(), replacement)?;
         drop(lock);
         Ok(())
     }

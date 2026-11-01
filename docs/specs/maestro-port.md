@@ -343,7 +343,7 @@ development-only edge from `maestro-extensions-wasm` to `maestro-listing`.
 | `maestro-tool` | define tool interchange records | `maestro-request` | below 0 |
 | `maestro-brand` | project a brand pack | `maestro-text`, `maestro-json` | below 0 |
 | `maestro-watch` | supply filesystem notification effects | — | below 0 |
-| `maestro-lock` | guard file writes (optional path utility) | — | below 0 |
+| `maestro-lock` | guard file writes | `maestro-path` | below 0 |
 | `maestro-process` | own native child-process lifecycles | — | below 0 |
 | `maestro-listing` | list directory entries | — | below 0 |
 | `maestro-listeners` | retain callback identities in live registration order | — | below 0 |
@@ -538,11 +538,11 @@ matching) may depend on it. Catalog owns model-scope selection and reuses the gl
 Move the existing matchers only after this contract lands, through
 [shared file-pattern ownership](https://github.com/Orchestration-Maestro/maestro/issues/561).
 
-`maestro-watch` and `maestro-lock` are core leaves below layer 0. Watch has no
-workspace dependencies; lock may use the optional path utility, which does not
-change its leaf status. Only theme and application
+`maestro-watch` is a core leaf below layer 0 without workspace dependencies.
+`maestro-lock` is below layer 0 and depends only on `maestro-path`, which owns
+`native_homedir`; it uses the existing external `sha2 =0.11.0` for target identity. Only theme and application
 may depend on watch; only settings, credentials, workspace, detection, session and application
-may depend on lock. Application uses maestro-lock: atomic file publication.
+may depend on lock. Application uses maestro-lock for recoverable file publication.
 
 `maestro-watch::fs_watch` owns watch creation/close helpers, the injected
 watch/timer interface and the native notification adapter. Reload, refresh,
@@ -551,16 +551,14 @@ paths may re-export the same moved types, not retain a second implementation.
 
 `maestro-lock` owns bounded and waiting acquisition of caller-opened file-write
 locks. Waiting acquisition uses the operating system's file lock, which is released
-when the holder exits. It also owns byte-oriented atomic replacement: a
-short exclusive temporary sibling is written, synced, closed and renamed before the
-parent directory is synced. Replacement preserves existing native permissions;
-a supplied creation mode applies only to missing files. Unix creation applies
-permission bits before first visibility; Windows maps only owner-write to the
-read-only attribute, without configuring ACLs. Workspace snapshot storage and detection catalog publication use this operation;
-feature owners retain serialization and symbolic-link policy. File creation for
-lock acquisition, permissions, in-place settings/credentials persistence, unlocking
-policy and asynchronous credential acquisition remain with settings and
-credentials. Neither leaf introduces a common background runtime, scheduler,
+when the holder exits. It also owns recoverable in-place byte publication, canonical target identity
+and the per-user lock root described in [file locking](../locking.md).
+A durable copy of the intended bytes is replayed by the next holder after an
+interrupted write. Native ownership, access controls and hard links survive.
+Workspace snapshot storage, detection catalogs and session rewrites use this
+operation; feature owners retain serialization and symbolic-link policy.
+Settings and credentials retain their existing bounded, in-place persistence.
+Neither leaf introduces a common background runtime, scheduler,
 retry policy or listener framework. Feature-specific timing, process,
 subscription and teardown semantics and current public capabilities are retained.
 
@@ -654,12 +652,14 @@ Markdown parser (`maestro-markdown`), text leaf (`maestro-text`),
 JSON leaf (`maestro-json`), entry and tool record contracts (`maestro-entry`,
 `maestro-tool`) and brand projection (`maestro-brand`) are excluded from this
 permission, so being a text consumer does not authorize the utility. Shared path helpers
-take supplied directory observations and add no global environment, filesystem service,
-directory cache, scheduler or workspace dependency. Final-component link traversal
-uses a caller-supplied observation callback: the utility owns relative-target joining
-and the forty-link bound, while lock and the native component adapter keep native
-link I/O and its error interpretation. Both may declare the optional native utility
-edge; it adds no cycle because the utility has no internal dependencies.
+take supplied directory observations, except `native_homedir` reads the native
+home environment and account entry. They add no filesystem service,
+directory cache, scheduler or workspace dependency.
+Final-component link traversal uses a caller-supplied observation callback:
+the utility owns relative-target joining and the forty-link bound, while lock
+and the native component adapter keep native link I/O and its error interpretation.
+Both may declare the native utility edge; it adds no cycle because the utility
+has no internal dependencies.
 
 ### Native feature unifier
 
@@ -709,6 +709,9 @@ not make the interactive frontend a terminal owner.
 `maestro-extensions-wasm` to `maestro-models`, declared as a native-only,
 non-optional development dependency, lets component tests pass retained schema
 callbacks to the native argument validator. It permits no normal or build edge.
+`maestro-extensions-wasm` to `maestro-extensions-wasmtime`, declared as a native-only,
+non-optional development dependency, lets component tests build their engine from the
+product's one engine configuration. It permits no normal or build edge.
 `maestro-extensions-wasm` to `maestro-listing`, declared as a portable development
 dependency, supplies name-ordered directory reads to the guest examples. It permits
 no normal or build dependency on the listing leaf.

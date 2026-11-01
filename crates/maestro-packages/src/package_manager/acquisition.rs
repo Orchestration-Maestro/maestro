@@ -1,8 +1,10 @@
 //! Source dispatch for explicit install and removal, and settings edits after success.
 use super::{
     DefaultPackageManager, InstalledSourceScope, PackageOperations, ProgressAction,
+    decisions::SourceEdit,
     sources::{self, Source},
 };
+use maestro_resources::paths::package_home_directory;
 use std::{io, path::Path};
 
 /// Whether acquisition changed an existing Git commit.
@@ -43,14 +45,14 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             })
             .await?;
         if let Some(edit) = prepared {
-            self.publish_source_edit(source, scope, edit, Some(acquisition))?;
+            self.publish_source_edit(source, scope, edit, SourceEdit::Add)?;
         }
         Ok(acquisition)
     }
     /// Fails unless the local path, resolved against the input base, exists.
     fn require_local(&self, path: &str) -> io::Result<()> {
         let resolved =
-            super::paths::resolve_local(path, &self.options.cwd, super::operations::home_dir)?;
+            super::paths::resolve_local(path, &self.options.cwd, package_home_directory)?;
         if Path::new(&resolved).exists() {
             return Ok(());
         }
@@ -81,7 +83,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         })
         .await?;
         if let Some(edit) = prepared {
-            self.publish_source_edit(source, scope, edit, None)
+            self.publish_source_edit(source, scope, edit, SourceEdit::Remove)
         } else {
             Ok(false)
         }
@@ -94,11 +96,11 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     ) -> io::Result<()> {
         let prepared = self.prepare_source_edit(source, scope, false)?;
         let admitted = prepared.is_some();
-        let acquisition = self.acquire(source, scope, prepared).await?;
+        self.acquire(source, scope, prepared).await?;
         if admitted {
             Ok(())
         } else {
-            self.record_source(source, scope, acquisition).map(drop)
+            self.record_source(source, scope).map(drop)
         }
     }
     /// Removes the contents, then removes the source from settings.

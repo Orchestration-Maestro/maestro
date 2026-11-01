@@ -7,7 +7,11 @@ fn simple_options_select_model_reasoning() {
         reasoning: Some(crate::ThinkingLevel::Medium),
         ..Default::default()
     };
-    let (raw, effort) = super::super::request::simple_options(&model, &options);
+    let (raw, effort) = super::super::request::simple_options(
+        &model,
+        &serde_json::from_value(serde_json::json!({"messages":[]})).unwrap(),
+        &options,
+    );
     assert_eq!(effort.as_deref(), Some("high"));
     assert!(raw.prompt_mode.is_none());
     super::request_corpus::corpus("simple_options_select_model_reasoning", 74);

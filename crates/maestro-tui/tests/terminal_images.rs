@@ -255,6 +255,7 @@ fn render_protocol_defaults_and_ignored_options() {
             image_support::dimensions(&args[1]),
             ImageRenderOptions {
                 max_width_cells: image_support::number(&options["maxWidthCells"]),
+                max_height_cells: image_support::number(&options["maxHeightCells"]),
                 preserve_aspect_ratio: terminal_support::enabled(&options["preserveAspectRatio"]),
                 image_id: image_support::number(&options["imageId"]),
                 move_cursor: terminal_support::enabled(&options["moveCursor"]),

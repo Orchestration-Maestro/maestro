@@ -1,9 +1,16 @@
 //! Preference admission before explicit package acquisition or removal.
-use super::{
-    DefaultPackageManager, InstalledSourceScope, PackageOperations, acquisition::SourceAcquisition,
-};
+use super::{DefaultPackageManager, InstalledSourceScope, PackageOperations};
 use maestro_settings::{DecisionRequest, PreparedSettingsEdit, SettingsChange, SettingsScope};
 use std::io;
+
+/// The source delta admitted before acquisition or removal.
+#[derive(Clone, Copy, Debug)]
+pub(super) enum SourceEdit {
+    /// Publish the requested source spelling.
+    Add,
+    /// Remove all matching source entries.
+    Remove,
+}
 
 impl<O: PackageOperations> DefaultPackageManager<O> {
     /// Stages exact edits only when admission is installed, preserving ordinary late reads.
@@ -69,7 +76,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         let entries = if remove {
             self.source_removal(source, scope)?
         } else {
-            self.source_addition(source, scope, SourceAcquisition::Prepared)?
+            self.source_addition(source, scope)?
         };
         entries.map_or_else(
             || super::configuration::packages(self.snapshot(scope)?),
@@ -88,11 +95,11 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         source: &str,
         scope: InstalledSourceScope,
         edit: PreparedSettingsEdit,
-        acquisition: Option<SourceAcquisition>,
+        operation: SourceEdit,
     ) -> io::Result<bool> {
-        let entries = match acquisition {
-            Some(acquisition) => self.source_addition(source, scope, acquisition)?,
-            None => self.source_removal(source, scope)?,
+        let entries = match operation {
+            SourceEdit::Add => self.source_addition(source, scope)?,
+            SourceEdit::Remove => self.source_removal(source, scope)?,
         };
         let Some(entries) = entries else {
             return Ok(false);

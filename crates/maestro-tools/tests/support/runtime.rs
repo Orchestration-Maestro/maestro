@@ -14,9 +14,12 @@ pub fn run_paused<T>(future: impl std::future::Future<Output = T>) -> T {
 
 /// Build one current-thread runtime, with its clock paused when asked.
 fn runtime(paused: bool) -> tokio::runtime::Runtime {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .start_paused(paused)
-        .build()
-        .unwrap()
+    builder().start_paused(paused).build().unwrap()
+}
+
+/// A current-thread runtime builder for tests that control blocking-pool execution.
+pub fn builder() -> tokio::runtime::Builder {
+    let mut builder = tokio::runtime::Builder::new_current_thread();
+    builder.enable_all();
+    builder
 }

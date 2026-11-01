@@ -304,6 +304,38 @@ fn settings_changes_preserve_each_callback_effect() {
 }
 
 #[test]
+fn settings_http_idle_timeout_change_is_saved_and_announced() {
+    isolated(
+        "settings_http_idle_timeout_change_is_saved_and_announced",
+        async |directory| {
+            let world = started_settings(directory).await;
+            let list = open(&world);
+            let session = world.host.session();
+            let saved = || {
+                session
+                    .settings_manager()
+                    .borrow()
+                    .get_http_idle_timeout_ms()
+            };
+            assert!(saved().total_cmp(&300_000.0).is_eq());
+            choose(&list, "idle", 0);
+            assert!(saved().total_cmp(&0.0).is_eq(), "the choice is saved");
+            assert!(
+                super::actions::shows(&world.mode.chat_container, "HTTP idle timeout: disabled"),
+                "the transcript names the new limit"
+            );
+            choose(&list, "idle", 0);
+            assert!(saved().total_cmp(&30_000.0).is_eq());
+            assert!(super::actions::shows(
+                &world.mode.chat_container,
+                "HTTP idle timeout: 30 sec"
+            ));
+            drop(world.runtime.settle());
+        },
+    );
+}
+
+#[test]
 fn settings_remaining_changes_preserve_each_callback_effect() {
     isolated(
         "settings_remaining_changes_preserve_each_callback_effect",

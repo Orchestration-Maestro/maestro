@@ -1,17 +1,15 @@
 //! Retrying a failed response with a visible, cancellable backoff.
-use super::state::thrown;
 use super::{AgentSession, AgentSessionEvent};
 use crate::utils::lock::read;
 use maestro_extensions::ExtensionExecution;
 use maestro_models::{
     AssistantMessage, Cancellation, DiagnosticErrorInfo, StopReason, is_context_overflow,
 };
-use std::rc::Rc;
 use std::sync::LazyLock;
 use std::time::Duration;
 
 /// Error texts a retry can recover from; a context overflow is recovered by compaction.
-const RETRYABLE: &str = r"(?i)overloaded|provider.?returned.?error|rate.?limit|too many requests|429|500|502|503|504|service.?unavailable|server.?error|internal.?error|network.?error|connection.?error|connection.?refused|connection.?lost|websocket.?closed|websocket.?error|other side closed|fetch failed|upstream.?connect|reset before headers|socket hang up|ended without|http2 request did not get a response|timed? out|timeout|terminated|retry delay";
+const RETRYABLE: &str = r"(?i)overloaded|provider.?returned.?error|rate.?limit|too many requests|429|500|502|503|504|service.?unavailable|server.?error|internal.?error|network.?error|connection.?error|connection.?refused|connection.?lost|websocket.?closed|websocket.?error|other side closed|fetch failed|upstream.?connect|reset before headers|socket hang up|ended without|stream ended before message_stop|exceeded request buffer limit while retrying upstream|http2 request did not get a response|timed? out|timeout|terminated|retry delay";
 
 /// The compiled retryable classifier; absent only if the authored pattern is invalid,
 /// which the recorded classification table rules out.
@@ -39,23 +37,13 @@ impl<E: ExtensionExecution> AgentSession<E> {
             && retryable().is_some_and(|pattern| pattern.is_match(text))
     }
 
-    /// Waits out the backoff and schedules one continuation, reporting whether it will run.
-    /// Once started, the wait belongs to the session: dropping the returned future leaves it
-    /// running, and `abort_retry` stops it.
-    ///
-    /// # Errors
-    /// Returns the failure when the wait's task ended before the wait did, for example when
-    /// the caller's task set was dropped mid-operation.
-    pub(crate) async fn handle_retryable_error(
-        self: &Rc<Self>,
-        message: &AssistantMessage,
-    ) -> Result<bool, DiagnosticErrorInfo> {
+    /// Waits out the backoff of a failed response, reporting whether the run continues. The
+    /// wait is part of the run, so the run's settle step follows it; `abort_retry` ends it.
+    pub(crate) async fn handle_retryable_error(&self, message: &AssistantMessage) -> bool {
         let settings = self.settings_manager.borrow().get_retry_settings();
         if !settings.enabled {
-            self.resolve_retry();
-            return Ok(false);
+            return false;
         }
-        self.create_retry_gate();
         let attempt = {
             let mut state = self.state.borrow_mut();
             state.retry_attempt = state.retry_attempt.saturating_add(1);
@@ -69,8 +57,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
                 final_error: error,
             });
             self.state.borrow_mut().retry_attempt = 0;
-            self.resolve_retry();
-            return Ok(false);
+            return false;
         }
         let exponent = i32::try_from(attempt).unwrap_or(i32::MAX);
         let delay = settings.base_delay_ms * 2_f64.powi(exponent - 1);
@@ -86,14 +73,10 @@ impl<E: ExtensionExecution> AgentSession<E> {
         self.drop_trailing_assistant(|_| true);
         let signal = Cancellation::new();
         self.state.borrow_mut().retry_signal = Some(signal.clone());
-        let session = Rc::clone(self);
-        self.start_operation(async move { session.wait_out_backoff(attempt, delay, &signal).await })
-            .await
-            .map_err(thrown)
+        self.wait_out_backoff(attempt, delay, &signal).await
     }
 
-    /// Sleeps `delay` milliseconds under `signal`, then schedules the continuation; an abort
-    /// ends the attempt instead.
+    /// Sleeps `delay` milliseconds under `signal`; an abort ends the attempt instead.
     async fn wait_out_backoff(&self, attempt: u32, delay: f64, signal: &Cancellation) -> bool {
         if maestro_tools::process::sleep::sleep(millis(delay), Some(signal))
             .await
@@ -103,34 +86,21 @@ impl<E: ExtensionExecution> AgentSession<E> {
             return false;
         }
         self.state.borrow_mut().retry_signal = None;
-        self.schedule_continuation(Duration::ZERO);
         true
     }
 
     /// Stops a waiting retry without clearing the attempt it was making.
     pub fn abort_retry(&self) {
-        let signal = self.state.borrow().retry_signal.clone();
+        let signal = self.state.borrow_mut().retry_signal.take();
         if let Some(signal) = signal {
             signal.abort();
         }
-        self.resolve_retry();
     }
 
-    /// Waits for a retry in flight and then for the agent to settle; returns at once when no
-    /// retry is in flight.
-    pub(crate) async fn wait_for_retry(&self) {
-        let gate = self.state.borrow().retry_gate.clone();
-        let Some(gate) = gate else {
-            return;
-        };
-        drop(gate.await);
-        self.agent.wait_for_idle().await;
-    }
-
-    /// Whether a response retry is in flight.
+    /// Whether a response retry is waiting out its backoff.
     #[must_use]
     pub fn is_retrying(&self) -> bool {
-        self.state.borrow().retry_gate.is_some()
+        self.state.borrow().retry_signal.is_some()
     }
 
     /// The attempts made by the retry in flight, or zero.
@@ -155,17 +125,6 @@ impl<E: ExtensionExecution> AgentSession<E> {
         Ok(())
     }
 
-    /// Creates the release every observer of this retry awaits, once.
-    pub(super) fn create_retry_gate(&self) {
-        let mut state = self.state.borrow_mut();
-        if state.retry_gate.is_some() {
-            return;
-        }
-        let (open, closed) = tokio::sync::oneshot::channel();
-        state.retry_gate = Some(futures_util::future::FutureExt::shared(closed));
-        state.retry_open = Some(open);
-    }
-
     /// Ends a retry whose wait was aborted, clearing its attempts.
     fn cancel_retry(&self, attempt: u32) {
         {
@@ -178,17 +137,6 @@ impl<E: ExtensionExecution> AgentSession<E> {
             attempt,
             final_error: Some("Retry cancelled".to_owned()),
         });
-        self.resolve_retry();
-    }
-
-    /// Releases every observer of the retry in flight.
-    pub(super) fn resolve_retry(&self) {
-        let (gate, open) = {
-            let mut state = self.state.borrow_mut();
-            (state.retry_gate.take(), state.retry_open.take())
-        };
-        drop(gate);
-        drop(open);
     }
 }
 

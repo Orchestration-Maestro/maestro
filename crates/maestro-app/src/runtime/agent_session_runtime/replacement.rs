@@ -48,8 +48,10 @@ impl AgentSessionRuntime {
 
     /// Starts a new session in the current directory, optionally recording `parent_session`,
     /// prepares its history with `setup` and continues with `with_session`, unless an
-    /// extension cancels the switch. Setup, message reload and continuation retain the
-    /// created session if another operation replaces it while a callback is suspended.
+    /// extension cancels the switch. The new history is kept in memory exactly when the
+    /// current one is, and stored in the current session directory otherwise. Setup, message
+    /// reload and continuation retain the created session if another operation replaces it
+    /// while a callback is suspended.
     ///
     /// # Errors
     /// Returns a history failure, an extension error listener's failure, the setup's failure
@@ -66,6 +68,7 @@ impl AgentSessionRuntime {
         }
         let session = self.session();
         let previous_session_file = session.session_file();
+        let persisted = session.session_manager().borrow().is_persisted();
         let session_dir = session
             .session_manager()
             .borrow()
@@ -73,8 +76,12 @@ impl AgentSessionRuntime {
             .to_owned();
         let cwd = self.cwd();
         let agent_dir = self.services().agent_dir.clone();
-        let mut session_manager =
-            SessionManager::create(&cwd, Some(&session_dir), &agent_dir).map_err(thrown)?;
+        let mut session_manager = if persisted {
+            SessionManager::create(&cwd, Some(&session_dir), &agent_dir)
+        } else {
+            SessionManager::in_memory(Some(&cwd))
+        }
+        .map_err(thrown)?;
         if let Some(parent_session) = options.parent_session {
             session_manager.new_session(NewSessionOptions {
                 parent_session: Presence::Present(parent_session),

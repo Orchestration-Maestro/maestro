@@ -6,13 +6,13 @@ mod tests;
 mod relocation;
 use relocation::{PreparedMove, relocate, remove_link_entry};
 
+use maestro_credentials::write_auth_file;
 use maestro_json::{canonical_entries, pretty_object};
 use maestro_path::join;
 use maestro_session::session_manager::get_default_session_dir;
 use serde_json::{Map, Value};
 use std::{
-    fs,
-    io::{self, Write},
+    fs, io,
     path::{Path, PathBuf},
 };
 
@@ -103,25 +103,6 @@ fn prepare_auth(oauth_path: &str, settings_path: &str) -> PreparedAuth {
     }
 }
 
-/// Write through the authored path and clean a failed created target.
-fn publish_auth(path: &str, bytes: &[u8]) -> io::Result<()> {
-    let mut options = fs::OpenOptions::new();
-    options.write(true).create(true).truncate(true);
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::OpenOptionsExt;
-        options.mode(0o600);
-    }
-    let mut file = options.open(path)?;
-    let target = fs::canonicalize(path)?;
-    let result = file.write_all(bytes);
-    drop(file);
-    if result.is_err() {
-        let _ = fs::remove_file(target);
-    }
-    result
-}
-
 /// Convert legacy credentials beneath the call-time configuration root.
 ///
 /// # Errors
@@ -136,9 +117,8 @@ pub fn migrate_auth_to_auth_json() -> io::Result<Vec<String>> {
     let settings_path = join(&[&agent_dir, "settings.json"]);
     let prepared = prepare_auth(&oauth_path, &settings_path);
     if !prepared.migrated.is_empty() {
-        fs::create_dir_all(maestro_path::dirname(&auth_path))?;
         let text = pretty_object(&prepared.migrated).map_err(io::Error::other)?;
-        publish_auth(&auth_path, text.as_bytes())?;
+        write_auth_file(&auth_path, &text)?;
     }
     if prepared.oauth_read {
         let _ = fs::rename(&oauth_path, format!("{oauth_path}.migrated"));

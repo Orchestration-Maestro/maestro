@@ -1,6 +1,7 @@
 //! Shared integration-test executable.
 #![cfg(test)]
 
+mod application_exports;
 mod architecture;
 mod boundaries;
 mod child_tests;
@@ -13,12 +14,14 @@ mod example_helpers;
 mod integration_tests;
 mod json_dependencies;
 mod message_renderer_ownership;
+mod platform_opener;
 mod quality;
 mod repetition;
 mod rpc_ownership;
 mod support;
 mod temp_directories;
 mod test_directories;
+mod test_input_routes;
 mod time_limits;
 
 mod test_budget;

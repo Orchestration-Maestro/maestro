@@ -113,7 +113,8 @@ fn default_prompt_paths_exist_in_the_installation() {
     let package = Path::new(&docs).parent().unwrap();
     let relative = built
         .split(|character: char| character.is_whitespace() || "(),".contains(character))
-        .filter(|word| word.starts_with("docs/") || word.starts_with("examples/"));
+        .filter(|word| word.starts_with("docs/") || word.starts_with("examples/"))
+        .filter(|word| !word.ends_with("..."));
     let absolute = built.lines().filter_map(|line| {
         [
             "- Main documentation: ",

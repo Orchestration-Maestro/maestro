@@ -327,6 +327,8 @@ fn maestro_wrapper_overrides_reach_request_and_tool() {
 }
 /// Probe one consuming stage with a fresh caller signal.
 fn check_overrides(continuation: bool, signal: Option<Cancellation>, stage: &'static str) {
+    // A call whose run signal aborted before preparation is not executed and the next turn follows.
+    let early_abort = signal.is_some() && stage != "tool";
     let configured = Cancellation::new();
     configured.abort();
     let mut config = config();
@@ -337,8 +339,9 @@ fn check_overrides(continuation: bool, signal: Option<Cancellation>, stage: &'st
     );
     let model = Arc::clone(&config.model);
     let expected = signal.clone();
+    let transformed = Arc::new(std::sync::atomic::AtomicBool::new(false));
     config.transform_context = Some(Arc::new(move |history, actual| {
-        if stage == "transform" {
+        if stage == "transform" && !transformed.swap(true, Ordering::SeqCst) {
             check_signal(actual.as_ref(), expected.as_ref());
         }
         ready(Ok(history))
@@ -365,24 +368,33 @@ fn check_overrides(continuation: bool, signal: Option<Cancellation>, stage: &'st
                 extra.extra["ordered"],
                 serde_json::json!(["zulu", "alpha", "zulu"])
             );
-            if stage == "model" {
+            let turn = count.fetch_add(1, Ordering::SeqCst);
+            if stage == "model" && turn == 0 {
                 check_signal(options.common.signal.as_ref(), expected.as_ref());
             }
-            count.fetch_add(1, Ordering::SeqCst);
             let stream = AssistantMessageEventStream::new();
-            stream.end(Some(tool_call()));
+            stream.end(Some(tool_then_stop(turn)));
             ready(Ok(stream))
         })),
     };
     let tasks = Arc::new(owned::Tasks::default());
     let stream = start(continuation, context, config, options, &tasks);
     run(tasks.take());
-    assert_eq!(executed.load(Ordering::SeqCst), 1);
-    assert_eq!(requests.load(Ordering::SeqCst), 1);
-    assert!(matches!(
-        drain(&stream).messages.last().unwrap(),
-        AgentMessage::ToolResult(_)
-    ));
+    assert_eq!(executed.load(Ordering::SeqCst), usize::from(!early_abort));
+    assert_eq!(
+        requests.load(Ordering::SeqCst),
+        if early_abort { 2 } else { 1 }
+    );
+    let last = drain(&stream).messages.last().unwrap().clone();
+    assert_eq!(matches!(last, AgentMessage::ToolResult(_)), !early_abort);
+}
+/// The first turn calls the tool; later turns end the run.
+fn tool_then_stop(turn: usize) -> maestro_models::SharedAssistantMessage {
+    if turn == 0 {
+        tool_call()
+    } else {
+        assistant("stopped")
+    }
 }
 /// Distinguish omission, state and shared cancellation identity.
 fn check_signal(actual: Option<&Cancellation>, expected: Option<&Cancellation>) {
