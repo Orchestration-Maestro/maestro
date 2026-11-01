@@ -67,9 +67,9 @@ valid cut, falling back to the first candidate. Tool results cannot start cuts.
 Preceding metadata is absorbed without crossing an entry that is in context or a
 compaction boundary. `find_turn_start_index` treats user, shell, custom, branch-summary
 and compaction-summary messages, and the custom-message and branch-summary entries that
-become them, as turn starts. A cut
-that is not itself a turn start but has one before it produces a split prefix, which may
-be empty.
+become them, as turn starts. Stored compaction entries never start turns or cuts.
+A cut that is not itself a turn start but has one before it produces a split prefix,
+which may be empty.
 
 ## Shared summary input
 

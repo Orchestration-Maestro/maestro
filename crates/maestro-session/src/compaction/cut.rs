@@ -13,6 +13,8 @@ const CUT_ROLES: [&str; 6] = [
     "compactionSummary",
 ];
 /// Roles that begin a turn: every cut role except an assistant answer.
+///
+/// Assistant answers can start a retained span but continue the current turn.
 const TURN_START_ROLES: [&str; 5] = [
     "user",
     "bashExecution",
