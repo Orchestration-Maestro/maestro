@@ -15,7 +15,7 @@
 use std::collections::BTreeMap;
 use std::ffi::OsString;
 use std::fmt::Write as _;
-use std::io;
+use std::io::{self, Write as _};
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
 
@@ -156,6 +156,13 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
     };
     run_example(cargo, checkout, &example, target, &supplied)?;
     let components = stage_components(checkout, output, target, &artifacts.shared, &supplied)?;
+    let reused = supplied.len();
+    let built = components.len().checked_sub(reused).ok_or_else(|| {
+        io::Error::other(format!(
+            "base supplied {reused} components but preparation staged only {}",
+            components.len()
+        ))
+    })?;
     stage_browser_graph(cargo, checkout, output)?;
     let mut unchanged = artifacts.is_current(checkout)?;
     for component in components.values() {
@@ -185,7 +192,8 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
         example: digest(&std::fs::read(&staged)?),
         compiled,
     };
-    std::fs::write(output.join(MANIFEST), serde_json::to_vec(&manifest)?)
+    std::fs::write(output.join(MANIFEST), serde_json::to_vec(&manifest)?)?;
+    writeln!(io::stdout(), "components: {reused} reused, {built} built")
 }
 
 /// The file the setup example writes its component paths to.
