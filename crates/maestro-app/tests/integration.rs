@@ -4,6 +4,7 @@
 mod agent_session_branch_summary_checks;
 mod agent_session_branching_checks;
 mod agent_session_compaction_checks;
+mod agent_session_compaction_suite_checks;
 mod agent_session_concurrent_checks;
 mod agent_session_custom_message_checks;
 mod agent_session_input_checks;

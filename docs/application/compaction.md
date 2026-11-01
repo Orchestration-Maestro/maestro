@@ -44,6 +44,18 @@ readable through the callback's session manager, and `from_extension` reports
 whether an extension supplied the result. A cancelled compaction stores no entry
 and sends no `session_compact` event.
 
+Handlers run in registration order. A failed before handler reports an attributed
+extension error and leaves default summarization available. An extension may
+instead return a `CompactionResult`; Maestro preserves its summary, retained
+entry ID, token estimate and JSON details without replacing them with prepared
+values. Missing details remain absent; explicit null remains null.
+
+### Automatic compaction
+
+Automatic compaction starts when reported context use is strictly greater than
+`contextWindow - reserveTokens`. Equality does not trigger compaction. Disabling
+automatic compaction suppresses these checks without disabling manual compaction.
+
 ## Reference
 
 `compact(custom_instructions)` returns an error when credentials are unavailable,

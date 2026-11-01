@@ -9,7 +9,9 @@ use serde_json::{Value, json};
 pub async fn seeded(mut options: HarnessOptions) -> Harness {
     options.context_window = Some(200_000.0);
     options.settings = json!({"compaction": {"keepRecentTokens": 1}, "retry": {"enabled": false}});
-    options.responses = Some(vec![Scripted::text("one"), Scripted::text("two")]);
+    options
+        .responses
+        .get_or_insert_with(|| vec![Scripted::text("one"), Scripted::text("two")]);
     let h = harness(options).await;
     for text in ["first", "second"] {
         start_prompt(&h, text).await.unwrap().unwrap();
