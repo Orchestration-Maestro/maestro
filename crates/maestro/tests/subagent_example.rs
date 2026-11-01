@@ -3,6 +3,7 @@
 
 use crate::support::Root;
 mod cancellation;
+mod child;
 mod errors;
 mod render;
 mod trust;
@@ -31,6 +32,9 @@ fn component() -> &'static Path {
 /// Loads the package using the existing application session and native-I/O fixture.
 async fn loaded(root: &Root, local: Rc<tokio::task::LocalSet>) -> Rc<AgentSession> {
     let path = component();
+    #[cfg(unix)]
+    return child::session(root, local, path.display().to_string()).await;
+    #[cfg(not(unix))]
     crate::support::session::component_session(
         root,
         local,
@@ -149,18 +153,16 @@ fn subagent_discovery_refreshes_scopes_and_nearest_project_shadowing() {
     });
 }
 
-/// Starts a selected test in its own environment, keeping its child script private.
+/// Starts a selected test with a disposable controlled-child launch operand.
 #[cfg(unix)]
 fn child_fixture(test: &str, component: Option<&Path>) -> Option<Scratch> {
-    use std::os::unix::fs::PermissionsExt;
     if maestro_test_process::selection().is_child() {
         return None;
     }
     let root = Scratch::new().unwrap();
     std::fs::create_dir(root.path().join("tmp")).unwrap();
     let program = root.path().join("maestro-child");
-    std::fs::write(&program, include_str!("fixtures/subagent-child.py")).unwrap();
-    std::fs::set_permissions(&program, std::fs::Permissions::from_mode(0o700)).unwrap();
+    std::fs::write(&program, child::MARKER).unwrap();
     let status = maestro_test_process::TestProcess::current(test)
         .unwrap()
         .case("*")

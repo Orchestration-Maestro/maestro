@@ -102,7 +102,9 @@ fn subagent_parallel_limit_and_abort_reach_every_owned_child() {
             let root = Root::new();
             controlled_role(&root, "project/.maestro/agents");
             let launches = Rc::new(Launches {
-                native: maestro_app::extension_native_io::extension_native_io(&local),
+                native: Rc::new(super::child::Io(
+                    maestro_app::extension_native_io::extension_native_io(&local),
+                )),
                 count: Cell::new(0),
                 children: RefCell::new(Vec::new()),
             });

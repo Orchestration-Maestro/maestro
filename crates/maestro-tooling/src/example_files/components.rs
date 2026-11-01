@@ -55,7 +55,7 @@ pub const FIXED_COMPONENTS: [(&str, &str, &str); 3] = [
 
 /// Visits marked components in source order, validating each export before its callback.
 ///
-/// Variables are unique across all roots, including the fixed author and context exports.
+/// Variables are unique across all roots, including every fixed component export.
 ///
 /// # Errors
 /// Returns discovery, invalid or duplicate marker, source-reading or callback failures.

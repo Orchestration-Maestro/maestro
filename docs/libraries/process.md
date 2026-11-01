@@ -61,5 +61,7 @@ so a child replaces one of its standard descriptors with the null device without
 code; the process tests share that one operation. The process tests also use
 `nix =0.31.3` (MIT), defaults off with `signal`, the version and feature the process
 wrapper already compiles, as a development dependency: a child blocks signals with its
-safe `sigprocmask` before it replaces itself with the test executable. No package
-version changes.
+safe `sigprocmask` before it replaces itself with the test executable. The `maestro`
+composition tests inherit the same workspace pin and `signal` feature. Their checked
+children block termination before replacing themselves with the test executable, then
+wait with `sigwait` after reporting readiness. No package version changes.

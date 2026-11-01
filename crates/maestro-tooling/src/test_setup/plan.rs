@@ -1,7 +1,7 @@
 //! The inputs each artifact of the test bundle is prepared from, read from the workspace.
 //!
-//! The components build for WebAssembly from one package and its examples, the setup example and
-//! the development tool for the host from two packages, and the browser graph from the web
+//! The components build for WebAssembly from the packages their entries name, the setup example
+//! and the development tool for the host from two packages, and the browser graph from the web
 //! package and the tooling. Each artifact hashes the closure of its own packages, so a change to
 //! another artifact's crates leaves it valid; each component also hashes the example files it
 //! read.
