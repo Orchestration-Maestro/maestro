@@ -2047,3 +2047,51 @@ fn compaction_flush_delivers_each_message_once() {
         }
     });
 }
+
+/// A started mode whose settings keep the screen height when content shrinks.
+async fn shrink_kept(directory: &Path) -> World {
+    let world = Setup {
+        configure: Box::new(|settings| settings.set_clear_on_shrink(true)),
+        ..Setup::default()
+    }
+    .build(directory);
+    super::start(&world).await;
+    world
+}
+
+#[test]
+fn idle_status_keeps_its_height_after_each_indicator_ends() {
+    isolated(
+        "idle_status_keeps_its_height_after_each_indicator_ends",
+        async |directory| {
+            let world = shrink_kept(directory).await;
+            let status = |world: &World| world.mode.status_container.render(100);
+            let idle = vec![" ".repeat(100), " ".repeat(100)];
+            assert!(status(&world).is_empty(), "no indicator has run");
+            agent_event(&world, maestro_app::AgentEvent::AgentStart);
+            assert_eq!(status(&world).len(), 2);
+            agent_event(&world, agent_end());
+            assert_eq!(status(&world), idle, "after the working indicator");
+            start_retry(&world, 1, 3.0, 2000.0);
+            assert_eq!(status(&world).len(), 2);
+            end_retry(&world, true, 1, None);
+            assert_eq!(status(&world), idle, "after the retry indicator");
+            start_compaction(&world, CompactionReason::Threshold);
+            end_compaction(&world, CompactionReason::Threshold, None, false);
+            assert_eq!(status(&world), idle, "after the compaction indicator");
+            world.mode.set_working_visible(false);
+            agent_event(&world, maestro_app::AgentEvent::AgentStart);
+            assert_eq!(
+                status(&world),
+                idle,
+                "a clear with nothing shown keeps the rows"
+            );
+            agent_event(&world, agent_end());
+            world.mode.settings_clear_on_shrink(false);
+            assert!(
+                status(&world).is_empty(),
+                "turning the setting off removes them"
+            );
+        },
+    );
+}
