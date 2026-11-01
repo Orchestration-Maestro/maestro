@@ -248,6 +248,12 @@ maintaining a second dependency list. The clean-folder guide test still builds
 with `--locked`. Populate the Cargo cache first if offline resolution reports a
 missing package; generation does not fetch dependencies.
 
+The tooling tests cover stale-lock detection, regeneration and resolver failures.
+Their path-only dependencies do not prove that resolution retains the workspace's
+registry versions: a matching Cargo cache can produce the same lock without the
+workspace seed. The shipped-index check compares the committed lock with the
+resolver's output, but it is not an independent test of workspace seeding.
+
 ## Feature unification
 
 See [dependency locks](dependency_locks.md) for generated-lock ownership,

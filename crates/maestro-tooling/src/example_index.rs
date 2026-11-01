@@ -29,7 +29,7 @@ struct Target {
     path: Option<String>,
 }
 
-/// Refresh the generated regions, or check them without changing files.
+/// Refresh the generated regions and guide lock, or check them without changing files.
 pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     if !args.is_empty() && args != [OsString::from("--check")] {
         return Err(io::Error::other("usage: example-index [--check]"));
