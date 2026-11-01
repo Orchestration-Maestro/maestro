@@ -38,7 +38,7 @@ pub fn group(name: &str) {
     }
 }
 /// Retained capture; registry entries are removed by their unique source identity.
-struct Adapter {
+pub struct Adapter {
     /// Isolated registry identity.
     api: String,
     /// Supplied response scripts.
@@ -253,6 +253,15 @@ struct Large {
 /// Decode all sections strictly.
 fn corpus() -> Corpus {
     serde_json::from_str(include_str!("../../fixtures/summary_generation.json")).unwrap()
+}
+/// Register an adapter answering with `text` and `usage`, with a model and controls for it.
+pub fn answering(text: &str, usage: &Value) -> (Arc<Adapter>, Model, SummaryOptions) {
+    let mut response = default_response();
+    response["content"][0]["text"] = json!(text);
+    response["usage"] = usage.clone();
+    let state = adapter(json!({"history": response}));
+    let model = model(&corpus().rows[0], &state.api);
+    (state, model, options(&json!({})))
 }
 /// Construct the exact supplied control operands.
 fn options(args: &Value) -> SummaryOptions {

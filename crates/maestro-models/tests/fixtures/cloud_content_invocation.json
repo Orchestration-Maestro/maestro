@@ -7951,7 +7951,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"thinkingBudget\":0}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"thinkingBudget\":0}}}"
         }
       ],
       "events": [
@@ -8011,7 +8011,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"thinkingLevel\":\"MINIMAL\"}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"thinkingLevel\":\"MINIMAL\"}}}"
         }
       ],
       "events": [
@@ -8071,7 +8071,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"thinkingLevel\":\"LOW\"}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"thinkingLevel\":\"LOW\"}}}"
         }
       ],
       "events": [
@@ -8131,7 +8131,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"thinkingBudget\":0}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"thinkingBudget\":0}}}"
         }
       ],
       "events": [
@@ -8192,7 +8192,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":128}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":128}}}"
         }
       ],
       "events": [
@@ -8253,7 +8253,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":2048}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":2048}}}"
         }
       ],
       "events": [
@@ -8314,7 +8314,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":8192}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":8192}}}"
         }
       ],
       "events": [
@@ -8375,7 +8375,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":32768}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":32768}}}"
         }
       ],
       "events": [
@@ -8436,7 +8436,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":32768}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":32768}}}"
         }
       ],
       "events": [
@@ -8497,7 +8497,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":128}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":128}}}"
         }
       ],
       "events": [
@@ -8558,7 +8558,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":2048}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":2048}}}"
         }
       ],
       "events": [
@@ -8619,7 +8619,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":8192}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":8192}}}"
         }
       ],
       "events": [
@@ -8680,7 +8680,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":24576}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":24576}}}"
         }
       ],
       "events": [
@@ -8741,7 +8741,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":24576}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":24576}}}"
         }
       ],
       "events": [
@@ -8802,7 +8802,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":128}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":128}}}"
         }
       ],
       "events": [
@@ -8863,7 +8863,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":2048}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":2048}}}"
         }
       ],
       "events": [
@@ -8924,7 +8924,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":8192}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":8192}}}"
         }
       ],
       "events": [
@@ -8985,7 +8985,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":24576}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":24576}}}"
         }
       ],
       "events": [
@@ -9046,7 +9046,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":24576}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":24576}}}"
         }
       ],
       "events": [
@@ -9107,7 +9107,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingLevel\":\"LOW\"}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingLevel\":\"LOW\"}}}"
         }
       ],
       "events": [
@@ -9168,7 +9168,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingLevel\":\"LOW\"}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingLevel\":\"LOW\"}}}"
         }
       ],
       "events": [
@@ -9229,7 +9229,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingLevel\":\"HIGH\"}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingLevel\":\"HIGH\"}}}"
         }
       ],
       "events": [
@@ -9290,7 +9290,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingLevel\":\"HIGH\"}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingLevel\":\"HIGH\"}}}"
         }
       ],
       "events": [
@@ -9351,7 +9351,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingLevel\":\"HIGH\"}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingLevel\":\"HIGH\"}}}"
         }
       ],
       "events": [
@@ -9412,7 +9412,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingLevel\":\"MINIMAL\"}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingLevel\":\"MINIMAL\"}}}"
         }
       ],
       "events": [
@@ -9473,7 +9473,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingLevel\":\"LOW\"}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingLevel\":\"LOW\"}}}"
         }
       ],
       "events": [
@@ -9534,7 +9534,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingLevel\":\"MEDIUM\"}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingLevel\":\"MEDIUM\"}}}"
         }
       ],
       "events": [
@@ -9595,7 +9595,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingLevel\":\"HIGH\"}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingLevel\":\"HIGH\"}}}"
         }
       ],
       "events": [
@@ -9656,7 +9656,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingLevel\":\"HIGH\"}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingLevel\":\"HIGH\"}}}"
         }
       ],
       "events": [
@@ -9717,7 +9717,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":-1}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":-1}}}"
         }
       ],
       "events": [
@@ -9778,7 +9778,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":-1}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":-1}}}"
         }
       ],
       "events": [
@@ -9839,7 +9839,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":-1}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":-1}}}"
         }
       ],
       "events": [
@@ -9900,7 +9900,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":-1}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":-1}}}"
         }
       ],
       "events": [
@@ -9961,7 +9961,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":-1}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":-1}}}"
         }
       ],
       "events": [
@@ -10022,7 +10022,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":-1}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":-1}}}"
         }
       ],
       "events": [
@@ -10083,7 +10083,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":-1}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":-1}}}"
         }
       ],
       "events": [
@@ -10144,7 +10144,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":-1}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":-1}}}"
         }
       ],
       "events": [
@@ -10205,7 +10205,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":-1}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":-1}}}"
         }
       ],
       "events": [
@@ -10266,7 +10266,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":-1}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":-1}}}"
         }
       ],
       "events": [
@@ -10330,7 +10330,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":0}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":0}}}"
         }
       ],
       "events": [
@@ -10394,7 +10394,7 @@
             "content-type": "application/json",
             "x-goog-api-key": "fixture-key"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":-1}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":-1}}}"
         }
       ],
       "events": [
@@ -10458,7 +10458,7 @@
             "content-type": "application/json",
             "x-goog-user-project": "fixture-quota"
           },
-          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":32,\"thinkingConfig\":{\"thinkingBudget\":0}}}"
+          "body": "{\"contents\":[{\"parts\":[{\"text\":\"before-hook\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{\"temperature\":0,\"maxOutputTokens\":1,\"thinkingConfig\":{\"thinkingBudget\":0}}}"
         }
       ],
       "events": [

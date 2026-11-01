@@ -427,6 +427,7 @@ save:
 | `retry.provider.timeoutMs` | number | unset | Optional timeout passed to the model provider |
 | `retry.provider.maxRetries` | number | unset | Optional retry limit passed to the model provider |
 | `retry.provider.maxRetryDelayMs` | number | `60000` | Largest accepted provider retry delay in milliseconds |
+| `httpIdleTimeoutMs` | number or `disabled` | `300000` | Longest wait, in whole milliseconds, for HTTP response headers or the next body chunk; `0` and `disabled` remove the limit; a negative or unusable value reads as the default; the setter ignores a negative or non-finite value |
 
 The crate stores and returns these values; applying them belongs to the callers.
 
@@ -485,24 +486,27 @@ An extension path never implies a package.
 
 ### Home directory in paths
 
-Every configured path reads a leading `~` one way. An exact `~` is the home directory.
-`~/` (`~\` on Windows) followed by more text puts that text below the home directory.
-Every other spelling, `~name` included, stays as written and is a relative path. The home
-directory is read only for the first two forms.
+An exact `~` names the home directory. A `~/` prefix puts the rest of the path
+below it. Other spellings, including `~name`, stay as written. On Windows,
+`~\` also expands in the daemon's new-terminal directory and in resource,
+prompt, skill, package and extension paths. Tool paths, application directory
+options, `sessionDir` and completion paths accept only `~/`, not `~\`.
+The home directory is read only for forms that expand.
 
-How the text is put below the home directory depends on the setting:
+How the rest of the path is combined with the home depends on the caller:
 
-- Settings, resource, prompt, skill, package, completion and extension paths join it with
-  the path module's normalizing join. `.`, `..` and repeated separators resolve, and an
-  empty home leaves a relative result. An exact `~` returns the home as supplied, except in
-  extension paths, which join it too.
-- Tool paths, the application directory options, the daemon's new-terminal directory and
-  git include paths append the text as written, so a repeated separator or `..` stays but
-  an absolute remainder still lies below the home directory. A home that ends in a
-  separator gains none, and an empty home gives a rooted result.
-
-On Windows either separator introduces the text, and the appended form drops empty
-components and joins with `\`.
+- `sessionDir`, resource, prompt, skill, package, completion and extension paths
+  use a normalizing join. `.`, `..` and repeated separators resolve, and an empty
+  home leaves a relative result. An exact `~` returns the home as supplied,
+  except in extension paths, which normalize it too.
+- Tool paths and application directory options append the suffix unchanged on
+  every platform. For example, `~/a//b` with home `C:\h` gives `C:\h/a//b`.
+  A trailing separator in the home stays too: `/h/` plus `~/x` gives `/h//x`.
+  An empty home with `~/x` gives `/x`.
+- The daemon's new-terminal directory keeps its native rule. On Windows it
+  splits on both separators, drops empty components and joins with `\`.
+  On other platforms it appends the rest without doubling the home's final
+  slash. An absolute remainder still stays below the home directory.
 
 ## Example
 

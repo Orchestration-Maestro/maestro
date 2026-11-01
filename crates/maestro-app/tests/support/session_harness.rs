@@ -514,6 +514,23 @@ pub fn assistant(text: &str, offset: u64, extra: &Value) -> Value {
     message
 }
 
+/// Stamps `message` at the compaction summary of `manager`'s context.
+///
+/// The message then counts as given after the compaction without reading the clock.
+///
+/// # Panics
+/// Panics when the session context cannot be built or holds no compaction summary.
+pub fn after_summary(manager: &SessionManager, mut message: Value) -> Value {
+    let context = manager.build_session_context().unwrap();
+    let summary = context
+        .messages
+        .iter()
+        .find(|message| message["role"] == "compactionSummary")
+        .expect("a compaction summary in context");
+    message["timestamp"] = summary["timestamp"].clone();
+    message
+}
+
 /// Tree entry identities by name.
 pub type Names = IndexMap<String, String>;
 
