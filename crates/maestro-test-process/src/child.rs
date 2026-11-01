@@ -266,8 +266,13 @@ pub fn collect_output(
     child: Child,
     listener: &TcpListener,
 ) -> io::Result<JoinHandle<io::Result<Output>>> {
-    let _ = (child, listener);
-    Err(io::ErrorKind::Unsupported.into())
+    let address = listener.local_addr()?;
+    Ok(std::thread::spawn(move || {
+        let output = child.wait_with_output();
+        // A connection nobody accepts is harmless; it only wakes a pending accept.
+        let _ = TcpStream::connect(address);
+        output
+    }))
 }
 
 /// Whether the descriptor behind `path`, such as `/dev/stdin`, is the null device.
