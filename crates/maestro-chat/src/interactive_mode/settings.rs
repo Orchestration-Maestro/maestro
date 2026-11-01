@@ -360,12 +360,12 @@ impl InteractiveMode {
     }
 
     /// Saves the shrink policy and applies it to the terminal.
-    fn settings_clear_on_shrink(&self, enabled: bool) {
+    pub(super) fn settings_clear_on_shrink(&self, enabled: bool) {
         self.runtime_host
             .session()
             .settings_manager()
             .borrow_mut()
             .set_clear_on_shrink(enabled);
-        self.ui.set_clear_on_shrink(enabled);
+        self.apply_clear_on_shrink(enabled);
     }
 }

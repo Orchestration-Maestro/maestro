@@ -103,7 +103,7 @@ impl InteractiveMode {
         {
             return Ok(self.show_status("Import cancelled")?);
         }
-        self.stop_working_loader();
+        self.clear_status_indicator(None);
         match self.runtime_host.import_from_jsonl(path, None).await {
             Ok(result) => {
                 if let Err(error) = self.show_import_result(path, result) {

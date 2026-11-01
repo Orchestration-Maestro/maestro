@@ -3,11 +3,12 @@
 mod capabilities;
 mod dimensions;
 mod protocol;
-pub use capabilities::TERM_PROGRAM;
+pub use capabilities::{PANE_TERM_PROGRAM, TERM_PROGRAM};
 pub use dimensions::{
-    calculate_image_rows, get_gif_dimensions, get_image_dimensions, get_jpeg_dimensions,
-    get_png_dimensions, get_webp_dimensions,
+    ImageCellSize, calculate_image_cell_size, calculate_image_rows, get_gif_dimensions,
+    get_image_dimensions, get_jpeg_dimensions, get_png_dimensions, get_webp_dimensions,
 };
+pub(crate) use protocol::fallback_name;
 pub use protocol::{
     ITerm2Options, ImageSize, KittyOptions, delete_all_kitty_images, delete_kitty_image,
     encode_i_term2, encode_kitty, hyperlink, image_fallback, is_image_line,
@@ -86,6 +87,15 @@ impl Default for CellDimensions {
         }
     }
 }
+impl TerminalImage {
+    /// The home directory: a present Unix `HOME` from the terminal environment, even when
+    /// empty, otherwise the native home directory.
+    pub(crate) fn home(&self) -> Option<String> {
+        maestro_path::homedir((self.environment)("HOME").filter(|_| cfg!(unix)), || {
+            maestro_path::native_homedir().map(|home| home.to_string_lossy().into_owned())
+        })
+    }
+}
 impl Default for TerminalImage {
     fn default() -> Self {
         Self::new(native_environment, || rand::random_range(1..=0xffff_fffe))
@@ -155,6 +165,8 @@ pub struct ImageDimensions {
 pub struct ImageRenderOptions {
     /// Target width in cells; absent means 80.
     pub max_width_cells: Option<u32>,
+    /// Height bound in rows; absent means the width alone decides the size.
+    pub max_height_cells: Option<u32>,
     /// Whether iTerm2 preserves aspect ratio.
     pub preserve_aspect_ratio: bool,
     /// Supplied Kitty ID; direct rendering never allocates one.
@@ -166,6 +178,7 @@ impl Default for ImageRenderOptions {
     fn default() -> Self {
         Self {
             max_width_cells: None,
+            max_height_cells: None,
             preserve_aspect_ratio: true,
             image_id: None,
             move_cursor: true,
@@ -192,14 +205,18 @@ impl TerminalImage {
         options: ImageRenderOptions,
     ) -> Option<RenderedImage> {
         let protocol = self.get_capabilities().images?;
-        let width = options.max_width_cells.unwrap_or(80);
-        let rows = calculate_image_rows(dimensions, width, Some(self.get_cell_dimensions()))?;
+        let ImageCellSize { columns, rows } = calculate_image_cell_size(
+            dimensions,
+            options.max_width_cells.unwrap_or(80),
+            options.max_height_cells,
+            Some(self.get_cell_dimensions()),
+        )?;
         let (sequence, image_id) = match protocol {
             ImageProtocol::Kitty => (
                 encode_kitty(
                     base64_data,
                     KittyOptions {
-                        columns: Some(width),
+                        columns: Some(columns),
                         rows: Some(rows),
                         image_id: options.image_id,
                         move_cursor: options.move_cursor,
@@ -211,7 +228,7 @@ impl TerminalImage {
                 encode_i_term2(
                     base64_data,
                     ITerm2Options {
-                        width: Some(ImageSize::Cells(width)),
+                        width: Some(ImageSize::Cells(columns)),
                         height: Some(ImageSize::Text("auto".to_owned())),
                         preserve_aspect_ratio: options.preserve_aspect_ratio,
                         ..ITerm2Options::default()

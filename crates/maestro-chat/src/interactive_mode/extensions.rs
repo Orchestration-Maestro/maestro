@@ -43,7 +43,7 @@ impl InteractiveMode {
             .set(settings.get_hide_thinking_block());
         self.ui
             .set_show_hardware_cursor(settings.get_show_hardware_cursor())?;
-        self.ui.set_clear_on_shrink(settings.get_clear_on_shrink());
+        self.apply_clear_on_shrink(settings.get_clear_on_shrink());
         let padding = settings.get_editor_padding_x();
         let max_visible = settings.get_autocomplete_max_visible();
         drop(settings);

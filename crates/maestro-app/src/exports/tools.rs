@@ -34,8 +34,8 @@ pub use maestro_tools::{
 pub use maestro_tools::process::exec::{ExecOptions, ExecResult, exec_command};
 
 pub use maestro_tools::{
-    RenderDiffOptions, format_key_text, key_display_text, key_hint, key_text, raw_key_hint,
-    render_diff,
+    RenderDiffOptions, expand_hint, format_key_text, key_display_text, key_hint, key_text,
+    raw_key_hint, render_diff,
 };
 
 /// Shared with the terminal frontend.

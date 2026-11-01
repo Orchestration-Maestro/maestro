@@ -104,7 +104,19 @@ impl MessageRendering {
         color: Option<ThemeColor>,
         thinking: bool,
     ) -> Rc<dyn Component> {
-        let style = color.map(|key| {
+        self.markdown_with(
+            text,
+            MarkdownOptions {
+                padding_x: padding,
+                padding_y: 0,
+                default_text_style: self.text_style(color, thinking),
+                clean_content: self.clean_content,
+            },
+        )
+    }
+    /// The base style painting text in `color`, italic for thinking; none without a colour.
+    fn text_style(&self, color: Option<ThemeColor>, thinking: bool) -> Option<DefaultTextStyle> {
+        color.map(|key| {
             let theme = self.theme.clone();
             DefaultTextStyle {
                 color: Some(Box::new(move |text| {
@@ -117,15 +129,13 @@ impl MessageRendering {
                 },
                 ..Default::default()
             }
-        });
+        })
+    }
+    /// Builds Markdown with the caller's layout and the shared callbacks and terminal.
+    fn markdown_with(&self, text: String, options: MarkdownOptions) -> Rc<dyn Component> {
         Rc::new(Markdown::new(
             text,
-            MarkdownOptions {
-                padding_x: padding,
-                padding_y: 0,
-                default_text_style: style,
-                clean_content: self.clean_content,
-            },
+            options,
             self.markdown.clone(),
             self.terminal.clone(),
         ))

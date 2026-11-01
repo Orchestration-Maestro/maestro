@@ -323,7 +323,7 @@ fn assert_brand_rows(
         (maestro_theme::ThemeColor::Accent, url),
         (maestro_theme::ThemeColor::Dim, "Ctrl+click to open"),
     ] {
-        let link = format!("\x1b]8;;{url}\x07{text}\x1b]8;;\x07");
+        let link = maestro_tui::hyperlink(text, url);
         assert!(
             rows.iter()
                 .any(|row| row.contains(&theme.fg(&role, &link).unwrap()))

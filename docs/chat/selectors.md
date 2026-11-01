@@ -218,7 +218,9 @@ provider-name/browser effects. Default names come from
 wins; a present title override wins even when empty.
 
 `show_auth` replaces content with linked URL, click hint and optional nonempty
-instructions. Native launch uses `open`, `explorer.exe` or `xdg-open`, passing
+instructions. Both rows come from the toolkit's `hyperlink`, on every terminal:
+the URL in the accent colour links to itself, and the dim hint, `Cmd+click to
+open` on macOS and `Ctrl+click to open` elsewhere, links to the URL. Native launch uses `open`, `explorer.exe` or `xdg-open`, passing
 one literal URL argument through the [shared process owner](../tools-process.md).
 Startup and exit failures are silent; the dialog never waits for browser exit.
 Browser embeddings provide their own launcher.

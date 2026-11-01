@@ -83,7 +83,7 @@ impl InteractiveMode {
     pub fn stop(&self) -> io::Result<()> {
         self.unregister_signal_handlers();
         self.set_terminal_progress(false)?;
-        self.release_working_loader();
+        self.clear_status_indicator(None);
         self.extension_input.clear();
         self.footer.dispose();
         self.footer_data_provider.dispose();

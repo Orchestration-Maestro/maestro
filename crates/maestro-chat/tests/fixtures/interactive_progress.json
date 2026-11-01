@@ -24,7 +24,8 @@
         "status": [],
         "chat": [
           "",
-          " @error@Error: Compaction cancelled\u001b[39m                                                                        "
+          " @error@Error: Compaction cancelled\u001b[39m                                                                        ",
+          ""
         ],
         "progress": [],
         "timers": [],
@@ -60,7 +61,8 @@
         "status": [],
         "chat": [
           "",
-          " @error@Error: Compaction cancelled\u001b[39m                                                                        "
+          " @error@Error: Compaction cancelled\u001b[39m                                                                        ",
+          ""
         ],
         "progress": [
           true,
@@ -229,7 +231,8 @@
     "expected": {
       "chat": [
         "",
-        " @error@Error: Compaction cancelled\u001b[39m                                                                        "
+        " @error@Error: Compaction cancelled\u001b[39m                                                                        ",
+        ""
       ],
       "progress": [],
       "timers": [],
@@ -278,7 +281,8 @@
     "expected": {
       "chat": [
         "",
-        " @error@Error: provider failure\u001b[39m                                                                            "
+        " @error@Error: provider failure\u001b[39m                                                                            ",
+        ""
       ],
       "progress": [],
       "timers": [],
@@ -584,7 +588,8 @@
         "status": [],
         "chat": [
           "",
-          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 "
+          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 ",
+          ""
         ],
         "progress": [],
         "timers": [],
@@ -747,7 +752,8 @@
         "status": [],
         "chat": [
           "",
-          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 "
+          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 ",
+          ""
         ],
         "progress": [],
         "timers": [],
@@ -910,7 +916,8 @@
         "status": [],
         "chat": [
           "",
-          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 "
+          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 ",
+          ""
         ],
         "progress": [],
         "timers": [],
@@ -1073,7 +1080,8 @@
         "status": [],
         "chat": [
           "",
-          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 "
+          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 ",
+          ""
         ],
         "progress": [],
         "timers": [],
@@ -1237,7 +1245,8 @@
         "status": [],
         "chat": [
           "",
-          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 "
+          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 ",
+          ""
         ],
         "progress": [],
         "timers": [],
@@ -1403,7 +1412,8 @@
         "status": [],
         "chat": [
           "",
-          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 "
+          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 ",
+          ""
         ],
         "progress": [],
         "timers": [],
@@ -1503,7 +1513,8 @@
       "status": [],
       "chat": [
         "",
-        " @error@Error: Retry failed after 3 attempts: Unknown error\u001b[39m                                                "
+        " @error@Error: Retry failed after 3 attempts: Unknown error\u001b[39m                                                ",
+        ""
       ],
       "progress": [],
       "timers": [],
@@ -1521,7 +1532,8 @@
       "status": [],
       "chat": [
         "",
-        " @error@Error: Retry failed after 3 attempts: Unknown error\u001b[39m                                                "
+        " @error@Error: Retry failed after 3 attempts: Unknown error\u001b[39m                                                ",
+        ""
       ],
       "progress": [],
       "timers": [],
@@ -1539,7 +1551,8 @@
       "status": [],
       "chat": [
         "",
-        " @error@Error: Retry failed after 3 attempts: last failure\u001b[39m                                                 "
+        " @error@Error: Retry failed after 3 attempts: last failure\u001b[39m                                                 ",
+        ""
       ],
       "progress": [],
       "timers": [],
@@ -1618,7 +1631,6 @@
         "progress": [],
         "timers": [
           80,
-          80,
           1000
         ],
         "editor": "draft"
@@ -1627,9 +1639,7 @@
         "status": [],
         "chat": [],
         "progress": [],
-        "timers": [
-          80
-        ],
+        "timers": [],
         "editor": "draft"
       },
       "working": {
@@ -1669,7 +1679,8 @@
         "status": [],
         "chat": [
           "",
-          " @error@Error: Compaction cancelled\u001b[39m                                                                        "
+          " @error@Error: Compaction cancelled\u001b[39m                                                                        ",
+          ""
         ],
         "progress": [],
         "timers": [],
@@ -1704,7 +1715,8 @@
         "status": [],
         "chat": [
           "",
-          " @error@Error: Compaction cancelled\u001b[39m                                                                        "
+          " @error@Error: Compaction cancelled\u001b[39m                                                                        ",
+          ""
         ],
         "progress": [],
         "timers": [],
@@ -1753,7 +1765,8 @@
     "expected": {
       "chat": [
         "",
-        " @error@Error: Compaction cancelled\u001b[39m                                                                        "
+        " @error@Error: Compaction cancelled\u001b[39m                                                                        ",
+        ""
       ],
       "progress": [
         false
@@ -1771,7 +1784,8 @@
     "expected": {
       "chat": [
         "",
-        " @error@Error: Compaction cancelled\u001b[39m                                                                        "
+        " @error@Error: Compaction cancelled\u001b[39m                                                                        ",
+        ""
       ],
       "progress": [
         true

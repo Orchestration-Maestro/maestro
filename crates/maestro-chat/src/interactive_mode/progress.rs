@@ -1,7 +1,8 @@
-//! Compaction and retry progress: their loaders, the retry countdown, the interrupt
-//! callbacks they replace and their teardown.
+//! Compaction and retry progress: their status indicators, the retry countdown, the
+//! interrupt callbacks they replace and their teardown.
 
 use super::InteractiveMode;
+use super::status_indicator::StatusKind;
 use crate::CountdownTimer;
 use maestro_app::agent_session::CompactionReason;
 use maestro_app::messages::CustomAgentMessages;
@@ -19,17 +20,13 @@ use std::{
 /// The interrupt callback a progress state replaced; its absence is the state's absence.
 pub(super) struct PreviousEscape(Option<Rc<dyn Fn()>>);
 
-/// The loaders, countdown and interrupt callbacks the two progress states retain.
+/// The status indicator and the interrupt callbacks the two progress states replaced.
 #[derive(Default)]
 pub(super) struct Retained {
-    /// The loader shown while a compaction runs.
-    compaction_loader: RefCell<Option<Loader>>,
+    /// The status container's indicator and idle rows.
+    pub(super) status: super::status_indicator::StatusArea,
     /// The interrupt callback the running compaction replaced.
     compaction_escape: RefCell<Option<PreviousEscape>>,
-    /// The loader shown while a retry counts down.
-    retry_loader: RefCell<Option<Loader>>,
-    /// The countdown of the running retry.
-    retry_countdown: RefCell<Option<CountdownTimer>>,
     /// The interrupt callback the running retry replaced.
     retry_escape: RefCell<Option<PreviousEscape>>,
 }
@@ -82,10 +79,8 @@ impl InteractiveMode {
         let host = Rc::clone(&self.runtime_host);
         self.editor
             .set_on_escape(Some(Rc::new(move || host.session().abort_compaction())));
-        self.status_container.clear();
         let loader = self.progress_loader(Some(compaction_label(reason)), ThemeColor::Accent);
-        self.status_container.add_child(Rc::new(loader.clone()));
-        self.progress.compaction_loader.replace(Some(loader));
+        self.show_status_indicator(StatusKind::Compaction, loader, None);
         self.ui.request_render(false);
         Ok(())
     }
@@ -102,7 +97,7 @@ impl InteractiveMode {
     ) -> Result<(), Box<dyn Error>> {
         self.set_terminal_progress(false)?;
         self.restore_compaction_interrupt();
-        self.stop_compaction_loader();
+        self.clear_status_indicator(Some(StatusKind::Compaction));
         self.show_compaction_outcome(outcome)?;
         self.flush_compaction_queue(outcome.will_retry)?;
         self.ui.request_render(false);
@@ -169,10 +164,6 @@ impl InteractiveMode {
         let host = Rc::clone(&self.runtime_host);
         self.editor
             .set_on_escape(Some(Rc::new(move || host.session().abort_retry())));
-        self.status_container.clear();
-        if let Some(countdown) = self.progress.retry_countdown.take() {
-            countdown.dispose();
-        }
         let attempt = retry.attempt;
         let limit = retry.max_attempts;
         // The countdown's own first tick writes the opening label before the row is shown.
@@ -189,9 +180,7 @@ impl InteractiveMode {
             on_tick,
             Rc::new(|| {}),
         );
-        self.status_container.add_child(Rc::new(loader.clone()));
-        self.progress.retry_loader.replace(Some(loader));
-        self.progress.retry_countdown.replace(Some(countdown));
+        self.show_status_indicator(StatusKind::Retry, loader, Some(countdown));
         self.ui.request_render(false);
     }
 
@@ -202,13 +191,7 @@ impl InteractiveMode {
     /// Returns the failure of the transcript's error notice.
     pub(super) fn end_retry(&self, outcome: &RetryEnd<'_>) -> Result<(), Box<dyn Error>> {
         self.restore_retry_interrupt();
-        if let Some(countdown) = self.progress.retry_countdown.take() {
-            countdown.dispose();
-        }
-        if let Some(loader) = self.progress.retry_loader.take() {
-            loader.stop();
-            self.status_container.clear();
-        }
+        self.clear_status_indicator(Some(StatusKind::Retry));
         if !outcome.success {
             let failure = outcome.final_error.filter(|text| !text.is_empty());
             let failure = failure.unwrap_or("Unknown error");
@@ -221,18 +204,10 @@ impl InteractiveMode {
         Ok(())
     }
 
-    /// Clears the retry progress when a response starts, so a retry that already ended
-    /// leaves no row behind before the working row starts.
+    /// Restores the interrupt callback a retry replaced when a response starts; the
+    /// working row then replaces the retry indicator.
     pub(super) fn start_agent_progress(&self) {
         self.restore_retry_interrupt();
-        if let Some(countdown) = self.progress.retry_countdown.take() {
-            countdown.dispose();
-        }
-        if let Some(loader) = self.progress.retry_loader.take() {
-            loader.stop();
-        }
-        self.status_container.clear();
-        self.ui.request_render(false);
     }
 
     /// Restores the callback the compaction replaced, or the editor's ordinary action when
@@ -248,14 +223,6 @@ impl InteractiveMode {
     fn restore_retry_interrupt(&self) {
         if let Some(previous) = self.progress.retry_escape.take() {
             self.editor.set_on_escape(previous.0);
-        }
-    }
-
-    /// Stops the compaction loader and empties its row, when one is still shown.
-    fn stop_compaction_loader(&self) {
-        if let Some(loader) = self.progress.compaction_loader.take() {
-            loader.stop();
-            self.status_container.clear();
         }
     }
 
