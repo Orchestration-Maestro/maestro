@@ -46,6 +46,7 @@ mod selectors;
 mod settings;
 mod share;
 mod startup;
+mod status_indicator;
 mod submit;
 
 mod extension_ui;
@@ -109,8 +110,8 @@ pub struct InteractiveMode {
     editor_state: extension_ui::editor::EditorState,
     /// The extension custom views that have not settled.
     custom_views: extension_ui::custom::CustomViews,
-    /// The latest extension dialog of each kind.
-    dialogs: extension_ui::dialogs::DialogSlots,
+    /// The extension dialogs and inline custom views in the editor's place.
+    dialogs: extension_ui::dialogs::DialogStack,
     /// The keybindings the editor reads, and the configured keys extension shortcuts use.
     keybindings: KeybindingsManager,
     /// The footer.
@@ -212,7 +213,7 @@ impl InteractiveMode {
             editor_container,
             editor_state: extension_ui::editor::EditorState::new(editor.clone()),
             custom_views: Rc::default(),
-            dialogs: extension_ui::dialogs::DialogSlots::default(),
+            dialogs: extension_ui::dialogs::DialogStack::default(),
             editor,
             keybindings: keys,
             footer,
@@ -260,8 +261,9 @@ impl InteractiveMode {
     /// Unix initialization needs a caller-driven Tokio local executor with signals enabled.
     ///
     /// # Errors
-    /// Returns a failure of lifecycle registration, the managed binary directory, the
-    /// header's theme colours, terminal start, session binding, replay or catalog refresh.
+    /// Returns a failure to register the termination or output-error handlers, or a failure
+    /// of the managed binary directory, the header's theme colours, terminal start, session
+    /// binding, replay or catalog refresh.
     pub async fn init(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
         if self.is_initialized.get() {
             return Ok(());

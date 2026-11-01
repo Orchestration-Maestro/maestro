@@ -783,13 +783,13 @@ api: "openai-completions".into(),
 provider: "openrouter".into(),
 base_url: "https://openrouter.ai/api/v1".into(),
 reasoning: true,
-thinking_level_map: Some(indexmap::IndexMap::from([(crate::ModelThinkingLevel::Minimal, None),(crate::ModelThinkingLevel::Low, None),(crate::ModelThinkingLevel::Medium, None),(crate::ModelThinkingLevel::High, Some("high".into())),(crate::ModelThinkingLevel::Xhigh, Some("max".into()))])),
+thinking_level_map: Some(indexmap::IndexMap::from([(crate::ModelThinkingLevel::Minimal, None),(crate::ModelThinkingLevel::Low, None),(crate::ModelThinkingLevel::Medium, None),(crate::ModelThinkingLevel::High, Some("high".into())),(crate::ModelThinkingLevel::Xhigh, Some("xhigh".into()))])),
 input: vec![crate::ModelInput::Text],
 cost: crate::ModelCost { input: 0.14, output: 0.28, cache_read: 0.0028, cache_write: 0.0 },
 context_window: 1_048_576.0,
 max_tokens: 384_000.0,
 headers: None,
-compat: Some(crate::ModelCompat([("requiresReasoningContentOnAssistantMessages".into(), serde_json::Value::Bool(true)),("thinkingFormat".into(), serde_json::Value::String("deepseek".into()))].into_iter().collect())),
+compat: Some(crate::ModelCompat([("requiresReasoningContentOnAssistantMessages".into(), serde_json::Value::Bool(true))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -801,13 +801,13 @@ api: "openai-completions".into(),
 provider: "openrouter".into(),
 base_url: "https://openrouter.ai/api/v1".into(),
 reasoning: true,
-thinking_level_map: Some(indexmap::IndexMap::from([(crate::ModelThinkingLevel::Minimal, None),(crate::ModelThinkingLevel::Low, None),(crate::ModelThinkingLevel::Medium, None),(crate::ModelThinkingLevel::High, Some("high".into())),(crate::ModelThinkingLevel::Xhigh, Some("max".into()))])),
+thinking_level_map: Some(indexmap::IndexMap::from([(crate::ModelThinkingLevel::Minimal, None),(crate::ModelThinkingLevel::Low, None),(crate::ModelThinkingLevel::Medium, None),(crate::ModelThinkingLevel::High, Some("high".into())),(crate::ModelThinkingLevel::Xhigh, Some("xhigh".into()))])),
 input: vec![crate::ModelInput::Text],
 cost: crate::ModelCost { input: 0.0, output: 0.0, cache_read: 0.0, cache_write: 0.0 },
 context_window: 131_000.0,
 max_tokens: 131_000.0,
 headers: None,
-compat: Some(crate::ModelCompat([("requiresReasoningContentOnAssistantMessages".into(), serde_json::Value::Bool(true)),("thinkingFormat".into(), serde_json::Value::String("deepseek".into()))].into_iter().collect())),
+compat: Some(crate::ModelCompat([("requiresReasoningContentOnAssistantMessages".into(), serde_json::Value::Bool(true))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -1923,7 +1923,7 @@ cost: crate::ModelCost { input: 0.74, output: 3.49, cache_read: 0.14, cache_writ
 context_window: 262_142.0,
 max_tokens: 262_142.0,
 headers: None,
-compat: None,
+compat: Some(crate::ModelCompat([("supportsDeveloperRole".into(), serde_json::Value::Bool(false)),("requiresReasoningContentOnAssistantMessages".into(), serde_json::Value::Bool(true))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -2835,7 +2835,7 @@ api: "openai-completions".into(),
 provider: "openrouter".into(),
 base_url: "https://openrouter.ai/api/v1".into(),
 reasoning: true,
-thinking_level_map: Some(indexmap::IndexMap::from([(crate::ModelThinkingLevel::Xhigh, Some("xhigh".into()))])),
+thinking_level_map: Some(indexmap::IndexMap::from([(crate::ModelThinkingLevel::Xhigh, Some("xhigh".into())),(crate::ModelThinkingLevel::Off, None),(crate::ModelThinkingLevel::Minimal, None),(crate::ModelThinkingLevel::Low, None)])),
 input: vec![crate::ModelInput::Text,crate::ModelInput::Image],
 cost: crate::ModelCost { input: 30.0, output: 180.0, cache_read: 0.0, cache_write: 0.0 },
 context_window: 1_050_000.0,

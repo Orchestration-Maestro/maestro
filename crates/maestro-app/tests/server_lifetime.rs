@@ -217,6 +217,74 @@ fn extension_shutdown_waits_for_command_reply() {
     });
 }
 
+/// Requests shutdown twice during compaction, then waits at the supplied gate.
+fn compaction_shutdown(gate: Rc<Gate>) -> ExtensionFactory<Local> {
+    Rc::new(move |api| {
+        let gate = Rc::clone(&gate);
+        let registered = api
+            .on::<maestro_app::SessionBeforeCompactEvent, maestro_app::SessionBeforeCompactResult>(
+                "session_before_compact".into(),
+                Rc::new(move |_, context| {
+                    let gate = Rc::clone(&gate);
+                    Box::pin(async move {
+                        context.shutdown()?;
+                        context.shutdown()?;
+                        pass(Some(gate)).await;
+                        Ok(Some(maestro_app::SessionBeforeCompactResult {
+                            cancel: maestro_app::Presence::Present(true),
+                            compaction: maestro_app::Presence::Missing,
+                        }))
+                    })
+                }),
+            );
+        Box::pin(std::future::ready(registered))
+    })
+}
+
+/// A shutdown requested during compaction waits for settlement without another command.
+#[test]
+fn extension_shutdown_during_compaction_waits_for_settle() {
+    on_task_set(|_| async {
+        let gate = Rc::new(Gate::default());
+        let factory = compaction_shutdown(Rc::clone(&gate));
+        let seen = Rc::default();
+        let factories = vec![
+            (None, factory),
+            (None, shutdown_watch(Rc::clone(&seen), None)),
+        ];
+        let (h, runtime, _) = runtime_for("settle-shutdown", factories).await;
+        let runtime = Rc::new(runtime);
+        let mut client = connect(Rc::clone(&runtime));
+        client.ask(r#"{"type":"get_state"}"#).await;
+        let session = runtime.session();
+        session.model().write().unwrap().context_window = 1.0;
+        let (requested, release) = hold_first_answer(&h, "answer", &[]);
+        let prompted = Rc::clone(&session);
+        let run = tokio::task::spawn_local(async move {
+            prompted
+                .prompt("one", maestro_app::PromptOptions::default())
+                .await
+        });
+        requested.notified().await;
+        release.notify_one();
+        gate.entered.notified().await;
+        client.ask(r#"{"type":"get_state"}"#).await;
+        assert_eq!(client.signals_stopped(), 0, "compaction still owns the run");
+        assert!(
+            seen.borrow().is_empty(),
+            "a reply during compaction must not shut down"
+        );
+        assert!(!client.server.is_finished());
+        gate.release.notify_one();
+        run.await.unwrap().unwrap();
+        assert_eq!(
+            client.outcome().await.unwrap(),
+            RpcConnectionOutcome::Requested
+        );
+        assert_eq!(seen.borrow().len(), 1);
+    });
+}
+
 /// Notified when a handler starts waiting, and released by the test.
 #[derive(Default)]
 struct Gate {
@@ -784,12 +852,14 @@ fn workspace_only_connections_refuse_session_commands() {
         use maestro_app::rpc_mode::{JsonlLineReader, RpcModeOptions};
         let lines = Rc::new(RefCell::new(Vec::new()));
         let written = Rc::clone(&lines);
-        let output = Rc::new(move |line: &maestro_app::rpc_mode::RpcLine| {
-            written
-                .borrow_mut()
-                .push(serde_json::from_str::<Value>(line.as_str()).unwrap());
-            Ok(())
-        });
+        let output = maestro_app::rpc_mode::RpcOutput::synchronous(Rc::new(
+            move |line: &maestro_app::rpc_mode::RpcLine| {
+                written
+                    .borrow_mut()
+                    .push(serde_json::from_str::<Value>(line.as_str()).unwrap());
+                Ok(())
+            },
+        ));
         let options = RpcModeOptions {
             session: None,
             workspace: Some(Rc::new(ClosureWorkspace(no_workspace()))),
@@ -827,12 +897,14 @@ fn workspace_commands_without_provider_are_unknown() {
         use maestro_app::rpc_mode::{JsonlLineReader, RpcModeOptions};
         let lines = Rc::new(RefCell::new(Vec::new()));
         let written = Rc::clone(&lines);
-        let output = Rc::new(move |line: &maestro_app::rpc_mode::RpcLine| {
-            written
-                .borrow_mut()
-                .push(serde_json::from_str::<Value>(line.as_str()).unwrap());
-            Ok(())
-        });
+        let output = maestro_app::rpc_mode::RpcOutput::synchronous(Rc::new(
+            move |line: &maestro_app::rpc_mode::RpcLine| {
+                written
+                    .borrow_mut()
+                    .push(serde_json::from_str::<Value>(line.as_str()).unwrap());
+                Ok(())
+            },
+        ));
         let input = Box::new(JsonlLineReader::new(
             b"{\"id\":\"workspace\",\"type\":\"ping\"}\n{\"id\":\"other\",\"type\":\"not_known\"}\n".as_slice(),
         ));

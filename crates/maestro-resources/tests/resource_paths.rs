@@ -1,5 +1,5 @@
 use crate::support;
-use maestro_resources::{canonicalize_path, is_local_path, paths::expand_tilde_text};
+use maestro_resources::{canonicalize_path, is_local_path};
 use support::text;
 
 /// Classify only the six exact lowercase source prefixes.
@@ -294,56 +294,4 @@ fn native_directory_entries_follow_platform_order() {
     let entries = maestro_resources::read_entries(dir.0.path()).unwrap();
     let names: Vec<_> = entries.into_iter().map(|e| e.name).collect();
     assert_eq!(names, ["C.md", "_x.md", "a.md", "b.md"]);
-}
-
-/// A leading `~` joins below the home directory and normalizes the written segments, spelled in
-/// the host's path flavor.
-#[test]
-fn text_tilde_expansion_joins_below_the_home_directory() {
-    let (home, rows) = if cfg!(windows) {
-        (
-            r"C:\home\sample",
-            [
-                ("~/link/../f", r"C:\home\sample\f"),
-                ("~", r"C:\home\sample"),
-                ("~/", r"C:\home\sample"),
-                ("~//note", r"C:\home\sample\note"),
-                ("~child", r"C:\home\sample\child"),
-            ],
-        )
-    } else {
-        (
-            "/home/sample",
-            [
-                ("~/link/../f", "/home/sample/f"),
-                ("~", "/home/sample"),
-                ("~/", "/home/sample"),
-                ("~//note", "/home/sample/note"),
-                ("~child", "/home/sample/child"),
-            ],
-        )
-    };
-    let text = || Ok(home.to_owned());
-    for (written, expected) in rows {
-        assert_eq!(
-            expand_tilde_text(written, text).unwrap(),
-            expected,
-            "{written:?}"
-        );
-    }
-    assert_eq!(
-        expand_tilde_text("/extra/../extra/q.md", || unreachable!()).unwrap(),
-        "/extra/../extra/q.md"
-    );
-}
-
-/// An empty home spelling joins lexically, so `~/` keeps the working directory.
-#[test]
-fn text_expansion_joins_an_empty_home_lexically() {
-    assert_eq!(expand_tilde_text("~/", || Ok(String::new())).unwrap(), ".");
-    assert_eq!(expand_tilde_text("~", || Ok(String::new())).unwrap(), "");
-    assert_eq!(
-        expand_tilde_text("~child", || Ok(String::new())).unwrap(),
-        "child"
-    );
 }

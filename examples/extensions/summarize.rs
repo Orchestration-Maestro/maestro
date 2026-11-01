@@ -1,4 +1,5 @@
 //! An opt-in conversation summary shown in a custom Markdown view.
+// maestro-component: MAESTRO_SUMMARIZE_COMPONENT
 #![cfg(target_arch = "wasm32")]
 #![forbid(
     clippy::pedantic,
@@ -199,11 +200,16 @@ async fn summarize(api: ExtensionAPI, ctx: ExtensionCommandContext) -> Extension
             NotificationType::Warning,
         );
     };
-    let (api_key, headers) = match registry.get_api_key_and_headers(model.clone()).await? {
+    let (api_key, headers, base_url) = match registry.get_api_key_and_headers(model.clone()).await?
+    {
         ResolvedRequestAuth::Error { error } => {
             return notify(&ctx, &error, NotificationType::Warning);
         }
-        ResolvedRequestAuth::Ok { api_key, headers } => (api_key, headers),
+        ResolvedRequestAuth::Ok {
+            api_key,
+            headers,
+            base_url,
+        } => (api_key, headers, base_url),
     };
     let Some(api_key) = api_key.filter(|key| !key.is_empty()) else {
         return notify(
@@ -218,6 +224,7 @@ async fn summarize(api: ExtensionAPI, ctx: ExtensionCommandContext) -> Extension
         ProviderStreamOptions {
             common: StreamOptions {
                 api_key: Some(api_key),
+                base_url,
                 headers,
                 ..Default::default()
             },

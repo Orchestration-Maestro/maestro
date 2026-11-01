@@ -7,7 +7,7 @@ use crate::config_support;
 use config_support::{TestApp, fixture};
 
 /// Admits one named workspace with retained terminal metadata and no native child.
-fn app() -> TestApp {
+pub(crate) fn app() -> TestApp {
     let (mut app, _, _) = fixture();
     let (pane, ()) = app
         .state

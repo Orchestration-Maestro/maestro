@@ -86,7 +86,9 @@ async fn inspect(catalog: &ModelRegistry, provider: &str, input: &Value) -> Resu
         .transpose()?;
     let auth = match model {
         Some(model) => Some(match catalog.get_api_key_and_headers(model).await? {
-            maestro_extensions_wasm::ResolvedRequestAuth::Ok { api_key, headers } => {
+            maestro_extensions_wasm::ResolvedRequestAuth::Ok {
+                api_key, headers, ..
+            } => {
                 json!({"ok":true,"apiKey":api_key,"headers":headers})
             }
             maestro_extensions_wasm::ResolvedRequestAuth::Error { error } => {

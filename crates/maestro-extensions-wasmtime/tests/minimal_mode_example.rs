@@ -1,6 +1,7 @@
 //! Minimal displays through the shipped component and original native tool owners.
 #![cfg(test)]
 #![cfg(unix)]
+use super::example_process::run;
 use maestro_extensions::{ExtensionRunner, Local};
 use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
@@ -51,15 +52,6 @@ async fn loaded(cwd: &Path) -> Rc<ExtensionRunner<Local>> {
         Rc::new(|_| {}),
         maestro_theme::LiveTheme::default(),
     ))
-}
-
-/// Runs a component on its caller-owned local executor.
-fn run(action: impl std::future::Future<Output = ()>) {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    tokio::task::LocalSet::new().block_on(&runtime, action);
 }
 
 /// Invokes a registered override, not a replacement implementation in the test.
@@ -163,7 +155,7 @@ fn minimal_mode_preserves_cancellation_and_native_read_limits() {
         let runner = loaded(root.path()).await;
         let result = execute(&runner, "read", json!({"path":"long.txt"})).await;
         assert_eq!(result["details"]["truncation"]["outputLines"], 2000);
-        assert_eq!(result["details"]["truncation"]["totalLines"], 2101);
+        assert_eq!(result["details"]["truncation"]["totalLines"], 2100);
         assert!(
             result["content"][0]["text"]
                 .as_str()

@@ -91,7 +91,9 @@
           ]
         }
       ],
-      "inferenceConfig": {}
+      "inferenceConfig": {
+        "maxTokens": 32768
+      }
     },
     "wire": {
       "messages": [
@@ -104,7 +106,9 @@
           ]
         }
       ],
-      "inferenceConfig": {}
+      "inferenceConfig": {
+        "maxTokens": 32768
+      }
     },
     "destination": "bedrock-runtime.eu-west-1.amazonaws.com",
     "signing_identity": "profile-key"

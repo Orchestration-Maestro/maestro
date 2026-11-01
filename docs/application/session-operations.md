@@ -31,6 +31,14 @@ replaces it in the shared history, so the listeners, later events, the totals
 and the stored entry read the replacement. Extension turn events count turns
 from the run's start.
 
+The session tells its listeners of every agent event in one place, and reads the
+`holdUncheckedText` setting there ([settings](../settings.md#delivery-and-transport)).
+While it is `true`, the listeners hear no text or thinking delta, and the start and
+tool-call updates of an assistant message reach them with their text and thinking
+blocks emptied. A tool's progress reaches them without its content or details.
+Tool-call and status events, the message end and the completed tool result arrive as
+they are. The extensions are told first and see the events whole.
+
 A tool call reaches the `tool_call` handlers only after the queued events are
 processed, and the arguments they edit are the ones executed. `tool_result`
 handlers may replace a result's content, details and error flag. A manual
@@ -139,6 +147,13 @@ credential failure is returned verbatim.
 
 `get_user_messages_for_forking` lists the user messages that have text, in entry
 order.
+
+## New sessions
+
+`AgentSessionRuntime::new_session` starts a session in the working directory. It
+follows the session it replaces: a stored session gives a new history in the same
+session directory, and a session that was never stored (in-memory history) gives
+another in-memory history, so `/new` after an unsaved session writes no session file.
 
 ## Compaction and retries
 

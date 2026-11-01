@@ -24,8 +24,10 @@ same local-source resolution and conventional discovery.
   nonempty `npmCommand` array, whose leading arguments come first (an empty array
   selects `npm`). An empty first entry fails with
   `Invalid npmCommand: first array entry must be a non-empty command`.
-- **Git**: an existing target with no ref or an already-current ref is unchanged.
-  A different explicit ref is selected in place. Missing targets are prepared in
+- **Git**: an existing target is fetched again: only the requested ref, or the
+  upstream branch when none is requested. When the fetched commit differs from
+  HEAD, the checkout is reset to it in place; a commit already current is left
+  alone. Missing targets are prepared in
   an owned sibling directory and published only on success, below the scope's
   `git` root (with a `.gitignore` there). Dependencies are installed when there is a
   `package.json` (`install --omit=dev`, or plain `install` when a nonempty
@@ -88,6 +90,30 @@ accept sources and scopes, never arbitrary cleanup paths. Restoration deliberate
 discards edits inside managed remote checkouts; use a local source for development.
 Ordinary `install` keeps its existing behavior and does not imply an integrity
 check.
+
+## Release inspection
+
+`list_releases(source)` lists a Git source's tags in name order, pairing each name
+with its peeled commit ID. Annotated and lightweight tags each produce one row.
+An untagged repository returns an empty list. The caller chooses the release;
+this operation does not apply version policy or change a checkout.
+
+`read_candidate_files(source, paths)` requires an explicit Git pin. It clones and
+selects that candidate in an exclusively owned directory below the temporary
+package scope, reads the requested relative files, then removes the staging
+directory before returning. Results preserve input order and raw bytes; a missing
+file is `None`. Absolute paths, parent traversal and links outside the candidate
+are rejected. Read and cleanup failures are returned.
+
+Candidate inspection does not install dependencies, run lifecycle scripts, build
+code or load extensions. Each call has its own checkout, so alternating pins
+cannot change an installed checkout or the ordinary temporary checkout. An
+accepted candidate still installs through `install` with normal dependency
+preparation.
+
+Release inspection rejects non-Git sources and reports remote failures. Offline
+mode returns `NotConnected` without running a command rather than treating an
+unavailable release list as an empty repository. Settings stay unchanged.
 
 ## Progress
 
@@ -226,11 +252,16 @@ file-pattern policy to [file patterns](package-patterns.md).
 
 ## Package-root manifests
 
-A present `maestro` member in `package.json` selects resources instead of
-conventional discovery; missing, null, false, zero or empty-string members use
-conventions. Object members select `extensions`, `skills`, `prompts`, `themes`
-and `contributions`; other present shapes have no named lists. Omitted lists add
-no resources.
+An object `maestro` member in `package.json` selects resources instead of
+conventional discovery. An absent or non-object member uses conventions, including
+numbers, booleans, strings and arrays. Object members select `extensions`,
+`skills`, `prompts`, `themes` and `contributions`. Omitted lists add
+no resources. A list that is present and truthy but is not a list of strings is
+ignored whole and adds no resources; the other lists still load, and nothing
+fails. One reader, `maestro_resources::package_manifest::Manifest::entries`, reports
+such a list as `InvalidData`: package resolution, filtered packages and conventional
+package discovery ignore that report, while extension loading fails on a non-string
+item.
 
 Positive manifest entries containing `*` or `?` expand against the package root
 without trimming. Other entries, including brace-only or bracket-only forms,
@@ -259,9 +290,12 @@ Without exclusions or removals, candidates remain admitted without matching,
 including when only restoration modifiers are supplied.
 
 Lists are consumed in extension, skill, prompt, theme and contribution order.
-A malformed list keeps earlier local kinds and stops that source's remaining
-kinds; the next local source can still contribute. Installed remote collection
-propagates the malformed-list failure.
+A malformed list contributes nothing in an unfiltered package, and the remaining
+kinds and sources still contribute. In an object-filtered package, a kind without
+a filter uses its manifest list only when it is a list of strings. A malformed
+list counts as absent, so that kind uses its conventional directory. An empty
+list is present and contributes nothing. These rules apply to local and installed
+remote packages alike.
 
 ## Configured resource resolution
 

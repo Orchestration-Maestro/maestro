@@ -1,4 +1,5 @@
 //! An opt-in single-question tool with an inline custom answer.
+// maestro-component: MAESTRO_QUESTION_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
@@ -84,6 +85,9 @@ async fn execute(
     Ok(result(&params, text, answer.as_ref()))
 }
 /// Registers the question tool with the supplied host.
+///
+/// # Errors
+/// The returned future returns the host's rejection when it refuses the tool registration.
 #[must_use]
 pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {

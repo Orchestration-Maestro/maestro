@@ -191,15 +191,16 @@ impl BashExecutionComponent {
         let completion = self.completion.borrow().as_ref().map(Rc::clone)?;
         let mut parts = Vec::new();
         if hidden > 0 {
-            parts.push(if self.expanded.get() {
-                format!("({})", self.hint("to collapse"))
+            let (open, hint) = if self.expanded.get() {
+                ("(".to_owned(), self.hint("to collapse"))
             } else {
-                format!(
-                    "{} ({})",
-                    self.paint(&ThemeColor::Muted, &format!("... {hidden} more lines")),
-                    self.hint("to expand")
-                )
-            });
+                (format!("... {hidden} more lines ("), self.hint("to expand"))
+            };
+            parts.push(format!(
+                "{}{hint}{}",
+                self.paint(&ThemeColor::Muted, &open),
+                self.paint(&ThemeColor::Muted, ")")
+            ));
         }
         match completion.kind {
             CompletionKind::Cancelled => {

@@ -4,11 +4,17 @@ use super::transcript;
 use super::typed::{poll, recalled, submit};
 use super::{Setup, World, isolated, start};
 use crate::SettingsSelectorComponent;
+use maestro_app::agent_session::PromptOptions;
 use maestro_app::presentation_data::footer_data_provider::FooterOperations;
-use maestro_app::{MessageDeliveryMode, SettingsManager, Transport, TransportSetting, strip_ansi};
+use maestro_app::{
+    AssistantMessageEventStream, MessageDeliveryMode, SettingsManager, Transport, TransportSetting,
+    strip_ansi,
+};
 use maestro_theme::{ThemeColor, ThemeDirectories};
 use maestro_tui::tui::InputHandler;
 use maestro_tui::{Component, SettingsList, TerminalCapabilities};
+use serde_json::{Value, json};
+use std::cell::RefCell;
 use std::path::Path;
 use std::rc::Rc;
 
@@ -294,6 +300,38 @@ fn settings_changes_preserve_each_callback_effect() {
 }
 
 #[test]
+fn settings_http_idle_timeout_change_is_saved_and_announced() {
+    isolated(
+        "settings_http_idle_timeout_change_is_saved_and_announced",
+        async |directory| {
+            let world = started_settings(directory).await;
+            let list = open(&world);
+            let session = world.host.session();
+            let saved = || {
+                session
+                    .settings_manager()
+                    .borrow()
+                    .get_http_idle_timeout_ms()
+            };
+            assert!(saved().total_cmp(&300_000.0).is_eq());
+            choose(&list, "idle", 0);
+            assert!(saved().total_cmp(&0.0).is_eq(), "the choice is saved");
+            assert!(
+                super::actions::shows(&world.mode.chat_container, "HTTP idle timeout: disabled"),
+                "the transcript names the new limit"
+            );
+            choose(&list, "idle", 0);
+            assert!(saved().total_cmp(&30_000.0).is_eq());
+            assert!(super::actions::shows(
+                &world.mode.chat_container,
+                "HTTP idle timeout: 30 sec"
+            ));
+            drop(world.runtime.settle());
+        },
+    );
+}
+
+#[test]
 fn settings_remaining_changes_preserve_each_callback_effect() {
     isolated(
         "settings_remaining_changes_preserve_each_callback_effect",
@@ -406,6 +444,279 @@ fn settings_transport_change_reaches_the_live_agent() {
                 assert_eq!(live, transport);
             }
             drop(world.runtime.settle());
+        },
+    );
+}
+
+/// Each of the four choices must reach the request the next prompt sends: the controlled
+/// provider records the transport its options carry, so the agent field alone proves nothing.
+#[test]
+fn settings_transport_change_reaches_next_model_request() {
+    isolated(
+        "settings_transport_change_reaches_next_model_request",
+        async |directory| {
+            let world = started_settings(directory).await;
+            world
+                .host
+                .services()
+                .auth_storage
+                .set_runtime_api_key("unknown", "key");
+            let list = open(&world);
+            let session = world.host.session();
+            let requested: Rc<RefCell<Vec<Option<Transport>>>> = Rc::default();
+            let record = Rc::clone(&requested);
+            *session.agent().stream_fn.write().unwrap() = Some(Rc::new(move |_, _, options, _| {
+                record.borrow_mut().push(options.common.transport);
+                let stream = AssistantMessageEventStream::new();
+                stream.end(Some(super::answer()));
+                Box::pin(std::future::ready(Ok(stream)))
+            }));
+            for transport in [
+                Transport::Sse,
+                Transport::Websocket,
+                Transport::WebsocketCached,
+                Transport::Auto,
+            ] {
+                choose(&list, "Transport", 0);
+                session
+                    .prompt("hello", PromptOptions::default())
+                    .await
+                    .unwrap();
+                assert_eq!(requested.borrow().last(), Some(&Some(transport)));
+            }
+            assert_eq!(requested.borrow().len(), 4, "one request per prompt");
+            drop(world.runtime.settle());
+        },
+    );
+}
+
+/// One call the counted tool's renderer served: the row's identity and the image visibility
+/// it was rendered with.
+type Served = (String, bool);
+
+/// What the renderer of row `t1` runs once, set after the rows exist.
+type Churn = Rc<RefCell<Option<Box<dyn FnOnce()>>>>;
+
+/// A tool whose result renderer notes each call it serves, so the tests count every rebuild,
+/// and whose row `t1` runs `churn` once when its rebuild comes.
+fn counted_tool(seen: &Rc<RefCell<Vec<Served>>>, churn: &Churn) -> transcript::Definition {
+    let mut counted = transcript::tool("counted");
+    let (seen, churn) = (Rc::clone(seen), Rc::clone(churn));
+    counted.render_result = Some(maestro_app::ToolRenderResult::<Value, ()>::Raw(Rc::new(
+        move |_: &maestro_app::ToolRenderResultLike<'_, Value>,
+              _: maestro_app::ToolRenderResultOptions,
+              _: &maestro_theme::LiveTheme,
+              context: &maestro_app::ToolRenderContext<'_, ()>| {
+            seen.borrow_mut()
+                .push((context.tool_call_id.clone(), context.show_images));
+            if context.tool_call_id == "t1"
+                && let Some(churn) = churn.borrow_mut().take()
+            {
+                churn();
+            }
+            Ok(transcript::text("RESULT"))
+        },
+    )));
+    counted
+}
+
+/// A started mode over the real theme inventory whose session registers `counted_tool`.
+async fn counted_world(directory: &Path, seen: &Rc<RefCell<Vec<Served>>>, churn: &Churn) -> World {
+    let world = Setup {
+        directories: Some(registry(directory)),
+        extension: Some(transcript::registering(vec![counted_tool(seen, churn)])),
+        ..Setup::default()
+    }
+    .build(directory);
+    start(&world).await;
+    // The panel offers the image rows only when the terminal shows images.
+    world
+        .mode
+        .tool_environment
+        .terminal_image
+        .set_capabilities(TerminalCapabilities {
+            images: Some(maestro_tui::ImageProtocol::Iterm2),
+            ..TerminalCapabilities::default()
+        });
+    world
+}
+
+/// Replays `count` stored calls of the counted tool, `t0` first, each with its result.
+fn replay_counted(world: &World, count: usize) {
+    let messages = (0..count)
+        .flat_map(|index| {
+            let id = format!("t{index}");
+            [
+                transcript::assistant(&json!([transcript::call(&id, "counted")]), "toolUse", None),
+                transcript::result(&id),
+            ]
+        })
+        .collect();
+    transcript::replay(world, messages);
+}
+
+/// The tool rows of the transcript, in order.
+fn tool_rows_of(world: &World) -> Vec<Rc<crate::ToolExecutionComponent>> {
+    world
+        .mode
+        .chat_container
+        .walk()
+        .filter_map(|child| {
+            (child as Rc<dyn std::any::Any>)
+                .downcast::<crate::ToolExecutionComponent>()
+                .ok()
+        })
+        .collect()
+}
+
+/// The renderer calls one image-visibility choice makes over `count` retained rows, and the
+/// calls of a deliberately rescanning update that re-walks every row for each row.
+async fn image_choice_work(directory: &Path, count: usize) -> (usize, usize) {
+    let seen = Rc::default();
+    let world = counted_world(directory, &seen, &Churn::default()).await;
+    replay_counted(&world, count);
+    let list = open(&world);
+    let before = seen.borrow().len();
+    choose(&list, "images", 0);
+    let work = seen.borrow().len() - before;
+    let rows = tool_rows_of(&world);
+    assert_eq!(rows.len(), count, "every replayed call is a retained row");
+    let before = seen.borrow().len();
+    for _ in &rows {
+        for row in &rows {
+            row.set_show_images(true).unwrap();
+        }
+    }
+    let rescanned = seen.borrow().len() - before;
+    drop(world.runtime.settle());
+    (work, rescanned)
+}
+
+/// One image-visibility choice rebuilds each retained tool row once: the work doubles with
+/// the rows, while an update that re-walks every row for each row grows faster than that.
+#[test]
+fn settings_tool_updates_have_linear_work() {
+    isolated(
+        "settings_tool_updates_have_linear_work",
+        async |directory| {
+            let mut work = Vec::new();
+            for count in [16, 32, 64] {
+                let (changed, rescanned) = image_choice_work(directory, count).await;
+                assert!(
+                    (count..=2 * count).contains(&changed),
+                    "{count} rows: {changed} calls"
+                );
+                assert!(rescanned > 2 * changed, "the control rescans: {rescanned}");
+                work.push(changed);
+            }
+            assert!(work[1] <= 2 * work[0] && work[2] <= 2 * work[1], "{work:?}");
+        },
+    );
+}
+
+/// How the callback running inside one row's rebuild changes the transcript's children.
+#[derive(Clone, Copy, Debug)]
+enum Edit {
+    /// Appends a further tool row.
+    Append,
+    /// Removes the row being rebuilt and the transcript entry after it.
+    RemoveWithNext,
+    /// Clears the transcript.
+    Clear,
+    /// Gives the transcript another array holding one further tool row.
+    Replace,
+}
+
+/// The ids the update visited in order, and the ids of the tool rows the transcript holds
+/// afterwards, when row `t1` applies `edit` to the transcript during its rebuild and the
+/// panel row matching `query` changes the setting.
+async fn edited_update(directory: &Path, edit: Edit, query: &str) -> (Vec<String>, Vec<String>) {
+    let seen = Rc::default();
+    let churn = Churn::default();
+    let world = counted_world(directory, &seen, &churn).await;
+    replay_counted(&world, 4);
+    let rows = tool_rows_of(&world);
+    let mut named: Vec<(&str, Rc<crate::ToolExecutionComponent>)> =
+        ["t0", "t1", "t2", "t3"].into_iter().zip(rows).collect();
+    let binding = world
+        .host
+        .session()
+        .get_tool_definition("counted")
+        .unwrap()
+        .renderer_binding()
+        .unwrap();
+    let mut params = transcript::tool_params(&world, "late");
+    params.tool_name = "counted".into();
+    params.tool_definition = Some(binding);
+    let late = Rc::new(crate::ToolExecutionComponent::new(params).unwrap());
+    late.update_result(image_result("late"), false).unwrap();
+    named.push(("late", Rc::clone(&late)));
+    let container = Rc::clone(&world.mode.chat_container);
+    let current: maestro_tui::tui::ComponentHandle = Rc::clone(&named[1].1) as _;
+    let late: maestro_tui::tui::ComponentHandle = late;
+    *churn.borrow_mut() = Some(match edit {
+        Edit::Append => Box::new(move || container.add_child(late)),
+        Edit::RemoveWithNext => Box::new(move || {
+            let array = container.children();
+            let mut children = array.borrow_mut();
+            let at = children
+                .iter()
+                .position(|child| Rc::ptr_eq(child, &current))
+                .unwrap();
+            children.drain(at..=at + 1);
+        }),
+        Edit::Clear => Box::new(move || container.clear()),
+        Edit::Replace => Box::new(move || {
+            container.set_children(Rc::new(RefCell::new(vec![late])));
+        }),
+    });
+    let list = open(&world);
+    let before = seen.borrow().len();
+    choose(&list, query, 0);
+    let visited = seen.borrow()[before..]
+        .iter()
+        .map(|(id, _)| id.clone())
+        .collect();
+    let held = tool_rows_of(&world);
+    let kept = named
+        .iter()
+        .filter(|(_, row)| held.iter().any(|held| Rc::ptr_eq(held, row)))
+        .map(|(id, _)| (*id).to_owned())
+        .collect();
+    drop(world.runtime.settle());
+    (visited, kept)
+}
+
+/// The child walk a setting change makes is the live array it started on: a row appended or
+/// removed during the walk is reached or skipped like the array's indexes say, and a cleared
+/// or replaced transcript leaves the walk on its old rows. Image visibility and image width
+/// take the same route.
+#[test]
+fn settings_tool_updates_keep_captured_live_child_walk() {
+    isolated(
+        "settings_tool_updates_keep_captured_live_child_walk",
+        async |directory| {
+            let cases: [(Edit, &[&str], &[&str]); 4] = [
+                (
+                    Edit::Append,
+                    &["t0", "t1", "t2", "t3", "late"],
+                    &["t0", "t1", "t2", "t3", "late"],
+                ),
+                (
+                    Edit::RemoveWithNext,
+                    &["t0", "t1", "t3"],
+                    &["t0", "t2", "t3"],
+                ),
+                (Edit::Clear, &["t0", "t1", "t2", "t3"], &[]),
+                (Edit::Replace, &["t0", "t1", "t2", "t3"], &["late"]),
+            ];
+            for query in ["images", "width"] {
+                for (edit, visited, kept) in cases {
+                    let (seen, held) = edited_update(directory, edit, query).await;
+                    assert_eq!(seen, visited, "{query}: visits after {edit:?}");
+                    assert_eq!(held, kept, "{query}: members after {edit:?}");
+                }
+            }
         },
     );
 }

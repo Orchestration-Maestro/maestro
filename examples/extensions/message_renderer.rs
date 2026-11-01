@@ -1,6 +1,7 @@
 //! A `/status` command posts status notes, and the renderer it registers draws each one: the
 //! level in its theme color over the custom message background, and the host's local send
 //! time once the message is expanded.
+// maestro-component: MAESTRO_MESSAGE_RENDERER_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

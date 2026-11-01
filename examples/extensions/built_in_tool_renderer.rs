@@ -1,4 +1,5 @@
 //! Compact displays for the original read, bash, edit and write tools.
+// maestro-component: MAESTRO_BUILT_IN_TOOL_RENDERER_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
@@ -260,6 +261,11 @@ fn render_call(name: &str, args: Option<&Value>, theme: &Theme) -> ExtensionResu
 }
 
 /// Replaces call and result displays while retaining the original native executions.
+///
+/// # Errors
+/// The returned future returns the failure to read the working directory, its refusal
+/// when the path is not valid UTF-8, the host's failure to create a built-in tool
+/// definition, or its rejection of a registration.
 #[must_use]
 pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {

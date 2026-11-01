@@ -52,7 +52,7 @@ impl Drop for Release {
     fn drop(&mut self) {
         let mode = self.mode.upgrade().unwrap();
         assert!(mode.unsubscribe.try_borrow_mut().is_ok());
-        assert!(mode.working.loading_animation.try_borrow_mut().is_ok());
+        assert!(mode.status_kind().is_none());
         self.released.set(true);
     }
 }
@@ -111,8 +111,8 @@ async fn subscription_case(directory: &Path, present: bool) {
         world.mode.unsubscribe.replace(Some(Box::new(move || {
             let _ = &release;
             let mode = mode.upgrade().unwrap();
-            assert!(mode.working.loading_animation.borrow().is_none());
-            assert_eq!(mode.status_container.children().borrow().len(), 1);
+            assert!(mode.working_loader().is_none());
+            assert!(mode.status_container.children().borrow().is_empty());
             assert!(registrations.closed(0), "provider precedes unsubscribe");
             assert!(mode.is_initialized.get(), "unsubscribe precedes UI stop");
             called.set(true);
@@ -127,13 +127,12 @@ async fn subscription_case(directory: &Path, present: bool) {
             assert_eq!(stopped.get(), present, "capture released before UI stop");
         }
     });
-    let status = world.mode.status_container.render(80);
     world.mode.stop().unwrap();
     assert_eq!(removed.get(), present);
     assert_eq!(released.get(), present);
-    assert!(world.mode.working.loading_animation.borrow().is_none());
+    assert!(world.mode.working_loader().is_none());
     assert!(world.mode.unsubscribe.borrow().is_none());
-    assert_eq!(world.mode.status_container.render(80), status);
+    assert!(world.mode.status_container.render(80).is_empty());
     assert_eq!(world.runtime.pending(), 0, "no loader tick remains");
     world.terminal.clear_writes();
     world.host.session().set_session_name("after stop").unwrap();
@@ -171,10 +170,7 @@ async fn failure_case(directory: &Path, progress_failure: bool) {
         );
         assert_eq!(watcher.closed(0), !progress_failure);
         assert!(!watcher.closed(1));
-        assert_eq!(
-            world.mode.working.loading_animation.borrow().is_some(),
-            progress_failure
-        );
+        assert_eq!(world.mode.working_loader().is_some(), progress_failure);
         assert_eq!(world.mode.unsubscribe.borrow().is_some(), progress_failure);
         assert_eq!(world.runtime.futures(), 0);
     }
@@ -196,7 +192,7 @@ fn recover_stop(world: &World, watcher: &RecordingWatcher) {
     world.mode.stop().unwrap();
     assert!(!world.mode.is_initialized.get());
     assert!(watcher.closed(0));
-    assert!(world.mode.working.loading_animation.borrow().is_none());
+    assert!(world.mode.working_loader().is_none());
     assert!(world.mode.unsubscribe.borrow().is_none());
     assert_eq!(world.runtime.pending(), 0);
 }
@@ -337,8 +333,8 @@ pub(super) fn replace_effects(
     mode
 }
 
-/// Signal callbacks whose ownership the controlled native registration keeps.
-type Signals = (Rc<dyn Fn()>, Rc<dyn Fn()>);
+/// The signal callback whose ownership the controlled native registration keeps.
+type Signals = Rc<dyn Fn()>;
 
 /// Observable process effects without touching the real process.
 pub(super) struct Effects {
@@ -367,17 +363,13 @@ impl super::super::lifecycle::LifecycleEffects for Effects {
     fn now_ms(&self) -> i64 {
         self.now.get()
     }
-    fn register_signals(
-        &self,
-        terminate: Rc<dyn Fn()>,
-        hangup: Rc<dyn Fn()>,
-    ) -> std::io::Result<Box<dyn Fn()>> {
+    fn register_signals(&self, shutdown: Rc<dyn Fn()>) -> std::io::Result<Box<dyn Fn()>> {
         if self.fail_registration.get() {
             return Err(std::io::Error::from(std::io::ErrorKind::PermissionDenied));
         }
         self.events.borrow_mut().push("register".into());
         assert!(self.signals.borrow().is_none());
-        *self.signals.borrow_mut() = Some((terminate, hangup));
+        *self.signals.borrow_mut() = Some(shutdown);
         let signals = Rc::clone(&self.signals);
         let events = Rc::clone(&self.events);
         Ok(Box::new(move || {
@@ -464,8 +456,7 @@ fn lifecycle_callbacks_release_the_mode() {
         assert!(weak.upgrade().is_none());
         assert!(!stdout.registered());
         assert!(!stderr.registered());
-        signals.0();
-        signals.1();
+        signals();
         stdout.emit(&std::io::Error::from(std::io::ErrorKind::BrokenPipe));
         terminal.send_input("\x04");
         assert_eq!(*rig.effects.events.borrow(), ["register", "remove"]);
@@ -536,11 +527,7 @@ fn ordinary_output_errors_keep_native_categories() {
                 std::io::Error::other("EIO"),
             ] {
                 for output in &rig.outputs {
-                    let kind = error.kind();
-                    let errno = error.raw_os_error();
                     output.emit(&error);
-                    assert_eq!(error.kind(), kind);
-                    assert_eq!(error.raw_os_error(), errno);
                 }
             }
             assert_eq!(*rig.effects.events.borrow(), ["register"]);
@@ -653,9 +640,9 @@ async fn failure_shutdown(directory: &Path, phase: &str) {
 }
 
 #[test]
-fn requested_shutdown_runs_after_agent_end_cleanup() {
+fn agent_end_cleans_up_without_starting_requested_shutdown() {
     isolated(
-        "requested_shutdown_runs_after_agent_end_cleanup",
+        "agent_end_cleans_up_without_starting_requested_shutdown",
         async |directory| {
             for requested in [false, true] {
                 for transient in [(false, false), (false, true), (true, false), (true, true)] {
@@ -666,7 +653,7 @@ fn requested_shutdown_runs_after_agent_end_cleanup() {
     );
 }
 
-/// Checks transient cleanup before consuming a requested shutdown, retaining transcript rows.
+/// Checks that agent end retains transcript rows and leaves shutdown to run settlement.
 async fn requested_case(directory: &Path, requested: bool, transient: (bool, bool)) {
     let rig = Rig::new(directory, Setup::default());
     rig.start().await;
@@ -687,7 +674,7 @@ async fn requested_case(directory: &Path, requested: bool, transient: (bool, boo
     let observed = Rc::downgrade(mode);
     rig.before_drain.replace(Some(Rc::new(move || {
         let mode = observed.upgrade().unwrap();
-        assert!(mode.working.loading_animation.borrow().is_none());
+        assert!(mode.working_loader().is_none());
         assert!(mode.streaming.borrow().is_none());
         assert!(mode.pending_tools.borrow().values().next().is_none());
     })));
@@ -696,7 +683,7 @@ async fn requested_case(directory: &Path, requested: bool, transient: (bool, boo
         messages: Vec::new(),
     };
     super::events::dispatch(&rig.world, ended);
-    assert!(mode.working.loading_animation.borrow().is_none());
+    assert!(mode.working_loader().is_none());
     assert!(mode.streaming.borrow().is_none());
     assert!(mode.pending_tools.borrow().values().next().is_none());
     assert!(
@@ -713,13 +700,15 @@ async fn requested_case(directory: &Path, requested: bool, transient: (bool, boo
             },
         );
     }
-    requested_result(&rig, requested);
+    assert!(rig.world.runtime.take_futures().is_empty());
+    assert!(rig.world.runtime.pending() > 0);
+    assert_eq!(*rig.effects.events.borrow(), ["register"]);
 }
 
 #[test]
-fn termination_signal_unregisters_and_drains_before_cleanup() {
+fn termination_signal_unregisters_and_disposes_before_terminal_writes() {
     native::run(
-        "termination_signal_unregisters_and_drains_before_cleanup",
+        "termination_signal_unregisters_and_disposes_before_terminal_writes",
         "term",
         "TERM",
         None,
@@ -727,9 +716,9 @@ fn termination_signal_unregisters_and_drains_before_cleanup() {
 }
 
 #[test]
-fn hangup_skips_terminal_and_runtime_cleanup() {
+fn hangup_runs_the_graceful_shutdown_and_exits_normally() {
     native::run(
-        "hangup_skips_terminal_and_runtime_cleanup",
+        "hangup_runs_the_graceful_shutdown_and_exits_normally",
         "hup",
         "HUP",
         None,
@@ -820,29 +809,6 @@ fn select_failure(rig: &Rig, phase: &str) {
             .set_stop_error(Some(std::io::ErrorKind::BrokenPipe)),
         "dispose" => {}
         _ => unreachable!(),
-    }
-}
-
-/// Asserts the requested and normal continuations after transient cleanup.
-fn requested_result(rig: &Rig, requested: bool) {
-    let mut work = rig.world.runtime.take_futures();
-    assert_eq!(work.len(), usize::from(requested));
-    if requested {
-        assert_eq!(
-            *rig.effects.events.borrow(),
-            ["register", "remove", "drain"]
-        );
-        assert!(matches!(super::typed::poll(&mut work[0]), Some(Ok(()))));
-        assert_eq!(
-            *rig.effects.events.borrow(),
-            ["register", "remove", "drain", "exit:0"]
-        );
-        assert!(!rig.world.mode.is_initialized.get());
-        rig.world.runtime.settle().unwrap();
-        assert_eq!(rig.world.runtime.pending(), 0);
-    } else {
-        assert!(rig.world.runtime.pending() > 0);
-        assert_eq!(*rig.effects.events.borrow(), ["register"]);
     }
 }
 

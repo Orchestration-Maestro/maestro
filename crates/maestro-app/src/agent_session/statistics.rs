@@ -8,10 +8,9 @@ use maestro_agent::AgentMessage;
 use maestro_extensions::{ContextUsage, ExtensionExecution};
 use maestro_models::{AssistantContent, DiagnosticErrorInfo, StopReason};
 use maestro_session::{
-    calculate_context_tokens, estimate_context_tokens, get_latest_compaction_entry,
+    estimate_context_tokens, get_last_assistant_usage, get_latest_compaction_entry,
     session_manager::ReadonlySessionManager,
 };
-use serde_json::Value;
 
 impl<E: ExtensionExecution> AgentSession<E> {
     /// Message counts, token totals, cost and context usage.
@@ -87,8 +86,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
         }))
     }
 
-    /// Whether the branch has no compaction, or its newest answer after the latest one
-    /// that was neither aborted nor failed reports context tokens.
+    /// Whether the branch has no compaction, or an answer after the latest one reports
+    /// context tokens; aborted, failed and all-zero answers are skipped.
     fn has_usage_since_compaction(&self) -> Result<bool, DiagnosticErrorInfo> {
         let manager = self.session_manager.borrow();
         let branch = manager.get_branch(None).map_err(thrown)?;
@@ -99,26 +98,9 @@ impl<E: ExtensionExecution> AgentSession<E> {
             .iter()
             .rposition(|entry| std::ptr::eq(*entry, latest))
             .map_or(0, |index| index + 1);
-        for entry in branch[start..].iter().rev() {
-            let message = &entry["message"];
-            if entry.get("type").and_then(Value::as_str) != Some("message")
-                || message.get("role").and_then(Value::as_str) != Some("assistant")
-            {
-                continue;
-            }
-            if matches!(
-                message.get("stopReason").and_then(Value::as_str),
-                Some("aborted" | "error")
-            ) {
-                continue;
-            }
-            return Ok(
-                calculate_context_tokens(message.get("usage").unwrap_or(&Value::Null))
-                    .map_err(thrown)?
-                    > 0.0,
-            );
-        }
-        Ok(false)
+        Ok(get_last_assistant_usage(&branch[start..])
+            .map_err(thrown)?
+            .is_some())
     }
 
     /// The trimmed text of the last answer, skipping an aborted empty one.

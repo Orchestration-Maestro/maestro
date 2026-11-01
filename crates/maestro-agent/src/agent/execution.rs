@@ -215,6 +215,7 @@ impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Agent<C, E> {
             before_tool_call: read(&self.before_tool_call).clone(),
             after_tool_call: read(&self.after_tool_call).clone(),
             should_stop_after_turn: None,
+            prepare_next_turn: read(&self.prepare_next_turn).clone(),
             get_steering_messages: None,
             get_follow_up_messages: None,
             tool_execution: Some(execution),

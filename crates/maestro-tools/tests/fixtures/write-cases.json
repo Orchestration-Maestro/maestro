@@ -314,7 +314,7 @@
           },
           "expanded": false
         },
-        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\n\n\u001b[38;5;3mline 1\u001b[39m\n\u001b[38;5;3mline 2\u001b[39m\n\u001b[38;5;3mline 3\u001b[39m\n\u001b[38;5;3mline 4\u001b[39m\n\u001b[38;5;3mline 5\u001b[39m\n\u001b[38;5;3mline 6\u001b[39m\n\u001b[38;5;3mline 7\u001b[39m\n\u001b[38;5;3mline 8\u001b[39m\n\u001b[38;5;3mline 9\u001b[39m\n\u001b[38;5;3mline 10\u001b[39m\u001b[38;5;6m\n... (1 more lines, 11 total,\u001b[39m \u001b[38;5;5mctrl+o\u001b[39m\u001b[38;5;6m to expand\u001b[39m)"
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\n\n\u001b[38;5;3mline 1\u001b[39m\n\u001b[38;5;3mline 2\u001b[39m\n\u001b[38;5;3mline 3\u001b[39m\n\u001b[38;5;3mline 4\u001b[39m\n\u001b[38;5;3mline 5\u001b[39m\n\u001b[38;5;3mline 6\u001b[39m\n\u001b[38;5;3mline 7\u001b[39m\n\u001b[38;5;3mline 8\u001b[39m\n\u001b[38;5;3mline 9\u001b[39m\n\u001b[38;5;3mline 10\u001b[39m\u001b[38;5;6m\n... (1 more lines, 11 total,\u001b[39m \u001b[38;5;5mctrl+o\u001b[39m\u001b[38;5;6m to expand\u001b[39m\u001b[38;5;6m)\u001b[39m"
       },
       {
         "input": {
@@ -334,7 +334,7 @@
           },
           "expanded": false
         },
-        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\n\n\u001b[38;5;3mline 1\u001b[39m\n\u001b[38;5;3mline 2\u001b[39m\n\u001b[38;5;3mline 3\u001b[39m\n\u001b[38;5;3mline 4\u001b[39m\n\u001b[38;5;3mline 5\u001b[39m\n\u001b[38;5;3mline 6\u001b[39m\n\u001b[38;5;3mline 7\u001b[39m\n\u001b[38;5;3mline 8\u001b[39m\n\u001b[38;5;3mline 9\u001b[39m\n\u001b[38;5;3mline 10\u001b[39m\u001b[38;5;6m\n... (2 more lines, 12 total,\u001b[39m \u001b[38;5;5mctrl+o\u001b[39m\u001b[38;5;6m to expand\u001b[39m)"
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\n\n\u001b[38;5;3mline 1\u001b[39m\n\u001b[38;5;3mline 2\u001b[39m\n\u001b[38;5;3mline 3\u001b[39m\n\u001b[38;5;3mline 4\u001b[39m\n\u001b[38;5;3mline 5\u001b[39m\n\u001b[38;5;3mline 6\u001b[39m\n\u001b[38;5;3mline 7\u001b[39m\n\u001b[38;5;3mline 8\u001b[39m\n\u001b[38;5;3mline 9\u001b[39m\n\u001b[38;5;3mline 10\u001b[39m\u001b[38;5;6m\n... (2 more lines, 12 total,\u001b[39m \u001b[38;5;5mctrl+o\u001b[39m\u001b[38;5;6m to expand\u001b[39m\u001b[38;5;6m)\u001b[39m"
       },
       {
         "input": {
@@ -356,7 +356,7 @@
           },
           "binding": []
         },
-        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\n\n\u001b[38;5;3mrow 0\u001b[39m\n\u001b[38;5;3mrow 1\u001b[39m\n\u001b[38;5;3mrow 2\u001b[39m\n\u001b[38;5;3mrow 3\u001b[39m\n\u001b[38;5;3mrow 4\u001b[39m\n\u001b[38;5;3mrow 5\u001b[39m\n\u001b[38;5;3mrow 6\u001b[39m\n\u001b[38;5;3mrow 7\u001b[39m\n\u001b[38;5;3mrow 8\u001b[39m\n\u001b[38;5;3mrow 9\u001b[39m\u001b[38;5;6m\n... (1 more lines, 11 total,\u001b[39m \u001b[38;5;5m\u001b[39m\u001b[38;5;6m to expand\u001b[39m)"
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\n\n\u001b[38;5;3mrow 0\u001b[39m\n\u001b[38;5;3mrow 1\u001b[39m\n\u001b[38;5;3mrow 2\u001b[39m\n\u001b[38;5;3mrow 3\u001b[39m\n\u001b[38;5;3mrow 4\u001b[39m\n\u001b[38;5;3mrow 5\u001b[39m\n\u001b[38;5;3mrow 6\u001b[39m\n\u001b[38;5;3mrow 7\u001b[39m\n\u001b[38;5;3mrow 8\u001b[39m\n\u001b[38;5;3mrow 9\u001b[39m\u001b[38;5;6m\n... (1 more lines, 11 total,\u001b[39m \u001b[38;5;5m\u001b[39m\u001b[38;5;6m to expand\u001b[39m\u001b[38;5;6m)\u001b[39m"
       },
       {
         "input": {
@@ -370,7 +370,7 @@
             "alt+x"
           ]
         },
-        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\n\n\u001b[38;5;3mrow 0\u001b[39m\n\u001b[38;5;3mrow 1\u001b[39m\n\u001b[38;5;3mrow 2\u001b[39m\n\u001b[38;5;3mrow 3\u001b[39m\n\u001b[38;5;3mrow 4\u001b[39m\n\u001b[38;5;3mrow 5\u001b[39m\n\u001b[38;5;3mrow 6\u001b[39m\n\u001b[38;5;3mrow 7\u001b[39m\n\u001b[38;5;3mrow 8\u001b[39m\n\u001b[38;5;3mrow 9\u001b[39m\u001b[38;5;6m\n... (1 more lines, 11 total,\u001b[39m \u001b[38;5;5malt+x/ctrl+o\u001b[39m\u001b[38;5;6m to expand\u001b[39m)"
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\n\n\u001b[38;5;3mrow 0\u001b[39m\n\u001b[38;5;3mrow 1\u001b[39m\n\u001b[38;5;3mrow 2\u001b[39m\n\u001b[38;5;3mrow 3\u001b[39m\n\u001b[38;5;3mrow 4\u001b[39m\n\u001b[38;5;3mrow 5\u001b[39m\n\u001b[38;5;3mrow 6\u001b[39m\n\u001b[38;5;3mrow 7\u001b[39m\n\u001b[38;5;3mrow 8\u001b[39m\n\u001b[38;5;3mrow 9\u001b[39m\u001b[38;5;6m\n... (1 more lines, 11 total,\u001b[39m \u001b[38;5;5malt+x/ctrl+o\u001b[39m\u001b[38;5;6m to expand\u001b[39m\u001b[38;5;6m)\u001b[39m"
       }
     ],
     "write_highlighting_follows_explicit_selected_path": [
@@ -1723,7 +1723,7 @@
         ]
       }
     ],
-    "write_abort_releases_queue_and_drops_pending_operation": [
+    "write_abort_keeps_queue_until_pending_operation_settles": [
       {
         "input": {},
         "expected": [

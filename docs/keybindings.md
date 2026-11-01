@@ -3,6 +3,8 @@
 Open `/hotkeys` in an interactive session to see keys from your loaded bindings.
 Use this reference when editing `keybindings.json`; action IDs are case-sensitive.
 The [toolkit API](terminal/keybindings.md) is for embedding applications.
+[Terminal key forwarding](terminal/setup.md) covers terminal and tmux setup when
+a modified key never reaches Maestro.
 
 ## Change a shortcut
 
@@ -28,8 +30,9 @@ two keys, and removes model cycling from Ctrl+P:
 
 An override replaces the whole default list. Remove its property to restore the
 default; `null` is not a disable value. Unknown action IDs do nothing. Duplicate
-keys within an action collapse to one key. Whitespace and casing in key strings
-are not normalized. Prefer the spellings in the tables below.
+keys within an action collapse to one key. Key strings are not normalized before
+that, so `Ctrl+C` and `ctrl+c` count as two keys that name the same key. Prefer the
+spellings in the tables below.
 
 Unreadable files, invalid JSON and non-object roots load defaults without a file
 error. Wrong-typed properties (including lists with non-string members) are
@@ -37,6 +40,29 @@ ignored. Reloading a missing or malformed file replaces existing overrides with
 defaults; it does not keep the previous working bindings. The loader does not
 rewrite the file. [Reload](chat/commands.md#reload) also reloads resources and
 extensions, clears the draft, and refuses to run during streaming or compaction.
+
+### Reset multiplexer overrides
+
+The native application operation
+`presentation_data::keybindings::reset_multiplexer_keybindings(agent_dir, timestamp)`
+reads `keybindings.json` from the supplied agent directory. The timestamp is Unix
+time in seconds. It creates `keybindings.json.bak-<timestamp>` exclusively and
+syncs the exact original bytes before publishing the edited document atomically.
+An existing backup is never overwritten.
+
+Only top-level action IDs beginning with `multiplexer.` are removed. Chat and
+unknown entries keep their JSON values. The input must be a UTF-8 JSON object;
+malformed or non-object input fails without changing the file. Publication
+follows existing symlinks and preserves target permissions. A backup or precommit
+write failure leaves the original unchanged. A directory-sync warning after
+publication is returned separately from failure. Reload or restart the workspace
+daemon to use the restored defaults.
+
+The CLI presentation function `workspace_commands::settings::run_reset_keys`
+validates the arguments after `settings reset-keys`, calls the application
+operation, and prints the backup path and reload guidance. Extra arguments return
+2 without file access. Application errors retain their cause and return 1;
+output errors propagate to the executable.
 
 ### Check collisions
 
@@ -100,9 +126,16 @@ intend to consume those letters instead of typing them.
 
 ## Key notation and terminal limits
 
-Combine `ctrl`, `shift` and `alt` with `+`, for example `ctrl+shift+x`.
+Combine the modifiers `ctrl`, `shift`, `alt`, `super` and `hyper` with `+`, for
+example `ctrl+shift+x`. Modifier words may come before or after the key: `k+ctrl`
+names the same key as `ctrl+k`. The aliases `control`, `option` and `meta` (alt), and
+`cmd` and `command` (super), name the same modifiers. A word that is neither a
+modifier name nor the one key, such as the typo in `ctlr+k`, makes the whole key string
+name nothing, so it never binds the plain key. `hyper+k` binds only a key reported with
+hyper held.
+The workspace key combinations use the same notation.
 Use lowercase letters, digits, literal punctuation, `f1` through `f12`, or named
-keys: `escape` (`esc`), `enter` (`return`), `tab`, `space`, `backspace`, `delete`,
+keys: `escape` (`esc`), `enter` (`return`), `tab`, `space`, `backspace` (`bs`), `delete`,
 `insert`, `clear`, `home`, `end`, `pageUp`, `pageDown`, `up`, `down`, `left`, `right`.
 The [key decoder reference](terminal/keys.md) gives the supported combinations.
 
@@ -263,3 +296,15 @@ Unix job control. The registered Windows defaults above do not imply that the
 executable can open interactive mode there: native Windows startup is blocked by
 [#2844](https://github.com/Orchestration-Maestro/maestro/issues/2844).
 WSL runs the Unix path and is not that native-Windows case.
+
+## Key names in hints
+
+Every hint spells its keys from the live registry through `key_text`, `key_display_text` and
+`format_key_text`, and none writes a key by hand. `key_text` joins the keys bound to an action
+with `/` as written, with `alt` shown as `option` on macOS. `key_display_text` also starts each
+part with a capital letter (`Ctrl+Option+X`), and `format_key_text(key, capitalize)` applies the
+same spelling to a key list that is not a registry action, such as an extension shortcut. The
+settings list, the hotkey list, the startup help and the model-scope line printed before the
+interactive mode starts all use them, so a remapped key shows as configured. The model-scope
+line names the key bound to the next-model action and leaves its hint out when none is bound.
+

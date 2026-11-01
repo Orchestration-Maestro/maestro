@@ -21,8 +21,8 @@ completion names used below and in the widget guide, so `maestro_tui::Component`
 
 ## Components
 
-A `Component` renders itself for a supplied viewport width. Image escapes and
-untruncated image fallback text do not guarantee lines within that width.
+A `Component` renders itself for a supplied viewport width. Image escapes do not
+guarantee lines within that width.
 Everything else is an optional capability that defaults to absent:
 
 | Capability | Method | Default |

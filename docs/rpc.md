@@ -14,10 +14,25 @@ executable. `RpcModeOptions::session` groups the runtime, signal registration, t
 export facilities. Without a session, a supplied workspace handler still runs and session
 commands return a correlated refusal asking the caller to open in a session.
 
-The writer receives each record as an `RpcLine`, already framed, and
-`rpc_mode::stdout_output` writes those lines to standard output. `maestro_rpc::run_rpc_mode` is its
+The writer receives each record as an `RpcLine`, already framed. An `RpcOutput` built with
+`RpcOutput::synchronous` writes each line before the write call returns, and
+`rpc_mode::stdout_output` is that output on standard output. `maestro_rpc::run_rpc_mode` is its
 standard-stream adapter: it reserves standard output for protocol records, serves the
 runtime and exits with the connection's code.
+
+`RpcOutput::new` takes an asynchronous writer instead. Lines queue in the order the connection
+admits them, and one task writes them. With a stall timeout, a write or flush that makes no
+progress for that long fails the connection. Each write that takes bytes starts a new budget,
+so a slow reader that keeps reading is not cut off. A workspace operation receives a
+write-completion receiver. It settles once the whole response line was written and flushed, or
+once that attempt failed. It disconnects if the response is dropped before any attempt, and it
+says nothing about whether the peer read the line. After a write fails, the connection admits
+no further lines, so no frame follows a partial one.
+
+When the input of a connection without a session ends, the workspace operations still waiting
+are dropped and get no response. Responses already queued are still written, and a write that
+fails after the connection ended becomes its result. Commands still running when the runner
+returns, or when the caller drops it, are dropped with it.
 
 ## Start a connection
 
@@ -639,7 +654,9 @@ remains available to extensions, but theme selection answers
 The connection ends when the input ends, when an extension requests shutdown, or on SIGTERM
 or SIGHUP. At the end of input the server stops streaming events, starts disposing the
 session and answers a final line without its LF; the process exits 0. A shutdown an
-extension requests takes effect after the next command's response. The first signal kills
+extension requests takes effect when the active run settles, including its retry
+waits and compaction, or after the next command's response. A command reply during
+an active run leaves the request waiting for settlement. The first signal kills
 the shell commands still running, disposes the session and exits with 143 or 129. Once
 shutdown has started, a second signal kills the process by that signal; once the session
 is disposing, the end of input exits 0 at once. A failed read, or a failed write of any

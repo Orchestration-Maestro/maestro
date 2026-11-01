@@ -187,6 +187,7 @@ fn application_auth_exports_use_existing_owners() {
     let _: &dyn AuthStorageBackend = &backend;
     let storage = AuthStorage::from_storage(backend);
     let key = AuthCredential::ApiKey(ApiKeyCredential {
+        env: None,
         key: "controlled-key".into(),
     });
     let oauth = AuthCredential::OAuth(OAuthCredential {

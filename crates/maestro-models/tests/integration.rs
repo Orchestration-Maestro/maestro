@@ -69,6 +69,7 @@ mod cloud_model_routes;
 mod cloud_pac_routing;
 mod cloud_profile_credentials;
 mod cloud_proxy_transports;
+mod cloudflare_dispatch;
 mod compatibility_invocation;
 mod content_generation_conversion;
 mod content_generation_invocation;
@@ -110,6 +111,8 @@ mod invocation_cancellation;
 #[path = "support/json.rs"]
 pub(crate) mod json;
 mod json_boundary_consumers;
+#[path = "support/json_equivalence.rs"]
+mod json_equivalence;
 #[path = "support/key_selection.rs"]
 mod key_selection;
 #[allow(
@@ -145,6 +148,7 @@ mod model_thinking_levels;
 mod oauth_primitives;
 mod oauth_provider_registry;
 mod offline_model_catalog;
+mod output_budget;
 #[cfg(unix)]
 #[path = "support/profile_credentials.rs"]
 mod profile_credentials;
@@ -219,3 +223,7 @@ mod cloud_content_invocation;
 
 #[path = "support/content_credentials.rs"]
 mod content_credentials;
+
+mod message_beta_headers;
+
+mod simple_missing_auth;

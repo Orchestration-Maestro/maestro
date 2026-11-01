@@ -14,9 +14,9 @@ For terminal views, follow [component authoring and recipes](extensions/componen
 to connect host widgets, input, focus and cleanup.
 
 Extensions run with the user's access. They inherit environment variables and
-standard streams, can use the network, and can read and write through
-preopened filesystem roots: `/` on Unix, and each accessible drive and the
-working directory's share on Windows. A component is **not an untrusted-code sandbox** in
+standard streams, can use the network, and can read and write every path the
+user can open through one filesystem root, `/`, on Unix and Windows alike. A
+component is **not an untrusted-code sandbox** in
 Maestro. Inspect an extension before loading it; see the
 [operating environment](extensions/host_io.md) for the precise access and current
 platform limitations.
@@ -248,8 +248,10 @@ maestro
 The `index.wasm` name is a conventional entry point. An extension directory can
 instead declare its entries in `package.json`. Discovery starts with
 `<cwd>/.maestro/extensions`, then `<agent_dir>/extensions`, followed by configured
-paths. The default agent directory is `~/.maestro/agent`; configuration can change
-it. Package installation records its own source in settings. See
+paths; a leading `~` reads as
+[Home directory in paths](settings.md#home-directory-in-paths), so `~name` is a relative
+path. The default agent directory is `~/.maestro/agent`; configuration can change it.
+Package installation records its own source in settings. See
 [path loading and discovery](extensions/loading.md) and
 [application resources](application/resources.md).
 
@@ -311,7 +313,7 @@ native-extension authoring instructions.
 | Messages, tool selection, model selection, thinking and session entries | [Guest actions](extensions/guest.md#ordinary-actions), [action bindings](extensions/registration.md#actions-and-provider-binding) |
 | Persistence across restarts | [Session entries](extensions/guest.md#session-entries), [entry records](entry.md) |
 | Event channels between extensions | [Event bus](extensions/event_bus.md), [guest event channels](extensions/guest.md#event-channels) |
-| Model invocation, streaming and provider registration | [Guest model streams](extensions/guest_streams.md) |
+| Provider endpoints, account flows and custom streaming | [Provider author guide](extensions/providers.md), [guest model streams](extensions/guest_streams.md) |
 | Dialogs, widgets, editors, overlays and custom rendering | [Guest UI](extensions/guest_ui.md), [UI and headless results](extensions/ui.md) |
 | Child processes, waits, HTTP bodies, watches and built-in tool wrappers | [Guest native operations](extensions/guest_operations.md) |
 | Files, environment, network access and platform limitations | [Operating environment](extensions/host_io.md) |

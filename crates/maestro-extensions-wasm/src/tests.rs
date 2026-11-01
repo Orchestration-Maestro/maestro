@@ -36,8 +36,11 @@ mod application_messages;
 pub(crate) mod author;
 mod authored_editor;
 mod authored_streams;
+mod background;
 mod basic_ui;
 mod build;
+mod build_cargo;
+mod build_warm;
 mod bus_callbacks;
 pub(crate) mod bus_host;
 pub(crate) mod catalog_host;
@@ -50,6 +53,7 @@ mod documents;
 mod event_transport;
 mod event_values;
 mod example_support;
+mod example_trim;
 mod exec_records;
 pub(crate) mod file_trigger_path;
 mod finite_records;
@@ -58,7 +62,6 @@ mod tui_ui;
 #[macro_use]
 mod fixtures;
 pub(crate) mod custom_host;
-mod custom_message_provider;
 pub(crate) mod editor_component;
 mod editor_driver;
 pub(crate) mod editor_host;
@@ -571,7 +574,7 @@ fn assert_catalog_imports(contract: &Contract) {
                 "result<option<record {tokens: option<f64>, context-window: f64, percent: option<f64>}>, string>"
             ],
             vec![
-                "result<variant {ok(record {api-key: option<string>, headers: option<list<tuple<string, string>>>}), error(string)}, string>"
+                "result<variant {ok(record {api-key: option<string>, base-url: option<string>, headers: option<list<tuple<string, string>>>}), error(string)}, string>"
             ],
         ]
     );

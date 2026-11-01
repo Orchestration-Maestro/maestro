@@ -41,6 +41,7 @@ mod transcript;
 mod transfer;
 mod typed;
 
+use super::hotkeys::tests::platform_keys;
 use crate::components::thinking_selector::thinking_text;
 use crate::interactive_mode::bash::component_address;
 use crate::{BashExecutionComponent, InteractiveMode, InteractiveModeOptions};
@@ -1528,11 +1529,17 @@ pub(super) async fn echoing_shell(directory: &Path) -> World {
     bash::shelling(directory, &script).await
 }
 
-/// Submits `count` shell commands while the response streams, awaiting each command it
-/// admits so its row settles.
+/// Submits `count` shell commands, each with its own text, while the response streams,
+/// awaiting each command it admits so its row settles.
 pub(super) async fn start_shells(world: &World, count: usize) {
+    start_commands(world, count, |index| format!("!mark{index}")).await;
+}
+
+/// Submits `count` shell commands worded by `text` while the response streams, awaiting
+/// each command it admits so its row settles.
+pub(super) async fn start_commands(world: &World, count: usize, text: impl Fn(usize) -> String) {
     for index in 0..count {
-        submit(&world.mode, &format!("!mark{index}"));
+        submit(&world.mode, &text(index));
         for command in world.runtime.take_futures() {
             command.await.expect("the shell command completes");
         }

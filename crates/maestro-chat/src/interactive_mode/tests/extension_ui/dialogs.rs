@@ -86,10 +86,13 @@ enum Input {
         /// The countdown in milliseconds, absent or not positive.
         timeout: Option<f64>,
     },
-    /// Open a dialog, release its result future, then cancel it.
+    /// Open a dialog, release its result future, then cancel it, or abort its signal.
     DialogObserverRelease {
         /// The dialog kind.
         kind: Kind,
+        /// Whether the dialog carries a signal and a countdown, and the abort ends it.
+        #[serde(default)]
+        abort: bool,
     },
 }
 
@@ -240,8 +243,15 @@ fn open(
     }
 }
 
-/// Ends a shown dialog as the scenario says, starting from its opening time `start`.
-fn finish(world: &World, input: &Input, signal: &Cancellation, start: u64) {
+/// Ends a shown dialog as the scenario says, starting from its opening time `start`; a timed
+/// out dialog's `future` is polled one millisecond before the deadline and must still wait.
+fn finish(
+    world: &World,
+    input: &Input,
+    signal: &Cancellation,
+    start: u64,
+    future: &mut ExtensionUIFuture<Value>,
+) {
     let Input::Dialog {
         kind,
         scenario,
@@ -270,6 +280,10 @@ fn finish(world: &World, input: &Input, signal: &Cancellation, start: u64) {
             }
             advance(world, start + ticks * 1000 - 1);
             assert_eq!(world.runtime.pending(), 1, "the countdown is still live");
+            assert!(
+                settled(future).is_none(),
+                "the dialog waits until its deadline"
+            );
             advance(world, start + ticks * 1000);
         }
         Scenario::Accept => {
@@ -319,7 +333,7 @@ fn dialog_group(test: &str) {
             assert_shown(shown, recorded(&world, first), *kind);
             let early = settled(&mut future);
             assert_eq!(early.is_none(), *scenario != Scenario::Preabort);
-            finish(&world, &input, &signal, start);
+            finish(&world, &input, &signal, start, &mut future);
             assert_eq!(early.or_else(|| settled(&mut future)), Some(value));
             assert_eq!(observe(&world, false), after);
             signal.abort();
@@ -476,7 +490,7 @@ fn dialog_observer_drop_does_not_cancel_host_owned_work() {
     isolated(test, async |directory| {
         for (input, expected) in cases::<Input, Expected>(test) {
             let (
-                Input::DialogObserverRelease { kind },
+                Input::DialogObserverRelease { kind, abort },
                 Expected::ObserverRelease {
                     restored,
                     active_timers,
@@ -487,14 +501,30 @@ fn dialog_observer_drop_does_not_cancel_host_owned_work() {
             };
             let world = retained(directory).await;
             let host = port(&world.mode);
+            let signal = Cancellation::new();
+            let opts = abort.then(|| ExtensionUIDialogOptions {
+                signal: Some(signal.clone()),
+                timeout: Some(5000.0),
+            });
             let future = match kind {
-                Kind::Selector => host.select("Choose".to_owned(), vec!["answer".to_owned()], None),
-                Kind::Input => host.input("Input".to_owned(), None, None),
+                Kind::Selector => host.select("Choose".to_owned(), vec!["answer".to_owned()], opts),
+                Kind::Input => host.input("Input".to_owned(), None, opts),
                 _ => host.editor("Editor".to_owned(), None),
             };
-            assert!(!observe(&world, false).restored, "the dialog is shown");
+            let shown = observe(&world, false);
+            assert!(!shown.restored, "the dialog is shown");
+            assert_eq!(
+                shown.active_timers,
+                usize::from(abort),
+                "the countdown runs"
+            );
             drop(future);
-            world.terminal.send_input("\x1b");
+            if abort {
+                signal.abort();
+                assert!(world.runtime.drain_futures().is_empty());
+            } else {
+                world.terminal.send_input("\x1b");
+            }
             let area = observe(&world, false);
             assert_eq!(area.restored, restored);
             assert_eq!(area.active_timers, active_timers);
@@ -536,6 +566,114 @@ fn ui_context_retains_the_mode_but_completed_dialogs_leave_no_cycle() {
             drop((selected, edited, context));
             assert!(weak.upgrade().is_none(), "nothing else keeps the mode");
             drop((terminal, runtime, themes, host, loader));
+        },
+    );
+}
+
+/// Whether the editor area shows a dialog whose rows contain `title`.
+fn shows(world: &World, title: &str) -> bool {
+    world
+        .mode
+        .editor_container
+        .render(80)
+        .iter()
+        .any(|row| row.contains(title))
+}
+
+#[test]
+fn tool_expansion_key_works_while_a_confirmation_is_focused() {
+    isolated(
+        "tool_expansion_key_works_while_a_confirmation_is_focused",
+        async |directory| {
+            let world = retained(directory).await;
+            assert!(!world.mode.tool_output_expanded.get());
+            let mut answer =
+                port(&world.mode).confirm("Title".to_owned(), "Message".to_owned(), None);
+            world.terminal.send_input("\x0f");
+            assert!(world.mode.tool_output_expanded.get());
+            assert!(settled(&mut answer).is_none());
+            assert!(shows(&world, "Title"));
+            world.terminal.send_input("\x0f");
+            assert!(!world.mode.tool_output_expanded.get());
+            world.terminal.send_input("\r");
+            assert_eq!(settled(&mut answer), Some(true));
+        },
+    );
+}
+
+#[test]
+fn concurrent_dialogs_stack_and_reveal_the_one_below() {
+    isolated(
+        "concurrent_dialogs_stack_and_reveal_the_one_below",
+        async |directory| {
+            let world = retained(directory).await;
+            let host = port(&world.mode);
+            let mut first = host.confirm("First".to_owned(), "one".to_owned(), None);
+            let mut second = host.confirm("Second".to_owned(), "two".to_owned(), None);
+            assert!(shows(&world, "Second") && !shows(&world, "First"));
+            assert!(settled(&mut first).is_none());
+            world.terminal.send_input("\x1b");
+            assert_eq!(settled(&mut second), Some(false));
+            assert!(shows(&world, "First"));
+            assert!(settled(&mut first).is_none());
+            world.terminal.send_input("\r");
+            assert_eq!(settled(&mut first), Some(true));
+            assert!(observe(&world, false).restored);
+        },
+    );
+}
+
+#[test]
+fn hidden_dialog_settles_on_abort_without_changing_the_shown_one() {
+    isolated(
+        "hidden_dialog_settles_on_abort_without_changing_the_shown_one",
+        async |directory| {
+            let world = retained(directory).await;
+            let host = port(&world.mode);
+            let signal = Cancellation::new();
+            let mut first = host.confirm(
+                "First".to_owned(),
+                "one".to_owned(),
+                Some(ExtensionUIDialogOptions {
+                    signal: Some(signal.clone()),
+                    timeout: None,
+                }),
+            );
+            let mut second = host.select(
+                "Second".to_owned(),
+                vec!["kept".to_owned(), "other".to_owned()],
+                None,
+            );
+            world.terminal.send_input("j");
+            assert!(settled(&mut first).is_none());
+            signal.abort();
+            assert!(world.runtime.drain_futures().is_empty());
+            assert_eq!(settled(&mut first), Some(false));
+            assert!(shows(&world, "Second"));
+            world.terminal.send_input("\r");
+            assert_eq!(settled(&mut second), Some(Some("other".to_owned())));
+            assert!(observe(&world, false).restored);
+        },
+    );
+}
+
+#[test]
+fn stacked_input_keeps_its_typed_text_while_hidden() {
+    isolated(
+        "stacked_input_keeps_its_typed_text_while_hidden",
+        async |directory| {
+            let world = retained(directory).await;
+            let host = port(&world.mode);
+            let mut typed = host.input("Name".to_owned(), None, None);
+            world.terminal.send_input("abc");
+            let mut confirm = host.confirm("Sure".to_owned(), "?".to_owned(), None);
+            assert!(shows(&world, "Sure"));
+            world.terminal.send_input("\r");
+            assert_eq!(settled(&mut confirm), Some(true));
+            assert!(shows(&world, "Name"));
+            world.terminal.send_input("d");
+            world.terminal.send_input("\r");
+            assert_eq!(settled(&mut typed), Some(Some("abcd".to_owned())));
         },
     );
 }

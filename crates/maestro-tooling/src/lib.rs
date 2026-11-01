@@ -18,8 +18,21 @@ pub mod run_tests;
 
 /// Locked browser-author preparation and native dispatch.
 mod browser_author;
+/// The locked packages and the dependency graph between them.
+mod cargo_lock;
+/// The source files a dependency file names.
+mod dep_info;
+/// Source-owned example discovery and component preparation.
+pub mod example_files;
+
 /// Derived extension documentation table.
 mod example_index;
+/// Path dependencies between workspace members.
+mod member_graph;
+/// Setup commands that nextest runs before the tests that need them.
+mod nextest_setup;
+/// Reusable test-setup staging and validation.
+mod test_setup;
 /// Filesystem watching and Cargo compilation dispatch.
 mod watch;
 
@@ -76,14 +89,12 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
         Some("clean-assets") => {
             for owner in ["app", "binary"] {
                 let path = asset_directory(owner, cargo)?;
-                match std::fs::remove_dir_all(path) {
-                    Ok(()) => {}
-                    Err(error) if error.kind() == io::ErrorKind::NotFound => {}
-                    Err(error) => return Err(error),
-                }
+                test_setup::remove_directory(&path)?;
             }
             Ok(ExitCode::SUCCESS)
         }
+        Some("nextest-setup") => nextest_setup::run(args),
+        Some("prepare-test-setup") => test_setup::run(args, cargo, checkout),
         Some("watch") => watch::run(args, cargo),
         Some("watch-step") => watch::step(args, cargo),
         Some("test-offline") => {

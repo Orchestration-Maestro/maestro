@@ -1,10 +1,12 @@
 //! Authored model additions with shared provider defaults.
 use crate::{Model, ModelCompat, ModelCost, ModelInput, OpenAICompletionsCompat, ThinkingFormat};
 mod defaults;
+mod xai;
 use defaults::{
     amazon_bedrock_base, anthropic_base, deepseek_base, google_base, google_vertex_base,
-    mistral_base, openai_base, openai_codex_base, openrouter_base, xai_base,
+    mistral_base, openai_base, openai_codex_base, openrouter_base,
 };
+use xai::{xai_grok_3, xai_grok_3_fast, xai_grok_code_fast_1};
 /// Authored constructor order.
 const INITIAL: &[fn() -> Model] = &[
     amazon_bedrock_eu_anthropic_claude_opus_4_6_v1,
@@ -50,6 +52,8 @@ pub(super) fn codex() -> Vec<Model> {
 
 /// Authored constructor order.
 const REMAINING: &[fn() -> Model] = &[
+    xai_grok_3,
+    xai_grok_3_fast,
     xai_grok_code_fast_1,
     mistral_mistral_medium_3_5,
     openrouter_auto,
@@ -359,15 +363,6 @@ fn openai_codex_gpt_5_3_codex_spark() -> Model {
         },
         context_window: 128_000.0,
         ..openai_codex_base()
-    }
-}
-
-/// Construct an authored model descriptor.
-fn xai_grok_code_fast_1() -> Model {
-    Model {
-        id: "grok-code-fast-1".into(),
-        name: "Grok Code Fast 1".into(),
-        ..xai_base()
     }
 }
 

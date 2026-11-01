@@ -9,7 +9,9 @@ mod configuration;
 mod configured_resolution;
 mod git;
 mod git_checks;
+mod inspection;
 mod integrity;
+pub use inspection::GitRelease;
 pub use integrity::GitPinStatus;
 mod glob;
 mod manifest;
@@ -155,7 +157,8 @@ pub trait PackageManager {
         sources: &'a [String],
         scope: Option<SourceScope>,
     ) -> PackageFuture<'a, ResolvedPaths>;
-    /// Appends a source or replaces the first identity match when its parsed pin changes.
+    /// Appends a source or replaces the first identity match when its normalized spelling differs.
+    /// An identical spelling changes nothing and returns `false`.
     /// Other raw entry fields stay in place; `None` means user scope.
     /// # Errors
     /// Returns consumed settings, borrow or path failures.
@@ -217,6 +220,21 @@ pub trait PackageManager {
         source: &'a str,
         scope: Option<InstalledSourceScope>,
     ) -> PackageFuture<'a, ()>;
+    /// Lists Git tags and their peeled commit IDs without selecting a release.
+    /// Offline mode refuses remote work rather than returning stale results.
+    /// # Errors
+    /// Returns invalid source, offline or Git capture failures.
+    fn list_releases<'a>(&'a self, source: &'a str) -> PackageFuture<'a, Vec<GitRelease>>;
+    /// Reads relative files from a pinned Git candidate in isolated temporary staging.
+    /// Results follow input order; a missing file is `None`, and bytes are not decoded.
+    /// No dependencies, builds or extensions run, and no installed checkout is changed.
+    /// # Errors
+    /// Returns invalid source/path, offline, Git, read or cleanup failures.
+    fn read_candidate_files<'a>(
+        &'a self,
+        source: &'a str,
+        paths: &'a [String],
+    ) -> PackageFuture<'a, Vec<Option<Vec<u8>>>>;
     /// Installs, then adds the source to settings; an existing entry is not an error.
     /// Nothing is flushed; a failed settings edit does not undo acquired contents.
     /// # Errors
@@ -312,6 +330,16 @@ impl<O: PackageOperations> PackageManager for DefaultPackageManager<O> {
         scope: Option<InstalledSourceScope>,
     ) -> PackageFuture<'a, ()> {
         Box::pin(self.repair_pin(source, scope))
+    }
+    fn list_releases<'a>(&'a self, source: &'a str) -> PackageFuture<'a, Vec<GitRelease>> {
+        Box::pin(self.git_releases(source))
+    }
+    fn read_candidate_files<'a>(
+        &'a self,
+        source: &'a str,
+        paths: &'a [String],
+    ) -> PackageFuture<'a, Vec<Option<Vec<u8>>>> {
+        Box::pin(self.inspect_candidate_files(source, paths))
     }
     fn install_and_persist<'a>(
         &'a self,

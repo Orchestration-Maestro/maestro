@@ -106,6 +106,16 @@ macro_rules! forward_resources {
             route::drive(&$function($($arg),*))
         })*
     };
+    (routed value functions { $($name:ident($($arg:ident: $ty:ty),* $(,)?) -> $ret:ty => $function:path => $reader:path;)* }) => {
+        $(fn $name(&self $(, $arg: $ty)*) -> ExtensionResult<$ret> {
+            $reader(&$function($($arg),*))
+        })*
+    };
+    (routed values { $($name:ident($resource:ident: $resource_ty:ty $(, $arg:ident: $ty:ty)*) -> $ret:ty => $method:ident($($value:expr),* $(,)?) via $reader:path;)* }) => {
+        $(fn $name(&self, $resource: $resource_ty $(, $arg: $ty)*) -> ExtensionResult<$ret> {
+            $reader(&$resource.$method($($value),*))
+        })*
+    };
     (routed { $($name:ident($resource:ident: $resource_ty:ty $(, $arg:ident: $ty:ty)*) => $method:ident($($value:expr),* $(,)?);)* }) => {
         $(fn $name(&self, $resource: $resource_ty $(, $arg: $ty)*) -> ExtensionResult<()> {
             route::drive(&$resource.$method($($value),*))

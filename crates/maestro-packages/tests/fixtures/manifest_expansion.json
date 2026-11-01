@@ -5045,7 +5045,18 @@
         }
       ],
       "skills": [],
-      "prompts": [],
+      "prompts": [
+        {
+          "path": "$SCENE/p.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
       "themes": []
     }
   },

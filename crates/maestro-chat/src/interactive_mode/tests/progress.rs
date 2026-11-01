@@ -23,7 +23,7 @@ use serde_json::Value;
 use std::{
     cell::{Cell, RefCell},
     path::Path,
-    rc::Rc,
+    rc::{Rc, Weak},
     sync::{Arc, RwLock},
     time::Duration,
 };
@@ -799,9 +799,10 @@ fn retry_completion_cancels_wait_and_restores_previous_action() {
 }
 
 /// The notice an interrupted first retry leaves at the end of the transcript.
-const RETRY_CANCELLED: [&str; 2] = [
+const RETRY_CANCELLED: [&str; 3] = [
     "",
     " @error@Error: Retry failed after 1 attempts: Retry cancelled\u{1b}[39m                                              ",
+    "",
 ];
 
 /// Makes every provider request of `world`'s session count itself before the installed
@@ -1538,6 +1539,17 @@ fn recording_handler(captured: &Captured, name: &'static str) -> CommandHandler 
     })
 }
 
+/// Runs `edit` on the extension while it is still loaded; the handler holds it weakly, since
+/// the extension owns the handler.
+fn edit_extension(
+    extension: &Weak<RwLock<Extension<Local>>>,
+    edit: impl FnOnce(&Rc<RwLock<Extension<Local>>>),
+) {
+    if let Some(loaded) = extension.upgrade() {
+        edit(&loaded);
+    }
+}
+
 /// The handler of `cmd`: it records its text, makes the case's edit, replaces the session
 /// when the case asks, and waits or fails as the case configures.
 fn command_handler(
@@ -1546,7 +1558,7 @@ fn command_handler(
     captured: &Captured,
 ) -> CommandHandler {
     let captured = captured.clone();
-    let extension = Rc::clone(extension);
+    let extension = Rc::downgrade(extension);
     let mode = Rc::downgrade(&world.mode);
     Rc::new(move |arguments: String, context: ExtensionCommandContext| {
         captured.record("command", &format!("/cmd {arguments}"));
@@ -1556,10 +1568,12 @@ fn command_handler(
                     mode.editor.set_text("replaced draft");
                 }
             }
-            Edit::AddCommand => {
-                register_command(&extension, "late", recording_handler(&captured, "late"));
-            }
-            Edit::RemoveCommand => drop(extension.write().unwrap().commands.shift_remove("late")),
+            Edit::AddCommand => edit_extension(&extension, |loaded| {
+                register_command(loaded, "late", recording_handler(&captured, "late"));
+            }),
+            Edit::RemoveCommand => edit_extension(&extension, |loaded| {
+                drop(loaded.write().unwrap().commands.shift_remove("late"));
+            }),
             Edit::None => {}
         }
         let captured = captured.clone();
@@ -1710,13 +1724,56 @@ fn assert_flush(world: &World, captured: &Captured, expected: &FlushExpected) {
     assert_eq!(world.mode.editor.get_text(), expected.editor);
 }
 
-/// Delivers one recorded captured batch inside a Tokio set and checks what it left.
+/// What one flush case built, held weakly so the case can check that dropping its world
+/// releases all of it.
+struct Released {
+    /// The mode under test.
+    mode: Weak<super::super::InteractiveMode>,
+    /// Each session the case ran, the one the mode started with first.
+    sessions: Vec<Weak<AgentSession>>,
+    /// The extension that owns the case's commands.
+    extension: Weak<RwLock<Extension<Local>>>,
+}
+
+impl Released {
+    /// The mode, its starting session and that session's first loaded extension.
+    fn of(world: &World) -> Self {
+        let session = world.mode.runtime_host.session();
+        Self {
+            mode: Rc::downgrade(&world.mode),
+            extension: Rc::downgrade(&session.resource_loader().get_extensions().extensions[0]),
+            sessions: vec![Rc::downgrade(&session)],
+        }
+    }
+
+    /// Also tracks the session the mode runs now, which a replacement changes.
+    fn track_current(&mut self, world: &World) {
+        self.sessions
+            .push(Rc::downgrade(&world.mode.runtime_host.session()));
+    }
+
+    /// Fails when anything the case built is still alive.
+    fn assert_gone(&self) {
+        assert!(self.mode.upgrade().is_none(), "the mode outlives the case");
+        assert!(
+            self.extension.upgrade().is_none(),
+            "the extension outlives the case"
+        );
+        for session in &self.sessions {
+            assert!(session.upgrade().is_none(), "a session outlives the case");
+        }
+    }
+}
+
+/// Delivers one recorded captured batch inside a Tokio set, checks what it left and that
+/// dropping the world releases the mode, its sessions and the extension.
 async fn flush_case(directory: &Path, input: &FlushInput, expected: &FlushExpected) {
     let captured = Captured::default();
     if input.faults.delayed {
         captured.delay();
     }
-    let (world, _removal) = flush_world(directory, input, &captured).await;
+    let (world, removal) = flush_world(directory, input, &captured).await;
+    let mut released = Released::of(&world);
     world.mode.editor.set_text("draft");
     if input.faults.refuses() && !input.replace {
         seed_session(&world, &captured);
@@ -1754,6 +1811,9 @@ async fn flush_case(directory: &Path, input: &FlushInput, expected: &FlushExpect
     }
     until(&world, &captured, || world.runtime.futures() == 0).await;
     assert_flush(&world, &captured, expected);
+    released.track_current(&world);
+    drop((world, removal, captured));
+    released.assert_gone();
 }
 
 #[test]
@@ -1961,8 +2021,8 @@ fn compaction_flush_real_session_rejects_without_duplicate_tail() {
 }
 
 #[test]
-fn compaction_flush_work_is_linear() {
-    const TEST: &str = "compaction_flush_work_is_linear";
+fn compaction_flush_delivers_each_message_once() {
+    const TEST: &str = "compaction_flush_delivers_each_message_once";
     isolated(TEST, async |directory| {
         for count in [32, 64, 128] {
             let captured = Captured::default();
@@ -1979,11 +2039,60 @@ fn compaction_flush_work_is_linear() {
             let (world, _removal) = flush_world(directory, &input, &captured).await;
             run_flush(&world, &input.local, true);
             until(&world, &captured, || world.runtime.futures() == 0).await;
-            // Every message reaches the session once, and nothing is walked twice.
+            // Every message reaches the session once at each size. The walk's own cost is not
+            // measured here: no test-owned callback runs per visited message.
             let log = captured.log.borrow().clone();
             assert_eq!(log.len(), count);
             let unique: std::collections::BTreeSet<&String> = log.iter().collect();
             assert_eq!(unique.len(), count);
         }
     });
+}
+
+/// A started mode whose settings keep the screen height when content shrinks.
+async fn shrink_kept(directory: &Path) -> World {
+    let world = Setup {
+        configure: Box::new(|settings| settings.set_clear_on_shrink(true)),
+        ..Setup::default()
+    }
+    .build(directory);
+    super::start(&world).await;
+    world
+}
+
+#[test]
+fn idle_status_keeps_its_height_after_each_indicator_ends() {
+    isolated(
+        "idle_status_keeps_its_height_after_each_indicator_ends",
+        async |directory| {
+            let world = shrink_kept(directory).await;
+            let status = |world: &World| world.mode.status_container.render(100);
+            let idle = vec![" ".repeat(100), " ".repeat(100)];
+            assert!(status(&world).is_empty(), "no indicator has run");
+            agent_event(&world, maestro_app::AgentEvent::AgentStart);
+            assert_eq!(status(&world).len(), 2);
+            agent_event(&world, agent_end());
+            assert_eq!(status(&world), idle, "after the working indicator");
+            start_retry(&world, 1, 3.0, 2000.0);
+            assert_eq!(status(&world).len(), 2);
+            end_retry(&world, true, 1, None);
+            assert_eq!(status(&world), idle, "after the retry indicator");
+            start_compaction(&world, CompactionReason::Threshold);
+            end_compaction(&world, CompactionReason::Threshold, None, false);
+            assert_eq!(status(&world), idle, "after the compaction indicator");
+            world.mode.set_working_visible(false);
+            agent_event(&world, maestro_app::AgentEvent::AgentStart);
+            assert_eq!(
+                status(&world),
+                idle,
+                "a clear with nothing shown keeps the rows"
+            );
+            agent_event(&world, agent_end());
+            world.mode.settings_clear_on_shrink(false);
+            assert!(
+                status(&world).is_empty(),
+                "turning the setting off removes them"
+            );
+        },
+    );
 }

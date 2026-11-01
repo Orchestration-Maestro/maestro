@@ -2,6 +2,7 @@
 
 use serde_json::{Map, Value};
 
+use super::conversion::number;
 use super::entries::SettingsListEntry;
 use super::records::{
     Member, ResolvedBranchSummarySettings, ResolvedCompactionSettings,
@@ -9,6 +10,21 @@ use super::records::{
 };
 use super::vocabulary::{MessageDeliveryMode, ThinkingLevel, TransportSetting};
 use super::{Change, SettingsManager, SettingsScope};
+
+/// The HTTP idle timeout, in milliseconds, when none is stored.
+const DEFAULT_HTTP_IDLE_TIMEOUT_MS: f64 = 300_000.0;
+
+/// A stored idle timeout as whole milliseconds: a nonnegative number, a numeric string or
+/// the text `disabled` (0).
+fn idle_timeout(value: &Value) -> Option<f64> {
+    let milliseconds = match value {
+        Value::Number(number) => number.as_f64()?,
+        Value::String(text) if text.trim().eq_ignore_ascii_case("disabled") => 0.0,
+        Value::String(text) => text.trim().parse().ok()?,
+        _ => return None,
+    };
+    (milliseconds.is_finite() && milliseconds >= 0.0).then(|| milliseconds.floor())
+}
 
 impl SettingsManager {
     /// Borrows a top-level string.
@@ -307,6 +323,26 @@ impl SettingsManager {
         }
     }
 
+    /// Returns the HTTP header or body idle timeout in milliseconds (default 300000).
+    ///
+    /// A stored number is floored; the text `disabled` and the number 0 mean no limit.
+    /// A negative, non-numeric or wrong-typed value reads as the default.
+    #[must_use]
+    pub fn get_http_idle_timeout_ms(&self) -> f64 {
+        self.effective
+            .get("httpIdleTimeoutMs")
+            .and_then(idle_timeout)
+            .unwrap_or(DEFAULT_HTTP_IDLE_TIMEOUT_MS)
+    }
+
+    /// Stores the HTTP header or body idle timeout in whole milliseconds; 0 disables it.
+    /// A negative or non-finite value is ignored.
+    pub fn set_http_idle_timeout_ms(&mut self, value: f64) {
+        if value.is_finite() && value >= 0.0 {
+            self.set_global("httpIdleTimeoutMs", number(value.floor()));
+        }
+    }
+
     /// Returns whether thinking blocks are hidden (default false).
     #[must_use]
     pub fn get_hide_thinking_block(&self) -> bool {
@@ -316,6 +352,18 @@ impl SettingsManager {
     /// Hides or shows thinking blocks.
     pub fn set_hide_thinking_block(&mut self, value: bool) {
         self.set_global("hideThinkingBlock", value);
+    }
+
+    /// Returns whether unchecked assistant text and tool output are withheld from session
+    /// listeners until checked (default false).
+    #[must_use]
+    pub fn get_hold_unchecked_text(&self) -> bool {
+        self.flag("holdUncheckedText").unwrap_or(false)
+    }
+
+    /// Withholds or delivers unchecked assistant text and tool output.
+    pub fn set_hold_unchecked_text(&mut self, value: bool) {
+        self.set_global("holdUncheckedText", value);
     }
 
     /// Returns the custom shell path, if any.

@@ -450,6 +450,7 @@ fn replay(
             timeout,
             runtime: Rc::new(spy.clone()),
             theme: live,
+            on_toggle_tools_expanded: None,
         },
         (
             query.title.clone().unwrap_or_else(|| default_title.into()),
@@ -679,23 +680,28 @@ pub fn native_dialog(
             timeout: Some(1000.0),
             runtime: Rc::new(spy.clone()),
             theme,
+            on_toggle_tools_expanded: None,
         },
         ("Title".into(), vec!["Alpha".into(), "Beta".into()], None),
     )
     .unwrap()
 }
 
-/// Construct the real startup component in its supplied containing writer.
-pub fn startup_host() -> (
-    TUI,
-    RecordingTerminal,
-    maestro_app::presentation_data::input_selectors::ExtensionSelectorFactory,
-) {
-    use super::{manual_runtime, published, recording_terminal};
-    use maestro_app::presentation_data::input_selectors::{
-        ExtensionSelectorFactory, PresentedSelector,
-    };
-    use maestro_theme::LiveTheme;
+/// The real startup selector in its containing writer, with the controlled runtime that
+/// paints the writer's scheduled frames.
+pub struct StartupHost {
+    /// The containing writer.
+    pub ui: TUI,
+    /// The terminal the writer paints to.
+    pub terminal: RecordingTerminal,
+    /// The startup selector factory.
+    pub factory: maestro_app::presentation_data::input_selectors::ExtensionSelectorFactory,
+    /// The runtime that runs the writer's scheduled frames.
+    pub runtime: Rc<super::manual_runtime::ManualRuntime>,
+}
+
+/// Installs the selector bindings the startup host is driven with.
+fn bind_startup_keys() {
     let keys = KeybindingsManager::new(
         maestro_app::presentation_data::keybindings::KEYBINDINGS.clone(),
         vec![],
@@ -715,6 +721,16 @@ pub fn startup_host() -> (
         ),
     ]);
     set_keybindings(keys);
+}
+
+/// Construct the real startup component in its supplied containing writer.
+pub fn startup_host() -> StartupHost {
+    use super::{manual_runtime, published, recording_terminal};
+    use maestro_app::presentation_data::input_selectors::{
+        ExtensionSelectorFactory, PresentedSelector,
+    };
+    use maestro_theme::LiveTheme;
+    bind_startup_keys();
     let runtime = Rc::new(manual_runtime::ManualRuntime::new());
     let terminal = recording_terminal::RecordingTerminal::new(80, 24);
     let ui = TUI::new(
@@ -724,7 +740,7 @@ pub fn startup_host() -> (
         Some(false),
     );
     let live = LiveTheme::from_theme(published::theme(0));
-    let actual_runtime = runtime;
+    let actual_runtime = runtime.clone();
     let factory: ExtensionSelectorFactory = Rc::new(move |request| {
         let component = Rc::new(
             ExtensionSelectorComponent::new(
@@ -737,6 +753,7 @@ pub fn startup_host() -> (
                     timeout: None,
                     runtime: actual_runtime.clone(),
                     theme: live.clone(),
+                    on_toggle_tools_expanded: None,
                 },
             )
             .unwrap(),
@@ -746,5 +763,10 @@ pub fn startup_host() -> (
             focus: component,
         })
     });
-    (ui, terminal, factory)
+    StartupHost {
+        ui,
+        terminal,
+        factory,
+        runtime,
+    }
 }

@@ -1,12 +1,31 @@
 # Settings
 
-`maestro-settings` owns the accepted global and project preferences. The
-[settings guide](sessions/settings.md) explains them by topic; this page is the
-single authority for defaults. A
-`SettingsManager` loads both scopes through a replaceable raw-text storage,
-answers typed reads from memory, publishes admitted edits immediately and persists
-edits through one ordered queue. Every public item lives in the `settings_manager`
-module and is re-exported at the crate root.
+Use `settings.json` to choose preferences for every project or one working
+directory. This reference lists the settings, their types, defaults and effects,
+and explains what happens when a recorded base layer locks a value. Unknown keys
+are retained; a stored preference does not bypass a lock. The
+[settings guide](sessions/settings.md) explains the same preferences by topic.
+
+## Contents
+
+1. [Locations](#locations)
+2. [Reading](#reading)
+3. [Writing](#writing)
+4. [Storage](#storage)
+5. [Saved text](#saved-text)
+6. [Stored-format conversions](#stored-format-conversions)
+7. [Preferences](#preferences)
+8. [Example](#example)
+9. [Workspace preference records](#workspace-preference-records)
+10. [Nested preference edits](#nested-preference-edits)
+
+## Locations
+
+`maestro-settings` owns the accepted global and project preferences. A
+`SettingsManager` loads both scopes through replaceable raw-text storage,
+answers typed reads from memory, publishes accepted edits immediately and persists
+them through one ordered queue. Its public items live in `settings_manager` and
+are re-exported at the crate root.
 
 | Scope | Holds |
 |-------|-------|
@@ -95,25 +114,54 @@ effective settings and discards them.
 
 ### Read-only base layer
 
+A recorded base layer supplies defaults below your settings. You can override an
+unlocked default in `settings.json`. A locked value always comes from the base
+layer, even if you saved a different value in your file. The stored conflict is
+reported without rewriting the file. An explicit edit of a locked preference is
+refused before any preference, pending write or live configuration changes.
+
+The refusal names the key, the recorded release and time, and the refresh action.
+For example, a release that locks the right-side tab entries reports:
+
+```text
+Edit refused: `multiplexer.tabBarRight` is locked by git:example/config#v1 (recorded 2026-10-27T12:00:00Z); starting Maestro refreshes the base layer
+```
+
+Use the refresh action reported in the refusal. Changing an ordinary preference
+file alone does not remove the recorded layer's locks. For workspace settings, only the global
+layer and user file apply; a project file or project layer cannot change the
+workspace daemon. With no recorded global layer, its normal user-file defaults
+and reload behavior are unchanged.
+
 A publisher can supply a `BaseSettingsLayer`: a settings document, dotted locked
 paths, a source release and its recorded time. `publish_base_layer(scope, layer)`
 replaces that scope's layer; `None` clears it. `get_base_layer` borrows the current
 layer. A project layer takes precedence over a global layer.
+`get_global_base_layer` borrows only the cached global layer, without rereading
+its persisted record.
 
 Effective settings merge the base, global and project documents in that order,
 using the same one-level merge. Locked paths then take the base value; an absent
-base leaf uses the getter's engine default. Raw scope snapshots, pending edits
+base leaf uses the getter's engine default. A malformed ancestor is replaced by
+an object containing the locked base value, or removed when that value is absent.
+This repair reports the locked path once. Raw scope snapshots, pending edits
 and saved preferences never include the base. Stored conflicts produce diagnostics
-through `drain_errors`, without rewriting either preference file. Reload retains
+through `drain_errors`, without rewriting either preference file.
+`SettingsError::kind` classifies base-lock and registered-decider resolutions as
+nonfatal `StoredValueIgnored` diagnostics, distinct from `Failure` errors such as
+refused explicit edits. Reload retains
 the accepted layer and keeps the ordinary failed-scope rules.
 
 Setters and runtime overrides refuse a locked path before changing memory,
-pending edits or the write queue. A batch with one locked member is refused as a
-whole, including an edit that replaces or removes a locked leaf's parent. Refusal
-records one diagnostic naming the path, source release, recorded time and how to
+pending edits or the write queue. Global edits check the global layer; project
+edits check the project layer when present, otherwise the global layer. Runtime
+overrides check the active layer. A project-only lock never blocks a global
+edit. A batch with one locked member is refused as a whole, including an edit
+that replaces or removes a locked leaf's parent. Refusal records one diagnostic naming the path, source release, recorded time and how to
 refresh it. Setter signatures are unchanged. `is_key_path_locked(field, keys)`
 lets a caller check a literal path before its own effects; it also detects locks
-on ancestors and descendants, but not siblings.
+on ancestors and descendants, but not siblings. The same query is available on
+`BaseSettingsLayer` for a caller holding a particular layer.
 
 Publication uses the existing write queue; `flush` waits for its persistence and
 `drain_errors` reports failures. A fresh manager reads persisted layers without a
@@ -275,11 +323,12 @@ join results, then works in place. Its legacy `with_lock` operation behaves as f
 Manager saves use `with_write_lock`. The native adapter creates the parent as
 needed and takes the same stable sidecar lock before reading, including when the
 settings file is absent. It holds exclusion through the single callback and
-optional write. Independent manager edits therefore survive concurrent first
-writes as well as existing-file saves. Acquire/read failures skip the callback;
-callback and write failures release exclusion. `Ok(None)` and callback errors
-leave settings bytes untouched, but may leave a new parent and sidecar. Locking
-alone never creates a settings file.
+optional write. Independent manager edits survive concurrent first writes and
+existing-file saves when the holder finishes within the writer's attempts; a
+writer that runs out reports the contention and writes nothing. Acquire/read
+failures skip the callback; callback and write failures release exclusion.
+`Ok(None)` and callback errors leave settings bytes untouched, but may leave a
+new parent and sidecar. Locking alone never creates a settings file.
 
 Raw callers that merge concurrent first writes must choose write intent too:
 
@@ -302,7 +351,12 @@ no stronger exclusion promised. Native decorators forward write intent to retain
 the native guarantee. In-memory callbacks still run without a lock and retain
 last-writer behavior.
 
-Writes are not atomic: there is no rename, rollback or sync step.
+The native adapter publishes each write through
+[the shared recoverable byte publication](locking.md#recoverable-byte-publication),
+following a symbolic link at the settings path. The text is written in place, keeping the
+file's permissions, ownership and hard links, and a write cut short is completed, not rolled
+back, by the next coordinated writer. A read-only settings file is refused and left
+unchanged. In-memory writes are not durable.
 
 ## Saved text
 
@@ -356,24 +410,25 @@ save:
 
 ### Context
 
-| Setting | Type | Default |
-|---------|------|---------|
-| `compaction.enabled` | boolean | `true` |
-| `compaction.reserveTokens` | number | `16384` |
-| `compaction.keepRecentTokens` | number | `20000` |
-| `branchSummary.reserveTokens` | number | `16384` |
-| `branchSummary.skipPrompt` | boolean | `false` |
+| Setting | Type | Default | Effect |
+|---------|------|---------|--------|
+| `compaction.enabled` | boolean | `true` | Allow automatic compaction of session context |
+| `compaction.reserveTokens` | number | `16384` | Tokens reserved when deciding whether context needs compaction |
+| `compaction.keepRecentTokens` | number | `20000` | Recent context retained alongside a compaction summary |
+| `branchSummary.reserveTokens` | number | `16384` | Tokens reserved when building a branch summary |
+| `branchSummary.skipPrompt` | boolean | `false` | Skip the "Summarize branch?" question and continue without a summary |
 
 ### Retry
 
-| Setting | Type | Default |
-|---------|------|---------|
-| `retry.enabled` | boolean | `true` |
-| `retry.maxRetries` | number | `3` |
-| `retry.baseDelayMs` | number | `2000` |
-| `retry.provider.timeoutMs` | number | unset |
-| `retry.provider.maxRetries` | number | unset |
-| `retry.provider.maxRetryDelayMs` | number | `60000` |
+| Setting | Type | Default | Effect |
+|---------|------|---------|--------|
+| `retry.enabled` | boolean | `true` | Allow session-level retries after a retryable failure |
+| `retry.maxRetries` | number | `3` | Maximum session-level retry attempts |
+| `retry.baseDelayMs` | number | `2000` | Initial session-level retry delay in milliseconds |
+| `retry.provider.timeoutMs` | number | unset | Optional timeout passed to the model provider |
+| `retry.provider.maxRetries` | number | unset | Optional retry limit passed to the model provider |
+| `retry.provider.maxRetryDelayMs` | number | `60000` | Largest accepted provider retry delay in milliseconds |
+| `httpIdleTimeoutMs` | number or `disabled` | `300000` | Longest wait, in whole milliseconds, for HTTP response headers or the next body chunk; `0` and `disabled` remove the limit; a negative or unusable value reads as the default; the setter ignores a negative or non-finite value |
 
 The crate stores and returns these values; applying them belongs to the callers.
 
@@ -384,6 +439,15 @@ The crate stores and returns these values; applying them belongs to the callers.
 | `steeringMode` | string | `one-at-a-time` | `all` or `one-at-a-time`; empty text reads as the default |
 | `followUpMode` | string | `one-at-a-time` | `all` or `one-at-a-time`; empty text reads as the default |
 | `transport` | string | `auto` | `sse`, `websocket`, `websocket-cached` or `auto`; any other text, including empty, is kept |
+| `holdUncheckedText` | boolean | `false` | Withhold assistant text, thinking and partial tool output from session listeners until they are checked |
+
+`holdUncheckedText` only withholds, and at its default it changes nothing. While it is
+`true`, the session tells its listeners (the interactive view, the JSON and RPC modes and
+SDK subscribers) nothing of a response's text or thinking until the message ends, and
+nothing of a tool's partial content or details until the tool result is complete.
+Tool-call and status events still arrive. A snapshot that carries a tool call keeps its
+text and thinking blocks in place, emptied. The message end delivers the message as the
+extensions left it, and extension hooks see every event as before.
 
 ### Terminal and images
 
@@ -403,7 +467,7 @@ The crate stores and returns these values; applying them belongs to the callers.
 | `shellPath` | string | unset | Custom shell path |
 | `shellCommandPrefix` | string | unset | Prefix for every shell command |
 | `npmCommand` | string[] | unset | Package-manager argument vector |
-| `sessionDir` | string | unset | An exact `~` reads as the home directory; a `~/` prefix is joined onto it through `maestro-path`; bytes of the home directory that are not valid UTF-8 read as U+FFFD; every other text, and any text while the home directory is unknown, is returned as written, including the empty string |
+| `sessionDir` | string | unset | A leading `~` reads as [Home directory in paths](#home-directory-in-paths); bytes of the home directory that are not valid UTF-8 read as U+FFFD; any text while the home directory is unknown is returned as written, including the empty string |
 | `enabledModels` | string[] | unset | Model patterns for cycling |
 
 ### Resources
@@ -420,6 +484,30 @@ The crate stores and returns these values; applying them belongs to the callers.
 The lists are stored and returned as written. Path resolution, patterns, package
 installation, update checks and reporting belong to the owners of those features.
 An extension path never implies a package.
+
+### Home directory in paths
+
+An exact `~` names the home directory. A `~/` prefix puts the rest of the path
+below it. Other spellings, including `~name`, stay as written. On Windows,
+`~\` also expands in the daemon's new-terminal directory and in resource,
+prompt, skill, package and extension paths. Tool paths, application directory
+options, `sessionDir` and completion paths accept only `~/`, not `~\`.
+The home directory is read only for forms that expand.
+
+How the rest of the path is combined with the home depends on the caller:
+
+- `sessionDir`, resource, prompt, skill, package, completion and extension paths
+  use a normalizing join. `.`, `..` and repeated separators resolve, and an empty
+  home leaves a relative result. An exact `~` returns the home as supplied,
+  except in extension paths, which normalize it too.
+- Tool paths and application directory options append the suffix unchanged on
+  every platform. For example, `~/a//b` with home `C:\h` gives `C:\h/a//b`.
+  A trailing separator in the home stays too: `/h/` plus `~/x` gives `/h//x`.
+  An empty home with `~/x` gives `/x`.
+- The daemon's new-terminal directory keeps its native rule. On Windows it
+  splits on both separators, drops empty components and joins with `\`.
+  On other platforms it appends the rest without doubling the home's final
+  slash. An absolute remainder still stays below the home directory.
 
 ## Example
 
@@ -476,13 +564,39 @@ object contains `token` and optional `fg`, `bold` and `dim`; explicit false valu
 are retained. Foreground colors accept `#RGB` or `#RRGGBB` and serialize as
 lowercase six-digit hex. Styles belong to each occurrence, not the token name.
 
+### Workspace settings governed by global locks
+
+Set these keys in the global `settings.json`, not the project file. The defaults
+below apply when neither a recorded base layer nor your user file supplies a
+value. An unlocked base value is a default you can override; a locked value wins
+as described under [Read-only base layer](#read-only-base-layer).
+
+| Setting | Type | Default | Effect |
+|---------|------|---------|--------|
+| `multiplexer.tabBarRight` | array of entry objects | `[]` | Ordered status entries at the right edge of the desktop tab row; entry types are `zoom`, `hostname`, `datetime`, `text` and `command` |
+| `multiplexer.allowNested` | boolean | `false` | Allow a multiplexer client inside an existing pane |
+| `multiplexer.remote.manageSshConfig` | boolean | `true` | Manage private SSH connection reuse and keepalive fallbacks; `false` leaves the user's SSH configuration unchanged |
+| `daemon.resumeAgentsOnRestore` | boolean | `true` | Resume supported agent conversations when restoring panes |
+| `daemon.detectionCatalogCheck` | boolean | `true` | Check for detection catalog updates |
+| `update.versionCheck` | boolean | `true` | Check for Maestro releases |
+| `update.channel` | string | `stable`, or `preview` for Windows preview builds | Select `stable` or `preview` releases |
+
 ### Global workspace projection and reload
 
-`maestro_daemon::settings::io` reads the supplied manager's accepted global
-settings. Workspace preferences never use project values or runtime chat
-overrides. `load_config` consumes startup global errors and returns unrelated
-project errors separately. Read or parse failures emit a structured warning and
-use defaults. `reload_config` waits for queued writes before separating earlier
+`maestro_daemon::settings::io` reads the supplied manager through
+`SettingsManager::effective_global_settings`: the persisted global base layer,
+then the accepted user document, then the base locks. A registered settings
+decider then resolves that view and the locks are restored again, so no resolved
+value replaces a locked one. This operation rereads the global layer on startup
+and each existing reload; a read failure retains the accepted layer and reports an
+error. With no layer and no decider, the result equals the raw global snapshot.
+Workspace preferences never use project settings, project base
+layers or runtime chat overrides. Stored lock conflicts are nonfatal diagnostics;
+explicit refused edits remain failures. `load_config` consumes startup global
+errors and returns unrelated project errors separately. Read or parse failures
+emit a structured warning and use `SettingsManager::global_base_settings`: the
+cached base layer with an empty user scope, resolved by the registered decider
+and restored to its locks like the global view. `reload_config` waits for queued writes before separating earlier
 errors, awaits the existing manager reload, then applies valid semantic areas.
 Only a new global document failure retains every area and reports `Failed`.
 Warnings or rejected areas report `Partial`; a clean reload reports `Applied`.
@@ -490,9 +604,17 @@ Earlier errors and new project errors are returned for their own reporting path.
 
 The independent areas are onboarding, theme, UI (including sidebar, toast and
 sound), terminal, restore, server, update, advanced, worktrees, experimental and
-remote. A malformed area retains its previous values without blocking valid
-siblings; removed members return to defaults. Required fields reject wrong JSON
-kinds, including positional arrays in place of records. Optional null values
+remote. A malformed area retains its last accepted settings document without
+blocking valid siblings. Documents rejected by runtime checks, such as inverted
+sidebar bounds or zero terminal dimensions, do not replace accepted documents.
+Current global locks are restored in the retained document before decoding it
+again: locked fields follow the base, while unlocked fields keep their previous
+values. If the area has never decoded successfully, it uses
+`global_base_settings`, as at startup. Without a base layer, rejected areas keep their
+current typed values and do not reapply UI interaction settings. A diagnostic
+identifies the invalid area. Correcting the user value restores ordinary overrides of unlocked
+fields. Project-only locks do not change this behavior. Removed members return
+to defaults. Required fields reject wrong JSON kinds, including positional arrays in place of records. Optional null values
 remain absent. Unknown nested keys produce sorted, deduplicated paths after their
 area decodes successfully; unknown global settings stay silent. Typed projection
 does not rewrite raw values.
@@ -663,3 +785,12 @@ pending.await;
 let errors = settings.borrow_mut().drain_errors();
 # }
 ```
+
+## Workspace keybinding reset
+
+Workspace shortcut overrides live in `keybindings.json`, not `settings.json`.
+The application keybinding owner provides a timestamped backup and atomic reset
+of only `multiplexer.*` actions. See [keybinding reset](keybindings.md#reset-multiplexer-overrides)
+for backup naming, preserved entries and failure handling. Saved settings and
+keybinding files remain strict JSON; annotated defaults are documentation, not a
+replacement file format.

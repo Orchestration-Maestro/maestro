@@ -5,7 +5,7 @@ use maestro_daemon::{instances, paths::DaemonPaths};
 
 #[test]
 fn daemon_deletion_preserves_running_and_unrelated_folders() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new_socket().unwrap();
     let root = scratch.path();
     let agent = root.to_str().unwrap();
     std::fs::create_dir_all(root).unwrap();

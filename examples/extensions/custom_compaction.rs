@@ -1,4 +1,5 @@
 //! Summarizes the complete prepared conversation with a separately selected model.
+// maestro-component: MAESTRO_CUSTOM_COMPACTION_COMPONENT
 #![cfg(target_arch = "wasm32")]
 #![forbid(
     clippy::pedantic,
@@ -89,8 +90,13 @@ async fn model_options(
         )?;
         return Ok(None);
     };
-    let (api_key, headers) = match registry.get_api_key_and_headers(model.clone()).await? {
-        ResolvedRequestAuth::Ok { api_key, headers } => (api_key, headers),
+    let (api_key, headers, base_url) = match registry.get_api_key_and_headers(model.clone()).await?
+    {
+        ResolvedRequestAuth::Ok {
+            api_key,
+            headers,
+            base_url,
+        } => (api_key, headers, base_url),
         ResolvedRequestAuth::Error { error } => {
             ctx.ui()?.notify(
                 &format!("Cannot authenticate the summary request: {error}"),
@@ -114,6 +120,7 @@ async fn model_options(
         ProviderStreamOptions {
             common: StreamOptions {
                 api_key: Some(api_key),
+                base_url,
                 headers,
                 max_tokens: Some(8192.0),
                 signal: Some(signal),
@@ -230,6 +237,10 @@ async fn on_compact(
 }
 
 /// Registers custom compaction for this explicitly loaded extension.
+///
+/// # Errors
+/// The returned future returns the host's rejection when it refuses the
+/// `session_before_compact` handler registration, so the extension adds no custom summary.
 #[must_use]
 pub fn custom_compaction(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {

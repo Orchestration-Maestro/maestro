@@ -4,8 +4,8 @@ use super::super::queues::{CompactionQueuedMessage, RestoreQueuedMessagesOptions
 use super::bash::shelling;
 use super::typed::{poll, recalled, submit};
 use super::{
-    Held, Setup, World, border_row, driving, echoing_shell, holding, isolated, painted,
-    rendered_border, scripted, select_level, start_shells, started, streaming,
+    Held, Setup, World, answer, border_row, driving, echoing_shell, holding, isolated, painted,
+    rendered_border, scripted, select_level, start_commands, start_shells, started, streaming,
     transcript_positions,
 };
 use crate::BashExecutionComponent;
@@ -13,8 +13,10 @@ use crate::InteractiveMode;
 use crate::interactive_mode::bash::component_address;
 use maestro_app::messages::UserMessageDelivery;
 use maestro_app::{
-    AgentSessionEvent, Cancellation, DiagnosticErrorInfo, ExtensionFactory, InputEvent,
-    InputEventResult, Local, RegisteredCommand, ThinkingLevel, is_whitespace_scalar,
+    AgentSessionEvent, AssistantMessageEventStream, Cancellation, Context, DiagnosticErrorInfo,
+    Extension, ExtensionFactory, InputEvent, InputEventResult, Local, Message, PromptTemplate,
+    RegisteredCommand, SourceInfo, SourceOrigin, SourceScope, ThinkingLevel, UserBlock,
+    UserContent, is_whitespace_scalar,
 };
 use maestro_theme::ThemeColor;
 use maestro_tui::editor_component::TextCallback;
@@ -802,7 +804,10 @@ struct Displayed {
 fn key_display_capitalizes_each_live_binding_without_reordering() {
     const TEST: &str = "key_display_capitalizes_each_live_binding_without_reordering";
     for (KeyName::CapitalizeKey { key }, expected) in cases::<KeyName, Displayed>(TEST) {
-        assert_eq!(InteractiveMode::capitalize_key(&key), expected.result);
+        assert_eq!(
+            maestro_app::format_key_text(&key, true),
+            super::platform_keys::on_this_platform(&expected.result)
+        );
     }
     isolated(TEST, async |directory| {
         // The mode publishes the application's key registry, which the display reads live.
@@ -817,10 +822,10 @@ fn key_display_capitalizes_each_live_binding_without_reordering() {
             )]);
             InteractiveMode::get_app_key_display("app.message.dequeue")
         };
-        assert_eq!(bind(None), "Alt+Up");
+        assert_eq!(bind(None), super::platform_keys::on_this_platform("Alt+Up"));
         assert_eq!(bind(Some(&["shift+x", "ctrl+q"])), "Shift+X/Ctrl+Q");
         assert_eq!(bind(Some(&["ctrl+q", "shift+x"])), "Ctrl+Q/Shift+X");
-        assert_eq!(bind(None), "Alt+Up");
+        assert_eq!(bind(None), super::platform_keys::on_this_platform("Alt+Up"));
     });
 }
 
@@ -939,27 +944,39 @@ fn controlled_factory(heard: &Heard, refuse: bool) -> ExtensionFactory<Local> {
 /// A started mode whose session loads the controlled extension and the command `cmd`: the
 /// extension's input handler records `["input", text]` and, when `refuse` is set, fails
 /// on `selected`; its shell handler records `["execute", command, excluded]` and answers
-/// the command without running one; the command records `["command", arguments]`. Queue
-/// operations are recorded in the same log.
+/// the command without running one; the command `cmd` records `["command", arguments]` and
+/// the command `setter` sets the editor's text. Queue operations are recorded in the same
+/// log.
 async fn controlled(directory: &Path, refuse: bool) -> (World, Heard) {
-    let heard = Heard::default();
-    let factory = controlled_factory(&heard, refuse);
-    let world = Setup {
-        extension: Some(factory),
-        ..Setup::default()
+    controlled_in(directory, refuse, Setup::default()).await
+}
+
+/// The prompt template the expansion witnesses type: `/greet world` expands to `Hello world`.
+fn greeting() -> PromptTemplate {
+    PromptTemplate {
+        name: "greet".into(),
+        description: "Greet someone".into(),
+        argument_hint: None,
+        content: "Hello $1".into(),
+        source_info: SourceInfo {
+            path: "greet.md".into(),
+            source: "local".into(),
+            scope: SourceScope::Project,
+            origin: SourceOrigin::TopLevel,
+            base_dir: None,
+        },
+        file_path: "greet.md".into(),
     }
-    .build(directory);
-    world.mode.init().await.unwrap();
-    world.runtime.settle().unwrap();
-    // The recorded transcripts start after the startup resource listing.
-    world.mode.chat_container.clear();
-    let session = world.mode.runtime_host.session();
-    let extension = Rc::clone(&session.resource_loader().get_extensions().extensions[0]);
+}
+
+/// Registers on `extension` the command `cmd`, which records its arguments in `heard`, and
+/// the command `setter`, which sets the editor's text to its arguments.
+fn register_commands(extension: &Rc<RwLock<Extension<Local>>>, heard: &Heard) {
     let source_info = Arc::clone(&extension.read().unwrap().source_info);
-    let runs = Rc::clone(&heard);
-    let command = RegisteredCommand::<Local> {
+    let runs = Rc::clone(heard);
+    let recording = RegisteredCommand::<Local> {
         name: "cmd".into(),
-        source_info,
+        source_info: Arc::clone(&source_info),
         description: None,
         get_argument_completions: None,
         handler: Rc::new(move |arguments, _| {
@@ -967,12 +984,55 @@ async fn controlled(directory: &Path, refuse: bool) -> (World, Heard) {
             Box::pin(std::future::ready(Ok(())))
         }),
     };
-    let command = Rc::new(RwLock::new(command));
-    extension
-        .write()
-        .unwrap()
-        .commands
-        .insert("cmd".into(), command);
+    let setting = RegisteredCommand::<Local> {
+        name: "setter".into(),
+        source_info,
+        description: None,
+        get_argument_completions: None,
+        handler: Rc::new(|arguments, context| {
+            Box::pin(async move {
+                context.ui()?.set_editor_text(arguments)?;
+                Ok(())
+            })
+        }),
+    };
+    for command in [recording, setting] {
+        let name = command.name.clone();
+        extension
+            .write()
+            .unwrap()
+            .commands
+            .insert(name, Rc::new(RwLock::new(command)));
+    }
+}
+
+/// [`controlled`] over a session that also loads the prompt template [`greeting`].
+async fn templated(directory: &Path) -> (World, Heard) {
+    let setup = Setup {
+        prompts: vec![vec![greeting()]],
+        ..Setup::default()
+    };
+    controlled_in(directory, false, setup).await
+}
+
+/// [`controlled`] over the session `setup` describes, whose extension is the controlled one.
+async fn controlled_in(directory: &Path, refuse: bool, setup: Setup) -> (World, Heard) {
+    let heard = Heard::default();
+    let factory = controlled_factory(&heard, refuse);
+    let world = Setup {
+        extension: Some(factory),
+        ..setup
+    }
+    .build(directory);
+    world.mode.init().await.unwrap();
+    world.runtime.settle().unwrap();
+    // The recorded transcripts start after the startup resource listing.
+    world.mode.chat_container.clear();
+    let session = world.mode.runtime_host.session();
+    register_commands(
+        &session.resource_loader().get_extensions().extensions[0],
+        &heard,
+    );
     if refuse {
         let rejection = DiagnosticErrorInfo::new(None, "controlled rejection");
         drop(
@@ -988,17 +1048,23 @@ async fn controlled(directory: &Path, refuse: bool) -> (World, Heard) {
 /// The failure the harness's own compaction always ends with.
 const COMPACTION_FAILURE: &str = "Compaction failed: Nothing to compact (session too small)";
 
-/// Appends a notice the mode shows for a compaction that failed, painted and padded.
-fn with_notice(mut observed: Observed, world: &World, text: &str) -> Observed {
+/// The row the mode shows for the error `text`, painted and padded.
+fn error_row(world: &World, text: &str) -> String {
     let painted_row = painted(
         &world.themes.theme().get().unwrap(),
         &[format!(" @error@{text}\x1b[39m")],
     )
     .remove(0);
     let pad = 80usize.saturating_sub(text.chars().count() + 1);
+    format!("{painted_row}{}", " ".repeat(pad))
+}
+
+/// Appends an error notice the mode shows for a compaction that failed, painted and padded,
+/// with the blank row that follows it.
+fn with_notice(mut observed: Observed, world: &World, text: &str) -> Observed {
     observed
         .chat
-        .extend([String::new(), format!("{painted_row}{}", " ".repeat(pad))]);
+        .extend([String::new(), error_row(world, text), String::new()]);
     observed
 }
 
@@ -1014,16 +1080,27 @@ fn with_compaction_notice(observed: Observed, world: &World) -> Observed {
         .unwrap_or_default();
     let named = format!("Error: {COMPACTION_FAILURE}");
     let mut observed = with_notice(observed, world, &named);
+    let prompted = !delivered.is_empty();
     observed.chat.extend(delivered);
     observed
         .errors
         .push(format!("{COMPACTION_FAILURE}\x1b[39m"));
+    if prompted {
+        // The delivered prompt then fails to start a response, and the mode shows that failure.
+        observed.chat.extend([
+            "\x1b]133;A\x07".to_owned(),
+            format!(
+                "\x1b]133;B\x07\x1b]133;C\x07{}",
+                error_row(world, &format!("Error: {PROVIDER_FAILURE}"))
+            ),
+        ]);
+        observed.errors.push(format!("{PROVIDER_FAILURE}\x1b[39m"));
+    }
     observed
 }
 
-/// The notice the automatic compaction attempt ends with when no provider is registered.
-const AUTO_COMPACTION_FAILURE: &str =
-    "Auto-compaction failed: No API provider registered for api: unknown";
+/// The failure of the delivered input when no provider is registered.
+const PROVIDER_FAILURE: &str = "No API provider registered for api: unknown";
 
 /// Runs `action` from the start notification of a compaction of `world`'s session, while
 /// the session compacts, then lets the compaction end.
@@ -1328,6 +1405,133 @@ fn follow_up_routes_expanded_input_through_idle_stream_and_compaction() {
     });
 }
 
+/// The user texts of every request the session's provider received, one list per request.
+type Requests = Rc<RefCell<Vec<Vec<String>>>>;
+
+/// The text of a user message: its text, or its text blocks in order.
+fn text_of(content: &UserContent) -> String {
+    match content {
+        UserContent::Text(text) => text.clone(),
+        UserContent::Blocks(blocks) => blocks
+            .iter()
+            .filter_map(|block| match block {
+                UserBlock::Text(text) => Some(text.text.as_str()),
+                UserBlock::Image(_) => None,
+            })
+            .collect(),
+    }
+}
+
+/// The user texts of the request `context` carries.
+fn user_texts(context: &Context) -> Vec<String> {
+    context
+        .messages
+        .iter()
+        .filter_map(|message| match message {
+            Message::User(user) => Some(text_of(&user.content)),
+            _ => None,
+        })
+        .collect()
+}
+
+/// The user texts `session` holds, in order: what its next request is built from.
+fn conversation_texts(session: &maestro_app::AgentSession<Local>) -> Vec<String> {
+    let messages = session.messages();
+    let messages = messages.read().unwrap();
+    messages
+        .iter()
+        .filter_map(|message| match message {
+            maestro_app::AgentMessage::User(user) => Some(text_of(&user.read().unwrap().content)),
+            _ => None,
+        })
+        .collect()
+}
+
+/// Points the session's provider at an answer that comes at once and records the user texts
+/// of each request it receives from now on. The zero-usage answers would otherwise start an
+/// automatic compaction of their own, so the session compacts only on request.
+fn answering(world: &World) -> Requests {
+    world
+        .mode
+        .runtime_host
+        .session()
+        .set_auto_compaction_enabled(false);
+    world
+        .host
+        .services()
+        .auth_storage
+        .set_runtime_api_key("unknown", "key");
+    let requests = Requests::default();
+    let seen = Rc::clone(&requests);
+    *world
+        .mode
+        .runtime_host
+        .session()
+        .agent()
+        .stream_fn
+        .write()
+        .unwrap() = Some(Rc::new(move |_, context, _, _| {
+        seen.borrow_mut().push(user_texts(&context));
+        let stream = AssistantMessageEventStream::new();
+        stream.end(Some(answer()));
+        Box::pin(std::future::ready(Ok(stream)))
+    }));
+    requests
+}
+
+#[test]
+fn follow_up_sends_a_template_to_the_provider_expanded() {
+    const TEST: &str = "follow_up_sends_a_template_to_the_provider_expanded";
+    isolated(TEST, async |directory| {
+        let (world, _) = templated(directory).await;
+        streaming(&world, async |world, _| {
+            world.mode.editor.set_text("/greet world");
+            world.mode.handle_follow_up().unwrap();
+            assert_eq!(settled(world), Vec::<String>::new());
+            assert_eq!(
+                world.mode.get_all_queued_messages().follow_up,
+                ["Hello world"],
+                "the session queues the expansion, not what was typed"
+            );
+        })
+        .await;
+        assert_eq!(
+            conversation_texts(&world.mode.runtime_host.session()),
+            ["run", "Hello world"],
+            "the follow-up turn carries the expansion"
+        );
+    });
+}
+
+#[test]
+fn compaction_keeps_a_template_as_typed_and_sends_it_expanded() {
+    const TEST: &str = "compaction_keeps_a_template_as_typed_and_sends_it_expanded";
+    isolated(TEST, async |directory| {
+        let (world, _) = templated(directory).await;
+        let requests = answering(&world);
+        let kept = Rc::new(RefCell::new(Vec::new()));
+        let seen = Rc::clone(&kept);
+        during_compaction(&world, move |mode| {
+            mode.editor.set_text("/greet world");
+            mode.handle_follow_up().unwrap();
+            let queued = mode.compaction_queued_messages.borrow();
+            seen.borrow_mut()
+                .extend(queued.iter().map(|message| message.text.clone()));
+        })
+        .await;
+        assert_eq!(
+            *kept.borrow(),
+            ["/greet world"],
+            "the compaction keeps the typed text"
+        );
+        assert_eq!(
+            *requests.borrow(),
+            [["Hello world"]],
+            "the delivery after the compaction sends the expansion"
+        );
+    });
+}
+
 /// The recorded Enter presses.
 #[derive(Deserialize)]
 #[serde(tag = "op", rename_all = "kebab-case", deny_unknown_fields)]
@@ -1458,13 +1662,13 @@ async fn rejection_case(directory: &Path, operation: Operation, expected: Value)
         0,
         format!("{shown}{}", " ".repeat(80 - heading.chars().count() - 1)),
     );
-    let expected = with_notice(expected, &world, AUTO_COMPACTION_FAILURE);
     assert_eq!(observe(&world, &heard, 0), expected);
 }
 
-/// Types `/cmd arg` and an ordinary text with the follow-up key from a compaction's start
-/// notification, checking before the notification returns that the command already ran
-/// and the text is already kept.
+/// Types `/cmd arg`, `/setter` and an ordinary text with the follow-up key from a
+/// compaction's start notification, checking before the notification returns that each
+/// command already ran, that the editor holds what `setter` put there and that the text is
+/// already kept.
 async fn compaction_admission(directory: &Path) {
     let (world, heard) = controlled(directory, false).await;
     let log = Rc::clone(&heard);
@@ -1473,6 +1677,13 @@ async fn compaction_admission(directory: &Path) {
         mode.handle_follow_up().unwrap();
         assert_eq!(*log.borrow(), [json!(["command", "arg"])]);
         assert_eq!(mode.editor.get_text(), "");
+        mode.editor.set_text("/setter set by the command");
+        mode.handle_follow_up().unwrap();
+        assert_eq!(
+            mode.editor.get_text(),
+            "set by the command",
+            "the editor is cleared before the command runs, not after"
+        );
         mode.editor.set_text(" kept ");
         mode.handle_follow_up().unwrap();
         let kept = mode.compaction_queued_messages.borrow();
@@ -1571,6 +1782,14 @@ async fn interrupt_binding(directory: &Path) {
         bind("app.interrupt", None);
     })
     .await;
+    // Back on its default, Escape stops a later response again and Alt+Z no longer does.
+    streaming(&world, async |world, held| {
+        world.mode.editor.handle_input("\x1bz");
+        assert_eq!(held.aborts(), 0);
+        world.mode.editor.handle_input("\x1b");
+        assert_eq!(held.aborts(), 1);
+    })
+    .await;
 }
 
 #[test]
@@ -1594,7 +1813,8 @@ fn queue_callbacks_release_the_mode_after_active_work_settles() {
                 (Rc::downgrade(&world.mode), world.runtime.take_futures())
             })
             .await;
-            let World { mode, .. } = world;
+            let World { mode, runtime, .. } = world;
+            let editor = Rc::clone(&mode.editor);
             drop(mode);
             assert!(weak.upgrade().is_some(), "the handed prompt keeps the mode");
             for mut future in handed {
@@ -1603,6 +1823,14 @@ fn queue_callbacks_release_the_mode_after_active_work_settles() {
                 assert!(matches!(polled, std::task::Poll::Ready(Ok(()))));
             }
             assert!(weak.upgrade().is_none(), "settled work releases the mode");
+            // The editor outlives the mode, and the queue keys it still answers hand the
+            // runtime nothing: interrupt, follow-up and dequeue.
+            editor.set_text("later");
+            for key in ["\x1b", "\x1b\r", DEQUEUE_KEY] {
+                editor.handle_input(key);
+                assert_eq!(runtime.futures(), 0, "{key:?} hands work to the runtime");
+                assert!(weak.upgrade().is_none(), "{key:?} revives the mode");
+            }
         },
     );
 }
@@ -1986,8 +2214,12 @@ fn refresh(world: &World, class: QueueClass, original: &[Rc<BashExecutionCompone
     assert_pending_rows(world, class, original);
 }
 
+/// The default keys of the dequeue action, Alt+Up.
+const DEQUEUE_KEY: &str = "\x1b[1;3A";
+
 /// One refresh witness: `shells` pending rows under `class`'s queues, refreshed twice, then
-/// once more after a dequeue and after the ordinary-input flush.
+/// dequeued through the registered key, refreshed again and once more after the
+/// ordinary-input flush.
 async fn refresh_case(directory: &Path, shells: usize, class: QueueClass) {
     let world = echoing_shell(directory).await;
     let errors = async {
@@ -2010,10 +2242,12 @@ async fn refresh_case(directory: &Path, shells: usize, class: QueueClass) {
                 pending(&world.mode, 80);
                 let retained = world.mode.pending_shells.borrow().len();
                 assert_eq!(retained, shells, "a later enqueue keeps the shells");
-                world.mode.clear_all_queues();
+                // The dequeue action empties the queues and refreshes the rows itself.
+                world.terminal.send_input(DEQUEUE_KEY);
+                assert_pending_rows(&world, QueueClass::Empty, &original);
                 refresh(&world, QueueClass::Empty, &original);
                 world.mode.flush_pending_bash_components();
-                assert_pending_rows(&world, QueueClass::Empty, &[]);
+                refresh(&world, QueueClass::Empty, &[]);
                 assert!(
                     world.mode.pending_shells.borrow().is_empty(),
                     "a flushed shell is not pending"
@@ -2057,11 +2291,21 @@ fn deliver(
     poll(waiter).map(|text| (text, world.mode.pending_shells.borrow().len()))
 }
 
+/// How the shell commands of a movement case are worded.
+#[derive(Clone, Copy, Debug)]
+enum Commands {
+    /// Each command has its own text.
+    Distinct,
+    /// Every command has the same text, so only a row's handle tells it from another.
+    Shared,
+}
+
 /// Produces `count` pending shell rows while a response streams, and returns the world with
 /// the retained rows and the pending area's children.
 async fn produce_pending(
     directory: &Path,
     count: usize,
+    commands: Commands,
 ) -> (
     World,
     Vec<Rc<BashExecutionComponent>>,
@@ -2071,7 +2315,10 @@ async fn produce_pending(
     let retained = async {
         holding(&world, |_| async {
             let (rows, errors) = driving(&world, async {
-                start_shells(&world, count).await;
+                match commands {
+                    Commands::Distinct => start_shells(&world, count).await,
+                    Commands::Shared => start_commands(&world, count, |_| "!same".to_owned()).await,
+                }
                 world.mode.pending_shells.borrow().clone()
             })
             .await;
@@ -2101,8 +2348,8 @@ async fn produce_pending(
 }
 
 /// Ends the response, delivers an ordinary submission and checks where every row went.
-async fn movement_case(directory: &Path, count: usize) {
-    let (world, retained, neighbours) = produce_pending(directory, count).await;
+async fn movement_case(directory: &Path, count: usize, commands: Commands) {
+    let (world, retained, neighbours) = produce_pending(directory, count, commands).await;
     let mut waiter = super::typed::waiting(&world.mode);
     assert_eq!(
         world.mode.pending_shells.borrow().len(),
@@ -2150,8 +2397,10 @@ fn pending_shell_rows_move_once_in_insertion_order_before_input() {
     isolated(
         "pending_shell_rows_move_once_in_insertion_order_before_input",
         async |directory| {
-            for count in [0, 1, 3] {
-                movement_case(directory, count).await;
+            for commands in [Commands::Distinct, Commands::Shared] {
+                for count in [0, 1, 3] {
+                    movement_case(directory, count, commands).await;
+                }
             }
         },
     );
@@ -2490,4 +2739,44 @@ fn shell_dispatch_precedes_streaming_and_compaction_admission() {
             }
         },
     );
+}
+
+#[test]
+fn extension_abort_restores_queued_input_exactly_as_typed() {
+    const TEST: &str = "extension_abort_restores_queued_input_exactly_as_typed";
+    isolated(TEST, async |directory| {
+        streaming(&started(directory).await, async |world, held| {
+            let session = world.mode.runtime_host.session();
+            session.steer("  queued  steer ", &[]).unwrap();
+            world.mode.editor.set_text("");
+            session.extension_runner().create_context().abort().unwrap();
+            assert_eq!(world.mode.editor.get_text(), "  queued  steer ");
+            assert_eq!(session.pending_message_count(), 0);
+            assert_eq!(held.aborts(), 1);
+        })
+        .await;
+    });
+}
+
+#[test]
+fn extension_abort_during_a_confirmation_restores_queued_input() {
+    const TEST: &str = "extension_abort_during_a_confirmation_restores_queued_input";
+    isolated(TEST, async |directory| {
+        streaming(&started(directory).await, async |world, held| {
+            let session = world.mode.runtime_host.session();
+            session.steer("queued steer", &[]).unwrap();
+            world.mode.editor.set_text("");
+            let ui = maestro_app::ExtensionUIContext::new(world.mode.clone());
+            let mut confirmation =
+                std::pin::pin!(ui.confirm("Run the tool?".into(), "bash".into(), None));
+            assert!(
+                poll(&mut confirmation).is_none(),
+                "the confirmation stays open"
+            );
+            session.extension_runner().create_context().abort().unwrap();
+            assert_eq!(world.mode.editor.get_text(), "queued steer");
+            assert_eq!(held.aborts(), 1);
+        })
+        .await;
+    });
 }
