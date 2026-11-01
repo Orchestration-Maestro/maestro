@@ -1056,11 +1056,12 @@ fn error_row(world: &World, text: &str) -> String {
     format!("{painted_row}{}", " ".repeat(pad))
 }
 
-/// Appends a notice the mode shows for a compaction that failed, painted and padded.
+/// Appends an error notice the mode shows for a compaction that failed, painted and padded,
+/// with the blank row that follows it.
 fn with_notice(mut observed: Observed, world: &World, text: &str) -> Observed {
     observed
         .chat
-        .extend([String::new(), error_row(world, text)]);
+        .extend([String::new(), error_row(world, text), String::new()]);
     observed
 }
 

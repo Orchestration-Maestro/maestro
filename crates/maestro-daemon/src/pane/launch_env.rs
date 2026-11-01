@@ -6,9 +6,6 @@ use std::{
     path::Path,
 };
 
-/// Program name a pane child reads from the terminal program variable.
-const TERMINAL_PROGRAM_NAME: &str = "maestro";
-
 /// Shell variable that tells fish to repaint its prompt after a resize.
 const FISH_REFLOW: &str = "fish_handle_reflow";
 
@@ -103,7 +100,7 @@ impl PaneLaunchEnv {
             ("CODEX_THREAD_ID".into(), None),
             (
                 maestro_tui::TERM_PROGRAM.into(),
-                Some(TERMINAL_PROGRAM_NAME.into()),
+                Some(maestro_tui::PANE_TERM_PROGRAM.into()),
             ),
             (
                 "TERM_PROGRAM_VERSION".into(),

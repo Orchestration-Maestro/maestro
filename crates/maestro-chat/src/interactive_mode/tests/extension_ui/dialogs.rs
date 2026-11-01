@@ -671,7 +671,8 @@ fn stacked_input_keeps_its_typed_text_while_hidden() {
             world.terminal.send_input("\r");
             assert_eq!(settled(&mut confirm), Some(true));
             assert!(shows(&world, "Name"));
-            world.terminal.send_input("d\r");
+            world.terminal.send_input("d");
+            world.terminal.send_input("\r");
             assert_eq!(settled(&mut typed), Some(Some("abcd".to_owned())));
         },
     );

@@ -2,7 +2,9 @@
 use super::dynamic_border::DynamicBorder;
 use maestro_theme::{LiveTheme, Theme, ThemeColor, ThemeError};
 use maestro_tui::tui::InputHandler;
-use maestro_tui::{Cancellation, Component, Container, FocusFlag, Focusable, Input, Spacer, Text};
+use maestro_tui::{
+    Cancellation, Component, Container, FocusFlag, Focusable, Input, Spacer, Text, hyperlink,
+};
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use tokio::sync::oneshot;
@@ -273,14 +275,12 @@ impl LoginDialogComponent {
     pub fn show_auth(&self, url: &str, instructions: Option<&str>) -> Result<(), ThemeError> {
         self.content.clear();
         self.content.add_child(Rc::new(Spacer::new(1)));
-        let linked_url = format!("\x1b]8;;{url}\x07{url}\x1b]8;;\x07");
-        self.text(&linked_url, Some(ThemeColor::Accent))?;
+        self.text(&hyperlink(url, url), Some(ThemeColor::Accent))?;
         let hint = match self.options.platform {
             LoginDialogPlatform::MacOs => "Cmd+click to open",
             _ => "Ctrl+click to open",
         };
-        let hyperlink = format!("\x1b]8;;{url}\x07{hint}\x1b]8;;\x07");
-        self.text(&hyperlink, Some(ThemeColor::Dim))?;
+        self.text(&hyperlink(hint, url), Some(ThemeColor::Dim))?;
         if let Some(instructions) = instructions.filter(|text| !text.is_empty()) {
             self.content.add_child(Rc::new(Spacer::new(1)));
             self.text(instructions, Some(ThemeColor::Warning))?;

@@ -224,20 +224,38 @@ fn select<'a>(
     error: Option<&str>,
 ) -> (Vec<Visible>, bool, Option<String>) {
     let mut tools = false;
-    let blocks = content
-        .filter_map(|block| match block {
-            Shown::Text(text) => Visible::from_content(text, Visible::Text, false),
-            Shown::Thinking(text) => Visible::from_content(text, Visible::Thinking, hide),
-            Shown::ToolCall => {
-                tools = true;
-                None
+    let mut blocks = Vec::new();
+    // The trimmed, non-empty thoughts of the consecutive thinking blocks read so far.
+    let mut run: Option<Vec<&str>> = None;
+    for block in content {
+        let text = match block {
+            Shown::Thinking(text) => {
+                let thought = text.trim_matches(is_whitespace_scalar);
+                let thoughts = run.get_or_insert_with(Vec::new);
+                if !thought.is_empty() {
+                    thoughts.push(thought);
+                }
+                continue;
             }
-        })
-        .collect();
+            Shown::Text(text) => Some(text),
+            Shown::ToolCall => None,
+        };
+        blocks.extend(run.take().and_then(|thoughts| thinking(&thoughts, hide)));
+        match text {
+            Some(text) => blocks.extend(Visible::from_content(text, Visible::Text, false)),
+            None => tools = true,
+        }
+    }
+    blocks.extend(run.and_then(|thoughts| thinking(&thoughts, hide)));
     let notice = failure
         .filter(|failure| !tools || matches!(failure, Failure::Length))
         .map(|failure| notice(&failure, error));
     (blocks, tools, notice)
+}
+/// One section for a run of consecutive thinking blocks: their thoughts joined by a blank
+/// line, or nothing when every thought was empty.
+fn thinking(thoughts: &[&str], hide: bool) -> Option<Visible> {
+    Visible::from_content(&thoughts.join("\n\n"), Visible::Thinking, hide)
 }
 /// Visible Markdown text or a body-free hidden thought; excludes tool calls.
 enum Visible {

@@ -799,9 +799,10 @@ fn retry_completion_cancels_wait_and_restores_previous_action() {
 }
 
 /// The notice an interrupted first retry leaves at the end of the transcript.
-const RETRY_CANCELLED: [&str; 2] = [
+const RETRY_CANCELLED: [&str; 3] = [
     "",
     " @error@Error: Retry failed after 1 attempts: Retry cancelled\u{1b}[39m                                              ",
+    "",
 ];
 
 /// Makes every provider request of `world`'s session count itself before the installed

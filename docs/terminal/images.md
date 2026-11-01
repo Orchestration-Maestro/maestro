@@ -32,7 +32,11 @@ uniform Kitty IDs in `1..=0xffff_fffe`. Browser defaults have no environment hin
 sources must honor that range. Callbacks run without a terminal-state borrow.
 
 Detection is case-insensitive without trimming. A nonempty `TMUX` or a `TERM`
-starting with `tmux` or `screen` disables images and hyperlinks. Otherwise Kitty,
+starting with `tmux` or `screen` disables images and hyperlinks. Next, a
+`TERM_PROGRAM` equal to `PANE_TERM_PROGRAM` (`maestro`), which the workspace daemon
+sets for pane children, disables images and enables hyperlinks, with true color
+only for `COLORTERM` `truecolor` or `24bit`, before any marker a pane child can
+inherit from the terminal around the daemon. Otherwise Kitty,
 Ghostty and `WezTerm` hints precede iTerm2 hints. `VSCode` and Alacritty enable true
 color and hyperlinks without image support. Unknown terminals enable true color
 only for exact `COLORTERM` values `truecolor` or `24bit`.

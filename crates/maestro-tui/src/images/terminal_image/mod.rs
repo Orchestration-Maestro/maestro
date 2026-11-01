@@ -3,7 +3,7 @@
 mod capabilities;
 mod dimensions;
 mod protocol;
-pub use capabilities::TERM_PROGRAM;
+pub use capabilities::{PANE_TERM_PROGRAM, TERM_PROGRAM};
 pub use dimensions::{
     calculate_image_rows, get_gif_dimensions, get_image_dimensions, get_jpeg_dimensions,
     get_png_dimensions, get_webp_dimensions,

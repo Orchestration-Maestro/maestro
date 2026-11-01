@@ -43,7 +43,10 @@ pub(crate) fn into_text(previous: Option<&ComponentHandle>, text: String) -> Com
 }
 
 /// The muted `counts` of rows left out of a preview, followed by the expand key hint.
-pub(crate) fn expand_hint(
+///
+/// # Errors
+/// Returns the published theme's failure.
+pub fn expand_hint(
     counts: &str,
     theme: &Theme,
     live_theme: &LiveTheme,
@@ -62,14 +65,15 @@ fn format_expand_hint(
     themes: Option<(&Theme, &LiveTheme)>,
 ) -> Result<String, DiagnosticErrorInfo> {
     let prefix = format!("\n... ({counts},");
-    let (more, hint) = match themes {
+    let (more, hint, close) = match themes {
         Some((theme, live)) => (
             paint(theme, &ThemeColor::Muted, &prefix)?,
             themed(key_hint(EXPAND, "to expand", live))?,
+            paint(theme, &ThemeColor::Muted, ")")?,
         ),
-        None => (prefix, plain_key_hint(EXPAND, "to expand")),
+        None => (prefix, plain_key_hint(EXPAND, "to expand"), ")".to_owned()),
     };
-    Ok(format!("{more} {hint})"))
+    Ok(format!("{more} {hint}{close}"))
 }
 
 /// Share a component as its concrete type when it matches.

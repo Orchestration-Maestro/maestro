@@ -300,19 +300,29 @@ impl Recorder {
 
     /// Records the rows of each notice added since the last record, skipping the
     /// resource diagnostics the startup listing appends as a text row and a spacer, and
-    /// the message rows the session's events add.
+    /// the message rows the session's events add. An error notice's own blank row, which a
+    /// following spacer or the end shows, belongs to its notice.
     fn flush(&self) {
         let children = self.chat.children();
         let children = children.borrow();
         let added = without_messages(&children[self.recorded.get()..]);
+        let blank = |index: usize| {
+            added
+                .get(index)
+                .is_some_and(|row| row.render(WIDTH).iter().all(String::is_empty))
+        };
         let mut index = 0;
         while index + 1 < added.len() {
-            let spacer = added[index].render(WIDTH);
-            if spacer.iter().all(String::is_empty) {
-                self.log
-                    .borrow_mut()
-                    .push(Err(added[index + 1].render(WIDTH)));
+            if !blank(index) {
+                index += 2;
+                continue;
             }
+            let mut rows = added[index + 1].render(WIDTH);
+            if blank(index + 2) && (index + 3 == added.len() || blank(index + 3)) {
+                rows.push(String::new());
+                index += 1;
+            }
+            self.log.borrow_mut().push(Err(rows));
             index += 2;
         }
         self.recorded.set(children.len());
@@ -547,10 +557,14 @@ struct Expectation<'a> {
 }
 
 impl Expectation<'_> {
-    /// The rows of a notice shown in `color`.
+    /// The rows of a notice shown in `color`; an error notice ends with a blank row.
     fn notice(&self, color: &ThemeColor, text: &str) -> Observed {
-        let text = self.theme.fg(color, text).unwrap();
-        Observed::Notice(Text::new(text, 1, 0, None).render(WIDTH))
+        let painted = self.theme.fg(color, text).unwrap();
+        let mut rows = Text::new(painted, 1, 0, None).render(WIDTH);
+        if *color == ThemeColor::Error {
+            rows.push(String::new());
+        }
+        Observed::Notice(rows)
     }
 
     /// The observation of `step`; none for a failed answer.

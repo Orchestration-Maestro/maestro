@@ -52,7 +52,7 @@ impl Drop for Release {
     fn drop(&mut self) {
         let mode = self.mode.upgrade().unwrap();
         assert!(mode.unsubscribe.try_borrow_mut().is_ok());
-        assert!(mode.working.loading_animation.try_borrow_mut().is_ok());
+        assert!(mode.status_kind().is_none());
         self.released.set(true);
     }
 }
@@ -111,8 +111,8 @@ async fn subscription_case(directory: &Path, present: bool) {
         world.mode.unsubscribe.replace(Some(Box::new(move || {
             let _ = &release;
             let mode = mode.upgrade().unwrap();
-            assert!(mode.working.loading_animation.borrow().is_none());
-            assert_eq!(mode.status_container.children().borrow().len(), 1);
+            assert!(mode.working_loader().is_none());
+            assert!(mode.status_container.children().borrow().is_empty());
             assert!(registrations.closed(0), "provider precedes unsubscribe");
             assert!(mode.is_initialized.get(), "unsubscribe precedes UI stop");
             called.set(true);
@@ -127,13 +127,12 @@ async fn subscription_case(directory: &Path, present: bool) {
             assert_eq!(stopped.get(), present, "capture released before UI stop");
         }
     });
-    let status = world.mode.status_container.render(80);
     world.mode.stop().unwrap();
     assert_eq!(removed.get(), present);
     assert_eq!(released.get(), present);
-    assert!(world.mode.working.loading_animation.borrow().is_none());
+    assert!(world.mode.working_loader().is_none());
     assert!(world.mode.unsubscribe.borrow().is_none());
-    assert_eq!(world.mode.status_container.render(80), status);
+    assert!(world.mode.status_container.render(80).is_empty());
     assert_eq!(world.runtime.pending(), 0, "no loader tick remains");
     world.terminal.clear_writes();
     world.host.session().set_session_name("after stop").unwrap();
@@ -171,10 +170,7 @@ async fn failure_case(directory: &Path, progress_failure: bool) {
         );
         assert_eq!(watcher.closed(0), !progress_failure);
         assert!(!watcher.closed(1));
-        assert_eq!(
-            world.mode.working.loading_animation.borrow().is_some(),
-            progress_failure
-        );
+        assert_eq!(world.mode.working_loader().is_some(), progress_failure);
         assert_eq!(world.mode.unsubscribe.borrow().is_some(), progress_failure);
         assert_eq!(world.runtime.futures(), 0);
     }
@@ -196,7 +192,7 @@ fn recover_stop(world: &World, watcher: &RecordingWatcher) {
     world.mode.stop().unwrap();
     assert!(!world.mode.is_initialized.get());
     assert!(watcher.closed(0));
-    assert!(world.mode.working.loading_animation.borrow().is_none());
+    assert!(world.mode.working_loader().is_none());
     assert!(world.mode.unsubscribe.borrow().is_none());
     assert_eq!(world.runtime.pending(), 0);
 }
@@ -678,7 +674,7 @@ async fn requested_case(directory: &Path, requested: bool, transient: (bool, boo
     let observed = Rc::downgrade(mode);
     rig.before_drain.replace(Some(Rc::new(move || {
         let mode = observed.upgrade().unwrap();
-        assert!(mode.working.loading_animation.borrow().is_none());
+        assert!(mode.working_loader().is_none());
         assert!(mode.streaming.borrow().is_none());
         assert!(mode.pending_tools.borrow().values().next().is_none());
     })));
@@ -687,7 +683,7 @@ async fn requested_case(directory: &Path, requested: bool, transient: (bool, boo
         messages: Vec::new(),
     };
     super::events::dispatch(&rig.world, ended);
-    assert!(mode.working.loading_animation.borrow().is_none());
+    assert!(mode.working_loader().is_none());
     assert!(mode.streaming.borrow().is_none());
     assert!(mode.pending_tools.borrow().values().next().is_none());
     assert!(

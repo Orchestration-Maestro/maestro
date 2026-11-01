@@ -1062,7 +1062,7 @@ async fn new_and_fork_outcomes(directory: &std::path::Path, cancel: bool) {
             if fork && !cancel { "first" } else { "draft" }
         );
         if !fork {
-            assert!(world.mode.working.loading_animation.borrow().is_none());
+            assert!(world.mode.working_loader().is_none());
             assert!(world.mode.status_container.render(120).is_empty());
             assert!(!shows(&world.mode.chat_container, "New session started"));
         }

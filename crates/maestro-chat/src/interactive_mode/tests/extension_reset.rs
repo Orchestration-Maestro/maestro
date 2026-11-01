@@ -445,9 +445,18 @@ fn hidden_dialog_completion_preserves_the_active_panel() {
                 "a hidden dialog cannot replace the active input"
             );
             let mut next = ui.input("next".into(), None, None);
-            assert_eq!(super::typed::poll(&mut input).unwrap().unwrap(), None);
+            assert!(
+                super::typed::poll(&mut input).is_none(),
+                "the covered input stays open"
+            );
             active.input_handler().unwrap().handle_input("\r");
+            assert_eq!(
+                super::typed::poll(&mut input).unwrap().unwrap(),
+                Some(String::new())
+            );
             assert!(super::typed::poll(&mut next).is_none());
+            let shown = world.mode.editor_container.children().borrow()[0].clone();
+            assert!(!Rc::ptr_eq(&shown, &active), "the shown dialog stays");
             world.terminal.send_input("\x1b");
             assert_eq!(next.await.unwrap(), None);
             let shown = world.mode.editor_container.children().borrow()[0].clone();

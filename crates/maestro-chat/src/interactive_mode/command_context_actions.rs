@@ -64,7 +64,7 @@ impl InteractiveMode {
         &self,
         options: NewSessionCommandOptions,
     ) -> Result<SessionChangeResult, EventError> {
-        self.stop_working_loader();
+        self.clear_status_indicator(None);
         let result: Result<_, EventError> = async {
             let result = self.runtime_host.new_session(options).await?;
             if !result.cancelled {

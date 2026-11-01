@@ -202,6 +202,7 @@ impl InteractiveMode {
                 timeout: None,
                 runtime: Rc::clone(&self.tool_environment.runtime),
                 theme: self.themes.theme(),
+                on_toggle_tools_expanded: None,
             },
         )?);
         self.show_panel(selector.clone(), selector);

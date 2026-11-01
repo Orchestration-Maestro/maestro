@@ -353,6 +353,23 @@ pub fn empty_self_rendered() {
     .unwrap();
     assert_eq!(row.render(120), Vec::<String>::new());
 }
+/// The rows of `row` without styles or trailing padding.
+fn plain(row: &ToolExecutionComponent) -> Vec<String> {
+    row.render(120)
+        .iter()
+        .map(|line| maestro_app::strip_ansi(line).unwrap().trim_end().to_owned())
+        .collect()
+}
+/// A successful result holding only `text`.
+fn text_result(text: String) -> maestro_chat::ToolExecutionResult {
+    maestro_chat::ToolExecutionResult {
+        content: vec![maestro_app::UserBlock::Text(maestro_app::TextContent::new(
+            text,
+        ))],
+        details: None,
+        is_error: false,
+    }
+}
 /// A result without a result renderer shows its first ten lines and a hint until expanded.
 pub fn collapsed_fallback() {
     use maestro_app::{ToolRenderShell, ToolRendererBinding};
@@ -362,7 +379,8 @@ pub fn collapsed_fallback() {
     let _restore = Restore(get_keybindings());
     keys(vec!["ctrl+o".into()]);
     let runtime = manual_runtime::ManualRuntime::new();
-    let (mut params, _) = params(&default_input(), &runtime);
+    let (_, live) = published::published(&published::theme(0));
+    let (mut params, _) = constructor(&default_input(), &runtime, live);
     params.tool_definition = Some(ToolRendererBinding {
         render_call: Some(Rc::new(|_, _, _| {
             Ok(Rc::new(maestro_tui::Text::new("call".into(), 0, 0, None)))
@@ -371,29 +389,13 @@ pub fn collapsed_fallback() {
         render_shell: Some(ToolRenderShell::Default),
     });
     let row = ToolExecutionComponent::new(params).unwrap();
-    let plain = |row: &ToolExecutionComponent| -> Vec<String> {
-        row.render(120)
-            .iter()
-            .map(|line| maestro_app::strip_ansi(line).unwrap().trim_end().to_owned())
-            .collect()
-    };
     for (lines, hidden) in [(15, Some(5)), (100, Some(90)), (10, None)] {
         let text = (1..=lines)
             .map(|line| format!("line-{line}"))
             .collect::<Vec<_>>()
             .join("\n");
         row.set_expanded(false).unwrap();
-        row.update_result(
-            maestro_chat::ToolExecutionResult {
-                content: vec![maestro_app::UserBlock::Text(maestro_app::TextContent::new(
-                    text,
-                ))],
-                details: None,
-                is_error: false,
-            },
-            false,
-        )
-        .unwrap();
+        row.update_result(text_result(text), false).unwrap();
         let collapsed = plain(&row);
         assert!(collapsed.iter().any(|line| line.trim() == "line-10"));
         assert!(!collapsed.iter().any(|line| line.trim() == "line-11"));

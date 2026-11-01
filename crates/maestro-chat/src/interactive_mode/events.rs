@@ -4,6 +4,7 @@
 use super::InteractiveMode;
 use super::progress::{CompactionOutcome, RetryEnd, RetryStart};
 use super::replay::{aborted_notice, error_notice, failure_result};
+use super::status_indicator::StatusKind;
 use crate::{AssistantMessageComponent, ToolExecutionComponent, ToolExecutionResult};
 use maestro_app::configuration::config::APP_TITLE;
 use maestro_app::messages::CustomAgentMessages;
@@ -226,17 +227,19 @@ impl InteractiveMode {
         Ok(())
     }
 
-    /// Forgets the pending calls, shows terminal progress when configured and replaces the
-    /// working row, unless an extension hid it.
+    /// Forgets the pending calls, shows terminal progress when configured and shows the
+    /// working row in place of any status indicator, or clears the indicator when an
+    /// extension hid the working row.
     ///
     /// # Errors
     /// Returns the terminal's progress-writing failure.
     fn handle_agent_start(&self) -> io::Result<()> {
         drop(self.pending_tools.take());
         self.set_terminal_progress(true)?;
-        self.stop_working_loader();
         if self.working.working_visible.get() {
             self.show_working_loader();
+        } else {
+            self.clear_status_indicator(None);
         }
         self.ui.request_render(false);
         Ok(())
@@ -426,9 +429,7 @@ impl InteractiveMode {
     /// Returns the terminal's progress-writing failure.
     fn handle_agent_end(&self) -> io::Result<()> {
         self.set_terminal_progress(false)?;
-        if self.working.loading_animation.borrow().is_some() {
-            self.stop_working_loader();
-        }
+        self.clear_status_indicator(Some(StatusKind::Working));
         if let Some((component, _)) = self.streaming.take() {
             let component: Rc<dyn Component> = component;
             self.chat_container.remove_child(&component);

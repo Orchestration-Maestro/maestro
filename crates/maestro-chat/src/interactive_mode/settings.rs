@@ -366,6 +366,6 @@ impl InteractiveMode {
             .settings_manager()
             .borrow_mut()
             .set_clear_on_shrink(enabled);
-        self.ui.set_clear_on_shrink(enabled);
+        self.apply_clear_on_shrink(enabled);
     }
 }

@@ -10,9 +10,12 @@ custom callbacks remain supported. Layout delegates to the
 
 ## User and assistant content
 
-The user widget puts Markdown inside a padded `userMessageBg` panel with
-`userMessageText` foreground. Nonempty user rendering prefixes the first row with
-OSC 133 A and the last row with OSC 133 B/C, without adding a row.
+The user widget is one Markdown layer that pads and colours itself: one column of
+horizontal padding, one blank row above and below, `userMessageText` foreground
+and the `userMessageBg` background across the full width. No outer panel keeps a
+second copy of its rows. Empty text renders no rows. Nonempty user rendering
+prefixes the first row with OSC 133 A and the last row with OSC 133 B/C, without
+adding a row.
 User-authored Markdown keeps pasted terminal colour sequences unchanged.
 
 The assistant constructor accepts an optional shared assistant message and
@@ -23,8 +26,12 @@ content is cleaned with the shared [display helpers](../tools-read.md#display-he
 before terminal styling and hyperlink generation. This removes authored escape
 sequences and C0 controls other than TAB, LF and CR without removing renderer styling.
 Visible blocks retain
-their order, with a leading spacer and a gap after thinking only when another
-visible block follows. Hidden thinking uses the literal label instead of Markdown.
+their order. Consecutive thinking blocks form one run, which any other block,
+an empty text block or a tool call included, ends. A run renders its non-empty
+thoughts, joined by a blank line, as one italic Markdown section, or one literal
+hidden-thinking label when thinking is hidden; a run of empty thoughts renders
+nothing. The content has a leading spacer and a gap after a run only when a later
+text or thinking block has text.
 
 `AssistantMessageComponent::from_record` builds the same widget from a stored
 assistant record. It reads only the content blocks and the stop reason and error
@@ -167,3 +174,18 @@ terminal support are independent. Kitty conversion uses the existing synchronous
 PNG converter; successful cache entries match both payload and MIME, and replaced
 results discard stale entries. Image conversion schedules no deferred work.
 Native edit previews retain their existing runtime and read-only preflight.
+
+A self-rendered row whose callbacks draw nothing takes no leading blank row; with
+no images it renders no rows at all, before and after its result. Each image keeps
+its own blank row above it.
+
+When the result slot has no callback, or its callback fails, the row shows the
+result text split on newlines in the `toolOutput` colour: every line when
+expanded, otherwise the first 10 followed by the muted
+`... (<count> more lines, <expand key> to expand)` hint. Empty text adds no row.
+
+## Expand hints and notices
+
+Collapsed tool previews and shell rows end their expand or collapse hint with a
+`)` in the muted colour, as the text before the key is. An interactive error
+notice is followed by one blank row; warnings and status notices are not.
