@@ -256,3 +256,25 @@ fn tail_omitted_final_newline_reports_bytes_not_lines() {
     assert_eq!(tail.truncated_by, Some(maestro_tools::TruncationBy::Bytes));
     assert!(!tail.last_line_partial);
 }
+
+#[test]
+fn head_omitted_final_newline_reports_bytes_not_lines() {
+    for bytes in [3, maestro_tools::DEFAULT_MAX_BYTES] {
+        let text = format!("{}\n", "a".repeat(bytes));
+        let result = truncate_head(
+            &text,
+            TruncationOptions {
+                max_bytes: Some(bytes),
+                ..TruncationOptions::default()
+            },
+        );
+        assert_eq!(
+            result.truncated_by,
+            Some(maestro_tools::TruncationBy::Bytes)
+        );
+        assert!(result.truncated);
+        assert_eq!(result.content, "a".repeat(bytes));
+        assert_eq!(result.output_lines, result.total_lines);
+        assert_eq!(result.output_bytes, bytes);
+    }
+}
