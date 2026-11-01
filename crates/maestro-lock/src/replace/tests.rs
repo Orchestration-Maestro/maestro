@@ -13,6 +13,7 @@ struct Effects {
     collision: bool,
     before_sync: Option<Box<dyn FnOnce()>>,
     before_write: Option<Box<dyn FnOnce()>>,
+    before_rename: Option<Box<dyn FnOnce()>>,
     temporary_path: Option<PathBuf>,
     acquisition: Option<Acquisition>,
     #[cfg(unix)]
@@ -41,6 +42,12 @@ pub(crate) fn effect(phase: &'static str) -> io::Result<()> {
     }
     if phase == "write_all" {
         let callback = EFFECTS.with_borrow_mut(|effects| effects.before_write.take());
+        if let Some(callback) = callback {
+            callback();
+        }
+    }
+    if phase == "rename" {
+        let callback = EFFECTS.with_borrow_mut(|effects| effects.before_rename.take());
         if let Some(callback) = callback {
             callback();
         }
@@ -360,13 +367,14 @@ fn assert_failed_creation_cleans_up(parent: &Path, target: &Path) {
 #[cfg(unix)]
 fn launch_umask_cases(test: &str) -> bool {
     use maestro_test_process::TestProcess;
-    if std::env::var_os("MAESTRO_REPLACE_UMASK").is_some() {
+    if let Ok(mask) = std::env::var("MAESTRO_REPLACE_UMASK") {
+        let mask = u32::from_str_radix(&mask, 8).unwrap();
+        rustix::process::umask(rustix::fs::Mode::from_bits_retain(mask));
         return false;
     }
     for mask in ["000", "077"] {
         let output = TestProcess::current(test)
             .unwrap()
-            .shell_setup("/bin/sh", format!("umask {mask}"))
             .env("MAESTRO_REPLACE_UMASK", mask)
             .single_threaded()
             .output()
@@ -807,6 +815,7 @@ fn atomic_publication_failures_remove_temporary_and_keep_previous_bytes() {
             b"next",
             crate::Symlinks::Follow,
             crate::Temporary::Fixed("json.tmp"),
+            None,
         );
 
         assert_eq!(result.unwrap_err().kind(), io::ErrorKind::Interrupted);
@@ -833,6 +842,7 @@ fn atomic_linked_temporary_failure_keeps_previous_bytes() {
         b"next",
         crate::Symlinks::Follow,
         crate::Temporary::Fixed("json.tmp"),
+        None,
     );
 
     assert_eq!(result.unwrap_err().kind(), io::ErrorKind::Interrupted);
@@ -866,6 +876,7 @@ fn atomic_temporary_is_private_at_creation() {
         b"secret",
         crate::Symlinks::Follow,
         crate::Temporary::Fixed("json.tmp"),
+        None,
     )
     .unwrap();
 
@@ -905,6 +916,7 @@ fn atomic_fixed_writers_wait_before_opening_temporary() {
             b"competitor-long",
             crate::Symlinks::Follow,
             crate::Temporary::Fixed("json.tmp"),
+            None,
         )
         .unwrap();
         stream.write_all(b"done").unwrap();
@@ -939,6 +951,7 @@ fn atomic_fixed_writers_wait_before_opening_temporary() {
         b"next",
         crate::Symlinks::Follow,
         crate::Temporary::Fixed("json.tmp"),
+        None,
     );
 
     EFFECTS.take();
@@ -964,6 +977,7 @@ fn atomic_creation_collision_keeps_competing_bytes() {
         b"next",
         crate::Symlinks::Follow,
         crate::Temporary::Fixed("json.tmp"),
+        None,
     );
 
     assert_eq!(result.unwrap_err().kind(), io::ErrorKind::AlreadyExists);
@@ -986,6 +1000,7 @@ fn atomic_temporary_cannot_name_the_target() {
         b"next",
         crate::Symlinks::Follow,
         crate::Temporary::Fixed("json"),
+        None,
     );
 
     assert_eq!(result.unwrap_err().kind(), io::ErrorKind::InvalidInput);
@@ -1181,4 +1196,250 @@ fn append_syncs_recovery_absence_once_before_writing() {
     assert_eq!(EFFECTS.take().events, ["recovery_sync", "target_append"]);
     assert_eq!(fs::read(target).unwrap(), b"beforeafter");
     assert_eq!(fs::read_dir(scratch.path()).unwrap().count(), 1);
+}
+
+#[cfg(unix)]
+#[test]
+fn atomic_requested_creation_mode_is_private_before_bytes() {
+    use std::os::unix::fs::PermissionsExt;
+    if launch_umask_cases("atomic_requested_creation_mode_is_private_before_bytes") {
+        return;
+    }
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let control = scratch.path().join("control");
+    fs::write(&control, b"control").unwrap();
+    assert_eq!(
+        fs::metadata(&control).unwrap().permissions().mode() & 0o777,
+        if std::env::var("MAESTRO_REPLACE_UMASK").unwrap() == "077" {
+            0o600
+        } else {
+            0o666
+        }
+    );
+    for temporary in [crate::Temporary::Fixed("tmp"), crate::Temporary::Unique] {
+        for bytes in [b"".as_slice(), b"\0\xffprivate"] {
+            let target = scratch.path().join("private");
+            EFFECTS.set(Effects::default());
+            CREATED.set(Some(Box::new(|| {
+                let path = EFFECTS.with_borrow(|effects| effects.temporary_path.clone().unwrap());
+                let metadata = fs::metadata(path).unwrap();
+                assert_eq!(metadata.len(), 0);
+                assert_eq!(metadata.permissions().mode() & 0o777, 0o600);
+            })));
+
+            let committed = crate::atomic_replace(
+                &target,
+                bytes,
+                crate::Symlinks::Follow,
+                temporary,
+                Some(0o600),
+            )
+            .unwrap();
+
+            assert!(committed.dir_sync.is_none());
+            assert_eq!(EFFECTS.take().temporary_mode, Some(0o600));
+            assert_eq!(fs::read(&target).unwrap(), bytes);
+            assert_eq!(
+                fs::metadata(&target).unwrap().permissions().mode() & 0o777,
+                0o600
+            );
+            fs::remove_file(target).unwrap();
+            assert_eq!(fs::read_dir(scratch.path()).unwrap().count(), 1);
+        }
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn atomic_rewrite_retains_existing_mode_before_bytes() {
+    use std::os::unix::fs::PermissionsExt;
+    if launch_umask_cases("atomic_rewrite_retains_existing_mode_before_bytes") {
+        return;
+    }
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let target = scratch.path().join("session.json");
+    fs::write(&target, b"previous").unwrap();
+    fs::set_permissions(&target, fs::Permissions::from_mode(0o640)).unwrap();
+    EFFECTS.set(Effects::default());
+    CREATED.set(Some(Box::new(|| {
+        let path = EFFECTS.with_borrow(|effects| effects.temporary_path.clone().unwrap());
+        let metadata = fs::metadata(path).unwrap();
+        assert_eq!(metadata.len(), 0);
+        let expected = if std::env::var("MAESTRO_REPLACE_UMASK").unwrap() == "077" {
+            0o600
+        } else {
+            0o640
+        };
+        assert_eq!(metadata.permissions().mode() & 0o777, expected);
+    })));
+
+    crate::atomic_replace(
+        &target,
+        b"next",
+        crate::Symlinks::Follow,
+        crate::Temporary::Unique,
+        Some(0o600),
+    )
+    .unwrap();
+
+    assert_eq!(EFFECTS.take().temporary_mode, Some(0o640));
+    assert_eq!(
+        fs::metadata(&target).unwrap().permissions().mode() & 0o777,
+        0o640
+    );
+    assert_eq!(fs::read(target).unwrap(), b"next");
+}
+
+#[cfg(unix)]
+#[test]
+fn atomic_default_creation_retains_umask_permissions() {
+    use std::os::unix::fs::PermissionsExt;
+    if launch_umask_cases("atomic_default_creation_retains_umask_permissions") {
+        return;
+    }
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let control = scratch.path().join("control");
+    fs::write(&control, b"").unwrap();
+    let mode = fs::metadata(control).unwrap().permissions().mode() & 0o777;
+    for temporary in [crate::Temporary::Fixed("tmp"), crate::Temporary::Unique] {
+        let target = scratch.path().join("session");
+        EFFECTS.set(Effects::default());
+        CREATED.set(Some(Box::new(move || {
+            let path = EFFECTS.with_borrow(|effects| effects.temporary_path.clone().unwrap());
+            assert_eq!(
+                fs::metadata(path).unwrap().permissions().mode() & 0o777,
+                mode
+            );
+        })));
+
+        crate::atomic_replace(
+            &target,
+            b"default",
+            crate::Symlinks::Follow,
+            temporary,
+            None,
+        )
+        .unwrap();
+
+        EFFECTS.take();
+        assert_eq!(
+            fs::metadata(&target).unwrap().permissions().mode() & 0o777,
+            mode
+        );
+        assert_eq!(fs::read(&target).unwrap(), b"default");
+        fs::remove_file(target).unwrap();
+    }
+}
+
+#[test]
+fn atomic_unlocked_readers_observe_whole_files_at_publication() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let target = scratch.path().join("session");
+    let previous = vec![b'a'; 131_072];
+    let next = vec![b'b'; 262_144];
+    fs::write(&target, &previous).unwrap();
+    let before_write = target.clone();
+    let before_rename = target.clone();
+    let old = previous.clone();
+    let intended = next.clone();
+    EFFECTS.set(Effects {
+        before_write: Some(Box::new(move || {
+            assert_eq!(fs::read(before_write).unwrap(), previous);
+        })),
+        before_rename: Some(Box::new(move || {
+            assert_eq!(fs::read(before_rename).unwrap(), old);
+            let temporary = EFFECTS.with_borrow(|effects| effects.temporary_path.clone().unwrap());
+            assert_eq!(fs::read(temporary).unwrap(), intended);
+        })),
+        ..Effects::default()
+    });
+
+    crate::atomic_replace(
+        &target,
+        &next,
+        crate::Symlinks::Follow,
+        crate::Temporary::Unique,
+        Some(0o600),
+    )
+    .unwrap();
+
+    let effects = EFFECTS.take();
+    assert!(effects.before_write.is_none());
+    assert!(effects.before_rename.is_none());
+    assert_eq!(fs::read(target).unwrap(), next);
+    assert_eq!(fs::read_dir(scratch.path()).unwrap().count(), 1);
+}
+
+#[cfg(unix)]
+#[test]
+fn atomic_requested_mode_failures_preserve_previous_state() {
+    use std::os::unix::fs::PermissionsExt;
+    for existing in [false, true] {
+        for phase in ["create", "write_all", "file_sync", "rename"] {
+            let scratch = maestro_test_directory::Scratch::new().unwrap();
+            let target = scratch.path().join("session");
+            if existing {
+                fs::write(&target, b"previous").unwrap();
+                fs::set_permissions(&target, fs::Permissions::from_mode(0o640)).unwrap();
+            }
+            EFFECTS.set(Effects {
+                fault: Some((phase, io::ErrorKind::Interrupted)),
+                ..Effects::default()
+            });
+
+            let result = crate::atomic_replace(
+                &target,
+                b"next",
+                crate::Symlinks::Follow,
+                crate::Temporary::Unique,
+                Some(0o600),
+            );
+
+            assert_eq!(result.unwrap_err().kind(), io::ErrorKind::Interrupted);
+            EFFECTS.take();
+            assert_eq!(
+                fs::read_dir(scratch.path()).unwrap().count(),
+                usize::from(existing)
+            );
+            if existing {
+                assert_eq!(fs::read(&target).unwrap(), b"previous");
+                assert_eq!(
+                    fs::metadata(&target).unwrap().permissions().mode() & 0o777,
+                    0o640
+                );
+            } else {
+                assert!(!target.exists());
+            }
+        }
+    }
+}
+
+#[test]
+fn atomic_parent_sync_failure_reports_committed_bytes() {
+    for &phase in sync_phases() {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let target = scratch.path().join("session");
+        fs::write(&target, b"previous").unwrap();
+        EFFECTS.set(Effects {
+            fault: Some((phase, io::ErrorKind::Interrupted)),
+            ..Effects::default()
+        });
+
+        let committed = crate::atomic_replace(
+            &target,
+            b"next",
+            crate::Symlinks::Follow,
+            crate::Temporary::Unique,
+            Some(0o600),
+        )
+        .unwrap();
+
+        EFFECTS.take();
+        assert_eq!(
+            committed.dir_sync.unwrap().kind(),
+            io::ErrorKind::Interrupted
+        );
+        assert_eq!(fs::read(target).unwrap(), b"next");
+        assert_eq!(fs::read_dir(scratch.path()).unwrap().count(), 1);
+    }
 }

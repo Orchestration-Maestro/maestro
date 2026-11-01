@@ -291,3 +291,85 @@ fn rewrite_refuses_an_existing_read_only_target() {
     );
     assert_eq!(fs::read(&path).unwrap(), b"before");
 }
+
+#[test]
+fn atomic_publication_accepts_full_length_native_leaves() {
+    #[cfg(windows)]
+    let unicode = "𝄞".repeat(127) + "x";
+    #[cfg(not(windows))]
+    let unicode = "é".repeat(127) + "x";
+    for leaf in ["x".repeat(255), unicode] {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let target = scratch.path().join(leaf);
+        if let Err(error) = fs::write(&target, b"native control") {
+            assert!(fs::write(scratch.path().join("control"), b"control").is_ok());
+            eprintln!("host refuses the full-length leaf: {error}");
+            continue;
+        }
+        for bytes in [b"rewritten".as_slice(), b"\0\xffcreated"] {
+            maestro_lock::atomic_replace(
+                &target,
+                bytes,
+                maestro_lock::Symlinks::Follow,
+                maestro_lock::Temporary::Unique,
+                Some(0o600),
+            )
+            .unwrap();
+            assert_eq!(fs::read(&target).unwrap(), bytes);
+            assert_eq!(fs::read_dir(scratch.path()).unwrap().count(), 1);
+            fs::remove_file(&target).unwrap();
+        }
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn atomic_requested_mode_follows_existing_and_dangling_final_links() {
+    use std::os::unix::fs::{PermissionsExt, symlink};
+    for existing in [false, true] {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let target = scratch.path().join("target");
+        let link = scratch.path().join("link");
+        if existing {
+            fs::write(&target, b"previous").unwrap();
+            fs::set_permissions(&target, fs::Permissions::from_mode(0o640)).unwrap();
+        }
+        symlink("target", &link).unwrap();
+        for temporary in [
+            maestro_lock::Temporary::Fixed("tmp"),
+            maestro_lock::Temporary::Unique,
+        ] {
+            maestro_lock::atomic_replace(
+                &link,
+                b"followed",
+                maestro_lock::Symlinks::Follow,
+                temporary,
+                Some(0o600),
+            )
+            .unwrap();
+            assert_eq!(fs::read(&target).unwrap(), b"followed");
+            assert_eq!(fs::read_link(&link).unwrap(), PathBuf::from("target"));
+            assert_eq!(
+                fs::metadata(&target).unwrap().permissions().mode() & 0o777,
+                if existing { 0o640 } else { 0o600 }
+            );
+        }
+        maestro_lock::atomic_replace(
+            &link,
+            b"entry",
+            maestro_lock::Symlinks::Replace,
+            maestro_lock::Temporary::Unique,
+            Some(0o600),
+        )
+        .unwrap();
+        assert!(
+            !fs::symlink_metadata(&link)
+                .unwrap()
+                .file_type()
+                .is_symlink()
+        );
+        assert_eq!(fs::read(&link).unwrap(), b"entry");
+        assert_eq!(fs::read(target).unwrap(), b"followed");
+        assert_eq!(fs::read_dir(scratch.path()).unwrap().count(), 2);
+    }
+}

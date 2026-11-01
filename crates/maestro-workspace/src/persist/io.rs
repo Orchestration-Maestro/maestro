@@ -23,7 +23,13 @@ pub fn save_to_paths(
 /// Serializes once and atomically renames synced bytes over the resolved target.
 fn save_json_to_path<T: serde::Serialize>(path: &Path, snapshot: &T) -> io::Result<()> {
     let bytes = serde_json::to_vec_pretty(snapshot)?;
-    let committed = atomic_replace(path, &bytes, Symlinks::Follow, Temporary::Fixed("json.tmp"))?;
+    let committed = atomic_replace(
+        path,
+        &bytes,
+        Symlinks::Follow,
+        Temporary::Fixed("json.tmp"),
+        None,
+    )?;
     match committed.dir_sync {
         Some(error) => Err(error),
         None => Ok(()),
