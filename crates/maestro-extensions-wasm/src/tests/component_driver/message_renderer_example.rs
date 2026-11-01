@@ -17,8 +17,7 @@ const WIDTH: u32 = 40;
 
 /// Starts the single shipped component with a supplied wall clock.
 async fn start() -> Result<ComponentDriver, String> {
-    let path =
-        crate::tests::build::example_component("maestro-extensions-wasm", "message_renderer")?;
+    let path = crate::tests::build::example_component("message_renderer")?;
     let (engine, component) =
         crate::tests::build::compile(&path).map_err(|error| error.to_string())?;
     let clock = Clock::default();

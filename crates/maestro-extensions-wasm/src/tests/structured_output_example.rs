@@ -116,7 +116,7 @@ fn structured_output_renders_complete_answers_and_fallbacks() -> Result<(), Stri
 /// The built single-copy component renders the same collapsed and expanded rows.
 #[test]
 fn structured_output_component_renders_complete_answers_and_fallbacks() -> Result<(), String> {
-    let path = super::build::example_component("maestro-extensions-wasm", "structured_output")?;
+    let path = super::build::example_component("structured_output")?;
     super::block_on(async {
         let mut driver = super::ComponentDriver::new(path);
         driver.start().await?;

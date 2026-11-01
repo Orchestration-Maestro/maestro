@@ -17,9 +17,17 @@ session-library operations. The [compaction API](../compaction.md),
 
 Automatic policy checks `contextTokens > contextWindow - reserveTokens` when enabled.
 The shipped reserve is 16384 and retained recent budget is 20000. Manual preparation
-is independent of the enabled flag. Applications may pass optional focus instructions.
+is independent of the enabled flag. A response that reports no tokens is measured by
+the last real usage plus the messages after it. Applications may pass optional focus
+instructions. Without any real usage, the automatic check starts no compaction.
 
-1. Find a cut by accumulating estimates backwards through recent message entries.
+Each user, custom or tool-result image adds 4800 UTF-16 units to the estimate, or
+1200 tokens. All-zero assistant usage is skipped when choosing the usage anchor.
+Usage from before a compaction summary inserted ahead of the retained span is stale
+and ignored until a new answer reports usage.
+
+1. Find a cut by accumulating estimates backwards through entries that put a message
+   in context.
 2. Extract discarded history and any early split-turn prefix.
 3. Generate structured text, using nonempty previous-summary text as iterative context.
 4. Append a compaction record containing the returned summary and retained identity.
@@ -48,8 +56,11 @@ pre-compaction context, not copied from an old estimate.
 
 ### Split turns and cuts
 
-A conversational turn begins at a user message and continues through assistant/tool
-work until the next user message. A large turn can require a mid-turn cut:
+A conversational turn begins at a user message, a shell execution or a generated message
+(custom, branch summary or compaction summary) and continues through assistant/tool
+work until the next such message. Stored compaction entries are not turn starts or
+cut candidates; their summary messages still count toward the budget. A large turn
+can require a mid-turn cut:
 
 ```text
   header | u1 a2 t3 a4 t5 t6 | a7 t8
@@ -67,9 +78,10 @@ History and prefix summaries start independently, then merge with a **Turn Conte
 history focus or previous-summary text. See the API for their distinct output budgets.
 
 Cuts may start at user, assistant, shell execution, custom-message or branch-summary
-content, never at a tool result. Preceding metadata is absorbed without crossing a
-message or compaction boundary. Shell/custom boundaries follow the library's turn
-selection rules rather than requiring every entry to be a model user message.
+content, never at a tool result. Custom messages and summaries count toward the retained
+budget like any other message, and an empty branch summary is neither a cut nor a turn
+start because it puts nothing in context. Preceding metadata is absorbed without
+crossing a message, another context entry or a compaction boundary.
 
 ### Stored compaction record
 
@@ -192,18 +204,23 @@ projection/writer, preserving unread metadata without decoding execution records
 
 ```text
 [User]: What they said
-[Assistant thinking]: Internal reasoning
 [Assistant]: Response text
 [Assistant tool calls]: read(path="foo.rs"); edit(path="bar.rs")
 [Tool result]: Output from tool
 ```
 
-Serialization separates labels with blank lines and groups assistant thinking, text and
-tools in that order. Arguments pair by name for object roots; array and string roots
-pair their positions instead (`echo(0=1, 1=2)`), and other roots name none. Only
+Serialization separates labels with blank lines and groups assistant text and tools in
+that order. Assistant thinking is never written, in compaction, branch summaries or the
+exported conversation text. Arguments pair by name for object roots; array and string
+roots pair their positions instead (`echo(0=1, 1=2)`), and other roots name none. Only
 tool-result text is clipped at 2000 Unicode scalar values,
 with an omitted-character notice; user and assistant text stay complete. Branch
 preparation excludes tool results altogether, so their context comes from tool calls.
+
+`generate_summary_with_usage` returns `GeneratedSummary`, containing the summary text
+and the provider's reported `Usage`. `generate_summary` keeps returning text alone.
+Neither helper stores usage on a session entry. See the
+[summary API](../compaction.md#generate-a-summary) for request options.
 
 ## Extension integration
 

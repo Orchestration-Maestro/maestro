@@ -323,11 +323,12 @@ join results, then works in place. Its legacy `with_lock` operation behaves as f
 Manager saves use `with_write_lock`. The native adapter creates the parent as
 needed and takes the same stable sidecar lock before reading, including when the
 settings file is absent. It holds exclusion through the single callback and
-optional write. Independent manager edits therefore survive concurrent first
-writes as well as existing-file saves. Acquire/read failures skip the callback;
-callback and write failures release exclusion. `Ok(None)` and callback errors
-leave settings bytes untouched, but may leave a new parent and sidecar. Locking
-alone never creates a settings file.
+optional write. Independent manager edits survive concurrent first writes and
+existing-file saves when the holder finishes within the writer's attempts; a
+writer that runs out reports the contention and writes nothing. Acquire/read
+failures skip the callback; callback and write failures release exclusion.
+`Ok(None)` and callback errors leave settings bytes untouched, but may leave a
+new parent and sidecar. Locking alone never creates a settings file.
 
 Raw callers that merge concurrent first writes must choose write intent too:
 
@@ -350,7 +351,12 @@ no stronger exclusion promised. Native decorators forward write intent to retain
 the native guarantee. In-memory callbacks still run without a lock and retain
 last-writer behavior.
 
-Writes are not atomic: there is no rename, rollback or sync step.
+The native adapter publishes each write through
+[the shared recoverable byte publication](locking.md#recoverable-byte-publication),
+following a symbolic link at the settings path. The text is written in place, keeping the
+file's permissions, ownership and hard links, and a write cut short is completed, not rolled
+back, by the next coordinated writer. A read-only settings file is refused and left
+unchanged. In-memory writes are not durable.
 
 ## Saved text
 
@@ -422,6 +428,7 @@ save:
 | `retry.provider.timeoutMs` | number | unset | Optional timeout passed to the model provider |
 | `retry.provider.maxRetries` | number | unset | Optional retry limit passed to the model provider |
 | `retry.provider.maxRetryDelayMs` | number | `60000` | Largest accepted provider retry delay in milliseconds |
+| `httpIdleTimeoutMs` | number or `disabled` | `300000` | Longest wait, in whole milliseconds, for HTTP response headers or the next body chunk; `0` and `disabled` remove the limit; a negative or unusable value reads as the default; the setter ignores a negative or non-finite value |
 
 The crate stores and returns these values; applying them belongs to the callers.
 
@@ -460,7 +467,7 @@ extensions left it, and extension hooks see every event as before.
 | `shellPath` | string | unset | Custom shell path |
 | `shellCommandPrefix` | string | unset | Prefix for every shell command |
 | `npmCommand` | string[] | unset | Package-manager argument vector |
-| `sessionDir` | string | unset | An exact `~` reads as the home directory; a `~/` prefix is joined onto it through `maestro-path`; bytes of the home directory that are not valid UTF-8 read as U+FFFD; every other text, and any text while the home directory is unknown, is returned as written, including the empty string |
+| `sessionDir` | string | unset | A leading `~` reads as [Home directory in paths](#home-directory-in-paths); bytes of the home directory that are not valid UTF-8 read as U+FFFD; any text while the home directory is unknown is returned as written, including the empty string |
 | `enabledModels` | string[] | unset | Model patterns for cycling |
 
 ### Resources
@@ -477,6 +484,30 @@ extensions left it, and extension hooks see every event as before.
 The lists are stored and returned as written. Path resolution, patterns, package
 installation, update checks and reporting belong to the owners of those features.
 An extension path never implies a package.
+
+### Home directory in paths
+
+An exact `~` names the home directory. A `~/` prefix puts the rest of the path
+below it. Other spellings, including `~name`, stay as written. On Windows,
+`~\` also expands in the daemon's new-terminal directory and in resource,
+prompt, skill, package and extension paths. Tool paths, application directory
+options, `sessionDir` and completion paths accept only `~/`, not `~\`.
+The home directory is read only for forms that expand.
+
+How the rest of the path is combined with the home depends on the caller:
+
+- `sessionDir`, resource, prompt, skill, package, completion and extension paths
+  use a normalizing join. `.`, `..` and repeated separators resolve, and an empty
+  home leaves a relative result. An exact `~` returns the home as supplied,
+  except in extension paths, which normalize it too.
+- Tool paths and application directory options append the suffix unchanged on
+  every platform. For example, `~/a//b` with home `C:\h` gives `C:\h/a//b`.
+  A trailing separator in the home stays too: `/h/` plus `~/x` gives `/h//x`.
+  An empty home with `~/x` gives `/x`.
+- The daemon's new-terminal directory keeps its native rule. On Windows it
+  splits on both separators, drops empty components and joins with `\`.
+  On other platforms it appends the rest without doubling the home's final
+  slash. An absolute remainder still stays below the home directory.
 
 ## Example
 

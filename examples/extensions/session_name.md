@@ -11,6 +11,7 @@ Loading the component is opt-in and needs that application's component runtime.
 ## Controlled runs
 
 ```sh
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- just prepare-tests
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- session_name_component_runs_registered_command
 ```

@@ -68,6 +68,44 @@ impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Driver<'_, C, 
         })
         .await
     }
+    /// Replaces the context, model and thinking level the next request uses with the
+    /// preparation callback's answer; the request already sent is untouched.
+    pub(super) async fn prepare_next_turn(
+        &mut self,
+        response: &SharedAssistantMessage,
+        results: &[Arc<RwLock<ToolResultMessage>>],
+        messages: &[AgentMessage<C>],
+    ) -> Result<(), DiagnosticErrorInfo> {
+        let Some(prepare) = &self.config.prepare_next_turn else {
+            return Ok(());
+        };
+        let update = prepare(
+            ShouldStopAfterTurnContext {
+                message: response,
+                tool_results: &results
+                    .iter()
+                    .map(|result| read(result).clone())
+                    .collect::<Vec<_>>(),
+                context: &self.context,
+                new_messages: messages,
+            },
+            self.options.signal.clone(),
+        )
+        .await?;
+        let Some(update) = update else {
+            return Ok(());
+        };
+        if let Some(context) = update.context {
+            self.context = context;
+        }
+        if let Some(model) = update.model {
+            self.model = model;
+        }
+        if let Some(level) = update.thinking_level {
+            self.reasoning = maestro_models::reasoning_from_thinking_level(&level);
+        }
+        Ok(())
+    }
     /// Borrow completed records for the optional stop callback.
     pub(super) async fn stop_after_turn(
         &self,

@@ -375,7 +375,7 @@ impl Host for ComponentHost {
 fn example() -> Result<PathBuf, String> {
     static BUILT: OnceLock<Result<PathBuf, String>> = OnceLock::new();
     BUILT
-        .get_or_init(|| super::build::example_component("maestro-extensions-wasm", "event_bus"))
+        .get_or_init(|| super::build::example_component("event_bus"))
         .clone()
 }
 

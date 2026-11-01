@@ -92,7 +92,7 @@ impl Host {
     /// Starts one factory with controlled inputs before registration.
     fn new(component: bool) -> Result<Self, String> {
         if component {
-            let path = super::build::example_component("maestro-extensions-wasm", "preset")?;
+            let path = super::build::example_component("preset")?;
             let (engine, component) = super::build::compile(&path).map_err(|e| e.to_string())?;
             let mut wasi = wasmtime_wasi::WasiCtxBuilder::new();
             wasi.preopened_dir(fixtures(), fixtures(), wasmtime_wasi::FsPerms::ReadOnly)

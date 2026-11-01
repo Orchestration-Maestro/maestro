@@ -507,9 +507,7 @@ impl Host for ComponentHost {
         static PATH: std::sync::OnceLock<Result<std::path::PathBuf, String>> =
             std::sync::OnceLock::new();
         let path = PATH
-            .get_or_init(|| {
-                super::build::component("trigger_compact", "MAESTRO_TRIGGER_COMPACT_COMPONENT")
-            })
+            .get_or_init(|| super::build::example_component("trigger_compact"))
             .as_ref()
             .map_err(Clone::clone)?;
         let (engine, component) = super::host::compiled(path).map_err(|error| error.to_string())?;
@@ -741,12 +739,6 @@ fn trigger_compact_factory_instances_keep_separate_usage() -> Result<(), String>
 /// The built component produces the recorded requests for every case.
 #[test]
 fn trigger_compact_component_matches_host_requests() -> Result<(), String> {
-    if std::env::var_os("NEXTEST").is_some() {
-        assert!(
-            std::env::var_os("MAESTRO_TRIGGER_COMPACT_COMPONENT").is_some(),
-            "nextest must prepare the compaction component outside the test"
-        );
-    }
     for row in corpus().rows {
         let instances = row.registrations.len() / 2;
         let mut host = ComponentHost::start(instances)?;

@@ -12,17 +12,19 @@ use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::{path::Path, rc::Rc, sync::OnceLock};
 
-#[path = "../../maestro-extensions-wasm/src/tests/build/examples.rs"]
+#[path = "../../maestro-extensions-wasm/src/tests/build/cargo.rs"]
 mod component_build;
 
 /// Selects the setup artifact, retaining a direct-Cargo fallback outside nextest.
 fn component() -> &'static Path {
     static COMPONENT: OnceLock<std::path::PathBuf> = OnceLock::new();
     COMPONENT.get_or_init(|| {
-        std::env::var_os("MAESTRO_SUBAGENT_COMPONENT").map_or_else(
-            || component_build::example_component("maestro-subagents", "component").unwrap(),
-            std::path::PathBuf::from,
+        component_build::component(
+            Path::new(env!("CARGO_MANIFEST_DIR")),
+            &["--example", "component"],
+            "component",
         )
+        .unwrap()
     })
 }
 

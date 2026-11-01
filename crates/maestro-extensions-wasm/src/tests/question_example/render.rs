@@ -160,7 +160,7 @@ fn question_renders_calls_and_results() -> Result<(), String> {
 }
 #[test]
 fn question_component_renders_calls_and_results() -> Result<(), String> {
-    let path = crate::tests::build::example_component("maestro-extensions-wasm", "question")?;
+    let path = crate::tests::build::example_component("question")?;
     crate::tests::block_on(async {
         let mut driver = crate::tests::ComponentDriver::new(path);
         driver.start().await?;

@@ -26,7 +26,7 @@ impl Host {
     /// Starts the shipped factory on the selected adapter.
     fn new(component: bool) -> Result<Self, String> {
         if component {
-            let path = super::build::example_component("maestro-extensions-wasm", "tools")?;
+            let path = super::build::example_component("tools")?;
             Ok(Self::Component(Box::new(
                 super::block_on(Harness::start(&path)).map_err(|e| e.to_string())?,
             )))

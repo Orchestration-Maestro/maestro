@@ -197,7 +197,7 @@ fn protected_paths_keeps_host_errors_catchable() -> Result<(), String> {
 /// The built single-copy hook executes the same policy across the component interface.
 #[test]
 fn protected_paths_component_matches_the_hook() -> Result<(), String> {
-    let path = super::build::example_component("maestro-extensions-wasm", "protected_paths")?;
+    let path = super::build::example_component("protected_paths")?;
     let (engine, component) = super::build::compile(&path).map_err(|error| error.to_string())?;
     let mut harness = super::block_on(super::host::Harness::from_compiled(&engine, &component))
         .map_err(|error| error.to_string())?;

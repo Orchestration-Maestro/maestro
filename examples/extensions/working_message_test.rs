@@ -1,4 +1,5 @@
 //! A startup extension that requests a custom working text and indicator.
+// maestro-component: MAESTRO_WORKING_MESSAGE_TEST_COMPONENT
 #![cfg(any(test, target_arch = "wasm32"))]
 #![forbid(
     clippy::pedantic,

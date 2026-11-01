@@ -1,5 +1,5 @@
-//! Extension dialogs that take the editor's place until answered, cancelled, timed out
-//! or aborted.
+//! Extension dialogs that stack in the editor's place until answered, cancelled, timed
+//! out or aborted.
 use crate::InteractiveMode;
 use crate::components::{
     extension_editor::{ExtensionEditorComponent, ExtensionEditorOptions},
@@ -24,48 +24,20 @@ type Settle = Rc<dyn Fn(Option<String>)>;
 /// Stops a dialog component's countdown before the editor returns.
 type Dispose = Box<dyn Fn()>;
 
-/// A dialog retained until it settles, even while another panel hides it.
-struct Dialog {
-    /// The component whose settlement this is.
+/// A dialog or inline custom view kept in the stack until it closes, even while another
+/// one covers it.
+struct Entry {
+    /// The component shown and focused while the entry is on top.
     component: Rc<dyn Component>,
-    /// Cancels or answers the component once.
-    settle: Settle,
+    /// Cancels or answers a dialog once; custom views settle through their own owner.
+    settle: Option<Settle>,
 }
 
-/// The latest selector, text input and multi-line editor dialog.
+/// The extension dialogs and inline custom views in the editor's place, newest on top.
 #[derive(Default)]
-pub(in super::super) struct DialogSlots {
-    /// The latest selector, including confirmations.
-    selector: RefCell<Option<Dialog>>,
-    /// The latest text input.
-    input: RefCell<Option<Dialog>>,
-    /// The latest multi-line editor.
-    editor: RefCell<Option<Dialog>>,
-}
-
-impl DialogSlots {
-    /// Cancels each kept dialog that has not settled, as its own cancellation does, so it
-    /// answers `None`.
-    pub(in super::super) fn cancel_all(&self) {
-        for slot in [&self.selector, &self.input, &self.editor] {
-            if let Some(dialog) = slot.take() {
-                (dialog.settle)(None);
-            }
-        }
-    }
-
-    /// Releases only the slot belonging to `component`, outside the slot's borrow.
-    fn release(&self, component: &Rc<dyn Component>) {
-        for slot in [&self.selector, &self.input, &self.editor] {
-            let matches = slot
-                .borrow()
-                .as_ref()
-                .is_some_and(|dialog| Rc::ptr_eq(&dialog.component, component));
-            if matches {
-                drop(slot.take());
-            }
-        }
-    }
+pub(in super::super) struct DialogStack {
+    /// The entries, oldest first.
+    entries: RefCell<Vec<Entry>>,
 }
 
 /// A shown dialog that has not settled yet.
@@ -90,7 +62,13 @@ impl InteractiveMode {
         opts: Option<ExtensionUIDialogOptions>,
     ) -> ExtensionUIFuture<Option<String>> {
         let ExtensionUIDialogOptions { signal, timeout } = opts.unwrap_or_default();
-        self.show_dialog(signal, &self.dialogs.selector, |settle| {
+        let mode = self.this.clone();
+        let toggle: Rc<dyn Fn()> = Rc::new(move || {
+            if let Some(mode) = mode.upgrade() {
+                mode.report(mode.toggle_tool_output_expansion());
+            }
+        });
+        self.show_dialog(signal, |settle| {
             let cancel = Rc::clone(&settle);
             let selector = Rc::new(ExtensionSelectorComponent::new(
                 title,
@@ -102,6 +80,7 @@ impl InteractiveMode {
                     timeout,
                     runtime: Rc::clone(&self.tool_environment.runtime),
                     theme: self.themes.theme(),
+                    on_toggle_tools_expanded: Some(toggle),
                 },
             )?);
             let dispose = disposer(&selector, ExtensionSelectorComponent::dispose);
@@ -148,7 +127,7 @@ impl InteractiveMode {
         opts: Option<ExtensionUIDialogOptions>,
     ) -> ExtensionUIFuture<Option<String>> {
         let ExtensionUIDialogOptions { signal, timeout } = opts.unwrap_or_default();
-        self.show_dialog(signal, &self.dialogs.input, |settle| {
+        self.show_dialog(signal, |settle| {
             let cancel = Rc::clone(&settle);
             let input = Rc::new(ExtensionInputComponent::new(
                 title,
@@ -174,7 +153,7 @@ impl InteractiveMode {
         title: String,
         prefill: Option<String>,
     ) -> ExtensionUIFuture<Option<String>> {
-        self.show_dialog(None, &self.dialogs.editor, |settle| {
+        self.show_dialog(None, |settle| {
             let cancel = Rc::clone(&settle);
             let editor = ExtensionEditorComponent::new(
                 &self.ui,
@@ -193,17 +172,15 @@ impl InteractiveMode {
         })
     }
 
-    /// Builds a dialog around its settlement, shows it in place of the editor before
+    /// Builds a dialog around its settlement, pushes it on the dialog stack before
     /// returning and, given a signal, settles it with `None` on abort.
     ///
     /// An already-aborted signal settles at once without showing anything. Settling
-    /// stops the countdown and abort observer, restoring the editor only when this
-    /// dialog is still shown. The slot retains the component independently of the
-    /// returned future; replacing the same kind cancels its previous dialog.
+    /// stops the countdown and abort observer and removes the dialog from the stack. The
+    /// stack retains the component independently of the returned future.
     fn show_dialog(
         &self,
         signal: Option<Cancellation>,
-        slot: &RefCell<Option<Dialog>>,
         build: impl FnOnce(Settle) -> Result<(Rc<dyn Component>, Option<Dispose>), ThemeError>,
     ) -> ExtensionUIFuture<Option<String>> {
         if signal.as_ref().is_some_and(Cancellation::is_aborted) {
@@ -226,14 +203,7 @@ impl InteractiveMode {
             open.dispose = dispose;
             open.component = Some(Rc::downgrade(&component));
         }
-        let previous = slot.replace(Some(Dialog {
-            component: Rc::clone(&component),
-            settle: Rc::clone(&settle),
-        }));
-        if let Some(previous) = previous {
-            (previous.settle)(None);
-        }
-        self.show_panel(Rc::clone(&component), component);
+        self.push_dialog(component, Some(Rc::clone(&settle)));
         if let Some(signal) = signal {
             let cancelled = signal.cancelled();
             self.tool_environment
@@ -268,27 +238,71 @@ impl InteractiveMode {
             if let Some(mode) = mode.upgrade()
                 && let Some(component) = component.and_then(|component| component.upgrade())
             {
-                mode.hide_extension_dialog(&component);
+                mode.remove_dialog(&component);
             }
             drop(observed);
             drop(answer.send(value));
         })
     }
 
-    /// Releases this dialog's slot, restoring the editor only if this component is shown.
-    fn hide_extension_dialog(&self, component: &Rc<dyn Component>) {
-        self.dialogs.release(component);
-        let shown = self
-            .editor_container
-            .children()
-            .borrow()
+    /// Pushes `component` on the dialog stack, then shows and focuses it.
+    pub(super) fn push_dialog(&self, component: Rc<dyn Component>, settle: Option<Settle>) {
+        self.dialogs
+            .entries
+            .borrow_mut()
+            .push(Entry { component, settle });
+        self.show_top_dialog();
+    }
+
+    /// Removes `component` from the dialog stack wherever it sits. Removing the top entry
+    /// shows the one below it, or the editor once none is left; removing a covered one
+    /// changes nothing on screen.
+    pub(super) fn remove_dialog(&self, component: &Rc<dyn Component>) {
+        let mut entries = self.dialogs.entries.borrow_mut();
+        let Some(index) = entries
             .iter()
-            .any(|child| Rc::ptr_eq(child, component));
-        if !shown {
+            .position(|entry| Rc::ptr_eq(&entry.component, component))
+        else {
             return;
+        };
+        let removed = entries.remove(index);
+        let was_top = index == entries.len();
+        drop(entries);
+        drop(removed);
+        if was_top {
+            self.show_top_dialog();
         }
-        self.restore_editor();
-        self.ui.request_render(false);
+    }
+
+    /// Empties the dialog stack, answering every dialog `None`, then shows the editor when
+    /// the stack held anything. Custom views settle through their own owner.
+    pub(in super::super) fn cancel_dialogs(&self) {
+        let entries = self.dialogs.entries.take();
+        for entry in &entries {
+            if let Some(settle) = &entry.settle {
+                settle(None);
+            }
+        }
+        if !entries.is_empty() {
+            self.show_top_dialog();
+        }
+    }
+
+    /// Shows and focuses the top dialog, or the editor when the stack is empty, then
+    /// requests a frame.
+    fn show_top_dialog(&self) {
+        let top = self
+            .dialogs
+            .entries
+            .borrow()
+            .last()
+            .map(|entry| Rc::clone(&entry.component));
+        if let Some(top) = top {
+            self.show_panel(Rc::clone(&top), top);
+        } else {
+            self.restore_editor();
+            self.ui.request_render(false);
+        }
     }
 }
 

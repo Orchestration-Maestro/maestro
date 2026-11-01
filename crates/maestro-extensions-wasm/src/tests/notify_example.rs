@@ -70,7 +70,7 @@ async fn start(
 fn notify_component_selects_terminal_protocol() -> Result<(), String> {
     let (host, _) = super::block_on(super::example_support::start::<Notify>())?;
     super::example_support::release_all(&host, &["event agent_end"]);
-    let path = super::build::example_component("maestro-extensions-wasm", "notify")?;
+    let path = super::build::example_component("notify")?;
     let compiled = super::build::compile(&path).map_err(|e| e.to_string())?;
     super::block_on(async {
         for (env, expected) in [
@@ -118,7 +118,7 @@ fn notify_component_selects_terminal_protocol() -> Result<(), String> {
 /// Windows wins over Kitty and receives a literal program/argv, with output discarded.
 #[test]
 fn notify_component_windows_command_is_controlled() -> Result<(), String> {
-    let path = super::build::example_component("maestro-extensions-wasm", "notify")?;
+    let path = super::build::example_component("notify")?;
     let compiled = super::build::compile(&path).map_err(|e| e.to_string())?;
     super::block_on(async {
         let (mut harness, stdout) = start(

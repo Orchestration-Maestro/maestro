@@ -6,7 +6,7 @@ use wasmtime_wasi::WasiView;
 
 /// Starts the built example with controlled randomness and literal keyboard replies.
 fn host() -> Result<Harness, String> {
-    let path = super::build::example_component("maestro-extensions-wasm", "snake")?;
+    let path = super::build::example_component("snake")?;
     let mut host = super::block_on(Harness::start(&path)).map_err(|e| e.to_string())?;
     random(&mut host, vec![0]);
     host.observed().catalog.data.has_ui = true;

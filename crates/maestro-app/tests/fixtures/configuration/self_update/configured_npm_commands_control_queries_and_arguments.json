@@ -21,9 +21,10 @@
           "/opt/tool",
           "install",
           "-g",
+          "--ignore-scripts",
           "@old/agent"
         ],
-        "display": "npm --prefix /opt/tool install -g @old/agent"
+        "display": "npm --prefix /opt/tool install -g --ignore-scripts @old/agent"
       }
     },
     "trace": [
@@ -77,9 +78,10 @@
           "named profile",
           "install",
           "-g",
+          "--ignore-scripts",
           "@old/agent"
         ],
-        "display": "wrapper --profile \"named profile\" install -g @old/agent"
+        "display": "wrapper --profile \"named profile\" install -g --ignore-scripts @old/agent"
       }
     },
     "trace": [
@@ -129,9 +131,10 @@
           "/opt/tool",
           "install",
           "-g",
+          "--ignore-scripts",
           "@old/agent"
         ],
-        "display": "npm --prefix /opt/tool install -g @old/agent"
+        "display": "npm --prefix /opt/tool install -g --ignore-scripts @old/agent"
       }
     },
     "trace": [
@@ -222,9 +225,10 @@
           "/opt/tool",
           "install",
           "-g",
+          "--ignore-scripts",
           "@new/maestro"
         ],
-        "display": "npm --prefix /opt/tool uninstall -g @old/agent && npm --prefix /opt/tool install -g @new/maestro",
+        "display": "npm --prefix /opt/tool uninstall -g @old/agent && npm --prefix /opt/tool install -g --ignore-scripts @new/maestro",
         "steps": [
           {
             "command": "npm",
@@ -244,9 +248,10 @@
               "/opt/tool",
               "install",
               "-g",
+              "--ignore-scripts",
               "@new/maestro"
             ],
-            "display": "npm --prefix /opt/tool install -g @new/maestro"
+            "display": "npm --prefix /opt/tool install -g --ignore-scripts @new/maestro"
           }
         ]
       }
@@ -299,9 +304,10 @@
         "args": [
           "install",
           "-g",
+          "--ignore-scripts",
           "@old/agent"
         ],
-        "display": "pnpm install -g @old/agent"
+        "display": "pnpm install -g --ignore-scripts @old/agent"
       }
     },
     "trace": [

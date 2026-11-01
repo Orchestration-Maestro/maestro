@@ -469,10 +469,11 @@ fn write_rendering_uses_theme_roles_without_new_tokens() {
             .map(|row| fg(ThemeColor::ToolOutput, row))
             .collect();
         let expected = format!(
-            "{title} {}\n\n{}{} {hint})",
+            "{title} {}\n\n{}{} {hint}{}",
             fg(ThemeColor::Accent, "notes.txt"),
             shown.join("\n"),
-            fg(ThemeColor::Muted, "\n... (1 more lines, 11 total,")
+            fg(ThemeColor::Muted, "\n... (1 more lines, 11 total,"),
+            fg(ThemeColor::Muted, ")")
         );
         assert_eq!(compact.render(WIDTH), laid_out(&expected), "{name} compact");
 

@@ -7,7 +7,7 @@ use crate::tests::scenario::Driver;
 
 /// Starts the single shipped component on a fresh controlled host.
 async fn start() -> Result<ComponentDriver, String> {
-    let path = crate::tests::build::example_component("maestro-extensions-wasm", "custom_footer")?;
+    let path = crate::tests::build::example_component("custom_footer")?;
     let mut driver = ComponentDriver::new(path);
     driver.start().await?;
     Ok(driver)

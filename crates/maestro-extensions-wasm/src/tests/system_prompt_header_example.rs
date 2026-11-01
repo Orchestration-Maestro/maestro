@@ -256,7 +256,7 @@ fn system_prompt_status_propagates_host_errors() -> Result<(), String> {
 /// The built single-copy example produces every recorded answer across the component interface.
 #[test]
 fn system_prompt_status_component_matches_lifecycle() -> Result<(), String> {
-    let path = super::build::example_component("maestro-extensions-wasm", "system_prompt_header")?;
+    let path = super::build::example_component("system_prompt_header")?;
     let (engine, component) = super::build::compile(&path).map_err(|error| error.to_string())?;
     let mut harness = super::block_on(super::host::Harness::from_compiled(&engine, &component))
         .map_err(|error| error.to_string())?;

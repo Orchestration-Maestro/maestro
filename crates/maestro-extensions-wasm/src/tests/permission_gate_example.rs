@@ -178,7 +178,7 @@ fn permission_gate_hook_preserves_patterns_and_decisions() -> Result<(), String>
 /// The built component runs the same calls without executing any shell command.
 #[test]
 fn permission_gate_component_preserves_patterns_and_decisions() -> Result<(), String> {
-    let path = super::build::example_component("maestro-extensions-wasm", "permission_gate")?;
+    let path = super::build::example_component("permission_gate")?;
     let (engine, component) = super::build::compile(&path).map_err(|e| e.to_string())?;
     let mut harness = super::block_on(super::host::Harness::from_compiled(&engine, &component))
         .map_err(|e| e.to_string())?;

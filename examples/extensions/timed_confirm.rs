@@ -1,4 +1,5 @@
 //! Timed confirmation, selection and caller-owned cancellation through the host UI.
+// maestro-component: MAESTRO_TIMED_CONFIRM_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

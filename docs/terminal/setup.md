@@ -13,8 +13,10 @@ binding cannot recover modifiers that the terminal discarded.
 
 ## Inspect received keys
 
-Maestro's native adapter queries the Kitty keyboard protocol at startup. If no
-support reply arrives within 150 ms, it requests xterm `modifyOtherKeys` mode 2.
+Maestro's native adapter queries the Kitty keyboard protocol at startup, followed by the
+terminal's device attributes. When the attributes arrive and no Kitty reply came first, it
+requests xterm `modifyOtherKeys` mode 2; no timer decides. A Kitty reply that arrives later
+turns that mode off and the Kitty protocol on.
 Maestro decodes both enhanced CSI-u reports and xterm reports. The
 [native terminal reference](native-terminal.md#keyboard-protocols) describes
 negotiation; the [key decoder](keys.md) describes accepted input.

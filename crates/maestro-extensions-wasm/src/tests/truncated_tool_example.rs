@@ -218,7 +218,7 @@ fn truncated_tool_renders_calls_and_results() -> Result<(), String> {
 
 #[test]
 fn truncated_tool_component_renders_calls_and_results() -> Result<(), String> {
-    let path = super::build::example_component("maestro-extensions-wasm", "truncated_tool")?;
+    let path = super::build::example_component("truncated_tool")?;
     super::block_on(async {
         let mut driver = super::ComponentDriver::new(path);
         driver.start().await?;

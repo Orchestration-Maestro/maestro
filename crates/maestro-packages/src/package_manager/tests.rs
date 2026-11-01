@@ -1,7 +1,7 @@
-//! Environment and home decision boundaries with native witnesses.
+//! Environment recovery boundaries with native witnesses.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-use super::operations::{home, recover_environment};
+use super::operations::recover_environment;
 use std::{cell::Cell, collections::BTreeMap, io};
 
 #[cfg(unix)]
@@ -41,25 +41,6 @@ fn empty_linux_environment_recovery_preserves_entries() {
         )))
         .is_empty()
     );
-}
-#[test]
-fn home_lookup_uses_truthy_environment_before_platform_fallback() {
-    assert_eq!(
-        home(Some("/explicit/home".into()), || panic!("eager fallback")).unwrap(),
-        "/explicit/home"
-    );
-    for explicit in [None, Some(String::new())] {
-        let reads = Cell::new(0);
-        assert_eq!(
-            home(explicit, || {
-                reads.set(reads.get() + 1);
-                Ok("/platform/home".into())
-            })
-            .unwrap(),
-            "/platform/home"
-        );
-        assert_eq!(reads.get(), 1);
-    }
 }
 #[cfg(target_os = "linux")]
 #[test]

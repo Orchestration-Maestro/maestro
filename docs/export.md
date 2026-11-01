@@ -72,6 +72,13 @@ The serializer does **not** sanitize supplied scripts, CSS or custom renderer
 HTML. Use trusted bundle/render providers. Base64 protects the session-data
 carrier; it is not a sanitization guarantee for the rest of the document.
 
+The exported Markdown viewer sanitizes link and image targets. It removes ASCII
+control characters from a target, then keeps it only when it has no scheme (a
+relative target) or names `http`, `https`, `mailto`, `tel` or `ftp`, ignoring
+case. Any other target, such as `javascript:`, `vbscript:`, `data:` or a custom
+scheme, leaves a link as its label text and an image as its alternative text.
+The emitted target is the one with control characters removed.
+
 ## Terminal text and standard tool rendering
 
 `ansi_to_html` escapes literal text once and converts ASCII SGR sequences into

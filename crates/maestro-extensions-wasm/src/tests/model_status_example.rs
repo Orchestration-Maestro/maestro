@@ -229,7 +229,7 @@ fn invoke_on_component(
 /// Every recorded successful selection reaches the built component's real callback.
 #[test]
 fn model_status_component_runs_selection_hook() -> Result<(), String> {
-    let path = super::build::example_component("maestro-extensions-wasm", "model_status")?;
+    let path = super::build::example_component("model_status")?;
     let (engine, component) = super::build::compile(&path).map_err(|error| error.to_string())?;
     let (mut harness, stdout) = super::block_on(super::host::Harness::from_compiled_capturing(
         &engine,
@@ -312,7 +312,7 @@ fn rejections_in_process() -> Result<(), String> {
 
 /// Runs both recorded rejections and a later control through the built component.
 fn rejections_on_component() -> Result<(), String> {
-    let path = super::build::example_component("maestro-extensions-wasm", "model_status")?;
+    let path = super::build::example_component("model_status")?;
     let (engine, component) = super::build::compile(&path).map_err(|error| error.to_string())?;
     let (mut harness, stdout) = super::block_on(super::host::Harness::from_compiled_capturing(
         &engine,

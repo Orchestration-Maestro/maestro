@@ -368,7 +368,7 @@ fn component_lifecycle(harness: &mut super::host::Harness, ending: &str) -> wasm
 /// The built component emits a delayed frame and cancels native waits at every stop seam.
 #[test]
 fn titlebar_spinner_component_runs_lifecycle() -> Result<(), String> {
-    let path = super::build::example_component("maestro-extensions-wasm", "titlebar_spinner")?;
+    let path = super::build::example_component("titlebar_spinner")?;
     let (engine, component) = super::build::compile(&path).map_err(|error| error.to_string())?;
     for ending in ["agent_start", "agent_end", "session_shutdown"] {
         let mut harness = super::block_on(super::host::Harness::from_compiled(&engine, &component))

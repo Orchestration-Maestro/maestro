@@ -124,7 +124,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
     async fn summarize(
         &self,
         preparation: &CompactionPreparation,
-        (api_key, headers): (String, Option<IndexMap<String, String>>),
+        (api_key, headers, base_url): (String, Option<IndexMap<String, String>>, Option<String>),
         custom_instructions: Option<String>,
         signal: &Cancellation,
     ) -> Result<CompactionResult, DiagnosticErrorInfo> {
@@ -135,7 +135,10 @@ impl<E: ExtensionExecution> AgentSession<E> {
             custom_instructions,
             thinking_level: Some(self.thinking_level()),
         };
-        let model = read(&self.model()).clone();
+        let mut model = read(&self.model()).clone();
+        if let Some(base_url) = base_url {
+            model.base_url = base_url;
+        }
         maestro_session::compaction::compact(preparation, &model, &options)
             .await
             .map(stored_result)

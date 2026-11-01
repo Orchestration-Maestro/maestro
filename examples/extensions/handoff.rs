@@ -162,11 +162,12 @@ async fn generate(
         .model_registry()?
         .get_api_key_and_headers(model.clone())
         .await?;
-    let (api_key, headers) = match auth {
+    let (api_key, headers, base_url) = match auth {
         ResolvedRequestAuth::Ok {
             api_key: Some(key),
             headers,
-        } if !key.is_empty() => (key, headers),
+            base_url,
+        } if !key.is_empty() => (key, headers, base_url),
         ResolvedRequestAuth::Ok { .. } => return Err(format!("No API key for {}", model.provider)),
         ResolvedRequestAuth::Error { error } => return Err(error),
     };
@@ -190,6 +191,7 @@ async fn generate(
         Some(ProviderStreamOptions {
             common: StreamOptions {
                 api_key: Some(api_key),
+                base_url,
                 headers,
                 signal: Some(signal),
                 ..Default::default()

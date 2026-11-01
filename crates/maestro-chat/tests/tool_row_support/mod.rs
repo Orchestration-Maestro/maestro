@@ -325,3 +325,150 @@ fn argument_root(arguments: &serde_json::Value, printed: &[&str]) {
         "{label}"
     );
 }
+/// A self-rendered row whose callbacks draw nothing.
+fn empty_self_rendered_row(runtime: &manual_runtime::ManualRuntime) -> ToolExecutionComponent {
+    use maestro_app::{ToolRenderResultCallback, ToolRenderShell, ToolRendererBinding};
+    let (mut params, _) = params(&default_input(), runtime);
+    let result: ToolRenderResultCallback<serde_json::Value, maestro_app::ToolRendererState> =
+        Rc::new(|_, _, _, _| Ok(Rc::new(maestro_tui::Text::new(String::new(), 0, 0, None))));
+    params.tool_definition = Some(ToolRendererBinding {
+        render_call: Some(Rc::new(|_, _, _| {
+            Ok(Rc::new(maestro_tui::Text::new(String::new(), 0, 0, None)))
+        })),
+        render_result: Some(result.into()),
+        render_shell: Some(ToolRenderShell::SelfRendered),
+    });
+    ToolExecutionComponent::new(params).unwrap()
+}
+/// A self-rendered row whose callbacks draw nothing and that has no images takes no rows,
+/// before and after its result.
+pub fn empty_self_rendered() {
+    let runtime = manual_runtime::ManualRuntime::new();
+    let row = empty_self_rendered_row(&runtime);
+    assert_eq!(row.render(120), Vec::<String>::new());
+    row.update_result(
+        maestro_chat::ToolExecutionResult {
+            content: vec![],
+            details: Some(serde_json::json!({})),
+            is_error: false,
+        },
+        false,
+    )
+    .unwrap();
+    assert_eq!(row.render(120), Vec::<String>::new());
+}
+/// A caller's child that replaces the leading blank row still renders when the content is empty.
+pub fn empty_self_rendered_keeps_caller_children() {
+    let runtime = manual_runtime::ManualRuntime::new();
+    let row = empty_self_rendered_row(&runtime);
+    let kept: maestro_tui::tui::ComponentHandle =
+        Rc::new(maestro_tui::Text::new("kept".into(), 0, 0, None));
+    row.children().borrow_mut()[0] = kept;
+    assert_eq!(plain(&row), ["kept"]);
+}
+/// On its first render, appends `added` to the array and removes the child after itself.
+struct Editor {
+    /// The row's children, without keeping them alive.
+    array: std::rc::Weak<std::cell::RefCell<Vec<maestro_tui::tui::ComponentHandle>>>,
+    /// Whether the edit has happened.
+    done: Cell<bool>,
+}
+impl Component for Editor {
+    fn render(&self, _width: usize) -> Vec<String> {
+        if !self.done.replace(true)
+            && let Some(array) = self.array.upgrade()
+        {
+            let mut children = array.borrow_mut();
+            let at = children
+                .iter()
+                .position(|child| std::ptr::addr_eq(Rc::as_ptr(child), std::ptr::from_ref(self)));
+            if let Some(at) = at {
+                children.remove(at + 1);
+            }
+            children.push(Rc::new(maestro_tui::Text::new("added".into(), 0, 0, None)));
+        }
+        vec!["editor".into()]
+    }
+}
+/// A self-rendered row walks its live children: one added while rendering is drawn and one
+/// removed ahead of the walk is not.
+pub fn self_rendered_rows_walk_live_children() {
+    let runtime = manual_runtime::ManualRuntime::new();
+    let row = empty_self_rendered_row(&runtime);
+    row.add_child(Rc::new(Editor {
+        array: Rc::downgrade(&row.children()),
+        done: Cell::new(false),
+    }));
+    row.add_child(Rc::new(maestro_tui::Text::new(
+        "removed".into(),
+        0,
+        0,
+        None,
+    )));
+    assert_eq!(plain(&row), ["editor", "added"]);
+}
+/// The rows of `row` without styles or trailing padding.
+fn plain(row: &ToolExecutionComponent) -> Vec<String> {
+    row.render(120)
+        .iter()
+        .map(|line| maestro_app::strip_ansi(line).unwrap().trim_end().to_owned())
+        .collect()
+}
+/// A successful result holding only `text`.
+fn text_result(text: String) -> maestro_chat::ToolExecutionResult {
+    maestro_chat::ToolExecutionResult {
+        content: vec![maestro_app::UserBlock::Text(maestro_app::TextContent::new(
+            text,
+        ))],
+        details: None,
+        is_error: false,
+    }
+}
+/// A result without a result renderer shows its first ten lines and a hint until expanded.
+pub fn collapsed_fallback() {
+    use maestro_app::{ToolRenderShell, ToolRendererBinding};
+    let _guard = REGISTRY
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _restore = Restore(get_keybindings());
+    keys(vec!["ctrl+o".into()]);
+    let runtime = manual_runtime::ManualRuntime::new();
+    let (_, live) = published::published(&published::theme(0));
+    let (mut params, _) = constructor(&default_input(), &runtime, live);
+    params.tool_definition = Some(ToolRendererBinding {
+        render_call: Some(Rc::new(|_, _, _| {
+            Ok(Rc::new(maestro_tui::Text::new("call".into(), 0, 0, None)))
+        })),
+        render_result: None,
+        render_shell: Some(ToolRenderShell::Default),
+    });
+    let row = ToolExecutionComponent::new(params).unwrap();
+    for (lines, hidden) in [(15, Some(5)), (100, Some(90)), (10, None)] {
+        let text = (1..=lines)
+            .map(|line| format!("line-{line}"))
+            .collect::<Vec<_>>()
+            .join("\n");
+        row.set_expanded(false).unwrap();
+        row.update_result(text_result(text), false).unwrap();
+        let collapsed = plain(&row);
+        assert!(collapsed.iter().any(|line| line.trim() == "line-10"));
+        assert!(!collapsed.iter().any(|line| line.trim() == "line-11"));
+        let hint = hidden.map(|hidden| format!("... ({hidden} more lines, ctrl+o to expand)"));
+        assert_eq!(
+            collapsed
+                .iter()
+                .find(|line| line.contains("more lines"))
+                .map(|line| line.trim().to_owned()),
+            hint,
+            "{collapsed:?}"
+        );
+        row.set_expanded(true).unwrap();
+        let expanded = plain(&row);
+        assert!(
+            expanded
+                .iter()
+                .any(|line| line.trim() == format!("line-{lines}"))
+        );
+        assert!(!expanded.iter().any(|line| line.contains("more lines")));
+    }
+}
