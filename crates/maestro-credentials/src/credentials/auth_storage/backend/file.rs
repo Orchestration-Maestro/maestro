@@ -40,12 +40,7 @@ impl FileAuthStorageBackend {
     /// Lock the sidecar, retrying only while another holder has it.
     fn acquire(&self) -> Result<WriteLock, AuthStorageError> {
         self.create_parents()?;
-        maestro_lock::acquire_write_bounded(Path::new(&self.auth_path), true).map_err(|error| {
-            match error {
-                TryLockError::Error(error) => error.into(),
-                error @ TryLockError::WouldBlock => error.into(),
-            }
-        })
+        maestro_lock::acquire_write_bounded(Path::new(&self.auth_path), true).map_err(lock_error)
     }
 
     /// Lock the sidecar, waiting the scheduled delays while another holder has it.
@@ -55,11 +50,11 @@ impl FileAuthStorageBackend {
         loop {
             match maestro_lock::try_acquire_write(Path::new(&self.auth_path), true) {
                 Ok(holder) => return Ok(holder),
-                Err(TryLockError::WouldBlock) => match delays.next() {
+                Err(error @ TryLockError::WouldBlock) => match delays.next() {
                     Some(delay) => tokio::time::sleep(Duration::from_millis(delay)).await,
-                    None => return Err(Box::new(TryLockError::WouldBlock)),
+                    None => return Err(lock_error(error)),
                 },
-                Err(TryLockError::Error(error)) => return Err(error.into()),
+                Err(error) => return Err(lock_error(error)),
             }
         }
     }
@@ -73,6 +68,14 @@ impl FileAuthStorageBackend {
             Err(error) if error.kind() == ErrorKind::NotFound => Ok(None),
             Err(error) => Err(error),
         }
+    }
+}
+
+/// Preserves native acquisition errors and distinguishes exhausted contention.
+fn lock_error(error: TryLockError) -> AuthStorageError {
+    match error {
+        TryLockError::Error(error) => error.into(),
+        error @ TryLockError::WouldBlock => error.into(),
     }
 }
 

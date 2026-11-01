@@ -82,9 +82,10 @@ fn acquisition_never_reads_home() {
         let mut child = maestro_test_process::TestProcess::current("acquisition_never_reads_home")
             .unwrap()
             .env("MAESTRO_LOCK_TARGET", &target)
-            .env_remove("HOME");
+            .env_remove("HOME")
+            .env_remove("USERPROFILE");
         if let Some(home) = &home {
-            child = child.env("HOME", home);
+            child = child.env("HOME", home).env("USERPROFILE", home);
         }
         let output = child.output().unwrap();
         assert!(output.status.success(), "{output:?}");

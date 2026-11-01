@@ -37,8 +37,9 @@ pub struct WriteLock {
     /// Durable intended-byte record beside the target.
     pub(crate) recovery: std::path::PathBuf,
     /// Name removed while this holder still owns native exclusion.
+    #[cfg(not(windows))]
     sidecar: std::path::PathBuf,
-    /// Retained native exclusion handle.
+    /// Retained native exclusion handle; Windows deletes its name when sharing handles close.
     _file: File,
 }
 
@@ -70,13 +71,10 @@ impl WriteLock {
     }
 }
 
+#[cfg(not(windows))]
 impl Drop for WriteLock {
     fn drop(&mut self) {
-        #[cfg(not(windows))]
         // A refused removal leaves a reusable lock file; closing still releases exclusion.
         let _ = std::fs::remove_file(&self.sidecar);
-        #[cfg(windows)]
-        // Windows removes the name only after all delete-sharing handles close.
-        let _ = &self.sidecar;
     }
 }

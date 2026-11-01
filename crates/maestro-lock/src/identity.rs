@@ -78,6 +78,7 @@ fn acquire_with(
         let guard = WriteLock {
             recovery: beside(&target, "", ".recovery"),
             target,
+            #[cfg(not(windows))]
             sidecar,
             _file: file,
         };
@@ -104,6 +105,12 @@ const SHARE_ALL: u32 = 1 | 2 | 4;
 /// Native deletion disposition applied when the final sharing handle closes.
 #[cfg(windows)]
 const DELETE_ON_CLOSE: u32 = 0x0400_0000;
+/// Windows access denial, also returned for a delete-pending lock name.
+#[cfg(windows)]
+const ERROR_ACCESS_DENIED: i32 = 5;
+/// Windows refusal caused by an incompatible open sharing mode.
+#[cfg(windows)]
+const ERROR_SHARING_VIOLATION: i32 = 32;
 
 /// Opens the lock name with platform-specific release semantics.
 fn options() -> OpenOptions {
@@ -124,8 +131,7 @@ fn options() -> OpenOptions {
 
 /// Opens once on Unix, where contention is reported by the native file lock.
 #[cfg(not(windows))]
-fn open_lock(path: &Path, waiting: Waiting) -> Result<File, TryLockError> {
-    let _ = waiting;
+fn open_lock(path: &Path, _waiting: Waiting) -> Result<File, TryLockError> {
     options().open(path).map_err(TryLockError::Error)
 }
 
@@ -139,14 +145,14 @@ fn open_lock(path: &Path, waiting: Waiting) -> Result<File, TryLockError> {
             Ok(file) => return Ok(file),
             Err(error) => error,
         };
-        denials = if error.raw_os_error() == Some(5) {
+        denials = if error.raw_os_error() == Some(ERROR_ACCESS_DENIED) {
             denials + 1
         } else {
             0
         };
         let failure = match error.raw_os_error() {
-            Some(5) => denied_name(path, &mut missing_denial),
-            Some(32) => OpenFailure::Contended,
+            Some(ERROR_ACCESS_DENIED) => denied_name(path, &mut missing_denial),
+            Some(ERROR_SHARING_VIOLATION) => OpenFailure::Contended,
             _ => OpenFailure::Refuse,
         };
         match failure {
@@ -216,8 +222,10 @@ fn still_named(_file: &File, path: &Path) -> io::Result<bool> {
     {
         Ok(_) => Ok(true),
         Err(error)
-            if matches!(error.raw_os_error(), Some(5 | 32))
-                || error.kind() == io::ErrorKind::NotFound =>
+            if matches!(
+                error.raw_os_error(),
+                Some(ERROR_ACCESS_DENIED | ERROR_SHARING_VIOLATION)
+            ) || error.kind() == io::ErrorKind::NotFound =>
         {
             Ok(false)
         }
