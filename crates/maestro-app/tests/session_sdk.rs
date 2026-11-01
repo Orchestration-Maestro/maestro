@@ -686,7 +686,7 @@ struct AttributionCase {
 /// The complete header map the provider receives for `case`'s one request, sent through the
 /// request function a created session installs.
 async fn capture_attribution_headers(case: AttributionCase) -> Option<AttributionHeaders> {
-    let h = fixture(Auth::Key).await;
+    let h = attribution_fixture(&case.provider).await;
     let mut descriptor = h.model("faux-1").read().unwrap().clone();
     descriptor.provider.clone_from(&case.provider);
     descriptor.base_url = case.base_url;
@@ -744,6 +744,17 @@ async fn capture_attribution_headers(case: AttributionCase) -> Option<Attributio
         "the provider receives exactly one request"
     );
     captured.pop().unwrap()
+}
+
+/// Supply complete account configuration for Cloudflare attribution witnesses.
+async fn attribution_fixture(provider: &str) -> Harness {
+    let h = fixture(Auth::Key).await;
+    if matches!(provider, "cloudflare-workers-ai" | "cloudflare-ai-gateway") {
+        h.registry.auth_storage().set(provider, serde_json::from_value(json!({
+            "type":"api_key", "key":"faux-key", "env":{"CLOUDFLARE_ACCOUNT_ID":"account", "CLOUDFLARE_GATEWAY_ID":"gateway"},
+        })).unwrap());
+    }
+    h
 }
 
 /// Sends each recorded attribution case `ids` names from a child without the telemetry
