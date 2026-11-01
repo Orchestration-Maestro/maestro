@@ -119,6 +119,7 @@ pub(super) async fn credentials(
 /// The stored key used to compare catalog and retained-owner reads.
 fn stored_key() -> maestro_extensions_wasm::AuthCredential {
     maestro_extensions_wasm::AuthCredential::ApiKey(maestro_extensions_wasm::ApiKeyCredential {
+        env: None,
         key: "!checkpoint-credential".into(),
     })
 }

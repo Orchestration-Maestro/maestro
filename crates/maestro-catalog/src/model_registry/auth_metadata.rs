@@ -10,6 +10,10 @@ impl ModelRegistry {
     /// # Errors
     /// Returns the original credential lookup failure.
     pub fn has_configured_auth(&self, model: &Arc<RwLock<Model>>) -> Result<bool, CatalogError> {
+        let descriptor = model.read().unwrap_or_else(PoisonError::into_inner).clone();
+        if self.auth_storage.cloudflare_base_url(&descriptor).is_err() {
+            return Ok(false);
+        }
         let provider = read_provider(model);
         if self.auth_storage.has_auth(&provider)? {
             return Ok(true);

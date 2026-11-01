@@ -24,6 +24,7 @@ fn empty_stored_keys_block_configured_fallback() {
     registry.auth_storage().set(
         "p",
         maestro_credentials::AuthCredential::ApiKey(maestro_credentials::ApiKeyCredential {
+            env: None,
             key: String::new(),
         }),
     );
@@ -174,7 +175,10 @@ fn request_keys_preserve_lower_layer_precedence() {
             registry.auth_storage().set(
                 "p",
                 maestro_credentials::AuthCredential::ApiKey(
-                    maestro_credentials::ApiKeyCredential { key: key.into() },
+                    maestro_credentials::ApiKeyCredential {
+                        env: None,
+                        key: key.into(),
+                    },
                 ),
             );
         }
@@ -214,7 +218,10 @@ fn authorization_requires_nonempty_resolved_key() {
             registry.auth_storage().set(
                 "p",
                 maestro_credentials::AuthCredential::ApiKey(
-                    maestro_credentials::ApiKeyCredential { key: String::new() },
+                    maestro_credentials::ApiKeyCredential {
+                        env: None,
+                        key: String::new(),
+                    },
                 ),
             );
         } else {
@@ -569,6 +576,7 @@ fn stored_commands_keep_lower_layer_cache_policy() {
     registry.auth_storage().set(
         "p",
         maestro_credentials::AuthCredential::ApiKey(maestro_credentials::ApiKeyCredential {
+            env: None,
             key: "!stored-cache-policy".into(),
         }),
     );

@@ -96,6 +96,7 @@ pub const CASE_ENV: &str = "MAESTRO_CASE";
 /// Stored API key credential.
 pub fn api_key(key: &str) -> AuthCredential {
     AuthCredential::ApiKey(ApiKeyCredential {
+        env: None,
         key: key.to_owned(),
     })
 }

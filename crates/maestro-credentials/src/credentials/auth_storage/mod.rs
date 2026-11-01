@@ -1,5 +1,6 @@
 //! Accepted stored credentials over a replaceable raw-text backend.
 mod backend;
+mod cloudflare;
 mod refresh;
 mod resolution;
 mod state;

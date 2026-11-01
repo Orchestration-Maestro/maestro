@@ -374,6 +374,7 @@ fn api_key_save_restores_editor_before_catalog_completion() {
             storage(&world).set(
                 "other",
                 AuthCredential::ApiKey(maestro_app::ApiKeyCredential {
+                    env: None,
                     key: "kept".to_owned(),
                 }),
             );

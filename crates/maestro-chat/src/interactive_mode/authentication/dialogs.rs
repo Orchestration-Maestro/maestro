@@ -157,6 +157,7 @@ impl InteractiveMode {
         session.model_registry().auth_storage().set(
             provider_id,
             AuthCredential::ApiKey(ApiKeyCredential {
+                env: None,
                 key: key.to_owned(),
             }),
         );

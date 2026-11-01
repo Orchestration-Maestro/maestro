@@ -49,6 +49,7 @@ fn run_auth(assert_started: bool) {
             catalog.auth_storage().set(
                 "fixture",
                 AuthCredential::ApiKey(ApiKeyCredential {
+                    env: None,
                     key: "!bridge-key".into(),
                 }),
             );
@@ -75,6 +76,7 @@ fn run_auth(assert_started: bool) {
             catalog.auth_storage().set(
                 "fixture",
                 AuthCredential::ApiKey(ApiKeyCredential {
+                    env: None,
                     key: "!replacement-source".into(),
                 }),
             );
