@@ -145,11 +145,12 @@ pub trait SettingsStorage: thread_bound::StorageThreadBound {
     /// The default delegates once to [`Self::with_lock`], preserving the supplied
     /// adapter's callback, exclusion and re-entry policy. Native decorators must
     /// forward this operation to retain the file adapter's write exclusion.
-    /// The file adapter creates the parent as needed and acquires its stable
-    /// sidecar before reading and invoking `update` exactly once. It releases
-    /// exclusion on every outcome; acquire/read failures skip the callback.
-    /// `Ok(None)` and callback failure leave settings bytes untouched but may
-    /// leave a newly created parent and sidecar, never a new settings file.
+    /// The file adapter creates the parent as needed and acquires the lock file
+    /// beside the settings file before reading and invoking `update` exactly once.
+    /// It releases exclusion and removes the lock file on every outcome;
+    /// acquire/read failures skip the callback. `Ok(None)` and callback failure
+    /// leave settings bytes untouched but may leave a newly created parent,
+    /// never a new settings file.
     ///
     /// # Errors
     ///

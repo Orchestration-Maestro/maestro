@@ -903,6 +903,7 @@ macro_rules! replay {
                         observations.lock().unwrap().push(json!({"call":"stop-after","sameContext":std::ptr::eq(context.context,&*before),"newRoles":context.new_messages.iter().map(|m|message(m)["role"].clone()).collect::<Vec<_>>(),"results":context.tool_results.iter().map(|m|m.tool_call_id.clone()).collect::<Vec<_>>()}));
                         Box::pin(std::future::ready(Ok(stop)))
                     })),
+                    prepare_next_turn: None,
                 }
             }
             /// Return a nonterminating empty tool result for stop-decision cases.

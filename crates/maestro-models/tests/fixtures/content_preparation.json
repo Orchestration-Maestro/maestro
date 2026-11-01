@@ -8748,7 +8748,7 @@
     },
     "expected": {
       "options": {
-        "maxTokens": 32000,
+        "maxTokens": 65536,
         "apiKey": "fixture-key",
         "thinking": {
           "enabled": false
@@ -8767,7 +8767,7 @@
           }
         ],
         "config": {
-          "maxOutputTokens": 32000,
+          "maxOutputTokens": 65536,
           "thinkingConfig": {
             "thinkingBudget": 0
           }

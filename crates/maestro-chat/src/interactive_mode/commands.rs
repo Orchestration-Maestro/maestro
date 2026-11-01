@@ -11,7 +11,7 @@ impl InteractiveMode {
     /// replays that session and confirms it. A failed replacement or replay ends the process
     /// through the fatal runtime route.
     pub(super) async fn handle_clear_command(self: Rc<Self>) -> Result<(), Box<dyn Error>> {
-        self.stop_working_loader();
+        self.clear_status_indicator(None);
         if let Err(error) = self.start_new_session().await {
             self.handle_fatal_runtime_error("Failed to create session", error.as_ref());
         }
@@ -56,7 +56,7 @@ impl InteractiveMode {
             self.show_warning("Nothing to compact (no messages yet)")?;
             return Ok(());
         }
-        self.stop_working_loader();
+        self.clear_status_indicator(None);
         drop(session.compact(custom_instructions.as_deref()).await);
         Ok(())
     }

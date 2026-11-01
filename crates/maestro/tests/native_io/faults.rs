@@ -109,11 +109,8 @@ impl maestro_app::ConfigValueOperations for NoCommands {
     }
 }
 
-/// Loads each component with the failing native capability in place of the real one.
-fn loader(local: &Rc<tokio::task::LocalSet>) -> maestro_app::ModuleLoader<maestro_app::Local> {
-    let io: Rc<dyn NativeIo> = Rc::new(FailedIo(
-        maestro_app::extension_native_io::extension_native_io(local),
-    ));
+/// Loads each component with the supplied native capability.
+fn loader(io: Rc<dyn NativeIo>) -> maestro_app::ModuleLoader<maestro_app::Local> {
     Rc::new(move |path: &str| {
         Box::pin(std::future::ready(Ok(Some(
             maestro_extensions_wasmtime::artifact_factory_with_io(
@@ -130,7 +127,11 @@ fn loader(local: &Rc<tokio::task::LocalSet>) -> maestro_app::ModuleLoader<maestr
 }
 
 /// Creates the normal embedding session with an explicitly swapped native capability.
-async fn session(root: &Root, local: &Rc<tokio::task::LocalSet>) -> Rc<maestro_app::AgentSession> {
+pub(crate) async fn session(
+    root: &Root,
+    local: &Rc<tokio::task::LocalSet>,
+    io: Rc<dyn NativeIo>,
+) -> Rc<maestro_app::AgentSession> {
     root.models("http://127.0.0.1:1/v1");
     let auth = Arc::new(maestro_app::AuthStorage::in_memory(
         maestro_app::AuthStorageData::default(),
@@ -144,10 +145,8 @@ async fn session(root: &Root, local: &Rc<tokio::task::LocalSet>) -> Rc<maestro_a
         .unwrap(),
     );
     let model = registry.find("startup", "controlled").unwrap();
-    let mut resources = maestro_app::ResourceLoaderOptions::<maestro_app::Local>::new(
-        Rc::clone(local),
-        loader(local),
-    );
+    let mut resources =
+        maestro_app::ResourceLoaderOptions::<maestro_app::Local>::new(Rc::clone(local), loader(io));
     resources
         .additional_extension_paths
         .push(std::env::var("MAESTRO_NATIVE_IO_COMPONENT").unwrap());
@@ -182,7 +181,7 @@ async fn session(root: &Root, local: &Rc<tokio::task::LocalSet>) -> Rc<maestro_a
 }
 
 /// Reads the guest's own recorded reply without installing another user-interface host.
-async fn answer(session: &Rc<maestro_app::AgentSession>, data: Value) -> Value {
+pub(super) async fn answer(session: &Rc<maestro_app::AgentSession>, data: Value) -> Value {
     session
         .prompt(
             &format!("/native-child {data}"),
@@ -210,7 +209,8 @@ fn native_child_read_failure_follows_the_real_prefix() {
         .unwrap();
     let local = Rc::new(tokio::task::LocalSet::new());
     local.block_on(&runtime,async {
-        let session = session(&root,&local).await;
+        let io = Rc::new(FailedIo(maestro_app::extension_native_io::extension_native_io(&local)));
+        let session = session(&root,&local,io).await;
         let reply = answer(&session,json!({"op":"spawn","command":"python3","args":["-c","import os; os.write(1,b'\\x00\\xff\\x01')"],"env":[],"stdio":["ignore","pipe","ignore"]})).await;
         assert!(reply["value"].as_u64().unwrap() > 0);
         let mut prefix = Vec::new();

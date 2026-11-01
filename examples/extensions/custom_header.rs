@@ -1,4 +1,5 @@
 //! Replaces the startup header with a themed illustration and restores it on command.
+// maestro-component: MAESTRO_CUSTOM_HEADER_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

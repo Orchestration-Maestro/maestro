@@ -27,7 +27,7 @@ fn discover_extensions_in_dir(dir: &str) -> Vec<String> {
         if (link || entry.file_type == ResourceFileType::File) && is_extension_file(&name) {
             discovered.push(path);
         } else if link || entry.file_type == ResourceFileType::Directory {
-            match resolve_extension_entries(&path) {
+            match resolve_extension_entries(&path, false) {
                 Ok(entries) => discovered.extend(entries.into_iter().flatten()),
                 Err(_) => return Vec::new(),
             }
@@ -85,7 +85,7 @@ pub async fn discover_and_load_extensions<E: ExtensionExecution>(
         let resolved = resolve_path(configured, cwd)?;
         if !Path::new(&resolved).is_dir() {
             found.add(vec![resolved])?;
-        } else if let Some(entries) = resolve_extension_entries(&resolved)? {
+        } else if let Some(entries) = resolve_extension_entries(&resolved, false)? {
             found.add(entries)?;
         } else {
             found.add(discover_extensions_in_dir(&resolved))?;

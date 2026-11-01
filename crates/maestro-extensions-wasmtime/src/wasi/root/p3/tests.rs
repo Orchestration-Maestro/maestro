@@ -32,9 +32,7 @@ fn cancelled_placement_reclaims_at_both_store_boundaries() {
         .build()
         .unwrap()
         .block_on(async {
-            let mut config = wasmtime::Config::new();
-            config.wasm_component_model_async(true);
-            let engine = wasmtime::Engine::new(&config).unwrap();
+            let engine = crate::component_engine(None).unwrap();
             let mut store = wasmtime::Store::new(&engine, state());
             let fd = store
                 .data_mut()

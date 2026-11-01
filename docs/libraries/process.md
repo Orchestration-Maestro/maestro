@@ -54,3 +54,14 @@ closure; no package version changes.
 For job control on Unix, the process crate also enables Tokio `signal` to observe the
 continue signal, and sends the stop signal to its process group through rustix's
 `process` feature. Both reuse the locked dependency closure.
+
+The process tests run their controlled children as Rust. On Unix the test-process owner
+(`maestro-test-process`) depends on the existing `rustix =1.1.5` with `std` and `stdio`,
+so a child replaces one of its standard descriptors with the null device without unsafe
+code; the process tests share that one operation. The process tests also use
+`nix =0.31.3` (MIT), defaults off with `signal`, the version and feature the process
+wrapper already compiles, as a development dependency: a child blocks signals with its
+safe `sigprocmask` before it replaces itself with the test executable. The `maestro`
+composition tests inherit the same workspace pin and `signal` feature. Their checked
+children block termination before replacing themselves with the test executable, then
+wait with `sigwait` after reporting readiness. No package version changes.

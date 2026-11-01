@@ -1,4 +1,5 @@
 //! Opt-in issue completion backed by the GitHub CLI and the current editor provider.
+// maestro-component: MAESTRO_GITHUB_ISSUE_AUTOCOMPLETE_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

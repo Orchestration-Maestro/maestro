@@ -52,13 +52,7 @@
             }
           }
         ],
-        "skillDiagnostics": [
-          {
-            "type": "warning",
-            "message": "name \"test-skill\" does not match parent directory \"skills\"",
-            "path": "$ROOT/agent/skills/test-skill.md"
-          }
-        ],
+        "skillDiagnostics": [],
         "prompts": [],
         "promptDiagnostics": [],
         "themes": [],
@@ -726,13 +720,7 @@
             }
           }
         ],
-        "skillDiagnostics": [
-          {
-            "type": "warning",
-            "message": "name \"custom\" does not match parent directory \"custom-skills\"",
-            "path": "$ROOT/custom-skills/custom.md"
-          }
-        ],
+        "skillDiagnostics": [],
         "prompts": [],
         "promptDiagnostics": [],
         "themes": [],
@@ -1866,18 +1854,7 @@
             }
           }
         ],
-        "skillDiagnostics": [
-          {
-            "type": "warning",
-            "message": "name \"home-skill\" does not match parent directory \"home-skills\"",
-            "path": "$HOME/home-skills/h.md"
-          },
-          {
-            "type": "warning",
-            "message": "name \"trimmed-skill\" does not match parent directory \"trimmed\"",
-            "path": "$ROOT/trimmed/t.md"
-          }
-        ],
+        "skillDiagnostics": [],
         "prompts": [],
         "promptDiagnostics": [],
         "themes": [],
@@ -1923,13 +1900,7 @@
             }
           }
         ],
-        "skillDiagnostics": [
-          {
-            "type": "warning",
-            "message": "name \"s\" does not match parent directory \"alias\"",
-            "path": "$ROOT/alias/SKILL.md"
-          }
-        ],
+        "skillDiagnostics": [],
         "prompts": [],
         "promptDiagnostics": [],
         "themes": [],
@@ -2318,13 +2289,7 @@
             }
           }
         ],
-        "skillDiagnostics": [
-          {
-            "type": "warning",
-            "message": "name \"rel-skill\" does not match parent directory \"rel-skills\"",
-            "path": "$ROOT/project/rel-skills/r.md"
-          }
-        ],
+        "skillDiagnostics": [],
         "prompts": [
           {
             "name": "r",

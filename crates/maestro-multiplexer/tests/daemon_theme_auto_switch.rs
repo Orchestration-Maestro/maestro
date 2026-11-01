@@ -1,11 +1,7 @@
 //! The chrome palette follows the daemon's theme selection and host appearance.
 #![cfg(target_os = "linux")]
 
-use maestro_app::daemon::{
-    app::state::ThemeRuntimeConfig,
-    settings::{model::Config, theme::CustomThemeColors},
-    terminal_theme::HostAppearance,
-};
+use maestro_app::daemon::{Config, CustomThemeColors, HostAppearance, ThemeRuntimeConfig};
 use maestro_multiplexer::palette::{Palette, resolve_effective_theme};
 use ratatui::style::Color;
 

@@ -22,7 +22,7 @@ impl InteractiveMode {
             wait_for_idle: Rc::new(move || {
                 let mode = current(&idle);
                 Box::pin(async move {
-                    mode?.runtime_host.session().agent().wait_for_idle().await;
+                    mode?.runtime_host.session().wait_for_idle().await;
                     Ok(())
                 })
             }),
@@ -64,7 +64,7 @@ impl InteractiveMode {
         &self,
         options: NewSessionCommandOptions,
     ) -> Result<SessionChangeResult, EventError> {
-        self.stop_working_loader();
+        self.clear_status_indicator(None);
         let result: Result<_, EventError> = async {
             let result = self.runtime_host.new_session(options).await?;
             if !result.cancelled {

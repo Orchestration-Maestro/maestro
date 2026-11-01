@@ -33,7 +33,8 @@ It reuses the [terminal toolkit](../terminal/components.md) and
   capabilities using the custom router.
 
 - `FooterComponent` renders three rows at most. The first shows the working
-  directory with its home shortened unless that home is empty or `/`, the branch
+  directory with its home shortened to `~` only for the home itself and the paths below
+  it (see [Footer metadata](../application/footer.md#working-directory-display)), the branch
   in parentheses and the session name after a bullet. The second puts the
   cumulative token and cache totals, the subscription cost and the context
   display on the left, and the model with its provider and thinking level on the

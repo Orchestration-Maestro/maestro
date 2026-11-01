@@ -1,4 +1,5 @@
 //! Follows the macOS system appearance through the host's theme interface.
+// maestro-component: MAESTRO_MAC_SYSTEM_THEME_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

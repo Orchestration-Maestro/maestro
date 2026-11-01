@@ -3,102 +3,121 @@
 /// Construct a model descriptor.
 fn model_0() -> crate::Model {
 crate::Model {
-id: "mimo-v2-flash".into(),
-name: "MiMo-V2-Flash".into(),
-api: "anthropic-messages".into(),
+id: "mimo-v2.5".into(),
+name: "MiMo-V2.5".into(),
+api: "openai-completions".into(),
 provider: "xiaomi".into(),
-base_url: "https://api.xiaomimimo.com/anthropic".into(),
+base_url: "https://api.xiaomimimo.com/v1".into(),
 reasoning: true,
 thinking_level_map: None,
-input: vec![crate::ModelInput::Text],
-cost: crate::ModelCost { input: 0.1, output: 0.3, cache_read: 0.01, cache_write: 0.0 },
-context_window: 256_000.0,
-max_tokens: 64_000.0,
+input: vec![crate::ModelInput::Text,crate::ModelInput::Image],
+cost: crate::ModelCost { input: 0.14, output: 0.28, cache_read: 0.0028, cache_write: 0.0 },
+context_window: 1_048_576.0,
+max_tokens: 131_072.0,
 headers: None,
-compat: None,
+compat: Some(crate::ModelCompat([("requiresReasoningContentOnAssistantMessages".into(), serde_json::Value::Bool(true)),("thinkingFormat".into(), serde_json::Value::String("deepseek".into()))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
 fn model_1() -> crate::Model {
 crate::Model {
-id: "mimo-v2-omni".into(),
-name: "MiMo-V2-Omni".into(),
-api: "anthropic-messages".into(),
+id: "mimo-v2.5-pro".into(),
+name: "MiMo-V2.5-Pro".into(),
+api: "openai-completions".into(),
 provider: "xiaomi".into(),
-base_url: "https://api.xiaomimimo.com/anthropic".into(),
+base_url: "https://api.xiaomimimo.com/v1".into(),
 reasoning: true,
 thinking_level_map: None,
-input: vec![crate::ModelInput::Text,crate::ModelInput::Image],
-cost: crate::ModelCost { input: 0.4, output: 2.0, cache_read: 0.08, cache_write: 0.0 },
-context_window: 256_000.0,
-max_tokens: 128_000.0,
+input: vec![crate::ModelInput::Text],
+cost: crate::ModelCost { input: 0.435, output: 0.87, cache_read: 0.0036, cache_write: 0.0 },
+context_window: 1_048_576.0,
+max_tokens: 131_072.0,
 headers: None,
-compat: None,
+compat: Some(crate::ModelCompat([("requiresReasoningContentOnAssistantMessages".into(), serde_json::Value::Bool(true)),("thinkingFormat".into(), serde_json::Value::String("deepseek".into()))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
 fn model_2() -> crate::Model {
 crate::Model {
-id: "mimo-v2-pro".into(),
-name: "MiMo-V2-Pro".into(),
-api: "anthropic-messages".into(),
+id: "mimo-v2.5-pro-ultraspeed".into(),
+name: "MiMo-V2.5-Pro-UltraSpeed".into(),
+api: "openai-completions".into(),
 provider: "xiaomi".into(),
-base_url: "https://api.xiaomimimo.com/anthropic".into(),
+base_url: "https://api.xiaomimimo.com/v1".into(),
 reasoning: true,
 thinking_level_map: None,
 input: vec![crate::ModelInput::Text],
-cost: crate::ModelCost { input: 1.0, output: 3.0, cache_read: 0.2, cache_write: 0.0 },
-context_window: 1_000_000.0,
-max_tokens: 128_000.0,
+cost: crate::ModelCost { input: 1.305, output: 2.61, cache_read: 0.0108, cache_write: 0.0 },
+context_window: 1_048_576.0,
+max_tokens: 131_072.0,
 headers: None,
-compat: None,
+compat: Some(crate::ModelCompat([("requiresReasoningContentOnAssistantMessages".into(), serde_json::Value::Bool(true)),("thinkingFormat".into(), serde_json::Value::String("deepseek".into()))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
 fn model_3() -> crate::Model {
 crate::Model {
-id: "mimo-v2.5".into(),
-name: "MiMo-V2.5".into(),
-api: "anthropic-messages".into(),
+id: "mimo-v2.6-flash".into(),
+name: "MiMo-V2.6-Flash".into(),
+api: "openai-completions".into(),
 provider: "xiaomi".into(),
-base_url: "https://api.xiaomimimo.com/anthropic".into(),
+base_url: "https://api.xiaomimimo.com/v1".into(),
 reasoning: true,
 thinking_level_map: None,
-input: vec![crate::ModelInput::Text],
-cost: crate::ModelCost { input: 0.4, output: 2.0, cache_read: 0.08, cache_write: 0.0 },
+input: vec![crate::ModelInput::Text,crate::ModelInput::Image],
+cost: crate::ModelCost { input: 0.14, output: 0.28, cache_read: 0.0028, cache_write: 0.0 },
 context_window: 1_048_576.0,
 max_tokens: 131_072.0,
 headers: None,
-compat: None,
+compat: Some(crate::ModelCompat([("requiresReasoningContentOnAssistantMessages".into(), serde_json::Value::Bool(true)),("thinkingFormat".into(), serde_json::Value::String("deepseek".into()))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
 fn model_4() -> crate::Model {
 crate::Model {
-id: "mimo-v2.5-pro".into(),
-name: "MiMo-V2.5-Pro".into(),
-api: "anthropic-messages".into(),
+id: "mimo-v2.6-pro".into(),
+name: "MiMo-V2.6-Pro".into(),
+api: "openai-completions".into(),
 provider: "xiaomi".into(),
-base_url: "https://api.xiaomimimo.com/anthropic".into(),
+base_url: "https://api.xiaomimimo.com/v1".into(),
 reasoning: true,
 thinking_level_map: None,
 input: vec![crate::ModelInput::Text,crate::ModelInput::Image],
-cost: crate::ModelCost { input: 1.0, output: 3.0, cache_read: 0.2, cache_write: 0.0 },
+cost: crate::ModelCost { input: 0.435, output: 0.87, cache_read: 0.0036, cache_write: 0.0 },
 context_window: 1_048_576.0,
 max_tokens: 131_072.0,
 headers: None,
-compat: None,
+compat: Some(crate::ModelCompat([("requiresReasoningContentOnAssistantMessages".into(), serde_json::Value::Bool(true)),("thinkingFormat".into(), serde_json::Value::String("deepseek".into()))].into_iter().collect())),
+}
+}
+/// Construct a model descriptor.
+fn model_5() -> crate::Model {
+crate::Model {
+id: "mimo-v2.6-pro-ultraspeed".into(),
+name: "MiMo-V2.6-Pro-UltraSpeed".into(),
+api: "openai-completions".into(),
+provider: "xiaomi".into(),
+base_url: "https://api.xiaomimimo.com/v1".into(),
+reasoning: true,
+thinking_level_map: None,
+input: vec![crate::ModelInput::Text,crate::ModelInput::Image],
+cost: crate::ModelCost { input: 4.35, output: 8.7, cache_read: 0.036, cache_write: 0.0 },
+context_window: 1_048_576.0,
+max_tokens: 131_072.0,
+headers: None,
+compat: Some(crate::ModelCompat([("requiresReasoningContentOnAssistantMessages".into(), serde_json::Value::Bool(true)),("thinkingFormat".into(), serde_json::Value::String("deepseek".into()))].into_iter().collect())),
 }
 }
 /// Construct one model descriptor.
 type ModelConstructor = fn() -> crate::Model;
 /// Model constructor table in emitted order.
 const MODELS: &[(&str, ModelConstructor)] = &[
-("mimo-v2-flash", model_0),
-("mimo-v2-omni", model_1),
-("mimo-v2-pro", model_2),
-("mimo-v2.5", model_3),
-("mimo-v2.5-pro", model_4),
+("mimo-v2.5", model_0),
+("mimo-v2.5-pro", model_1),
+("mimo-v2.5-pro-ultraspeed", model_2),
+("mimo-v2.6-flash", model_3),
+("mimo-v2.6-pro", model_4),
+("mimo-v2.6-pro-ultraspeed", model_5),
 ];
 /// Assemble this provider's models in emitted order.
 pub(super) fn models() -> indexmap::IndexMap<&'static str, crate::Model> {

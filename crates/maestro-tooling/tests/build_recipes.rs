@@ -142,6 +142,65 @@ fn maestro_package_recipes_select_their_owners() {
 }
 
 #[test]
+fn maestro_test_recipe_installs_the_setup_tool_before_nextest() {
+    let workspace = Workspace::new();
+    fs::create_dir_all(workspace.path().join("crates/maestro-tooling")).unwrap();
+
+    let output = workspace.run("test");
+
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(
+        workspace.log(),
+        "cargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|prepare-test-setup|install|target/test-setup\ncargo nextest|run|--workspace|--locked\ncargo test|--workspace|--locked|--doc\n"
+    );
+}
+
+/// The recipe that docs name before a hand-run nextest stages the setup tool and nothing else.
+#[test]
+fn maestro_prepare_tests_recipe_stages_only_the_setup_tool() {
+    let workspace = Workspace::new();
+    fs::create_dir_all(workspace.path().join("crates/maestro-tooling")).unwrap();
+
+    let output = workspace.run("prepare-tests");
+
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(
+        workspace.log(),
+        "cargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|prepare-test-setup|install|target/test-setup\n"
+    );
+}
+
+/// The check recipe stages the setup tool before any step that could start nextest.
+#[test]
+fn maestro_check_recipe_stages_the_setup_tool_first() {
+    let workspace = Workspace::new();
+    fs::create_dir_all(workspace.path().join("crates/maestro-tooling")).unwrap();
+
+    let output = workspace.run("check");
+
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(
+        workspace.log().starts_with(
+            "cargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|prepare-test-setup|install|target/test-setup\n"
+        ),
+        "{}",
+        workspace.log()
+    );
+}
+
+#[test]
 fn maestro_test_recipes_forward_literal_arguments() {
     for (recipe, selection, doctests) in [
         ("test", "--workspace|--locked", true),
@@ -792,6 +851,7 @@ fn prepare_watch_workspace(workspace: &Workspace) {
 }
 
 fn prepare_tooling_owner(workspace: &Workspace) {
+    workspace.use_prepared_sources();
     let source = Path::new(env!("CARGO_MANIFEST_DIR"));
     let root = workspace.path().join("crates/maestro-tooling");
     copy_tree(&source.join("src"), &root.join("src"));
@@ -831,11 +891,7 @@ fn prepare_tooling_owner(workspace: &Workspace) {
         )
         .unwrap();
     }
-    fs::copy(
-        source.join("../../Cargo.toml"),
-        workspace.path().join("Cargo.toml"),
-    )
-    .unwrap();
+    copy_root_manifest(workspace);
     assert!(
         workspace
             .toolchain_command(env!("CARGO"))
@@ -844,6 +900,16 @@ fn prepare_tooling_owner(workspace: &Workspace) {
             .unwrap()
             .success()
     );
+}
+
+/// Give the checkout the workspace manifest its tooling build resolves against.
+fn copy_root_manifest(workspace: &Workspace) {
+    fs::copy(
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../Cargo.toml"),
+        workspace.path().join("Cargo.toml"),
+    )
+    .unwrap();
+    workspace.use_plain_dev_profile();
 }
 
 /// Copy local dependency patches from the source manifest into a build fixture.
@@ -862,6 +928,17 @@ fn copy_patched_sources(source: &Path, destination: &Path) {
             }
         }
     }
+}
+
+/// The tooling owner's cold build compiles its dependencies at the plain development profile.
+#[test]
+fn tooling_owner_checkout_builds_dependencies_at_the_plain_dev_profile() {
+    let workspace = Workspace::new();
+    copy_root_manifest(&workspace);
+    let manifest: toml::Table =
+        toml::from_str(&fs::read_to_string(workspace.path().join("Cargo.toml")).unwrap()).unwrap();
+    let packages = manifest["profile"]["dev"]["package"].as_table().unwrap();
+    assert_eq!(packages.keys().collect::<Vec<_>>(), ["*"]);
 }
 
 #[test]

@@ -47,7 +47,7 @@ Credentials maintain a tolerant accepted snapshot until explicit reload, ordered
 
 Settings retain user/project scopes, runtime overrides, established names/defaults, a top-level merge with one nested object spread, immediate cache publication, queued writes, flush and error drain. Reload accepts each healthy scope independently, retains a failed scope and rebuilds effective values without preserving runtime overrides. Use Rust `std::fs::File` locking as-is for native storage mutual exclusion. Keep application read/callback/write ordering, explicit application retry loops, permissions, memory publication and failure handling. Do not reproduce lock-directory leases, heartbeats, mtime probing or library retry internals.
 
-Settings persistence uses explicit write intent: native `SettingsStorage::with_write_lock` creates the parent as needed and holds the stable sidecar lock before reading, through its single callback and optional write, including first creation. `Ok(None)` and callback failure may leave a parent/sidecar but never create the settings file. Concurrent independent manager edits therefore merge against fresh text under exclusion. The legacy `with_lock` remains noncreating for missing-file reads and calls its callback before locking a first replacement; raw callers needing concurrent first-write exclusion choose write intent. Supplied adapters default to their existing `with_lock` contract; native decorators forward write intent to retain native exclusion.
+Settings persistence uses explicit write intent: native `SettingsStorage::with_write_lock` creates the parent as needed and holds the shared write lock beside the settings file before reading, through its single callback and optional write, including first creation. `Ok(None)` and callback failure may leave a new parent but never create the settings file. Concurrent independent manager edits therefore merge against fresh text under exclusion. The legacy `with_lock` remains noncreating for missing-file reads and calls its callback before locking a first replacement; raw callers needing concurrent first-write exclusion choose write intent. Supplied adapters default to their existing `with_lock` contract; native decorators forward write intent to retain native exclusion.
 
 Workspace preference saves use the same captured-edit queue at literal nested
 key paths. `SettingsManager::set_global_key_path(field, keys, value)` publishes
@@ -343,7 +343,7 @@ development-only edge from `maestro-extensions-wasm` to `maestro-listing`.
 | `maestro-tool` | define tool interchange records | `maestro-request` | below 0 |
 | `maestro-brand` | project a brand pack | `maestro-text`, `maestro-json` | below 0 |
 | `maestro-watch` | supply filesystem notification effects | — | below 0 |
-| `maestro-lock` | guard file writes (optional path utility) | — | below 0 |
+| `maestro-lock` | guard file writes | `maestro-path` | below 0 |
 | `maestro-process` | own native child-process lifecycles | — | below 0 |
 | `maestro-listing` | list directory entries | — | below 0 |
 | `maestro-listeners` | retain callback identities in live registration order | — | below 0 |
@@ -377,7 +377,7 @@ development-only edge from `maestro-extensions-wasm` to `maestro-listing`.
 | `maestro-tools` | execute tool definitions | `maestro-models`, `maestro-agent`, `maestro-tui`, `maestro-theme`, `maestro-tool`, `maestro-text`, `maestro-json`, `maestro-process`, `maestro-listing`, `maestro-resources` | 2 |
 | `maestro-export` | serialize session documents | `maestro-session`, `maestro-models`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-json`, `maestro-text` | 3 |
 | `maestro-extensions` | govern extension semantics | `maestro-models`, `maestro-agent`, `maestro-session`, `maestro-catalog`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-resources`, `maestro-listeners` | 3 |
-| `maestro-app` | coordinate application operations | `maestro-protocol`, `maestro-terminal`, `maestro-markdown`, `maestro-models`, `maestro-agent`, `maestro-credentials`, `maestro-settings`, `maestro-catalog`, `maestro-session`, `maestro-tools`, `maestro-resources`, `maestro-packages`, `maestro-extensions`, `maestro-export`, `maestro-theme`, `maestro-tui`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-process`, `maestro-listing`, `maestro-daemon`, `maestro-workspace`, `maestro-listeners` | 4 |
+| `maestro-app` | coordinate application operations | `maestro-protocol`, `maestro-terminal`, `maestro-markdown`, `maestro-models`, `maestro-agent`, `maestro-credentials`, `maestro-settings`, `maestro-catalog`, `maestro-session`, `maestro-tools`, `maestro-resources`, `maestro-packages`, `maestro-extensions`, `maestro-export`, `maestro-theme`, `maestro-tui`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-process`, `maestro-listing`, `maestro-daemon`, `maestro-workspace`, `maestro-listeners`, `maestro-lock` | 4 |
 | `maestro-extensions-wasmtime` | execute artifacts (optional path utility) | `maestro-extensions` | 4 |
 | `maestro-chat` | present interactive conversations | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme` | 5 |
 | `maestro-cli` | present command-line operations | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme` | 5 |
@@ -538,31 +538,36 @@ matching) may depend on it. Catalog owns model-scope selection and reuses the gl
 Move the existing matchers only after this contract lands, through
 [shared file-pattern ownership](https://github.com/Orchestration-Maestro/maestro/issues/561).
 
-`maestro-watch` and `maestro-lock` are core leaves below layer 0. Watch has no
-workspace dependencies; lock may use the optional path utility, which does not
-change its leaf status. Only theme and application
-may depend on watch; only settings, credentials, workspace, detection and session
-may depend on lock.
+`maestro-watch` is a core leaf below layer 0 without workspace dependencies.
+`maestro-lock` is below layer 0 and depends only on `maestro-path` and the existing
+external `sha2 =0.11.0`, which shortens lock and record names for long file names. Only theme and application
+may depend on watch; only settings, credentials, workspace, detection, session and application
+may depend on lock. Application uses maestro-lock for recoverable file publication.
 
 `maestro-watch::fs_watch` owns watch creation/close helpers, the injected
 watch/timer interface and the native notification adapter. Reload, refresh,
 retry and polling policy remain in their feature owners. Existing theme watch
 paths may re-export the same moved types, not retain a second implementation.
 
-`maestro-lock` owns bounded and waiting acquisition of caller-opened file-write
-locks. Waiting acquisition uses the operating system's file lock, which is released
-when the holder exits. It also owns byte-oriented atomic replacement: a
-short exclusive temporary sibling is written, synced, closed and renamed before the
-parent directory is synced. Replacement preserves existing native permissions;
-a supplied creation mode applies only to missing files. Unix creation applies
-permission bits before first visibility; Windows maps only owner-write to the
-read-only attribute, without configuring ACLs. Workspace snapshot storage and detection catalog publication use this operation;
-feature owners retain serialization and symbolic-link policy. File creation for
-lock acquisition, permissions, in-place settings/credentials persistence, unlocking
-policy and asynchronous credential acquisition remain with settings and
-credentials. Neither leaf introduces a common background runtime, scheduler,
-retry policy or listener framework. Feature-specific timing, process,
-subscription and teardown semantics and current public capabilities are retained.
+`maestro-lock` owns file-write exclusion. A write lock is the file `<target>.lock`
+beside the canonical target, after final symbolic links when the caller follows
+them. It is created on acquisition, held through the operating system's file lock,
+and removed on release. The operating system releases a dead holder's lock; the
+next holder reuses any lock file left behind. Acquisition never reads the home
+directory or configuration root. It waits until free, makes at most ten attempts
+with 20 ms between contended attempts, or makes one attempt. Names that would
+exceed the platform's limit keep a cut file name and a short digest of the full
+name. The owner also provides recoverable in-place publication: a durable copy of
+the intended bytes, `<target>.recovery`, sits beside the target and is replayed by
+the next holder after an interrupted write. Native ownership, access controls and
+hard links survive. Settings and credentials hold this lock across read, update
+and replace, keeping their retry schedules. Session appends and rewrites and
+keybinding writes publish through it. Workspace snapshots and detection catalogs
+use the same owner's atomic publication because their readers hold no lock.
+Feature owners keep serialization and symbolic-link policy. Neither leaf
+introduces a common background runtime, scheduler, retry policy or listener
+framework. Feature-specific timing, process, subscription and teardown semantics
+and current public capabilities are retained.
 
 `maestro-listing` is a core leaf below layer 0 with no workspace dependencies,
 including the path utility. Its one job is listing directory entries: it returns
@@ -654,12 +659,14 @@ Markdown parser (`maestro-markdown`), text leaf (`maestro-text`),
 JSON leaf (`maestro-json`), entry and tool record contracts (`maestro-entry`,
 `maestro-tool`) and brand projection (`maestro-brand`) are excluded from this
 permission, so being a text consumer does not authorize the utility. Shared path helpers
-take supplied directory observations and add no global environment, filesystem service,
-directory cache, scheduler or workspace dependency. Final-component link traversal
-uses a caller-supplied observation callback: the utility owns relative-target joining
-and the forty-link bound, while lock and the native component adapter keep native
-link I/O and its error interpretation. Both may declare the optional native utility
-edge; it adds no cycle because the utility has no internal dependencies.
+take supplied directory observations, except `native_homedir` reads the native
+home environment and account entry. They add no filesystem service,
+directory cache, scheduler or workspace dependency.
+Final-component link traversal uses a caller-supplied observation callback:
+the utility owns relative-target joining and the forty-link bound, while lock
+and the native component adapter keep native link I/O and its error interpretation.
+Both may declare the native utility edge; it adds no cycle because the utility
+has no internal dependencies.
 
 ### Native feature unifier
 
@@ -709,6 +716,9 @@ not make the interactive frontend a terminal owner.
 `maestro-extensions-wasm` to `maestro-models`, declared as a native-only,
 non-optional development dependency, lets component tests pass retained schema
 callbacks to the native argument validator. It permits no normal or build edge.
+`maestro-extensions-wasm` to `maestro-extensions-wasmtime`, declared as a native-only,
+non-optional development dependency, lets component tests build their engine from the
+product's one engine configuration. It permits no normal or build edge.
 `maestro-extensions-wasm` to `maestro-listing`, declared as a portable development
 dependency, supplies name-ordered directory reads to the guest examples. It permits
 no normal or build dependency on the listing leaf.
@@ -760,7 +770,9 @@ completion. `output_with` uses this same selection operation and additionally
 checks its returned output's prologue. `TestProcess::temp_dir(path)` sets the
 variables the child's temporary directory comes from: `TMPDIR` on Unix, `TMP` and
 `TEMP` on Windows. A cleared child of `run_per_environment` keeps the parent's
-temporary directory unless its case sets one. `local_zone_follows_tz()` states the
+temporary directory unless its case sets one. `user_cache_home()` names the directory a
+child passes as `XDG_CACHE_HOME` to keep this process's user cache when it replaces
+`HOME` on Linux, the only platform whose cache location follows that variable. `local_zone_follows_tz()` states the
 premise of a test that selects a time zone through `TZ`: Unix hosts follow it, while
 Windows reads its system zone, so such a test reports the premise and returns there.
 

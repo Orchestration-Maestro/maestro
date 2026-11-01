@@ -12,8 +12,13 @@ pub fn bindings_guard() -> BindingsGuard {
     let guard = registry::REGISTRY
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let restore = registry::Restore(maestro_tui::get_keybindings());
+    // The application's actions are registered, as the interactive mode registers them.
+    maestro_tui::set_keybindings(
+        (*maestro_app::KeybindingsManager::new(Vec::default(), None)).clone(),
+    );
     BindingsGuard {
-        _restore: registry::Restore(maestro_tui::get_keybindings()),
+        _restore: restore,
         _guard: guard,
     }
 }

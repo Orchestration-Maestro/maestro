@@ -98,7 +98,7 @@ fn detect_mode() -> ColorMode {
     if matches!(term.as_str(), "" | "dumb" | "linux") {
         return ColorMode::Color256;
     }
-    if env("TERM_PROGRAM").as_deref() == Some("Apple_Terminal")
+    if env(maestro_tui::TERM_PROGRAM).as_deref() == Some("Apple_Terminal")
         || term == "screen"
         || term.starts_with("screen-")
         || term.starts_with("screen.")
@@ -159,7 +159,7 @@ fn color_supported(
     }
     env("COLORTERM").is_some()
         || matches!(
-            env("TERM_PROGRAM").as_deref(),
+            env(maestro_tui::TERM_PROGRAM).as_deref(),
             Some("iTerm.app" | "Apple_Terminal")
         )
         || term == "wezterm"

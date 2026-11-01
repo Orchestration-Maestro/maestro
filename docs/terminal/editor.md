@@ -44,10 +44,14 @@ a cursor marker. Both scroll labels are clipped before border styling and keep t
 styling may add visible text. Display tabs expand outside recognized escapes;
 escape-safe cursor decoration never changes the stored edit position.
 
-With available history, Up starts browsing when the editor is empty. While
-browsing, Up and Down select admitted older and newer entries at the first and
-last visual rows. Unavailable selections leave the prompt unchanged. Outside
-these history-selection branches, they move within the current prompt. Callers add history
+With available history, Up on the first visual row starts browsing, whether or not
+the prompt is empty, and keeps the prompt and cursor as a draft. While browsing, Up
+and Down select admitted older and newer entries at the first and last visual rows.
+An entry selected with Up has the cursor at its start and one selected with Down at
+its end. Down past the newest entry puts back the exact draft and cursor. Any edit,
+`set_text` or undo leaves browsing and drops the draft. Unavailable selections leave
+the prompt unchanged. Outside these history-selection branches, they move within the
+current prompt. Callers add history
 explicitly; submission does not add it. Page keys use the live terminal row count;
 visual movement uses terminal-cell columns; a column beyond the width of a final row
 lands at the line end, after any trailing zero-width text. Literal character jumps search stored

@@ -8,7 +8,7 @@ setup:
     mise exec -- prek install
 
 # Formatting, lint, public documentation and the checkout's workspace conventions.
-check:
+check: prepare-tests
     cargo fmt --all
     just example-index-check
     just _check --workspace
@@ -22,8 +22,12 @@ _check *selection:
     @RUSTDOCFLAGS="-D warnings -D missing_docs" cargo doc {{quote(selection)}} --no-deps --locked
     cargo test -p maestro-test-conventions --locked --test integration -- --exact architecture::real_workspace_obeys_crate_rules dependency_locks::maestro_locked_resolution_keeps_checkout_clean
 
+# Stage the development tool that nextest's component setup runs.
+prepare-tests:
+    @if [ -d crates/maestro-tooling ]; then cargo run --quiet --locked -p maestro-tooling --bin development -- prepare-test-setup install target/test-setup; fi
+
 # Run all workspace tests.
-test *args:
+test *args: prepare-tests
     @cargo nextest run --workspace --locked {{quote(args)}}
     @cargo test --workspace --locked --doc {{quote(args)}}
 

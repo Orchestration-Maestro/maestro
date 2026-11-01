@@ -61,8 +61,10 @@ impl Subject<'_> {
 
     /// Anchor a `gitdir` pattern: `~/` below the home, `./` beside the file, else anywhere.
     fn gitdir_pattern(&self, pattern: &str, config_path: &Path) -> Option<String> {
-        let anchored = if let Some(rest) = pattern.strip_prefix("~/") {
-            self.home?.join(rest).display().to_string()
+        let anchored = if pattern.starts_with("~/") {
+            super::expand_home(pattern, self.home)?
+                .display()
+                .to_string()
         } else if let Some(rest) = pattern.strip_prefix("./") {
             config_path
                 .parent()
@@ -80,10 +82,7 @@ impl Subject<'_> {
 
     /// Where the include entry `value`, written in `config_path`, points.
     pub(super) fn include_path(&self, value: &str, config_path: &Path) -> Option<PathBuf> {
-        let path = match value.strip_prefix("~/") {
-            Some(rest) => self.home?.join(rest),
-            None => PathBuf::from(value),
-        };
+        let path = super::expand_home(value, self.home)?;
         Some(if path.is_absolute() {
             path
         } else {
