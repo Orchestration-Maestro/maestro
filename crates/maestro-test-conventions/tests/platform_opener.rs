@@ -11,6 +11,9 @@ fn platform_viewers_reject_bypasses_in_fragments_and_nested_groups() {
     let copies = [
         "let program = match platform { MacOs => \"open\", Windows => \"explorer.exe\", _ => \"xdg-open\" };",
         "fn launch() { capture!(Command::new(\"xdg-open\")); }",
+        "fn launch() { capture!(Command::new(\"open\")); }",
+        "fn launch() { let run = || maestro_process::command(\"open\"); }",
+        "impl Host { fn launch(&self) { Command::new(r#\"open\"#); } }",
         "fn launch() { let run = || Command::new(\"explorer.exe\"); }",
         "impl Host { fn launch(&self) { Command::new(\"xdg-open\"); } }",
         "fn launch() { let args = [\"/c\", \"start\", target]; Command::new(\"cmd\").args(args); }",
@@ -47,7 +50,7 @@ fn platform_viewers_accept_owner_calls_and_distinct_process_policies() {
         &workspace,
         "maestro-app",
         "src/caller.rs",
-        "fn launch() { utils::platform_opener(target, platform); let _ = utils::platform_opener(target, platform); Command::new(editor).args(files); Command::new(\"pbcopy\"); Command::new(\"cmd\").args([\"/c\", editor]); }",
+        "fn launch() { utils::platform_opener(target, platform); let _ = utils::platform_opener(target, platform); Command::new(editor).args(files); Command::new(\"pbcopy\"); Command::new(\"cmd\").args([\"/c\", editor]); let label = \"open\"; Widget::new(\"open\"); }",
     );
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }

@@ -32,7 +32,7 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
                 literals
                     .into_iter()
                     .filter(|(text, _)| {
-                        matches!(text.as_str(), "xdg-open" | "explorer.exe")
+                        matches!(text.as_str(), "open" | "xdg-open" | "explorer.exe")
                             || (shell_start && text == "cmd")
                     })
                     .map(|(_, line)| {
@@ -51,17 +51,34 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     }
 }
 
-/// Collect decoded string literals and their source lines through every delimiter group.
+/// Collect decoded literals through every group, recognizing `open` only as a command operand.
 fn strings(tokens: TokenStream, found: &mut Vec<(String, usize)>) {
+    let mut command = false;
     for token in tokens {
         match token {
+            TokenTree::Ident(name) => {
+                command = name == "Command" || name == "command" || (command && name == "new");
+            }
+            TokenTree::Punct(punct) => command &= punct.as_char() == ':',
             TokenTree::Literal(literal) => {
-                if let Ok(text) = syn::parse_str::<syn::LitStr>(&literal.to_string()) {
+                if let Ok(text) = syn::parse_str::<syn::LitStr>(&literal.to_string())
+                    && text.value() != "open"
+                {
                     found.push((text.value(), literal.span().start().line));
                 }
+                command = false;
             }
-            TokenTree::Group(group) => strings(group.stream(), found),
-            _ => {}
+            TokenTree::Group(group) => {
+                if command
+                    && let Some(TokenTree::Literal(literal)) = group.stream().into_iter().next()
+                    && let Ok(text) = syn::parse_str::<syn::LitStr>(&literal.to_string())
+                    && text.value() == "open"
+                {
+                    found.push((text.value(), literal.span().start().line));
+                }
+                strings(group.stream(), found);
+                command = false;
+            }
         }
     }
 }
