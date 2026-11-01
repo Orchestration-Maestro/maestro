@@ -51,11 +51,6 @@ path = "../../examples/extensions/custom_footer.rs"
 crate-type = ["cdylib"]
 
 [[example]]
-name = "custom_gateway_provider"
-path = "../../examples/extensions/custom-provider-gitlab-duo/main.rs"
-crate-type = ["cdylib"]
-
-[[example]]
 name = "custom_header"
 path = "../../examples/extensions/custom_header.rs"
 crate-type = ["cdylib"]

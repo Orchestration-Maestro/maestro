@@ -65,12 +65,6 @@ resolving conflicts, then regenerate the table.
 | `custom-provider-anthropic/response.rs` | Ordered provider events reduced into one shared assistant message. |
 | `custom-provider-anthropic/sse.rs` | Byte-framed server-sent events, decoded only after each complete line. |
 | `custom-provider-anthropic/stream.rs` | A custom message-stream implementation using the host's transport and event buffer. |
-| `custom-provider-gitlab-duo.md` | Custom gateway provider |
-| `custom-provider-gitlab-duo/main.rs` | A provider for GitLab Duo's Claude and GPT models, with GitLab sign-in and requests delegated to the built-in protocols. |
-| `custom-provider-gitlab-duo/models.rs` | The gateway's service addresses and the models it serves. |
-| `custom-provider-gitlab-duo/oauth.rs` | GitLab sign-in and token refresh through the host's HTTP and interaction interfaces. |
-| `custom-provider-gitlab-duo/provider.rs` | The provider's retained effects and its cached direct access token. |
-| `custom-provider-gitlab-duo/stream.rs` | Requests for the gateway's models, delegated to the built-in Anthropic and OpenAI protocols. |
 | `custom_compaction.md` | Custom compaction |
 | `custom_compaction.rs` | Summarizes the complete prepared conversation with a separately selected model. |
 | `custom_footer.md` | Custom footer |

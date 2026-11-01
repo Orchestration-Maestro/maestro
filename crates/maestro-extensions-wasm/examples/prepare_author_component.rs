@@ -23,7 +23,6 @@ fn main() -> Result<(), String> {
     build::compile(&context).map_err(|error| error.to_string())?;
     let message = build::component("custom_message_provider", MESSAGE_COMPONENT)?;
     let bash_spawn_hook = build::component("bash_spawn_hook", "MAESTRO_BASH_SPAWN_HOOK_COMPONENT")?;
-    let gateway = build::component("custom_gateway_provider", "MAESTRO_GATEWAY_COMPONENT")?;
     let summarize = build::component("summarize", "MAESTRO_SUMMARIZE_COMPONENT")?;
     let qna = build::component("qna", "MAESTRO_QNA_COMPONENT")?;
     let tool_override = build::component("tool_override", "MAESTRO_TOOL_OVERRIDE_COMPONENT")?;
@@ -47,12 +46,11 @@ fn main() -> Result<(), String> {
         std::fs::write(
             environment,
             format!(
-                "MAESTRO_AUTHOR_COMPONENT={}\nMAESTRO_CONTEXT_COMPONENT={}\nMAESTRO_GATEWAY_COMPONENT={}\n\
+                "MAESTRO_AUTHOR_COMPONENT={}\nMAESTRO_CONTEXT_COMPONENT={}\n\
                  MAESTRO_LOCAL_SHELL_COMPONENT={}\nMAESTRO_NATIVE_IO_COMPONENT={}\nMAESTRO_FILE_TRIGGER_COMPONENT={}\nMAESTRO_LOCATION_COMPONENT={}\nMAESTRO_WASI_COMPONENT={}\nMAESTRO_HELPER_COMPONENT={}\nMAESTRO_HOOK_COMPONENT={}\nMAESTRO_RESOURCE_COMPONENT={}\nMAESTRO_RESOURCE_RELOADED_COMPONENT={}\nMAESTRO_TOOLS_COMPONENT={}\nMAESTRO_SUMMARIZE_COMPONENT={}\nMAESTRO_GIT_CHECKPOINT_COMPONENT={}\nMAESTRO_TOOL_OVERRIDE_COMPONENT={}\nMAESTRO_HANDOFF_COMPONENT={}\nMAESTRO_QNA_COMPONENT={}\nMAESTRO_BASH_SPAWN_HOOK_COMPONENT={}\n\
                  MAESTRO_TRUNCATED_TOOL_COMPONENT={}\nMAESTRO_CUSTOM_MESSAGE_PROVIDER_COMPONENT={}\n",
                 path.display(),
                 context.display(),
-                gateway.display(),
                 shell.display(),
                 native_io.display(),
                 file_trigger.display(),
