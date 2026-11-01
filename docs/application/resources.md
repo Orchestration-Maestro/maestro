@@ -136,11 +136,9 @@ prompt replaces the default one. The default prompt lists the selected tools
 (read, bash, edit and write when none are selected) that have a non-empty
 snippet, or `(none)`, followed by the guidelines and the documentation paths.
 Guidelines keep their first occurrence: the exploration guideline the tools call
-for, the trimmed caller guidelines, then the two standing ones. The exploration
-guideline is `Use bash for file operations like ls, rg, find` when `bash` is
-selected without `grep`, `find` or `ls`; otherwise it is absent. The documentation
-section tells the model to resolve `docs/...` under Additional docs and
-`examples/...` under Examples, not the current working directory. Both prompts end
+for, the trimmed caller guidelines, then the two standing ones. See
+[default system prompt](prompts.md#default-system-prompt) for the exploration
+guideline and documentation-path rules. Both prompts end
 with the appended text, the context files, the skills when the `read` tool is
 available, the local date and the working directory with `/` separators. Only
 the default prompt resolves documentation paths.
