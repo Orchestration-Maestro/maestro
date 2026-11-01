@@ -55,6 +55,8 @@ impl<C: CustomAgentMessages + 'static, E: AgentExecution> Agent<C, E> {
                 timestamp: timestamp_now(),
             }))
         };
+        let retired = write(&agent.state).error_message.replace(error.message);
+        drop(retired);
         let message = AgentMessage::Assistant(Arc::clone(&failure));
         let events = [
             AgentEvent::MessageStart {

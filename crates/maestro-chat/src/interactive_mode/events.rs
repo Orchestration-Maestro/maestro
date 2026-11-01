@@ -435,7 +435,9 @@ impl InteractiveMode {
             self.chat_container.remove_child(&component);
         }
         drop(self.pending_tools.take());
-        self.ui.request_render(false);
+        if !self.check_shutdown_requested() {
+            self.ui.request_render(false);
+        }
         Ok(())
     }
 

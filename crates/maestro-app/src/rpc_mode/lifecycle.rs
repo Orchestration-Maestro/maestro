@@ -160,7 +160,7 @@ impl Connection {
             abort_handler: None,
             shutdown_handler: Some(Rc::new(move || {
                 if let Some(connection) = weak.upgrade() {
-                    connection.request_shutdown();
+                    connection.lifecycle.borrow_mut().shutdown_requested = true;
                 }
                 Ok(())
             })),
@@ -194,34 +194,9 @@ impl Connection {
         Ok(())
     }
 
-    /// Records an extension shutdown and checks it again when an active run settles.
-    fn request_shutdown(self: &Rc<Self>) {
-        self.lifecycle.borrow_mut().shutdown_requested = true;
-        let Some(owner) = &self.session else {
-            return;
-        };
-        let session = owner.session();
-        if session.is_idle() {
-            return;
-        }
-        let weak = Rc::downgrade(self);
-        drop(tokio::task::spawn_local(async move {
-            session.wait_for_idle().await;
-            if let Some(connection) = weak.upgrade() {
-                connection.check_shutdown_requested().await;
-            }
-        }));
-    }
-
-    /// Starts a requested shutdown after a command or run settlement, only while idle.
+    /// Shuts down after a command when an extension requested it.
     pub(super) async fn check_shutdown_requested(self: &Rc<Self>) {
-        if self.lifecycle.borrow().shutdown_requested
-            && !self.shutting_down()
-            && self
-                .session
-                .as_ref()
-                .is_some_and(|owner| owner.session().is_idle())
-        {
+        if self.lifecycle.borrow().shutdown_requested {
             self.shutdown(RpcConnectionOutcome::Requested).await;
         }
     }

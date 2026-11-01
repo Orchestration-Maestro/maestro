@@ -192,7 +192,6 @@ pub enum InputSource {
 
 /// A user input before agent processing.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct InputEvent {
     /// The input text.
     pub text: String,

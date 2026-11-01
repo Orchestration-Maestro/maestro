@@ -28,10 +28,6 @@ recorded while it ran are appended, the session is marked idle and every waiter
 is released.
 
 `is_streaming` is true from the start of the run through its last continuation.
-`is_idle` is its inverse: retry waits, compaction and queued continuations all belong
-to the active run. A second start is refused without changing that run or its waiters.
-An extension shutdown requested during a run waits for settlement; an interactive
-request made while idle starts shutdown at once.
 `prompt`, `wait_for_idle` and `abort` return only after the settle step, and so
 do the idle waits of the extension and interactive command contexts. `dispose` stops
 the work a run waits on (a retry wait, a compaction, a branch summary, a shell command and
@@ -51,17 +47,10 @@ reaches the next request of the run; the request already sent keeps its payload.
 prompt the extensions set for the run, even an empty one, stays in force for every turn of the
 run, and the base prompt returns when the run settles.
 
-If a retry ends with a non-retryable error, `auto_retry_end` reports failure, the
-current attempt and the final error, then clears the attempt count before the
-compaction check. A first error without retries emits no retry-end event.
-
 ## Reload
 
 `AgentSession::reload` reads the settings again and gives the live agent the steering and
 follow-up modes they now hold, so the next queued input uses them without a restart.
-Reload emits `session_start` and extends extension resources only when a UI context,
-command actions, shutdown handler or error handler is bound. An abort handler alone
-does not count.
 
 ## Names
 

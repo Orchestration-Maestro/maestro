@@ -107,9 +107,8 @@ returned, and the settings before it stay applied.
 
 The binding also installs the mode's shutdown and error handlers. An extension's
 shutdown request records the request; while the session is idle it starts
-[graceful shutdown](#native-shutdown) at once. During a run, including retry waits
-and compaction, shutdown starts only when the run settles. A shortcut's context
-reaches the same handler.
+[graceful shutdown](#native-shutdown) at once, and while a response streams the
+agent's end starts it. A shortcut's context reaches the same handler.
 
 Each attributed extension failure the runner reports is appended to the transcript
 as `Extension "<path>" error: <message>` in the error colour. When the failure
@@ -161,9 +160,9 @@ handlers are removed and no other registration in the process is live, a later
 termination or hangup signal takes its native default action. Windows
 console-close integration is not provided by this mode.
 
-Agent end cleans up transient rows and requests a frame. A requested shutdown
-waits for the run to settle, then uses this same graceful owner once. Extension
-requests reach it through the [session binding](#session-binding).
+At agent end, a requested shutdown follows transient-row cleanup through this
+same graceful owner instead of requesting a final frame. Extension requests reach
+it through the [session binding](#session-binding).
 
 ## Loaded resources
 

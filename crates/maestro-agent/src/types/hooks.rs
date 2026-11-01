@@ -94,7 +94,7 @@ pub struct AgentLoopTurnUpdate<
     /// Thinking level for the next request.
     pub thinking_level: Option<maestro_models::ModelThinkingLevel>,
 }
-/// Retained next-turn callback receiving the completed turn and the run's abort signal.
+/// Retained `PrepareNextTurn` callback.
 pub type PrepareNextTurn<C, E = super::Threaded> =
     <E as maestro_models::Execution>::Shared<<E as super::AgentExecution>::PrepareNextTurn<C>>;
 /// Completed-turn stop callback.

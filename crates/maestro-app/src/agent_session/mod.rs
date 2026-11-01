@@ -322,12 +322,6 @@ impl<E: ExtensionExecution> AgentSession<E> {
         self.state.borrow().run_gate.is_some()
     }
 
-    /// Whether no run, retry, compaction or queued continuation is active.
-    #[must_use]
-    pub fn is_idle(&self) -> bool {
-        !self.is_streaming()
-    }
-
     /// The current system prompt.
     #[must_use]
     pub fn system_prompt(&self) -> String {

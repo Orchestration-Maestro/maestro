@@ -1,7 +1,7 @@
 //! Sending a prompt: registered commands, input handlers, skill and template expansion,
 //! streaming admission, the credential check and delivery to the agent.
 use super::state::{last_assistant_message, thrown};
-use super::{AgentSession, AgentSessionEvent, PromptOptions};
+use super::{AgentSession, PromptOptions};
 use crate::configuration::config::get_docs_path;
 use crate::utils::lock::{read, write};
 use maestro_agent::{AgentMessage, PromptInput};
@@ -10,8 +10,8 @@ use maestro_extensions::{
     ExtensionError, ExtensionExecution, InputEventResult, InputSource, NativeAgentMessage,
 };
 use maestro_models::{
-    DiagnosticErrorInfo, ImageContent, StopReason, TextContent, UserBlock, UserContent,
-    UserMessage, timestamp_now,
+    DiagnosticErrorInfo, ImageContent, TextContent, UserBlock, UserContent, UserMessage,
+    timestamp_now,
 };
 use maestro_resources::{expand_prompt_template, skills::read_text, strip_frontmatter};
 use maestro_session::Presence;
@@ -82,9 +82,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
         input: PromptInput<CustomAgentMessages>,
     ) -> Result<(), DiagnosticErrorInfo> {
         if !self.begin_run() {
-            return Err(DiagnosticErrorInfo::error(
-                "Agent is already processing a prompt. Use steer() or followUp() to queue messages, or wait for completion.",
-            ));
+            // The agent refuses a second start while the first run is active.
+            return self.agent.prompt(input).await.map(drop);
         }
         let outcome = self.drive_run(input).await;
         outcome.and(self.settle_run())
@@ -144,15 +143,6 @@ impl<E: ExtensionExecution> AgentSession<E> {
         let message = read(&last).clone();
         if self.is_retryable_error(&message) && self.handle_retryable_error(&message).await {
             return Ok(true);
-        }
-        let attempt = self.retry_attempt();
-        if message.stop_reason == StopReason::Error && attempt > 0 {
-            self.emit(&AgentSessionEvent::AutoRetryEnd {
-                success: false,
-                attempt,
-                final_error: message.error_message.clone(),
-            });
-            self.state.borrow_mut().retry_attempt = 0;
         }
         if self.check_compaction(&message, true).await? {
             return Ok(true);

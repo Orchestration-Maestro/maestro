@@ -111,12 +111,9 @@ When a failure rejects a run that `Agent::prompt` or `Agent::continue` admitted,
 agent records it as an assistant message with an error (or aborted) stop reason and
 an empty text block. Listeners see that message's start and end, a turn end with no
 tool results, and then the run's end, each awaited in order; the history stores the
-message once, when its end is reduced. The message carries the failure text from
-its start; the agent state's `error_message` stays unset during message start and
-end, and is set when turn end is reduced.
+message once, when its end is reduced.
 
 An abort stops a tool batch where it happened. After each call, a sequential batch and a
 parallel preflight check the run's signal and prepare no later sibling. The check also runs
-after preparation, whether or not a before hook is installed. A call aborted during
-preparation or its before hook is not executed: it ends as an error result that
-reads `Operation aborted`.
+right after the before hook, so a call whose hook aborted, or whose signal was aborted while
+the hook ran, is not executed: it ends as an error result that reads `Operation aborted`.

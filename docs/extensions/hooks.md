@@ -26,7 +26,7 @@ Dedicated routes preserve their own outcomes:
   images retain the current images; an explicit list, even empty or equal, marks
   image replacement. `Continue` preserves mutable image edits without declaring a
   transform. Text changed and restored can finish as `Continue`. The event carries
-  `streamingBehavior` (`steer` or `followUp`) only when the input arrives while a
+  `streaming_behavior` (`steer` or `followUp`) only when the input arrives while a
   response streams and the caller chose a delivery; idle input carries none.
 
 An extension's `abort` goes to the abort handler the host bound with the session's

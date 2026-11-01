@@ -653,22 +653,17 @@ async fn shared_signal_case() {
         signal.unwrap().abort();
         ready(Ok(history))
     }));
-    let context = with_execute(Arc::new(|_, _, _, _| {
-        panic!("a call aborted before preparation is not executed")
+    let context = with_execute(Arc::new(|_, _, signal, _| {
+        assert!(signal.unwrap().is_aborted());
+        ready(Ok(result()))
     }));
-    let turns = Arc::new(std::sync::atomic::AtomicUsize::new(0));
     let options = maestro_agent::AgentLoopOptions {
         signal: Some(invocation.clone()),
-        stream_fn: Some(Arc::new(move |_, _, options, open| {
+        stream_fn: Some(Arc::new(|_, _, options, open| {
             assert!(open.common.signal.unwrap().is_aborted());
             assert!(options.common.signal.unwrap().is_aborted());
-            let first = turns.fetch_add(1, std::sync::atomic::Ordering::SeqCst) == 0;
             let stream = maestro_models::AssistantMessageEventStream::new();
-            stream.end(Some(if first {
-                tool_call()
-            } else {
-                assistant("stopped")
-            }));
+            stream.end(Some(tool_call()));
             ready(Ok(stream))
         })),
     };
