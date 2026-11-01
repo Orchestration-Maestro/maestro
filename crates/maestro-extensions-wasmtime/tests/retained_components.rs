@@ -5,7 +5,6 @@ use maestro_extensions::{
     ComponentHandle, EventBus, EventError, ExtensionRunner, Local, MessageRenderOptions,
     create_event_bus_for, create_extension_runtime, load_extension_from_factory,
 };
-use maestro_extensions_wasmtime::artifact_factory;
 use std::{rc::Rc, sync::RwLock};
 
 use super::{session, support};
@@ -56,11 +55,59 @@ pub(super) async fn loaded_in(
     ExtensionRunner<Local>,
     EventBus<Local>,
 ) {
+    loaded_at(events, session, "/fixture").await
+}
+
+/// Supplies the factory's captured directory independently of the callback context.
+pub(super) async fn loaded_at(
+    events: EventBus<Local>,
+    session: maestro_extensions::runner::ExtensionRunnerSession,
+    cwd: &str,
+) -> (
+    ExtensionHandle<Local>,
+    ExtensionRunner<Local>,
+    EventBus<Local>,
+) {
     let runtime = create_extension_runtime::<Local>();
+    runtime.set_catalog_construction(maestro_extensions::CatalogConstruction {
+        auth_path: std::sync::Arc::new(|| Err("unexpected default auth path".into())),
+        models_path: std::sync::Arc::new(|| Err("unexpected default model path".into())),
+        config_values: session.model_registry.config_values().clone(),
+    });
+    loaded_with_runtime(events, session, cwd, runtime).await
+}
+
+/// Loads the real artifact after the caller installed factory-time defaults and flags.
+pub(super) async fn loaded_with_runtime(
+    events: EventBus<Local>,
+    session: maestro_extensions::runner::ExtensionRunnerSession,
+    cwd: &str,
+    runtime: Rc<maestro_extensions::ExtensionRuntime<Local>>,
+) -> (
+    ExtensionHandle<Local>,
+    ExtensionRunner<Local>,
+    EventBus<Local>,
+) {
+    let result = unbound_with_runtime(events, session, cwd, runtime).await;
+    support::bind_prompt(&result.1, "renderer barrier");
+    result
+}
+
+/// Loads factories without binding so callers can observe individual flush diagnostics.
+pub(super) async fn unbound_with_runtime(
+    events: EventBus<Local>,
+    session: maestro_extensions::runner::ExtensionRunnerSession,
+    cwd: &str,
+    runtime: Rc<maestro_extensions::ExtensionRuntime<Local>>,
+) -> (
+    ExtensionHandle<Local>,
+    ExtensionRunner<Local>,
+    EventBus<Local>,
+) {
     let path = std::env::var("MAESTRO_CONTEXT_COMPONENT").unwrap();
     let owner = load_extension_from_factory(
-        artifact_factory(path.clone()),
-        "/fixture".into(),
+        crate::artifact(path.clone()),
+        cwd.into(),
         events.clone(),
         runtime.clone(),
         Some(path),
@@ -74,7 +121,6 @@ pub(super) async fn loaded_in(
         Rc::new(|_| {}),
         maestro_theme::LiveTheme::default(),
     );
-    support::bind_prompt(&runner, "renderer barrier");
     (owner, runner, events)
 }
 
@@ -321,7 +367,7 @@ async fn faulted_calls(queue_release: bool) {
         .unwrap()
         .command
         .handler;
-    let (first, second, pending) = futures_util::join!(
+    let (first, second, pending) = futures_util::future::join3(
         command("trap".into(), trap_runner.create_command_context()),
         command("pending".into(), pending_runner.create_command_context()),
         async {
@@ -336,7 +382,8 @@ async fn faulted_calls(queue_release: bool) {
             trap.send(()).unwrap();
             pending
         },
-    );
+    )
+    .await;
     let first = first.unwrap_err().to_string();
     assert!(
         first.contains("component fault") && first.contains("wasm trap"),
@@ -417,7 +464,7 @@ fn foreign_component_listener_prefixes_run_after_the_current_renderer_returns() 
         );
         let path = std::env::var("MAESTRO_CONTEXT_COMPONENT").unwrap();
         let owner = load_extension_from_factory(
-            artifact_factory(path.clone()),
+            crate::artifact(path.clone()),
             "/fixture".into(),
             bus.clone(),
             create_extension_runtime::<Local>(),
@@ -427,7 +474,7 @@ fn foreign_component_listener_prefixes_run_after_the_current_renderer_returns() 
         .unwrap();
         let runner = other_runner(&owner);
         let _foreign = load_extension_from_factory(
-            artifact_factory(path.clone()),
+            crate::artifact(path.clone()),
             "/foreign".into(),
             controller.for_extension(),
             create_extension_runtime::<Local>(),

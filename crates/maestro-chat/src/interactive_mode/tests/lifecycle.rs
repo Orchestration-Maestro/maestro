@@ -32,9 +32,11 @@ fn watched(directory: &Path, progress: bool) -> (World, Rc<RecordingWatcher>) {
     assert_eq!(watcher.paths().len(), 2);
     assert_eq!(Path::new(&watcher.paths()[0]).file_name().unwrap(), ".git");
     assert!(watcher.paths()[1].ends_with("custom"));
-    world.host.set_before_session_invalidate(Some(Rc::new(|| {
-        panic!("presentation stop must not dispose the application runtime");
-    })));
+    world.host.set_before_session_invalidate(Some(Rc::new(
+        || -> Result<(), maestro_app::EventError> {
+            panic!("presentation stop must not dispose the application runtime");
+        },
+    )));
     (world, watcher)
 }
 
@@ -50,7 +52,7 @@ impl Drop for Release {
     fn drop(&mut self) {
         let mode = self.mode.upgrade().unwrap();
         assert!(mode.unsubscribe.try_borrow_mut().is_ok());
-        assert!(mode.working.loading_animation.try_borrow_mut().is_ok());
+        assert!(mode.status_kind().is_none());
         self.released.set(true);
     }
 }
@@ -59,9 +61,9 @@ impl Drop for Release {
 fn stop_releases_loader_and_subscription_before_ui() {
     isolated(
         "stop_releases_loader_and_subscription_before_ui",
-        |directory| {
+        async |directory| {
             for present in [false, true] {
-                subscription_case(directory, present);
+                subscription_case(directory, present).await;
             }
         },
     );
@@ -69,9 +71,9 @@ fn stop_releases_loader_and_subscription_before_ui() {
 
 #[test]
 fn stop_failure_keeps_the_original_phase() {
-    isolated("stop_failure_keeps_the_original_phase", |directory| {
+    isolated("stop_failure_keeps_the_original_phase", async |directory| {
         for progress_failure in [true, false] {
-            failure_case(directory, progress_failure);
+            failure_case(directory, progress_failure).await;
         }
     });
 }
@@ -80,18 +82,18 @@ fn stop_failure_keeps_the_original_phase() {
 fn stop_unregisters_and_releases_only_current_owners() {
     isolated(
         "stop_unregisters_and_releases_only_current_owners",
-        |directory| {
+        async |directory| {
             for initialized in [false, true] {
-                owners_case(directory, initialized);
+                owners_case(directory, initialized).await;
             }
         },
     );
 }
 
 /// Checks present or absent working owners and the subscription release boundary.
-fn subscription_case(directory: &Path, present: bool) {
+async fn subscription_case(directory: &Path, present: bool) {
     let (world, watcher) = watched(directory, false);
-    world.mode.init().unwrap();
+    world.mode.init().await.unwrap();
     world.runtime.settle().unwrap();
     let removed = Rc::new(Cell::new(false));
     let released = Rc::new(Cell::new(false));
@@ -109,8 +111,8 @@ fn subscription_case(directory: &Path, present: bool) {
         world.mode.unsubscribe.replace(Some(Box::new(move || {
             let _ = &release;
             let mode = mode.upgrade().unwrap();
-            assert!(mode.working.loading_animation.borrow().is_none());
-            assert_eq!(mode.status_container.children().borrow().len(), 1);
+            assert!(mode.working_loader().is_none());
+            assert!(mode.status_container.children().borrow().is_empty());
             assert!(registrations.closed(0), "provider precedes unsubscribe");
             assert!(mode.is_initialized.get(), "unsubscribe precedes UI stop");
             called.set(true);
@@ -125,13 +127,12 @@ fn subscription_case(directory: &Path, present: bool) {
             assert_eq!(stopped.get(), present, "capture released before UI stop");
         }
     });
-    let status = world.mode.status_container.render(80);
     world.mode.stop().unwrap();
     assert_eq!(removed.get(), present);
     assert_eq!(released.get(), present);
-    assert!(world.mode.working.loading_animation.borrow().is_none());
+    assert!(world.mode.working_loader().is_none());
     assert!(world.mode.unsubscribe.borrow().is_none());
-    assert_eq!(world.mode.status_container.render(80), status);
+    assert!(world.mode.status_container.render(80).is_empty());
     assert_eq!(world.runtime.pending(), 0, "no loader tick remains");
     world.terminal.clear_writes();
     world.host.session().set_session_name("after stop").unwrap();
@@ -145,9 +146,9 @@ fn subscription_case(directory: &Path, present: bool) {
 }
 
 /// Checks each failing phase through two attempts and a successful retry.
-fn failure_case(directory: &Path, progress_failure: bool) {
+async fn failure_case(directory: &Path, progress_failure: bool) {
     let (world, watcher) = watched(directory, true);
-    world.mode.init().unwrap();
+    world.mode.init().await.unwrap();
     world.runtime.settle().unwrap();
     world.mode.show_working_loader();
     let kind = if progress_failure {
@@ -169,10 +170,7 @@ fn failure_case(directory: &Path, progress_failure: bool) {
         );
         assert_eq!(watcher.closed(0), !progress_failure);
         assert!(!watcher.closed(1));
-        assert_eq!(
-            world.mode.working.loading_animation.borrow().is_some(),
-            progress_failure
-        );
+        assert_eq!(world.mode.working_loader().is_some(), progress_failure);
         assert_eq!(world.mode.unsubscribe.borrow().is_some(), progress_failure);
         assert_eq!(world.runtime.futures(), 0);
     }
@@ -194,17 +192,17 @@ fn recover_stop(world: &World, watcher: &RecordingWatcher) {
     world.mode.stop().unwrap();
     assert!(!world.mode.is_initialized.get());
     assert!(watcher.closed(0));
-    assert!(world.mode.working.loading_animation.borrow().is_none());
+    assert!(world.mode.working_loader().is_none());
     assert!(world.mode.unsubscribe.borrow().is_none());
     assert_eq!(world.runtime.pending(), 0);
 }
 
 /// Checks both progress policies with one initialized-state policy.
-fn owners_case(directory: &Path, initialized: bool) {
+async fn owners_case(directory: &Path, initialized: bool) {
     for progress in [false, true] {
         let (world, watcher) = watched(directory, progress);
         if initialized {
-            world.mode.init().unwrap();
+            world.mode.init().await.unwrap();
             world.runtime.settle().unwrap();
         }
         let effects = Rc::new(RefCell::new(Vec::new()));
@@ -265,10 +263,10 @@ fn owners_case(directory: &Path, initialized: bool) {
 fn graceful_shutdown_is_once_only_and_preserves_effect_order() {
     isolated(
         "graceful_shutdown_is_once_only_and_preserves_effect_order",
-        |directory| {
+        async |directory| {
             for initialized in [false, true] {
                 for progress in [false, true] {
-                    graceful_case(directory, (initialized, progress));
+                    graceful_case(directory, (initialized, progress)).await;
                 }
             }
         },
@@ -276,7 +274,7 @@ fn graceful_shutdown_is_once_only_and_preserves_effect_order() {
 }
 
 /// Checks synchronous admission and both asynchronous waits through real disposal.
-fn graceful_case(directory: &Path, branches: (bool, bool)) {
+async fn graceful_case(directory: &Path, branches: (bool, bool)) {
     let (initialized, progress) = branches;
     let effects = Rc::new(Effects::default());
     let (release, gate) = tokio::sync::oneshot::channel::<()>();
@@ -289,7 +287,7 @@ fn graceful_case(directory: &Path, branches: (bool, bool)) {
     }
     .build(directory);
     if initialized {
-        world.mode.init().unwrap();
+        world.mode.init().await.unwrap();
         world.runtime.settle().unwrap();
     } else {
         world.mode.register_signal_handlers().unwrap();
@@ -327,19 +325,21 @@ pub(super) fn replace_effects(
 ) -> Rc<InteractiveMode> {
     let mut mode = Rc::try_unwrap(mode).unwrap_or_else(|_| panic!("unique mode"));
     mode.lifecycle.effects = effects;
-    Rc::new_cyclic(|this| {
+    let mode = Rc::new_cyclic(|this| {
         mode.this = this.clone();
         mode
-    })
+    });
+    super::super::extensions::bind_runtime_hooks(&mode);
+    mode
 }
 
-/// Signal callbacks whose ownership the controlled native registration keeps.
-type Signals = (Rc<dyn Fn()>, Rc<dyn Fn()>);
+/// The signal callback whose ownership the controlled native registration keeps.
+type Signals = Rc<dyn Fn()>;
 
 /// Observable process effects without touching the real process.
 pub(super) struct Effects {
     /// Wall time the clear action observes.
-    now: Cell<i64>,
+    pub(super) now: Cell<i64>,
     /// Effects in invocation order.
     pub(super) events: Rc<RefCell<Vec<String>>>,
     /// The currently registered callbacks, shared with their remover.
@@ -363,17 +363,13 @@ impl super::super::lifecycle::LifecycleEffects for Effects {
     fn now_ms(&self) -> i64 {
         self.now.get()
     }
-    fn register_signals(
-        &self,
-        terminate: Rc<dyn Fn()>,
-        hangup: Rc<dyn Fn()>,
-    ) -> std::io::Result<Box<dyn Fn()>> {
+    fn register_signals(&self, shutdown: Rc<dyn Fn()>) -> std::io::Result<Box<dyn Fn()>> {
         if self.fail_registration.get() {
             return Err(std::io::Error::from(std::io::ErrorKind::PermissionDenied));
         }
         self.events.borrow_mut().push("register".into());
         assert!(self.signals.borrow().is_none());
-        *self.signals.borrow_mut() = Some((terminate, hangup));
+        *self.signals.borrow_mut() = Some(shutdown);
         let signals = Rc::clone(&self.signals);
         let events = Rc::clone(&self.events);
         Ok(Box::new(move || {
@@ -440,17 +436,17 @@ impl Rig {
         }
     }
     /// Initializes and settles the startup frame.
-    fn start(&self) {
-        self.world.mode.init().unwrap();
+    async fn start(&self) {
+        self.world.mode.init().await.unwrap();
         self.world.runtime.settle().unwrap();
     }
 }
 
 #[test]
 fn lifecycle_callbacks_release_the_mode() {
-    isolated("lifecycle_callbacks_release_the_mode", |directory| {
+    isolated("lifecycle_callbacks_release_the_mode", async |directory| {
         let rig = Rig::new(directory, Setup::default());
-        rig.start();
+        rig.start().await;
         let weak = Rc::downgrade(&rig.world.mode);
         let signals = rig.effects.signals.borrow().clone().unwrap();
         let terminal = rig.world.terminal.clone();
@@ -460,8 +456,7 @@ fn lifecycle_callbacks_release_the_mode() {
         assert!(weak.upgrade().is_none());
         assert!(!stdout.registered());
         assert!(!stderr.registered());
-        signals.0();
-        signals.1();
+        signals();
         stdout.emit(&std::io::Error::from(std::io::ErrorKind::BrokenPipe));
         terminal.send_input("\x04");
         assert_eq!(*rig.effects.events.borrow(), ["register", "remove"]);
@@ -482,7 +477,7 @@ fn lifecycle_callbacks_release_the_mode() {
 fn signal_registration_replaces_and_cancels_live_handlers() {
     isolated(
         "signal_registration_replaces_and_cancels_live_handlers",
-        |directory| {
+        async |directory| {
             let rig = Rig::new(directory, Setup::default());
             let events = Rc::clone(&rig.effects.events);
             rig.world.terminal.set_tap(move |_| {
@@ -491,8 +486,8 @@ fn signal_registration_replaces_and_cancels_live_handlers() {
                     Some("register")
                 );
             });
-            rig.start();
-            rig.world.mode.init().unwrap();
+            rig.start().await;
+            rig.world.mode.init().await.unwrap();
             assert_eq!(*rig.effects.events.borrow(), ["register"]);
             rig.world.mode.register_signal_handlers().unwrap();
             assert_eq!(
@@ -502,14 +497,14 @@ fn signal_registration_replaces_and_cancels_live_handlers() {
             rig.world.mode.stop().unwrap();
             assert!(rig.effects.signals.borrow().is_none());
             assert!(rig.outputs.iter().all(|output| !output.registered()));
-            rig.start();
+            rig.start().await;
             let second = Rig::new(directory, Setup::default());
-            second.start();
+            second.start().await;
             rig.world.mode.stop().unwrap();
             assert!(second.effects.signals.borrow().is_some());
             let failed = Rig::new(directory, Setup::default());
             failed.effects.fail_registration.set(true);
-            let error = failed.world.mode.init().unwrap_err();
+            let error = failed.world.mode.init().await.unwrap_err();
             assert_eq!(
                 error.downcast_ref::<std::io::Error>().unwrap().kind(),
                 std::io::ErrorKind::PermissionDenied
@@ -524,19 +519,15 @@ fn signal_registration_replaces_and_cancels_live_handlers() {
 fn ordinary_output_errors_keep_native_categories() {
     isolated(
         "ordinary_output_errors_keep_native_categories",
-        |directory| {
+        async |directory| {
             let rig = Rig::new(directory, Setup::default());
-            rig.start();
+            rig.start().await;
             for error in [
                 std::io::Error::from_raw_os_error(22),
                 std::io::Error::other("EIO"),
             ] {
                 for output in &rig.outputs {
-                    let kind = error.kind();
-                    let errno = error.raw_os_error();
                     output.emit(&error);
-                    assert_eq!(error.kind(), kind);
-                    assert_eq!(error.raw_os_error(), errno);
                 }
             }
             assert_eq!(*rig.effects.events.borrow(), ["register"]);
@@ -557,7 +548,7 @@ fn dead_output_errors_exit_without_normal_cleanup() {
     }
     isolated(
         "dead_output_errors_exit_without_normal_cleanup",
-        |directory| {
+        async |directory| {
             for code in [
                 rustix::io::Errno::IO,
                 rustix::io::Errno::PIPE,
@@ -565,7 +556,7 @@ fn dead_output_errors_exit_without_normal_cleanup() {
             ] {
                 for source in 0..2 {
                     let rig = Rig::new(directory, Setup::default());
-                    rig.start();
+                    rig.start().await;
                     rig.effects.events.borrow_mut().clear();
                     let error = std::io::Error::from_raw_os_error(code.raw_os_error());
                     rig.outputs[source].emit(&error);
@@ -584,16 +575,16 @@ fn dead_output_errors_exit_without_normal_cleanup() {
 fn graceful_failures_keep_phase_and_never_report_success() {
     isolated(
         "graceful_failures_keep_phase_and_never_report_success",
-        |directory| {
+        async |directory| {
             for phase in ["drain", "progress", "ui", "dispose"] {
-                failure_shutdown(directory, phase);
+                failure_shutdown(directory, phase).await;
             }
         },
     );
 }
 
 /// Checks the first failing effect's original category and the closed later-effect set.
-fn failure_shutdown(directory: &Path, phase: &str) {
+async fn failure_shutdown(directory: &Path, phase: &str) {
     let rig = Rig::new(
         directory,
         Setup {
@@ -602,12 +593,15 @@ fn failure_shutdown(directory: &Path, phase: &str) {
             ..Setup::default()
         },
     );
-    rig.start();
+    rig.start().await;
     let invalidated = Rc::new(Cell::new(false));
     let seen = Rc::clone(&invalidated);
     rig.world
         .host
-        .set_before_session_invalidate(Some(Rc::new(move || seen.set(true))));
+        .set_before_session_invalidate(Some(Rc::new(move || {
+            seen.set(true);
+            Ok(())
+        })));
     select_failure(&rig, phase);
     let mut shutdown = rig.world.mode.shutdown();
     let error = super::typed::poll(&mut shutdown)
@@ -646,23 +640,23 @@ fn failure_shutdown(directory: &Path, phase: &str) {
 }
 
 #[test]
-fn requested_shutdown_runs_after_agent_end_cleanup() {
+fn agent_end_cleans_up_without_starting_requested_shutdown() {
     isolated(
-        "requested_shutdown_runs_after_agent_end_cleanup",
-        |directory| {
+        "agent_end_cleans_up_without_starting_requested_shutdown",
+        async |directory| {
             for requested in [false, true] {
                 for transient in [(false, false), (false, true), (true, false), (true, true)] {
-                    requested_case(directory, requested, transient);
+                    requested_case(directory, requested, transient).await;
                 }
             }
         },
     );
 }
 
-/// Checks transient cleanup before consuming a requested shutdown, retaining transcript rows.
-fn requested_case(directory: &Path, requested: bool, transient: (bool, bool)) {
+/// Checks that agent end retains transcript rows and leaves shutdown to run settlement.
+async fn requested_case(directory: &Path, requested: bool, transient: (bool, bool)) {
     let rig = Rig::new(directory, Setup::default());
-    rig.start();
+    rig.start().await;
     let mode = &rig.world.mode;
     let completed: Rc<dyn Component> =
         Rc::new(maestro_tui::Text::new("completed".into(), 0, 0, None));
@@ -680,7 +674,7 @@ fn requested_case(directory: &Path, requested: bool, transient: (bool, bool)) {
     let observed = Rc::downgrade(mode);
     rig.before_drain.replace(Some(Rc::new(move || {
         let mode = observed.upgrade().unwrap();
-        assert!(mode.working.loading_animation.borrow().is_none());
+        assert!(mode.working_loader().is_none());
         assert!(mode.streaming.borrow().is_none());
         assert!(mode.pending_tools.borrow().values().next().is_none());
     })));
@@ -689,7 +683,7 @@ fn requested_case(directory: &Path, requested: bool, transient: (bool, bool)) {
         messages: Vec::new(),
     };
     super::events::dispatch(&rig.world, ended);
-    assert!(mode.working.loading_animation.borrow().is_none());
+    assert!(mode.working_loader().is_none());
     assert!(mode.streaming.borrow().is_none());
     assert!(mode.pending_tools.borrow().values().next().is_none());
     assert!(
@@ -706,13 +700,15 @@ fn requested_case(directory: &Path, requested: bool, transient: (bool, bool)) {
             },
         );
     }
-    requested_result(&rig, requested);
+    assert!(rig.world.runtime.take_futures().is_empty());
+    assert!(rig.world.runtime.pending() > 0);
+    assert_eq!(*rig.effects.events.borrow(), ["register"]);
 }
 
 #[test]
-fn termination_signal_unregisters_and_drains_before_cleanup() {
+fn termination_signal_unregisters_and_disposes_before_terminal_writes() {
     native::run(
-        "termination_signal_unregisters_and_drains_before_cleanup",
+        "termination_signal_unregisters_and_disposes_before_terminal_writes",
         "term",
         "TERM",
         None,
@@ -720,9 +716,9 @@ fn termination_signal_unregisters_and_drains_before_cleanup() {
 }
 
 #[test]
-fn hangup_skips_terminal_and_runtime_cleanup() {
+fn hangup_runs_the_graceful_shutdown_and_exits_normally() {
     native::run(
-        "hangup_skips_terminal_and_runtime_cleanup",
+        "hangup_runs_the_graceful_shutdown_and_exits_normally",
         "hup",
         "HUP",
         None,
@@ -816,29 +812,6 @@ fn select_failure(rig: &Rig, phase: &str) {
     }
 }
 
-/// Asserts the requested and normal continuations after transient cleanup.
-fn requested_result(rig: &Rig, requested: bool) {
-    let mut work = rig.world.runtime.take_futures();
-    assert_eq!(work.len(), usize::from(requested));
-    if requested {
-        assert_eq!(
-            *rig.effects.events.borrow(),
-            ["register", "remove", "drain"]
-        );
-        assert!(matches!(super::typed::poll(&mut work[0]), Some(Ok(()))));
-        assert_eq!(
-            *rig.effects.events.borrow(),
-            ["register", "remove", "drain", "exit:0"]
-        );
-        assert!(!rig.world.mode.is_initialized.get());
-        rig.world.runtime.settle().unwrap();
-        assert_eq!(rig.world.runtime.pending(), 0);
-    } else {
-        assert!(rig.world.runtime.pending() > 0);
-        assert_eq!(*rig.effects.events.borrow(), ["register"]);
-    }
-}
-
 /// Records native progress clearing and UI restoration in the shared operation trace.
 fn trace_terminal(terminal: &super::RecordingTerminal, events: &Rc<RefCell<Vec<String>>>) {
     let events = Rc::clone(events);
@@ -866,33 +839,36 @@ fn graceful_expected(branches: (bool, bool)) -> Vec<&'static str> {
 
 #[test]
 fn clear_action_first_press_clears_and_redraws() {
-    isolated("clear_action_first_press_clears_and_redraws", |directory| {
-        let rig = Rig::new(directory, Setup::default());
-        rig.start();
-        rig.world.mode.editor.add_to_history("kept history");
-        rig.world.mode.editor.set_text("unsubmitted");
-        rig.world.runtime.settle().unwrap();
-        rig.world.mode.editor.handle_input("\x03");
-        assert_eq!(rig.world.mode.editor.get_text(), "");
-        assert_eq!(rig.world.runtime.pending(), 1);
-        assert_eq!(rig.world.mode.lifecycle.last_sigint_time.get(), 10000);
-        assert_eq!(*rig.effects.events.borrow(), ["register"]);
-        assert_eq!(
-            super::typed::recalled(&rig.world.mode.editor),
-            ["kept history"]
-        );
-        assert_eq!(rig.world.runtime.futures(), 0);
-    });
+    isolated(
+        "clear_action_first_press_clears_and_redraws",
+        async |directory| {
+            let rig = Rig::new(directory, Setup::default());
+            rig.start().await;
+            rig.world.mode.editor.add_to_history("kept history");
+            rig.world.mode.editor.set_text("unsubmitted");
+            rig.world.runtime.settle().unwrap();
+            rig.world.mode.editor.handle_input("\x03");
+            assert_eq!(rig.world.mode.editor.get_text(), "");
+            assert_eq!(rig.world.runtime.pending(), 1);
+            assert_eq!(rig.world.mode.lifecycle.last_sigint_time.get(), 10000);
+            assert_eq!(*rig.effects.events.borrow(), ["register"]);
+            assert_eq!(
+                super::typed::recalled(&rig.world.mode.editor),
+                ["kept history"]
+            );
+            assert_eq!(rig.world.runtime.futures(), 0);
+        },
+    );
 }
 
 #[test]
 fn clear_action_uses_strict_double_press_boundary() {
     isolated(
         "clear_action_uses_strict_double_press_boundary",
-        |directory| {
+        async |directory| {
             for delta in [-1000, 0, 1, 498, 499, 500, 501, 1000] {
                 let rig = Rig::new(directory, Setup::default());
-                rig.start();
+                rig.start().await;
                 rig.world.mode.editor.handle_input("\x03");
                 rig.world.mode.editor.set_text("second draft");
                 rig.world.runtime.settle().unwrap();
@@ -938,16 +914,16 @@ fn finish_work(world: &World) {
 fn remapped_clear_and_exit_actions_keep_empty_editor_admission() {
     isolated(
         "remapped_clear_and_exit_actions_keep_empty_editor_admission",
-        |directory| {
+        async |directory| {
             for remapped in [false, true] {
-                remapped_case(directory, remapped);
+                remapped_case(directory, remapped).await;
             }
         },
     );
 }
 
 /// Drives both registered actions through the editor's real empty-text interception.
-fn remapped_case(directory: &Path, remapped: bool) {
+async fn remapped_case(directory: &Path, remapped: bool) {
     let bindings = if remapped {
         serde_json::json!({"app.clear":"ctrl+y", "app.exit":"ctrl+x"})
     } else {
@@ -959,7 +935,7 @@ fn remapped_case(directory: &Path, remapped: bool) {
     )
     .unwrap();
     let rig = Rig::new(directory, Setup::default());
-    rig.start();
+    rig.start().await;
     let clear = if remapped { "\x19" } else { "\x03" };
     let exit = if remapped { "\x18" } else { "\x04" };
     rig.world.mode.editor.set_text("clear this");
@@ -1002,7 +978,7 @@ enum QuitOutcome {
 fn quit_command_exits_before_input_delivery_or_history() {
     isolated(
         "quit_command_exits_before_input_delivery_or_history",
-        |directory| {
+        async |directory| {
             for (text, outcome) in [
                 ("/quit", QuitOutcome::Quit),
                 (" \t/quit\t ", QuitOutcome::Quit),
@@ -1013,24 +989,33 @@ fn quit_command_exits_before_input_delivery_or_history() {
                 ("", QuitOutcome::Empty),
                 (" \t\u{feff}", QuitOutcome::Empty),
             ] {
-                quit_case(directory, text, outcome);
+                quit_case(directory, text, outcome).await;
             }
             for compacting in [false, true] {
-                quit_busy_case(directory, compacting);
+                quit_busy_case(directory, compacting).await;
             }
         },
     );
 }
 
 /// Checks the actual installed submit handler, its waiter, history and frame boundary.
-fn quit_case(directory: &Path, text: &str, outcome: QuitOutcome) {
+async fn quit_case(directory: &Path, text: &str, outcome: QuitOutcome) {
     let rig = Rig::new(directory, Setup::default());
-    rig.start();
+    rig.start().await;
     rig.world.mode.editor.add_to_history("kept");
     rig.world.mode.editor.set_text("draft");
     rig.world.runtime.settle().unwrap();
     let mut waiter = super::typed::waiting(&rig.world.mode);
     super::typed::submit(&rig.world.mode, text);
+    assert_quit_outcome(&rig, outcome, &mut waiter);
+}
+
+/// Checks quit settlement without mixing initialization into the outcome branches.
+fn assert_quit_outcome(
+    rig: &Rig,
+    outcome: QuitOutcome,
+    waiter: &mut std::pin::Pin<Box<dyn std::future::Future<Output = String>>>,
+) {
     match outcome {
         QuitOutcome::Quit => {
             assert_eq!(rig.world.mode.editor.get_text(), "");
@@ -1044,12 +1029,12 @@ fn quit_case(directory: &Path, text: &str, outcome: QuitOutcome) {
                 *rig.effects.events.borrow(),
                 ["register", "remove", "drain"]
             );
-            assert!(super::typed::poll(&mut waiter).is_none());
+            assert!(super::typed::poll(waiter).is_none());
             finish_work(&rig.world);
             assert_eq!(super::typed::recalled(&rig.world.mode.editor), ["kept"]);
         }
         QuitOutcome::Input(expected) => {
-            assert_eq!(super::typed::poll(&mut waiter).as_deref(), Some(expected));
+            assert_eq!(super::typed::poll(waiter).as_deref(), Some(expected));
             assert_eq!(
                 super::typed::recalled(&rig.world.mode.editor),
                 [expected, "kept"]
@@ -1057,7 +1042,7 @@ fn quit_case(directory: &Path, text: &str, outcome: QuitOutcome) {
             assert_eq!(*rig.effects.events.borrow(), ["register"]);
         }
         QuitOutcome::Empty => {
-            assert!(super::typed::poll(&mut waiter).is_none());
+            assert!(super::typed::poll(waiter).is_none());
             assert_eq!(rig.world.mode.editor.get_text(), "draft");
             assert_eq!(super::typed::recalled(&rig.world.mode.editor), ["kept"]);
             assert_eq!(*rig.effects.events.borrow(), ["register"]);
@@ -1066,9 +1051,9 @@ fn quit_case(directory: &Path, text: &str, outcome: QuitOutcome) {
 }
 
 /// Keeps quit admission ahead of both real busy-session queue branches.
-fn quit_busy_case(directory: &Path, compacting: bool) {
+async fn quit_busy_case(directory: &Path, compacting: bool) {
     let rig = Rig::new(directory, Setup::default());
-    rig.start();
+    rig.start().await;
     rig.world.mode.editor.add_to_history("kept");
     let mut waiter = super::typed::waiting(&rig.world.mode);
     let seen = Rc::new(Cell::new(false));
@@ -1091,9 +1076,9 @@ fn quit_busy_case(directory: &Path, compacting: bool) {
         observed.set(true);
     };
     if compacting {
-        super::queues::during_compaction(&rig.world, submit);
+        super::queues::during_compaction(&rig.world, submit).await;
     } else {
-        super::streaming(&rig.world, |world, _| submit(&world.mode));
+        super::streaming(&rig.world, async |world, _| submit(&world.mode)).await;
     }
     assert!(seen.get());
     assert!(super::typed::poll(&mut waiter).is_none());

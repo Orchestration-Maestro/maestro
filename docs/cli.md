@@ -1,11 +1,31 @@
 # Command-line input
 
+For daily workflows, complete option and environment tables, and attachment
+examples, read [daily use](usage.md). This page describes the library boundary.
+
 The `maestro-cli` library prepares the input of a command-line run: it turns
 authored arguments into retained input, prepares file and image attachments,
 assembles the first message, renders the available-model table, selects what a
 run does before its frontend starts, and runs the configuration and session
 selectors through supplied presenters. It is a command-line frontend; every
 selector widget stays in `maestro-chat`.
+
+## Executables
+
+Run the source executable with `cargo run --locked -p maestro -- --help`.
+Use `--version` for version-only output, `--mode rpc` for the standard-stream
+protocol, or no mode flag for interactive startup when stdin is a terminal.
+Redirected stdin selects print mode. Non-interactive startup reserves stdout
+for protocol or result records, including during help and version handling.
+
+`maestro-model-account` is a separate binary for account help, provider listing
+and login: `cargo run --locked -p maestro --bin maestro-model-account -- --help`.
+It does not run session startup.
+
+The executable loads authored extension components through the native component
+adapter on its one local executor. Unix supplies the real terminal and selectors;
+other native targets retain the terminal adapter's unsupported-operation boundary.
+Package commands wait for their queued settings writes before the process returns.
 
 ## Arguments
 
@@ -78,8 +98,8 @@ run returns successfully, dispatch closes the watcher, restores managed stdout
 and returns the print status, including nonzero statuses. Errors stop at their
 original phase.
 
-The startup entry, production native extension loader and executable wiring are
-not delivered by this operation.
+The library startup entry composes this dispatch with parsing, session selection
+and runtime creation. The native executable supplies the concrete chat, RPC and selector adapters.
 
 ## Print mode
 
@@ -98,10 +118,36 @@ account file, not the session credential store. See
 
 ## Startup
 
+`maestro_cli::main(args, options, host)` runs startup through the application
+services and returns its requested exit status. `MainOptions` supplies ordered
+extra extension factories. `startup::main::MainHost` supplies package operations,
+selector presentations, mode launchers, streams, file preparation, the extension
+module loader and timing observations. Borrowed input and effects stay with the
+caller; only owned handles enter the retained runtime factory.
+
+Package commands run before configuration commands, parsing and stdout takeover.
+The caller's startup callback receives the raw offline selection before either
+command. Non-interactive ordinary output uses the application's managed stdout
+route; print and RPC protocol output keep their raw route. Help and model listing
+run after extension registration but before fatal runtime diagnostics.
+
+Text, JSON and RPC startup without a resolved model prints login guidance in red
+on stderr and returns status 1 before benchmark validation or mode launch.
+Runtime errors take precedence. Interactive startup still opens without a model;
+a selected saved/default model does not need credentials to pass this check.
+
+The retained factory rebuilds directory-bound settings, resources and providers
+when a session changes directory. Replacements share the original auth store,
+startup-relative resource paths, extra factories and stream handles. Each write
+or flush borrows its stream only for that call.
+
 `startup::main` selects what a run does before any frontend starts, in the
 order the authored arguments decide it. `bootstrap` picks the presentation mode
-from the parsed mode, the print request and the stdin kind; any run that is not
-the interactive frontend reserves standard output first. Parser diagnostics,
+from the parsed mode, the print request and the stdin kind, and says whether the
+run needs standard output reserved, which every mode but the interactive
+frontend does; the entry point reserves it. In JSON mode the prompts run in
+order and each session event is streamed as a JSON line; text print mode writes
+the final answer after the prompts. Parser diagnostics,
 settings failures and conflicting fork flags are written with their exact
 prefix and style, and each reporting step returns the status that ends the run
 when the problem is fatal. The session directory comes from the authored
@@ -113,7 +159,11 @@ before every project, and selects the operation the arguments name: an unsaved,
 forked, opened, resumed, continued or new session. An explicit fork copies the
 matched session into the current project without asking, wherever it was found;
 a session argument of another project is returned for confirmation instead of
-being opened in place. A missing session keeps the argument its message quotes.
+being opened in place. A refused `--session` file, whether selected by path or a
+local identifier match, prints `Error: <reason>` to standard error in red (plain
+text when colour is off) and exits with status 1. For a nonempty file without a
+valid session, the reason is `Session file is not a valid maestro session: <path>`.
+A missing session keeps the argument its message quotes.
 
 `options` selects the model from the authored pattern before the scoped
 default, the effort from the explicit level before the model shorthand and the
@@ -127,7 +177,8 @@ for malformed UTF-8, then removes authored whitespace at the edges.
 existing file owner before consuming the first queued prompt. `prompt_confirm`
 flushes its question before reading an untrimmed answer; an unterminated answer
 at EOF supplies no decision. These operations accept caller-owned streams and
-file effects; the startup entry and executable wiring remain separate work.
+file effects. The library entry composes them; native executable wiring remains
+separate.
 
 `presentation::prompt_for_missing_session_cwd` offers Continue and Cancel using
 an application-supplied selection component. It loads the theme and keybindings
@@ -135,10 +186,3 @@ before constructing its frame writer, forwards saved cursor and clear-on-shrink
 policies, and returns the fallback directory only for Continue. Cancellation,
 repeated notifications and dropped operations share the existing selector's
 one-shot cleanup. It does not start a theme watch or bind session services.
-
-## Print mode
-
-`run_print_mode` runs one session to completion over a caller-owned runtime and
-presents the result as its final text or as session event records. See [print
-mode](print.md) for the options, the exact output and the cleanup and error
-boundary.

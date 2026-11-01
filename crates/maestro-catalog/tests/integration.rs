@@ -11,6 +11,7 @@ mod catalog_provider_lifecycle;
 mod catalog_provider_registration;
 mod catalog_reentry;
 mod catalog_request_auth;
+mod cloudflare_auth;
 #[allow(
     dead_code,
     reason = "This binary uses part of the shared credential fallback corpus."
@@ -26,6 +27,7 @@ mod fallback;
 #[path = "support/isolation.rs"]
 mod isolation;
 mod model_cli_resolution;
+mod model_file_layers;
 mod model_initial_choice;
 mod model_locale_ordering;
 mod model_reference_matching;

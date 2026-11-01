@@ -35,7 +35,11 @@ impl NativePackageOperations {
         let out = String::from_utf8_lossy(&output.stdout);
         let err = String::from_utf8_lossy(&output.stderr);
         if status.success() {
-            return Ok(crate::trim(&out).to_owned());
+            return Ok(if command == "git" && args.iter().any(|arg| arg == "-z") {
+                out.into_owned()
+            } else {
+                crate::trim(&out).to_owned()
+            });
         }
         let payload = if err.is_empty() { &out } else { &err };
         Err(io::Error::other(format!(

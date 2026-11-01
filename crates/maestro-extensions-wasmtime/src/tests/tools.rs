@@ -22,7 +22,7 @@ fn registered_tool_preserves_metadata_preparation_and_execution_capabilities() {
 /// Drives the real native definition and its fresh per-invocation context.
 async fn tool() {
     let (owner, api) = super::api::api(maestro_extensions::create_extension_runtime::<Local>());
-    let (mut pump, admission) = Pump::new();
+    let (mut pump, admission) = Pump::new(crate::tests::support::widgets());
     let endpoint = pump.registry().api(api).unwrap();
     let (calls, incoming) = tokio::sync::mpsc::unbounded_channel();
     let mut callbacks = Callbacks::new(calls.downgrade(), Replies::default());
@@ -33,6 +33,8 @@ async fn tool() {
     let worker = std::thread::spawn(move || {
         endpoint
             .registration(|reply| Request::Tool {
+                schemas: vec![],
+                renderers: (None, None),
                 metadata: json!({"name":" exact ","label":" Label ","description":" desc ",
                 "parameters":{"type":"object"},"promptSnippet":"",
                 "promptGuidelines":[],"executionMode":"parallel","renderShell":"self"})
@@ -50,7 +52,7 @@ async fn tool() {
     let runner = Rc::new(super::runner("/native-tool"));
     let wrapped = maestro_extensions::wrap_registered_tool(&definition, runner);
     let prepare = wrapped.prepare_arguments.clone().unwrap();
-    super::reports_reentry(&mut pump, move || prepare(&mut json!({"before":true}))).await;
+    routed_preparation(&mut pump, move || prepare(&mut json!({"nested":true}))).await;
     let worker = std::thread::spawn(move || invoke(incoming));
     let mut args = json!({"before":true});
     args = wrapped.prepare_arguments.as_ref().unwrap()(&mut args).unwrap();
@@ -76,6 +78,27 @@ async fn tool() {
     pump.serve().await;
 }
 
+/// Answers a preparation made while the Store waits in a routed request, through that route.
+async fn routed_preparation<E: std::fmt::Debug + 'static>(
+    pump: &mut Pump,
+    prepare: impl FnOnce() -> Result<serde_json::Value, E> + 'static,
+) {
+    let nested = super::during_routed_request(pump, prepare, |call| {
+        let Call::Tool(ToolCall::Prepare { args, reply, .. }) = call else {
+            panic!("missing nested preparation")
+        };
+        assert_eq!(args, r#"{"nested":true}"#);
+        reply
+            .send(Ok(crate::guest_exports::tools::PreparedArguments {
+                retained: args,
+                prepared: Ok(r#"{"nested":"prepared"}"#.into()),
+            }))
+            .unwrap();
+    })
+    .await;
+    assert_eq!(nested.unwrap(), json!({"nested":"prepared"}));
+}
+
 /// Observes typed Store messages and exercises the original capability endpoints.
 fn invoke(mut incoming: tokio::sync::mpsc::UnboundedReceiver<Call>) {
     let Call::Tool(ToolCall::Prepare {
@@ -92,7 +115,12 @@ fn invoke(mut incoming: tokio::sync::mpsc::UnboundedReceiver<Call>) {
         json!({"before":true})
     );
     drop(emitter);
-    reply.send(Ok("{\"prepared\":true}".into())).unwrap();
+    reply
+        .send(Ok(crate::guest_exports::tools::PreparedArguments {
+            retained: args,
+            prepared: Ok("{\"prepared\":true}".into()),
+        }))
+        .unwrap();
     let call = loop {
         match incoming.blocking_recv().unwrap() {
             Call::Release(_) => {}
@@ -121,6 +149,7 @@ fn invoke(mut incoming: tokio::sync::mpsc::UnboundedReceiver<Call>) {
     update
         .unwrap()
         .update(r#"{"content":[],"details":{"part":1}}"#.into())
+        .result()
         .unwrap();
     reply
         .send(Ok(
@@ -163,7 +192,7 @@ fn metadata(definition: &maestro_extensions::RegisteredTool<Local>) {
 fn malformed_tool_documents_never_register_a_native_definition() {
     tokio::runtime::Builder::new_current_thread().build().unwrap().block_on(async {
         let (owner, api) = super::api::api(maestro_extensions::create_extension_runtime::<Local>());
-        let (pump, admission) = Pump::new();
+        let (pump, admission) = Pump::new(crate::tests::support::widgets());
         let endpoint = pump.registry().api(api).unwrap();
         let (calls, _incoming) = tokio::sync::mpsc::unbounded_channel();
         let mut callbacks = Callbacks::new(calls.downgrade(), Replies::default());
@@ -176,7 +205,7 @@ fn malformed_tool_documents_never_register_a_native_definition() {
                 json!({"name":"bad","label":"bad","description":"bad","parameters":{},"renderShell":"unknown"}).to_string(),
                 json!({"name":"bad","label":"bad","description":"bad","parameters":{},"executionMode":"unknown"}).to_string(),
             ] {
-                assert!(endpoint.registration(|reply| Request::Tool {
+                assert!(endpoint.registration(|reply| Request::Tool { schemas: vec![], renderers: (None, None),
                     metadata, prepare: None, execute: handler.clone(), reply,
                 }).is_err());
             }

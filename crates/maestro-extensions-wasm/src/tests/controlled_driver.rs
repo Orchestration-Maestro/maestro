@@ -39,10 +39,40 @@ pub struct ControlledDriver {
 }
 
 impl ControlledDriver {
+    /// Delivers input to the factory widget the host shows under `key`.
+    pub(super) fn widget_input(&self, key: &str, data: &str) -> Result<(), String> {
+        let component = self
+            .host
+            .widget(key)
+            .ok_or_else(|| format!("no widget {key}"))?;
+        super::renderer_host::invoke(
+            &component,
+            super::renderer_host::Call::Input(data),
+            &self.host,
+            0,
+        )
+        .map(drop)
+    }
+    /// Starts a shipped factory with the existing controlled widget host installed.
+    pub(super) async fn example<E: Extension>() -> Result<Self, String> {
+        let driver = Self::new();
+        driver.exports().start::<E>().await?;
+        Ok(driver)
+    }
+
+    /// Publishes literal theme replies for a shipped factory's renderer.
+    pub(super) fn publish_theme(&self, palette: super::theme_host::Palette) {
+        self.host.observe().themes.publish("dark", palette);
+    }
+
     /// A driver with a fresh host.
     pub fn new() -> Self {
+        let host = Controlled::default();
+        crate::component_adapter::install(std::rc::Rc::new(crate::component_adapter::Builder(
+            host.clone(),
+        )));
         Self {
-            host: Controlled::default(),
+            host,
             components: Vec::new(),
             bash: Vec::new(),
             last_bash: None,
@@ -121,6 +151,63 @@ impl ControlledDriver {
             let _ = open.send(());
         };
         super::join::alongside(run, release).await
+    }
+}
+
+impl ControlledDriver {
+    /// Runs one tool renderer for its row, keeping a new row's state, and renders the result.
+    fn rendered_tool(
+        &self,
+        run: &super::scenario::ToolRenderRun<'_>,
+        width: u32,
+    ) -> Result<Vec<String>, String> {
+        use crate::bindings::maestro::extension::host;
+        let handler = self.identity(&format!("render-{} {}", run.slot, run.tool))?;
+        let wire = super::ui_host::render_info(run.info);
+        let info = host::ToolRenderInfo {
+            tool_call_id: wire.tool_call_id,
+            args: wire.args,
+            cwd: wire.cwd,
+            phase: host::ToolRenderPhase {
+                execution_started: wire.phase.execution_started,
+                args_complete: wire.phase.args_complete,
+                is_partial: wire.phase.is_partial,
+            },
+            expanded: wire.expanded,
+            show_images: wire.show_images,
+            is_error: wire.is_error,
+        };
+        let id = info.tool_call_id.clone();
+        let slot = if run.slot == "call" {
+            host::ToolRenderSlot::Call
+        } else {
+            host::ToolRenderSlot::Result
+        };
+        let render = host::ToolRender {
+            slot,
+            row: self.host.observed().tool_rows.get(&id).copied(),
+            args: info.args.clone(),
+            options: Some(host::ToolRenderResultOptions {
+                expanded: info.expanded,
+                is_partial: info.phase.is_partial,
+            }),
+            info,
+            result: run.result.map(ToString::to_string),
+        };
+        let lent = (self.host.theme("dark"), self.host.invalidator(&id), None);
+        let emitter = super::bus_host::Emitter { key: 0 };
+        let (component, row) = self
+            .exports()
+            .invoke_tool_render(handler, &render, lent, &emitter)?;
+        if let Some(row) = row {
+            let row = crate::component_adapter::tool_renders::keep_row(&self.host, row);
+            self.host.observe().tool_rows.insert(id, row);
+        }
+        let call = super::renderer_host::Call::Render(width);
+        match super::renderer_host::invoke(&component?, call, &self.host, 0)? {
+            super::renderer_host::Reply::Lines(lines) => Ok(lines),
+            _ => Err("expected rendered lines".to_owned()),
+        }
     }
 }
 
@@ -349,16 +436,133 @@ impl Driver for ControlledDriver {
         &mut self.previous
     }
 
+    fn render_tool(
+        &mut self,
+        run: super::scenario::ToolRenderRun<'_>,
+        width: u32,
+    ) -> impl Future<Output = Result<Vec<String>, String>> {
+        std::future::ready(self.rendered_tool(&run, width))
+    }
+    fn footer(&mut self, width: u32) -> impl Future<Output = Result<Option<Vec<String>>, String>> {
+        let rendered = self.host.footer().map(|component| {
+            let call = super::renderer_host::Call::Render(width);
+            match super::renderer_host::invoke(&component, call, &self.host, 0)? {
+                super::renderer_host::Reply::Lines(lines) => Ok(lines),
+                _ => Err("expected rendered lines".to_owned()),
+            }
+        });
+        std::future::ready(rendered.transpose())
+    }
+    fn branch_change(&mut self) -> impl Future<Output = Result<Vec<serde_json::Value>, String>> {
+        let listeners = super::ui_host::listeners_on(&self.host.observed(), "branch");
+        let answers = listeners
+            .into_iter()
+            .map(|id| {
+                super::ui_host::unit_answer(
+                    crate::component_adapter::factories::invoke_branch_change(id),
+                )
+            })
+            .collect();
+        std::future::ready(Ok(answers))
+    }
+    fn header(
+        &mut self,
+        width: u32,
+    ) -> impl Future<Output = Result<(Vec<String>, Option<Vec<String>>), String>> {
+        let children = self.host.observed().ui.header.children.clone();
+        let rendered = self.host.header().map(|component| {
+            let call = super::renderer_host::Call::Render(width);
+            match super::renderer_host::invoke(&component, call, &self.host, 0)? {
+                super::renderer_host::Reply::Lines(lines) => Ok(lines),
+                _ => Err("expected rendered lines".to_owned()),
+            }
+        });
+        std::future::ready(rendered.transpose().map(|rendered| (children, rendered)))
+    }
+    fn widget(
+        &mut self,
+        key: &str,
+        width: u32,
+    ) -> impl Future<Output = Result<Vec<String>, String>> {
+        let rendered = self
+            .host
+            .widget(key)
+            .ok_or_else(|| format!("no widget {key}"))
+            .and_then(|component| {
+                let call = super::renderer_host::Call::Render(width);
+                super::renderer_host::invoke(&component, call, &self.host, 0)
+            });
+        std::future::ready(rendered.and_then(|reply| match reply {
+            super::renderer_host::Reply::Lines(lines) => Ok(lines),
+            _ => Err("expected rendered lines".to_owned()),
+        }))
+    }
+    fn editor_request(
+        &mut self,
+        request: serde_json::Value,
+    ) -> impl Future<Output = Result<serde_json::Value, String>> {
+        std::future::ready(self.host.authored_editor(request))
+    }
+    async fn provider_request(
+        &mut self,
+        request: serde_json::Value,
+    ) -> Result<serde_json::Value, String> {
+        self.host.provider_request(request, &self.flags).await
+    }
+    fn editor_component(
+        &mut self,
+        call: super::renderer_host::Call<'_>,
+    ) -> impl Future<Output = Result<super::renderer_host::Reply, String>> {
+        std::future::ready(self.host.editor_component(call))
+    }
+    fn widget_capabilities(
+        &mut self,
+        key: &str,
+        expanded: bool,
+    ) -> impl Future<Output = Result<(Option<f64>, bool), String>> {
+        let answer = (|| {
+            let built = self.host.widget_built(key).ok_or("no factory component")?;
+            let present = built.set_expanded.is_some();
+            if let Some(handler) = built.set_expanded {
+                let emitter = super::bus_host::Emitter { key: 0 };
+                crate::component_adapter::renderers::with_emitter(
+                    &self.host,
+                    &emitter,
+                    |emitter| handler(expanded, emitter),
+                )?;
+            }
+            Ok((built.width, present))
+        })();
+        std::future::ready(answer)
+    }
+    fn terminal_input(
+        &mut self,
+        data: &str,
+    ) -> impl Future<Output = Result<Vec<serde_json::Value>, String>> {
+        let listeners = super::ui_host::terminal_listeners(&self.host.observed());
+        let exports = self.exports();
+        let emitter = super::bus_host::Emitter { key: 0 };
+        let answers = listeners
+            .into_iter()
+            .map(|id| {
+                let answer = exports.invoke_terminal_input(id, data, &emitter);
+                super::ui_host::terminal_answer(
+                    answer.map(|decision| decision.map(|it| (it.consume, it.data))),
+                )
+            })
+            .collect();
+        std::future::ready(Ok(answers))
+    }
     fn prepare_key(
         &mut self,
         handler: u32,
         args: &str,
     ) -> impl Future<Output = Result<String, String>> {
-        std::future::ready(self.exports().invoke_prepare(
-            handler,
-            args,
-            &super::bus_host::Emitter { key: 0 },
-        ))
+        std::future::ready(
+            self.exports()
+                .invoke_prepare(handler, args, &super::bus_host::Emitter { key: 0 })
+                .and_then(|result| result.prepared),
+        )
     }
     fn reborrow(&mut self, id: u32) -> Result<u32, String> {
         Ok(id)
@@ -710,4 +914,42 @@ async fn cancel_after_entered(
         flag.abort();
     }
     open.send(()).expect("execution still pending");
+}
+
+/// The native adapter dispatches only the selected callback against its actual borrowed value.
+#[test]
+fn controlled_schema_resource_invokes_the_supplied_refinement() {
+    use crate::bindings::maestro::extension::host::SchemaOperation;
+    use serde_json::json;
+    use std::sync::{Arc, Mutex};
+    let mut driver = ControlledDriver::new();
+    super::block_on(driver.start()).unwrap();
+    let config = json!({"metadata":{"name":"original","label":"Original","description":"","parameters":{"type":"object"}},
+        "schemaProgram":"full","prepare":false,"result":{"content":[]}});
+    super::block_on(driver.run_plain_command("capture", &format!("tools {config}"))).unwrap();
+    let handler = driver
+        .host
+        .observe()
+        .schemas
+        .iter()
+        .find(|(name, _, _)| name == "original")
+        .unwrap()
+        .2;
+    let shape = Exports::<Controlled>::describe_schema(handler).unwrap();
+    assert!(shape.base);
+    assert_eq!(shape.refinements, 2);
+    let value = Arc::new(Mutex::new(json!({"original":1})));
+    let result = driver
+        .exports()
+        .invoke_schema(
+            handler,
+            SchemaOperation::Refine(1),
+            &super::schema_host::JsonNode(Arc::clone(&value)),
+            &super::bus_host::Emitter { key: 37 },
+        )
+        .unwrap();
+    assert_eq!(result, "false");
+    assert_eq!(*value.lock().unwrap(), json!({"original":1,"refine1":true}));
+    release(handler);
+    super::block_on(driver.release_all());
 }

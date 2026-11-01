@@ -236,8 +236,11 @@ fn set_model_action(weak: &Weak<AgentSession<Local>>) -> SetModelHandler<Local> 
             {
                 return Ok(false);
             }
-            session.set_model(model).await?;
-            Ok(true)
+            match session.set_model_checked(model).await {
+                Ok(()) => Ok(true),
+                Err(super::decisions::SelectionError::Refused(_)) => Ok(false),
+                Err(super::decisions::SelectionError::Failed(error)) => Err(error.into()),
+            }
         }) as <Local as Execution>::Future<'static, Result<bool, EventError>>
     })
 }
@@ -254,6 +257,11 @@ fn context_actions(weak: &Weak<AgentSession<Local>>) -> ExtensionContextActions 
     let w = weak.clone();
     let abort = Rc::new(move || {
         with(&w, |session| {
+            let handler = session.state.borrow().bindings.abort_handler.clone();
+            if let Some(handler) = handler {
+                handler();
+                return Ok(());
+            }
             let aborting = Rc::clone(session);
             drop(session.start_operation(async move { aborting.abort().await }));
             Ok(())

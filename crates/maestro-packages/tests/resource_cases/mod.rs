@@ -2,7 +2,7 @@
 #![cfg(test)]
 #[cfg(unix)]
 use super::resolution_support::manager;
-use super::{resolution_support::output, scratch::Scratch, support};
+use super::{resolution_support::recorded_output, scratch::Scratch, support};
 use maestro_packages::{DefaultPackageManager, PackageManager, PackageManagerOptions, SourceScope};
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -82,7 +82,12 @@ pub async fn cases(names: &[&str]) {
             .resolve_extension_sources(&sources, Some(case.scope))
             .await
             .unwrap();
-        assert_eq!(output(actual, &base), case.expected, "{}", case.case);
+        assert_eq!(
+            recorded_output(actual, &base),
+            case.expected,
+            "{}",
+            case.case
+        );
         assert!(events.borrow().is_empty(), "{}", case.case);
         assert_eq!(effects.spawns.get(), 0);
         assert_calls(case, &effects);

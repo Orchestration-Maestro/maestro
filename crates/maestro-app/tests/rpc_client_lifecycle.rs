@@ -1,6 +1,7 @@
 //! Launching, observing and stopping the RPC client's child.
 #![cfg(unix)]
-use crate::rpc_peer::{Peer, SERVE, events, hold_clock, next_of, poll_once};
+use crate::rpc_peer::{Peer, SERVE, events, hold_clock, next_of};
+use crate::support::rpc_connection::poll_once;
 use crate::support::session_harness::{on_paused_task_set, on_task_set};
 use maestro_app::{RpcClient, RpcClientError, RpcClientOptions};
 use maestro_process::child_process::process_exists;

@@ -107,7 +107,10 @@ impl OAuthProviderInterface for ControlledProvider {
         (self.on_refresh)(credentials)
     }
 
-    fn get_api_key<'a>(&self, credentials: &'a OAuthCredentials) -> Result<&'a str, OAuthError> {
+    fn get_api_key<'a>(
+        &self,
+        credentials: &'a OAuthCredentials,
+    ) -> Result<std::borrow::Cow<'a, str>, OAuthError> {
         if credentials.access == "extract-fails" {
             return Err(error("extract failed"));
         }
@@ -116,9 +119,10 @@ impl OAuthProviderInterface for ControlledProvider {
                 .extra
                 .get("enterpriseUrl")
                 .and_then(|url| url.as_str())
+                .map(std::borrow::Cow::Borrowed)
                 .ok_or_else(|| error("no enterpriseUrl"));
         }
-        Ok(&credentials.access)
+        Ok(std::borrow::Cow::Borrowed(&credentials.access))
     }
 }
 

@@ -25,15 +25,16 @@ pub(crate) struct BoundaryCase {
     pub rendered: Vec<String>,
 }
 
-/// Escapes written before an overflowing grapheme, after a painted wide blank or between words:
-/// a background, inverse or underline reset with a marker before or after it, two metadata
-/// escapes, and a closed hyperlink.
+/// Escapes written before an overflowing CJK grapheme, after a wide blank that closes its row,
+/// or between words: a background, inverse or underline reset with a marker before or after it,
+/// two metadata escapes, and a closed hyperlink. The blank is dropped at the break, and the
+/// escapes between it and the grapheme that starts the next row move to that row.
 pub(crate) fn boundary_cases() -> Vec<BoundaryCase> {
-    let case = |row: String, width: usize, padding: &str| BoundaryCase {
-        text: format!("{row}\u{754c}"),
+    let moved = |first: String, carried: String, width: usize, padding: &str| BoundaryCase {
+        text: format!("{first}{carried}\u{754c}"),
         width,
-        rendered: vec![format!("{row} "), format!("\u{754c}{padding}")],
-        wrapped: vec![row, "\u{754c}".to_owned()],
+        rendered: vec![format!("{first}{padding}"), format!("{carried}\u{754c} ")],
+        wrapped: vec![first, format!("{carried}\u{754c}")],
     };
     let mut cases = Vec::new();
     for (on, off) in [
@@ -48,19 +49,23 @@ pub(crate) fn boundary_cases() -> Vec<BoundaryCase> {
             (PROMPT, ""),
             ("", PROMPT),
         ] {
-            cases.push(case(
-                format!("ab{on}\u{3000}{before}{off}{after}"),
-                5,
-                "   ",
-            ));
+            let first = if on == UNDERLINE_ON {
+                format!("ab{on}{UNDERLINE_OFF}")
+            } else {
+                format!("ab{on}")
+            };
+            let mut case = moved(first, format!("{on}{before}{off}{after}"), 5, "   ");
+            case.text = format!("ab{on}\u{3000}{before}{off}{after}\u{754c}");
+            case.rendered[1] = format!("{on}{before}{off}{after}\u{754c}   ");
+            cases.push(case);
         }
     }
-    cases.push(case(format!("ab{PROMPT}{MARKER}"), 3, " "));
-    cases.push(case(
-        "\x1b]8;;https://example.com\x07ab\x1b]8;;\x07".to_owned(),
-        3,
-        " ",
-    ));
+    cases.push(moved("ab".to_owned(), format!("{PROMPT}{MARKER}"), 3, " "));
+    let link = "\x1b]8;;https://example.com\x07";
+    let close = "\x1b]8;;\x07";
+    let mut case = moved(format!("{link}ab{close}"), format!("{link}{close}"), 3, " ");
+    case.text = format!("{link}ab{close}\u{754c}");
+    cases.push(case);
     cases
 }
 
@@ -109,6 +114,40 @@ fn assert_wraps(cases: &[BoundaryCase]) {
         .map(|case| (case.text.as_str(), case.wrapped.clone()))
         .collect();
     assert_eq!(actual, expected);
+}
+
+#[test]
+fn cjk_runs_break_between_graphemes_after_latin_text() {
+    let text = "This is an example \u{4e2d}\u{6587}\u{6c49}\u{5b57}\u{6d4b}\u{8bd5}\u{6bb5}\u{843d}\u{5185}\u{5bb9}\u{4e2d}\u{6587}\u{6c49}\u{5b57}\u{6d4b}\u{8bd5}\u{6bb5}\u{843d}\u{5185}\u{5bb9}.";
+    let wrapped = wrap_text_with_ansi(text, 40);
+    assert_eq!(
+        wrapped,
+        [
+            "This is an example \u{4e2d}\u{6587}\u{6c49}\u{5b57}\u{6d4b}\u{8bd5}\u{6bb5}\u{843d}\u{5185}\u{5bb9}",
+            "\u{4e2d}\u{6587}\u{6c49}\u{5b57}\u{6d4b}\u{8bd5}\u{6bb5}\u{843d}\u{5185}\u{5bb9}."
+        ]
+    );
+    assert!(wrapped.iter().all(|line| visible_width(line) <= 40));
+}
+
+#[test]
+fn cjk_wrapping_keeps_the_color_on_every_row() {
+    let text = format!(
+        "{RED}This is an example \u{4e2d}\u{6587}\u{6c49}\u{5b57}\u{6d4b}\u{8bd5}\u{6bb5}\u{843d}\u{5185}\u{5bb9}\u{4e2d}\u{6587}\u{6c49}\u{5b57}\u{6d4b}\u{8bd5}\u{6bb5}\u{843d}\u{5185}\u{5bb9}.{RESET}"
+    );
+    let wrapped = wrap_text_with_ansi(&text, 40);
+    assert_eq!(
+        wrapped,
+        [
+            format!(
+                "{RED}This is an example \u{4e2d}\u{6587}\u{6c49}\u{5b57}\u{6d4b}\u{8bd5}\u{6bb5}\u{843d}\u{5185}\u{5bb9}"
+            ),
+            format!(
+                "{RED}\u{4e2d}\u{6587}\u{6c49}\u{5b57}\u{6d4b}\u{8bd5}\u{6bb5}\u{843d}\u{5185}\u{5bb9}.{RESET}"
+            )
+        ]
+    );
+    assert!(wrapped.iter().all(|line| visible_width(line) <= 40));
 }
 
 #[test]
@@ -358,8 +397,8 @@ fn maestro_wrap_discards_style_only_overflow() {
         ("\x1b[31m\n\n", 1, &["", "", ""]),
         ("\x1b[31m\n\n", 2, &["", "", ""]),
         ("\u{754c}\u{301}a", 1, &["\u{754c}\u{301}", "a"]),
-        ("\u{301}\u{754c}", 1, &["\u{301}\u{754c}"]),
-        ("\u{754c}\u{85}x", 1, &["\u{754c}\u{85}", "x"]),
+        ("\u{301}\u{754c}", 1, &["\u{301}", "\u{754c}"]),
+        ("\u{754c}\u{85}x", 1, &["\u{754c}", "\u{85}x"]),
         ("ab\x1b[31m  \x1b[0m", 2, &["ab\x1b[0m"]),
     ];
     for (text, width, expected) in cases {

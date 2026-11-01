@@ -24,7 +24,8 @@
         "status": [],
         "chat": [
           "",
-          " @error@Error: Compaction cancelled\u001b[39m                                                                        "
+          " @error@Error: Compaction cancelled\u001b[39m                                                                        ",
+          ""
         ],
         "progress": [],
         "timers": [],
@@ -60,7 +61,8 @@
         "status": [],
         "chat": [
           "",
-          " @error@Error: Compaction cancelled\u001b[39m                                                                        "
+          " @error@Error: Compaction cancelled\u001b[39m                                                                        ",
+          ""
         ],
         "progress": [
           true,
@@ -219,7 +221,7 @@
     }
   },
   {
-    "test": "compaction_completion_replays_then_appends_summary",
+    "test": "compaction_completion_keeps_seeded_replay_and_one_summary",
     "input": {
       "op": "compaction-outcome",
       "reason": "manual",
@@ -229,7 +231,8 @@
     "expected": {
       "chat": [
         "",
-        " @error@Error: Compaction cancelled\u001b[39m                                                                        "
+        " @error@Error: Compaction cancelled\u001b[39m                                                                        ",
+        ""
       ],
       "progress": [],
       "timers": [],
@@ -237,7 +240,7 @@
     }
   },
   {
-    "test": "compaction_completion_replays_then_appends_summary",
+    "test": "compaction_completion_keeps_seeded_replay_and_one_summary",
     "input": {
       "op": "compaction-outcome",
       "reason": "manual",
@@ -245,15 +248,30 @@
       "willRetry": false
     },
     "expected": {
-      "chat": [],
+      "chat": [
+        "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+        "\u001b[48;5;71m \u001b[38;5;12mHISTORY_ALPHA\u001b[39m                                                                                      \u001b[49m",
+        "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+        "",
+        "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+        "\u001b[48;5;71m \u001b[38;5;12mHISTORY_BETA\u001b[39m                                                                                       \u001b[49m",
+        "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+        "",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m",
+        "\u001b[48;5;72m \u001b[38;5;14m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m",
+        "\u001b[48;5;72m \u001b[1m\u001b[38;5;13mCompacted from 123 tokens\u001b[39m\u001b[22m                                                                          \u001b[49m",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m",
+        "\u001b[48;5;72m \u001b[38;5;13msummary\u001b[39m                                                                                            \u001b[49m",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m"
+      ],
       "progress": [],
       "timers": [],
-      "editor": "draft",
-      "chatContains": "Compacted from 123 tokens"
+      "editor": "draft"
     }
   },
   {
-    "test": "compaction_completion_replays_then_appends_summary",
+    "test": "compaction_completion_keeps_seeded_replay_and_one_summary",
     "input": {
       "op": "compaction-outcome",
       "reason": "manual",
@@ -263,7 +281,8 @@
     "expected": {
       "chat": [
         "",
-        " @error@Error: provider failure\u001b[39m                                                                            "
+        " @error@Error: provider failure\u001b[39m                                                                            ",
+        ""
       ],
       "progress": [],
       "timers": [],
@@ -271,7 +290,7 @@
     }
   },
   {
-    "test": "compaction_completion_replays_then_appends_summary",
+    "test": "compaction_completion_keeps_seeded_replay_and_one_summary",
     "input": {
       "op": "compaction-outcome",
       "reason": "manual",
@@ -286,7 +305,7 @@
     }
   },
   {
-    "test": "compaction_completion_replays_then_appends_summary",
+    "test": "compaction_completion_keeps_seeded_replay_and_one_summary",
     "input": {
       "op": "compaction-outcome",
       "reason": "manual",
@@ -301,7 +320,7 @@
     }
   },
   {
-    "test": "compaction_completion_replays_then_appends_summary",
+    "test": "compaction_completion_keeps_seeded_replay_and_one_summary",
     "input": {
       "op": "compaction-outcome",
       "reason": "threshold",
@@ -319,7 +338,7 @@
     }
   },
   {
-    "test": "compaction_completion_replays_then_appends_summary",
+    "test": "compaction_completion_keeps_seeded_replay_and_one_summary",
     "input": {
       "op": "compaction-outcome",
       "reason": "threshold",
@@ -327,15 +346,30 @@
       "willRetry": false
     },
     "expected": {
-      "chat": [],
+      "chat": [
+        "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+        "\u001b[48;5;71m \u001b[38;5;12mHISTORY_ALPHA\u001b[39m                                                                                      \u001b[49m",
+        "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+        "",
+        "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+        "\u001b[48;5;71m \u001b[38;5;12mHISTORY_BETA\u001b[39m                                                                                       \u001b[49m",
+        "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+        "",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m",
+        "\u001b[48;5;72m \u001b[38;5;14m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m",
+        "\u001b[48;5;72m \u001b[1m\u001b[38;5;13mCompacted from 123 tokens\u001b[39m\u001b[22m                                                                          \u001b[49m",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m",
+        "\u001b[48;5;72m \u001b[38;5;13msummary\u001b[39m                                                                                            \u001b[49m",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m"
+      ],
       "progress": [],
       "timers": [],
-      "editor": "draft",
-      "chatContains": "Compacted from 123 tokens"
+      "editor": "draft"
     }
   },
   {
-    "test": "compaction_completion_replays_then_appends_summary",
+    "test": "compaction_completion_keeps_seeded_replay_and_one_summary",
     "input": {
       "op": "compaction-outcome",
       "reason": "threshold",
@@ -353,7 +387,7 @@
     }
   },
   {
-    "test": "compaction_completion_replays_then_appends_summary",
+    "test": "compaction_completion_keeps_seeded_replay_and_one_summary",
     "input": {
       "op": "compaction-outcome",
       "reason": "threshold",
@@ -368,7 +402,7 @@
     }
   },
   {
-    "test": "compaction_completion_replays_then_appends_summary",
+    "test": "compaction_completion_keeps_seeded_replay_and_one_summary",
     "input": {
       "op": "compaction-outcome",
       "reason": "threshold",
@@ -383,7 +417,7 @@
     }
   },
   {
-    "test": "compaction_completion_replays_then_appends_summary",
+    "test": "compaction_completion_keeps_seeded_replay_and_one_summary",
     "input": {
       "op": "compaction-outcome",
       "reason": "overflow",
@@ -401,7 +435,7 @@
     }
   },
   {
-    "test": "compaction_completion_replays_then_appends_summary",
+    "test": "compaction_completion_keeps_seeded_replay_and_one_summary",
     "input": {
       "op": "compaction-outcome",
       "reason": "overflow",
@@ -409,15 +443,30 @@
       "willRetry": true
     },
     "expected": {
-      "chat": [],
+      "chat": [
+        "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+        "\u001b[48;5;71m \u001b[38;5;12mHISTORY_ALPHA\u001b[39m                                                                                      \u001b[49m",
+        "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+        "",
+        "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+        "\u001b[48;5;71m \u001b[38;5;12mHISTORY_BETA\u001b[39m                                                                                       \u001b[49m",
+        "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+        "",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m",
+        "\u001b[48;5;72m \u001b[38;5;14m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m",
+        "\u001b[48;5;72m \u001b[1m\u001b[38;5;13mCompacted from 123 tokens\u001b[39m\u001b[22m                                                                          \u001b[49m",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m",
+        "\u001b[48;5;72m \u001b[38;5;13msummary\u001b[39m                                                                                            \u001b[49m",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m"
+      ],
       "progress": [],
       "timers": [],
-      "editor": "draft",
-      "chatContains": "Compacted from 123 tokens"
+      "editor": "draft"
     }
   },
   {
-    "test": "compaction_completion_replays_then_appends_summary",
+    "test": "compaction_completion_keeps_seeded_replay_and_one_summary",
     "input": {
       "op": "compaction-outcome",
       "reason": "overflow",
@@ -435,7 +484,7 @@
     }
   },
   {
-    "test": "compaction_completion_replays_then_appends_summary",
+    "test": "compaction_completion_keeps_seeded_replay_and_one_summary",
     "input": {
       "op": "compaction-outcome",
       "reason": "overflow",
@@ -450,7 +499,7 @@
     }
   },
   {
-    "test": "compaction_completion_replays_then_appends_summary",
+    "test": "compaction_completion_keeps_seeded_replay_and_one_summary",
     "input": {
       "op": "compaction-outcome",
       "reason": "overflow",
@@ -465,7 +514,7 @@
     }
   },
   {
-    "test": "retry_countdown_uses_ceiling_and_live_cancel_keys",
+    "test": "retry_countdown_interrupts_then_restores_previous_action",
     "input": {
       "op": "retry-countdown",
       "delayMs": 0,
@@ -539,7 +588,8 @@
         "status": [],
         "chat": [
           "",
-          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 "
+          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 ",
+          ""
         ],
         "progress": [],
         "timers": [],
@@ -548,7 +598,7 @@
     }
   },
   {
-    "test": "retry_countdown_uses_ceiling_and_live_cancel_keys",
+    "test": "retry_countdown_interrupts_then_restores_previous_action",
     "input": {
       "op": "retry-countdown",
       "delayMs": 0,
@@ -628,7 +678,7 @@
     }
   },
   {
-    "test": "retry_countdown_uses_ceiling_and_live_cancel_keys",
+    "test": "retry_countdown_interrupts_then_restores_previous_action",
     "input": {
       "op": "retry-countdown",
       "delayMs": 1,
@@ -702,7 +752,8 @@
         "status": [],
         "chat": [
           "",
-          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 "
+          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 ",
+          ""
         ],
         "progress": [],
         "timers": [],
@@ -711,7 +762,7 @@
     }
   },
   {
-    "test": "retry_countdown_uses_ceiling_and_live_cancel_keys",
+    "test": "retry_countdown_interrupts_then_restores_previous_action",
     "input": {
       "op": "retry-countdown",
       "delayMs": 1,
@@ -791,7 +842,7 @@
     }
   },
   {
-    "test": "retry_countdown_uses_ceiling_and_live_cancel_keys",
+    "test": "retry_countdown_interrupts_then_restores_previous_action",
     "input": {
       "op": "retry-countdown",
       "delayMs": 999,
@@ -865,7 +916,8 @@
         "status": [],
         "chat": [
           "",
-          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 "
+          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 ",
+          ""
         ],
         "progress": [],
         "timers": [],
@@ -874,7 +926,7 @@
     }
   },
   {
-    "test": "retry_countdown_uses_ceiling_and_live_cancel_keys",
+    "test": "retry_countdown_interrupts_then_restores_previous_action",
     "input": {
       "op": "retry-countdown",
       "delayMs": 999,
@@ -954,7 +1006,7 @@
     }
   },
   {
-    "test": "retry_countdown_uses_ceiling_and_live_cancel_keys",
+    "test": "retry_countdown_interrupts_then_restores_previous_action",
     "input": {
       "op": "retry-countdown",
       "delayMs": 1000,
@@ -1028,7 +1080,8 @@
         "status": [],
         "chat": [
           "",
-          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 "
+          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 ",
+          ""
         ],
         "progress": [],
         "timers": [],
@@ -1037,7 +1090,7 @@
     }
   },
   {
-    "test": "retry_countdown_uses_ceiling_and_live_cancel_keys",
+    "test": "retry_countdown_interrupts_then_restores_previous_action",
     "input": {
       "op": "retry-countdown",
       "delayMs": 1000,
@@ -1117,7 +1170,7 @@
     }
   },
   {
-    "test": "retry_countdown_uses_ceiling_and_live_cancel_keys",
+    "test": "retry_countdown_interrupts_then_restores_previous_action",
     "input": {
       "op": "retry-countdown",
       "delayMs": 1001,
@@ -1192,7 +1245,8 @@
         "status": [],
         "chat": [
           "",
-          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 "
+          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 ",
+          ""
         ],
         "progress": [],
         "timers": [],
@@ -1201,7 +1255,7 @@
     }
   },
   {
-    "test": "retry_countdown_uses_ceiling_and_live_cancel_keys",
+    "test": "retry_countdown_interrupts_then_restores_previous_action",
     "input": {
       "op": "retry-countdown",
       "delayMs": 1001,
@@ -1282,7 +1336,7 @@
     }
   },
   {
-    "test": "retry_countdown_uses_ceiling_and_live_cancel_keys",
+    "test": "retry_countdown_interrupts_then_restores_previous_action",
     "input": {
       "op": "retry-countdown",
       "delayMs": 2500,
@@ -1358,7 +1412,8 @@
         "status": [],
         "chat": [
           "",
-          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 "
+          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 ",
+          ""
         ],
         "progress": [],
         "timers": [],
@@ -1367,7 +1422,7 @@
     }
   },
   {
-    "test": "retry_countdown_uses_ceiling_and_live_cancel_keys",
+    "test": "retry_countdown_interrupts_then_restores_previous_action",
     "input": {
       "op": "retry-countdown",
       "delayMs": 2500,
@@ -1449,7 +1504,7 @@
     }
   },
   {
-    "test": "retry_completion_disposes_progress_and_selects_failure_text",
+    "test": "retry_completion_cancels_wait_and_restores_previous_action",
     "input": {
       "op": "retry-end",
       "success": false
@@ -1458,7 +1513,8 @@
       "status": [],
       "chat": [
         "",
-        " @error@Error: Retry failed after 3 attempts: Unknown error\u001b[39m                                                "
+        " @error@Error: Retry failed after 3 attempts: Unknown error\u001b[39m                                                ",
+        ""
       ],
       "progress": [],
       "timers": [],
@@ -1466,7 +1522,7 @@
     }
   },
   {
-    "test": "retry_completion_disposes_progress_and_selects_failure_text",
+    "test": "retry_completion_cancels_wait_and_restores_previous_action",
     "input": {
       "op": "retry-end",
       "success": false,
@@ -1476,7 +1532,8 @@
       "status": [],
       "chat": [
         "",
-        " @error@Error: Retry failed after 3 attempts: Unknown error\u001b[39m                                                "
+        " @error@Error: Retry failed after 3 attempts: Unknown error\u001b[39m                                                ",
+        ""
       ],
       "progress": [],
       "timers": [],
@@ -1484,7 +1541,7 @@
     }
   },
   {
-    "test": "retry_completion_disposes_progress_and_selects_failure_text",
+    "test": "retry_completion_cancels_wait_and_restores_previous_action",
     "input": {
       "op": "retry-end",
       "success": false,
@@ -1494,7 +1551,8 @@
       "status": [],
       "chat": [
         "",
-        " @error@Error: Retry failed after 3 attempts: last failure\u001b[39m                                                 "
+        " @error@Error: Retry failed after 3 attempts: last failure\u001b[39m                                                 ",
+        ""
       ],
       "progress": [],
       "timers": [],
@@ -1502,7 +1560,7 @@
     }
   },
   {
-    "test": "retry_completion_disposes_progress_and_selects_failure_text",
+    "test": "retry_completion_cancels_wait_and_restores_previous_action",
     "input": {
       "op": "retry-end",
       "success": true
@@ -1516,7 +1574,7 @@
     }
   },
   {
-    "test": "retry_completion_disposes_progress_and_selects_failure_text",
+    "test": "retry_completion_cancels_wait_and_restores_previous_action",
     "input": {
       "op": "retry-end",
       "success": true,
@@ -1531,7 +1589,7 @@
     }
   },
   {
-    "test": "retry_completion_disposes_progress_and_selects_failure_text",
+    "test": "retry_completion_cancels_wait_and_restores_previous_action",
     "input": {
       "op": "retry-end",
       "success": true,
@@ -1546,7 +1604,7 @@
     }
   },
   {
-    "test": "progress_replacement_stops_old_countdown_and_restores_escape",
+    "test": "retry_replacement_preserves_working_row_and_previous_action",
     "input": {
       "op": "retry-replace-and-live-keys"
     },
@@ -1573,13 +1631,22 @@
         "progress": [],
         "timers": [
           80,
-          80,
           1000
         ],
         "editor": "draft"
       },
       "end": {
         "status": [],
+        "chat": [],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      },
+      "working": {
+        "status": [
+          "",
+          " @accent@⠋\u001b[39m @muted@Working...\u001b[39m                                                                                       "
+        ],
         "chat": [],
         "progress": [],
         "timers": [
@@ -1612,7 +1679,8 @@
         "status": [],
         "chat": [
           "",
-          " @error@Error: Compaction cancelled\u001b[39m                                                                        "
+          " @error@Error: Compaction cancelled\u001b[39m                                                                        ",
+          ""
         ],
         "progress": [],
         "timers": [],
@@ -1647,7 +1715,8 @@
         "status": [],
         "chat": [
           "",
-          " @error@Error: Compaction cancelled\u001b[39m                                                                        "
+          " @error@Error: Compaction cancelled\u001b[39m                                                                        ",
+          ""
         ],
         "progress": [],
         "timers": [],
@@ -1657,7 +1726,7 @@
     }
   },
   {
-    "test": "retry_countdown_uses_ceiling_and_live_cancel_keys",
+    "test": "retry_countdown_interrupts_then_restores_previous_action",
     "input": {
       "op": "retry-fractional-limit",
       "maxAttempts": 2.5,
@@ -1696,7 +1765,8 @@
     "expected": {
       "chat": [
         "",
-        " @error@Error: Compaction cancelled\u001b[39m                                                                        "
+        " @error@Error: Compaction cancelled\u001b[39m                                                                        ",
+        ""
       ],
       "progress": [
         false
@@ -1714,7 +1784,8 @@
     "expected": {
       "chat": [
         "",
-        " @error@Error: Compaction cancelled\u001b[39m                                                                        "
+        " @error@Error: Compaction cancelled\u001b[39m                                                                        ",
+        ""
       ],
       "progress": [
         true
@@ -1723,13 +1794,27 @@
     }
   },
   {
-    "test": "compaction_completion_replays_then_appends_summary",
+    "test": "compaction_completion_keeps_seeded_replay_and_one_summary",
     "input": {
       "op": "compaction-empty-summary-zero-tokens"
     },
     "expected": {
-      "chat": [],
-      "chatContains": "Compacted from 0 tokens",
+      "chat": [
+        "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+        "\u001b[48;5;71m \u001b[38;5;12mHISTORY_ALPHA\u001b[39m                                                                                      \u001b[49m",
+        "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+        "",
+        "\u001b]133;A\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+        "\u001b[48;5;71m \u001b[38;5;12mHISTORY_BETA\u001b[39m                                                                                       \u001b[49m",
+        "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;5;71m                                                                                                    \u001b[49m",
+        "",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m",
+        "\u001b[48;5;72m \u001b[38;5;14m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m",
+        "\u001b[48;5;72m \u001b[1m\u001b[38;5;13mCompacted from 0 tokens\u001b[39m\u001b[22m                                                                            \u001b[49m",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m",
+        "\u001b[48;5;72m                                                                                                    \u001b[49m"
+      ],
       "progress": [],
       "timers": [],
       "editor": "draft"
@@ -2741,7 +2826,7 @@
       ],
       "local": [],
       "errors": [],
-      "pending": 3,
+      "pending": 0,
       "editor": "draft"
     }
   },

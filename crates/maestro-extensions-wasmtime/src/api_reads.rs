@@ -12,8 +12,19 @@ use std::sync::{Arc, mpsc};
 /// A catchable result after native registration or action dispatch.
 type Reply<T> = mpsc::Sender<Result<T, String>>;
 
-/// Callback-independent operations on the original extension API.
+/// Operations on the original extension API and its current runtime.
 pub(crate) enum Request {
+    /// Registers a provider through the facade's loading or bound action route.
+    RegisterProvider(
+        String,
+        String,
+        crate::provider_registration::Callbacks,
+        Reply<()>,
+    ),
+    /// Removes every queued occurrence or the bound provider.
+    UnregisterProvider(String, Reply<()>),
+    /// Offers JSON input through the original base registration owner's load-time channel.
+    ContributeLoadTime(String, Reply<()>),
     /// Registers metadata and seeds only the native owner's missing flag value.
     RegisterFlag(String, ExtensionFlagOptions, Reply<()>),
     /// Reads the host-resolved value for a flag registered by this extension.
@@ -32,8 +43,6 @@ pub(crate) enum Request {
     Label(String, Option<String>, Reply<()>),
     /// Reads active tool identities in their native order.
     ActiveTools(Reply<Vec<String>>),
-    /// Reads owned tool metadata.
-    AllTools(Reply<String>),
     /// Selects the authored tool identities without normalization.
     SetActiveTools(Vec<String>, Reply<()>),
     /// Reads current command metadata with provenance.
@@ -44,10 +53,34 @@ pub(crate) enum Request {
     SetThinking(String, Reply<()>),
 }
 
-impl Request {
+/// Requests answered against the original API after releasing capability storage.
+pub(crate) trait ApiRequest {
+    /// Dispatch against the original facade and capability owner.
+    fn answer(self, api: &ExtensionAPI<Local>, registry: &crate::local_resources::Registry);
+    /// Settle when that original capability has ended.
+    fn reject(self, error: &str);
+}
+
+impl ApiRequest for Request {
     /// Calls the real API after the pump releases its capability-table borrow.
-    pub(crate) fn answer(self, api: &ExtensionAPI<Local>) {
+    fn answer(self, api: &ExtensionAPI<Local>, registry: &crate::local_resources::Registry) {
         match self {
+            Self::RegisterProvider(name, config, callbacks, reply) => {
+                let result = crate::provider_registration::config(&config, callbacks, registry)
+                    .and_then(|config| {
+                        api.register_provider(name, config)
+                            .map_err(|e| e.to_string())
+                    });
+                let _ = reply.send(result);
+            }
+            Self::UnregisterProvider(name, reply) => send(&reply, api.unregister_provider(&name)),
+            Self::ContributeLoadTime(payload, reply) => {
+                let result = decode(&payload).and_then(|inputs| {
+                    api.contribute_load_time(inputs)
+                        .map_err(|error| error.to_string())
+                });
+                let _ = reply.send(result);
+            }
             Self::RegisterFlag(name, options, reply) => {
                 send(&reply, api.register_flag(name, options));
             }
@@ -77,13 +110,6 @@ impl Request {
             Self::SessionName(reply) => send(&reply, api.get_session_name()),
             Self::Label(id, label, reply) => send(&reply, api.set_label(id, label)),
             Self::ActiveTools(reply) => send(&reply, api.get_active_tools()),
-            Self::AllTools(reply) => {
-                let result = api
-                    .get_all_tools()
-                    .map_err(|error| error.to_string())
-                    .and_then(|tools| maestro_extensions::schema_transport::encode_tools(&tools));
-                let _ = reply.send(result);
-            }
             Self::SetActiveTools(names, reply) => send(&reply, api.set_active_tools(names)),
             Self::Commands(reply) => send_json(&reply, api.get_commands()),
             Self::Thinking(reply) => send_json(&reply, api.get_thinking_level()),
@@ -96,9 +122,12 @@ impl Request {
     }
 
     /// Settles missing API resources without stranding the waiting Store caller.
-    pub(crate) fn reject(self, error: &str) {
+    fn reject(self, error: &str) {
         match self {
-            Self::RegisterFlag(_, _, reply)
+            Self::RegisterProvider(_, _, _, reply)
+            | Self::UnregisterProvider(_, reply)
+            | Self::RegisterFlag(_, _, reply)
+            | Self::ContributeLoadTime(_, reply)
             | Self::Append(_, _, reply)
             | Self::SendMessage(_, _, reply)
             | Self::SendUserMessage(_, _, reply)
@@ -117,7 +146,7 @@ impl Request {
             Self::ActiveTools(reply) => {
                 let _ = reply.send(Err(error.to_owned()));
             }
-            Self::AllTools(reply) | Self::Commands(reply) | Self::Thinking(reply) => {
+            Self::Commands(reply) | Self::Thinking(reply) => {
                 let _ = reply.send(Err(error.to_owned()));
             }
         }
@@ -160,9 +189,25 @@ fn send_json<T: serde::Serialize>(
 pub(crate) struct Endpoint(pub(crate) Arc<Lease>);
 
 impl Endpoint {
+    /// Select live schema origins through the actual native declarations.
+    pub(crate) fn schema_listing(&self) -> Result<crate::schema_registration::ToolListing, String> {
+        self.0.request(Message::SchemaListing)
+    }
     /// Retains the same local pump while a native callback remains callable.
     pub(crate) fn admission(&self) -> crate::local_resources::Admission {
         self.0.admission()
+    }
+
+    /// Allocates an operation's signal through the original local owner.
+    pub(crate) fn new_signal(&self) -> Result<crate::local_resources::SignalEndpoint, String> {
+        self.0.request(|_, reply| Message::NewSignal(None, reply))
+    }
+
+    /// Admits explicit execution on the original local runtime.
+    pub(crate) async fn exec(&self, request: crate::exec::Request) -> Result<String, String> {
+        self.0
+            .request_async(|id, reply, admission| Message::Exec(id, request, reply, admission))
+            .await
     }
 
     /// Admits the selected model operation on the original local runtime.

@@ -9,24 +9,33 @@ use crate::{
 };
 use wasmtime::{
     Store,
-    component::{Accessor, ComponentExportIndex, Instance, Resource, ResourceAny, TypedFunc},
+    component::{Accessor, ComponentExportIndex, Instance, Resource, TypedFunc},
 };
 use wasmtime_wasi::WasiView;
 
 /// Original renderer entry point transfers an optional real guest component.
 type Create = TypedFunc<
     (Resource<Callback>, RenderRequest, Resource<EmitterEndpoint>),
-    (Result<Option<ResourceAny>, String>,),
+    (Result<Option<Resource<Callback>>, String>,),
 >;
 /// Original component rendering method.
 type Render =
-    TypedFunc<(ResourceAny, u32, Resource<EmitterEndpoint>), (Result<Vec<String>, String>,)>;
+    TypedFunc<(Resource<Callback>, u32, Resource<EmitterEndpoint>), (Result<Vec<String>, String>,)>;
 /// Original component input method.
-type Input = TypedFunc<(ResourceAny, String, Resource<EmitterEndpoint>), (Result<(), String>,)>;
+type Input =
+    TypedFunc<(Resource<Callback>, String, Resource<EmitterEndpoint>), (Result<(), String>,)>;
 /// Original component invalidation method.
-type Invalidate = TypedFunc<(ResourceAny, Resource<EmitterEndpoint>), (Result<(), String>,)>;
+type Invalidate = TypedFunc<(Resource<Callback>, Resource<EmitterEndpoint>), (Result<(), String>,)>;
+/// Retained expansion callback.
+type SetExpanded =
+    TypedFunc<(Resource<Callback>, bool, Resource<EmitterEndpoint>), (Result<(), String>,)>;
 /// Original component key-release preference.
-type WantsKeyRelease = TypedFunc<(ResourceAny, Resource<EmitterEndpoint>), (Result<bool, String>,)>;
+type WantsKeyRelease =
+    TypedFunc<(Resource<Callback>, Resource<EmitterEndpoint>), (Result<bool, String>,)>;
+
+/// Optional focus state of an authored component.
+type Focused =
+    TypedFunc<(Resource<Callback>, Resource<EmitterEndpoint>), (Result<Option<bool>, String>,)>;
 
 /// All methods belong to the same canonical component instance.
 pub(super) struct Exports {
@@ -38,8 +47,14 @@ pub(super) struct Exports {
     input: Input,
     /// Actual component cache invalidation method.
     invalidate: Invalidate,
+    /// Actual expansion callback.
+    set_expanded: SetExpanded,
     /// Actual component key-release preference method.
     wants_key_release: WantsKeyRelease,
+    /// The component's optional focus state.
+    focused: Focused,
+    /// The component's synchronous focus setter.
+    set_focused: SetExpanded,
 }
 impl Exports {
     /// Resolves required canonical methods without a fallback implementation.
@@ -50,24 +65,17 @@ impl Exports {
     ) -> wasmtime::Result<Self> {
         Ok(Self {
             create: super::typed(store, instance, guest, "invoke-renderer")?,
-            render: super::typed(store, instance, guest, "[method]component-view.render")?,
-            input: super::typed(
-                store,
-                instance,
-                guest,
-                "[method]component-view.handle-input",
-            )?,
-            invalidate: super::typed(store, instance, guest, "[method]component-view.invalidate")?,
-            wants_key_release: super::typed(
-                store,
-                instance,
-                guest,
-                "[method]component-view.wants-key-release",
-            )?,
+            render: super::typed(store, instance, guest, "component-render")?,
+            input: super::typed(store, instance, guest, "component-handle-input")?,
+            invalidate: super::typed(store, instance, guest, "component-invalidate")?,
+            set_expanded: super::typed(store, instance, guest, "invoke-set-expanded")?,
+            wants_key_release: super::typed(store, instance, guest, "component-wants-key-release")?,
+            focused: super::typed(store, instance, guest, "component-focused")?,
+            set_focused: super::typed(store, instance, guest, "component-set-focused")?,
         })
     }
     /// Transfers the original theme and borrows only the callback and invocation frame.
-    pub(super) async fn create<T: WasiView + 'static>(
+    pub(super) async fn create<T: crate::callback_imports::CallbackView + 'static>(
         &self,
         accessor: &Accessor<T>,
         call: RendererCall<Callback>,
@@ -89,77 +97,123 @@ impl Exports {
                 ),
             )
             .await;
-        accessor.with(|mut access| {
+        let result = accessor.with(|mut access| {
             let table = access.get().ctx().table;
             table.delete(callback)?;
             table.delete(emitter)?;
-            Ok::<_, wasmtime::Error>(())
+            let component = match result?.0 {
+                Ok(component) => component,
+                Err(error) => return Ok::<_, wasmtime::Error>(Err(error)),
+            };
+            let component = component
+                .map(|component| crate::callback_imports::transferred(access.get(), component));
+            Ok(Ok(component.transpose()?))
         })?;
-        let _ = call.reply.send(result?.0);
+        let _ = call.reply.send(result);
         Ok(())
     }
-    /// Borrows the retained guest owner; its final drop remains the driver's responsibility.
+    /// Borrows the retained authored identity; its final release remains the driver's.
     pub(super) async fn component<T: WasiView + 'static>(
         &self,
         accessor: &Accessor<T>,
-        call: ComponentCall<ResourceAny>,
+        call: ComponentCall<Callback>,
     ) -> wasmtime::Result<()> {
         match call {
             ComponentCall::Render(owner, width, emitter, reply) => {
-                let emitter = insert(accessor, emitter)?;
+                let (owner, emitter) = insert(accessor, owner, emitter)?;
                 let result = self
                     .render
-                    .call_concurrent(
-                        accessor,
-                        (owner, width, Resource::new_borrow(emitter.rep())),
-                    )
+                    .call_concurrent(accessor, (borrow(&owner), width, borrow(&emitter)))
                     .await;
-                delete(accessor, emitter)?;
+                delete(accessor, owner, emitter)?;
                 let _ = reply.send(result?.0);
             }
             ComponentCall::Unit(owner, method, emitter, reply) => {
-                let emitter = insert(accessor, emitter)?;
-                let borrow = Resource::new_borrow(emitter.rep());
-                let result = match method {
-                    ComponentMethod::Input(data) => {
-                        self.input
-                            .call_concurrent(accessor, (owner, data, borrow))
-                            .await
-                    }
-                    ComponentMethod::Invalidate => {
-                        self.invalidate
-                            .call_concurrent(accessor, (owner, borrow))
-                            .await
-                    }
-                };
-                delete(accessor, emitter)?;
+                let (owner, emitter) = insert(accessor, owner, emitter)?;
+                let result = self
+                    .unit(accessor, borrow(&owner), borrow(&emitter), method)
+                    .await;
+                delete(accessor, owner, emitter)?;
+                let _ = reply.send(result?.0);
+            }
+            ComponentCall::Focused(owner, emitter, reply) => {
+                let (owner, emitter) = insert(accessor, owner, emitter)?;
+                let result = self
+                    .focused
+                    .call_concurrent(accessor, (borrow(&owner), borrow(&emitter)))
+                    .await;
+                delete(accessor, owner, emitter)?;
                 let _ = reply.send(result?.0);
             }
             ComponentCall::WantsKeyRelease(owner, emitter, reply) => {
-                let emitter = insert(accessor, emitter)?;
+                let (owner, emitter) = insert(accessor, owner, emitter)?;
                 let result = self
                     .wants_key_release
-                    .call_concurrent(accessor, (owner, Resource::new_borrow(emitter.rep())))
+                    .call_concurrent(accessor, (borrow(&owner), borrow(&emitter)))
                     .await;
-                delete(accessor, emitter)?;
+                delete(accessor, owner, emitter)?;
                 let _ = reply.send(result?.0);
             }
         }
         Ok(())
     }
+    /// Runs one unit-returning component operation with its original borrowed operands.
+    async fn unit<T: WasiView + 'static>(
+        &self,
+        accessor: &Accessor<T>,
+        view: Resource<Callback>,
+        frame: Resource<EmitterEndpoint>,
+        method: ComponentMethod,
+    ) -> wasmtime::Result<(Result<(), String>,)> {
+        match method {
+            ComponentMethod::Input(data) => {
+                self.input
+                    .call_concurrent(accessor, (view, data, frame))
+                    .await
+            }
+            ComponentMethod::SetExpanded(expanded) => {
+                self.set_expanded
+                    .call_concurrent(accessor, (view, expanded, frame))
+                    .await
+            }
+            ComponentMethod::SetFocused(focused) => {
+                self.set_focused
+                    .call_concurrent(accessor, (view, focused, frame))
+                    .await
+            }
+            ComponentMethod::Invalidate => {
+                self.invalidate
+                    .call_concurrent(accessor, (view, frame))
+                    .await
+            }
+        }
+    }
 }
-/// Inserts only this call's original native invocation frame.
+/// Inserts the retained identity and this call's original native invocation frame.
 fn insert<T: WasiView + 'static>(
     accessor: &Accessor<T>,
+    owner: Callback,
     emitter: EmitterEndpoint,
-) -> wasmtime::Result<Resource<EmitterEndpoint>> {
-    Ok(accessor.with(|mut access| access.get().ctx().table.push(emitter))?)
+) -> wasmtime::Result<(Resource<Callback>, Resource<EmitterEndpoint>)> {
+    accessor.with(|mut access| {
+        let table = access.get().ctx().table;
+        Ok((table.push(owner)?, table.push(emitter)?))
+    })
 }
-/// Retires the temporary canonical borrow before exposing the native reply.
+/// Lends a temporary table entry to one canonical call.
+fn borrow<R: 'static>(resource: &Resource<R>) -> Resource<R> {
+    Resource::new_borrow(resource.rep())
+}
+/// Retires both temporary canonical borrows before exposing the native reply.
 fn delete<T: WasiView + 'static>(
     accessor: &Accessor<T>,
+    owner: Resource<Callback>,
     emitter: Resource<EmitterEndpoint>,
 ) -> wasmtime::Result<()> {
-    accessor.with(|mut access| access.get().ctx().table.delete(emitter))?;
-    Ok(())
+    accessor.with(|mut access| {
+        let table = access.get().ctx().table;
+        table.delete(owner)?;
+        table.delete(emitter)?;
+        Ok(())
+    })
 }

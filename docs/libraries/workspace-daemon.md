@@ -3,16 +3,24 @@
 `maestro-ipc` uses `interprocess =2.4.2` on Unix with default features disabled.
 No Tokio or asynchronous feature is enabled. It uses the Apache-2.0 licence option.
 It also uses the already-locked `rustix =1.1.5` on Unix with default features
-disabled and `std` enabled, under the MIT OR Apache-2.0 licence. `rustix` supplies
-the named native not-a-socket error code that separates a non-socket entry from a
-wrong-protocol connection failure; it adds no package identity or version, because
+disabled and `std` and `net` enabled, under the MIT OR Apache-2.0 licence.
+`rustix` supplies the bounded connection attempts and the named native
+not-a-socket error code that separates a non-socket entry from a wrong-protocol
+connection failure; it adds no package identity or version, because
 the shared native feature unifier already activates it.
+
+The already-locked `socket2 =0.6.5`, with default features disabled, creates
+unconnected Unix streams with close-on-exec protection on every Unix platform,
+including Apple targets. It uses the MIT OR Apache-2.0 licence. The IPC owner
+retains its absolute-deadline retry loop: a full Unix accept queue must not count
+as a successful connection merely because the descriptor is writable.
 
 The locked dependency closure is:
 
 | Package | Version | Licence |
 |---|---|---|
 | interprocess | 2.4.2 | Apache-2.0 |
+| socket2 | 0.6.5 | MIT OR Apache-2.0 |
 | bitflags | 2.13.2 | MIT OR Apache-2.0 |
 | doctest-file | 1.1.1 | 0BSD |
 | errno | 0.3.14 | MIT OR Apache-2.0 |

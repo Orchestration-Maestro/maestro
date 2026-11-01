@@ -6,83 +6,15 @@ use super::callbacks::Scoped;
 use super::imports::Imports;
 use super::session::reader;
 use super::{model_registry::registry, session::decode};
-use crate::{
-    ContextUsage, ExtensionUIContext, ExtensionUIContextPort, ExtensionWidgetOptions, Model,
-    ModelRegistry, NotificationType, ReadonlySessionManager, WorkingIndicatorOptions,
-};
-/// Independently retained UI resource.
-struct Ui<I: Imports> {
-    /// The host the capability belongs to.
-    imports: I,
-    /// The retained host capability.
-    resource: I::Ui,
-}
-
-impl<I: Imports> ExtensionUIContextPort for Ui<I> {
-    fn notify(&self, message: &str, kind: Option<NotificationType>) -> ExtensionResult<()> {
-        self.imports.ui_notify(&self.resource, message, kind)
-    }
-    fn set_status(&self, key: &str, text: Option<&str>) -> ExtensionResult<()> {
-        self.imports.ui_set_status(&self.resource, key, text)
-    }
-    fn set_working_message(&self, message: Option<&str>) -> ExtensionResult<()> {
-        self.imports.ui_set_working_message(&self.resource, message)
-    }
-    fn set_working_visible(&self, visible: bool) -> ExtensionResult<()> {
-        self.imports.ui_set_working_visible(&self.resource, visible)
-    }
-    fn set_working_indicator(
-        &self,
-        options: Option<WorkingIndicatorOptions>,
-    ) -> ExtensionResult<()> {
-        self.imports
-            .ui_set_working_indicator(&self.resource, options)
-    }
-    fn set_hidden_thinking_label(&self, label: Option<&str>) -> ExtensionResult<()> {
-        self.imports
-            .ui_set_hidden_thinking_label(&self.resource, label)
-    }
-    fn set_widget(
-        &self,
-        key: &str,
-        content: Option<&[String]>,
-        options: Option<ExtensionWidgetOptions>,
-    ) -> ExtensionResult<()> {
-        self.imports
-            .ui_set_widget(&self.resource, key, content, options)
-    }
-    fn set_title(&self, title: &str) -> ExtensionResult<()> {
-        self.imports.ui_set_title(&self.resource, title)
-    }
-}
 use crate::bindings::maestro::extension::session::SessionChangeResult;
 use crate::types::{
     AbortSignal, CommandContextPort, ContextPort, ExtensionCommandContext, ExtensionContext,
     ExtensionFuture, ExtensionResult, NewSessionCommandOptions, ReplacedSessionContext,
-    ReplacedSessionContextPort, SignalPort,
+    ReplacedSessionContextPort,
 };
+use crate::{ContextUsage, ExtensionUIContext, Model, ModelRegistry, ReadonlySessionManager};
 
-/// Host signal behind the facade.
-struct Signal<I: Imports> {
-    /// The host the signal belongs to.
-    imports: I,
-    /// The host's cancellation flag.
-    signal: I::Signal,
-}
-
-impl<I: Imports> SignalPort for Signal<I> {
-    fn aborted(&self) -> bool {
-        self.imports.aborted(&self.signal)
-    }
-}
-
-/// Wraps a host signal.
-pub(super) fn signal<I: Imports>(imports: &I, signal: I::Signal) -> AbortSignal {
-    AbortSignal::new(Rc::new(Signal {
-        imports: imports.clone(),
-        signal,
-    }))
-}
+use super::signals::signal;
 
 /// Host ordinary context behind the facade.
 struct Ordinary<I: Imports> {
@@ -122,10 +54,10 @@ macro_rules! context_port {
                 )
             }
             fn ui(&self) -> ExtensionResult<ExtensionUIContext> {
-                Ok(ExtensionUIContext::new(Rc::new(Ui::<I> {
-                    imports: self.imports.clone(),
-                    resource: self.imports.$ui(&self.context)?,
-                })))
+                Ok(super::ui::ui(
+                    self.imports.clone(),
+                    self.imports.$ui(&self.context)?,
+                ))
             }
             fn has_ui(&self) -> ExtensionResult<bool> {
                 self.imports.$has_ui(&self.context)

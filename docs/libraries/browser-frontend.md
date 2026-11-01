@@ -128,9 +128,10 @@ browser-runner dependency is added.
 Generic artifact views reuse the existing reading registry, native SVG bindings,
 canvas ghost control and original-byte download lifecycle. The byte control is
 adapted under MIT; its copyright and permission text are retained in
-[third-party notices](../../THIRD-PARTY-NOTICES.md). Native composition tests use
-chrono 0.4.45 (defaults off/std, MIT) to name the existing application clock return
-type. This dev-only declaration adds no package version or production edge.
+[third-party notices](../../THIRD-PARTY-NOTICES.md). Native artifact panel timestamps
+reuse chrono 0.4.45 (defaults off/std, MIT or Apache-2.0) on browser targets to name the existing
+application clock return type. Composition tests keep the same development
+declaration. No package version or native production edge is added.
 
 Retained sandbox loading additionally enables `web-sys/DomParser` and
 `web-sys/SupportedType` on the same locked version, with no added package or

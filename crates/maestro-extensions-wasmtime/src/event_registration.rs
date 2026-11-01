@@ -164,20 +164,16 @@ impl EventData for AfterProviderResponseEvent {
     fn encode(&self, name: &str) -> Result<String, String> {
         let headers: Vec<_> = self.headers.iter().collect();
         tagged(
-            &serde_json::json!({"status": self.status, "headers": headers}),
+            &AfterProviderResponseEvent {
+                status: self.status,
+                headers,
+            },
             name,
         )
     }
     fn apply(&mut self, data: &str) -> Result<(), String> {
-        /// The canonical record carries headers as ordered name and value pairs.
-        #[derive(Deserialize)]
-        struct Data {
-            /// Edited status.
-            status: f64,
-            /// Edited headers.
-            headers: Vec<(String, String)>,
-        }
-        let data = crate::writer_reads::decode::<Data>(data)?;
+        let data =
+            crate::writer_reads::decode::<AfterProviderResponseEvent<Vec<(String, String)>>>(data)?;
         self.status = data.status;
         self.headers = data.headers.into_iter().collect();
         Ok(())

@@ -102,6 +102,14 @@ struct Listen {
     /// Whether the prefix traces `<name>:end` after its edits.
     #[serde(default)]
     end: bool,
+    /// Authored failure the prefix returns after its edits.
+    fail: Option<String>,
+    /// Whether the prefix traps after its edits.
+    #[serde(default)]
+    trap: bool,
+    /// The creating command's signal, retained independently of later bindings.
+    #[serde(skip)]
+    signal: Option<maestro_extensions_wasm::AbortSignal>,
     /// Whether the listener and its tail share a capture that flags its release.
     #[serde(default)]
     retain: bool,
@@ -125,6 +133,7 @@ impl Drop for Release {
                 default: Some(maestro_extensions_wasm::FlagValue::Boolean(true)),
             },
         );
+        let _ = self.api.set_session_name(&self.id);
     }
 }
 
@@ -158,6 +167,8 @@ enum Tail {
     Emit(String),
     /// Traces, then lets the suspended emitter resume.
     Done,
+    /// Fails with the authored error.
+    Fail(String),
 }
 
 /// Subscriptions and the gate one instance's programs share.
@@ -209,7 +220,7 @@ thread_local! {
 }
 
 /// Runs each supplied step in order.
-pub(super) async fn run(
+pub(crate) async fn run(
     api: ExtensionAPI,
     args: &str,
     context: ExtensionCommandContext,
@@ -218,6 +229,10 @@ pub(super) async fn run(
     let ops: Vec<Op> = serde_json::from_str(args).map_err(|error| error.to_string())?;
     for op in ops {
         match op {
+            Op::On(mut listen) if listen.retain => {
+                listen.signal = context.signal()?;
+                edit(&api, &programs, Op::On(listen))?;
+            }
             Op::EmitAndWait { channel } => {
                 emit(&api, &channel, Value::Null).await?;
                 context.wait_for_idle().await?;
@@ -320,6 +335,12 @@ fn listener(
                 json!(format!("{}:end", listen.name)),
             )?;
         }
+        if listen.trap {
+            std::arch::wasm32::unreachable();
+        }
+        if let Some(error) = &listen.fail {
+            return Err(error.clone());
+        }
         let retained = release.clone();
         Ok(continuation(&api, &programs, &listen).map(|tail| {
             Box::pin(async move {
@@ -361,15 +382,24 @@ fn continuation(
     let (events, api, gate) = (api.events(), api.clone(), programs.gate.clone());
     let step = format!("{}:tail", listen.name);
     let tail = listen.tail.clone();
+    let signal = listen.signal.clone();
     if matches!(tail, Tail::None) {
         return None;
     }
     Some(Box::pin(async move {
         match &tail {
-            Tail::Wait => Opened(gate.clone()).await,
+            Tail::Fail(error) => return Err(error.clone()),
+            Tail::Wait => {
+                events.emit("tail-waiting", Value::Null).await?;
+                Opened(gate.clone()).await;
+            }
             Tail::Emit(channel) => events.emit(channel, Value::Null).await?,
             _ => {}
         }
+        let step = match signal {
+            Some(signal) => format!("{step}:{}", signal.aborted()),
+            None => step,
+        };
         trace(&events, &api, &step).await?;
         match tail {
             Tail::Open => gate.open(),
@@ -399,6 +429,8 @@ fn tool(api: &ExtensionAPI) -> ExtensionResult<()> {
     api.register_tool(maestro_extensions_wasm::ToolDefinition {
         metadata: serde_json::from_value(json!({"name":"bridge-emit", "label":"Emit", "description":"Emits its parameters", "parameters":{"type":"object"}})).map_err(|error| error.to_string())?,
         prepare_arguments: None,
+        render_call: None,
+        render_result: None,
         execute: Rc::new(move |_, params, _, _, _| {
             let api = tool_api.clone();
             Box::pin(async move {

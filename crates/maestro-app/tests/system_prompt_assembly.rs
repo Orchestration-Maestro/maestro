@@ -1,7 +1,7 @@
 //! System prompt assembly against the recorded prompt texts.
 #![cfg(not(target_arch = "wasm32"))]
 use maestro_app::BuildSystemPromptOptions;
-use maestro_app::configuration::config::{get_docs_path, get_readme_path};
+use maestro_app::configuration::config::{get_docs_path, get_readme_path, paths};
 use maestro_app::resources::system_prompt::build_system_prompt;
 use maestro_test_process::{TestProcess, selection};
 use serde::Deserialize;
@@ -54,9 +54,10 @@ fn in_child(test: &str, value: Option<&str>) {
 /// Every recorded prompt, with the documentation paths of `package_dir` and the local date
 /// read around the build.
 fn assert_recorded_prompts(package_dir: &str) {
-    let readme = format!("{package_dir}/README.md");
-    let docs = format!("{package_dir}/docs");
-    let examples = format!("{package_dir}/examples");
+    // Resolved as the prompt resolves them: `/package` is on the working drive on Windows.
+    let readme = paths::get_readme_path(package_dir).unwrap();
+    let docs = paths::get_docs_path(package_dir).unwrap();
+    let examples = paths::get_examples_path(package_dir).unwrap();
     for case in cases() {
         let before = today();
         let built = prompt(case.options);
@@ -99,6 +100,41 @@ fn prompt_names_the_running_installation_without_override() {
     assert!(Path::new(&get_docs_path().unwrap()).is_dir());
     let workspace = Path::new(env!("CARGO_MANIFEST_DIR")).ancestors().nth(2);
     assert_recorded_prompts(workspace.unwrap().to_str().unwrap());
+}
+
+/// Every documentation and example path in the default prompt names shipped content.
+#[test]
+fn default_prompt_paths_exist_in_the_installation() {
+    if !selection().is_child() {
+        return in_child("default_prompt_paths_exist_in_the_installation", None);
+    }
+    let built = prompt(serde_json::json!({"cwd": "/work"}));
+    let docs = get_docs_path().unwrap();
+    let package = Path::new(&docs).parent().unwrap();
+    let relative = built
+        .split(|character: char| character.is_whitespace() || "(),".contains(character))
+        .filter(|word| word.starts_with("docs/") || word.starts_with("examples/"))
+        .filter(|word| !word.ends_with("..."));
+    let absolute = built.lines().filter_map(|line| {
+        [
+            "- Main documentation: ",
+            "- Additional docs: ",
+            "- Examples: ",
+        ]
+        .iter()
+        .find_map(|prefix| line.strip_prefix(prefix))
+        .and_then(|rest| rest.split(" (extensions,").next())
+    });
+    let paths: Vec<_> = relative.chain(absolute).collect();
+    assert!(!paths.is_empty(), "the prompt must name its documentation");
+    let missing: Vec<_> = paths
+        .into_iter()
+        .filter(|path| !package.join(path).exists())
+        .collect();
+    assert!(
+        missing.is_empty(),
+        "missing shipped prompt paths: {missing:?}"
+    );
 }
 
 /// Only the default prompt resolves documentation paths, so a relative package override in

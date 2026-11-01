@@ -13,7 +13,7 @@ use std::{
 };
 
 /// Complete branded guidance, unchanged across the canonical component boundary.
-const STALE: &str = "This extension ctx is stale after session replacement or reload. Do not use a captured maestro or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload().";
+pub(super) const STALE: &str = "This extension ctx is stale after session replacement or reload. Do not use a captured maestro or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload().";
 
 /// Signals final release of the original UI rather than replacement of its binding.
 struct Ui(RefCell<Option<tokio::sync::oneshot::Sender<()>>>);
@@ -53,7 +53,7 @@ pub(super) async fn retained(with_healthy: bool) {
         .unwrap()
         .command
         .handler;
-    let (retired, (), ()) = futures_util::join!(
+    let (retired, (), ()) = futures_util::future::join3(
         command("retain-suspended".into(), runner.create_command_context()),
         async {
             if with_healthy {
@@ -69,7 +69,8 @@ pub(super) async fn retained(with_healthy: bool) {
             }
             retire(&runner, &history, &original_ui, resumes, caught_error).await;
         },
-    );
+    )
+    .await;
     let observed: Value = serde_json::from_str(&retired.unwrap_err().to_string()).unwrap();
     assert_eq!(
         observed,

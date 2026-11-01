@@ -1,6 +1,6 @@
 //! Canonical primitive imports sharing the original local context endpoint.
 use crate::read_imports::ReadEndpoint;
-use crate::read_imports::add_read;
+use crate::read_imports::{add_read, add_routed};
 use crate::{
     context_reads::{Endpoint, Request},
     local_resources::{SignalEndpoint, UiEndpoint},
@@ -62,11 +62,32 @@ pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
 ) -> wasmtime::Result<()> {
     add_resource::<T, UiEndpoint>(host, "extension-ui-context")?;
     add_resource::<T, SignalEndpoint>(host, "abort-signal")?;
+    add_resource::<T, crate::local_resources::effects::TuiEndpoint>(host, "tui")?;
+    add_resource::<T, crate::local_resources::effects::InvalidatorEndpoint>(
+        host,
+        "tool-invalidator",
+    )?;
+    host.func_wrap(
+        "[method]tool-invalidator.invalidate",
+        |mut store: wasmtime::StoreContextMut<'_, T>,
+         (resource,): (Resource<crate::local_resources::effects::InvalidatorEndpoint>,)| {
+            let invalidator = store.data_mut().ctx().table.get(&resource)?.clone();
+            Ok((invalidator.invalidate(),))
+        },
+    )?;
     host.func_wrap(
         "[method]abort-signal.aborted",
         |mut store: StoreContextMut<'_, T>, (resource,): (Resource<SignalEndpoint>,)| {
             let signal = store.data_mut().ctx().table.get(&resource)?.clone();
             Ok((signal.aborted().map_err(wasmtime::Error::msg)?,))
+        },
+    )?;
+    host.func_wrap(
+        "[method]abort-signal.retain",
+        |mut store: StoreContextMut<'_, T>, (signal,): (Resource<SignalEndpoint>,)| {
+            let table = store.data_mut().ctx().table;
+            let signal = table.get(&signal)?.clone();
+            Ok((table.push(signal)?,))
         },
     )?;
     add_context::<T, Context>(host, "context")?;
@@ -171,13 +192,13 @@ fn add_primitives<T: WasiView + 'static, R: ContextResource>(
         Request::HasPendingMessages,
         endpoint::<T, R>,
     )?;
-    add_read(
+    add_routed(
         host,
         &format!("[method]{name}.abort"),
         Request::Abort,
         endpoint::<T, R>,
     )?;
-    add_read(
+    add_routed(
         host,
         &format!("[method]{name}.shutdown"),
         Request::Shutdown,
@@ -278,7 +299,8 @@ fn add_compact<T: crate::callback_imports::CallbackView + 'static, R: ContextRes
                 on_error: crate::callback_imports::optional(store.data_mut(), error.as_ref())?,
                 api: store.data().api().clone(),
             };
-            Ok((endpoint.read(|reply| Request::Compact(options, reply)),))
+            let route = endpoint.route(|reply| Request::Compact(options, reply));
+            Ok((crate::import_route::push(store.data_mut(), route)?,))
         },
     )?;
     Ok(())

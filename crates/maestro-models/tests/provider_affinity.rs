@@ -51,6 +51,7 @@ fn raw_simple_and_catalog_keep_original_option_families() -> crate::TestResult {
 #[test]
 fn base_options_share_hooks_without_calling_them() {
     let model = crate::chat::model(&serde_json::json!({"maxTokens":40000})).unwrap();
+    let context = crate::chat::context(&serde_json::json!({"messages": []})).unwrap();
     let calls = Rc::new(Cell::new(0));
     let payload_calls = Rc::clone(&calls);
     let payload: OnPayload<Local> = Rc::new(move |input, _| {
@@ -78,7 +79,7 @@ fn base_options_share_hooks_without_calling_them() {
             },
             ..Default::default()
         };
-        let prepared = build_base_options_for(&model, Some(&options), Some("selected"));
+        let prepared = build_base_options_for(&model, &context, Some(&options), Some("selected"));
         assert_eq!(prepared.on_payload.is_some(), with_payload);
         assert_eq!(prepared.on_response.is_some(), with_response);
         assert_eq!(
@@ -99,12 +100,12 @@ fn base_options_share_hooks_without_calling_them() {
             assert!(Rc::ptr_eq(&actual, &response));
         }
         assert_eq!(prepared.api_key.as_deref(), Some("selected"));
-        assert_eq!(prepared.max_tokens, Some(32000.0));
+        assert_eq!(prepared.max_tokens, Some(40000.0));
     }
     assert_eq!(calls.get(), 0);
     assert_eq!(
-        maestro_models::build_base_options(&model, None, None).max_tokens,
-        Some(32000.0)
+        maestro_models::build_base_options(&model, &context, None, None).max_tokens,
+        Some(40000.0)
     );
 }
 

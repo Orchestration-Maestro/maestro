@@ -108,6 +108,45 @@ pub fn substitute(value: &Value, vars: &[(&str, &str)]) -> Value {
     }
 }
 
+/// `text` with what this host resolved from a recorded POSIX path spelled as the recording
+/// does. Windows resolves `/work` on the drive of the working directory, as `D:\\work`.
+pub fn posix_spelling(text: &str) -> String {
+    let Some(root) = std::env::current_dir()
+        .ok()
+        .filter(|_| cfg!(windows))
+        .and_then(|cwd| {
+            cwd.ancestors()
+                .last()
+                .map(|root| root.display().to_string())
+        })
+    else {
+        return text.to_owned();
+    };
+    text.replace(&root, "/").replace('\\', "/")
+}
+
+/// [`posix_spelling`] applied to every string of `value`.
+pub fn posix_value(value: &Value) -> Value {
+    match value {
+        Value::String(text) => Value::String(posix_spelling(text)),
+        Value::Array(items) => Value::Array(items.iter().map(posix_value).collect()),
+        Value::Object(members) => Value::Object(
+            members
+                .iter()
+                .map(|(key, member)| (key.clone(), posix_value(member)))
+                .collect(),
+        ),
+        other => other.clone(),
+    }
+}
+
+/// [`posix_spelling`] applied to every field of recorded call rows.
+pub fn posix_rows(rows: &[Vec<String>]) -> Vec<Vec<String>> {
+    rows.iter()
+        .map(|row| row.iter().map(|field| posix_spelling(field)).collect())
+        .collect()
+}
+
 /// Replace the `$HOME` placeholder in every string of `value`.
 pub fn with_home(value: &Value) -> Value {
     substitute(value, &[("$HOME", &home())])
@@ -400,7 +439,12 @@ impl LsOperations for Scripted {
 
     fn stat(&self, path: String) -> BoxFuture<Result<bool, DiagnosticErrorInfo>> {
         let stage = self.stat_stage(&path);
-        let name = path.rsplit('/').next().unwrap_or_default().to_owned();
+        // The entry name after the last separator; Windows joins with `\\`.
+        let name = path
+            .rsplit(['/', '\\'])
+            .next()
+            .unwrap_or_default()
+            .to_owned();
         let answer = match stage {
             Stage::RootStat => self.directory,
             _ => self.directories.contains(&name),
@@ -542,7 +586,12 @@ pub fn assert_effects(case: &Case, outcome: &Outcome) {
     assert_eq!(outcome.updates, expected.updates, "updates of {id}");
     if let Some(calls) = &expected.calls {
         let calls = recorded_calls(&with_home(calls));
-        assert_eq!(outcome.calls, calls, "calls of {id}");
+        let observed: Vec<_> = outcome
+            .calls
+            .iter()
+            .map(|(operation, path)| (operation.clone(), posix_spelling(path)))
+            .collect();
+        assert_eq!(observed, calls, "calls of {id}");
     }
 }
 
@@ -560,10 +609,18 @@ pub fn assert_outcome(case: &Case, outcome: &Outcome) {
             if let Some(cut) = result.pointer_mut("/details/truncation/content") {
                 *cut = Value::String(recorded_text(cut));
             }
-            assert_eq!(canon(actual), canon(&result), "result of {id}");
+            assert_eq!(
+                canon(&posix_value(actual)),
+                canon(&result),
+                "result of {id}"
+            );
         }
         (Err(actual), None, Some(error)) => {
-            assert_eq!(actual, &with_home(&json!(error)), "error of {id}");
+            assert_eq!(
+                &posix_spelling(actual),
+                &with_home(&json!(error)),
+                "error of {id}"
+            );
         }
         (observed, recorded, _) => panic!(
             "case {id} observed {} but records {}",

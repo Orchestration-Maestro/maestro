@@ -1,14 +1,14 @@
 //! Default browser tool input and output preparation.
 use crate::tools::types::ToolUiError;
-mod content;
 #[cfg(target_arch = "wasm32")]
-pub(crate) mod dom;
+mod dom;
+#[cfg(target_arch = "wasm32")]
+mod listing;
 use super::super::{
     renderer_registry::{ToolHeaderState, get_text_output},
     types::ToolResultMessageView,
 };
 use crate::tools::types::{ToolRenderResult, ToolRenderer};
-use content::DefaultContent;
 use serde_json::Value;
 
 /// Choose the result's status before invoking any input formatter.
@@ -37,13 +37,15 @@ fn pretty(value: &Value) -> Result<String, ToolUiError> {
     maestro_app::pretty_json(value).map_err(|error| ToolUiError::Presentation(error.to_string()))
 }
 /// One literal listing and its selected language.
-struct Listing {
+#[cfg(any(target_arch = "wasm32", test))]
+pub(crate) struct Listing {
     /// Original displayed and copied text.
-    code: String,
+    pub(crate) code: String,
     /// Explicit syntax label.
-    language: &'static str,
+    pub(crate) language: &'static str,
 }
 /// Branch-selected header and independently retained subsections.
+#[cfg(any(target_arch = "wasm32", test))]
 struct Prepared {
     /// Literal, untranslated tool caption.
     caption: &'static str,
@@ -53,6 +55,7 @@ struct Prepared {
     output: Option<Listing>,
 }
 /// Select visible branches after input formatting and raw-output observation.
+#[cfg(any(target_arch = "wasm32", test))]
 fn prepare(
     params: Option<&str>,
     output: Option<&str>,
@@ -98,6 +101,22 @@ fn prepare(
 #[cfg(test)]
 mod tests;
 
+/// Call-owned immutable default content.
+#[cfg_attr(
+    not(target_arch = "wasm32"),
+    allow(
+        dead_code,
+        reason = "native targets prepare records only the browser mounts"
+    )
+)]
+pub(in crate::tools) struct DefaultContent {
+    /// Status selected before formatting input.
+    state: ToolHeaderState,
+    /// Optional already-formatted input.
+    params: Option<String>,
+    /// Raw joined output; absence means no result yet.
+    output: Option<String>,
+}
 /// Default JSON input and raw text output renderer.
 #[derive(Default)]
 pub struct DefaultRenderer;
@@ -116,7 +135,7 @@ impl<D> ToolRenderer<Value, D> for DefaultRenderer {
 }
 impl DefaultRenderer {
     /// Retain formatted inputs and raw output without inspecting native details.
-    pub(crate) fn render_prepared(
+    pub(in crate::tools) fn render_prepared(
         state: ToolHeaderState,
         params: Option<String>,
         output: Option<String>,

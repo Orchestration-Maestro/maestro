@@ -96,7 +96,9 @@ fn root_user_navigation_restores_editor_and_empty_leaf() {
 #[test]
 fn assistant_navigation_selects_the_message_without_editor_text() {
     on_task_set(|_| async {
-        let (h, ids) = conversation(&["Hello"]).await;
+        // The leaf is the second answer, so selecting the first answer is a real move.
+        let (h, ids) = conversation(&["Hello", "Again"]).await;
+        assert!(is_leaf(&h, Some(&ids[3])));
         let result = h
             .session
             .navigate_tree(&ids[1], NavigateTreeOptions::default())

@@ -21,7 +21,7 @@ async fn sessions() {
     let runner = crate::tests::runner("/sessions");
     let calls = Rc::new(RefCell::new(Vec::new()));
     runner.bind_command_context(Some(actions(&calls)));
-    let (pump, admission) = Pump::new();
+    let (pump, admission) = Pump::new(crate::tests::support::widgets());
     let endpoint = pump
         .registry()
         .context(Owner::Command(runner.create_command_context()))

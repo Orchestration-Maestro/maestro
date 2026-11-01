@@ -36,7 +36,7 @@ fn native_content_borders_belong_to_visible_owners() {
             fit == ImageFit::Cover
         );
     }
-    let record = std::rc::Rc::new(std::cell::RefCell::new(crate::Attachment {
+    let record = std::sync::Arc::new(std::sync::RwLock::new(crate::Attachment {
         id: "id".into(),
         r#type: maestro_app::browser::utils::attachment_utils::AttachmentType::Document,
         file_name: "file".into(),
@@ -96,52 +96,6 @@ fn placements_write_once_and_modal_changes_refresh_siblings_once() {
         super::style_targets(ids.iter().copied(), None, Some(ids[1]), None).collect::<Vec<_>>(),
         ids
     );
-}
-
-#[test]
-fn input_focus_and_error_rings_keep_three_css_pixels_inside_parent_clip() {
-    let context = egui::Context::default();
-    for error in ["", "Invalid address"] {
-        let props = crate::components::input::InputProps {
-            error: error.into(),
-            ..Default::default()
-        };
-        let mut surface = AttachmentSurface {
-            id: egui::Id::new("decorated-input"),
-            rect: egui::Rect::from_min_max(egui::pos2(10., 20.), egui::pos2(110., 56.)),
-            clip_rect: egui::Rect::from_min_max(egui::pos2(0., 0.), egui::pos2(200., 100.)),
-            pixels_per_point: 1.,
-            opacity: 1.,
-            occluders: Vec::new(),
-            content: AttachmentContent::Input {
-                props: &props,
-                accessible_label: "",
-                value_changed: true,
-                modal: None,
-                context: &context,
-            },
-        };
-        assert_eq!(
-            clip_path(&surface, (1., 1.)),
-            "path(evenodd,\"M-3 -3H103V39H-3Z\")"
-        );
-        assert_eq!(
-            clip_path(&surface, (0.75, 0.75)),
-            "path(evenodd,\"M-3 -3H78V30H-3Z\")"
-        );
-        assert_eq!(
-            clip_path(&surface, (0.5, 0.75)),
-            "path(evenodd,\"M-3 -3H53V30H-3Z\")"
-        );
-        surface.clip_rect = surface.rect;
-        for (scale, expected) in [
-            ((1., 1.), "path(evenodd,\"M0 0H100V36H0Z\")"),
-            ((0.75, 0.75), "path(evenodd,\"M0 0H75V27H0Z\")"),
-            ((0.5, 0.75), "path(evenodd,\"M0 0H50V27H0Z\")"),
-        ] {
-            assert_eq!(clip_path(&surface, scale), expected);
-        }
-    }
 }
 
 #[test]

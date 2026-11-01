@@ -382,7 +382,7 @@ fn tool_metadata_keeps_native_schemas_and_guest_schema_text() {
         serde_json::to_value(&guest).unwrap()["parameters"],
         "{\"type\":\"object\"}"
     );
-    let native: ToolInfo = serde_json::from_value(serde_json::json!({
+    let native: ToolInfo<maestro_models::ParameterSchema<maestro_models::SchemaCode>> = serde_json::from_value(serde_json::json!({
         "name": "read", "description": "Read", "parameters": {"type": "object"}, "sourceInfo": source
     }))
     .unwrap();
@@ -578,7 +578,7 @@ fn catalog_getter_and_constructor_share_one_direct_owner() {
         &runner.create_command_context().model_registry().unwrap()
     ));
     let retained = context.model_registry().unwrap();
-    let (_owner, api) = local_api(runtime.clone(), "/work");
+    let (_owner, api) = local_api(runtime, "/work");
     bind_empty(&runner, ProviderActions::default()).unwrap();
     api.register_provider("fallback".into(), good("fallback-model"))
         .unwrap();
@@ -595,7 +595,7 @@ fn catalog_getter_and_constructor_share_one_direct_owner() {
         .register_provider("p", good("m"))
         .unwrap();
     assert!(registry.find("p", "m").is_some());
-    runtime.invalidate(Some("stale".into()));
+    runner.invalidate(Some("stale".into()));
     assert_eq!(context.model_registry().err().unwrap().to_string(), "stale");
     retained.refresh().unwrap();
     assert!(retained.find("p", "m").is_some());

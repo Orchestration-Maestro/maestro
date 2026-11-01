@@ -34,11 +34,12 @@ impl<I: Imports> EventBusPort for Bus<I> {
         let identity = callbacks::Identity::new(&self.0);
         let handle = self.0.event_on(channel, &identity.handle)?;
         identity.keep(listener);
-        Ok(Subscription::new(Rc::new(Remover {
-            imports: self.0.clone(),
-            handle,
-        })))
+        Ok(subscription(self.0.clone(), handle))
     }
+}
+/// Wraps a host remover in the author facade.
+pub(super) fn subscription<I: Imports>(imports: I, handle: I::Subscription) -> Subscription {
+    Subscription::new(Rc::new(Remover { imports, handle }))
 }
 impl<I: Imports> SubscriptionPort for Remover<I> {
     fn unsubscribe(&self) -> ExtensionResult<()> {

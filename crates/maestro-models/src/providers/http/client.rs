@@ -12,7 +12,9 @@ use super::{FetchError, HttpBody, HttpRequest, HttpResponse};
 use crate::{BoxFuture, DiagnosticErrorInfo};
 
 /// Send one attempt with the shared client.
-pub(super) fn fetch(request: HttpRequest) -> BoxFuture<Result<HttpResponse, FetchError>> {
+pub(super) fn fetch<B: Into<Option<Vec<u8>>> + Send + 'static>(
+    request: HttpRequest<B>,
+) -> BoxFuture<Result<HttpResponse, FetchError>> {
     Box::pin(async move { send(build()?, request).await })
 }
 
@@ -26,9 +28,9 @@ pub(crate) fn supplied_fetch(client: reqwest::Client) -> super::Fetch {
 }
 
 /// Send one attempt with `client`.
-async fn send(
+async fn send<B: Into<Option<Vec<u8>>>>(
     client: impl Borrow<reqwest::Client>,
-    request: HttpRequest,
+    request: HttpRequest<B>,
 ) -> Result<HttpResponse, FetchError> {
     let request = prepare(client.borrow(), request)?;
     Ok(finish(
@@ -37,9 +39,9 @@ async fn send(
 }
 
 /// Prepare one request for either native sender, including ordinary client defaults.
-pub(super) fn prepare(
+pub(super) fn prepare<B: Into<Option<Vec<u8>>>>(
     client: &reqwest::Client,
-    request: HttpRequest,
+    request: HttpRequest<B>,
 ) -> Result<reqwest::Request, FetchError> {
     let method = reqwest::Method::from_bytes(request.method.as_bytes()).map_err(failed)?;
     let mut headers = request.headers;
@@ -49,7 +51,10 @@ pub(super) fn prepare(
     for (name, value) in client_pairs(&mut headers).map_err(connection)? {
         builder = builder.header(name, value);
     }
-    let mut request = builder.body(request.body).build().map_err(failed)?;
+    if let Some(body) = request.body.into() {
+        builder = builder.body(body);
+    }
+    let mut request = builder.build().map_err(failed)?;
     request
         .headers_mut()
         .entry(reqwest::header::ACCEPT)

@@ -2,13 +2,15 @@
 #![cfg(test)]
 use maestro_extensions::types::{ExtensionHandle, FlagValue};
 use maestro_extensions::{
-    ErrorReporter, EventBus, EventBusController, ExtensionRunner, Local, MessageRenderOptions,
-    create_event_bus_for,
+    ErrorReporter, EventBus, EventBusController, ExtensionActions, ExtensionContextActions,
+    ExtensionExecution, ExtensionRunner, Local, MessageRenderOptions, create_event_bus_for,
+    types::ProviderActions,
 };
 use serde_json::{Value, json};
 use std::{cell::RefCell, future::Future, pin::Pin, rc::Rc};
 use tokio::sync::mpsc;
 
+pub(super) use super::components::local;
 use super::retained_components::loaded_on;
 
 /// Ordered entries recorded by native listeners.
@@ -26,6 +28,8 @@ pub(super) struct Instance {
     pub(super) runner: Rc<ExtensionRunner<Local>>,
     /// The instance's own bus identity.
     pub(super) events: EventBus<Local>,
+    /// Supplied actions retained across context rebinding.
+    actions: ExtensionActions<Local>,
 }
 
 /// Two instances of the author fixture on one bus, with native observers.
@@ -42,6 +46,8 @@ pub(super) struct Pair {
     pub(super) payloads: Payloads,
     /// Continuations in the order the bus handed them over.
     pub(super) tails: mpsc::UnboundedReceiver<Queued>,
+    /// Destructor completions observed through the supplied domain action.
+    pub(super) releases: mpsc::UnboundedReceiver<String>,
 }
 
 impl Pair {
@@ -56,8 +62,9 @@ impl Pair {
         let bus =
             create_event_bus_for::<Local>(Rc::new(move |tail| sender.send(tail).unwrap()), report);
         let (trace, payloads) = (Trace::default(), Payloads::default());
-        let a = Instance::labelled(bus.for_extension(), "a").await;
-        let b = Instance::labelled(bus.for_extension(), "b").await;
+        let (notify, releases) = mpsc::unbounded_channel();
+        let a = Instance::labelled(bus.for_extension(), "a", notify.clone()).await;
+        let b = Instance::labelled(bus.for_extension(), "b", notify).await;
         let pair = Self {
             bus,
             a,
@@ -65,6 +72,7 @@ impl Pair {
             trace,
             payloads,
             tails,
+            releases,
         };
         pair.observe();
         pair
@@ -81,6 +89,11 @@ impl Pair {
         std::mem::take(&mut *self.trace.borrow_mut())
     }
 
+    /// Waits for the named destructor's actual completion, not a later command.
+    pub(super) async fn wait_release(&mut self, expected: &str) {
+        assert_eq!(self.releases.recv().await.unwrap(), expected);
+    }
+
     /// Returns every continuation handed over so far, in order.
     pub(super) fn queued(&mut self) -> Vec<Queued> {
         std::iter::from_fn(|| self.tails.try_recv().ok()).collect()
@@ -89,14 +102,35 @@ impl Pair {
 
 impl Instance {
     /// Loads one instance and assigns the label its trace entries carry.
-    async fn labelled(events: EventBus<Local>, label: &str) -> Self {
+    async fn labelled(
+        events: EventBus<Local>,
+        label: &str,
+        released: mpsc::UnboundedSender<String>,
+    ) -> Self {
         let (owner, runner, events) = loaded_on(events).await;
         runner.set_flag_value("bridge-label".into(), FlagValue::String(label.into()));
-        Self {
+        let label = label.to_owned();
+        let mut actions = Local::unbound_actions();
+        actions.set_session_name =
+            Rc::new(move |name| released.send(format!("{label}:{name}")).map_err(Into::into));
+        let instance = Self {
             owner,
             runner: Rc::new(runner),
             events,
-        }
+            actions,
+        };
+        instance.bind_context(ExtensionContextActions {
+            get_system_prompt: Rc::new(|| Ok("renderer barrier".into())),
+            ..Default::default()
+        });
+        instance
+    }
+
+    /// Rebinds context operations without replacing the supplied release observer.
+    pub(super) fn bind_context(&self, context: ExtensionContextActions) {
+        self.runner
+            .bind_core(self.actions.clone(), context, ProviderActions::default())
+            .unwrap();
     }
 
     /// Runs authored steps in this instance's command.
@@ -124,7 +158,7 @@ impl Instance {
             .contains_key(&format!("dropped-{name}"))
     }
 
-    /// Makes one later Store call, after which queued resource releases have run.
+    /// Completes one Store command without waiting for unrelated object destruction.
     pub(super) async fn barrier(&self) {
         let command = self
             .runner
@@ -159,14 +193,6 @@ fn observe(events: &EventBus<Local>, label: &str, trace: &Trace, payloads: &Payl
             Ok(None)
         }),
     );
-}
-
-/// Runs a current-thread test inside a local task set.
-pub(super) fn local(test: impl Future<Output = ()>) {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
-    tokio::task::LocalSet::new().block_on(&runtime, test);
 }
 
 /// Steps subscribing one listener per `(channel, id, extra)` entry.
@@ -237,7 +263,7 @@ fn foreign_component_delivery_follows_each_callback_return() {
             ["a:inner:tail", "b:back:tail", "a:back:tail", "b:inner:tail"]
         );
         drop(component);
-        pair.a.barrier().await;
+        pair.wait_release("a:order-foreign").await;
         assert!(pair.a.released("order-foreign"));
     });
 }

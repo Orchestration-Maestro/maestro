@@ -1,7 +1,7 @@
 //! Authored metadata becomes the real native local tool definition.
 use crate::{guest_calls::Handle, local_resources::Registry};
 use maestro_extensions::{
-    EventBus, Local, Presence, Tool, ToolExecutionMode, ToolRenderShell, local::ToolDefinition,
+    ExtensionAPI, Local, Presence, Tool, ToolExecutionMode, ToolRenderShell, local::ToolDefinition,
 };
 use serde::Deserialize;
 use serde_json::Value;
@@ -52,14 +52,22 @@ fn optional<T>(value: Presence<T>) -> Option<T> {
 /// Retains actual prepare/execute closures without supplying a context factory at registration.
 pub(crate) fn definition(
     metadata: &str,
-    prepare: Option<Handle>,
-    execute: Handle,
+    callbacks: crate::schema_registration::ToolCallbacks,
+    (render_call, render_result): (Option<Handle>, Option<Handle>),
     registry: Registry,
-    events: EventBus<Local>,
-) -> Result<ToolDefinition<maestro_extensions::ExtensionContext, Value, Value, ()>, String> {
+    api: ExtensionAPI<Local>,
+) -> Result<ToolDefinition<maestro_extensions::ExtensionContext, Value, Value>, String> {
+    let (prepare, execute, schemas) = callbacks;
     let (metadata, parameters): (Metadata, _) =
-        maestro_extensions::schema_transport::decode_metadata(metadata)?;
-    let prepare_arguments = prepare.map(|prepare| prepare.prepare(registry.clone(), events));
+        maestro_extensions::schema_transport::decode_metadata::<Metadata, ()>(metadata)?;
+    let parameters =
+        parameters.with_code(crate::schema_registration::code(schemas, &registry, &api));
+    let events = api.events;
+    let prepare_arguments =
+        prepare.map(|prepare| prepare.prepare(registry.clone(), events.clone()));
+    let render_call =
+        render_call.map(|render| render.render_call(registry.clone(), events.clone()));
+    let render_result = render_result.map(|render| render.render_result(registry.clone(), events));
     Ok(ToolDefinition {
         definition: Tool {
             name: metadata.name,
@@ -76,7 +84,7 @@ pub(crate) fn definition(
         execution_mode: optional(metadata.execution_mode),
         prepare_arguments,
         execute: execute.execute(registry),
-        render_call: None,
-        render_result: None,
+        render_call,
+        render_result,
     })
 }

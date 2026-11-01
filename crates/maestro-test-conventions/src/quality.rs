@@ -1,13 +1,12 @@
 use std::path::Path;
 
-use ra_ap_rustc_lexer::{FrontmatterAllowed, TokenKind};
-use syn::{spanned::Spanned, visit::Visit};
+use ra_ap_rustc_lexer::TokenKind;
+use syn::spanned::Spanned;
 
 use crate::generated;
 use crate::graph::UNIFIER;
 use crate::source::{
-    Member, Source, cfg_test, exclude_test_item, impl_item_attributes, item_attributes,
-    read_manifest, test_layout, trait_item_attributes,
+    Member, Source, cfg_test, item_attributes, read_manifest, test_layout, test_spans,
 };
 
 /// Verify protected lint settings and production source size for every member.
@@ -50,11 +49,8 @@ fn check_file(member: &Member, source: &Source) -> Result<(), String> {
 
 /// Count lines with non-whitespace characters outside documentation tokens and test-only spans.
 fn production_lines(contents: &str, syntax: Option<&syn::File>) -> usize {
-    let mut exclusions = TestLines::default();
-    if let Some(syntax) = syntax {
-        exclusions.visit_file(syntax);
-    }
-    exclusions.spans.extend(documentation_spans(contents));
+    let mut exclusions = test_spans(syntax);
+    exclusions.extend(documentation_spans(contents));
     let end = syntax
         .and_then(|syntax| syntax.items.last())
         .filter(|item| cfg_test(item_attributes(item)))
@@ -68,7 +64,6 @@ fn production_lines(contents: &str, syntax: Option<&syn::File>) -> usize {
             text.chars().enumerate().any(|(column, character)| {
                 !character.is_whitespace()
                     && !exclusions
-                        .spans
                         .iter()
                         .any(|span| span.contains(&(line + 1, column)))
             })
@@ -79,10 +74,16 @@ fn production_lines(contents: &str, syntax: Option<&syn::File>) -> usize {
 /// Locates documentation tokens in the Unicode coordinates used by syntax spans.
 fn documentation_spans(contents: &str) -> Vec<std::ops::Range<(usize, usize)>> {
     let mut spans = Vec::new();
-    let mut offset = ra_ap_rustc_lexer::strip_shebang(contents).unwrap_or(0);
-    let mut position = (1, contents[..offset].chars().count());
-    for token in ra_ap_rustc_lexer::tokenize(&contents[offset..], FrontmatterAllowed::No) {
-        let end = offset + token.len as usize;
+    let mut tokens = crate::source::tokens(contents).peekable();
+    let mut position = (
+        1,
+        tokens
+            .peek()
+            .map_or(0, |(_, range)| contents[..range.start].chars().count()),
+    );
+    for (kind, range) in tokens {
+        let offset = range.start;
+        let end = range.end;
         let next = contents[offset..end]
             .chars()
             .fold(position, |(line, column), character| {
@@ -93,7 +94,7 @@ fn documentation_spans(contents: &str) -> Vec<std::ops::Range<(usize, usize)>> {
                 }
             });
         if matches!(
-            token.kind,
+            kind,
             TokenKind::LineComment { doc_style: Some(_) }
                 | TokenKind::BlockComment {
                     doc_style: Some(_),
@@ -102,49 +103,9 @@ fn documentation_spans(contents: &str) -> Vec<std::ops::Range<(usize, usize)>> {
         ) {
             spans.push(position..next);
         }
-        offset = end;
         position = next;
     }
     spans
-}
-
-#[derive(Default)]
-/// Source spans excluded from the production line count.
-struct TestLines {
-    /// Half-open character ranges occupied by test-only syntax or documentation tokens.
-    spans: Vec<std::ops::Range<(usize, usize)>>,
-}
-
-impl<'ast> Visit<'ast> for TestLines {
-    fn visit_item(&mut self, item: &'ast syn::Item) {
-        exclude_test_item!(self, item, item_attributes(item), visit_item);
-    }
-
-    fn visit_impl_item(&mut self, item: &'ast syn::ImplItem) {
-        exclude_test_item!(self, item, impl_item_attributes(item), visit_impl_item);
-    }
-
-    fn visit_trait_item(&mut self, item: &'ast syn::TraitItem) {
-        exclude_test_item!(self, item, trait_item_attributes(item), visit_trait_item);
-    }
-
-    fn visit_foreign_item(&mut self, item: &'ast syn::ForeignItem) {
-        let attributes = match item {
-            syn::ForeignItem::Fn(item) => &item.attrs,
-            syn::ForeignItem::Static(item) => &item.attrs,
-            syn::ForeignItem::Type(item) => &item.attrs,
-            syn::ForeignItem::Macro(item) => &item.attrs,
-            _ => return,
-        };
-        exclude_test_item!(self, item, attributes, visit_foreign_item);
-    }
-}
-
-/// Convert a syntax span into comparable line and character coordinates.
-fn span_positions(span: proc_macro2::Span) -> std::ops::Range<(usize, usize)> {
-    let start = span.start();
-    let end = span.end();
-    (start.line, start.column)..(end.line, end.column)
 }
 
 /// Require each crate to enable workspace lint inheritance.

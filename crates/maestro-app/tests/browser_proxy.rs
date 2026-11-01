@@ -381,3 +381,73 @@ impl<E: maestro_models::ProviderExecution>
         Ok(stream)
     }
 }
+
+#[cfg(not(target_arch = "wasm32"))]
+/// Base addresses the local recorder received, in order.
+type Addresses = Arc<Mutex<Vec<String>>>;
+#[cfg(not(target_arch = "wasm32"))]
+/// Retained invocation owner recording only the requested address.
+struct AddressRecorder(Addresses);
+#[cfg(not(target_arch = "wasm32"))]
+impl<E: maestro_models::ProviderExecution, O>
+    maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for AddressRecorder
+{
+    type Return =
+        Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(&self, call: maestro_models::ProviderCall<E, O>) -> Self::Return {
+        self.0.lock().unwrap().push(call.model.base_url);
+        Ok(AssistantMessageEventStream::new())
+    }
+}
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+/// The local proxy stream reads current settings per invocation and reaches the registered provider.
+fn local_proxy_stream_reads_current_settings_per_invocation() {
+    use maestro_app::browser::utils::proxy_utils::create_local_stream_fn;
+    use maestro_models::{ApiProvider, register_api_provider, unregister_api_providers};
+    run(async {
+        let addresses: Addresses = Arc::default();
+        register_api_provider(
+            ApiProvider {
+                api: "browser-proxy-local".into(),
+                stream: Arc::new(UnexpectedRaw),
+                stream_simple: Arc::new(AddressRecorder(Arc::clone(&addresses))),
+            },
+            Some("browser-proxy-local".into()),
+        );
+        let reads = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let spawner: maestro_app::AgentSpawner<maestro_app::Local> = std::rc::Rc::new(|_| {});
+        let wrapper = create_local_stream_fn(settings_getter(Arc::clone(&reads)), spawner);
+        for key in [None, Some("key"), None, Some("key"), Some(""), Some("key")] {
+            let mut options = maestro_models::SimpleStreamOptions::<maestro_app::Local>::default();
+            options.common.api_key = key.map(str::to_owned);
+            let mut input = model();
+            input.api = "browser-proxy-local".into();
+            wrapper(
+                input,
+                context(),
+                options,
+                maestro_models::ProviderStreamOptions::default(),
+            )
+            .await
+            .unwrap();
+        }
+        assert_eq!(reads.load(std::sync::atomic::Ordering::SeqCst), 6);
+        let proxied = |proxy: &str| {
+            format!("{proxy}/?url=https%3A%2F%2Fapi.example%2Fv1%3Fx%3D1%26y%3Dtwo%20words%23part")
+        };
+        let original = model().base_url;
+        assert_eq!(
+            *addresses.lock().unwrap(),
+            [
+                original.clone(),
+                original.clone(),
+                original.clone(),
+                proxied("https://second"),
+                original,
+                proxied("https://fourth"),
+            ]
+        );
+        unregister_api_providers("browser-proxy-local");
+    });
+}

@@ -1,5 +1,5 @@
 //! Replay recorded observations through public conversation operations.
-use super::{assistant, owned, ready};
+use super::{assistant, owned, ready, typed_user as user};
 use maestro_agent::{
     Agent, AgentEvent, AgentInitialState, AgentMessage, AgentOptions, AgentTool,
     CustomAgentMessages, PromptInput, QueueMode, ToolExecutionMode,
@@ -97,13 +97,6 @@ impl CustomAgentMessages for Notice {
     fn role(&self) -> &'static str {
         "notice"
     }
-}
-/// Shared user entry.
-fn user(text: &str) -> AgentMessage<Notice> {
-    AgentMessage::User(Arc::new(RwLock::new(UserMessage {
-        content: UserContent::Text(text.into()),
-        timestamp: 1.0,
-    })))
 }
 /// Projection used by both generated history and model requests.
 fn record(value: &AgentMessage<Notice>) -> Value {

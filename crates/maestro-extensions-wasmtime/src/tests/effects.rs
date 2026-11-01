@@ -19,7 +19,7 @@ fn opaque_theme_releases_its_native_owner_after_the_final_capability() {
                 .unwrap(),
             );
             let original = Rc::downgrade(&theme);
-            let (pump, admission) = Pump::new();
+            let (pump, admission) = Pump::new(crate::tests::support::widgets());
             let endpoint = pump
                 .registry()
                 .theme(maestro_extensions::LiveTheme::from_theme(theme))
@@ -43,14 +43,14 @@ fn tool_updates_decode_before_calling_the_original_observer() {
             observed.borrow_mut().push(partial);
         });
         let original = Rc::downgrade(&callback);
-        let (pump, admission) = Pump::new();
+        let (pump, admission) = Pump::new(crate::tests::support::widgets());
         let update = pump.registry().tool_update(callback).unwrap();
         let worker = std::thread::spawn(move || {
-            assert!(update.update("not JSON".into()).is_err());
-            update.update(r#"{"content":[{"type":"text","text":" exact "}],"details":{"part":0},"terminate":false}"#.into()).unwrap();
+            assert!(update.update("not JSON".into()).result().is_err());
+            update.update(r#"{"content":[{"type":"text","text":" exact "}],"details":{"part":0},"terminate":false}"#.into()).result().unwrap();
             let copy = update.clone();
             drop(update);
-            copy.update(r#"{"content":[]}"#.into()).unwrap();
+            copy.update(r#"{"content":[]}"#.into()).result().unwrap();
         });
         drop(admission);
         pump.serve().await;
@@ -78,7 +78,7 @@ fn dropping_a_subscription_resource_does_not_unsubscribe_the_native_listener() {
             });
             let retained = bus.on(" exact ", listener.clone());
             let removed = bus.on(" exact ", listener);
-            let (pump, admission) = Pump::new();
+            let (pump, admission) = Pump::new(crate::tests::support::widgets());
             let retained = pump.registry().subscription(retained).unwrap();
             let removed = pump.registry().subscription(removed).unwrap();
             let worker = std::thread::spawn(move || {
@@ -116,7 +116,7 @@ fn retained_emitter_uses_original_queue_and_returns_native_retirement_error() {
                     Ok(None)
                 }),
             );
-            let (pump, admission) = Pump::new();
+            let (pump, admission) = Pump::new(crate::tests::support::widgets());
             let registry = pump.registry();
             let endpoint = owner.invoke_callback(|emitter| {
                 emitter.emit(" exact ", serde_json::json!(1));
@@ -160,7 +160,7 @@ fn drive_emitter(
     let endpoint = registry.emitter(frame).unwrap();
     let mut worker = None;
     registry
-        .invoke_sync(|completion| {
+        .invoke_sync(None, |completion, _| {
             worker = Some(std::thread::spawn(move || {
                 tokio::runtime::Builder::new_current_thread()
                     .build()
@@ -174,7 +174,7 @@ fn drive_emitter(
                         let (snapshot, tags) =
                             endpoint.snapshot(" exact ".into(), "2".into()).unwrap();
                         assert_eq!(tags, [None]);
-                        endpoint.segment(snapshot, 0, 1).unwrap();
+                        endpoint.segment(snapshot, 0, 1).result().unwrap();
                         endpoint.end_snapshot(snapshot).unwrap();
                     });
                 completion.complete(Ok(()));

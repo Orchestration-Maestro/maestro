@@ -9,7 +9,7 @@ use std::sync::RwLock;
 /// Declaration fields observed by tool enumeration and prompt construction.
 pub struct ToolDefinitionMetadata {
     /// Model-facing name, description and schema.
-    pub definition: maestro_models::Tool,
+    pub definition: maestro_models::Tool<maestro_models::SchemaCode>,
     /// Display label.
     pub label: String,
     /// Optional prompt snippet.
@@ -49,7 +49,7 @@ impl<P: DeserializeOwned + 'static, D: Serialize + 'static, S: Default + 'static
     fn metadata(&self) -> ToolDefinitionMetadata {
         let definition = read(&self.definition);
         ToolDefinitionMetadata {
-            definition: definition.definition.clone(),
+            definition: E::local_definition(&definition.definition),
             label: definition.label.clone(),
             prompt_snippet: definition.prompt_snippet.clone(),
             prompt_guidelines: definition.prompt_guidelines.clone(),

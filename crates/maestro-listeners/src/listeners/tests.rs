@@ -103,13 +103,20 @@ fn labels(log: &Log) -> Vec<usize> {
     log.borrow().iter().map(|(label, _)| *label).collect()
 }
 
+/// The collection a callback registers into, held weakly so the callback registered in it
+/// does not keep it alive.
+fn registrar(registry: &Registry) -> impl Fn() -> Registry + 'static {
+    let weak = Rc::downgrade(registry);
+    move || weak.upgrade().expect("the collection outlives its walk")
+}
+
 /// A collection with callback 1 adding a tail callback while it runs.
 fn live_add(log: &Log) -> Registry {
     let registry: Registry = Rc::default();
     let appended = plain(2, log);
-    let registrar = Rc::clone(&registry);
+    let registrar = registrar(&registry);
     registry.borrow_mut().add(recording(1, log, move |_| {
-        registrar.borrow_mut().add(Rc::clone(&appended));
+        registrar().borrow_mut().add(Rc::clone(&appended));
     }));
     registry
 }
@@ -118,10 +125,10 @@ fn live_add(log: &Log) -> Registry {
 fn live_remove(log: &Log) -> Registry {
     let registry: Registry = Rc::default();
     let skipped = plain(2, log);
-    let registrar = Rc::clone(&registry);
+    let registrar = registrar(&registry);
     let removed = Rc::clone(&skipped);
     registry.borrow_mut().add(recording(1, log, move |_| {
-        let removed = registrar.borrow_mut().remove(Rc::as_ptr(&removed));
+        let removed = registrar().borrow_mut().remove(Rc::as_ptr(&removed));
         drop(removed);
     }));
     registry.borrow_mut().add(skipped);
@@ -131,9 +138,9 @@ fn live_remove(log: &Log) -> Registry {
 /// A collection whose first callback removes itself during its own visit.
 fn self_removing(log: &Log) -> (Registry, Rc<RefCell<Option<Callback>>>) {
     let registry: Registry = Rc::default();
-    let registrar = Rc::clone(&registry);
+    let registrar = registrar(&registry);
     let (holder, callback) = self_referencing(1, log, move |this| {
-        let removed = registrar.borrow_mut().remove(Rc::as_ptr(this));
+        let removed = registrar().borrow_mut().remove(Rc::as_ptr(this));
         drop(removed);
     });
     registry.borrow_mut().add(callback);
@@ -146,10 +153,11 @@ fn readd_moves_to_tail(log: &Log) -> Registry {
     let registry: Registry = Rc::default();
     let moved = plain(2, log);
     let tail = plain(3, log);
-    let registrar = Rc::clone(&registry);
+    let registrar = registrar(&registry);
     let moved_again = Rc::clone(&moved);
     registry.borrow_mut().add(recording(1, log, move |_| {
-        let mut listeners = registrar.borrow_mut();
+        let registry = registrar();
+        let mut listeners = registry.borrow_mut();
         drop(listeners.remove(Rc::as_ptr(&moved_again)));
         listeners.add(Rc::clone(&moved_again));
     }));
@@ -161,13 +169,14 @@ fn readd_moves_to_tail(log: &Log) -> Registry {
 /// A collection whose first callback re-registers itself once.
 fn self_readd_once(log: &Log) -> (Registry, Rc<RefCell<Option<Callback>>>) {
     let registry: Registry = Rc::default();
-    let registrar = Rc::clone(&registry);
+    let registrar = registrar(&registry);
     let once = Cell::new(false);
     let (holder, callback) = self_referencing(1, log, move |this| {
         if once.replace(true) {
             return;
         }
-        let mut listeners = registrar.borrow_mut();
+        let registry = registrar();
+        let mut listeners = registry.borrow_mut();
         drop(listeners.remove(Rc::as_ptr(this)));
         listeners.add(Rc::clone(this));
     });
@@ -179,10 +188,10 @@ fn self_readd_once(log: &Log) -> (Registry, Rc<RefCell<Option<Callback>>>) {
 /// A collection whose first callback walks the same collection once.
 fn nested_dispatch(log: &Log) -> Registry {
     let registry: Registry = Rc::default();
-    let nested = Rc::clone(&registry);
+    let nested = registrar(&registry);
     registry.borrow_mut().add(recording(1, log, move |text| {
         if text == "original" {
-            dispatch(&nested, "nested");
+            dispatch(&nested(), "nested");
         }
     }));
     registry.borrow_mut().add(plain(2, log));
@@ -325,34 +334,56 @@ fn every_registration_admission_removes_each_registration_once() {
     assert!(registry.borrow().entries.is_empty());
 }
 
+/// Drops `registry` and checks that no callback outlived it: the collection is freed and
+/// the callbacks released the `log` they recorded into.
+fn assert_released(log: &Log, registry: Registry) {
+    let weak = Rc::downgrade(&registry);
+    drop(registry);
+    assert!(weak.upgrade().is_none(), "a callback keeps its collection");
+    assert_eq!(
+        Rc::strong_count(log),
+        1,
+        "a callback outlives its collection"
+    );
+}
+
 #[test]
 fn live_walks_observe_remove_append_and_readd() {
     let log: Log = Rc::default();
-    dispatch(&live_add(&log), "original");
+    let registry = live_add(&log);
+    dispatch(&registry, "original");
     assert_eq!(labels(&log), [1, 2]);
+    assert_released(&log, registry);
 
     let log: Log = Rc::default();
-    dispatch(&live_remove(&log), "original");
+    let registry = live_remove(&log);
+    dispatch(&registry, "original");
     assert_eq!(labels(&log), [1]);
+    assert_released(&log, registry);
 
     let log: Log = Rc::default();
     let (registry, holder) = self_removing(&log);
     dispatch(&registry, "original");
     assert_eq!(labels(&log), [1, 3]);
     drop(holder);
+    assert_released(&log, registry);
 
     let log: Log = Rc::default();
-    dispatch(&readd_moves_to_tail(&log), "original");
+    let registry = readd_moves_to_tail(&log);
+    dispatch(&registry, "original");
     assert_eq!(labels(&log), [1, 3, 2]);
+    assert_released(&log, registry);
 
     let log: Log = Rc::default();
     let (registry, holder) = self_readd_once(&log);
     dispatch(&registry, "original");
     assert_eq!(labels(&log), [1, 2, 1]);
     drop(holder);
+    assert_released(&log, registry);
 
     let log: Log = Rc::default();
-    dispatch(&nested_dispatch(&log), "original");
+    let registry = nested_dispatch(&log);
+    dispatch(&registry, "original");
     assert_eq!(
         *log.borrow(),
         [
@@ -362,6 +393,7 @@ fn live_walks_observe_remove_append_and_readd() {
             (2, "original".to_owned()),
         ]
     );
+    assert_released(&log, registry);
 }
 
 #[test]

@@ -1,18 +1,27 @@
-//! Removing saved provider credentials through the installed `/logout` command.
+//! Signing in and removing saved provider credentials through the installed `/login`
+//! and `/logout` commands.
 
+mod completion;
+mod navigation;
+mod subscription;
+
+use super::actions::install;
 use super::models::{
     editor, editor_focused, refuse_availability, refuse_refresh, register_configured,
     replace_session, replaceable, scope, shows_only, submit_held,
 };
 use super::typed::{poll, recalled, submit, waiting};
-use super::{World, isolated, started_with};
+use super::{World, isolated, isolated_case, started_with};
 use crate::components::session_selector::list::tests::session_picker::decode_cases;
-use crate::{AuthSelectorProvider, AuthType, OAuthSelectorComponent};
+use crate::{
+    AuthSelectorProvider, AuthType, ExtensionSelectorComponent, LoginDialogComponent,
+    OAuthSelectorComponent,
+};
 use maestro_app::{
     AuthCredential, AuthStorage, BoxFuture, Fetch, Model, OAuthCallbacks, OAuthCredentials,
     OAuthError, OAuthProviderInterface, ReadonlyFooterDataProvider, SharedHandle,
 };
-use maestro_tui::Component;
+use maestro_tui::{Component, Focusable, KeybindingKeys};
 use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::{Map, Value, json};
 use std::{
@@ -65,15 +74,187 @@ fn count(world: &World) -> f64 {
         .get_available_provider_count()
 }
 
-/// The credential picker the editor container shows, if it shows one.
-fn picker(world: &World) -> Option<Rc<OAuthSelectorComponent>> {
+/// The panel of type `T` the editor container shows alone, if it shows one.
+fn shown_as<T: Any>(world: &World) -> Option<Rc<T>> {
     let shown = world.mode.editor_container.children().borrow().clone();
     let [panel] = shown.as_slice() else {
         return None;
     };
-    (Rc::clone(panel) as Rc<dyn Any>)
-        .downcast::<OAuthSelectorComponent>()
-        .ok()
+    (Rc::clone(panel) as Rc<dyn Any>).downcast::<T>().ok()
+}
+
+/// The credential picker the editor container shows, if it shows one.
+fn picker(world: &World) -> Option<Rc<OAuthSelectorComponent>> {
+    shown_as(world)
+}
+
+/// The sign-in method choice or a subscription's choice, if one is shown.
+fn chooser(world: &World) -> Option<Rc<ExtensionSelectorComponent>> {
+    shown_as(world)
+}
+
+/// The sign-in dialog the editor container shows.
+fn dialog(world: &World) -> Rc<LoginDialogComponent> {
+    shown_as(world).expect("the sign-in dialog is shown")
+}
+
+/// The rows the editor container shows, read wide enough to keep each notice whole.
+fn panel_rows(world: &World) -> String {
+    world.mode.editor_container.render(WIDE).join("\n")
+}
+
+/// Replaces the browser openers with ones that do nothing, so an authorization link
+/// opens no browser.
+fn quiet_browser(directory: &Path) {
+    for name in ["xdg-open", "open"] {
+        install(directory, name, "#!/bin/sh\n");
+    }
+}
+
+/// Runs the terminal runtime's work until it waits, expecting no unhandled failure.
+fn settle(world: &World) {
+    let errors = world.runtime.drain_futures();
+    assert!(errors.is_empty(), "no unhandled failure: {errors:?}");
+}
+
+/// Submits `/login` and chooses the sign-in method for `kind`.
+fn choose_method(world: &World, kind: AuthType) {
+    submit_held(world, "/login");
+    assert!(chooser(world).is_some(), "the method choice is shown");
+    if kind == AuthType::ApiKey {
+        world.terminal.send_input("\x1b[B");
+    }
+    world.terminal.send_input("\r");
+}
+
+/// Chooses `id` among the providers offered for `kind` and runs the sign-in it starts
+/// until it waits.
+fn choose_provider(world: &World, kind: AuthType, id: &str) {
+    let options = world.mode.get_login_provider_options(Some(kind)).unwrap();
+    let position = options
+        .iter()
+        .position(|option| option.id == id)
+        .expect("the provider is offered");
+    assert!(picker(world).is_some(), "the provider picker is shown");
+    for _ in 0..position {
+        world.terminal.send_input("\x1b[B");
+    }
+    world.terminal.send_input("\r");
+    settle(world);
+}
+
+/// Signs in to `id` with `kind` through the installed command until the sign-in waits.
+fn sign_in_to(world: &World, kind: AuthType, id: &str) {
+    choose_method(world, kind);
+    choose_provider(world, kind, id);
+}
+
+/// Pastes `text` into the focused input, submits it and runs the work that follows.
+fn answer(world: &World, text: &str) {
+    world
+        .terminal
+        .send_input(&format!("\x1b[200~{text}\x1b[201~"));
+    world.terminal.send_input("\r");
+    settle(world);
+}
+
+/// What a scripted subscription does when asked to sign in.
+type Script =
+    Arc<dyn Fn(OAuthCallbacks) -> BoxFuture<Result<OAuthCredentials, OAuthError>> + Send + Sync>;
+
+/// A subscription whose sign-in runs a test script.
+struct Scripted {
+    /// The display name.
+    name: String,
+    /// Whether it also accepts a pasted redirect.
+    server: Option<bool>,
+    /// The sign-in.
+    script: Script,
+}
+
+impl OAuthProviderInterface for Scripted {
+    fn id(&self) -> &'static str {
+        "scripted"
+    }
+    fn name(&self) -> &str {
+        &self.name
+    }
+    fn uses_callback_server(&self) -> Option<bool> {
+        self.server
+    }
+    fn login(
+        &self,
+        callbacks: OAuthCallbacks,
+        _: Option<Fetch>,
+    ) -> BoxFuture<Result<OAuthCredentials, OAuthError>> {
+        (self.script)(callbacks)
+    }
+    fn refresh_token(
+        &self,
+        _: OAuthCredentials,
+        _: Option<Fetch>,
+    ) -> BoxFuture<Result<OAuthCredentials, OAuthError>> {
+        Box::pin(std::future::ready(Err(refused())))
+    }
+    fn get_api_key<'a>(
+        &self,
+        credentials: &'a OAuthCredentials,
+    ) -> Result<Cow<'a, str>, OAuthError> {
+        Ok(Cow::Borrowed(&credentials.access))
+    }
+}
+
+/// Registers the subscription `id`, named `name`, whose sign-in runs `script`.
+fn subscribe(
+    world: &World,
+    (id, name): (&str, &str),
+    server: Option<bool>,
+    script: impl Fn(OAuthCallbacks) -> BoxFuture<Result<OAuthCredentials, OAuthError>>
+    + Send
+    + Sync
+    + 'static,
+) {
+    let scripted = SharedHandle::new(Scripted {
+        name: name.to_owned(),
+        server,
+        script: Arc::new(script),
+    });
+    register_configured(world, id, &[], move |config| {
+        config.callbacks.oauth = Some(scripted);
+    });
+}
+
+/// Subscription credentials whose key is `access`.
+fn signed(access: &str) -> OAuthCredentials {
+    OAuthCredentials {
+        access: access.to_owned(),
+        refresh: "refresh".to_owned(),
+        expires: 4_102_444_800_000.0,
+        extra: Map::default(),
+    }
+}
+
+/// The stored subscription key of `id`, if one is stored.
+fn stored_access(world: &World, id: &str) -> Option<String> {
+    match storage(world).get(id)? {
+        AuthCredential::OAuth(credentials) => Some(credentials.access),
+        AuthCredential::ApiKey(_) => None,
+    }
+}
+
+/// The stored API key of `id`, if one is stored.
+fn stored_key(world: &World, id: &str) -> Option<String> {
+    match storage(world).get(id)? {
+        AuthCredential::ApiKey(credential) => Some(credential.key),
+        AuthCredential::OAuth(_) => None,
+    }
+}
+
+/// Where the success text says credentials are saved.
+fn saved_path() -> String {
+    maestro_app::configuration::config::paths::get_auth_path(
+        &maestro_app::configuration::config::get_agent_dir().unwrap(),
+    )
 }
 
 /// Whether the editor alone is shown again.
@@ -106,15 +287,44 @@ fn position(world: &World, selected: &str) -> usize {
 /// Moves the picker to `position` with its own key bindings, confirms it and settles the
 /// removal it starts.
 fn select(world: &World, position: usize) {
-    let panel = picker(world).expect("the picker is shown");
+    assert!(
+        !world.mode.editor.focus_flag().get(),
+        "the picker holds the keyboard until the removal starts"
+    );
+    select_on(
+        world,
+        &picker(world).expect("the picker is shown"),
+        position,
+    );
+}
+
+/// Moves `panel` to `position`, confirms it and settles the removal it starts, then the
+/// frame it requested. The terminal holds only what the removal painted.
+fn select_on(world: &World, panel: &OAuthSelectorComponent, position: usize) {
     for _ in 0..position {
         panel.handle_input("\x1b[B").unwrap();
     }
+    world.runtime.settle().unwrap();
+    world.terminal.clear_writes();
     panel.handle_input("\r").unwrap();
     assert!(
         world.runtime.drain_futures().is_empty(),
         "the removal reports no unhandled failure"
     );
+    world.runtime.settle().unwrap();
+}
+
+/// Whether the terminal was written `text`, however the frame wrapped it: every word of
+/// `text` appears, in order, in what the terminal received.
+fn painted(world: &World, text: &str) -> bool {
+    let frame = maestro_app::strip_ansi(&world.terminal.writes().concat()).unwrap();
+    let mut rest = frame.as_str();
+    text.split_whitespace().all(|word| {
+        rest.find(word).is_some_and(|at| {
+            rest = &rest[at + word.len()..];
+            true
+        })
+    })
 }
 
 /// The authentication kind of `option` as its case records it.
@@ -290,7 +500,7 @@ fn register_one(world: &World, provider: &Provider) {
     register_configured(world, &provider.id, &ids, move |config| {
         config.name = name;
         config.api_key = key;
-        config.oauth = oauth;
+        config.callbacks.oauth = oauth;
     });
 }
 
@@ -341,6 +551,10 @@ fn removed(world: &World, expected: &Removed) {
     match (&expected.message, &expected.error) {
         (Some(message), None) => {
             assert!(notes(world, message), "the chosen success text is shown");
+            assert!(
+                painted(world, message),
+                "the success text reaches the terminal"
+            );
             assert!(!notes(world, "Error: "), "no failure is shown");
         }
         (None, Some(error)) => {
@@ -348,67 +562,83 @@ fn removed(world: &World, expected: &Removed) {
                 notes(world, &format!("Error: {error}")),
                 "the failure is shown"
             );
+            assert!(
+                painted(world, &format!("Error: {error}")),
+                "the failure reaches the terminal"
+            );
             assert!(!notes(world, "Logged out of") && !notes(world, "Removed stored API key"));
         }
         _ => panic!("a removal either succeeds or fails"),
     }
+    assert!(
+        editor_focused(world),
+        "the keyboard is back on the editor after the outcome"
+    );
 }
 
 #[test]
 fn logout_options_keep_saved_kinds_and_stable_names() {
     const TEST: &str = "logout_options_keep_saved_kinds_and_stable_names";
-    isolated(TEST, |directory| {
-        for (index, (input, expected)) in cases::<Listing, Listed>(TEST).into_iter().enumerate() {
-            assert!(!input.case.is_empty());
-            let auth = document_store(directory, index, &input.stored);
-            let world = started_with(directory, Some(auth));
-            for provider in &input.configured {
-                register_one(&world, provider);
+    // The fixture orders `Ångström` before `zebra`, as English collation does. The child's
+    // environment is cleared already; the pin states the assumption where it is made.
+    isolated_case(
+        TEST,
+        "child",
+        &[("LC_ALL", "en_US.UTF-8")],
+        async |directory| {
+            for (index, (input, expected)) in cases::<Listing, Listed>(TEST).into_iter().enumerate()
+            {
+                assert!(!input.case.is_empty());
+                let auth = document_store(directory, index, &input.stored);
+                let world = started_with(directory, Some(auth)).await;
+                for provider in &input.configured {
+                    register_one(&world, provider);
+                }
+                for entry in &input.stored {
+                    register_named(&world, &entry.id, entry.name.clone());
+                }
+                let options = world.mode.logout_provider_options().unwrap();
+                let listed: Vec<_> = options
+                    .iter()
+                    .map(|option| (option.id.as_str(), option.name.as_str(), kind(option)))
+                    .collect();
+                let recorded: Vec<_> = expected
+                    .options
+                    .iter()
+                    .map(|choice| {
+                        (
+                            choice.id.as_str(),
+                            choice.name.as_str(),
+                            choice.auth_type.as_str(),
+                        )
+                    })
+                    .collect();
+                assert_eq!(listed, recorded, "{}", input.case);
+                if options.is_empty() {
+                    submit_held(&world, "/logout");
+                    assert!(picker(&world).is_none(), "{}", input.case);
+                    continue;
+                }
+                let panel = open(&world);
+                let rows = panel.render(WIDE).concat();
+                let mut read = 0;
+                for choice in &expected.options {
+                    let at = rows[read..]
+                        .find(&choice.name)
+                        .unwrap_or_else(|| panic!("{}: {} is listed", input.case, choice.name));
+                    read += at + choice.name.len();
+                }
             }
-            for entry in &input.stored {
-                register_named(&world, &entry.id, entry.name.clone());
-            }
-            let options = world.mode.logout_provider_options().unwrap();
-            let listed: Vec<_> = options
-                .iter()
-                .map(|option| (option.id.as_str(), option.name.as_str(), kind(option)))
-                .collect();
-            let recorded: Vec<_> = expected
-                .options
-                .iter()
-                .map(|choice| {
-                    (
-                        choice.id.as_str(),
-                        choice.name.as_str(),
-                        choice.auth_type.as_str(),
-                    )
-                })
-                .collect();
-            assert_eq!(listed, recorded, "{}", input.case);
-            if options.is_empty() {
-                submit_held(&world, "/logout");
-                assert!(picker(&world).is_none(), "{}", input.case);
-                continue;
-            }
-            let panel = open(&world);
-            let rows = panel.render(WIDE).concat();
-            let mut read = 0;
-            for choice in &expected.options {
-                let at = rows[read..]
-                    .find(&choice.name)
-                    .unwrap_or_else(|| panic!("{}: {} is listed", input.case, choice.name));
-                read += at + choice.name.len();
-            }
-        }
-    });
+        },
+    );
 }
 
 #[test]
 fn logout_empty_command_restores_editor_and_reports_scope() {
     const TEST: &str = "logout_empty_command_restores_editor_and_reports_scope";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (input, expected) in cases::<Submission, Admitted>(TEST) {
-            let world = started_with(directory, None);
+            let world = started_with(directory, None).await;
             if input.saved {
                 saved_credential(&world);
             }
@@ -472,9 +702,14 @@ fn status_notice() -> String {
 #[test]
 fn logout_selection_removes_only_chosen_saved_credential() {
     const TEST: &str = "logout_selection_removes_only_chosen_saved_credential";
-    isolated(TEST, |directory| {
-        for (input, expected) in cases::<Removal, Removed>(TEST) {
-            let world = started_with(directory, None);
+    isolated(TEST, async |directory| {
+        for (index, (input, expected)) in cases::<Removal, Removed>(TEST).into_iter().enumerate() {
+            // The credentials live in a file and a model configuration sits in the agent
+            // directory: a removal may change only the file.
+            let auth = document_store(directory, index, &input.stored);
+            let configuration = directory.join("models.json");
+            std::fs::write(&configuration, "{\n  \"providers\": {}\n}\n").unwrap();
+            let world = started_with(directory, Some(auth)).await;
             prepare(&world, &input);
             let chosen = position(&world, &input.selected);
             open(&world);
@@ -496,16 +731,51 @@ fn logout_selection_removes_only_chosen_saved_credential() {
             }
             select(&world, chosen);
             removed(&world, &expected);
+            let backing = directory.join(format!("store{index}")).join("auth.json");
+            assert_stored_without(&backing, &input);
+            assert_eq!(
+                std::fs::read_to_string(&configuration).unwrap(),
+                "{\n  \"providers\": {}\n}\n",
+                "the model configuration is unchanged"
+            );
         }
     });
+}
+
+/// Checks that the file at `backing` holds every saved credential of `input` but the
+/// chosen one, each as it was recorded.
+fn assert_stored_without(backing: &Path, input: &Removal) {
+    let document: Map<String, Value> =
+        serde_json::from_str(&std::fs::read_to_string(backing).unwrap()).unwrap();
+    let mut kept: Vec<&str> = document.keys().map(String::as_str).collect();
+    kept.sort_unstable();
+    let mut expected: Vec<&str> = input
+        .stored
+        .iter()
+        .map(|entry| entry.id.as_str())
+        .filter(|id| *id != input.selected)
+        .collect();
+    expected.sort_unstable();
+    assert_eq!(kept, expected, "the file loses the chosen credential only");
+    for entry in input
+        .stored
+        .iter()
+        .filter(|entry| entry.id != input.selected)
+    {
+        assert_eq!(
+            document[&entry.id], entry.record,
+            "{} is kept as it was",
+            entry.id
+        );
+    }
 }
 
 #[test]
 fn logout_count_uses_scoped_or_available_candidates() {
     const TEST: &str = "logout_count_uses_scoped_or_available_candidates";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (input, expected) in cases::<Removal, Removed>(TEST) {
-            let world = started_with(directory, None);
+            let world = started_with(directory, None).await;
             prepare(&world, &input);
             let chosen = position(&world, &input.selected);
             open(&world);
@@ -518,12 +788,13 @@ fn logout_count_uses_scoped_or_available_candidates() {
 #[test]
 fn logout_selection_uses_current_session_with_captured_choice() {
     const TEST: &str = "logout_selection_uses_current_session_with_captured_choice";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (input, expected) in cases::<Removal, Removed>(TEST) {
-            let world = replaceable(directory);
+            let world = replaceable(directory).await;
             prepare(&world, &input);
             let chosen = position(&world, &input.selected);
-            open(&world);
+            // The replacement's extension UI reset puts the editor back in the panel's place.
+            let panel = open(&world);
             let captured = world.host.session();
             replace_session(&world);
             for entry in &input.replacement {
@@ -539,7 +810,7 @@ fn logout_selection_uses_current_session_with_captured_choice() {
                     oauth_only: false,
                 },
             );
-            select(&world, chosen);
+            select_on(&world, &panel, chosen);
             removed(&world, &expected);
             let original: Vec<String> = Arc::clone(captured.model_registry().auth_storage()).list();
             assert_eq!(
@@ -585,8 +856,11 @@ impl OAuthProviderInterface for RefusingAfter {
     ) -> BoxFuture<Result<OAuthCredentials, OAuthError>> {
         Box::pin(std::future::ready(Err(refused())))
     }
-    fn get_api_key<'a>(&self, credentials: &'a OAuthCredentials) -> Result<&'a str, OAuthError> {
-        Ok(&credentials.access)
+    fn get_api_key<'a>(
+        &self,
+        credentials: &'a OAuthCredentials,
+    ) -> Result<Cow<'a, str>, OAuthError> {
+        Ok(Cow::Borrowed(&credentials.access))
     }
     fn modify_models<'m>(
         &self,
@@ -614,7 +888,7 @@ fn refuse_after(world: &World, succeeds: usize) {
         succeeds: AtomicUsize::new(succeeds),
     });
     register_configured(world, "refusing", &["one"], move |config| {
-        config.oauth = Some(oauth);
+        config.callbacks.oauth = Some(oauth);
     });
     let credential = json!({
         "type": "oauth",
@@ -628,9 +902,9 @@ fn refuse_after(world: &World, succeeds: usize) {
 #[test]
 fn logout_failures_keep_reached_effects_and_restore_focus() {
     const TEST: &str = "logout_failures_keep_reached_effects_and_restore_focus";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (input, expected) in cases::<Removal, Removed>(TEST) {
-            let world = started_with(directory, None);
+            let world = started_with(directory, None).await;
             prepare(&world, &input);
             let chosen = position(&world, &input.selected);
             open(&world);
@@ -648,10 +922,10 @@ fn logout_failures_keep_reached_effects_and_restore_focus() {
 #[test]
 fn logout_unavailable_candidates_set_zero_without_error() {
     const TEST: &str = "logout_unavailable_candidates_set_zero_without_error";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (input, expected) in cases::<Removal, Removed>(TEST) {
             assert_eq!(input.case.as_str(), "available-failure");
-            let world = started_with(directory, None);
+            let world = started_with(directory, None).await;
             prepare(&world, &input);
             let chosen = position(&world, &input.selected);
             open(&world);
@@ -665,11 +939,11 @@ fn logout_unavailable_candidates_set_zero_without_error() {
 #[test]
 fn logout_persistence_failure_remains_a_store_diagnostic() {
     const TEST: &str = "logout_persistence_failure_remains_a_store_diagnostic";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (input, expected) in cases::<Removal, Removed>(TEST) {
             assert_eq!(input.case.as_str(), "write-failure");
             let auth = document_store(directory, 0, &input.stored);
-            let world = started_with(directory, Some(Arc::clone(&auth)));
+            let world = started_with(directory, Some(Arc::clone(&auth))).await;
             let root = directory.join("store0");
             let Some(_restored) =
                 maestro_test_directory::deny(root.join("auth.json"), 0o400).unwrap()
@@ -704,9 +978,9 @@ fn logout_persistence_failure_remains_a_store_diagnostic() {
 #[test]
 fn logout_cancel_keeps_saved_credentials_and_restores_editor() {
     const TEST: &str = "logout_cancel_keeps_saved_credentials_and_restores_editor";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (input, expected) in cases::<Removal, Removed>(TEST) {
-            let world = started_with(directory, None);
+            let world = started_with(directory, None).await;
             prepare(&world, &input);
             let panel = open(&world);
             world.terminal.clear_writes();
@@ -728,42 +1002,88 @@ fn logout_cancel_keeps_saved_credentials_and_restores_editor() {
 }
 
 #[test]
+fn logout_cancel_follows_the_configured_key_and_leaves_the_file_as_it_was() {
+    isolated(
+        "logout_cancel_follows_the_configured_key_and_leaves_the_file_as_it_was",
+        async |directory| {
+            let recorded = "logout_cancel_keeps_saved_credentials_and_restores_editor";
+            for (index, (input, expected)) in
+                cases::<Removal, Removed>(recorded).into_iter().enumerate()
+            {
+                let auth = document_store(directory, index, &input.stored);
+                let world = started_with(directory, Some(auth)).await;
+                prepare(&world, &input);
+                let backing = directory.join(format!("store{index}")).join("auth.json");
+                let before = std::fs::read(&backing).unwrap();
+                // Cancel is Ctrl+X here, so Escape and Ctrl+C stop cancelling.
+                maestro_tui::get_keybindings().set_user_bindings(vec![(
+                    "tui.select.cancel".to_owned(),
+                    Some(KeybindingKeys::Single("ctrl+x".to_owned())),
+                )]);
+                let panel = open(&world);
+                for old in ["\x1b", "\x03"] {
+                    panel.handle_input(old).unwrap();
+                    assert!(picker(&world).is_some(), "{old:?} no longer cancels");
+                }
+                world.terminal.clear_writes();
+                panel.handle_input("\x18").unwrap();
+                world.runtime.settle().unwrap();
+                assert!(editor_restored(&world), "the configured key cancels");
+                assert!(!world.terminal.writes().is_empty(), "a frame is requested");
+                assert!(editor_focused(&world), "the keyboard is back on the editor");
+                assert_eq!(accepted(&world), expected.accepted);
+                assert_eq!(count(&world).to_bits(), expected.count.to_bits());
+                assert!(!notes(&world, "Logged out of") && !notes(&world, "Error: "));
+                assert_eq!(
+                    std::fs::read(&backing).unwrap(),
+                    before,
+                    "cancelling leaves the credential file byte for byte as it was"
+                );
+            }
+        },
+    );
+}
+
+#[test]
 fn logout_callbacks_do_not_retain_the_mode() {
-    isolated("logout_callbacks_do_not_retain_the_mode", |directory| {
-        let world = started_with(directory, None);
-        register_one(
-            &world,
-            &Provider {
-                id: "a".into(),
-                models: vec!["one".into()],
-                name: None,
-                key: true,
-                oauth_only: false,
-            },
-        );
-        store_key(&world, "a");
-        let panel = open(&world);
-        let mode = Rc::downgrade(&world.mode);
-        let World {
-            mode: owned,
-            runtime,
-            ..
-        } = world;
-        assert!(mode.upgrade().is_some());
-        panel.handle_input("\r").unwrap();
-        assert_eq!(runtime.futures(), 1, "the admitted removal owns the mode");
-        drop(owned);
-        assert!(
-            mode.upgrade().is_some(),
-            "admitted work keeps the mode until it settles"
-        );
-        assert!(runtime.drain_futures().is_empty());
-        assert!(
-            mode.upgrade().is_none(),
-            "the settled work releases the mode"
-        );
-        panel.handle_input("\r").unwrap();
-        panel.handle_input("\x1b").unwrap();
-        assert_eq!(runtime.futures(), 0, "the retained callbacks start nothing");
-    });
+    isolated(
+        "logout_callbacks_do_not_retain_the_mode",
+        async |directory| {
+            let world = started_with(directory, None).await;
+            register_one(
+                &world,
+                &Provider {
+                    id: "a".into(),
+                    models: vec!["one".into()],
+                    name: None,
+                    key: true,
+                    oauth_only: false,
+                },
+            );
+            store_key(&world, "a");
+            let panel = open(&world);
+            let mode = Rc::downgrade(&world.mode);
+            let World {
+                mode: owned,
+                runtime,
+                ..
+            } = world;
+            assert!(mode.upgrade().is_some());
+            panel.handle_input("\r").unwrap();
+            assert_eq!(runtime.futures(), 1, "the admitted removal owns the mode");
+            drop(owned);
+            assert!(
+                mode.upgrade().is_some(),
+                "admitted work keeps the mode until it settles"
+            );
+            assert!(runtime.drain_futures().is_empty());
+            assert!(
+                mode.upgrade().is_none(),
+                "the settled work releases the mode"
+            );
+            panel.handle_input("\r").unwrap();
+            panel.handle_input("\x1b").unwrap();
+            assert_eq!(runtime.futures(), 0, "the retained callbacks start nothing");
+        },
+    );
 }

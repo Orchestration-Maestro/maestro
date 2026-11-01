@@ -750,22 +750,23 @@ fn slow_message_handlers_preserve_history_order() {
 }
 
 /// Copies the committed empty root `name` below `base`, returning the copy's path.
-#[cfg(unix)]
 fn copy_empty_root(base: &str, name: &str) -> String {
-    let source = format!("{}/tests/fixtures/{name}", env!("CARGO_MANIFEST_DIR"));
-    let copy = format!("{base}/{name}");
+    let source = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests")
+        .join("fixtures")
+        .join(name);
+    let copy = std::path::Path::new(base).join(name);
     std::fs::create_dir(&copy).unwrap();
-    std::fs::copy(format!("{source}/.gitkeep"), format!("{copy}/.gitkeep")).unwrap();
-    copy
+    std::fs::copy(source.join(".gitkeep"), copy.join(".gitkeep")).unwrap();
+    copy.to_str().unwrap().to_owned()
 }
 
-#[cfg(unix)]
 #[test]
 fn empty_resource_roots_keep_the_session_isolated() {
     use maestro_app::{CreateAgentSessionOptions, ResourceLoaderOptions, SessionResources};
     let expected = expected("empty_roots");
     let test = "empty_resource_roots_keep_the_session_isolated";
-    crate::resource_fixtures::with_isolated_home(test, |base| {
+    crate::isolated_home::with_isolated_home(test, |base| {
         let cwd = copy_empty_root(base, "empty-cwd");
         let agent_dir = copy_empty_root(base, "empty-agent");
         let counts = on_task_set(|local| async move {

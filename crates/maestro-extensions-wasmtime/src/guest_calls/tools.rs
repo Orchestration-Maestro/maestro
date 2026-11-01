@@ -25,7 +25,7 @@ pub(crate) enum ToolCall<H = Handle> {
         /// Original native bus and deferred deliveries.
         emitter: EmitterEndpoint,
         /// Returns the actual prepared document, independently of completion.
-        reply: Reply<String>,
+        reply: Reply<crate::guest_exports::tools::PreparedArguments>,
     },
     /// Asynchronous execution with independently retained caller capabilities.
     Execute {
@@ -67,19 +67,20 @@ impl Handle {
     fn prepared(
         &self,
         registry: &Registry,
-        args: &Value,
+        args: &mut Value,
         emitter: EmitterEndpoint,
     ) -> Result<Value, String> {
-        let args = serde_json::to_string(args).map_err(|error| error.to_string())?;
-        let result = self.0.endpoint.replies.synchronous(registry, |reply| {
-            self.send_tool(ToolCall::Prepare {
+        let document = serde_json::to_string(args).map_err(|error| error.to_string())?;
+        let result = self.0.endpoint.synchronous(registry, |reply| {
+            Ok(Call::Tool(ToolCall::Prepare {
                 handler: self.clone(),
-                args,
+                args: document,
                 emitter,
                 reply,
-            })
+            }))
         })?;
-        crate::writer_reads::decode(&result)
+        *args = crate::writer_reads::decode(&result.retained)?;
+        crate::writer_reads::decode(&result.prepared?)
     }
 
     /// Keeps invocation local and requires the actual context supplied by the native wrapper.
@@ -90,13 +91,14 @@ impl Handle {
         Rc::new(move |id, params, signal, update, context| {
             let resources = execution_resources(&registry, context, signal, update);
             let params = serde_json::to_string(&params).map_err(|error| error.to_string());
-            Box::pin(invoke_tool(self.clone(), id, params, resources))
+            Box::pin(invoke_tool(
+                self.clone(),
+                registry.clone(),
+                id,
+                params,
+                resources,
+            ))
         })
-    }
-
-    /// Submits to the same original Store queue as all other retained callbacks.
-    fn send_tool(&self, call: ToolCall) -> Result<(), String> {
-        self.0.endpoint.send(Call::Tool(call))
     }
 }
 
@@ -122,6 +124,7 @@ fn execution_resources(
 /// Awaits the original authored tool under the shared lifecycle submission owner.
 async fn invoke_tool(
     handler: Handle,
+    registry: Registry,
     id: String,
     params: Result<String, String>,
     resources: Result<Resources, String>,
@@ -131,7 +134,7 @@ async fn invoke_tool(
     let result = handler
         .0
         .endpoint
-        .submit(|reply| {
+        .call(&registry, |reply| {
             Call::Tool(ToolCall::Execute {
                 handler: handler.clone(),
                 id,

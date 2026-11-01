@@ -331,9 +331,31 @@ ordered cancellable events through the ordinary invocation interface. See the
 ## Resolved request authentication
 
 `maestro-request::model_registry::ResolvedRequestAuth` owns the resolved key,
-ordered headers or denial string shared by the [native catalog](catalog.md#request-authentication)
+optional endpoint, ordered headers or denial string shared by the [native catalog](catalog.md#request-authentication)
 and [guest authoring library](extensions/guest.md). Both consumers re-export the
 same record; resolution policy remains with the producer.
+
+## Provider registration records
+
+`maestro-request::provider_config` owns `ProviderConfig<C>` and
+`ProviderModelConfig`, the data a provider registration carries. `C` holds the
+caller's callable operations and never enters the JSON form: the native catalog
+uses `ProviderConfigInput`, which is `ProviderConfig<ProviderCallbacks>`, and the
+guest authoring library uses `ProviderConfig` with no operations. The catalog
+re-exports `ProviderModelConfig` as `ProviderModelInput` and the guest under its
+own name. JSON field names are camel case, absent options are omitted, and empty
+strings, lists, maps and `false` stay as written.
+
+## Credential records
+
+`maestro-request::oauth::OAuthCredentials` and the `maestro-request::auth_storage`
+records (`ApiKeyCredential`, `AuthCredential`, `AuthStorageData`, `AuthSource` and
+`AuthStatus`) are the [credential owner's](credentials.md) typed records, defined
+once here and re-exported by models, credentials and the guest.
+`maestro-request::oauth` also owns `OAuthPrompt`, `OAuthAuthInfo`,
+`OAuthSelectOption` and `OAuthSelectPrompt`, re-exported by models and the guest.
+These are plain interaction data; callable login operations stay with their
+native or guest owners.
 
 ## Raw user-block text
 

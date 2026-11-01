@@ -1,12 +1,23 @@
 //! Family-correct request hooks and producer submission.
 use super::{
-    BoxFuture, DiagnosticErrorInfo, Execution, Local, Model, PayloadHookInput, ProviderInvocation,
-    ProviderResponse, StreamOptionsFamily, Threaded,
+    BoxFuture, Cancellation, DiagnosticErrorInfo, Execution, Local, Model, PayloadHookInput,
+    ProviderInvocation, ProviderResponse, StreamOptionSlots, StreamOptionsFamily, Threaded,
 };
+use crate::providers::http::Fetch;
 use std::sync::Arc;
 
 /// Request-hook futures and submission associated with an execution family.
-pub trait ProviderExecution: Execution + Clone + Default {
+pub trait ProviderExecution:
+    Execution
+    + Clone
+    + Default
+    + StreamOptionSlots<
+        Signal = Cancellation,
+        PayloadHook = OnPayload<Self>,
+        ResponseHook = OnResponse<Self>,
+        Fetch = Fetch,
+    >
+{
     /// Payload selector retained for this invocation.
     type Payload: Fn(
             PayloadHookInput,
@@ -109,3 +120,17 @@ impl ProviderExecution for Threaded {
         }
     }
 }
+
+/// Native options retain each family's existing hook pointers and transport.
+macro_rules! slots {
+    ($family:ty) => {
+        impl StreamOptionSlots for $family {
+            type Signal = Cancellation;
+            type PayloadHook = OnPayload<Self>;
+            type ResponseHook = OnResponse<Self>;
+            type Fetch = Fetch;
+        }
+    };
+}
+slots!(Local);
+slots!(Threaded);

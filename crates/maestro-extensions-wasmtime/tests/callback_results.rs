@@ -129,11 +129,13 @@ async fn call(pair: &Pair, instance: &Instance, mut raw: Value) -> Outcome {
     match maestro_models::validate_tool_arguments(&wrapped.definition, &candidate) {
         Err(error) => (outcome.phase, outcome.invalid) = ("validation", Some(error.message)),
         Ok(valid) => {
-            (wrapped.execute)("call".into(), valid, None, None)
+            let result = (wrapped.execute)("call".into(), valid, None, None)
                 .await
                 .unwrap();
             outcome.phase = "execution";
             outcome.executed = pair.payloads.borrow_mut().pop();
+            assert!(result.content.is_empty());
+            assert_eq!(result.details, outcome.executed);
         }
     }
     outcome
@@ -253,9 +255,10 @@ fn prepare_callbacks_drain_before_execution_and_release() {
         };
         let valid =
             maestro_models::validate_tool_arguments(&wrapped.definition, &candidate).unwrap();
-        (wrapped.execute)("call".into(), valid, None, None)
+        let result = (wrapped.execute)("call".into(), valid, None, None)
             .await
             .unwrap();
+        assert_eq!(result.details, Some(json!({"prepared":{"n":1}})));
         assert_eq!(
             pair.payloads.borrow().as_slice(),
             [json!({"prepared":{"n":1}})]
@@ -342,4 +345,173 @@ fn compaction_callbacks_preserve_results_errors_and_return_order() {
             ]
         );
     });
+}
+#[test]
+fn callback_failures_keep_authored_errors_and_healthy_delivery() {
+    local(async {
+        let errors = Rc::new(RefCell::new(Vec::<String>::new()));
+        let reported = errors.clone();
+        let mut pair = Pair::reporting(Rc::new(move |error| {
+            reported.borrow_mut().push(error.to_owned());
+        }))
+        .await;
+        let requests = compaction(&pair);
+        let foreign = json!([
+            {"op":"on", "channel":"probe-foreign", "id":"probe", "name":"probe"},
+            {"op":"on", "channel":"prepare-foreign", "id":"prepare", "name":"prepare"},
+            {"op":"on", "channel":"compaction-foreign", "id":"compaction", "name":"compaction"},
+        ]);
+        pair.b.program(&foreign.to_string()).await;
+        pair.a.program(r#"[{"op":"echo","prepare":true}]"#).await;
+        for (index, error) in ["", "multi\nline \u{3a9}"].into_iter().enumerate() {
+            renderer_and_component_errors(&pair, error);
+            preparation_and_compaction_errors(&pair, &requests, error).await;
+            let channel = format!("authored-{index}");
+            let steps = json!([
+                {"op":"on", "channel":channel, "id":channel, "name":"bad", "fail":error,
+                    "edits":[{"op":"emit", "channel":"authored-foreign", "data":null}]},
+            ]);
+            pair.b.program(&steps.to_string()).await;
+            let healthy =
+                json!([{"op":"on", "channel":"authored-foreign", "id":channel, "name":"healthy"}]);
+            pair.a.program(&healthy.to_string()).await;
+            pair.bus.emit(&channel, Value::Null).await;
+            assert_eq!(pair.take(), ["bad:prefix", "healthy:prefix"]);
+            let diagnostic = format!("Event handler error ({channel}): {error}\n");
+            assert_eq!(std::mem::take(&mut *errors.borrow_mut()), [diagnostic]);
+            pair.a
+                .program(&json!([{"op":"off", "id":channel}]).to_string())
+                .await;
+        }
+        prefix_and_tail_failures_report_separately(&mut pair, &errors).await;
+        faulted_listener_keeps_healthy_delivery(&pair, &errors).await;
+    });
+}
+
+/// Renders a probe view of `category`, keeping whatever the renderer returned.
+fn probe(
+    pair: &Pair,
+    category: &str,
+    error: &str,
+) -> Result<Option<maestro_extensions::ComponentHandle>, maestro_extensions::EventError> {
+    let renderer = pair
+        .a
+        .runner
+        .get_message_renderer_call::<Value>("probe-view")
+        .unwrap();
+    let message = serde_json::from_value(json!({"role":"custom", "customType": format!("{category}|{error}"), "content": "", "display": true, "timestamp": 0})).unwrap();
+    renderer.call(
+        Rc::new(message),
+        maestro_extensions::MessageRenderOptions { expanded: false },
+        maestro_theme::LiveTheme::default(),
+    )
+}
+
+/// Each renderer and view method keeps its authored error and its queued delivery.
+fn renderer_and_component_errors(pair: &Pair, error: &str) {
+    let failed = probe(pair, "renderer", error).err().unwrap();
+    assert_eq!(failed.to_string(), error);
+    assert_eq!(pair.take(), ["probe:prefix"]);
+    let view = probe(pair, "render", error).unwrap().unwrap();
+    assert_eq!(pair.take(), ["probe:prefix"]);
+    assert_eq!(view.try_render(5).unwrap_err().to_string(), error);
+    assert_eq!(pair.take(), ["probe:prefix"]);
+    for method in ["input", "key-release", "invalidate"] {
+        let view = probe(pair, method, error).unwrap().unwrap();
+        pair.take();
+        match method {
+            "input" => view.input_handler().unwrap().handle_input("x"),
+            "key-release" => assert!(!view.wants_key_release()),
+            _ => view.invalidate(),
+        }
+        assert_eq!(pair.take(), ["probe:prefix"], "{method}");
+        assert_eq!(
+            view.try_render(5).unwrap_err().to_string(),
+            error,
+            "{method}"
+        );
+        assert_eq!(view.try_render(6).unwrap(), ["probe:6"], "{method}");
+        pair.take();
+    }
+}
+
+/// Preparation and both compaction notifications keep their authored errors and delivery.
+async fn preparation_and_compaction_errors(pair: &Pair, requests: &Requests, error: &str) {
+    let mode = json!([{"op":"prepare-mode", "mode":format!("fail:{error}")}]);
+    pair.a.program(&mode.to_string()).await;
+    let tools = pair.a.runner.get_all_registered_tools();
+    let wrapped = wrap_registered_tool(&tools[0], pair.a.runner.clone());
+    let failed = wrapped.prepare_arguments.as_ref().unwrap()(&mut json!({})).unwrap_err();
+    assert_eq!(failed.message, error);
+    assert_eq!(pair.take(), ["a:prepare", "prepare:prefix"]);
+    let options = json!([{"op":"compact", "options":format!("fail:{error}")}]);
+    pair.a.program(&options.to_string()).await;
+    assert_eq!(pair.take(), ["operation", "request:return"]);
+    let request = requests.borrow_mut().pop().unwrap().unwrap();
+    let result: CompactionResult = serde_json::from_value(
+        json!({"summary":"kept","firstKeptEntryId":"entry-2","tokensBefore":17}),
+    )
+    .unwrap();
+    let complete = request.on_complete.unwrap()(result).unwrap_err();
+    assert_eq!(complete.to_string(), error);
+    assert_eq!(pair.take(), ["compaction:prefix"]);
+    let notified = request.on_error.unwrap()("operation failed".into()).unwrap_err();
+    assert_eq!(notified.to_string(), error);
+    assert_eq!(pair.take(), ["compaction:prefix"]);
+}
+
+/// A prefix failure reports during the emit; a tail failure reports when the tail settles.
+async fn prefix_and_tail_failures_report_separately(
+    pair: &mut Pair,
+    errors: &Rc<RefCell<Vec<String>>>,
+) {
+    let steps = json!([
+        {"op":"on", "channel":"x", "id":"prefix-bad", "name":"bad", "fail":"prefix failure"},
+        {"op":"on", "channel":"y", "id":"tail-bad", "name":"bad", "tail":{"fail":"tail failure"}},
+    ]);
+    pair.b.program(&steps.to_string()).await;
+    let healthy = json!([
+        {"op":"on", "channel":"x", "id":"x-healthy", "name":"healthy"},
+        {"op":"on", "channel":"y", "id":"y-healthy", "name":"healthy"},
+    ]);
+    pair.a.program(&healthy.to_string()).await;
+    pair.bus.emit("x", Value::Null).await;
+    pair.trace.borrow_mut().push("return".into());
+    assert_eq!(pair.take(), ["bad:prefix", "healthy:prefix", "return"]);
+    let prefix = std::mem::take(&mut *errors.borrow_mut());
+    assert_eq!(prefix, ["Event handler error (x): prefix failure\n"]);
+    pair.bus.emit("y", Value::Null).await;
+    pair.trace.borrow_mut().push("return".into());
+    assert_eq!(pair.take(), ["bad:prefix", "healthy:prefix", "return"]);
+    assert!(errors.borrow().is_empty());
+    for tail in pair.queued() {
+        tail.await;
+    }
+    let tail = std::mem::take(&mut *errors.borrow_mut());
+    assert_eq!(tail, ["Event handler error (y): tail failure\n"]);
+}
+
+/// A trapped listener reports its fault on each delivery; another instance keeps receiving.
+async fn faulted_listener_keeps_healthy_delivery(pair: &Pair, errors: &Rc<RefCell<Vec<String>>>) {
+    pair.b
+        .program(r#"[{"op":"on","channel":"z","id":"trap","name":"trap","trap":true}]"#)
+        .await;
+    pair.a
+        .program(r#"[{"op":"on","channel":"z","id":"z-healthy","name":"healthy"}]"#)
+        .await;
+    pair.bus.emit("z", Value::Null).await;
+    pair.bus.emit("z", Value::Null).await;
+    assert_eq!(
+        pair.take(),
+        ["trap:prefix", "healthy:prefix", "healthy:prefix"]
+    );
+    let faults = std::mem::take(&mut *errors.borrow_mut());
+    assert_eq!(faults.len(), 2);
+    assert_eq!(faults[0], faults[1]);
+    let fault = &faults[0];
+    assert!(fault.starts_with("Event handler error (z): "), "{fault}");
+    assert!(
+        fault.contains("component fault") && fault.contains("wasm trap"),
+        "{fault}"
+    );
 }

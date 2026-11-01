@@ -1,17 +1,15 @@
-//! Returned shell operations retain the actual guest resource and native borrowed sink.
+//! Returned shell operations retain their authored identity and the native borrowed sink.
 use super::{Call, Handle};
-use crate::lifecycle::GuestResource;
 use crate::lifecycle::replies::Reply;
 use crate::local_resources::{Registry, SignalEndpoint, bash_output};
 use maestro_extensions::{BashError, BashExecOptions, BashExecResult, BashOperations, Local};
-use std::sync::Arc;
-use wasmtime::component::{ComponentType, Lower, ResourceAny};
+use wasmtime::component::{ComponentType, Lift, Lower};
 
 /// Actual Local-family borrowed output operand.
 type LocalOptions<'a> = BashExecOptions<'a, dyn FnMut(&[u8]) + 'a>;
 
 /// Literal canonical execution operands, with no process policy added at the boundary.
-#[derive(ComponentType, Lower)]
+#[derive(ComponentType, Lift, Lower, Clone)]
 #[component(record)]
 pub(crate) struct BashRequest {
     /// Exact authored shell command.
@@ -25,9 +23,9 @@ pub(crate) struct BashRequest {
 }
 
 /// One real guest execution consumed by the original Store driver.
-pub(crate) struct BashCall<R = Arc<GuestResource>> {
-    /// Retains the guest owner until execution settles, independently of native aliases.
-    pub(crate) owner: R,
+pub(crate) struct BashCall<H = Handle> {
+    /// Retains the authored operations until execution settles, independently of aliases.
+    pub(crate) owner: H,
     /// Unmodified owned operands.
     pub(crate) request: BashRequest,
     /// Per-execution original output frame.
@@ -40,19 +38,16 @@ pub(crate) struct BashCall<R = Arc<GuestResource>> {
 
 /// Local native adapter; the original registry owns each output frame independently.
 pub(crate) struct ReturnedBash {
-    /// Original guest resource and its Store sender.
-    owner: Arc<GuestResource>,
+    /// Retained identity of the authored operations and its Store lifecycle.
+    owner: Handle,
     /// Original single native request pump, never a receiver copy.
     registry: Registry,
 }
 
-impl Handle {
+impl ReturnedBash {
     /// Retains returned operations independently of event editing or decision encoding.
-    pub(crate) fn bash(&self, resource: ResourceAny, registry: Registry) -> ReturnedBash {
-        ReturnedBash {
-            owner: self.resource(resource),
-            registry,
-        }
+    pub(crate) fn new(owner: Handle, registry: Registry) -> Self {
+        Self { owner, registry }
     }
 }
 
@@ -94,24 +89,12 @@ impl ReturnedBash {
                 .env
                 .map(|env| {
                     env.iter()
-                        .map(|(key, value)| {
-                            Ok((
-                                key.to_str()
-                                    .ok_or("extension environment key is not UTF-8")?
-                                    .to_owned(),
-                                Some(
-                                    value
-                                        .to_str()
-                                        .ok_or("extension environment value is not UTF-8")?
-                                        .to_owned(),
-                                ),
-                            ))
-                        })
+                        .map(environment_entry)
                         .collect::<Result<Vec<_>, String>>()
                 })
                 .transpose()?,
         };
-        let operation = self.owner.endpoint.submit(|reply| {
+        let operation = self.owner.endpoint().call(&self.registry, |reply| {
             Call::Bash(BashCall {
                 owner: self.owner.clone(),
                 request,
@@ -122,4 +105,23 @@ impl ReturnedBash {
         });
         consumer.finish(operation, options.on_data).await
     }
+}
+
+/// Projects a native environment entry without losing unset values or accepting lossy text.
+pub(crate) fn environment_entry(
+    (key, value): (&std::ffi::OsString, &Option<std::ffi::OsString>),
+) -> Result<(String, Option<String>), String> {
+    let key = key
+        .to_str()
+        .ok_or("extension environment key is not UTF-8")?;
+    let value = value
+        .as_ref()
+        .map(|value| {
+            value
+                .to_str()
+                .ok_or("extension environment value is not UTF-8")
+                .map(str::to_owned)
+        })
+        .transpose()?;
+    Ok((key.to_owned(), value))
 }

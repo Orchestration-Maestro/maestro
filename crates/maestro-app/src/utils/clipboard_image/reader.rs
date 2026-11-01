@@ -128,7 +128,7 @@ fn run_command(
     use maestro_process::{OutputMode, SpawnSyncOptions};
     operations
         .spawn_sync(
-            tokio::process::Command::new(program).args(args),
+            maestro_process::command(program).args(args),
             SpawnSyncOptions::Capture {
                 stdout: OutputMode::Capture,
                 stderr: OutputMode::Capture,

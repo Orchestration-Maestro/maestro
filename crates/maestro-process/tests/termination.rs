@@ -91,6 +91,42 @@ fn termination_subscription_delivers_and_removes_for_both_callers() {
     });
 }
 
+/// Removing the final delivery during the first signal must not apply that signal's
+/// default action while its native handler is still running on another thread.
+#[test]
+fn first_signal_removal_does_not_terminate_in_flight_delivery() {
+    use maestro_test_process::{TestProcess, selection};
+    if !selection().is_child() {
+        let output =
+            TestProcess::current("first_signal_removal_does_not_terminate_in_flight_delivery")
+                .unwrap()
+                .case("child")
+                .nocapture()
+                .output()
+                .unwrap();
+        assert!(output.status.success(), "{}", output.status);
+        return;
+    }
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        for _ in 0..1000 {
+            let mut registration = caller().await.unwrap();
+            let sender = std::thread::spawn(|| {
+                signal_hook::low_level::raise(15).unwrap();
+            });
+            assert_eq!(
+                registration.received.recv().await,
+                Some(TerminationSignal::Terminate)
+            );
+            (registration.remove)();
+            sender.join().unwrap();
+        }
+    });
+}
+
 #[test]
 fn last_removal_restores_native_termination() {
     use maestro_test_process::{TestProcess, selection};

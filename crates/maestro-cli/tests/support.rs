@@ -76,3 +76,7 @@ pub mod missing_cwd;
 
 /// Final dispatch recording presentations and streams.
 pub mod mode_dispatch;
+
+/// The startup entry over controlled effects.
+#[cfg(unix)]
+pub mod entry;

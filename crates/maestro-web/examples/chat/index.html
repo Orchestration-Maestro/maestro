@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maestro Web UI Example</title>
+<meta name="description" content="A browser-local chat embedding the Maestro web components">
+<style>
+html, body { height: 100%; margin: 0; background: var(--maestro-color-background); color: var(--maestro-color-text); font-family: var(--maestro-type-body-font); }
+#app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+.example-loading { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--maestro-color-muted); }
+.example-header { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--maestro-color-border); }
+.example-header-start, .example-header-end { display: flex; align-items: center; gap: var(--maestro-spacing-xs); padding: 0 var(--maestro-spacing-sm); }
+.example-name { font-weight: 600; }
+.example-title-button { padding: 0.25rem 0.5rem; border: 0; border-radius: var(--maestro-radii-control); background: transparent; color: var(--maestro-color-text); font: inherit; cursor: pointer; }
+.example-title-button:hover { background: var(--maestro-color-panel); }
+.example-title-button:focus-visible { outline: 2px solid var(--maestro-color-accent); }
+.example-title-input { width: 16rem; }
+.example-notification-row { padding: 0 var(--maestro-spacing-md); }
+.example-notification { display: flex; flex-direction: column; gap: 0.25rem; padding: var(--maestro-spacing-md); border: 1px solid var(--maestro-color-border); border-radius: var(--maestro-radii-panel); }
+.example-notification-destructive { border-color: var(--maestro-color-error); color: var(--maestro-color-error); }
+.example-notification-time { font-size: 0.75rem; color: var(--maestro-color-muted); }
+#app > .maestro-chat { flex: 1; }
+</style>
+<script type="module">
+import init from './chat.js';
+init();
+</script>
+</head>
+<body><div id="app"></div></body>
+</html>

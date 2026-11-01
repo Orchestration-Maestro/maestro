@@ -1,9 +1,12 @@
 use std::collections::BTreeSet;
 use std::path::Path;
 
-use crate::source::{Member, Source, test_layout};
+use crate::source::{Member, Source, test_scope};
 use proc_macro2::{TokenStream, TokenTree};
 use syn::ext::IdentExt;
+
+/// Named frontend-facing exports from bounded domain crates.
+mod application_exports;
 
 /// Static interface inputs for extension code generation.
 mod wit;
@@ -48,6 +51,7 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
             }
         }
     }
+    application_exports::check(members)?;
     message_renderers::check(members)?;
     inline_polls::check(members)?;
     wit.finish()
@@ -64,12 +68,6 @@ const SESSION_CONFIGURATION: &str = "AgentSessionConfig";
 
 /// The one owner of the interactive-mode test session setup.
 const SESSION_SETUP: &str = "tests/footer_support/session.rs";
-
-/// Footer support tree shared by the footer and interactive startup tests.
-const FOOTER_SUPPORT: &str = "tests/footer_support";
-
-/// Source tree holding the interactive mode and its own test modules.
-const INTERACTIVE_MODE: &str = "src/interactive_mode";
 
 #[derive(Default)]
 /// Declarations and interface-generation macros found in one source.
@@ -189,27 +187,18 @@ fn union_body(token: Option<&TokenTree>) -> bool {
     }
 }
 
-/// Interactive-mode chat test sources that build their sessions through the shared setup.
+/// Reject a second interactive-mode session setup in chat test code outside its owner.
 ///
 /// Paths compare by component, so native separators never change the answer.
-fn migrated(relative: &Path) -> bool {
-    if relative.starts_with(FOOTER_SUPPORT) {
-        return relative != Path::new(SESSION_SETUP);
-    }
-    relative.starts_with(INTERACTIVE_MODE) && test_layout(relative, Path::new(""))
-}
-
-/// Reject a second interactive-mode session setup outside its extracted owner.
 fn check_session_setup(member: &Member, source: &Source, records: &Records) -> Result<(), String> {
     let Some(line) = records.session_configuration_line else {
         return Ok(());
     };
-    let in_scope = member.name == "maestro-chat"
-        && source
-            .path
-            .strip_prefix(&member.directory)
-            .is_ok_and(migrated);
-    if !in_scope {
+    let owner = source
+        .path
+        .strip_prefix(&member.directory)
+        .is_ok_and(|relative| relative == Path::new(SESSION_SETUP));
+    if member.name != "maestro-chat" || owner || !test_scope(member, source) {
         return Ok(());
     }
     Err(format!(
@@ -270,8 +259,10 @@ fn check_declarations(
         let Some(owner) = declaration_owner(name, kind) else {
             continue;
         };
-        let guest_tool = name == "ToolDefinition"
-            && member.name == "maestro-extensions-wasm"
+        let guest_tool = matches!(
+            name.as_str(),
+            "ToolDefinition" | "ToolRenderContext" | "ToolRenderResultOptions"
+        ) && member.name == "maestro-extensions-wasm"
             && source.path == member.directory.join("src/types/tools.rs");
         let guest_metadata = name == "ToolInfo"
             && kind == "type"

@@ -2,10 +2,7 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-#[path = "support/launch.rs"]
-mod launch;
-mod support;
-use launch::launch_inputs;
+use crate::support::{self, launch::launch_inputs};
 
 use maestro_daemon::{
     app::App,
@@ -38,7 +35,7 @@ fn with_live_root(name: &str, delayed: bool) {
     if run_alone(name).unwrap() {
         return;
     }
-    TestProcess::named("setup_entry")
+    TestProcess::named("daemon_events::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()
@@ -420,7 +417,7 @@ fn daemon_pane_died_respawns_shell_and_clears_restored_agent_session() {
     if run_alone("daemon_pane_died_respawns_shell_and_clears_restored_agent_session").unwrap() {
         return;
     }
-    TestProcess::named("setup_entry")
+    TestProcess::named("daemon_events::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()
@@ -706,7 +703,7 @@ fn native_workspace_creation_retains_one_runtime_and_rolls_back_spawn_failure() 
     {
         return;
     }
-    TestProcess::named("setup_entry")
+    TestProcess::named("daemon_events::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()

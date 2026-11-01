@@ -132,6 +132,12 @@ fn maestro_responses_events_insert_final_only_tool() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
+fn maestro_responses_events_open_unmatched_final_items() -> TestResult {
+    event_rows("maestro_responses_events_open_unmatched_final_items", 2)
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
 fn maestro_responses_events_map_completion_status() -> TestResult {
     event_rows("maestro_responses_events_map_completion_status", 10)?;
     for (status, error) in [
@@ -227,6 +233,12 @@ fn maestro_responses_events_accept_incomplete_terminal() -> TestResult {
 #[test]
 fn maestro_responses_events_ignore_unknown_events() -> TestResult {
     event_rows("maestro_responses_events_ignore_unknown_events", 1)
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn maestro_responses_events_keep_items_by_output_index() -> TestResult {
+    event_rows("maestro_responses_events_keep_items_by_output_index", 1)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -469,7 +481,7 @@ fn maestro_responses_events_share_live_output() -> TestResult {
 fn maestro_responses_events_ignore_malformed_unselected_fields() -> TestResult {
     event_rows(
         "maestro_responses_events_ignore_malformed_unselected_fields",
-        33,
+        31,
     )?;
     let events = [
         r#"{"type":"future.event","delta":"\ud800","response":{"id":"\ud800"}}"#,

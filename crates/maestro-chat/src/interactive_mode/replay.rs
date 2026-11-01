@@ -7,12 +7,12 @@ use crate::{
 };
 use maestro_app::agent_session::ToolsManager;
 use maestro_app::{
-    ReadonlySessionManager, SessionContext, TextContent, ToolName, ToolRendererBinding,
+    EventError, ReadonlySessionManager, SessionContext, TextContent, ToolName, ToolRendererBinding,
     ToolResultMessage, ToolsOptions, UserBlock, create_all_tool_definitions,
 };
 use maestro_tui::Component;
 use serde_json::Value;
-use std::{collections::HashMap, error::Error, io, rc::Rc, sync::Arc};
+use std::{collections::HashMap, io, rc::Rc, sync::Arc};
 
 /// The pending tool rows of replay or live events by call id, in call order. Pairing a
 /// result retires its slot; reclaiming at half occupancy keeps total pairing work linear.
@@ -102,7 +102,7 @@ impl InteractiveMode {
     /// # Errors
     /// Returns the failure of reading the session context, of a stored record, of a row's
     /// rendering or of the published theme.
-    pub fn render_initial_messages(&self) -> Result<(), Box<dyn Error>> {
+    pub fn render_initial_messages(&self) -> Result<(), EventError> {
         let session = self.runtime_host.session();
         let context = session.session_manager().borrow().build_session_context()?;
         let options = RenderSessionContextOptions {
@@ -129,7 +129,7 @@ impl InteractiveMode {
     /// # Errors
     /// Returns the failure of reading the session context, of a stored record or of a row's
     /// rendering.
-    pub(super) fn rebuild_chat_from_messages(&self) -> Result<(), Box<dyn Error>> {
+    pub(super) fn rebuild_chat_from_messages(&self) -> Result<(), EventError> {
         self.chat_container.clear();
         let session = self.runtime_host.session();
         let context = session.session_manager().borrow().build_session_context()?;
@@ -146,7 +146,7 @@ impl InteractiveMode {
         &self,
         context: SessionContext,
         options: RenderSessionContextOptions,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<(), EventError> {
         drop(self.pending_tools.take());
         let mut rendered = PendingTools::default();
         if options.update_footer {
@@ -177,7 +177,7 @@ impl InteractiveMode {
         &self,
         record: &Rc<Value>,
         rendered: &mut PendingTools,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<(), EventError> {
         let component = AssistantMessageComponent::from_record(
             Rc::clone(record),
             self.assistant_options(),
@@ -223,7 +223,7 @@ impl InteractiveMode {
         id: &str,
         name: &str,
         args: Option<Value>,
-    ) -> Result<Rc<ToolExecutionComponent>, Box<dyn Error>> {
+    ) -> Result<Rc<ToolExecutionComponent>, EventError> {
         let session = self.runtime_host.session();
         let options = {
             let settings = session.settings_manager().borrow();
@@ -269,7 +269,7 @@ impl InteractiveMode {
 ///
 /// # Errors
 /// Returns the failure of a malformed result record or of the row's rendering.
-fn complete_tool_call(record: Value, rendered: &mut PendingTools) -> Result<(), Box<dyn Error>> {
+fn complete_tool_call(record: Value, rendered: &mut PendingTools) -> Result<(), EventError> {
     let id = record.get("toolCallId").and_then(Value::as_str);
     let Some(row) = id.and_then(|id| rendered.remove(id)) else {
         return Ok(());

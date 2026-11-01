@@ -15,7 +15,7 @@ use std::rc::Rc;
 const LABEL: &str = "bridge-label";
 
 /// Registers the ordering renderer and listeners that trace under the supplied label.
-pub(super) fn register(api: &ExtensionAPI) -> ExtensionResult<()> {
+pub(crate) fn register(api: &ExtensionAPI) -> ExtensionResult<()> {
     api.register_flag(
         LABEL,
         FlagOptions {
@@ -33,12 +33,18 @@ pub(super) fn register(api: &ExtensionAPI) -> ExtensionResult<()> {
             emitter.emit("order-inner", json!(label))?;
             emitter.emit("order-after", Value::Null)?;
             trace(&emitter, &label, "render:end")?;
-            Ok(Some(Component::new(super::View {
-                api: renderer_api.clone(),
-                name: message.custom_type,
-            })))
+            let name = message.custom_type;
+            Ok(Some(super::components::with_release(
+                super::ui::View {
+                    api: renderer_api.clone(),
+                    name: name.clone(),
+                },
+                &renderer_api,
+                name,
+            )))
         }),
     )?;
+    probe(api)?;
     let inner_api = api.clone();
     api.events().on(
         "order-inner",
@@ -72,6 +78,27 @@ pub(super) fn register(api: &ExtensionAPI) -> ExtensionResult<()> {
     Ok(())
 }
 
+/// Registers a renderer whose views fail in the method its message type names.
+fn probe(api: &ExtensionAPI) -> ExtensionResult<()> {
+    api.register_message_renderer(
+        "probe-view",
+        Rc::new(|message, _, _, emitter| {
+            let (category, error) = message
+                .custom_type
+                .split_once('|')
+                .ok_or("missing failure category")?;
+            emitter.emit("probe-foreign", json!("renderer"))?;
+            if category == "renderer" {
+                return Err(error.into());
+            }
+            Ok(Some(Component::new(Probe {
+                category: category.into(),
+                error: error.into(),
+            })))
+        }),
+    )
+}
+
 /// Reads the label the native caller assigned to this instance.
 pub(super) fn label(api: &ExtensionAPI) -> ExtensionResult<String> {
     match api.get_flag(LABEL)? {
@@ -92,4 +119,40 @@ fn tail(events: EventBus, label: String, step: &'static str) -> ExtensionFuture<
             .emit(&format!("trace:{label}"), json!(format!("{label}:{step}")))
             .await
     })
+}
+
+/// A view whose selected method emits to other instances, then fails with the authored error.
+struct Probe {
+    /// Method that fails.
+    category: String,
+    /// Authored failure.
+    error: String,
+}
+
+impl Probe {
+    /// Emits for `method`, then fails when it is the selected one.
+    fn answer(&self, method: &str, emitter: &CallbackEmitter<'_>) -> ExtensionResult<()> {
+        emitter.emit("probe-foreign", json!(method))?;
+        if self.category == method {
+            return Err(self.error.clone());
+        }
+        Ok(())
+    }
+}
+
+impl maestro_extensions_wasm::ComponentView for Probe {
+    fn render(&self, width: u32, emitter: CallbackEmitter<'_>) -> ExtensionResult<Vec<String>> {
+        self.answer("render", &emitter)?;
+        Ok(vec![format!("probe:{width}")])
+    }
+    fn handle_input(&self, _: &str, emitter: CallbackEmitter<'_>) -> ExtensionResult<()> {
+        self.answer("input", &emitter)
+    }
+    fn wants_key_release(&self, emitter: CallbackEmitter<'_>) -> ExtensionResult<bool> {
+        self.answer("key-release", &emitter)?;
+        Ok(true)
+    }
+    fn invalidate(&self, emitter: CallbackEmitter<'_>) -> ExtensionResult<()> {
+        self.answer("invalidate", &emitter)
+    }
 }

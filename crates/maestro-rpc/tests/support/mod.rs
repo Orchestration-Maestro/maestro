@@ -35,6 +35,7 @@ impl WorkspaceOperations for ClosureWorkspace {
         &self,
         command: workspace::RpcCommand,
         events: WorkspaceEventSink,
+        _write_complete: tokio::sync::oneshot::Receiver<()>,
     ) -> RpcFuture<WorkspaceResult> {
         Box::pin(std::future::ready((self.0)(command, events)))
     }
@@ -141,7 +142,7 @@ pub fn options(
         Box::leak(Box::new(ThemeState::new(get_theme_directories().unwrap())));
     let theme = state.theme();
     RpcModeOptions {
-        workspace: Rc::new(ClosureWorkspace(workspace)),
+        workspace: Some(Rc::new(ClosureWorkspace(workspace))),
         session: Some(maestro_app::RpcSessionOptions {
             runtime,
             process: Rc::new(NativeRpcProcess),

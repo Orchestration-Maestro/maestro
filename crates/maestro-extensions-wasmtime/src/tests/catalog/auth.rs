@@ -49,10 +49,11 @@ fn run_auth(assert_started: bool) {
             catalog.auth_storage().set(
                 "fixture",
                 AuthCredential::ApiKey(ApiKeyCredential {
+                    env: None,
                     key: "!bridge-key".into(),
                 }),
             );
-            let (mut pump, admission) = Pump::new();
+            let (mut pump, admission) = Pump::new(crate::tests::support::widgets());
             let endpoint = pump.registry().catalog(catalog.clone()).unwrap();
             let model = model_support::model("auth-owned").read().unwrap().clone();
             let worker = std::thread::spawn(move || {
@@ -75,6 +76,7 @@ fn run_auth(assert_started: bool) {
             catalog.auth_storage().set(
                 "fixture",
                 AuthCredential::ApiKey(ApiKeyCredential {
+                    env: None,
                     key: "!replacement-source".into(),
                 }),
             );
@@ -88,7 +90,10 @@ fn run_auth(assert_started: bool) {
 
 /// Checks the supplied result without exposing credential material in failure output.
 fn check_auth(resolved: maestro_catalog::ResolvedRequestAuth) {
-    let maestro_catalog::ResolvedRequestAuth::Ok { api_key, headers } = resolved else {
+    let maestro_catalog::ResolvedRequestAuth::Ok {
+        api_key, headers, ..
+    } = resolved
+    else {
         panic!("expected controlled credential success");
     };
     assert!(api_key.as_deref().eq(&Some("caller key")), "selected key");

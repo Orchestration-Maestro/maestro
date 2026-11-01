@@ -5,6 +5,7 @@ use super::types::{AuthCredential, AuthSource, AuthStatus, decode};
 use crate::{ConfigValueOperations, resolve_config_value};
 use maestro_models::{
     OAuthError, OAuthProviderHandle, find_env_keys, get_env_api_key, get_oauth_provider,
+    providers::chat::cloudflare::is_cloudflare_provider,
 };
 
 /// How the synchronous prefix of a key request ended.
@@ -25,14 +26,30 @@ impl AuthStorage {
     }
 
     /// Whether any authentication is configured, without resolving stored helpers or refreshing tokens;
-    /// the supplied fallback resolver is the caller's and runs as given.
+    /// the supplied fallback resolver is the caller's and runs as given. Rereads the stored
+    /// document first. Cloudflare requires a nonempty API-key source or stored OAuth
+    /// with a registered handler.
     ///
     /// # Errors
     /// Returns the original fallback resolver failure.
     pub fn has_auth(&self, provider: &str) -> Result<bool, OAuthError> {
+        let cloudflare = is_cloudflare_provider(provider);
+        // Release handler handles before taking the credential lock.
+        let oauth = cloudflare && get_oauth_provider(provider).is_some();
         let configured = {
-            let state = self.state();
-            state.runtime_overrides.contains_key(provider) || state.data.contains_key(provider)
+            let state = self.latest();
+            let runtime = state.runtime_overrides.get(provider);
+            let stored = state.data.get(provider);
+            if cloudflare {
+                let stored = match stored.and_then(decode) {
+                    Some(AuthCredential::ApiKey(key)) => !key.key.is_empty(),
+                    Some(AuthCredential::OAuth(_)) => oauth,
+                    None => false,
+                };
+                runtime.is_some_and(|key| !key.is_empty()) || stored
+            } else {
+                runtime.is_some() || stored.is_some()
+            }
         };
         Ok(configured
             || get_env_api_key(provider).is_some()
@@ -42,13 +59,14 @@ impl AuthStorage {
     }
 
     /// Configured-authentication metadata without key values, stored helper resolution or refresh;
-    /// the supplied fallback resolver is the caller's and runs as given.
+    /// the supplied fallback resolver is the caller's and runs as given. Rereads the stored
+    /// document first.
     ///
     /// # Errors
     /// Returns the original fallback resolver failure.
     pub fn get_auth_status(&self, provider: &str) -> Result<AuthStatus, OAuthError> {
         let (stored, runtime) = {
-            let state = self.state();
+            let state = self.latest();
             (
                 state.data.contains_key(provider),
                 state.runtime_overrides.contains_key(provider),
@@ -91,7 +109,7 @@ impl AuthStorage {
         operations: &dyn ConfigValueOperations,
     ) -> Selection {
         let (known_kind, decoded) = {
-            let state = self.state();
+            let state = self.latest();
             if let Some(key) = state
                 .runtime_overrides
                 .get(provider_id)
@@ -123,7 +141,7 @@ impl AuthStorage {
                     return Selection::Done(
                         provider
                             .get_api_key(&stored)
-                            .map(|key| Some(key.to_owned())),
+                            .map(|key| Some(key.into_owned())),
                     );
                 }
                 Selection::Refresh(provider)
@@ -168,7 +186,7 @@ impl AuthStorage {
                 let record = self.state().data.get(provider_id).and_then(decode);
                 match record {
                     Some(AuthCredential::OAuth(stored)) if (self.clock)() < stored.expires => {
-                        Ok(Some(provider.get_api_key(&stored)?.to_owned()))
+                        Ok(Some(provider.get_api_key(&stored)?.into_owned()))
                     }
                     _ => Ok(None),
                 }
@@ -177,6 +195,8 @@ impl AuthStorage {
     }
 
     /// Select a request key: runtime override, stored record, environment, then fallback.
+    ///
+    /// The stored document is reread first, so a key another process wrote is the one used.
     ///
     /// The returned future is `Send` on native targets and does not borrow `operations`:
     /// stored keys resolve before it is built. Stored records decide as follows.

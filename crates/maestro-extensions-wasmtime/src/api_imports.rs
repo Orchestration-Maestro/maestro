@@ -1,7 +1,7 @@
 //! Canonical API imports use the original facade through the single local pump.
 use crate::api_reads::{Endpoint, Request};
 use crate::read_imports::ReadEndpoint;
-use crate::read_imports::{add_operand, add_read};
+use crate::read_imports::{add_read, add_routed_operand};
 use maestro_extensions::types;
 use wasmtime::{
     StoreContextMut,
@@ -9,17 +9,34 @@ use wasmtime::{
 };
 use wasmtime_wasi::WasiView;
 
+/// Installs the one synchronous load-time input route on the original local API.
+fn add_load_time<T: crate::callback_imports::CallbackView + 'static>(
+    host: &mut LinkerInstance<'_, T>,
+) -> wasmtime::Result<()> {
+    host.func_wrap(
+        "contribute-load-time",
+        |store: StoreContextMut<'_, T>, (payload,): (String,)| {
+            Ok((store
+                .data()
+                .api()
+                .read(|reply| Request::ContributeLoadTime(payload, reply)),))
+        },
+    )
+}
+
 /// Store access to its original API endpoint, never to a local registration facade.
 pub(crate) trait ApiView: WasiView {
     /// Borrows the Store-safe endpoint retained during initialization.
     fn api(&self) -> &Endpoint;
 }
 
-/// Installs callback-independent registration and runtime action imports.
-pub(crate) fn add_to_linker<T: ApiView + 'static>(
+/// Installs provider registration and runtime action imports.
+pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
     add_values(host)?;
+    add_load_time(host)?;
+    add_providers(host)?;
     for (name, request) in [
         ("append-entry", Request::Append as fn(_, _, _) -> _),
         ("send-message", Request::SendMessage),
@@ -28,11 +45,12 @@ pub(crate) fn add_to_linker<T: ApiView + 'static>(
     ] {
         host.func_wrap(
             name,
-            move |store: StoreContextMut<'_, T>, (value, options): (String, Option<String>)| {
-                Ok((store
+            move |mut store: StoreContextMut<'_, T>, (value, options): (String, Option<String>)| {
+                let route = store
                     .data()
                     .api()
-                    .read(|reply| request(value, options, reply)),))
+                    .route(|reply| request(value, options, reply));
+                Ok((crate::import_route::push(store.data_mut(), route)?,))
             },
         )?;
     }
@@ -82,9 +100,6 @@ fn add_values<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtim
         Request::ActiveTools,
         |store, ()| Ok(store.api().clone()),
     )?;
-    add_read(host, "get-all-tools", Request::AllTools, |store, ()| {
-        Ok(store.api().clone())
-    })?;
     add_read(host, "get-commands", Request::Commands, |store, ()| {
         Ok(store.api().clone())
     })?;
@@ -94,19 +109,19 @@ fn add_values<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtim
         Request::Thinking,
         |store, ()| Ok(store.api().clone()),
     )?;
-    add_operand(
+    add_routed_operand(
         host,
         "set-session-name",
         Request::SetSessionName,
         |store, (value,)| Ok((store.api().clone(), value)),
     )?;
-    add_operand(
+    add_routed_operand(
         host,
         "set-active-tools",
         Request::SetActiveTools,
         |store, (value,)| Ok((store.api().clone(), value)),
     )?;
-    add_operand(
+    add_routed_operand(
         host,
         "set-thinking-level",
         Request::SetThinking,
@@ -186,4 +201,29 @@ impl From<FlagOptions> for types::ExtensionFlagOptions {
             default: options.default.map(types::FlagValue::from),
         }
     }
+}
+
+/// Links individual provider mutations to their original registration facade.
+fn add_providers<T: crate::callback_imports::CallbackView + 'static>(
+    host: &mut LinkerInstance<'_, T>,
+) -> wasmtime::Result<()> {
+    host.func_wrap(
+        "register-provider",
+        |mut store: StoreContextMut<'_, T>,
+         (name, config, callbacks): (String, String, crate::provider_registration::Wire)| {
+            let callbacks =
+                crate::provider_registration::retain(store.data_mut(), &name, callbacks)?;
+            let route = store
+                .data()
+                .api()
+                .route(|reply| Request::RegisterProvider(name, config, callbacks, reply));
+            Ok((crate::import_route::push(store.data_mut(), route)?,))
+        },
+    )?;
+    crate::read_imports::add_routed_operand(
+        host,
+        "unregister-provider",
+        Request::UnregisterProvider,
+        |store, (name,)| Ok((store.api().clone(), name)),
+    )
 }

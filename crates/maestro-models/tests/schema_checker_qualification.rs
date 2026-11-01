@@ -20,7 +20,7 @@ fn check(schema: Value, input: Value) -> Result<Value, String> {
 }
 
 fn check_object(schema: Value, arguments: Value) -> Result<Value, String> {
-    let tool = Tool {
+    let tool: Tool = Tool {
         name: "check".into(),
         description: String::new(),
         parameters: schema.into(),
@@ -433,7 +433,7 @@ fn maestro_keeps_schema_resource_origins_distinct() {
         ("https://one.example/schema?q=1", false),
     ] {
         let schema = json!({"$id":"https://one.example/schema", "$defs":{"target":{"$id":"target", "type":"number"}},"properties":{"n":{"$ref":format!("{reference}#/$defs/target")}}});
-        let tool = Tool {
+        let tool: Tool = Tool {
             name: "check".into(),
             description: String::new(),
             parameters: schema.into(),

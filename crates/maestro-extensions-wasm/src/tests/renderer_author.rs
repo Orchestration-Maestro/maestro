@@ -51,9 +51,69 @@ struct Request {
     /// Selected registration marker.
     marker: Option<u32>,
 }
-/// Distinguishable independently supplied theme port.
+/// Distinguishable independently supplied theme port; it answers no request.
 struct LocalTheme(super::Released);
-impl ThemePort for LocalTheme {}
+/// The answer of every request to the local theme.
+fn unanswered<T>() -> ExtensionResult<T> {
+    Err("local theme".into())
+}
+impl ThemePort for LocalTheme {
+    fn name(&self) -> ExtensionResult<Option<String>> {
+        unanswered()
+    }
+    fn source_path(&self) -> ExtensionResult<Option<String>> {
+        unanswered()
+    }
+    fn source_info(&self) -> ExtensionResult<Option<maestro_extensions_wasm::SourceInfo>> {
+        unanswered()
+    }
+    fn set_source_info(
+        &self,
+        _: Option<maestro_extensions_wasm::SourceInfo>,
+    ) -> ExtensionResult<()> {
+        unanswered()
+    }
+    fn fg(&self, _: &str, _: &str) -> ExtensionResult<String> {
+        unanswered()
+    }
+    fn bg(&self, _: &str, _: &str) -> ExtensionResult<String> {
+        unanswered()
+    }
+    fn bold(&self, _: &str) -> ExtensionResult<String> {
+        unanswered()
+    }
+    fn italic(&self, _: &str) -> ExtensionResult<String> {
+        unanswered()
+    }
+    fn underline(&self, _: &str) -> ExtensionResult<String> {
+        unanswered()
+    }
+    fn inverse(&self, _: &str) -> ExtensionResult<String> {
+        unanswered()
+    }
+    fn strikethrough(&self, _: &str) -> ExtensionResult<String> {
+        unanswered()
+    }
+    fn get_fg_ansi(&self, _: &str) -> ExtensionResult<String> {
+        unanswered()
+    }
+    fn get_bg_ansi(&self, _: &str) -> ExtensionResult<String> {
+        unanswered()
+    }
+    fn get_color_mode(&self) -> ExtensionResult<maestro_extensions_wasm::ColorMode> {
+        unanswered()
+    }
+    fn thinking_border(
+        &self,
+        _: maestro_extensions_wasm::ModelThinkingLevel,
+        _: &str,
+    ) -> ExtensionResult<String> {
+        unanswered()
+    }
+    fn bash_mode_border(&self, _: &str) -> ExtensionResult<String> {
+        unanswered()
+    }
+}
 impl Drop for LocalTheme {
     fn drop(&mut self) {
         let _ = &self.0;

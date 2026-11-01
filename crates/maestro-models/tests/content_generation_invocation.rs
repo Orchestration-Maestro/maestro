@@ -557,11 +557,11 @@ async fn sent_call_args(authored: serde_json::Value) -> TestResult<serde_json::V
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn registered_simple_missing_key_becomes_a_terminal_error() -> TestResult {
+fn registered_simple_missing_key_precedes_stream() -> TestResult {
     if !maestro_test_process::selection().is_child() {
         return {
             let output = maestro_test_process::TestProcess::current(
-                "registered_simple_missing_key_becomes_a_terminal_error",
+                "registered_simple_missing_key_precedes_stream",
             )?
             .nocapture()
             .env_clear()
@@ -587,7 +587,12 @@ fn registered_simple_missing_key_becomes_a_terminal_error() -> TestResult {
                 ..Default::default()
             };
             let stream = if generic {
-                maestro_models::stream_simple(model, context, Some(options))?
+                let result = maestro_models::stream_simple(model, context, Some(options));
+                assert_eq!(
+                    result.err().map(|error| error.message).as_deref(),
+                    Some("No API key for provider: google")
+                );
+                continue;
             } else {
                 maestro_models::stream_simple_google(model, context, Some(options))
             };
@@ -1214,4 +1219,35 @@ pub(crate) mod native {
             json!({"thinking":{"enabled":true,"level":"UNKNOWN"}}),
         ]
     }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn content_call_roots_keep_only_nullish_defaults() -> TestResult {
+    crate::runtime::run(async {
+        for row in crate::root_routes::recorded()?.content {
+            let api = match row.route {
+                crate::root_routes::ContentRoute::Direct => "google-generative-ai",
+                crate::root_routes::ContentRoute::Cloud => "google-vertex",
+            };
+            let frame = format!(
+                "data: {}\n\n",
+                serde_json::json!({
+                    "candidates":[{"content":{"parts":[row.part]},"finishReason":"STOP"}]
+                })
+            )
+            .into_bytes();
+            let (feed, body) = crate::messages::feed();
+            let stream = native::native_stream_for(
+                api,
+                maestro_models::StreamOptions {
+                    api_key: Some("fixture-key".into()),
+                    fetch: Some(crate::root_routes::body_fetch(body)),
+                    ..Default::default()
+                },
+            )?;
+            crate::root_routes::gated(&stream, feed, vec![frame, Vec::new()], row.expected).await?;
+        }
+        Ok(())
+    })
 }

@@ -18,7 +18,7 @@ pub(super) async fn load(uri: &url::Url, cache: Option<&Cache>) -> Result<Source
         _ => None,
     };
     tokio::task::spawn_blocking(move || {
-        let mut file = std::fs::File::open(path).map_err(not_found)?;
+        let mut file = std::fs::File::open(&path).map_err(|error| not_found(error, &path))?;
         let modified = file
             .metadata()?
             .modified()?
@@ -38,9 +38,11 @@ pub(super) async fn load(uri: &url::Url, cache: Option<&Cache>) -> Result<Source
     .await?
 }
 
-/// Missing files alone have the source's authored not-found category.
-fn not_found(error: std::io::Error) -> Failure {
-    if error.kind() == std::io::ErrorKind::NotFound {
+/// Missing files alone have the source's authored not-found category. Windows refuses to
+/// open an existing directory named with a trailing separator as not found, so the existence
+/// of the entry the open would reach, following links, decides.
+fn not_found(error: std::io::Error, path: &std::path::Path) -> Failure {
+    if error.kind() == std::io::ErrorKind::NotFound && std::fs::metadata(path).is_err() {
         NotFound.into()
     } else {
         error.into()

@@ -26,6 +26,9 @@ fn check(member: &str, file: &str, contents: &str, expected: &[usize]) {
     let workspace = Workspace::new();
     workspace.foundation(&[member]);
     let path = source(&workspace, member, file, contents);
+    if file.starts_with("tests/") {
+        workspace.integration(member);
+    }
     let result = if expected.is_empty() {
         Ok(())
     } else {

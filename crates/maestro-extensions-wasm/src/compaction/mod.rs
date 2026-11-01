@@ -13,3 +13,6 @@ pub type CompactionPreparation = maestro_entry::compaction::CompactionPreparatio
 
 /// A compaction an extension supplies, with opaque JSON text details.
 pub type CompactionResult = maestro_entry::compaction::CompactionResult<crate::JsonText>;
+
+/// Native transcript serialization.
+pub mod utils;

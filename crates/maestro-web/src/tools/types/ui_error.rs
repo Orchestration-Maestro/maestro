@@ -69,6 +69,7 @@ impl ToolUiError {
     }
 
     /// Retain native and leaf phases while composing reading preparation causes.
+    #[cfg(target_arch = "wasm32")]
     pub(crate) fn reading(error: ReadingUiError) -> Self {
         match error {
             ReadingUiError::I18n(error) => Self::I18n(error),

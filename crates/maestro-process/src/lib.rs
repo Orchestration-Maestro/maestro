@@ -18,6 +18,11 @@ pub mod shell;
 #[cfg(not(target_arch = "wasm32"))]
 pub use shell::{Launch, LaunchContext, windows_shell_launch};
 
+#[cfg(not(target_arch = "wasm32"))]
+mod startup;
+#[cfg(not(target_arch = "wasm32"))]
+pub use startup::{command, environment, initialize_coding_agent};
+
 pub mod foreground;
 
 #[cfg(unix)]

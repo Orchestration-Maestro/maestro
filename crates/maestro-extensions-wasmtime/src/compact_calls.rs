@@ -73,7 +73,7 @@ impl Compact {
 }
 
 /// Uses the original native invocation frame for every synchronous notification.
-fn notify(
+pub(crate) fn notify(
     handler: &Handle,
     registry: &Registry,
     events: &EventBus<Local>,

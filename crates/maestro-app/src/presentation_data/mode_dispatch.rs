@@ -29,7 +29,7 @@ pub trait InteractiveModeRunner {
     ///
     /// # Errors
     /// Returns the existing initialization error.
-    fn init(self: Rc<Self>) -> Result<(), Box<dyn Error>>;
+    fn init(self: Rc<Self>) -> LocalFuture;
     /// Run the existing presentation.
     fn run(self: Rc<Self>) -> LocalFuture;
     /// Stop the existing presentation without disposing the session runtime.

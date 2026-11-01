@@ -7,7 +7,7 @@ use maestro_app::{
     ChangelogEntry, ReadonlySessionManager, get_changelog_path, get_new_entries, parse_changelog,
 };
 use maestro_theme::{Theme, ThemeColor};
-use maestro_tui::{Markdown, MarkdownOptions, Spacer, Text};
+use maestro_tui::{Markdown, MarkdownOptions, Spacer, Text, hyperlink};
 use std::{error::Error, rc::Rc};
 
 impl InteractiveMode {
@@ -20,9 +20,21 @@ impl InteractiveMode {
     pub(super) fn handle_changelog_command(&self) -> Result<(), Box<dyn Error>> {
         let path = get_changelog_path(&get_package_dir()?)?;
         let markdown = join_contents(&parse_changelog(&path));
+        self.append_markdown_panel("What's New", markdown)
+    }
+
+    /// Appends a bordered Markdown card with a captured heading and requests a frame.
+    ///
+    /// # Errors
+    /// Returns a failure reading the heading's theme.
+    pub(super) fn append_markdown_panel(
+        &self,
+        heading: &str,
+        markdown: String,
+    ) -> Result<(), Box<dyn Error>> {
         let live = self.themes.theme();
         let theme = live.get()?;
-        let title = Theme::bold(&theme.fg(&ThemeColor::Accent, "What's New")?, true);
+        let title = Theme::bold(&theme.fg(&ThemeColor::Accent, heading)?, true);
         self.chat_container.add_child(Rc::new(Spacer::new(1)));
         self.chat_container
             .add_child(Rc::new(DynamicBorder::new(live.clone(), None)));
@@ -176,6 +188,10 @@ pub(super) fn join_changelog<'a>(entries: impl Iterator<Item = &'a ChangelogEntr
 impl InteractiveMode {
     /// Appends the available-release card and requests a frame.
     ///
+    /// When the terminal supports links, the changelog row is a link labelled
+    /// `open changelog`; otherwise it prints the changelog address. Link support is
+    /// read once, when the card is built.
+    ///
     /// # Errors
     /// Returns a published-theme colour failure.
     pub fn show_new_version_notification(&self, new_version: &str) -> Result<(), Box<dyn Error>> {
@@ -189,13 +205,20 @@ impl InteractiveMode {
             &format!("New version {new_version} is available. Run "),
         )?;
         let label = theme.fg(&ThemeColor::Muted, "Changelog: ")?;
-        let url = theme.fg(
-            &ThemeColor::Accent,
-            "https://github.com/Orchestration-Maestro/maestro/blob/main/CHANGELOG.md",
-        )?;
+        let url = "https://github.com/Orchestration-Maestro/maestro/blob/main/CHANGELOG.md";
+        let link = if self
+            .tool_environment
+            .terminal_image
+            .get_capabilities()
+            .hyperlinks
+        {
+            hyperlink(&theme.fg(&ThemeColor::Accent, "open changelog")?, url)
+        } else {
+            theme.fg(&ThemeColor::Accent, url)?
+        };
         self.show_update_notification(
             "Update Available",
-            &format!("{instruction}{action}\n{label}{url}"),
+            &format!("{instruction}{action}\n{label}{link}"),
         )
     }
 

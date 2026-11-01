@@ -31,9 +31,6 @@ static ENV_PACKAGE_DIR: LazyLock<String> =
 /// The state directory the controlled program reads its configuration from.
 const ENV_STATE: &str = "MAESTRO_SHARE_STATE";
 
-/// The program directory the child puts first on its own path.
-const ENV_PROGRAMS: &str = "MAESTRO_SHARE_PROGRAMS";
-
 /// The temporary directory the child's artifacts are created in.
 const ENV_TEMP: &str = "MAESTRO_SHARE_TEMP";
 
@@ -144,10 +141,8 @@ struct History {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Copied {
-    /// The text the clipboard owner receives, absent when nothing may be copied.
-    text: Option<String>,
-    /// The clipboard sequence that owner writes for that text.
-    frame: Option<String>,
+    /// The clipboard sequence the clipboard owner writes for the copied answer.
+    frame: String,
 }
 
 /// The process status a recorded exit code describes.
@@ -192,11 +187,11 @@ fn run(
     test: &str,
     case: &str,
     program: Option<(&str, &str)>,
-    body: impl FnOnce(&Path),
+    body: impl AsyncFnOnce(&Path),
 ) -> Option<String> {
     if maestro_test_process::selection().is_child() {
         if maestro_test_process::selection().runs_case(case) {
-            body(Path::new(&std::env::var(&*ENV_AGENT_DIR).unwrap()));
+            super::on_tasks(body(Path::new(&std::env::var(&*ENV_AGENT_DIR).unwrap())));
         }
         return None;
     }
@@ -232,7 +227,6 @@ fn run(
         .env(ENV_AGENT_DIR.as_str(), &root)
         .env(&*ENV_PACKAGE_DIR, &package)
         .env(ENV_STATE, &state)
-        .env(ENV_PROGRAMS, &programs)
         .env(ENV_TEMP, &temp)
         .env("PATH", path);
     for key in CONTROLLED {
@@ -245,6 +239,17 @@ fn run(
         String::from_utf8_lossy(&finished.stderr)
     );
     Some(String::from_utf8_lossy(&finished.stdout).into_owned())
+}
+
+/// Whether the copy route starts at the controlled programs and the terminal sequence. On a
+/// host with a system clipboard the route reaches that clipboard first, outside the child's
+/// control, so the copy cases report the premise there instead of writing the real clipboard.
+fn clipboard_route_controlled(test: &str) -> bool {
+    let controlled = !cfg!(any(target_os = "macos", windows));
+    if !controlled {
+        eprintln!("{test} needs a host whose copy route starts at the controlled programs");
+    }
+    controlled
 }
 
 /// The directory the child's temporary artifacts are created in.
@@ -333,8 +338,8 @@ fn publish(world: &World, directory: &Path, messages: &[Value]) {
 }
 
 /// A started mode over `directory` whose session holds `messages`.
-fn with_messages(directory: &Path, messages: &[Value]) -> World {
-    let world = started(directory);
+async fn with_messages(directory: &Path, messages: &[Value]) -> World {
+    let world = started(directory).await;
     publish(&world, directory, messages);
     world
 }
@@ -349,36 +354,24 @@ fn answer(text: &str) -> Value {
 }
 
 /// Runs the single admitted operation to completion, returning the operation's own result.
-fn drive(world: &World) -> Result<(), Box<dyn std::error::Error>> {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
+async fn drive(world: &World) -> Result<(), Box<dyn std::error::Error>> {
     let mut admitted = world.runtime.take_futures();
     assert_eq!(admitted.len(), 1, "one admitted operation");
-    runtime.block_on(admitted.pop().unwrap())
+    admitted.pop().unwrap().await
 }
 
-/// Starts the single admitted operation and polls it once, spawning its child and
-/// registering the pipe reads, then returns the runtime that owns it.
-fn start(world: &World) -> (tokio::runtime::Runtime, maestro_tui::tui::LocalFuture) {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
+/// Starts the single admitted operation on the current runtime and polls it once.
+fn start(world: &World) -> maestro_tui::tui::LocalFuture {
     let mut admitted = world.runtime.take_futures();
     assert_eq!(admitted.len(), 1, "one admitted operation");
     let mut operation = admitted.pop().unwrap();
-    {
-        let _context = runtime.enter();
-        assert!(poll(&mut operation).is_none(), "the operation is running");
-    }
-    (runtime, operation)
+    assert!(poll(&mut operation).is_none(), "the operation is running");
+    operation
 }
 
 /// The last transcript row of `world`, rendered wide.
 fn last_row(world: &World) -> String {
-    rows(world).last().cloned().unwrap_or_default()
+    notice_rows(world).last().cloned().unwrap_or_default()
 }
 
 /// Whether the transcript's last row holds `needle`.
@@ -386,12 +379,16 @@ fn last_row_holds(world: &World, needle: &str) -> bool {
     last_row(world).contains(needle)
 }
 
-/// The transcript rows of the latest notice, one per displayed line.
+/// The transcript rows of the latest notice, one per displayed line, without the blank row
+/// that follows an error notice.
 ///
 /// The padding is dropped without counting the text's characters, because a row is
 /// measured in display cells and a recorded notice may hold a scalar of no width.
 fn notice_rows(world: &World) -> Vec<String> {
-    let rendered = rows(world);
+    let mut rendered = rows(world);
+    if rendered.last().is_some_and(String::is_empty) {
+        rendered.pop();
+    }
     let start = rendered
         .iter()
         .rposition(|row| row.trim().is_empty())
@@ -423,6 +420,9 @@ fn assert_notice(world: &World, color: &ThemeColor, text: &str) {
         .collect();
     let observed = notice_rows(world).join("\n");
     assert_eq!(observed, format!("{}\u{1b}[39m", opened.join("\n")));
+    if *color == ThemeColor::Error {
+        assert_eq!(rows(world).last().map(String::as_str), Some(""));
+    }
 }
 
 /// The complete text of one recorded notice, with the presenter's own prefix.
@@ -438,13 +438,13 @@ fn presented(report: &Report) -> (ThemeColor, String) {
 fn reports(test: &str, expected: usize) {
     let cases: Vec<(GistOutput, Report)> = recorded_cases(FIXTURES, test);
     assert_eq!(cases.len(), expected);
-    drop(run(test, "child", None, |directory| {
+    drop(run(test, "child", None, async |directory| {
         for (case, report) in &cases {
-            let world = started(directory);
-            let origin = case.origin.clone().unwrap_or_default();
+            let world = started(directory).await;
+            let origin = case.origin.as_deref().unwrap_or_default();
             world
                 .mode
-                .show_share_result(&finished(case), &origin)
+                .show_share_result(&finished(case), origin)
                 .unwrap();
             let (color, notice) = presented(report);
             assert_notice(&world, &color, &notice);
@@ -458,10 +458,10 @@ fn package_root() -> PathBuf {
 }
 
 /// A started mode over `directory` whose package carries the export bundle.
-fn exportable(directory: &Path) -> World {
+async fn exportable(directory: &Path) -> World {
     let package = package_root();
     bundle(&layout_dir(&package, "src"), "SRC");
-    themed(directory, &package)
+    themed(directory, &package).await
 }
 
 /// The hexadecimal bytes of `text`, for a controlled frame.
@@ -494,18 +494,18 @@ fn share_formats_gist_with_configured_or_empty_viewer() {
     const TEST: &str = "share_formats_gist_with_configured_or_empty_viewer";
     let cases: Vec<(GistOutput, Report)> = recorded_cases(FIXTURES, TEST);
     assert_eq!(cases.len(), 2);
-    drop(run(TEST, "child", None, |directory| {
+    drop(run(TEST, "child", None, async |directory| {
         for (case, report) in &cases {
-            let world = started(directory);
-            let origin = case.origin.clone().unwrap_or_default();
+            let world = started(directory).await;
+            let origin = case.origin.as_deref().unwrap_or_default();
             world
                 .mode
-                .show_share_result(&finished(case), &origin)
+                .show_share_result(&finished(case), origin)
                 .unwrap();
             let gist = case.stdout.trim_matches(maestro_app::is_whitespace_scalar);
             let id = gist.rsplit('/').next().unwrap();
             // The selected identifier reaches the application's viewer owner unchanged.
-            let expected = get_share_viewer_url(id, &origin).map_or_else(
+            let expected = get_share_viewer_url(id, origin).map_or_else(
                 || format!("Gist: {gist}"),
                 |viewer| format!("Share URL: {viewer}\nGist: {gist}"),
             );
@@ -519,14 +519,13 @@ fn share_formats_gist_with_configured_or_empty_viewer() {
 #[test]
 fn copy_refuses_when_no_assistant_text() {
     const TEST: &str = "copy_refuses_when_no_assistant_text";
-    let cases: Vec<(History, Copied)> = recorded_cases(FIXTURES, TEST);
+    let cases: Vec<(History, ())> = recorded_cases(FIXTURES, TEST);
     assert_eq!(cases.len(), 4);
-    let Some(stdout) = run(TEST, "child", None, |directory| {
-        for (case, expected) in &cases {
-            assert_eq!(expected.text, None);
-            let world = with_messages(directory, &case.messages);
+    let Some(stdout) = run(TEST, "child", None, async |directory| {
+        for (case, ()) in &cases {
+            let world = with_messages(directory, &case.messages).await;
             submit(&world.mode, "/copy");
-            drive(&world).unwrap();
+            drive(&world).await.unwrap();
             assert_notice(
                 &world,
                 &ThemeColor::Error,
@@ -542,13 +541,16 @@ fn copy_refuses_when_no_assistant_text() {
 #[test]
 fn copy_uses_current_last_assistant_and_reports_result() {
     const TEST: &str = "copy_uses_current_last_assistant_and_reports_result";
+    if !clipboard_route_controlled(TEST) {
+        return;
+    }
     let cases: Vec<(History, Copied)> = recorded_cases(FIXTURES, TEST);
     assert_eq!(cases.len(), 6);
-    let Some(stdout) = run(TEST, "child", None, |directory| {
+    let Some(stdout) = run(TEST, "child", None, async |directory| {
         for (case, _) in &cases {
-            let world = with_messages(directory, &case.messages);
+            let world = with_messages(directory, &case.messages).await;
             submit(&world.mode, "/copy");
-            drive(&world).unwrap();
+            drive(&world).await.unwrap();
             assert_notice(
                 &world,
                 &ThemeColor::Dim,
@@ -556,10 +558,10 @@ fn copy_uses_current_last_assistant_and_reports_result() {
             );
         }
         // The command reads the current session, including one replaced between calls.
-        let world = started(directory);
+        let world = started(directory).await;
         publish(&world, directory, &[answer("replaced")]);
         submit(&world.mode, "/copy");
-        drive(&world).unwrap();
+        drive(&world).await.unwrap();
         assert_notice(
             &world,
             &ThemeColor::Dim,
@@ -570,7 +572,7 @@ fn copy_uses_current_last_assistant_and_reports_result() {
     };
     let expected: Vec<&str> = cases
         .iter()
-        .filter_map(|(_, copied)| copied.frame.as_deref())
+        .map(|(_, copied)| copied.frame.as_str())
         .chain(["\u{1b}]52;c;cmVwbGFjZWQ=\u{7}"])
         .collect();
     assert_eq!(
@@ -583,11 +585,14 @@ fn copy_uses_current_last_assistant_and_reports_result() {
 #[test]
 fn copy_reports_clipboard_failure() {
     const TEST: &str = "copy_reports_clipboard_failure";
-    let Some(stdout) = run(TEST, "child", None, |directory| {
+    if !clipboard_route_controlled(TEST) {
+        return;
+    }
+    let Some(stdout) = run(TEST, "child", None, async |directory| {
         // Beyond the terminal fallback's 100000 encoded bytes with no desktop route.
-        let world = with_messages(directory, &[answer(&"a".repeat(90_000))]);
+        let world = with_messages(directory, &[answer(&"a".repeat(90_000))]).await;
         submit(&world.mode, "/copy");
-        drive(&world).unwrap();
+        drive(&world).await.unwrap();
         assert_notice(
             &world,
             &ThemeColor::Error,
@@ -603,10 +608,10 @@ fn copy_reports_clipboard_failure() {
 #[test]
 fn share_reports_missing_cli_before_auth_failure() {
     const TEST: &str = "share_reports_missing_cli_before_auth_failure";
-    drop(run(TEST, "missing", None, |directory| {
-        let world = started(directory);
+    drop(run(TEST, "missing", None, async |directory| {
+        let world = started(directory).await;
         submit(&world.mode, "/share");
-        drive(&world).unwrap();
+        drive(&world).await.unwrap();
         assert_notice(
             &world,
             &ThemeColor::Error,
@@ -616,10 +621,10 @@ fn share_reports_missing_cli_before_auth_failure() {
         assert!(arguments().is_empty(), "no program ran");
     }));
     // The same program installed without execute permission is refused at startup too.
-    drop(run(TEST, "denied", Some((GH, "0600")), |directory| {
-        let world = started(directory);
+    drop(run(TEST, "denied", Some((GH, "0600")), async |directory| {
+        let world = started(directory).await;
         submit(&world.mode, "/share");
-        drive(&world).unwrap();
+        drive(&world).await.unwrap();
         assert_notice(
             &world,
             &ThemeColor::Error,
@@ -633,16 +638,16 @@ fn share_reports_missing_cli_before_auth_failure() {
 #[test]
 fn share_auth_failure_does_not_export() {
     const TEST: &str = "share_auth_failure_does_not_export";
-    drop(run(TEST, "child", Some((GH, "0700")), |directory| {
+    drop(run(TEST, "child", Some((GH, "0700")), async |directory| {
         for settings in [
             json!({"auth": {"exit": 1}}),
             json!({"auth": {"signal": 15}}),
         ] {
             forget_arguments();
             configure(&settings);
-            let world = started(directory);
+            let world = started(directory).await;
             submit(&world.mode, "/share");
-            drive(&world).unwrap();
+            drive(&world).await.unwrap();
             assert_notice(
                 &world,
                 &ThemeColor::Error,
@@ -656,9 +661,9 @@ fn share_auth_failure_does_not_export() {
         configure(&json!({"auth": {"exit": 0}, "gist": {"frames": [
             {"stream": "out", "bytes": hex("https://gist.github.com/alice/abc123\n")}
         ]}}));
-        let world = exportable(directory);
+        let world = exportable(directory).await;
         submit(&world.mode, "/share");
-        drive(&world).unwrap();
+        drive(&world).await.unwrap();
         assert_eq!(arguments().len(), 2, "both calls were made");
         assert_notice(
             &world,
@@ -671,15 +676,15 @@ fn share_auth_failure_does_not_export() {
 #[test]
 fn share_creates_secret_gist_and_restores_editor() {
     const TEST: &str = "share_creates_secret_gist_and_restores_editor";
-    drop(run(TEST, "child", Some((GH, "0700")), |directory| {
+    drop(run(TEST, "child", Some((GH, "0700")), async |directory| {
         configure(&json!({"auth": {"exit": 0}, "gist": {"frames": [
             {"stream": "copy", "as": "artifact.html"},
             {"stream": "out", "bytes": hex("https://gist.github.com/alice/abc123\n")}
         ]}}));
-        let world = exportable(directory);
+        let world = exportable(directory).await;
         let editor = Rc::clone(&world.mode.editor);
         submit(&world.mode, "/share");
-        let (runtime, mut operation) = start(&world);
+        let operation = start(&world);
         // The loader replaced the editor, holds the input and names the gist.
         let loader = world.mode.editor_container.children().borrow().clone();
         assert_eq!(loader.len(), 1);
@@ -699,7 +704,7 @@ fn share_creates_secret_gist_and_restores_editor() {
         let artifact = artifacts()[0].join("session.html");
         assert!(artifact.exists());
         // Completion restores the same editor and removes the artifact before its notice.
-        assert!(runtime.block_on(&mut operation).is_ok());
+        assert!(operation.await.is_ok());
         assert!(artifacts().is_empty(), "the artifact is gone");
         // The child received that path and read the exported document.
         let calls = arguments();
@@ -728,7 +733,7 @@ fn share_creates_secret_gist_and_restores_editor() {
 fn share_cancel_terminates_child_and_suppresses_late_outcome() {
     use std::io::{BufRead, BufReader, Read as _};
     const TEST: &str = "share_cancel_terminates_child_and_suppresses_late_outcome";
-    drop(run(TEST, "child", Some((GH, "0700")), |directory| {
+    drop(run(TEST, "child", Some((GH, "0700")), async |directory| {
         // The controlled program announces its gist step on a socket this test owns.
         let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
         let port = listener.local_addr().unwrap().port();
@@ -738,10 +743,10 @@ fn share_cancel_terminates_child_and_suppresses_late_outcome() {
                 {"stream": "hold"}
             ]}}),
         );
-        let world = exportable(directory);
+        let world = exportable(directory).await;
         let editor = Rc::clone(&world.mode.editor);
         submit(&world.mode, "/share");
-        let (runtime, mut operation) = start(&world);
+        let operation = start(&world);
         // Readiness comes from the running child, not from a pause in this test.
         let (mut control, _) = listener.accept().unwrap();
         let mut ready = String::new();
@@ -755,7 +760,7 @@ fn share_cancel_terminates_child_and_suppresses_late_outcome() {
         assert_notice(&world, &ThemeColor::Dim, "Share cancelled");
         assert!(artifacts().is_empty(), "the artifact is gone");
         // The wait requests ordinary termination and settles once the child is reaped.
-        assert!(runtime.block_on(&mut operation).is_ok());
+        assert!(operation.await.is_ok());
         let mut reached = [0u8; 1];
         assert_eq!(
             control.read(&mut reached).unwrap(),
@@ -777,7 +782,7 @@ fn share_cancel_terminates_child_and_suppresses_late_outcome() {
             {"stream": "out", "bytes": hex("https://gist.github.com/alice/second\n")}
         ]}}));
         submit(&world.mode, "/share");
-        drive(&world).unwrap();
+        drive(&world).await.unwrap();
         assert_notice(
             &world,
             &ThemeColor::Dim,
@@ -791,9 +796,9 @@ fn share_and_copy_commands_clear_editor_after_completion() {
     const TEST: &str = "share_and_copy_commands_clear_editor_after_completion";
     let cases: Vec<(Submitted, Routed)> = recorded_cases(FIXTURES, TEST);
     assert_eq!(cases.len(), 6);
-    drop(run(TEST, "child", None, |directory| {
+    drop(run(TEST, "child", None, async |directory| {
         for (case, expected) in &cases {
-            let world = started(directory);
+            let world = started(directory).await;
             let mut waiter = waiting(&world.mode);
             submit(&world.mode, &case.text);
             if !expected.routed {
@@ -813,7 +818,7 @@ fn share_and_copy_commands_clear_editor_after_completion() {
             assert_eq!(world.runtime.futures(), 1, "{}", case.text);
             // A buffer seeded while the command is pending is cleared once it settles.
             world.mode.editor.set_text("seeded");
-            drive(&world).unwrap();
+            drive(&world).await.unwrap();
             assert_eq!(world.mode.editor.get_text(), "", "{}", case.text);
             assert_eq!(world.runtime.futures(), 0, "{}", case.text);
         }
@@ -823,17 +828,17 @@ fn share_and_copy_commands_clear_editor_after_completion() {
 #[test]
 fn share_export_failure_cleans_only_owned_artifact() {
     const TEST: &str = "share_export_failure_cleans_only_owned_artifact";
-    drop(run(TEST, "child", Some((GH, "0700")), |directory| {
+    drop(run(TEST, "child", Some((GH, "0700")), async |directory| {
         configure(&json!({"auth": {"exit": 0}}));
         let keep = temp_root().join("keep.txt");
         fs::write(&keep, "unrelated").unwrap();
         // A published session whose package carries no export bundle fails at the
         // exporter's own asset step.
-        let published = exportable(directory);
+        let published = exportable(directory).await;
         fs::remove_dir_all(layout_dir(&package_root(), "src")).unwrap();
         publish(&published, directory, &[answer("exported")]);
         submit(&published.mode, "/share");
-        drive(&published).unwrap();
+        drive(&published).await.unwrap();
         assert_last_row_holds(
             &published,
             "Error: Failed to export session: ",
@@ -848,10 +853,10 @@ fn share_export_failure_cleans_only_owned_artifact() {
             return;
         };
         forget_arguments();
-        let world = started(directory);
+        let world = started(directory).await;
         publish(&world, directory, &[answer("exported")]);
         submit(&world.mode, "/share");
-        drive(&world).unwrap();
+        drive(&world).await.unwrap();
         assert_last_row_holds(
             &world,
             "Error: Failed to export session: ",
@@ -864,13 +869,13 @@ fn share_export_failure_cleans_only_owned_artifact() {
 #[test]
 fn share_spawn_failure_restores_editor_and_cleans_artifact() {
     const TEST: &str = "share_spawn_failure_restores_editor_and_cleans_artifact";
-    drop(run(TEST, "child", Some((GH, "0700")), |directory| {
+    drop(run(TEST, "child", Some((GH, "0700")), async |directory| {
         // The authentication answer succeeds and removes the program the gist needs.
         configure(&json!({"auth": {"exit": 0, "remove_self": true}}));
-        let world = exportable(directory);
+        let world = exportable(directory).await;
         let editor = Rc::clone(&world.mode.editor);
         submit(&world.mode, "/share");
-        drive(&world).unwrap();
+        drive(&world).await.unwrap();
         assert_last_row_holds(&world, "Error: Failed to create gist: ", "a refused launch");
         assert!(!last_row_holds(&world, "Share URL: "));
         assert!(artifacts().is_empty(), "the artifact is gone");
@@ -887,14 +892,14 @@ fn share_spawn_failure_restores_editor_and_cleans_artifact() {
 #[test]
 fn share_cleanup_failure_does_not_replace_result() {
     const TEST: &str = "share_cleanup_failure_does_not_replace_result";
-    drop(run(TEST, "child", Some((GH, "0700")), |directory| {
+    drop(run(TEST, "child", Some((GH, "0700")), async |directory| {
         configure(&json!({"auth": {"exit": 0}, "gist": {"frames": [
             {"stream": "chmod_artifact", "mode": "0500"},
             {"stream": "out", "bytes": hex("https://gist.github.com/alice/kept\n")}
         ]}}));
-        let world = exportable(directory);
+        let world = exportable(directory).await;
         submit(&world.mode, "/share");
-        drive(&world).unwrap();
+        drive(&world).await.unwrap();
         assert_notice(
             &world,
             &ThemeColor::Dim,
@@ -915,7 +920,7 @@ fn share_cleanup_failure_does_not_replace_result() {
 #[test]
 fn share_temp_artifacts_do_not_collide() {
     const TEST: &str = "share_temp_artifacts_do_not_collide";
-    drop(run(TEST, "child", None, |_directory| {
+    drop(run(TEST, "child", None, async |_directory| {
         let first = ShareArtifact::new().unwrap();
         let second = ShareArtifact::new().unwrap();
         assert_ne!(first.file, second.file);
@@ -948,7 +953,7 @@ fn share_temp_artifacts_do_not_collide() {
 #[test]
 fn share_capture_preserves_unicode_across_pipe_boundaries() {
     const TEST: &str = "share_capture_preserves_unicode_across_pipe_boundaries";
-    drop(run(TEST, "child", Some((GH, "0700")), |directory| {
+    drop(run(TEST, "child", Some((GH, "0700")), async |directory| {
         // Two-, three- and four-byte scalars split across native writes, an unsplit
         // control, and genuinely invalid bytes.
         let cases = [
@@ -980,9 +985,9 @@ fn share_capture_preserves_unicode_across_pipe_boundaries() {
                 .zip(["Gist: é", "Gist: €", "Gist: gists/🦀", "Gist: \u{fffd}"])
         {
             configure(&settings);
-            let world = exportable(directory);
+            let world = exportable(directory).await;
             submit(&world.mode, "/share");
-            drive(&world).unwrap();
+            drive(&world).await.unwrap();
             assert_notice(&world, &ThemeColor::Dim, notice);
         }
         // A failed gist keeps a split standard-error scalar too.
@@ -991,9 +996,9 @@ fn share_capture_preserves_unicode_across_pipe_boundaries() {
             {"stream": "sleep", "seconds": 0.05},
             {"stream": "err", "bytes": hex_byte(0xa9)}
         ]}}));
-        let world = exportable(directory);
+        let world = exportable(directory).await;
         submit(&world.mode, "/share");
-        drive(&world).unwrap();
+        drive(&world).await.unwrap();
         assert_notice(
             &world,
             &ThemeColor::Error,
@@ -1005,9 +1010,9 @@ fn share_capture_preserves_unicode_across_pipe_boundaries() {
 #[test]
 fn command_submission_preserves_editor_callback_order() {
     const TEST: &str = "command_submission_preserves_editor_callback_order";
-    drop(run(TEST, "child", None, |directory| {
+    drop(run(TEST, "child", None, async |directory| {
         for command in ["/share", "/copy"] {
-            let world = started(directory);
+            let world = started(directory).await;
             let editor = Rc::clone(&world.mode.editor);
             let seen: Rc<RefCell<Vec<(String, String, String)>>> = Rc::default();
             let recorded = Rc::clone(&seen);
@@ -1033,6 +1038,10 @@ fn command_submission_preserves_editor_callback_order() {
                 installed(text);
             })));
             world.terminal.send_input(command);
+            for work in world.runtime.take_futures() {
+                work.await.unwrap();
+            }
+            world.terminal.send_input("\x1b");
             world.terminal.send_input("\r");
             let events = seen.borrow().clone();
             let submitted = events.last().cloned().unwrap();
@@ -1054,7 +1063,7 @@ fn command_submission_preserves_editor_callback_order() {
 #[test]
 fn command_callbacks_release_containing_mode() {
     const TEST: &str = "command_callbacks_release_containing_mode";
-    drop(run(TEST, "child", None, |directory| {
+    drop(run(TEST, "child", None, async |directory| {
         let World {
             mode,
             terminal,
@@ -1062,7 +1071,7 @@ fn command_callbacks_release_containing_mode() {
             themes,
             host,
             loader,
-        } = started(directory);
+        } = started(directory).await;
         let editor = Rc::clone(&mode.editor);
         let callback = editor.on_submit().unwrap();
         let retained = mode
@@ -1081,7 +1090,7 @@ fn command_callbacks_release_containing_mode() {
         retained.dispose();
         drop((terminal, runtime, themes, host, loader, editor, retained));
         // A second live mode admits its own operation independently.
-        let world = started(directory);
+        let world = started(directory).await;
         submit(&world.mode, "/copy");
         assert_eq!(world.runtime.futures(), 1);
     }));

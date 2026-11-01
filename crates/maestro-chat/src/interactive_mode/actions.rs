@@ -57,6 +57,47 @@ impl InteractiveMode {
         );
     }
 
+    /// Opens the thinking picker or selects a case-insensitive supported level.
+    ///
+    /// # Errors
+    /// Returns the session's recording failure for a selected level, or the published
+    /// theme's failure while colouring the editor border, the status line or the
+    /// unknown-level error notice.
+    pub(super) fn handle_thinking_command(
+        self: &Rc<Self>,
+        search_term: &str,
+    ) -> Result<(), Box<dyn Error>> {
+        if search_term.is_empty() {
+            return self.show_thinking_selector();
+        }
+        let levels = self.runtime_host.session().get_available_thinking_levels();
+        if let Some(level) = levels
+            .iter()
+            .find(|level| thinking_text(level).0.eq_ignore_ascii_case(search_term))
+        {
+            return self.select_thinking_level(level.clone());
+        }
+        let available = levels
+            .iter()
+            .map(|level| thinking_text(level).0)
+            .collect::<Vec<_>>()
+            .join(", ");
+        Ok(self.show_error(&format!(
+            "Unknown thinking level \"{search_term}\". Available levels: {available}."
+        ))?)
+    }
+
+    /// Saves the chosen level and refreshes its footer, border and status.
+    ///
+    /// # Errors
+    /// Returns the session's recording failure, or the published theme's failure while
+    /// colouring the editor border or the status line.
+    pub(super) fn select_thinking_level(&self, level: ThinkingLevel) -> Result<(), Box<dyn Error>> {
+        let label = thinking_text(&level).0;
+        self.settings_thinking(level)?;
+        Ok(self.show_status(&format!("Thinking level: {label}"))?)
+    }
+
     /// Selects the session's next thinking level and shows it, refreshing the footer and
     /// border, or says the model cannot reason.
     ///
@@ -136,11 +177,13 @@ impl InteractiveMode {
             .map_err(Into::into)
     }
 
-    /// Edits the expanded editor text in the configured external editor, or warns when
-    /// neither `VISUAL` nor `EDITOR` names one.
+    /// Edits the current editor's expanded text in the configured external editor, or warns
+    /// when neither `VISUAL` nor `EDITOR` names one; the edited text goes to the editor that
+    /// is current when the edit finishes.
     ///
     /// # Errors
-    /// Returns the warning's theme failure or the edit's file, terminal or process failure.
+    /// Returns the warning's theme failure, the editor's failure or the edit's file,
+    /// terminal or process failure.
     pub(super) fn open_external_editor(&self) -> Result<(), Box<dyn Error>> {
         let Some(command) = external_command(self.tool_environment.runtime.as_ref()) else {
             return Ok(self.show_warning(
@@ -151,19 +194,22 @@ impl InteractiveMode {
             "maestro-editor-{}.maestro.md",
             self.tool_environment.runtime.log_context().unix_ms
         ));
+        let text = self
+            .expanded_editor_text()
+            .map_err(|error| -> Box<dyn Error> { error })?;
         let file = ExternalEditorFile {
             command: &command,
             path: &path,
-            text: &self.editor.get_expanded_text(),
+            text: &text,
         };
         edit_external_file(
             &self.ui,
             #[cfg(windows)]
             self.tool_environment.runtime.as_ref(),
-            &self.editor,
+            |text| self.current_editor().try_set_text(text),
             &file,
-        )?;
-        Ok(())
+        )
+        .map_err(|error| -> Box<dyn Error> { error })
     }
 
     /// Suspends the terminal to the background until the shell continues the process.
@@ -224,7 +270,8 @@ impl InteractiveMode {
     }
 
     /// Writes a read clipboard image to a new private temporary file and inserts its path
-    /// at the cursor; no image and every failure leave the editor untouched.
+    /// at the current editor's cursor; no image and every file failure leave the editor
+    /// untouched, and the editor's own failure goes to the terminal runtime.
     pub(super) fn paste_clipboard_result(&self, result: io::Result<Option<ClipboardImage>>) {
         let Ok(Some(image)) = result else {
             return;
@@ -235,8 +282,13 @@ impl InteractiveMode {
             uuid::Uuid::new_v4()
         ));
         if write_temporary_file(&path, &image.bytes).is_ok() {
-            self.editor.insert_text_at_cursor(&path.to_string_lossy());
-            self.ui.request_render(false);
+            let inserted = self
+                .current_editor()
+                .try_insert_text_at_cursor(&path.to_string_lossy());
+            match inserted {
+                Ok(_) => self.ui.request_render(false),
+                Err(error) => self.report(Err(error)),
+            }
         }
     }
 }

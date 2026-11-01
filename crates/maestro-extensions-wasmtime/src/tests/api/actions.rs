@@ -29,7 +29,7 @@ fn scalar_actions_keep_values_order_and_catchable_errors() {
             let output = seen.clone();
             actions.set_thinking_level = Rc::new(move |level| { output.borrow_mut().push(serde_json::json!(["thinking", level])); Err("selected failure".into()) });
         }
-        let (pump, admission) = Pump::new();
+        let (pump, admission) = Pump::new(crate::tests::support::widgets());
         let endpoint = pump.registry().api(api).unwrap();
         let worker = std::thread::spawn(move || {
             endpoint.read(|reply| Request::SetSessionName(" raw\u{feff}\u{85} ".into(), reply)).unwrap();
@@ -38,7 +38,7 @@ fn scalar_actions_keep_values_order_and_catchable_errors() {
                 endpoint.read(|reply| Request::Label(" id ".into(), label, reply)).unwrap();
             }
             endpoint.read(|reply| Request::SetActiveTools(vec![" z ".into(), "a".into(), "a".into()], reply)).unwrap();
-            assert_eq!(serde_json::from_str::<serde_json::Value>(&endpoint.read(Request::AllTools).unwrap()).unwrap(), serde_json::json!([{"name":" tool ","description":"","parameters":{"type":"object"},"sourceInfo":{"path":"p","source":"custom","scope":"project","origin":"package","baseDir":"base"},"schemaKinds":{}}]));
+            assert_eq!(serde_json::from_str::<serde_json::Value>(&endpoint.schema_listing().unwrap().0).unwrap(), serde_json::json!([{"name":" tool ","description":"","parameters":{"type":"object"},"sourceInfo":{"path":"p","source":"custom","scope":"project","origin":"package","baseDir":"base"},"schemaKinds":{}}]));
             assert_eq!(serde_json::from_str::<serde_json::Value>(&endpoint.read(Request::Commands).unwrap()).unwrap(), serde_json::json!([{"name":" command ","description":"","source":"custom-source","sourceInfo":{"path":"p","source":"custom","scope":"project","origin":"package","baseDir":"base"}}]));
             assert_eq!(endpoint.read(Request::Thinking).unwrap(), "\"high\"");
             assert_eq!(endpoint.read(|reply| Request::SetThinking("\"off\"".into(), reply)).unwrap_err(), "selected failure");
@@ -72,7 +72,7 @@ fn admitted_model_selection_survives_rebind_and_retirement() {
                     Ok(false)
                 })
             });
-            let (mut pump, admission) = Pump::new();
+            let (mut pump, admission) = Pump::new(crate::tests::support::widgets());
             let endpoint = pump.registry().api(api).unwrap();
             let model = model_support::model(" selected ").read().unwrap().clone();
             let reader = endpoint.clone();
@@ -115,7 +115,7 @@ fn thinking_levels_use_canonical_json_in_both_directions() {
                 *set.borrow_mut() = level;
                 Ok(())
             });
-            let (pump, admission) = Pump::new();
+            let (pump, admission) = Pump::new(crate::tests::support::widgets());
             let endpoint = pump.registry().api(api).unwrap();
             let worker = std::thread::spawn(move || {
                 assert_eq!(endpoint.read(Request::Thinking).unwrap(), "\"off\"");

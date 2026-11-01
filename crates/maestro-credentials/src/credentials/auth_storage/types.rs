@@ -1,62 +1,9 @@
 //! Stored credential records, their stored JSON form and status metadata.
-use indexmap::IndexMap;
-use maestro_models::OAuthCredentials;
+pub use maestro_request::auth_storage::{
+    ApiKeyCredential, AuthCredential, AuthSource, AuthStatus, AuthStorageData, OAuthCredential,
+};
 use serde::Deserialize;
 use serde_json::{Map, Value};
-
-/// A stored key: a literal, an environment variable name or a `!` command.
-#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
-pub struct ApiKeyCredential {
-    /// Configured value resolved when a request key is selected.
-    pub key: String,
-}
-
-/// OAuth tokens stored under the `oauth` discriminator.
-pub type OAuthCredential = OAuthCredentials;
-
-/// One provider's stored credential.
-#[derive(Clone, Debug, PartialEq, Deserialize)]
-#[serde(tag = "type")]
-pub enum AuthCredential {
-    /// Stored as `{"type": "api_key", "key": ...}`.
-    #[serde(rename = "api_key")]
-    ApiKey(ApiKeyCredential),
-    /// Stored as `{"type": "oauth", "refresh": ..., "access": ..., "expires": ...}`
-    /// followed by provider fields.
-    #[serde(rename = "oauth")]
-    OAuth(OAuthCredential),
-}
-
-/// Typed credentials by provider, in stored order.
-pub type AuthStorageData = IndexMap<String, AuthCredential>;
-
-/// Where a provider's configured authentication comes from.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum AuthSource {
-    /// A stored record.
-    Stored,
-    /// A runtime key override.
-    Runtime,
-    /// A populated provider environment variable.
-    Environment,
-    /// The fallback resolver.
-    Fallback,
-    /// A literal key from the model configuration file.
-    ModelsJsonKey,
-    /// A command key from the model configuration file.
-    ModelsJsonCommand,
-}
-
-/// Configured-authentication metadata that never carries key or token values.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct AuthStatus {
-    /// Whether the selected source is a stored record.
-    pub configured: bool,
-    /// The selected source; absent when nothing is configured.
-    pub source: Option<AuthSource>,
-    /// Display label of the source, when it has one.
-    pub label: Option<String>,
-}
 
 /// A recorded read, lock, parse or write failure.
 pub type AuthStorageError = Box<dyn std::error::Error + Send + Sync>;
@@ -86,6 +33,16 @@ pub(super) fn stored_record(credential: AuthCredential) -> Value {
         AuthCredential::ApiKey(api_key) => {
             record.insert("type".into(), "api_key".into());
             record.insert("key".into(), api_key.key.into());
+            if let Some(env) = api_key.env {
+                record.insert(
+                    "env".into(),
+                    Value::Object(
+                        env.into_iter()
+                            .map(|(name, value)| (name, Value::String(value)))
+                            .collect(),
+                    ),
+                );
+            }
         }
         AuthCredential::OAuth(oauth) => {
             record.insert("type".into(), "oauth".into());

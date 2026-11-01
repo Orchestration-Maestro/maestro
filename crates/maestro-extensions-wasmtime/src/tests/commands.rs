@@ -41,7 +41,7 @@ async fn admitted_wait() {
             ..crate::context_actions::silent_command_operations()
         },
     )));
-    let (mut pump, admission) = Pump::new();
+    let (mut pump, admission) = Pump::new(crate::tests::support::widgets());
     let endpoint = pump
         .registry()
         .context(Owner::Command(runner.create_command_context()))
@@ -82,7 +82,7 @@ fn reload_uses_the_operation_selected_when_consumed() {
         .unwrap()
         .block_on(async {
             let runner = runner("/reload");
-            let (mut pump, admission) = Pump::new();
+            let (mut pump, admission) = Pump::new(crate::tests::support::widgets());
             let endpoint = pump
                 .registry()
                 .context(Owner::Command(runner.create_command_context()))
@@ -137,7 +137,7 @@ async fn navigation() {
             ..crate::context_actions::silent_command_operations()
         },
     )));
-    let (pump, admission) = Pump::new();
+    let (pump, admission) = Pump::new(crate::tests::support::widgets());
     let endpoint = pump
         .registry()
         .context(Owner::Command(runner.create_command_context()))

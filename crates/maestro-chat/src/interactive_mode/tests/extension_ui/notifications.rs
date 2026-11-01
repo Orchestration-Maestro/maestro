@@ -49,12 +49,12 @@ struct Sequence {
 #[test]
 fn notifications_choose_status_warning_or_error() {
     let test = "notifications_choose_status_warning_or_error";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<Input, Notice>(test) {
             let Input::Notify { kind } = input else {
                 panic!("a notification")
             };
-            let world = started(directory);
+            let world = started(directory).await;
             world.mode.chat_container.clear();
             port(&world.mode)
                 .notify("first\n界".to_owned(), kind)
@@ -76,10 +76,10 @@ fn notifications_choose_status_warning_or_error() {
 #[test]
 fn notification_status_reuses_only_the_adjacent_pair() {
     let test = "notification_status_reuses_only_the_adjacent_pair";
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (input, expected) in cases::<Input, Sequence>(test) {
             assert!(matches!(input, Input::Sequence));
-            let world = started(directory);
+            let world = started(directory).await;
             world.mode.chat_container.clear();
             let host = port(&world.mode);
             host.notify("first".to_owned(), None).unwrap();

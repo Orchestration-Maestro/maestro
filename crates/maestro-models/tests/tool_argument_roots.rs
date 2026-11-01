@@ -1,6 +1,7 @@
 //! Validation keeps the complete JSON root of a tool call's arguments.
 use std::collections::BTreeMap;
 
+use crate::json_equivalence::equivalent;
 use maestro_models::{
     ParameterSchema, SchemaKind, Tool, ToolCall, validate_tool_arguments, validate_tool_call,
 };
@@ -66,27 +67,6 @@ fn invocation(row: &Row) -> ToolCall {
     }
 }
 
-/// Compare JSON values, treating numbers by their binary64 value.
-fn equivalent(left: &Value, right: &Value) -> bool {
-    match (left, right) {
-        (Value::Number(left), Value::Number(right)) => left.as_f64() == right.as_f64(),
-        (Value::Array(left), Value::Array(right)) => {
-            left.len() == right.len()
-                && left
-                    .iter()
-                    .zip(right)
-                    .all(|(left, right)| equivalent(left, right))
-        }
-        (Value::Object(left), Value::Object(right)) => {
-            left.len() == right.len()
-                && left
-                    .iter()
-                    .all(|(key, left)| right.get(key).is_some_and(|right| equivalent(left, right)))
-        }
-        _ => left == right,
-    }
-}
-
 /// Every recorded family, operand and origin keeps its complete outcome.
 #[test]
 fn validation_preserves_recorded_root_outcomes() {
@@ -126,7 +106,7 @@ fn validation_preserves_recorded_root_outcomes() {
 /// Both public validation operations report the original root, in order.
 #[test]
 fn root_validation_keeps_original_diagnostics() {
-    let text_tool = Tool {
+    let text_tool: Tool = Tool {
         name: "text".into(),
         description: String::new(),
         parameters: json!({"type": "object"}).into(),
@@ -139,7 +119,7 @@ fn root_validation_keeps_original_diagnostics() {
     };
 
     assert_eq!(
-        validate_tool_call(&[], &call("missing", json!({"q": 1})))
+        validate_tool_call::<()>(&[], &call("missing", json!({"q": 1})))
             .expect_err("an unknown tool is rejected")
             .message,
         "Tool \"missing\" not found"
@@ -175,7 +155,7 @@ fn root_validation_keeps_original_diagnostics() {
         );
     }
 
-    let number = Tool {
+    let number: Tool = Tool {
         name: "number".into(),
         description: String::new(),
         parameters: json!({"type": "number", "minimum": 100}).into(),

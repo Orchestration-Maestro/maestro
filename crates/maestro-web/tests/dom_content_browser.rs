@@ -22,8 +22,8 @@ use maestro_web::{
     tools::{
         dom::render_tool as render_page_tool,
         types::{
-            ToolContent, ToolParams, ToolRenderResult, ToolRenderer, ToolRendererBinding,
-            ToolResultMessageView, ToolUiError,
+            ToolParams, ToolRenderResult, ToolRenderer, ToolRendererBinding, ToolResultMessageView,
+            ToolUiError,
         },
     },
 };
@@ -163,26 +163,30 @@ impl ToolRenderer<Native, Details, Box<dyn DomContent>> for PageRenderer {
         })
     }
 }
-/// Canvas renderer for ordinary JSON operands.
-struct CanvasRenderer;
-impl ToolRenderer<JsonObject, Value> for CanvasRenderer {
+/// Default-output renderer for ordinary JSON operands.
+struct DefaultOutputRenderer;
+impl ToolRenderer<JsonObject, Value> for DefaultOutputRenderer {
     fn render(
         &self,
         _: Option<&JsonObject>,
         _: Option<ToolResultMessageView<'_, Value>>,
         _: bool,
     ) -> Result<ToolRenderResult, ToolUiError> {
-        Err(ToolUiError::Presentation("canvas reached".into()))
+        Err(ToolUiError::Presentation("default output reached".into()))
     }
 }
 
-/// Page and canvas handles answer only their own lookups; page operands keep their identity.
+/// Root and page aliases retain the same callback and original native operands.
 #[wasm_bindgen]
-pub fn binding_keeps_canvas_and_page_handles_apart() {
-    let page = ToolRendererBinding::from_dom::<Native, Details>(Rc::new(PageRenderer));
-    assert!(page.renderer::<Native, Details>().is_none());
-    assert!(page.renderer::<JsonObject, Value>().is_none());
-    register_tool_renderer("page-only", page);
+pub fn binding_root_and_page_aliases_keep_original_operands() {
+    let renderer: Rc<dyn ToolRenderer<Native, Details>> = Rc::new(PageRenderer);
+    let binding = ToolRendererBinding::from_dom(Rc::clone(&renderer));
+    assert!(Rc::ptr_eq(
+        &binding.renderer::<Native, Details>().unwrap(),
+        &renderer
+    ));
+    assert!(binding.renderer::<JsonObject, Value>().is_none());
+    register_tool_renderer("page-only", binding);
     let seen = Rc::new(Cell::new(""));
     let observed = Rc::clone(&seen);
     let native = Native {
@@ -197,28 +201,27 @@ pub fn binding_keeps_canvas_and_page_handles_apart() {
         details: Some(Details(Rc::clone(&calls))),
         is_error: false,
     };
-    let params = ToolParams::typed(&native, |_| Ok(None));
-    let shown = render_page_tool("page-only", Some(params), Some(&message), false).unwrap();
-    assert!(shown.is_custom);
-    assert_eq!((seen.get(), calls.get()), ("page", 1));
-    let params = ToolParams::typed(&native, |_| Ok(None));
-    let canvas = render_tool("page-only", Some(params), Some(&message), false);
-    assert!(
-        matches!(canvas, Err(ToolUiError::Presentation(text)) if text == "Renderer operand types do not match")
-    );
+    for dispatch in [render_tool, render_page_tool] {
+        let params = ToolParams::typed(&native, |_| Ok(None));
+        let shown = dispatch("page-only", Some(params), Some(&message), false).unwrap();
+        assert!(shown.is_custom);
+        let root = shown.content.mount(&view()).unwrap();
+        assert_eq!(text(&root.node), "page");
+    }
+    assert_eq!((seen.get(), calls.get()), ("page", 2));
     register_tool_renderer(
-        "canvas-only",
-        ToolRendererBinding::from_raw::<JsonObject, Value>(Rc::new(CanvasRenderer)),
+        "default-output",
+        ToolRendererBinding::from_raw::<JsonObject, Value>(Rc::new(DefaultOutputRenderer)),
     );
     let object = JsonObject::new();
-    let page = render_page_tool::<JsonObject, Value>(
-        "canvas-only",
+    let result = render_page_tool::<JsonObject, Value>(
+        "default-output",
         Some(ToolParams::object(&object)),
         None,
         false,
     );
     assert!(
-        matches!(page, Err(ToolUiError::Presentation(text)) if text == "Renderer operand types do not match")
+        matches!(result, Err(ToolUiError::Presentation(text)) if text == "default output reached")
     );
 }
 
@@ -281,11 +284,11 @@ impl MessageRenderer<NoCustomMessages, Box<dyn DomContent>> for PageMessage {
         Ok(Box::new(Text(self.0)))
     }
 }
-/// Canvas message renderer that is never reached by page lookups.
-struct CanvasMessage;
-impl MessageRenderer for CanvasMessage {
-    fn render(&self, _: &AgentMessage) -> Result<Box<dyn ToolContent>, ToolUiError> {
-        Err(ToolUiError::Presentation("canvas reached".into()))
+/// Default-output message renderer whose error both aliases preserve.
+struct DefaultOutputMessage;
+impl MessageRenderer for DefaultOutputMessage {
+    fn render(&self, _: &AgentMessage) -> Result<Box<dyn DomContent>, ToolUiError> {
+        Err(ToolUiError::Presentation("default output reached".into()))
     }
 }
 /// The text a page message renderer's content shows.
@@ -325,27 +328,31 @@ pub fn page_message_renderers_keep_open_roles_and_replacements() {
     }
 }
 
-/// A page message renderer is invisible to canvas lookups and the other way round.
+/// Root and page message lookups use one map and preserve the selected callback's error.
 #[wasm_bindgen]
-pub fn canvas_and_page_message_lookups_stay_separate() {
-    let page: Rc<dyn MessageRenderer<NoCustomMessages, Box<dyn DomContent>>> =
-        Rc::new(PageMessage("page"));
-    register_message_renderer("user", page);
-    let canvas: Rc<dyn MessageRenderer> = Rc::new(CanvasMessage);
-    register_message_renderer("assistant", canvas);
+pub fn root_and_page_message_aliases_share_roles_and_errors() {
+    let renderer: Rc<dyn MessageRenderer> = Rc::new(PageMessage("page"));
+    register_message_renderer("user", Rc::clone(&renderer));
+    register_message_renderer("assistant", Rc::new(DefaultOutputMessage));
     let user: AgentMessage =
-        serde_json::from_value(json!({"role": "user", "content": "hi", "timestamp": 1})).unwrap();
-    assert!(get_message_renderer::<NoCustomMessages>("user").is_none());
-    assert!(render_message(&user).unwrap().is_none());
-    let content = render_page_message(&user).unwrap().unwrap();
-    let view = view();
-    let parent: Node = container().into();
-    MountedContent::default()
-        .show(content.as_ref(), &parent, &view)
-        .unwrap();
-    assert_eq!(text(&parent), "page");
-    assert!(get_page_message_renderer::<NoCustomMessages>("assistant").is_none());
-    assert!(get_message_renderer::<NoCustomMessages>("assistant").is_some());
+        serde_json::from_value(json!({"role":"user","content":"hi","timestamp":1})).unwrap();
+    for lookup in [
+        get_message_renderer::<NoCustomMessages>,
+        get_page_message_renderer::<NoCustomMessages>,
+    ] {
+        assert!(Rc::ptr_eq(&lookup("user").unwrap(), &renderer));
+        assert!(lookup("assistant").is_some());
+    }
+    for dispatch in [render_message, render_page_message] {
+        let root = dispatch(&user).unwrap().unwrap().mount(&view()).unwrap();
+        assert_eq!(text(&root.node), "page");
+    }
+    let failed = get_page_message_renderer::<NoCustomMessages>("assistant")
+        .unwrap()
+        .render(&user);
+    assert!(
+        matches!(failed, Err(ToolUiError::Presentation(text)) if text == "default output reached")
+    );
 }
 
 /// Mount the default page content for these operands and return its root.
@@ -372,7 +379,7 @@ fn default_content(
 }
 /// Section labels, shown listing text and listing languages of mounted default content.
 fn listings(root: &Element) -> Vec<(String, String, String)> {
-    let codes = root.query_selector_all("code-block").unwrap();
+    let codes = root.query_selector_all(".maestro-code").unwrap();
     (0..codes.length())
         .map(|index| {
             let code: Element = codes.item(index).unwrap().unchecked_into();
@@ -776,9 +783,9 @@ pub fn default_page_content_updates_its_listings_in_place(import_module: &js_sys
     };
     show(&mut mounted, None);
     let root: Element = mounted.root().cloned().unwrap().unchecked_into();
-    let input = root.query_selector("code-block").unwrap().unwrap();
+    let input = root.query_selector(".maestro-code").unwrap().unwrap();
     show(&mut mounted, Some(result("done", false)));
-    let blocks = root.query_selector_all("code-block").unwrap();
+    let blocks = root.query_selector_all(".maestro-code").unwrap();
     assert_eq!(blocks.length(), 2);
     assert_eq!(blocks.item(0), Some(input.into()));
     let output: Element = blocks.item(1).unwrap().unchecked_into();

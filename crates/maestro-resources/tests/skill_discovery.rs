@@ -38,9 +38,9 @@ fn maestro_skills_load_valid_metadata_and_source() {
     assert_eq!(skill.source_info.origin, SourceOrigin::TopLevel);
 }
 
-/// Parent mismatch warns without omitting the described resource.
+/// A name that differs from the containing directory loads without a warning.
 #[test]
-fn maestro_skills_warn_on_parent_mismatch() {
+fn maestro_skills_accept_name_that_differs_from_directory() {
     let dir = Directory::new();
     let file = dir.file(
         "calendar/SKILL.md",
@@ -52,20 +52,8 @@ fn maestro_skills_warn_on_parent_mismatch() {
         source: "path",
     });
     assert_eq!(result.skills.len(), 1);
-    assert_eq!(result.diagnostics.len(), 1);
-    assert_eq!(
-        result.diagnostics[0].message,
-        "name \"other\" does not match parent directory \"calendar\""
-    );
-    assert_eq!(
-        result.diagnostics[0].path.as_deref(),
-        Some(support::text(&file))
-    );
-    assert_eq!(
-        result.diagnostics[0].r#type,
-        maestro_resources::DiagnosticType::Warning
-    );
-    assert!(result.diagnostics[0].collision.is_none());
+    assert_eq!(result.skills[0].name, "other");
+    assert!(result.diagnostics.is_empty());
 }
 
 /// Name warnings retain their authored order and count complete characters.
@@ -90,19 +78,18 @@ fn maestro_skills_keep_name_warning_order() {
             .map(|d| d.message.as_str())
             .collect::<Vec<_>>(),
         vec![
-            format!("name \"{name}\" does not match parent directory \"parent\""),
-            "name exceeds 64 characters (65)".into(),
-            "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)".into(),
-            "name must not start or end with a hyphen".into(),
-            "name must not contain consecutive hyphens".into(),
+            "name exceeds 64 characters (65)",
+            "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "name must not start or end with a hyphen",
+            "name must not contain consecutive hyphens",
         ]
     );
     for (name, expected) in [
         ("a0-b".to_string(), 0),
         ("a".repeat(64), 0),
         ("a".repeat(65), 1),
-        ("😀".repeat(64), 2),
-        ("😀".repeat(65), 3),
+        ("😀".repeat(64), 1),
+        ("😀".repeat(65), 2),
         ("a.b".into(), 1),
     ] {
         let parent = if name.contains('😀') {
@@ -152,7 +139,6 @@ fn maestro_skills_validate_description_before_name() {
                     .collect::<Vec<_>>(),
                 vec![
                     "description is required",
-                    "name \"Other\" does not match parent directory \"parent\"",
                     "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)"
                 ]
             );
@@ -654,7 +640,8 @@ fn maestro_skills_report_explicit_path_failures() {
     );
 }
 
-/// All home forms and relative components resolve to populated resources.
+/// The home forms and relative components resolve to populated resources, and `~name` stays a
+/// path below the working directory.
 #[test]
 fn maestro_skills_expand_all_home_path_forms() {
     let dir = Directory::new();
@@ -664,7 +651,6 @@ fn maestro_skills_expand_all_home_path_forms() {
         ("~".into(), file.clone()),
         ("~/calendar".into(), file.clone()),
         ("~//calendar".into(), file.clone()),
-        ("~calendar".into(), file.clone()),
         ("home/../home/calendar".into(), file.clone()),
         ("\u{feff}~/calendar\u{feff}".into(), file.clone()),
         (home.join("calendar/../calendar"), file),
@@ -683,6 +669,21 @@ fn maestro_skills_expand_all_home_path_forms() {
         assert_eq!(result.skills[0].file_path.as_str(), support::text(&target));
         assert!(result.diagnostics.is_empty());
     }
+    let paths = [std::path::PathBuf::from("~calendar")];
+    let result = maestro_resources::load_skills(maestro_resources::LoadSkillsOptions {
+        cwd: support::text(dir.0.path()),
+        home: support::text(&home),
+        agent_dir: support::text(dir.0.path()),
+        config_dir_name: ".maestro",
+        skill_paths: &strings(&paths),
+        include_defaults: false,
+    })
+    .unwrap();
+    assert!(result.skills.is_empty());
+    assert_eq!(
+        result.diagnostics[0].path.as_deref(),
+        Some(support::text(&support::under(dir.0.path(), "~calendar")))
+    );
     let paths = [std::path::PathBuf::from("\u{85}~/calendar")];
     let result = maestro_resources::load_skills(maestro_resources::LoadSkillsOptions {
         cwd: support::text(dir.0.path()),
@@ -696,14 +697,20 @@ fn maestro_skills_expand_all_home_path_forms() {
     assert!(result.skills.is_empty());
     assert_eq!(
         result.diagnostics[0].path.as_deref(),
-        Some(support::text(&dir.0.path().join("\u{85}~/calendar")))
+        Some(support::text(&support::under(
+            dir.0.path(),
+            "\u{85}~/calendar"
+        )))
     );
 }
 
 /// The complete fixture tree yields exact retained files and diagnostic cardinality.
 #[test]
 fn maestro_skills_load_the_complete_fixture_tree() {
-    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/skills");
+    let root = support::under(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")),
+        "tests/fixtures/skills",
+    );
     let result = load_skills_from_dir(LoadSkillsFromDirOptions {
         cwd: support::text(&std::env::temp_dir()),
         dir: support::text(&root),
@@ -729,7 +736,7 @@ fn maestro_skills_load_the_complete_fixture_tree() {
     ];
     expected.sort_unstable();
     assert_eq!(names, expected);
-    assert_eq!(result.diagnostics.len(), 10);
+    assert_eq!(result.diagnostics.len(), 6);
     assert!(result.skills.iter().all(
         |s| s.file_path.starts_with(support::text(&root)) && s.source_info.source == "fixture"
     ));
@@ -738,9 +745,14 @@ fn maestro_skills_load_the_complete_fixture_tree() {
 /// Public loading keeps the first name and appends complete collision details last.
 #[test]
 fn maestro_skills_keep_first_discovered_name() {
-    let root =
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/skills-collision");
-    let paths = [root.join("first/calendar"), root.join("second/calendar")];
+    let root = support::under(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")),
+        "tests/fixtures/skills-collision",
+    );
+    let paths = [
+        support::under(&root, "first/calendar"),
+        support::under(&root, "second/calendar"),
+    ];
     let result = maestro_resources::load_skills(maestro_resources::LoadSkillsOptions {
         cwd: support::text(&root),
         home: support::text(&root),
@@ -1303,6 +1315,8 @@ fn maestro_skills_use_literal_dot_root_names() {
         let skill = &result.skills[0];
         assert_eq!(skill.name, root);
         assert_eq!(skill.base_dir.as_str(), root);
+        // The file is joined natively, so Windows spells `../SKILL.md` with `\`.
+        let expected_file = expected_file.replace('/', std::path::MAIN_SEPARATOR_STR);
         assert_eq!(skill.file_path.as_str(), expected_file);
         assert_eq!(result.diagnostics.len(), 1);
         assert_eq!(
@@ -1515,7 +1529,7 @@ fn maestro_skills_classify_exact_default_roots() {
             &format!("{root}/SKILL.md"),
             "---\nname: skills\ndescription: Meetings\n---",
         );
-        let paths = [support::text(&dir.0.path().join(root)).to_owned()];
+        let paths = [support::text(&support::under(dir.0.path(), root)).to_owned()];
         let result = load_skills(LoadSkillsOptions {
             cwd: support::text(dir.0.path()),
             home: support::text(dir.0.path()),

@@ -14,6 +14,8 @@ type Reply = std::sync::mpsc::Sender<Result<(), String>>;
 
 /// Owned canonical registration operands, never native callback substitutes.
 pub(crate) enum Request {
+    /// Constructs native credential and catalog owners on the same facade.
+    Construct(crate::construction::Request),
     /// Registers the actual Local renderer without a reporter projection.
     Renderer(String, Handle, Reply),
     /// Registers a concrete known event or retains an opaque unknown callback.
@@ -26,6 +28,10 @@ pub(crate) enum Request {
         prepare: Option<Handle>,
         /// Actual execution callback.
         execute: Handle,
+        /// The schema bindings admitted for this declaration.
+        schemas: crate::schema_registration::Schemas,
+        /// Independently optional call and result renderers.
+        renderers: (Option<Handle>, Option<Handle>),
         /// Catchable native registration result.
         reply: Reply,
     },
@@ -55,10 +61,33 @@ pub(crate) enum Request {
     },
 }
 
-impl Request {
+/// Registers one tool declaration with its callbacks and optional renderers.
+fn tool(
+    api: &ExtensionAPI<Local>,
+    registry: &Registry,
+    metadata: &str,
+    callbacks: crate::schema_registration::ToolCallbacks,
+    renderers: (Option<Handle>, Option<Handle>),
+) -> Result<(), String> {
+    let definition = crate::tool_registration::definition(
+        metadata,
+        callbacks,
+        renderers,
+        registry.clone(),
+        api.clone(),
+    )?;
+    api.register_tool(definition)
+        .map_err(|error| error.to_string())
+}
+
+impl crate::api_reads::ApiRequest for Request {
     /// Calls native registration outside all resource-table borrows.
-    pub(crate) fn answer(self, api: &ExtensionAPI<Local>, registry: &Registry) {
+    fn answer(self, api: &ExtensionAPI<Local>, registry: &Registry) {
         let (result, reply) = match self {
+            Self::Construct(request) => {
+                request.answer(api, registry);
+                return;
+            }
             Self::Renderer(name, handler, reply) => {
                 let renderer = handler.renderer(registry.clone(), api.events.clone());
                 (api.register_message_renderer(name, renderer), reply)
@@ -73,20 +102,12 @@ impl Request {
                 metadata,
                 prepare,
                 execute,
+                schemas,
+                renderers,
                 reply,
             } => {
-                let result = crate::tool_registration::definition(
-                    &metadata,
-                    prepare,
-                    execute,
-                    registry.clone(),
-                    api.events.clone(),
-                )
-                .and_then(|definition| {
-                    api.register_tool(definition)
-                        .map_err(|error| error.to_string())
-                });
-                let _ = reply.send(result);
+                let callbacks = (prepare, execute, schemas);
+                let _ = reply.send(tool(api, registry, &metadata, callbacks, renderers));
                 return;
             }
             Self::Command {
@@ -98,7 +119,8 @@ impl Request {
             } => {
                 let options = RegisteredCommandOptions {
                     description,
-                    get_argument_completions: completions.map(|handler| handler.completions()),
+                    get_argument_completions: completions
+                        .map(|handler| handler.completions(registry.clone())),
                     handler: handler.command(registry.clone()),
                 };
                 (api.register_command(name, options), reply)
@@ -120,13 +142,17 @@ impl Request {
     }
 
     /// Settles the caller when its original API capability has ended.
-    pub(crate) fn reject(self, error: &str) {
-        let (Self::Command { reply, .. }
-        | Self::Shortcut { reply, .. }
-        | Self::Tool { reply, .. }
-        | Self::On(_, _, reply)
-        | Self::Renderer(_, _, reply)) = self;
-        let _ = reply.send(Err(error.to_owned()));
+    fn reject(self, error: &str) {
+        match self {
+            Self::Construct(request) => request.reject(error),
+            Self::Command { reply, .. }
+            | Self::Shortcut { reply, .. }
+            | Self::Tool { reply, .. }
+            | Self::On(_, _, reply)
+            | Self::Renderer(_, _, reply) => {
+                let _ = reply.send(Err(error.to_owned()));
+            }
+        }
     }
 }
 
@@ -138,5 +164,15 @@ impl Endpoint {
     ) -> Result<(), String> {
         self.0
             .request(|id, reply| Message::Registration(id, request(reply)))
+    }
+
+    /// Registers through a route, for a registration whose native refresh may call back
+    /// into this instance.
+    pub(crate) fn routed_registration(
+        &self,
+        request: impl FnOnce(Reply) -> Request,
+    ) -> crate::import_route::Route {
+        self.0
+            .route(|id, reply| Message::Registration(id, request(reply)))
     }
 }

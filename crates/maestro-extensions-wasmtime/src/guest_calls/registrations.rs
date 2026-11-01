@@ -26,7 +26,12 @@ impl Handle {
         let handler = self.clone();
         Rc::new(move |args, context| {
             let context = registry.context(Owner::Command(context));
-            Box::pin(invoke_command(handler.clone(), args, context))
+            Box::pin(invoke_command(
+                handler.clone(),
+                registry.clone(),
+                args,
+                context,
+            ))
         })
     }
     /// Adapts the shortcut's original ordinary context on the native local owner.
@@ -34,18 +39,21 @@ impl Handle {
         let handler = self.clone();
         Rc::new(move |context| {
             let context = registry.context(Owner::Base(context));
-            Box::pin(invoke_shortcut(handler.clone(), context))
+            Box::pin(invoke_shortcut(handler.clone(), registry.clone(), context))
         })
     }
     /// Preserves absent and present-empty completion lists as distinct native outcomes.
-    pub(crate) fn completions(&self) -> ArgumentCompletions<Local> {
+    pub(crate) fn completions(&self, registry: Registry) -> ArgumentCompletions<Local> {
         let handler = self.clone();
-        Rc::new(move |prefix| Box::pin(invoke_completion(handler.clone(), prefix)))
+        Rc::new(move |prefix| {
+            Box::pin(invoke_completion(handler.clone(), registry.clone(), prefix))
+        })
     }
 }
 /// Awaits the original command after its supplied context has crossed the local boundary.
 async fn invoke_command(
     handler: Handle,
+    registry: Registry,
     args: String,
     context: Result<Endpoint, String>,
 ) -> Result<(), EventError> {
@@ -53,7 +61,7 @@ async fn invoke_command(
     handler
         .0
         .endpoint
-        .submit(|reply| {
+        .call(&registry, |reply| {
             Call::Registered(RegisteredCall::Command(
                 handler.clone(),
                 args,
@@ -67,25 +75,29 @@ async fn invoke_command(
 /// Awaits the original shortcut with no command-context substitution.
 async fn invoke_shortcut(
     handler: Handle,
+    registry: Registry,
     context: Result<Endpoint, String>,
 ) -> Result<(), EventError> {
     let context = context?;
     handler
         .0
         .endpoint
-        .submit(|reply| Call::Registered(RegisteredCall::Shortcut(handler.clone(), context, reply)))
+        .call(&registry, |reply| {
+            Call::Registered(RegisteredCall::Shortcut(handler.clone(), context, reply))
+        })
         .await
         .map_err(Into::into)
 }
 /// Returns the authored optional completion list unchanged.
 async fn invoke_completion(
     handler: Handle,
+    registry: Registry,
     prefix: String,
 ) -> Result<Option<Vec<AutocompleteItem>>, EventError> {
     handler
         .0
         .endpoint
-        .submit(|reply| {
+        .call(&registry, |reply| {
             Call::Registered(RegisteredCall::Completion(handler.clone(), prefix, reply))
         })
         .await

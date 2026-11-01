@@ -94,7 +94,7 @@ async fn nonfinite_numbers_are_written_as_json_does() -> TestResult {
     let cases = [
         (
             f64::NAN,
-            r#""max_tokens":10666,"stream":true,"temperature":null"#,
+            r#""max_tokens":32000,"stream":true,"temperature":null"#,
         ),
         (
             f64::INFINITY,
@@ -104,7 +104,7 @@ async fn nonfinite_numbers_are_written_as_json_does() -> TestResult {
             f64::NEG_INFINITY,
             r#""max_tokens":null,"stream":true,"temperature":null"#,
         ),
-        (-0.0, r#""max_tokens":10666,"stream":true,"temperature":0"#),
+        (-0.0, r#""max_tokens":32000,"stream":true,"temperature":0"#),
     ];
     for (number, tail) in cases {
         let requests = messages::Requests::default();
@@ -592,7 +592,7 @@ async fn hooked_call(
 /// The expected default payload with `members` added or replaced.
 fn default_payload(members: &Value) -> Value {
     let mut payload =
-        json!({"model": "claude-sonnet-4-5", "messages": [], "max_tokens": 10666, "stream": true});
+        json!({"model": "claude-sonnet-4-5", "messages": [], "max_tokens": 32000, "stream": true});
     if let (Some(target), Some(extra)) = (payload.as_object_mut(), members.as_object()) {
         target.extend(extra.iter().map(|(k, v)| (k.clone(), v.clone())));
     }

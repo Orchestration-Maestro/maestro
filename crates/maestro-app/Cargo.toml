@@ -46,6 +46,7 @@ regex.workspace = true
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-export = { path = "../maestro-export" }
 maestro-workspace = { path = "../maestro-workspace" }
+maestro-lock = { path = "../maestro-lock" }
 maestro-daemon = { path = "../maestro-daemon" }
 maestro-terminal = { path = "../maestro-terminal" }
 maestro-packages = { path = "../maestro-packages" }

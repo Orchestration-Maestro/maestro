@@ -962,6 +962,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "bstr"
+version = "1.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6bb31b46c14244e20ee9984b11bf5c992b91fb6939fea616e3512c8baecdbe5f"
+dependencies = [
+ "memchr",
+ "serde_core",
+]
+
+[[package]]
 name = "bumpalo"
 version = "3.20.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2494,6 +2504,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "globset"
+version = "0.4.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "07c34a9410465b45bd9787443bc7370f37735bad04b0f0cd57ff1a3186c98988"
+dependencies = [
+ "aho-corasick",
+ "bstr",
+ "regex-automata",
+ "regex-syntax",
+]
+
+[[package]]
 name = "google-cloud-auth"
 version = "1.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3698,6 +3720,28 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dae608c151f68243f2b000364e1f7b186d9c29845f7d2d85bd31b9ad77ad552b"
 
 [[package]]
+name = "maestro"
+version = "0.1.0"
+dependencies = [
+ "maestro-app",
+ "maestro-chat",
+ "maestro-cli",
+ "maestro-dependencies",
+ "maestro-extensions-wasmtime",
+ "maestro-process",
+ "maestro-rpc",
+ "maestro-test-directory",
+ "maestro-test-process",
+ "maestro-theme",
+ "maestro-tui",
+ "maestro-tui-crossterm",
+ "nix 0.31.3",
+ "rustix",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "maestro-agent"
 version = "0.1.0"
 dependencies = [
@@ -3739,6 +3783,7 @@ dependencies = [
  "maestro-json",
  "maestro-listeners",
  "maestro-listing",
+ "maestro-lock",
  "maestro-markdown",
  "maestro-models",
  "maestro-packages",
@@ -3789,6 +3834,7 @@ name = "maestro-cancellation"
 version = "0.1.0"
 dependencies = [
  "maestro-dependencies",
+ "maestro-listeners",
  "tokio",
 ]
 
@@ -3869,6 +3915,7 @@ dependencies = [
  "maestro-models",
  "maestro-path",
  "maestro-process",
+ "maestro-request",
  "maestro-test-directory",
  "maestro-test-process",
  "maestro-text",
@@ -3897,6 +3944,7 @@ dependencies = [
  "maestro-tui",
  "maestro-workspace",
  "regex",
+ "rustix",
  "serde",
  "serde_json",
  "sha2 0.11.0",
@@ -3910,6 +3958,7 @@ dependencies = [
 name = "maestro-dependencies"
 version = "0.1.0"
 dependencies = [
+ "aho-corasick",
  "arrayvec",
  "base64 0.23.1",
  "bitflags 2.13.2",
@@ -3929,6 +3978,7 @@ dependencies = [
  "futures-core",
  "futures-io",
  "futures-sink",
+ "futures-task",
  "futures-util",
  "getrandom 0.4.3",
  "hashbrown 0.17.1",
@@ -3969,6 +4019,7 @@ dependencies = [
  "simd-adler32",
  "slab",
  "smallvec",
+ "socket2",
  "stable_deref_trait",
  "syn 2.0.119",
  "syn 3.0.6",
@@ -4047,6 +4098,7 @@ dependencies = [
 name = "maestro-extensions"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "indexmap 2.14.2",
  "maestro-agent",
  "maestro-catalog",
@@ -4071,13 +4123,20 @@ dependencies = [
 name = "maestro-extensions-wasm"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "indexmap 2.14.2",
  "maestro-dependencies",
  "maestro-entry",
+ "maestro-extensions-wasmtime",
  "maestro-json",
+ "maestro-listing",
+ "maestro-models",
  "maestro-request",
+ "maestro-test-directory",
  "maestro-tool",
+ "num-traits",
  "regex",
+ "ryu-js",
  "serde",
  "serde_json",
  "tokio",
@@ -4096,10 +4155,12 @@ dependencies = [
  "maestro-dependencies",
  "maestro-extensions",
  "maestro-models",
+ "maestro-path",
  "maestro-session",
  "maestro-test-directory",
  "maestro-test-process",
  "maestro-theme",
+ "maestro-tui",
  "serde",
  "serde_json",
  "tokio",
@@ -4116,6 +4177,7 @@ dependencies = [
  "maestro-test-directory",
  "maestro-test-process",
  "rustix",
+ "socket2",
 ]
 
 [[package]]
@@ -4148,7 +4210,10 @@ name = "maestro-lock"
 version = "0.1.0"
 dependencies = [
  "maestro-dependencies",
+ "maestro-path",
  "maestro-test-directory",
+ "maestro-test-process",
+ "sha2 0.11.0",
 ]
 
 [[package]]
@@ -4297,6 +4362,7 @@ dependencies = [
  "maestro-test-directory",
  "maestro-test-process",
  "maestro-test-tracing",
+ "nix 0.31.3",
  "process-wrap",
  "rustix",
  "serde",
@@ -4375,6 +4441,7 @@ dependencies = [
  "maestro-entry",
  "maestro-json",
  "maestro-listing",
+ "maestro-lock",
  "maestro-models",
  "maestro-path",
  "maestro-request",
@@ -4385,6 +4452,7 @@ dependencies = [
  "ryu-js",
  "serde",
  "serde_json",
+ "sha2 0.11.0",
  "tokio",
  "uuid",
 ]
@@ -4404,6 +4472,19 @@ dependencies = [
  "serde_json",
  "tokio",
  "wasm-bindgen-futures",
+]
+
+[[package]]
+name = "maestro-subagents"
+version = "0.1.0"
+dependencies = [
+ "futures-util",
+ "maestro-dependencies",
+ "maestro-extensions-wasm",
+ "maestro-json",
+ "ryu-js",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -4456,6 +4537,7 @@ version = "0.1.0"
 dependencies = [
  "maestro-dependencies",
  "maestro-test-directory",
+ "rustix",
 ]
 
 [[package]]
@@ -4539,6 +4621,7 @@ dependencies = [
  "maestro-test-process",
  "serde",
  "serde_json",
+ "sha2 0.11.0",
  "toml",
 ]
 
@@ -4549,6 +4632,7 @@ dependencies = [
  "base64 0.23.1",
  "futures-util",
  "getrandom 0.4.3",
+ "globset",
  "icu_normalizer",
  "image 0.24.9",
  "indexmap 2.14.2",
@@ -4570,6 +4654,7 @@ dependencies = [
  "num-traits",
  "owo-colors",
  "regex",
+ "regex-syntax",
  "rustix",
  "ryu-js",
  "serde",
@@ -4612,6 +4697,7 @@ version = "0.1.0"
 dependencies = [
  "base64 0.23.1",
  "chrono",
+ "crossterm_winapi",
  "maestro-brand",
  "maestro-dependencies",
  "maestro-listeners",
@@ -7935,6 +8021,7 @@ dependencies = [
  "async-trait",
  "bitflags 2.13.2",
  "bumpalo",
+ "bytes",
  "cc",
  "encoding_rs",
  "futures",
@@ -8652,6 +8739,7 @@ version = "0.62.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "53cb4b5556c3a791e86838ea287782bdafa704d55b0e68b5b81a3a16b9ea5f4b"
 dependencies = [
+ "futures",
  "wit-bindgen-rust-macro",
 ]
 

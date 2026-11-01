@@ -6,14 +6,15 @@ use crate::{
     BranchSummaryMessageComponent, CompactionSummaryMessageComponent, CustomMessageComponent,
     SkillInvocationMessageComponent, UserMessageComponent,
 };
+use maestro_app::EventError;
 use maestro_app::messages::{BashExecutionMessage, CustomAgentMessages};
 use maestro_app::{
     AgentMessage, Local, LocaleNumberFormat, NativeAgentMessage, Presence, SharedAssistantMessage,
     TruncationOptions, UserBlock, UserContent, parse_skill_block, truncate_tail,
 };
 use maestro_theme::{ThemeColor, ThemeError};
-use maestro_tui::{Component, EditorComponent, MarkdownTheme, Spacer, TUI, Text};
-use std::{error::Error, rc::Rc, sync::PoisonError};
+use maestro_tui::{Component, MarkdownTheme, Spacer, TUI, Text};
+use std::{rc::Rc, sync::PoisonError};
 
 impl InteractiveMode {
     /// The text blocks of a user message joined without a separator; other roles have none.
@@ -90,10 +91,10 @@ impl InteractiveMode {
         &self,
         message: &NativeAgentMessage,
         populate_history: bool,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<(), EventError> {
         match message {
             AgentMessage::User(_) => {
-                self.add_user_message(&Self::get_user_message_text(message), populate_history);
+                self.add_user_message(&Self::get_user_message_text(message), populate_history)?;
             }
             AgentMessage::Assistant(message) => {
                 let component = self.assistant_component(message.clone());
@@ -137,9 +138,12 @@ impl InteractiveMode {
 
     /// Appends a nonempty user text, as a skill block with an optional separate user row or
     /// as one user row, after a spacer when the transcript is not empty.
-    fn add_user_message(&self, text: &str, populate_history: bool) {
+    ///
+    /// # Errors
+    /// Returns the current editor's original history failure.
+    fn add_user_message(&self, text: &str, populate_history: bool) -> Result<(), EventError> {
         if text.is_empty() {
-            return;
+            return Ok(());
         }
         if !self.chat_container.children().borrow().is_empty() {
             self.chat_container.add_child(Rc::new(Spacer::new(1)));
@@ -169,15 +173,16 @@ impl InteractiveMode {
             self.chat_container.add_child(user(text.to_owned()));
         }
         if populate_history {
-            self.editor.add_to_history(text);
+            self.current_editor().try_add_to_history(text)?;
         }
+        Ok(())
     }
 
     /// Appends the rows of a shell run, a displayed custom message or a summary.
     ///
     /// # Errors
     /// Returns the failure of a shell row's output cleaning or of the locale's number format.
-    fn add_custom_message(&self, message: CustomAgentMessages) -> Result<(), Box<dyn Error>> {
+    fn add_custom_message(&self, message: CustomAgentMessages) -> Result<(), EventError> {
         let expanded = self.tool_output_expanded.get();
         let theme = self.themes.theme();
         let image = self.tool_environment.terminal_image.clone();
@@ -225,7 +230,7 @@ impl InteractiveMode {
     ///
     /// # Errors
     /// Returns the failure of the output's control-sequence cleaning.
-    fn add_bash_execution(&self, message: BashExecutionMessage) -> Result<(), Box<dyn Error>> {
+    fn add_bash_execution(&self, message: BashExecutionMessage) -> Result<(), EventError> {
         let component = BashExecutionComponent::new(
             message.command,
             TUI::clone(&self.ui),

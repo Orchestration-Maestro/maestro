@@ -8,7 +8,7 @@ use crate::{
 use wasmtime::{
     Store,
     component::{
-        Accessor, ComponentExportIndex, ComponentType, Instance, Lower, Resource, TypedFunc,
+        Accessor, ComponentExportIndex, ComponentType, Instance, Lift, Lower, Resource, TypedFunc,
     },
 };
 use wasmtime_wasi::WasiView;
@@ -16,34 +16,44 @@ use wasmtime_wasi::WasiView;
 /// Exact owned canonical tool invocation record.
 #[derive(ComponentType, Lower)]
 #[component(record)]
-struct Invocation {
+pub(crate) struct Invocation {
     /// Literal invocation identity.
     #[component(name = "tool-call-id")]
-    tool_call_id: String,
+    pub(crate) tool_call_id: String,
     /// Serialized native arguments.
-    params: String,
+    pub(crate) params: String,
 }
 
 /// Independently retained original execution resources.
 #[derive(ComponentType, Lower)]
 #[component(record)]
-struct Capabilities {
+pub(crate) struct Capabilities {
     /// Original wrapper-created context.
-    ctx: Resource<Context>,
+    pub(crate) ctx: Resource<Context>,
     /// Independently optional native cancellation.
-    signal: Option<Resource<SignalEndpoint>>,
+    pub(crate) signal: Option<Resource<SignalEndpoint>>,
     /// Independently optional progress observer.
-    update: Option<Resource<ToolUpdate>>,
+    pub(crate) update: Option<Resource<ToolUpdate>>,
 }
 
-/// Exact canonical preparation signature, returning an argument document.
+/// Retained mutations remain independent of the prepared value or callback failure.
+#[derive(ComponentType, Lift, Lower, Debug)]
+#[component(record)]
+pub(crate) struct PreparedArguments {
+    /// Original arguments after the callback's in-place changes.
+    pub(crate) retained: String,
+    /// Returned preparation or the callback's original failure.
+    pub(crate) prepared: Result<String, String>,
+}
+
+/// Exact canonical preparation signature, returning both argument observations.
 type Prepare = TypedFunc<
     (
         Resource<Callback>,
         String,
         Resource<crate::local_resources::effects::EmitterEndpoint>,
     ),
-    (Result<String, String>,),
+    (Result<PreparedArguments, String>,),
 >;
 /// Canonical asynchronous tool execution signature.
 type Execute = TypedFunc<(Resource<Callback>, Invocation, Capabilities), (Result<String, String>,)>;
@@ -123,7 +133,7 @@ impl Exports {
         handler: &Callback,
         args: String,
         emitter: crate::local_resources::effects::EmitterEndpoint,
-    ) -> wasmtime::Result<Result<String, String>> {
+    ) -> wasmtime::Result<Result<PreparedArguments, String>> {
         let (callback, emitter) = arguments(accessor, handler, emitter)?;
         let result = self
             .prepare

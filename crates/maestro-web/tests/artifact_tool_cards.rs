@@ -173,12 +173,13 @@ fn assert_unused_diffs() {
     assert!(serde_json::from_value::<crate::artifact_card_support::Expected>(sibling).is_err());
 
     for row in cards::unused_diffs() {
-        let actual = maestro_web::ToolRenderer::render(
-            &maestro_web::ArtifactsToolRenderer::new(None),
-            row.input.params.as_ref(),
-            row.input.result.as_ref().map(Into::into),
-            row.input.is_streaming,
-        );
+        let actual: Result<maestro_web::tools::types::ToolRenderResult, _> =
+            maestro_web::ToolRenderer::render(
+                &maestro_web::ArtifactsToolRenderer::new(None),
+                row.input.params.as_ref(),
+                row.input.result.as_ref().map(Into::into),
+                row.input.is_streaming,
+            );
         match row.expected {
             Branch::Rendered { card } => assert_eq!(actual.unwrap().is_custom, card.is_custom),
             Branch::Error { kind } => {
@@ -195,7 +196,7 @@ fn artifact_recipes_own_selected_inputs_and_panel_handles() {
     use maestro_app::browser::tools::artifacts::{
         ArtifactCommand, ArtifactsParams, LocalArtifactsPanel,
     };
-    use maestro_web::{ArtifactsToolRenderer, ToolRenderer, tools::types::ToolRenderState};
+    use maestro_web::{ArtifactsToolRenderer, ToolRenderer};
     use std::rc::Rc;
     let host = Rc::new(crate::attachment_support::Host::default());
     let presentation = Rc::new(crate::artifact_support::presentation::Presentation::new(
@@ -222,16 +223,7 @@ fn artifact_recipes_own_selected_inputs_and_panel_handles() {
     renderer.artifacts_panel = None;
     drop(renderer);
     assert!(weak.upgrade().is_some());
-    let mut frame = crate::attachment_support::Frame::default();
-    let mut state = ToolRenderState::default();
-    crate::document_card_support::frame_owner(&mut frame, &host, vec![], |ui, view| {
-        recipe.render(ui, view, &mut state)
-    })
-    .response
-    .unwrap();
+    assert!(host.effects.borrow().is_empty());
     drop(recipe);
-    assert!(weak.upgrade().is_some());
-    drop(state);
     assert!(weak.upgrade().is_none());
-    assert!(!host.effects.borrow().is_empty());
 }

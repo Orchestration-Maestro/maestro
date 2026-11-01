@@ -38,12 +38,12 @@ impl<E: ExtensionExecution> ExtensionRunner<E> {
     }
     /// Sets a shared value even when no owner registered that name.
     pub fn set_flag_value(&self, name: String, value: FlagValue) {
-        write(&self.binding.runtime.flag_values).insert(name, value);
+        write(&self.runtime.flag_values).insert(name, value);
     }
     /// Returns an independent ordered snapshot of shared values.
     #[must_use]
     pub fn get_flag_values(&self) -> IndexMap<String, FlagValue> {
-        read(&self.binding.runtime.flag_values).clone()
+        read(&self.runtime.flag_values).clone()
     }
     /// Returns the first owner's renderer for `custom_type` when it has details type `T`.
     ///

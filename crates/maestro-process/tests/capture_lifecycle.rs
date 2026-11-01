@@ -1,9 +1,11 @@
 //! Captured native children observed through the public lifecycle interface.
 #![cfg(test)]
 #![cfg(unix)]
+use crate::child_programs::{self, HeldMode, async_command};
 use maestro_process::child_process::{
     CapturedChild, OutputMode, Termination, WaitOptions, wait_for_child_process,
 };
+use maestro_test_process::child::{Stream, harness, without_harness};
 use std::cell::Cell;
 use std::future::Future;
 use std::os::unix::process::ExitStatusExt;
@@ -15,42 +17,6 @@ use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
-/// Child behaviours selected by the first argument; later arguments are the port and,
-/// for the `live` and `exit` modes, the stream descriptors closed before the hold. The
-/// `term` and `flood` modes take the blocked termination signal with `sigwait`, which
-/// cannot miss a signal sent right after `READY`.
-const CHILD: &str = r"
-import os, signal, socket, sys
-mode, port = sys.argv[1], int(sys.argv[2])
-def ready():
-    s = socket.create_connection(('127.0.0.1', port)); s.sendall(b'READY'); return s
-def hold():
-    ready().recv(1)
-def finish(closed):
-    for fd in (1, 2):
-        if str(fd) not in closed: os.write(fd, b'tail')
-    os._exit(0)
-if mode in ('live', 'exit'):
-    closed = sys.argv[3]
-    os.write(1, b'early'); os.write(2, b'diag')
-    if mode == 'live':
-        for fd in closed: os.close(int(fd))
-        hold(); finish(closed)
-    gone, alive = os.pipe()
-    if os.fork() == 0:
-        os.close(alive); os.read(gone, 1)
-        for fd in closed: os.close(int(fd))
-        hold(); finish(closed)
-    os._exit(0)
-elif mode in ('term', 'flood'):
-    signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGTERM})
-    s = ready(); signal.sigwait({signal.SIGTERM})
-    os.write(1, b'terminated' if mode == 'term' else b'x' * 200000 + b'end'); os._exit(0)
-elif mode == 'kill':
-    if os.fork() == 0: hold(); os._exit(0)
-    hold()
-";
-
 /// A runtime with the I/O driver the readiness sockets need.
 fn runtime() -> tokio::runtime::Runtime {
     tokio::runtime::Builder::new_current_thread()
@@ -60,16 +26,17 @@ fn runtime() -> tokio::runtime::Runtime {
 }
 
 /// A readiness listener and the child command that connects back to it.
-async fn fixture(mode: &str, closed: &str) -> (TcpListener, tokio::process::Command) {
+async fn fixture(mode: HeldMode, closed: &[Stream]) -> (TcpListener, tokio::process::Command) {
     let listener = TcpListener::bind(("127.0.0.1", 0)).await.unwrap();
-    let mut command = tokio::process::Command::new("python3");
-    command.args([
-        "-c",
-        CHILD,
-        mode,
-        &listener.local_addr().unwrap().port().to_string(),
-        closed,
-    ]);
+    let port = listener.local_addr().unwrap().port().to_string();
+    let command = async_command(
+        child_programs::held_child,
+        &[
+            ("CHILD_MODE", mode.name()),
+            ("CHILD_PORT", &port),
+            ("CHILD_CLOSED", &Stream::list_text(closed)),
+        ],
+    );
     (listener, command)
 }
 
@@ -122,12 +89,12 @@ impl<F> Drop for Observed<F> {
 /// output, the held sockets, the child and whether the stop future was dropped.
 async fn request(requested: Termination) -> (Output, Vec<TcpStream>, CapturedChild, bool) {
     let mode = if requested == Termination::Kill {
-        "kill"
+        HeldMode::Kill
     } else {
-        "term"
+        HeldMode::Term
     };
     let holders = if requested == Termination::Kill { 2 } else { 1 };
-    let (listener, mut command) = fixture(mode, "").await;
+    let (listener, mut command) = fixture(mode, &[]).await;
     let mut child = CapturedChild::spawn(&mut command).unwrap();
     let (stop, request) = tokio::sync::oneshot::channel();
     let dropped = Rc::new(Cell::new(false));
@@ -152,20 +119,13 @@ async fn request(requested: Termination) -> (Output, Vec<TcpStream>, CapturedChi
 #[test]
 fn captured_process_keeps_native_command_and_raw_streams() {
     let dir = std::env::temp_dir().canonicalize().unwrap();
-    let script = r"
-import os, sys
-assert sys.stdin.buffer.read() == b''
-sys.stderr.buffer.write(b'diag\0\xff' + b'e' * 300000); sys.stderr.flush()
-sys.stdout.buffer.write(sys.argv[1].encode() + b'|' + os.getcwd().encode() + b'|' + os.environ['PROBE'].encode() + b'\0\xe2')
-sys.stdout.buffer.write(b'o' * 300000 + b'\x82\xac\xff')
-";
     for (mode, stderr) in [
         (OutputMode::Capture, Some(300_006)),
         (OutputMode::Discard, None),
     ] {
-        let mut command = tokio::process::Command::new("python3");
+        let mut command = async_command(child_programs::raw_stream_writer, &[]);
         command
-            .args(["-c", script, "arg value"])
+            .arg("arg value")
             .current_dir(&dir)
             .env("PROBE", "set");
         let output = runtime().block_on(async {
@@ -187,7 +147,7 @@ sys.stdout.buffer.write(b'o' * 300000 + b'\x82\xac\xff')
         expected.extend_from_slice(b"\0\xe2");
         expected.extend(std::iter::repeat_n(b'o', 300_000));
         expected.extend_from_slice(b"\x82\xac\xff");
-        assert_eq!(output.stdout, expected);
+        assert_eq!(output.stdout, harness(&expected));
         match stderr {
             Some(length) => {
                 assert_eq!(output.stderr.len(), length);
@@ -202,15 +162,15 @@ sys.stdout.buffer.write(b'o' * 300000 + b'\x82\xac\xff')
 fn exit_and_pipe_completion_orders_keep_output() {
     runtime().block_on(async {
         for (mode, closed, stdout, stderr) in [
-            ("live", "", &b"earlytail"[..], &b"diagtail"[..]),
-            ("live", "1", b"early", b"diagtail"),
-            ("live", "2", b"earlytail", b"diag"),
-            ("live", "12", b"early", b"diag"),
-            ("exit", "", b"earlytail", b"diagtail"),
-            ("exit", "1", b"early", b"diagtail"),
-            ("exit", "2", b"earlytail", b"diag"),
+            (HeldMode::Live, &[][..], &b"earlytail"[..], &b"diagtail"[..]),
+            (HeldMode::Live, &[Stream::Output][..], b"early", b"diagtail"),
+            (HeldMode::Live, &[Stream::Error][..], b"earlytail", b"diag"),
+            (HeldMode::Live, &Stream::OUTPUTS[..], b"early", b"diag"),
+            (HeldMode::Exit, &[][..], b"earlytail", b"diagtail"),
+            (HeldMode::Exit, &[Stream::Output][..], b"early", b"diagtail"),
+            (HeldMode::Exit, &[Stream::Error][..], b"earlytail", b"diag"),
         ] {
-            let case = format!("{mode} closing {closed:?}");
+            let case = format!("{mode:?} closing {closed:?}");
             let (listener, mut command) = fixture(mode, closed).await;
             let mut child = CapturedChild::spawn(&mut command).unwrap();
             let run = wait_for_child_process(&mut child, WaitOptions::default(), never(), None);
@@ -224,7 +184,7 @@ fn exit_and_pipe_completion_orders_keep_output() {
             let output = output.unwrap();
             assert!(output.status.success(), "{case}");
             assert_eq!(
-                (output.stdout, output.stderr),
+                (without_harness(&output.stdout), output.stderr),
                 (stdout.to_vec(), stderr.to_vec()),
                 "{case}"
             );
@@ -248,7 +208,7 @@ fn exit_and_pipe_completion_orders_keep_output() {
 fn requested_termination_uses_live_state_and_reaps() {
     runtime().block_on(async {
         let (output, _sockets, _child, _) = request(Termination::Terminate).await;
-        assert_eq!(output.stdout, b"terminated");
+        assert_eq!(without_harness(&output.stdout), b"terminated");
         assert!(output.status.success());
 
         let (output, sockets, mut child, _) = request(Termination::Kill).await;
@@ -324,8 +284,8 @@ fn capture_driver_releases_completed_stop_future() {
 /// Runs a held child with `options`, sends `requested` once its holder is ready and
 /// returns the output with the still-held socket.
 async fn run_held(
-    mode: &str,
-    closed: &str,
+    mode: HeldMode,
+    closed: &[Stream],
     options: WaitOptions,
     requested: Termination,
 ) -> (Output, TcpStream) {
@@ -346,12 +306,12 @@ async fn run_held(
 fn grace_preserves_prefixes_from_unfinished_streams() {
     runtime().block_on(async {
         for (closed, grace) in [
-            ("", Duration::from_millis(100)),
-            ("1", Duration::from_millis(100)),
-            ("", Duration::ZERO),
+            (&[][..], Duration::from_millis(100)),
+            (&[Stream::Output][..], Duration::from_millis(100)),
+            (&[][..], Duration::ZERO),
         ] {
             let case = format!("closing {closed:?} with grace {grace:?}");
-            let (listener, mut command) = fixture("exit", closed).await;
+            let (listener, mut command) = fixture(HeldMode::Exit, closed).await;
             let mut child = CapturedChild::spawn(&mut command).unwrap();
             let options = WaitOptions {
                 post_exit_grace: Some(grace),
@@ -363,7 +323,7 @@ fn grace_preserves_prefixes_from_unfinished_streams() {
             assert!(output.status.success(), "{case}");
             if !grace.is_zero() {
                 assert_eq!(
-                    (output.stdout, output.stderr),
+                    (without_harness(&output.stdout), output.stderr),
                     (b"early".to_vec(), b"diag".to_vec()),
                     "{case}"
                 );
@@ -379,9 +339,10 @@ fn termination_escalation_keeps_draining_until_exit() {
         let escalate = Termination::TerminateThenKill {
             after: Duration::from_secs(3600),
         };
-        let (output, socket) = run_held("flood", "", WaitOptions::default(), escalate).await;
+        let (output, socket) =
+            run_held(HeldMode::Flood, &[], WaitOptions::default(), escalate).await;
         assert!(output.status.success());
-        assert_eq!(output.stdout.len(), 200_003);
+        assert_eq!(without_harness(&output.stdout).len(), 200_003);
         assert!(output.stdout.ends_with(b"xxend"));
         release(socket).await;
     });
@@ -390,10 +351,18 @@ fn termination_escalation_keeps_draining_until_exit() {
 #[test]
 fn forced_kill_retains_only_completed_streams() {
     runtime().block_on(async {
-        let (output, socket) =
-            run_held("live", "1", WaitOptions::default(), Termination::Kill).await;
+        let (output, socket) = run_held(
+            HeldMode::Live,
+            &[Stream::Output],
+            WaitOptions::default(),
+            Termination::Kill,
+        )
+        .await;
         assert_eq!(output.status.signal(), Some(9));
-        assert_eq!((output.stdout, output.stderr), (b"early".to_vec(), vec![]));
+        assert_eq!(
+            (without_harness(&output.stdout), output.stderr),
+            (b"early".to_vec(), vec![])
+        );
         release(socket).await;
     });
 }

@@ -14,10 +14,13 @@ use tokio::time::Sleep;
 
 mod exit_signal;
 mod native;
+mod raw;
+pub use raw::{RawChild, RawExitStatus, RawInput, RawOutput};
 mod wait;
 pub use exit_signal::exit_signal_name;
 #[cfg(windows)]
 pub use native::request_tree_kill;
+pub use native::signal_pid;
 #[cfg(unix)]
 pub use native::{Signal, kill_process, kill_process_group, process_exists, signal_processes};
 use wait::wait;
@@ -165,14 +168,32 @@ impl CapturedChild {
     ///
     /// # Errors
     /// Returns the native session configuration or spawn error.
-    pub fn spawn_detached(mut command: Command) -> io::Result<Self> {
+    pub fn spawn_detached(command: Command) -> io::Result<Self> {
+        Self::spawn_with_stdio(
+            command,
+            [Stdio::null(), Stdio::piped(), Stdio::piped()],
+            true,
+        )
+    }
+
+    /// Spawns with supplied descriptors and optional native session creation.
+    ///
+    /// # Errors
+    /// Returns the original native configuration or spawn failure.
+    pub fn spawn_with_stdio(
+        mut command: Command,
+        stdio: [Stdio; 3],
+        detached: bool,
+    ) -> io::Result<Self> {
         #[cfg(unix)]
-        {
+        if detached {
             use process_wrap::tokio::{CommandWrap, CommandWrapper, ProcessSession};
             let context = CommandWrap::from(Command::new(""));
             ProcessSession.pre_spawn(&mut command, &context)?;
         }
-        Self::spawn(&mut command)
+        #[cfg(not(unix))]
+        let _ = detached;
+        Self::spawn_with(&mut command, stdio)
     }
 
     /// Spawns `command` with the selected descriptors.
@@ -621,23 +642,22 @@ async fn capture(
     Err(SpawnSyncError::Timeout)
 }
 
-/// Starts a caller-built command, then transfers input and waits in an owned worker.
+/// Starts a caller-built command in a new Unix session, then transfers input and waits in an
+/// owned worker. The command leaves the caller's process group, so a stop signal sent to that
+/// group, such as a terminal suspend, does not reach it.
 ///
 /// Stdout/stderr use the null device. Input errors are ignored; normal waiting
 /// reaps the direct child. Dropping the handle neither joins nor cancels the worker.
 ///
 /// # Errors
 /// Returns native startup or worker/runtime construction errors unchanged.
-pub fn spawn(
-    mut command: Command,
-    input: Option<Vec<u8>>,
-) -> io::Result<std::thread::JoinHandle<()>> {
+pub fn spawn(command: Command, input: Option<Vec<u8>>) -> io::Result<std::thread::JoinHandle<()>> {
     let (sender, receiver) = std::sync::mpsc::sync_channel(0);
     let worker = std::thread::Builder::new().spawn(move || {
         let started = runtime().and_then(|runtime| {
             let guard = runtime.enter();
-            let child = CapturedChild::spawn_with(
-                &mut command,
+            let child = CapturedChild::spawn_with_stdio(
+                command,
                 [
                     if input.is_some() {
                         Stdio::piped()
@@ -647,6 +667,7 @@ pub fn spawn(
                     Stdio::null(),
                     Stdio::null(),
                 ],
+                true,
             )?;
             drop(guard);
             Ok((runtime, child))

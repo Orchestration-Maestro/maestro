@@ -4,7 +4,6 @@ use maestro_extensions::{
     ExtensionRunner, Local, SessionStartEvent, SessionStartReason, create_event_bus_for,
     create_extension_runtime, load_extension_from_factory,
 };
-use maestro_extensions_wasmtime::artifact_factory;
 use maestro_session::Presence;
 use std::{cell::RefCell, rc::Rc, sync::RwLock};
 
@@ -28,7 +27,7 @@ async fn composed_contexts() {
         Rc::new(|_| panic!("this fixture registers no bus listeners")),
     );
     let owner = load_extension_from_factory(
-        artifact_factory(path.clone()),
+        crate::artifact(path.clone()),
         "/factory-only".into(),
         bus.for_extension(),
         runtime.clone(),
@@ -40,7 +39,12 @@ async fn composed_contexts() {
         let registered = owner.read().unwrap();
         assert_eq!(
             registered.commands.keys().collect::<Vec<_>>(),
-            ["bridge-observe"]
+            [
+                "builtin-read",
+                "builtin-read-executable",
+                "builtin-prepare-edit",
+                "bridge-observe"
+            ]
         );
         assert_eq!(
             registered.handlers.keys().collect::<Vec<_>>(),

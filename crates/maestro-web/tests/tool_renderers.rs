@@ -367,31 +367,28 @@ fn raw_registration_after_decoder_failures() {
     );
 }
 
-/// A canvas renderer that names the content parameter explicitly.
-struct ExplicitCanvas(Rc<Cell<u32>>);
-impl ToolRenderer<Value, Value, Box<dyn maestro_web::tools::types::ToolContent>>
-    for ExplicitCanvas
-{
+/// A renderer that names the prepared-content parameter explicitly.
+struct ExplicitOutput(Rc<Cell<u32>>);
+impl ToolRenderer<Value, Value, tool_renderer_support::PreparedContent> for ExplicitOutput {
     fn render(
         &self,
         _: Option<&Value>,
         _: Option<ToolResultMessageView<'_>>,
         _: bool,
-    ) -> Result<ToolRenderResult<Box<dyn maestro_web::tools::types::ToolContent>>, ToolUiError>
-    {
+    ) -> Result<ToolRenderResult<tool_renderer_support::PreparedContent>, ToolUiError> {
         self.0.set(self.0.get() + 1);
         Ok(content("explicit", true))
     }
 }
 
-/// Canvas renderers with the defaulted or explicit content type dispatch as before.
+/// Defaulted and explicit prepared-content types use the same dispatcher.
 #[test]
-fn content_parameter_keeps_canvas_renderers_working() {
+fn content_parameter_keeps_explicit_renderers_working() {
     reset();
     let calls = Rc::new(Cell::new(0));
     register_tool_renderer(
         "explicit",
-        ToolRendererBinding::from_raw::<Value, Value>(Rc::new(ExplicitCanvas(calls.clone()))),
+        ToolRendererBinding::from_raw::<Value, Value>(Rc::new(ExplicitOutput(calls.clone()))),
     );
     let count = calls.clone();
     let defaulted: Rc<dyn ToolRenderer<Value>> = Rc::new(CallbackRenderer(Rc::new(

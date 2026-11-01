@@ -39,7 +39,7 @@ impl ContextBinding {
         cell: &RefCell<A>,
         select: fn(&A) -> &Rc<F>,
     ) -> Result<Rc<F>, EventError> {
-        self.runtime.assert_active()?;
+        self.activity.assert_active()?;
         Ok(Rc::clone(select(&cell.borrow())))
     }
 }
@@ -50,7 +50,7 @@ impl ExtensionContext {
     /// # Errors
     /// Returns the stale error.
     pub fn ui(&self) -> Result<ExtensionUIContext, EventError> {
-        self.binding.runtime.assert_active()?;
+        self.binding.activity.assert_active()?;
         Ok(self.binding.get_ui_context())
     }
     /// Whether an installed UI context is current.
@@ -58,7 +58,7 @@ impl ExtensionContext {
     /// # Errors
     /// Returns the stale error.
     pub fn has_ui(&self) -> Result<bool, EventError> {
-        self.binding.runtime.assert_active()?;
+        self.binding.activity.assert_active()?;
         Ok(self.binding.has_ui())
     }
     /// Returns the runner's working directory.
@@ -66,7 +66,7 @@ impl ExtensionContext {
     /// # Errors
     /// Returns the stale error.
     pub fn cwd(&self) -> Result<&str, EventError> {
-        self.binding.runtime.assert_active()?;
+        self.binding.activity.assert_active()?;
         Ok(&self.binding.session.cwd)
     }
     /// Shares the runner's read-only session history.
@@ -74,7 +74,7 @@ impl ExtensionContext {
     /// # Errors
     /// Returns the stale error.
     pub fn session_manager(&self) -> Result<Rc<RefCell<dyn ReadonlySessionManager>>, EventError> {
-        self.binding.runtime.assert_active()?;
+        self.binding.activity.assert_active()?;
         Ok(Rc::clone(&self.binding.session.session_manager))
     }
     /// Shares the runner's model catalog.
@@ -82,7 +82,7 @@ impl ExtensionContext {
     /// # Errors
     /// Returns the stale error.
     pub fn model_registry(&self) -> Result<SharedHandle<ModelRegistry>, EventError> {
-        self.binding.runtime.assert_active()?;
+        self.binding.activity.assert_active()?;
         Ok(SharedHandle::clone(&self.binding.session.model_registry))
     }
     /// Reads the current model through the reader captured at creation.
@@ -90,7 +90,7 @@ impl ExtensionContext {
     /// # Errors
     /// Returns the stale error or the reader's error.
     pub fn model(&self) -> Result<Option<Arc<RwLock<Model>>>, EventError> {
-        self.binding.runtime.assert_active()?;
+        self.binding.activity.assert_active()?;
         (self.get_model)()
     }
     /// Whether the agent is not streaming.
@@ -162,7 +162,7 @@ impl ExtensionContext {
     /// Returns the stale error or the bound operation's error.
     pub fn get_system_prompt(&self) -> Result<String, EventError> {
         if let Some(prompt) = &self.invocation_system_prompt {
-            self.binding.runtime.assert_active()?;
+            self.binding.activity.assert_active()?;
             return Ok(prompt.borrow().clone());
         }
         (self

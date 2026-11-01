@@ -41,17 +41,8 @@ const FIXTURES: &str = include_str!("../../../tests/fixtures/interactive_prompts
 /// The width transcript notices are rendered at.
 const WIDTH: usize = 120;
 
-/// Runs `body` to completion on a current-thread runtime inside a local task set.
-fn on_local<F: Future<Output = ()>>(body: F) {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    runtime.block_on(tokio::task::LocalSet::new().run_until(body));
-}
-
 /// Polls `run` until the mode waits for typed input; the loop never ends on its own.
-async fn until_waiting<F: Future<Output = Result<(), Box<dyn Error>>>>(
+pub(super) async fn until_waiting<F: Future<Output = Result<(), Box<dyn Error>>>>(
     mode: &InteractiveMode,
     mut run: Pin<&mut F>,
 ) {
@@ -69,11 +60,11 @@ async fn until_waiting<F: Future<Output = Result<(), Box<dyn Error>>>>(
 }
 
 /// A mode whose sessions answer through the scripted provider without retrying.
-struct Scripted {
+pub(super) struct Scripted {
     /// The mode and its runtime.
-    world: World,
+    pub(super) world: World,
     /// The scripted provider.
-    provider: FauxProviderRegistration,
+    pub(super) provider: FauxProviderRegistration,
     /// Makes the next credential lookup find no key, so the session refuses that prompt.
     refuse: Arc<AtomicBool>,
     /// What the application input hook saw of each prompt.
@@ -129,7 +120,7 @@ impl<E: ProviderExecution> Invoke<E, ProviderCall<E, StreamOptionsInput<E>>> for
 
 impl Scripted {
     /// Builds a mode with `options` in `directory`; its key comes from the fallback resolver.
-    fn new(directory: &Path, options: InteractiveModeOptions) -> Self {
+    pub(super) fn new(directory: &Path, options: InteractiveModeOptions) -> Self {
         let hook: HookLog = Rc::default();
         let world = Setup {
             options,
@@ -147,7 +138,10 @@ impl Scripted {
                 &provider.models[0].provider,
                 Arc::new(RwLock::new(ProviderConfigInput {
                     api: Some(provider.api.clone()),
-                    stream_simple: Some(Arc::new(RetainedProvider(callback))),
+                    callbacks: maestro_app::ProviderCallbacks {
+                        stream_simple: Some(Arc::new(RetainedProvider(callback))),
+                        ..Default::default()
+                    },
                     ..ProviderConfigInput::default()
                 })),
             )
@@ -176,8 +170,8 @@ impl Scripted {
     }
 
     /// Makes `session` answer through the provider without retrying.
-    fn adopt(&self, session: &AgentSession) {
-        session.set_auto_retry_enabled(false);
+    pub(super) fn adopt(&self, session: &AgentSession) {
+        session.set_auto_retry_enabled(false).unwrap();
         session.state().write().unwrap().model =
             Arc::new(RwLock::new(self.provider.models[0].clone()));
     }
@@ -192,7 +186,7 @@ impl Scripted {
     }
 
     /// Unregisters the provider and disposes of the current session.
-    fn finish(&self) {
+    pub(super) fn finish(&self) {
         self.world.host.session().dispose();
         self.provider.unregister();
     }
@@ -306,19 +300,29 @@ impl Recorder {
 
     /// Records the rows of each notice added since the last record, skipping the
     /// resource diagnostics the startup listing appends as a text row and a spacer, and
-    /// the message rows the session's events add.
+    /// the message rows the session's events add. An error notice's own blank row, which a
+    /// following spacer or the end shows, belongs to its notice.
     fn flush(&self) {
         let children = self.chat.children();
         let children = children.borrow();
         let added = without_messages(&children[self.recorded.get()..]);
+        let blank = |index: usize| {
+            added
+                .get(index)
+                .is_some_and(|row| row.render(WIDTH).iter().all(String::is_empty))
+        };
         let mut index = 0;
         while index + 1 < added.len() {
-            let spacer = added[index].render(WIDTH);
-            if spacer.iter().all(String::is_empty) {
-                self.log
-                    .borrow_mut()
-                    .push(Err(added[index + 1].render(WIDTH)));
+            if !blank(index) {
+                index += 2;
+                continue;
             }
+            let mut rows = added[index + 1].render(WIDTH);
+            if blank(index + 2) && (index + 3 == added.len() || blank(index + 3)) {
+                rows.push(String::new());
+                index += 1;
+            }
+            self.log.borrow_mut().push(Err(rows));
             index += 2;
         }
         self.recorded.set(children.len());
@@ -553,10 +557,14 @@ struct Expectation<'a> {
 }
 
 impl Expectation<'_> {
-    /// The rows of a notice shown in `color`.
+    /// The rows of a notice shown in `color`; an error notice ends with a blank row.
     fn notice(&self, color: &ThemeColor, text: &str) -> Observed {
-        let text = self.theme.fg(color, text).unwrap();
-        Observed::Notice(Text::new(text, 1, 0, None).render(WIDTH))
+        let painted = self.theme.fg(color, text).unwrap();
+        let mut rows = Text::new(painted, 1, 0, None).render(WIDTH);
+        if *color == ThemeColor::Error {
+            rows.push(String::new());
+        }
+        Observed::Notice(rows)
     }
 
     /// The observation of `step`; none for a failed answer.
@@ -703,10 +711,10 @@ async fn replay_case(directory: &Path, mut startup: Startup, expected: Vec<Step>
 
 /// Replays every recorded case of `test` in a fresh child.
 fn replay(test: &str) {
-    isolated(test, |directory| {
+    isolated(test, async |directory| {
         for (startup, expected) in cases::<Startup, Vec<Step>>(FIXTURES, test) {
             let case = maestro_test_directory::Scratch::new_in(directory).unwrap();
-            on_local(replay_case(case.path(), startup, expected));
+            (replay_case(case.path(), startup, expected)).await;
         }
     });
 }
@@ -734,8 +742,8 @@ fn typed_submission_follows_the_current_runtime_session() {
 #[test]
 fn prompt_operation_refusal_is_distinct_from_assistant_error_event() {
     const TEST: &str = "prompt_operation_refusal_is_distinct_from_assistant_error_event";
-    isolated(TEST, |directory| {
-        on_local(refusal_then_assistant_error(directory));
+    isolated(TEST, async |directory| {
+        (refusal_then_assistant_error(directory)).await;
     });
 }
 
@@ -848,9 +856,9 @@ fn from_prompts<'a>(
 #[test]
 fn startup_message_traversal_has_linear_work() {
     const TEST: &str = "startup_message_traversal_has_linear_work";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (size, work) in cases::<Size, Work>(FIXTURES, TEST) {
-            on_local(measure(directory, size, work));
+            (measure(directory, size, work)).await;
         }
     });
 }
@@ -870,4 +878,71 @@ async fn measure(directory: &Path, size: Size, work: Work) {
         "the linear bound rejects a rescanning traversal"
     );
     assert_eq!(admitted, texts);
+}
+
+#[test]
+fn startup_subscription_check_is_started_between_fallback_and_prompts() {
+    isolated(
+        "startup_subscription_check_is_started_between_fallback_and_prompts",
+        startup_subscription_check,
+    );
+}
+
+/// Observes warning admission before the first prompt, without awaiting its completion.
+async fn startup_subscription_check(directory: &Path) {
+    let scripted = Scripted::new(
+        directory,
+        InteractiveModeOptions {
+            model_fallback_message: Some("controlled fallback".into()),
+            initial_message: Some("first prompt".into()),
+            ..Default::default()
+        },
+    );
+    let world = &scripted.world;
+    super::start(world).await;
+    assert!(world.runtime.drain_futures().is_empty());
+    let model = world.host.session().model();
+    let mut selected = model.read().unwrap().clone();
+    selected.provider = "anthropic".into();
+    world.host.session().state().write().unwrap().model = Arc::new(RwLock::new(selected));
+    world
+        .host
+        .services()
+        .auth_storage
+        .set_runtime_api_key("anthropic", "sk-ant-oat-controlled");
+    scripted.provider.set_responses(vec![answer(None)]);
+    let observed = Rc::new(Cell::new(None));
+    let seen = observed.clone();
+    let mode = Rc::downgrade(&world.mode);
+    let runtime = world.runtime.clone();
+    let unsubscribe = world.host.session().subscribe(Rc::new(move |event| {
+        if let AgentSessionEvent::Agent(event) = event
+            && matches!(*event.read().unwrap(), maestro_app::AgentEvent::AgentStart)
+        {
+            let mode = mode.upgrade().unwrap();
+            seen.set(Some((
+                super::actions::shows(&mode.chat_container, "controlled fallback"),
+                mode.anthropic_subscription_warning_shown.get(),
+                runtime.futures(),
+            )));
+        }
+    }));
+    let mut run = pin!(world.mode.run());
+    until_waiting(&world.mode, run.as_mut()).await;
+    assert_eq!(
+        observed.get(),
+        Some((true, false, 4)),
+        "fallback is shown and the independent check is admitted before the first prompt"
+    );
+    assert_eq!(scripted.provider.state.call_count(), 1);
+    assert!(world.runtime.drain_futures().is_empty());
+    assert!(world.mode.anthropic_subscription_warning_shown.get());
+    let rows = maestro_app::strip_ansi(&world.mode.chat_container.render(1000).join("\n")).unwrap();
+    assert_eq!(
+        rows.matches("Anthropic subscription auth is active.")
+            .count(),
+        1
+    );
+    unsubscribe();
+    scripted.finish();
 }

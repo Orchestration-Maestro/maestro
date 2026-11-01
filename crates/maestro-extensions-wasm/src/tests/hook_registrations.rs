@@ -134,6 +134,8 @@ fn tool(name: &str, label: &str) -> ExtensionResult<ToolDefinition> {
     });
     let (prepared, executed) = (label.to_owned(), label.to_owned());
     Ok(ToolDefinition {
+        render_call: None,
+        render_result: None,
         metadata: serde_json::from_value(metadata).map_err(|e| e.to_string())?,
         prepare_arguments: Some(Rc::new(move |args, _| {
             Ok(json!({ "prepared": prepared, "args": args }))

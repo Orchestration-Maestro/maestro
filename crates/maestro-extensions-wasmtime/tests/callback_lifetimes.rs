@@ -6,13 +6,33 @@ use maestro_extensions::{
     create_extension_runtime, types::ProviderActions,
 };
 use serde_json::{Value, json};
-use std::{cell::RefCell, collections::HashMap, rc::Rc, sync::RwLock};
+use std::{cell::RefCell, rc::Rc, sync::RwLock};
 use tokio::sync::{mpsc, oneshot};
 
 use super::callback_ordering::{Instance, Pair, local};
 
 /// Suspensions entered by command roots, with the sender that resumes each.
 type Entered = mpsc::UnboundedSender<(&'static str, oneshot::Sender<()>)>;
+
+/// The live prompt reader and signal new command contexts obtain.
+fn signal_context(signal: Cancellation) -> ExtensionContextActions {
+    ExtensionContextActions {
+        get_system_prompt: Rc::new(|| Ok("renderer barrier".into())),
+        get_signal: Rc::new(move || Ok(Some(signal.clone()))),
+        ..Default::default()
+    }
+}
+
+/// Binds the live prompt reader and the signal new command contexts obtain.
+fn bind_signal(runner: &ExtensionRunner<Local>, signal: Cancellation) {
+    runner
+        .bind_core(
+            Local::unbound_actions(),
+            signal_context(signal),
+            ProviderActions::default(),
+        )
+        .unwrap();
+}
 
 /// Gives `runner` its own cancellation signal and a wait the test resumes.
 fn suspend(
@@ -21,17 +41,7 @@ fn suspend(
     entered: Entered,
     signal: Cancellation,
 ) {
-    runner
-        .bind_core(
-            Local::unbound_actions(),
-            ExtensionContextActions {
-                get_system_prompt: Rc::new(|| Ok("renderer barrier".into())),
-                get_signal: Rc::new(move || Ok(Some(signal.clone()))),
-                ..Default::default()
-            },
-            ProviderActions::default(),
-        )
-        .unwrap();
+    bind_signal(runner, signal);
     runner.bind_command_context(Some(ExtensionCommandContextActions::new(
         CommandContextOperations {
             wait_for_idle: Rc::new(move || {
@@ -85,15 +95,14 @@ fn overlapping_component_roots_finish_without_stack_order() {
         suspend(&pair.a.runner, "older", entered.clone(), older_signal);
         suspend(&younger_runner, "younger", entered, younger_signal.clone());
         let older = root(&pair.a.runner, "older");
+        let (tag, resume_older) = waiting.recv().await.unwrap();
+        assert_eq!(tag, "older");
         let younger = root(&younger_runner, "younger");
-        let mut resumes = HashMap::new();
-        for _ in 0..2 {
-            let (tag, resume) = waiting.recv().await.unwrap();
-            resumes.insert(tag, resume);
-        }
+        let (tag, resume_younger) = waiting.recv().await.unwrap();
+        assert_eq!(tag, "younger");
         assert_eq!(pair.take(), ["older:start", "younger:start"]);
         younger_signal.abort();
-        resumes.remove("older").unwrap().send(()).unwrap();
+        resume_older.send(()).unwrap();
         older.await.unwrap().unwrap();
         assert_eq!(pair.take(), ["older:done:false"]);
         let renderer = pair
@@ -120,7 +129,7 @@ fn overlapping_component_roots_finish_without_stack_order() {
                 "caller:return"
             ]
         );
-        resumes.remove("younger").unwrap().send(()).unwrap();
+        resume_younger.send(()).unwrap();
         younger.await.unwrap().unwrap();
         assert_eq!(pair.take(), ["younger:done:true"]);
         drop(view);
@@ -160,17 +169,53 @@ fn start(pair: &mut Pair) -> Vec<tokio::task::JoinHandle<()>> {
 
 /// Unsubscribing keeps an admitted pending tail and its capture until the tail settles.
 async fn removal_leaves_an_admitted_tail_running(pair: &mut Pair) {
+    let signal = Cancellation::new();
+    pair.b.bind_context(signal_context(signal.clone()));
+    let (entered, waiting) = oneshot::channel();
+    let entered = RefCell::new(Some(entered));
+    let ready = pair.b.events.on(
+        "tail-waiting",
+        Rc::new(move |_, _| {
+            entered.borrow_mut().take().unwrap().send(()).unwrap();
+            Ok(None)
+        }),
+    );
     pair.b
         .program(r#"[{"op":"on","channel":"rx","id":"r","name":"r","tail":"wait","retain":true}]"#)
         .await;
     pair.bus.emit("rx", Value::Null).await;
     let pending = start(pair);
+    waiting.await.unwrap();
+    ready.unsubscribe();
     pair.b
         .program(r#"[{"op":"off","id":"r"},{"op":"off","id":"r"}]"#)
         .await;
     pair.trace.borrow_mut().push("unsubscribe".into());
     pair.b.barrier().await;
     assert!(!pair.b.released("r"));
+    let rebound = Cancellation::new();
+    pair.b.bind_context(signal_context(rebound.clone()));
+    rebound.abort();
+    assert!(!signal.is_aborted());
+    finish_tails(pair, pending).await;
+    assert_eq!(
+        pair.take(),
+        [
+            "r:prefix",
+            "unsubscribe",
+            "open:prefix",
+            "open:tail",
+            "r:tail:false"
+        ]
+    );
+    pair.wait_release("b:r").await;
+    assert!(pair.b.released("r"));
+    pair.bus.emit("rx", Value::Null).await;
+    assert!(pair.take().is_empty() && pair.queued().is_empty());
+}
+
+/// Opens the authored gate and waits for both tails to settle.
+async fn finish_tails(pair: &mut Pair, pending: Vec<tokio::task::JoinHandle<()>>) {
     pair.b
         .program(r#"[{"op":"on","channel":"open","id":"o","name":"open","tail":"open"}]"#)
         .await;
@@ -179,20 +224,6 @@ async fn removal_leaves_an_admitted_tail_running(pair: &mut Pair) {
     for task in pending.into_iter().chain(opener) {
         task.await.unwrap();
     }
-    assert_eq!(
-        pair.take(),
-        [
-            "r:prefix",
-            "unsubscribe",
-            "open:prefix",
-            "open:tail",
-            "r:tail"
-        ]
-    );
-    pair.b.barrier().await;
-    assert!(pair.b.released("r"));
-    pair.bus.emit("rx", Value::Null).await;
-    assert!(pair.take().is_empty() && pair.queued().is_empty());
 }
 
 /// A settled tail leaves the capture with its registration; dropped handles keep listening.
@@ -218,7 +249,7 @@ async fn settled_tails_release_with_their_registration(pair: &mut Pair) {
     assert!(!pair.a.released("c"));
     pair.bus.clear();
     pair.observe();
-    pair.a.barrier().await;
+    pair.wait_release("a:c").await;
     assert!(pair.a.released("c"));
     pair.a
         .program(r#"[{"op":"on","channel":"ig","id":"after","name":"after-clear"}]"#)

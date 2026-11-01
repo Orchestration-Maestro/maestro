@@ -2,7 +2,7 @@
 use super::ExtensionRunner;
 use crate::{
     ExtensionExecution,
-    types::{ExtensionUIContext, ExtensionUIContextPort},
+    types::{ExtensionUIContext, ExtensionUIContextBinding, ExtensionUIContextPort},
 };
 use maestro_theme::LiveTheme;
 use std::rc::Rc;
@@ -20,13 +20,23 @@ impl ExtensionUIContext {
         Self {
             port: Rc::new(NoUiContext(theme)),
             fallback: true,
+            error_reporter: None,
         }
     }
 }
 impl<E: ExtensionExecution> ExtensionRunner<E> {
     /// Installs a UI context, or restores this runner's headless fallback with `None`.
     pub fn set_ui_context(&self, context: Option<ExtensionUIContext>) {
-        let context = context.unwrap_or_else(|| self.binding.no_ui.clone());
+        self.set_ui_context_binding(context.map(Into::into));
+    }
+    /// Installs the supplied ownership of a host without forwarding its operations.
+    pub fn set_ui_context_binding(&self, context: Option<ExtensionUIContextBinding>) {
+        let context = context.unwrap_or_else(|| self.binding.no_ui.clone().into());
+        drop(
+            self.binding
+                .ui_error_reporter
+                .replace(Some(self.ui_error_reporter())),
+        );
         drop(self.binding.ui.replace(context));
     }
     /// Returns the current UI context; it keeps its host after later changes.

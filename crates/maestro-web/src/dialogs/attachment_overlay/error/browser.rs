@@ -11,20 +11,28 @@ pub(in crate::dialogs::attachment_overlay) fn mount(
     text: &Rc<RefCell<Text>>,
     padded: bool,
 ) -> Result<ReadingRoot, AttachmentHostError> {
+    Ok(ReadingRoot {
+        frame_style: "",
+        decoration: None,
+        commit: None,
+        owner: None,
+        element: root(document, text, padded)?,
+        slots: vec![],
+    })
+}
+/// Build a literal error root without a retained-placement wrapper.
+pub(in crate::dialogs::attachment_overlay) fn root(
+    document: &web_sys::Document,
+    text: &Rc<RefCell<Text>>,
+    padded: bool,
+) -> Result<web_sys::Element, AttachmentHostError> {
     let (root, nodes) = nodes(document, padded)?;
     text.borrow_mut().nodes = Some(nodes);
     {
         let text = text.borrow();
         sync_text(text.nodes.as_ref(), &text.values);
     }
-    Ok(ReadingRoot {
-        frame_style: "",
-        decoration: None,
-        commit: None,
-        owner: None,
-        element: root,
-        slots: vec![],
-    })
+    Ok(root)
 }
 
 /// Build literal error nodes independently of retained placement.

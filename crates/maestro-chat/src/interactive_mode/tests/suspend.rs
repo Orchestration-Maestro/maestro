@@ -23,15 +23,9 @@ fn suspended(test: &str, body: impl AsyncFnOnce(&World)) -> Option<Output> {
         "child",
         &[],
         "exec setsid \"$@\"",
-        |directory: &Path| {
-            let runtime = tokio::runtime::Builder::new_current_thread()
-                .enable_io()
-                .build()
-                .unwrap();
-            tokio::task::LocalSet::new().block_on(&runtime, async {
-                let world = started(directory);
-                body(&world).await;
-            });
+        async |directory: &Path| {
+            let world = started(directory).await;
+            body(&world).await;
         },
     )
 }
@@ -102,8 +96,8 @@ impl GroupMember {
 fn suspend_windows_reports_without_native_effects() {
     isolated(
         "suspend_windows_reports_without_native_effects",
-        |directory| {
-            let world = started(directory);
+        async |directory| {
+            let world = started(directory).await;
             world.mode.show_suspend_unsupported().unwrap();
             let shown = world.mode.chat_container.render(80).concat();
             assert!(shown.contains("Suspend to background is not supported on Windows"));

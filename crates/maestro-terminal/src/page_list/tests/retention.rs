@@ -16,10 +16,7 @@ fn history_budget_retains_at_least_recorded_rows() {
     for (pages, styles) in CONTROLS {
         replay(pages, styles, |list, appended| {
             assert!(list.charged_bytes() <= list.max_size());
-            assert_eq!(
-                list.max_size(),
-                u64::try_from(pages).unwrap() * PageList::standard_bytes()
-            );
+            assert_eq!(list.max_size(), recorded_limit(pages));
             assert!(list.total_rows() >= recorded_rows(pages, styles, appended));
             integrity(list);
         });
@@ -56,21 +53,38 @@ fn replay(pages: usize, styles: u16, mut check: impl FnMut(&PageList, usize)) {
     assert_eq!(unequal, styles == 104);
 }
 
+/// Whether this target sizes pages in 16 KiB memory pages, where every page holds more rows.
+const LARGE_PAGES: bool = crate::page::layout::PAGE_SIZE == 16_384;
+
+/// The recorded effective limit of a control's budget, which never falls below two
+/// standard pages.
+fn recorded_limit(pages: usize) -> u64 {
+    if LARGE_PAGES && pages == 2 {
+        819_200
+    } else {
+        u64::try_from(pages).unwrap() * 401_408
+    }
+}
+
 /// Compact the recorded checkpoint rows without imposing exact native retention.
 fn recorded_rows(pages: usize, styles: u16, appended: usize) -> usize {
-    let boundaries: &[usize] = if pages == 2 {
-        &[193, 301, 409, 517, 625, 733, 841, 949]
+    // With 16 KiB host pages a page holds 111 rows of 430 columns, and every control's budget
+    // keeps two such pages.
+    let (boundaries, page_rows): (&[usize], usize) = if LARGE_PAGES {
+        (&[199, 310, 421, 532, 643, 754, 865, 976], 111)
+    } else if pages == 2 {
+        (&[193, 301, 409, 517, 625, 733, 841, 949], 108)
     } else if styles > 0 {
-        &[193, 409, 517, 625, 733, 841, 949]
+        (&[193, 409, 517, 625, 733, 841, 949], 108)
     } else {
-        &[301, 409, 517, 625, 733, 841, 949]
+        (&[301, 409, 517, 625, 733, 841, 949], 108)
     };
     24 + appended
         - boundaries
             .iter()
             .filter(|&&boundary| boundary <= appended)
             .count()
-            * 108
+            * page_rows
 }
 
 /// Fill the style store, release interior slots, reinsert and finally release all.

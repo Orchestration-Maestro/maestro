@@ -106,7 +106,8 @@ mod tests {
         for width in [16, 32, 64] {
             let (schema, kinds) = wide(width);
             let document = Document::new(&schema, &kinds);
-            let converter = Context::new(&document);
+            let code = crate::arguments::validation::check::Code::default();
+            let converter = Context::new(&document, &code);
             let performed = work(|| {
                 let _ = instantiate(&converter, converter.document.root());
             });
@@ -141,7 +142,7 @@ mod tests {
                     .keys()
                     .map(|name| (name.clone(), Value::Null))
                     .collect();
-            let tool = Tool {
+            let tool: Tool = Tool {
                 name: "echo".to_owned(),
                 description: String::new(),
                 parameters: crate::ParameterSchema::authored(schema, kinds),

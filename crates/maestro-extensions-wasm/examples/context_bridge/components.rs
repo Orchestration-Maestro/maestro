@@ -15,11 +15,11 @@ use std::{
 };
 
 /// Registers the echoing, scoped and replaceable renderers.
-pub(super) fn register(api: &ExtensionAPI) -> ExtensionResult<()> {
+pub(crate) fn register(api: &ExtensionAPI) -> ExtensionResult<()> {
     let echo_api = api.clone();
     api.register_message_renderer(
         "echo-view",
-        Rc::new(move |message, options, _, emitter| {
+        Rc::new(move |message, options, theme, emitter| {
             let label = super::ordering::label(&echo_api)?;
             let message_json = serde_json::to_value(&message).map_err(|error| error.to_string())?;
             let forwarded = json!({"message": message_json, "expanded": options.expanded});
@@ -32,7 +32,7 @@ pub(super) fn register(api: &ExtensionAPI) -> ExtensionResult<()> {
                     api: echo_api.clone(),
                     release: Cell::new(false),
                 }))),
-                _ => Ok(Some(Component::new(State::default()))),
+                _ => Ok(Some(state(theme, &echo_api, &message.custom_type))),
             }
         }),
     )?;
@@ -41,9 +41,13 @@ pub(super) fn register(api: &ExtensionAPI) -> ExtensionResult<()> {
         "scoped-view",
         Rc::new(move |_, _, _, emitter| {
             scope(&scoped_api, &emitter, "create")?;
-            Ok(Some(Component::new(Scoped {
-                api: scoped_api.clone(),
-            })))
+            Ok(Some(with_release(
+                Scoped {
+                    api: scoped_api.clone(),
+                },
+                &scoped_api,
+                "scoped".into(),
+            )))
         }),
     )?;
     swap(api, "v1".into())
@@ -55,12 +59,83 @@ pub(super) fn swap(api: &ExtensionAPI, version: String) -> ExtensionResult<()> {
     api.register_message_renderer(
         "swap-view",
         Rc::new(move |message, _, _, _| {
-            Ok(Some(Component::new(super::View {
-                api: view_api.clone(),
-                name: format!("{}:{version}", message.custom_type),
-            })))
+            let name = format!("{}:{version}", message.custom_type);
+            Ok(Some(with_release(
+                super::ui::View {
+                    api: view_api.clone(),
+                    name: name.clone(),
+                },
+                &view_api,
+                name,
+            )))
         }),
     )
+}
+
+/// Wraps an authored view with a notice that follows its completed destruction.
+pub(super) fn with_release(
+    view: impl ComponentView + 'static,
+    api: &ExtensionAPI,
+    name: String,
+) -> Component {
+    Component::new(ReleasedView {
+        view,
+        _notice: ReleaseNotice {
+            api: api.clone(),
+            name,
+        },
+    })
+}
+
+/// Builds retained input state, with completion observation for the themed view.
+fn state(theme: maestro_extensions_wasm::Theme, api: &ExtensionAPI, name: &str) -> Component {
+    let state = State {
+        inputs: RefCell::default(),
+        invalidated: Cell::new(0),
+        _theme: theme,
+    };
+    if name == "theme-owner" {
+        with_release(state, api, name.into())
+    } else {
+        Component::new(state)
+    }
+}
+
+/// Keeps the original view's methods and observes its completed destruction.
+struct ReleasedView<V> {
+    /// Drops before the notice, so its release effects have finished.
+    view: V,
+    /// Field order makes the notice follow the original view's destructor.
+    _notice: ReleaseNotice,
+}
+
+impl<V: ComponentView> ComponentView for ReleasedView<V> {
+    fn render(&self, width: u32, emitter: CallbackEmitter<'_>) -> ExtensionResult<Vec<String>> {
+        self.view.render(width, emitter)
+    }
+    fn handle_input(&self, data: &str, emitter: CallbackEmitter<'_>) -> ExtensionResult<()> {
+        self.view.handle_input(data, emitter)
+    }
+    fn wants_key_release(&self, emitter: CallbackEmitter<'_>) -> ExtensionResult<bool> {
+        self.view.wants_key_release(emitter)
+    }
+    fn invalidate(&self, emitter: CallbackEmitter<'_>) -> ExtensionResult<()> {
+        self.view.invalidate(emitter)
+    }
+}
+
+/// Reports completed destruction through the caller's existing session-name action.
+struct ReleaseNotice {
+    /// Original factory API.
+    api: ExtensionAPI,
+    /// Identity of the view whose destruction finished.
+    name: String,
+}
+
+impl Drop for ReleaseNotice {
+    fn drop(&mut self) {
+        let _ = self.api.set_session_name(&self.name);
+    }
 }
 
 /// Traces the start and end of `method` around one emission to other listeners.
@@ -73,8 +148,9 @@ fn scope(api: &ExtensionAPI, emitter: &CallbackEmitter<'_>, method: &str) -> Ext
 }
 
 /// A view whose lines show every input and invalidation it retained.
-#[derive(Default)]
 struct State {
+    /// Keeps the supplied theme alive until the view's last alias releases it.
+    _theme: maestro_extensions_wasm::Theme,
     /// Literal inputs in arrival order.
     inputs: RefCell<Vec<String>>,
     /// Invalidations so far.

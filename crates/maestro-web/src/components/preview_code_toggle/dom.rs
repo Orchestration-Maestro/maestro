@@ -1,33 +1,20 @@
 //! Native preview/source control group and its page element.
 use super::{PreviewCodeToggle, ViewMode};
 use crate::{
-    browser::{attachment_content::AttachmentHostError, event_subscription::EventSubscription},
+    browser::attachment_content::AttachmentHostError,
+    components::mode_toggle::{Mode, ModeGroup, Options},
     dom::{self, DomContent, DomRoot, DomView, Getter, Link, Setter},
-    icons,
     tools::types::ToolUiError,
 };
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,
 };
-use wasm_bindgen::{JsCast as _, JsValue, closure::Closure};
-use web_sys::{CustomEvent, CustomEventInit, HtmlElement, Node};
+use wasm_bindgen::JsValue;
+use web_sys::HtmlElement;
 
 /// Element tag of the standalone preview/source control.
 pub(crate) const TAG: &str = "preview-code-toggle";
-/// Group class holding position, clipping, border and background.
-const GROUP: &str = "maestro-toggle";
-/// Button class owning its selected, hover and focus presentation.
-const BUTTON: &str = "maestro-toggle-button";
-/// Class marked on the selected button.
-const SELECTED: &str = "maestro-toggle-selected";
-/// Event dispatched by a changed user selection.
-const CHANGED: &str = "mode-change";
-/// The two controls in native order with their glyph and message key.
-const OPTIONS: [(ViewMode, &str, &str); 2] = [
-    (ViewMode::Preview, "Eye", "Preview"),
-    (ViewMode::Code, "Code", "Code"),
-];
 /// The selection a mounted group reports to, replaced when another controller updates it.
 type Selection = Rc<RefCell<Rc<Cell<ViewMode>>>>;
 /// Getter and setter callables of one element property, kept as long as its element's state.
@@ -38,58 +25,73 @@ struct Mounted {
     group: HtmlElement,
     /// Selection the buttons report to.
     selection: Selection,
-    /// Clicks released with the group.
-    _clicks: Vec<EventSubscription<Closure<dyn Fn()>>>,
+    /// Shared native button and event owner.
+    controls: RefCell<ModeGroup>,
 }
 impl Mounted {
-    /// Build the group for `selection`, reporting changed user selections from `host`.
+    /// Mount the shared owner with the preview/source controller and event spelling.
     fn build(
         view: &DomView,
         selection: &Rc<Cell<ViewMode>>,
         host: Option<&HtmlElement>,
     ) -> Result<Self, ToolUiError> {
-        let group = element(view, "div")?;
-        group.set_class_name(GROUP);
-        let host = host.cloned().unwrap_or_else(|| group.clone());
-        let shared = Rc::new(RefCell::new(Rc::clone(selection)));
-        let mut clicks = Vec::with_capacity(OPTIONS.len());
-        for (mode, icon, key) in OPTIONS {
-            let button = element(view, "button")?;
-            button.set_class_name(&classes(mode, selection.get()));
-            button.set_title(&view.i18n.text(key).map_err(ToolUiError::I18n)?);
-            button
-                .append_child(&glyph(icon)?)
-                .map_err(|error| ToolUiError::native(&error))?;
-            let (selection, watched, target) = (Rc::clone(&shared), group.clone(), host.clone());
-            let click = Closure::<dyn Fn()>::new(move || {
-                choose(&selection, &watched, &target, mode);
-            });
-            clicks.push(
-                EventSubscription::new(button.clone().into(), "click", click)
-                    .map_err(|error| ToolUiError::native(&error))?,
-            );
-            group
-                .append_child(&button)
-                .map_err(|error| ToolUiError::native(&error))?;
-        }
+        let selection = Rc::new(RefCell::new(Rc::clone(selection)));
+        let controls = ModeGroup::new(view, options(view, &selection)?, host)?;
         Ok(Self {
-            group,
-            selection: shared,
-            _clicks: clicks,
+            group: controls.node.clone(),
+            selection,
+            controls: RefCell::new(controls),
         })
     }
-    /// Show the selection the buttons currently report to.
+    /// Show the controller's current choice without publishing an event.
     fn paint(&self) {
-        paint(&self.group, self.selection.borrow().get());
+        self.controls.borrow().paint();
     }
-    /// Take over `selection` and this view: another controller owns the group afterwards.
+    /// Rebind the controller and localized titles, preserving native button identities.
     fn show(&self, selection: &Rc<Cell<ViewMode>>, view: &DomView) -> Result<(), ToolUiError> {
-        localize(&self.group, view)?;
+        let options = options(view, &self.selection)?;
         *self.selection.borrow_mut() = Rc::clone(selection);
-        self.paint();
-        Ok(())
+        self.controls.borrow_mut().show(view, options)
     }
 }
+/// Project the existing preview controller into the shared native button owner.
+fn options(view: &DomView, selection: &Selection) -> Result<Options, ToolUiError> {
+    let modes = [("Eye", "Preview"), ("Code", "Code")]
+        .into_iter()
+        .map(|(icon, key)| {
+            Ok(Mode {
+                label: view.i18n.text(key).map_err(ToolUiError::I18n)?,
+                icon: Some(icon),
+            })
+        })
+        .collect::<Result<Vec<_>, ToolUiError>>()?;
+    let (read, write) = (Rc::clone(selection), Rc::clone(selection));
+    Ok(Options {
+        modes,
+        read: Rc::new(move || {
+            if read.borrow().get() == ViewMode::Preview {
+                0.
+            } else {
+                1.
+            }
+        }),
+        write: Rc::new(move |index| {
+            write.borrow().set(if index == 0. {
+                ViewMode::Preview
+            } else {
+                ViewMode::Code
+            });
+        }),
+        detail: |index, _| {
+            if index == 0 {
+                "preview".into()
+            } else {
+                "code".into()
+            }
+        },
+    })
+}
+
 impl DomContent for PreviewCodeToggle {
     fn mount(&self, view: &DomView) -> Result<DomRoot, ToolUiError> {
         let mounted = Rc::new(Mounted::build(view, &self.selection, None)?);
@@ -105,90 +107,6 @@ impl DomContent for PreviewCodeToggle {
             .and_then(|owner| owner.downcast_ref::<Rc<Mounted>>())
             .ok_or_else(missing_group)?;
         mounted.show(&self.selection, view)
-    }
-}
-/// Classes of one button in `mode` while `selected` is current.
-fn classes(mode: ViewMode, selected: ViewMode) -> String {
-    if mode == selected {
-        format!("{BUTTON} {SELECTED}")
-    } else {
-        BUTTON.to_owned()
-    }
-}
-/// One glyph at the control's fixed extent.
-fn glyph(icon: &str) -> Result<Node, ToolUiError> {
-    let node = icons::icon_node(icon)
-        .map_err(|error| ToolUiError::native(&JsValue::from_str(&error.to_string())))?
-        .ok_or_else(|| ToolUiError::native(&JsValue::from_str("Missing icon")))?;
-    icons::icon_dom(&node, icons::IconSize::Sm, None)
-        .map(Into::into)
-        .map_err(|error| ToolUiError::native(&error))
-}
-/// A new element of `name` in the page.
-fn element(view: &DomView, name: &str) -> Result<HtmlElement, ToolUiError> {
-    view.document
-        .create_element(name)
-        .map_err(|error| ToolUiError::native(&error))?
-        .dyn_into()
-        .map_err(|error| ToolUiError::native(&error))
-}
-/// The group's buttons in native order with their mode, glyph and message key.
-fn buttons(
-    group: &HtmlElement,
-) -> impl Iterator<Item = ((ViewMode, &'static str, &'static str), HtmlElement)> + '_ {
-    let mut next = group.first_element_child();
-    OPTIONS.into_iter().filter_map(move |option| {
-        let button = next.clone()?.unchecked_into::<HtmlElement>();
-        next = button.next_element_sibling();
-        Some((option, button))
-    })
-}
-/// Show `selected` on the buttons of `group`.
-fn paint(group: &HtmlElement, selected: ViewMode) {
-    for ((mode, ..), button) in buttons(group) {
-        button.set_class_name(&classes(mode, selected));
-    }
-}
-/// Refresh the localized button titles of `group` from `view`.
-fn localize(group: &HtmlElement, view: &DomView) -> Result<(), ToolUiError> {
-    for ((_, _, key), button) in buttons(group) {
-        button.set_title(&view.i18n.text(key).map_err(ToolUiError::I18n)?);
-    }
-    Ok(())
-}
-/// Select `mode` in `selection`, reporting whether the selection changed.
-fn select(selection: &Rc<Cell<ViewMode>>, mode: ViewMode) -> bool {
-    if selection.get() == mode {
-        return false;
-    }
-    selection.set(mode);
-    true
-}
-/// Report one changed user selection, keeping any selection made while it dispatched.
-fn choose(selection: &Selection, group: &HtmlElement, host: &HtmlElement, mode: ViewMode) {
-    if !select(&selection.borrow(), mode) {
-        return;
-    }
-    paint(group, mode);
-    let _ = dispatch(host, mode);
-    // A listener may select again while the event bubbles; its choice stays shown.
-    paint(group, selection.borrow().get());
-}
-/// Dispatch one changed selection from the element a page listens on.
-fn dispatch(host: &HtmlElement, mode: ViewMode) -> Result<bool, JsValue> {
-    let init = CustomEventInit::new();
-    init.set_detail(&JsValue::from_str(name(mode)));
-    init.set_bubbles(true);
-    init.set_composed(false);
-    init.set_cancelable(false);
-    let event = CustomEvent::new_with_event_init_dict(CHANGED, &init)?;
-    host.dispatch_event(&event)
-}
-/// Mode spelling carried by the element property and the changed-selection event.
-fn name(mode: ViewMode) -> &'static str {
-    match mode {
-        ViewMode::Preview => "preview",
-        ViewMode::Code => "code",
     }
 }
 /// Report an update of a root this control does not own.
@@ -235,7 +153,13 @@ fn property(
     mounted: &Rc<RefCell<Option<Rc<Mounted>>>>,
 ) -> Accessors {
     let read = Rc::clone(selection);
-    let get = Getter::new(move || name(read.get()).into());
+    let get = Getter::new(move || {
+        match read.get() {
+            ViewMode::Preview => "preview",
+            ViewMode::Code => "code",
+        }
+        .into()
+    });
     let (write, group) = (Rc::clone(selection), Rc::clone(mounted));
     let set = Setter::new(move |value: JsValue| {
         // Only the declared modes are operands; other assignments leave the selection alone.
@@ -244,7 +168,7 @@ fn property(
             Some("code") => ViewMode::Code,
             _ => return,
         };
-        if select(&write, mode)
+        if write.replace(mode) != mode
             && let Some(mounted) = group.borrow().as_ref()
         {
             mounted.paint();

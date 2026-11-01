@@ -116,9 +116,8 @@ fn runner() -> ExtensionRunner {
 fn native_runtime_exports_share_the_extension_records() {
     let runtime: Arc<ExtensionRuntime> = create_extension_runtime::<Threaded>();
     let mut actions: ExtensionActions = Threaded::unbound_actions();
-    let tool = runtime_tool();
-    let expected = serde_json::to_value(&tool).unwrap();
-    actions.get_all_tools = Arc::new(move || Ok(vec![tool.clone()]));
+    let expected = serde_json::to_value(runtime_tool()).unwrap();
+    actions.get_all_tools = Arc::new(|| Ok(vec![runtime_schema_tool()]));
     let config = runtime_provider();
     let owner = Arc::new(RwLock::new(Extension::new(
         "/extension".into(),
@@ -184,6 +183,19 @@ fn runtime_tool() -> maestro_app::ToolInfo {
         description: "Inspect data".into(),
         parameters: serde_json::json!({"type":"object"}).into(),
         source_info: source,
+    }
+}
+
+/// Add local executable storage only after the threaded callback is invoked.
+#[cfg(not(target_arch = "wasm32"))]
+fn runtime_schema_tool()
+-> maestro_app::ToolInfo<maestro_models::ParameterSchema<maestro_models::SchemaCode>> {
+    let tool = runtime_tool();
+    maestro_app::ToolInfo {
+        name: tool.name,
+        description: tool.description,
+        parameters: tool.parameters.with_code(maestro_models::SchemaCode::new()),
+        source_info: tool.source_info,
     }
 }
 

@@ -44,6 +44,7 @@ impl DomContent for ConsoleBlock {
                     nodes::scroll_bottom(&scroll);
                 }
             })),
+            None,
         )
         .map_err(|error| host_error(&error))?;
         for (name, value) in [("show-text", ""), ("compact", "")] {

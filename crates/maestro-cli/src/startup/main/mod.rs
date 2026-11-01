@@ -8,3 +8,10 @@ pub mod runtime;
 pub mod sessions;
 
 pub mod dispatch;
+
+mod entry;
+mod factory;
+mod selected_sessions;
+mod writers;
+
+pub use entry::{MainExport, MainHost, MainOptions, main};

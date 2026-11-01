@@ -32,29 +32,42 @@ impl Endpoint {
             .send(call)
             .map_err(|_| "extension Store owner ended".to_owned())
     }
+    /// Enters a synchronous target, through the active native operation when one owns
+    /// this instance, and services local requests until its typed reply settles.
+    pub(crate) fn synchronous<T: Send + 'static>(
+        &self,
+        registry: &crate::local_resources::Registry,
+        make: impl FnOnce(Reply<T>) -> Result<Call, String>,
+    ) -> Result<T, String> {
+        self.replies
+            .synchronous(registry, |reply| registry.dispatch(self, make(reply)?))
+    }
+    /// Admits an asynchronous target through the active native operation when one owns this
+    /// instance, so its prefix runs before that caller continues, and awaits its result.
+    pub(crate) async fn call<T: Send + 'static>(
+        &self,
+        registry: &crate::local_resources::Registry,
+        make: impl FnOnce(Reply<T>) -> Call,
+    ) -> Result<T, String> {
+        self.settled(make, |call| registry.admit(self, call)).await
+    }
     /// Registers before submission and returns only the original lifecycle's result.
     pub(crate) async fn submit<T: Send + 'static>(
         &self,
         make: impl FnOnce(Reply<T>) -> Call,
     ) -> Result<T, String> {
+        self.settled(make, |call| self.send(call)).await
+    }
+    /// Registers the reply before the call leaves, then awaits the one lifecycle result.
+    async fn settled<T: Send + 'static>(
+        &self,
+        make: impl FnOnce(Reply<T>) -> Call,
+        send: impl FnOnce(Call) -> Result<(), String>,
+    ) -> Result<T, String> {
         let (reply, result) = self.replies.reply()?;
-        self.send(make(reply))?;
+        send(make(reply))?;
         result
             .await
             .map_err(|_| "extension guest reply ended".to_owned())?
-    }
-}
-
-/// One final-release owner for a guest resource and its original admission.
-pub(crate) struct GuestResource {
-    /// Real Wasmtime guest owner, not a host table slot or reconstructed resource.
-    pub(crate) resource: wasmtime::component::ResourceAny,
-    /// Original shared lifecycle admission and settlement owner.
-    pub(crate) endpoint: Endpoint,
-}
-
-impl Drop for GuestResource {
-    fn drop(&mut self) {
-        let _ = self.endpoint.send(Call::ReleaseResource(self.resource));
     }
 }

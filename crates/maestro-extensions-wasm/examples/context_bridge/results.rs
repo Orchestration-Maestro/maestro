@@ -31,7 +31,7 @@ fn trace(api: &ExtensionAPI, emitter: &CallbackEmitter<'_>, step: &str) -> Exten
 pub(super) fn echo(api: &ExtensionAPI, prepare: bool) -> ExtensionResult<()> {
     let (prepare_api, execute_api) = (api.clone(), api.clone());
     let prepare: Option<maestro_extensions_wasm::PrepareArguments> = prepare.then(|| {
-        Rc::new(move |args: Value, emitter: CallbackEmitter<'_>| {
+        Rc::new(move |args: &mut Value, emitter: CallbackEmitter<'_>| {
             trace(&prepare_api, &emitter, "prepare")?;
             prepared(&prepare_api, args, &emitter)
         }) as _
@@ -39,12 +39,14 @@ pub(super) fn echo(api: &ExtensionAPI, prepare: bool) -> ExtensionResult<()> {
     api.register_tool(maestro_extensions_wasm::ToolDefinition {
         metadata: serde_json::from_value(json!({"name":"echo", "label":"Echo", "description":"Echoes its arguments", "parameters":{"type":"object"}})).map_err(|error| error.to_string())?,
         prepare_arguments: prepare,
+        render_call: None,
+        render_result: None,
         execute: Rc::new(move |_, params, _, _, _| {
             let api = execute_api.clone();
             Box::pin(async move {
                 let label = super::ordering::label(&api)?;
-                api.events().emit(&format!("payload:{label}"), params).await?;
-                serde_json::from_value(json!({"content":[],"details":null})).map_err(|error| error.to_string())
+                api.events().emit(&format!("payload:{label}"), params.clone()).await?;
+                serde_json::from_value(json!({"content":[],"details":params})).map_err(|error| error.to_string())
             })
         }),
     })
@@ -53,7 +55,7 @@ pub(super) fn echo(api: &ExtensionAPI, prepare: bool) -> ExtensionResult<()> {
 /// Answers one preparation under the selected mode.
 fn prepared(
     api: &ExtensionAPI,
-    mut args: Value,
+    args: &mut Value,
     emitter: &CallbackEmitter<'_>,
 ) -> ExtensionResult<Value> {
     let mode = MODE.with_borrow(Clone::clone);
@@ -73,9 +75,15 @@ fn prepared(
             trace(api, emitter, "prepare:end")?;
             return Ok(json!({"prepared": args}));
         }
-        mode => return Err(format!("unknown preparation mode {mode}")),
+        mode => {
+            let error = mode
+                .strip_prefix("fail:")
+                .ok_or_else(|| format!("unknown preparation mode {mode}"))?;
+            emitter.emit("prepare-foreign", Value::Null)?;
+            return Err(error.into());
+        }
     }
-    Ok(args)
+    Ok(args.clone())
 }
 
 /// Requests compaction with absent, empty or complete options, then traces the return.
@@ -87,6 +95,7 @@ pub(super) async fn compact(
     let options = match options {
         "absent" => None,
         "empty" => Some(CompactOptions::default()),
+        failing if failing.starts_with("fail:") => Some(rejecting(&failing[5..])),
         _ => Some(CompactOptions {
             custom_instructions: Some("keep".into()),
             on_complete: Some(completed(api)),
@@ -121,4 +130,20 @@ fn failed(api: &ExtensionAPI) -> CompactionError {
         emitter.emit("compaction-foreign", Value::Null)?;
         trace(&api, &emitter, "error:end")
     })
+}
+
+/// Callbacks that emit to other instances, then return the authored error.
+fn rejecting(error: &str) -> CompactOptions {
+    let (complete, failed) = (error.to_owned(), error.to_owned());
+    CompactOptions {
+        custom_instructions: None,
+        on_complete: Some(Rc::new(move |_, emitter| {
+            emitter.emit("compaction-foreign", Value::Null)?;
+            Err(complete.clone())
+        })),
+        on_error: Some(Rc::new(move |_, emitter| {
+            emitter.emit("compaction-foreign", Value::Null)?;
+            Err(failed.clone())
+        })),
+    }
 }

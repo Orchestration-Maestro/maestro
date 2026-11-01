@@ -1,99 +1,60 @@
 //! Typed dynamic provider definitions and incoming validation.
 use super::CatalogError;
 use maestro_models::{
-    Api, DiagnosticErrorInfo, ModelCompat, ModelCost, ModelInput, OAuthError, OAuthProviderHandle,
-    StreamFunction, StreamOptionsInput, ThinkingLevelMap,
+    DiagnosticErrorInfo, OAuthError, OAuthProviderHandle, StreamFunction, StreamOptionsInput,
 };
+use maestro_request::provider_config::ProviderConfig;
 use std::borrow::Cow;
 
-/// Partially supplied dynamic registration; absent fields retain earlier values on replay.
+/// Native callable operations supplied with a dynamic registration.
 #[derive(Default)]
-pub struct ProviderConfigInput {
-    /// Provider display label, including an empty label.
-    pub name: Option<String>,
-    /// Provider endpoint.
-    pub base_url: Option<String>,
-    /// Configured request key expression.
-    pub api_key: Option<String>,
-    /// Protocol used by the callback and model fallback.
-    pub api: Option<Api>,
+pub struct ProviderCallbacks {
     /// Callback receiving the original raw or simple options.
     pub stream_simple: Option<StreamFunction<StreamOptionsInput>>,
-    /// Request header expressions.
-    pub headers: Option<indexmap::IndexMap<String, String>>,
-    /// Whether to synthesize Authorization.
-    pub auth_header: Option<bool>,
     /// Subscription operations whose installed ID is the registration name.
     pub oauth: Option<OAuthProviderHandle>,
-    /// Complete dynamic model definitions; empty lists do not replace immediately.
-    pub models: Option<Vec<ProviderModelInput>>,
 }
-
+/// Partially supplied dynamic registration; absent fields retain earlier values on replay.
+pub type ProviderConfigInput = ProviderConfig<ProviderCallbacks>;
 /// Complete metadata for a dynamically supplied model, without file-loader defaults.
-#[derive(Clone)]
-pub struct ProviderModelInput {
-    /// Exact model identifier.
-    pub id: String,
-    /// Display label.
-    pub name: String,
-    /// Nonempty protocol override.
-    pub api: Option<Api>,
-    /// Endpoint override, including an empty endpoint.
-    pub base_url: Option<String>,
-    /// Whether reasoning is supported.
-    pub reasoning: bool,
-    /// Provider-specific thinking level values.
-    pub thinking_level_map: Option<ThinkingLevelMap>,
-    /// Accepted input kinds in supplied order.
-    pub input: Vec<ModelInput>,
-    /// Supplied usage prices.
-    pub cost: ModelCost,
-    /// Context capacity.
-    pub context_window: f64,
-    /// Output capacity.
-    pub max_tokens: f64,
-    /// Per-model request header expressions, not descriptor headers.
-    pub headers: Option<indexmap::IndexMap<String, String>>,
-    /// Open compatibility metadata.
-    pub compat: Option<ModelCompat>,
-}
-impl ProviderConfigInput {
-    /// Check prerequisites in their consuming order before registration effects.
-    pub(super) fn validate(&self, provider: &str) -> Result<(), CatalogError> {
-        let failure = if self.stream_simple.is_some() && nonempty(self.api.as_deref()).is_none() {
-            Some(format!(
-                "Provider {provider}: \"api\" is required when registering streamSimple."
-            ))
-        } else if self.models.as_ref().is_none_or(Vec::is_empty) {
-            None
-        } else if nonempty(self.base_url.as_deref()).is_none() {
-            Some(format!(
-                "Provider {provider}: \"baseUrl\" is required when defining models."
-            ))
-        } else if nonempty(self.api_key.as_deref()).is_none() && self.oauth.is_none() {
-            Some(format!(
-                "Provider {provider}: \"apiKey\" or \"oauth\" is required when defining models."
-            ))
-        } else {
-            self.models
-                .iter()
-                .flatten()
-                .find(|model| {
-                    nonempty(model.api.as_deref())
-                        .or(nonempty(self.api.as_deref()))
-                        .is_none()
-                })
-                .map(|model| {
-                    format!(
-                        "Provider {provider}, model {}: no \"api\" specified.",
-                        model.id
-                    )
-                })
-        };
-        failure.map_or(Ok(()), |message| {
-            Err(DiagnosticErrorInfo::new(None, message).into())
-        })
-    }
+pub use maestro_request::provider_config::ProviderModelConfig as ProviderModelInput;
+/// Check prerequisites in their consuming order before registration effects.
+pub(super) fn validate(config: &ProviderConfigInput, provider: &str) -> Result<(), CatalogError> {
+    let models = config.models.as_deref().unwrap_or_default();
+    let failure = if config.callbacks.stream_simple.is_some()
+        && nonempty(config.api.as_deref()).is_none()
+    {
+        Some(format!(
+            "Provider {provider}: \"api\" is required when registering streamSimple."
+        ))
+    } else if models.is_empty() {
+        None
+    } else if nonempty(config.base_url.as_deref()).is_none() {
+        Some(format!(
+            "Provider {provider}: \"baseUrl\" is required when defining models."
+        ))
+    } else if nonempty(config.api_key.as_deref()).is_none() && config.callbacks.oauth.is_none() {
+        Some(format!(
+            "Provider {provider}: \"apiKey\" or \"oauth\" is required when defining models."
+        ))
+    } else {
+        models
+            .iter()
+            .find(|model| {
+                nonempty(model.api.as_deref())
+                    .or(nonempty(config.api.as_deref()))
+                    .is_none()
+            })
+            .map(|model| {
+                format!(
+                    "Provider {provider}, model {}: no \"api\" specified.",
+                    model.id
+                )
+            })
+    };
+    failure.map_or(Ok(()), |message| {
+        Err(DiagnosticErrorInfo::new(None, message).into())
+    })
 }
 /// String truthiness at the typed registration boundary.
 pub(super) fn nonempty(value: Option<&str>) -> Option<&str> {
@@ -133,7 +94,7 @@ impl maestro_models::OAuthProviderInterface for RegisteredOAuth {
     fn get_api_key<'a>(
         &self,
         credentials: &'a maestro_models::OAuthCredentials,
-    ) -> Result<&'a str, OAuthError> {
+    ) -> Result<Cow<'a, str>, OAuthError> {
         self.inner.get_api_key(credentials)
     }
     fn modify_models<'m>(

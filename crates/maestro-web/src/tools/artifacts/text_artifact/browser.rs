@@ -24,15 +24,11 @@ pub(super) fn sync(body: &Body, html_changed: bool) {
         }
     }
 }
-/// Mount a literal listing in the canvas document.
-pub(super) fn mount(
+/// Create a literal listing's `pre` and `code` nodes, styled with the shared syntax palette.
+pub(crate) fn source_nodes(
     document: &web_sys::Document,
-    body: &Rc<RefCell<Body>>,
-) -> Result<ReadingRoot, AttachmentHostError> {
+) -> Result<(web_sys::Element, web_sys::Element), AttachmentHostError> {
     let root = element(document, "pre", "maestro-text-artifact")?;
-    if body.borrow().wrap {
-        root.set_class_name("maestro-text-artifact maestro-markdown-source");
-    }
     let style = element(document, "style", "")?;
     let syntax = maestro_theme::highlight_css()
         .map_err(|error| AttachmentHostError::Presentation(error.to_string()))?;
@@ -43,6 +39,17 @@ pub(super) fn mount(
     append(&root, &style)?;
     let code = element(document, "code", "")?;
     append(&root, &code)?;
+    Ok((root, code))
+}
+/// Mount a literal listing in the canvas document.
+pub(super) fn mount(
+    document: &web_sys::Document,
+    body: &Rc<RefCell<Body>>,
+) -> Result<ReadingRoot, AttachmentHostError> {
+    let (root, code) = source_nodes(document)?;
+    if body.borrow().wrap {
+        root.set_class_name("maestro-text-artifact maestro-markdown-source");
+    }
     body.borrow_mut().code = Some(code);
     sync(&body.borrow(), true);
     Ok(ReadingRoot {

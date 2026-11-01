@@ -38,7 +38,7 @@ fn message(custom_type: &str) -> Value {
 #[test]
 fn registered_component_renderer_keeps_message_options_and_theme() {
     local(async {
-        let pair = Pair::new().await;
+        let mut pair = Pair::new().await;
         let runner = &pair.a.runner;
         for missing in ["Echo-view", "echo-view ", "echo", ""] {
             assert!(
@@ -69,9 +69,8 @@ fn registered_component_renderer_keeps_message_options_and_theme() {
                 _ => assert!(outcome.unwrap().is_some()),
             }
             let forwarded = pair.payloads.borrow_mut().pop().unwrap();
-            let parsed: maestro_session::messages::CustomMessage<Value> =
-                serde_json::from_value(supplied.clone()).unwrap();
-            let expected = serde_json::to_value(&parsed).unwrap();
+            let mut expected = supplied.clone();
+            expected["timestamp"] = json!(supplied["timestamp"].as_f64().unwrap());
             assert_eq!(
                 forwarded["message"].to_string(),
                 expected.to_string(),
@@ -92,7 +91,42 @@ fn registered_component_renderer_keeps_message_options_and_theme() {
         render(&call, &messages[0], false).unwrap();
         let forwarded = pair.payloads.borrow_mut().pop().unwrap();
         assert!(forwarded["message"].get("details").is_none());
+        theme_ownership(&mut pair, &call).await;
     });
+}
+
+/// A guest-retained theme outlives the caller and releases with the last view alias.
+async fn theme_ownership(
+    pair: &mut Pair,
+    call: &MessageRendererCall<Value, maestro_extensions::Local>,
+) {
+    let theme = Rc::new(
+        maestro_theme::Theme::new(
+            [],
+            [],
+            maestro_theme::ColorMode::Color256,
+            maestro_theme::ThemeOptions::default(),
+        )
+        .unwrap(),
+    );
+    let released = Rc::downgrade(&theme);
+    let view = call
+        .call(
+            Rc::new(serde_json::from_value(message("theme-owner")).unwrap()),
+            MessageRenderOptions { expanded: false },
+            maestro_theme::LiveTheme::from_theme(theme),
+        )
+        .unwrap()
+        .unwrap();
+    let alias = view.clone();
+    pair.a.barrier().await;
+    assert!(released.upgrade().is_some());
+    drop(view);
+    pair.a.barrier().await;
+    assert!(released.upgrade().is_some());
+    drop(alias);
+    pair.wait_release("a:theme-owner").await;
+    assert!(released.upgrade().is_none());
 }
 
 #[test]
@@ -208,7 +242,7 @@ fn component_defaults_and_release_preference_remain_live() {
 #[test]
 fn returned_components_outlive_renderer_registration() {
     local(async {
-        let pair = Pair::new().await;
+        let mut pair = Pair::new().await;
         let original = renderer(&pair.a, "swap-view");
         let first = render(&original, &message("keep"), false).unwrap().unwrap();
         let alias = first.clone();
@@ -226,11 +260,16 @@ fn returned_components_outlive_renderer_registration() {
         assert!(!pair.a.released("keep:v1"));
         assert_eq!(alias.try_render(7).unwrap(), ["keep:v1:7"]);
         drop(alias);
-        pair.a.barrier().await;
+        pair.wait_release("a:keep:v1").await;
         assert!(pair.a.released("keep:v1"));
         assert!(!pair.a.released("keep:v2") && !pair.a.released("old:v1"));
         drop((replacement, retained));
-        pair.a.barrier().await;
+        let mut completed = [
+            pair.releases.recv().await.unwrap(),
+            pair.releases.recv().await.unwrap(),
+        ];
+        completed.sort();
+        assert_eq!(completed, ["a:keep:v2", "a:old:v1"]);
         assert!(pair.a.released("keep:v2") && pair.a.released("old:v1"));
     });
 }
@@ -238,7 +277,7 @@ fn returned_components_outlive_renderer_registration() {
 #[test]
 fn component_callbacks_drain_before_release() {
     local(async {
-        let pair = Pair::new().await;
+        let mut pair = Pair::new().await;
         pair.b
             .program(
                 r#"[{"op":"on","channel":"component-foreign","id":"foreign","name":"foreign"}]"#,
@@ -268,7 +307,7 @@ fn component_callbacks_drain_before_release() {
         assert_eq!(pair.take(), expected);
         assert!(!pair.a.released("scoped"));
         drop(view);
-        pair.a.barrier().await;
+        pair.wait_release("a:scoped").await;
         assert!(pair.a.released("scoped"));
         assert!(pair.take().is_empty());
     });

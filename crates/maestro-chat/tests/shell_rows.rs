@@ -239,3 +239,55 @@ fn shell_try_render_preserves_child_rows_and_errors() {
         std::io::ErrorKind::Other
     );
 }
+
+#[test]
+fn shell_expand_and_collapse_hints_close_in_the_muted_colour() {
+    let _guard = shell_rows_support::registry_guard();
+    shell_rows_support::default_bindings();
+    let runtime = manual_runtime::ManualRuntime::default();
+    let terminal = recording_terminal::RecordingTerminal::new(60, 24);
+    let ui = TUI::new(
+        terminal.handle(),
+        runtime.handle(),
+        TerminalImage::default(),
+        None,
+    );
+    let theme = published::theme(0);
+    let (_state, live) = published::published(&theme);
+    let component = BashExecutionComponent::new("hint".into(), ui, live.clone(), false);
+    component
+        .append_output(
+            &(0..22)
+                .map(|n| n.to_string())
+                .collect::<Vec<_>>()
+                .join("\n"),
+        )
+        .unwrap();
+    component.set_complete(None, false, None, None);
+    let muted = |text| theme.fg(&maestro_theme::ThemeColor::Muted, text).unwrap();
+    let hint = |text| maestro_app::key_hint("app.tools.expand", text, &live).unwrap();
+    let collapsed = format!(
+        "{}{}{}",
+        muted("... 2 more lines ("),
+        hint("to expand"),
+        muted(")")
+    );
+    assert!(
+        component
+            .render(60)
+            .iter()
+            .any(|row| row.contains(&collapsed)),
+        "{:?}",
+        component.render(60)
+    );
+    component.set_expanded(true);
+    let expanded = format!("{}{}{}", muted("("), hint("to collapse"), muted(")"));
+    assert!(
+        component
+            .render(60)
+            .iter()
+            .any(|row| row.contains(&expanded)),
+        "{:?}",
+        component.render(60)
+    );
+}

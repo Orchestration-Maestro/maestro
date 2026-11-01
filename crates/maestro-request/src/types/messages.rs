@@ -290,13 +290,25 @@ pub enum Message {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Tool {
+#[serde(bound(serialize = "", deserialize = "C: Default"))]
+pub struct Tool<C = ()> {
     /// Name.
     pub name: String,
     /// Description.
     pub description: String,
     /// Parameters.
-    pub parameters: crate::parameter_schema::ParameterSchema,
+    pub parameters: crate::parameter_schema::ParameterSchema<C>,
+}
+impl<C> Tool<C> {
+    /// Project provider data without retaining or invoking executable annotations.
+    #[must_use]
+    pub fn data(&self) -> Tool {
+        Tool {
+            name: self.name.clone(),
+            description: self.description.clone(),
+            parameters: self.parameters.data(),
+        }
+    }
 }
 /// Supply conversation messages with optional system prompt and tools.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

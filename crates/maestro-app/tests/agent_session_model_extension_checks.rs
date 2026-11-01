@@ -222,6 +222,18 @@ fn details_view(record: &Value) -> Option<Value> {
     }
 }
 
+/// A tool-result record as text, error flag and details.
+fn result_fields(record: &Value) -> Value {
+    let mut view = json!({
+        "text": message_text(record),
+        "is_error": record["isError"],
+    });
+    if let Some(details) = details_view(record) {
+        view["details"] = details;
+    }
+    view
+}
+
 /// The tool result a request carries, as text, error flag and details.
 fn tool_result_view(input: &FauxResponseInput<Local>) -> Value {
     let record = input
@@ -231,14 +243,7 @@ fn tool_result_view(input: &FauxResponseInput<Local>) -> Value {
         .map(|message| serde_json::to_value(message).unwrap())
         .find(|record| record["role"] == json!("toolResult"))
         .expect("a tool result");
-    let mut view = json!({
-        "text": message_text(&record),
-        "is_error": record["isError"],
-    });
-    if let Some(details) = details_view(&record) {
-        view["details"] = details;
-    }
-    view
+    result_fields(&record)
 }
 
 /// An answer reporting the request's tool result and answering with its text.
@@ -303,15 +308,7 @@ fn stored_tool_result(h: &Harness) -> Value {
         .into_iter()
         .find(|entry| entry["message"]["role"] == "toolResult")
         .expect("a stored tool result");
-    let message = &entry["message"];
-    let mut view = json!({
-        "text": message_text(message),
-        "is_error": message["isError"],
-    });
-    if let Some(details) = details_view(message) {
-        view["details"] = details;
-    }
-    view
+    result_fields(&entry["message"])
 }
 
 /// The last answer's text.

@@ -1,4 +1,7 @@
-//! Safe native hostname and local calendar observations.
+//! Safe native hostname, local calendar and process-session observations.
+
+#[cfg(unix)]
+pub use maestro_process::foreground::current_process_is_detached_server_daemon;
 
 /// Reads the Linux kernel hostname, without invoking a shell.
 #[must_use]
@@ -29,7 +32,7 @@ pub fn show_desktop_notification(title: &str, body: Option<&str>) -> std::io::Re
     if std::env::var_os("DISPLAY").is_none() && std::env::var_os("WAYLAND_DISPLAY").is_none() {
         return Ok(false);
     }
-    let mut command = tokio::process::Command::new("notify-send");
+    let mut command = maestro_process::command("notify-send");
     command.arg("--").arg(title);
     if let Some(body) = body.filter(|body| !body.is_empty()) {
         command.arg(body);
