@@ -309,12 +309,14 @@ impl LoginDialogComponent {
         } else {
             #[cfg(not(target_arch = "wasm32"))]
             {
-                let platform = match self.options.platform {
-                    LoginDialogPlatform::MacOs => "macos",
-                    LoginDialogPlatform::Windows => "windows",
-                    LoginDialogPlatform::Other => "other",
+                let program = match self.options.platform {
+                    LoginDialogPlatform::MacOs => "open",
+                    LoginDialogPlatform::Windows => "explorer.exe",
+                    LoginDialogPlatform::Other => "xdg-open",
                 };
-                maestro_app::utils::platform_opener(url, platform);
+                let mut command = tokio::process::Command::new(program);
+                command.arg(url);
+                let _ = maestro_app::spawn(command, None);
             }
         }
         (self.request_render)();

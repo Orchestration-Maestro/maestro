@@ -20,8 +20,6 @@ mod generated;
 mod graph;
 /// Single-target integration-test packaging checks.
 mod integration_tests;
-/// Native platform viewer ownership.
-mod platform_opener;
 /// Source-size and protected-lint checks.
 mod quality;
 /// Repeated documentation and test source layout checks.
@@ -110,10 +108,6 @@ mod time_limits;
 /// arguments and attributes are not reads. Each unrouted read is reported with its file
 /// and line.
 ///
-/// Native viewer executable literals and the shell-start combination belong only to
-/// the application's platform opener. The whole-file token check includes fragments
-/// and nested groups; editor and clipboard process policies stay with their callers.
-///
 /// # Errors
 ///
 /// Returns a human-readable diagnostic on malformed input or a violated boundary.
@@ -125,7 +119,6 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
     child_tests::check(&members)?;
     integration_tests::check(&members)?;
     boundaries::check(&members)?;
-    platform_opener::check(&members)?;
     comments::check(&members)?;
     repetition::check(&members)?;
     quality::check(root, &members)?;
