@@ -324,9 +324,6 @@ pub(crate) fn project_summary(
                     Some("text") => {
                         Some(<&str>::deserialize(&block["text"]).map(SummaryBlock::Text))
                     }
-                    Some("thinking") => {
-                        Some(<&str>::deserialize(&block["thinking"]).map(SummaryBlock::Thinking))
-                    }
                     Some("toolCall") => Some((|| {
                         Ok(SummaryBlock::Tool(
                             <&str>::deserialize(&block["name"])?,

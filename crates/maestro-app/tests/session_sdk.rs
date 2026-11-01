@@ -3,8 +3,8 @@
 //! hooks, withheld images and both resource routes, compared with the recorded SDK cases.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Auth, Harness, HarnessOptions, TestResourceLoader, answer, as_recorded, assistant,
-    create_test_extensions_result, create_test_resource_loader, harness, on_task_set,
+    Auth, Harness, HarnessOptions, TestResourceLoader, after_summary, answer, as_recorded,
+    assistant, create_test_extensions_result, create_test_resource_loader, harness, on_task_set,
     recorded_number, script_responses, summary_provider, usage,
 };
 use maestro_app::{
@@ -418,12 +418,13 @@ fn context(created: &CreateAgentSessionResult) -> (Option<f64>, Option<f64>) {
 /// A saved history whose compaction is followed by one answer carrying `extra`.
 fn after_compaction(cwd: &str, extra: &Value) -> SessionManager {
     let mut manager = saved_history(cwd, &usage([7, 3, 2, 1], 1.0, None), true);
-    manager
-        .append_message(json!({"role": "user", "content": "later question", "timestamp": 1000}))
-        .unwrap();
-    manager
-        .append_message(assistant("later answer", 1000, extra))
-        .unwrap();
+    let question = after_summary(
+        &manager,
+        json!({"role": "user", "content": "later question"}),
+    );
+    manager.append_message(question).unwrap();
+    let answer = after_summary(&manager, assistant("later answer", 1000, extra));
+    manager.append_message(answer).unwrap();
     manager
 }
 

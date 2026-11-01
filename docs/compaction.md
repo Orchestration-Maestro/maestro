@@ -50,20 +50,26 @@ window minus reserve; disabled settings never trigger it. `calculate_context_tok
 uses a nonzero reported total, treating an omitted or null total as absent, or
 adds input, output, cache-read and cache-write counts.
 `estimate_context_tokens` selects the latest successful assistant usage, ignoring
-error/aborted attempts, and estimates subsequent messages; without usage it estimates
-all supplied messages.
+error/aborted attempts and usage that reports no tokens, and estimates subsequent
+messages; without usage it estimates all supplied messages. Usage from an answer stamped
+earlier than a later message, such as a compaction summary inserted ahead of the retained
+span, is stale and ignored until a newer answer reports usage.
 
 `estimate_tokens` rounds up UTF-16 code units divided by four. It includes assistant
 text, thinking and canonical JSON tool arguments, shell command/output even when
-excluded from model context, and unwrapped summary text. User images add nothing;
-custom/tool-result images add 4800 units each. Unknown roles contribute zero.
+excluded from model context, and unwrapped summary text. Each image in a user, custom
+or tool-result message adds 4800 units. Unknown roles contribute zero.
 
-`find_cut_point` accepts an existing half-open index range. It counts only message
-entries backwards, crosses at the retained budget and selects the next valid cut,
-falling back to the first candidate. Tool results cannot start cuts. Preceding metadata
-is absorbed without crossing a message or compaction boundary. `find_turn_start_index`
-distinguishes user/shell message starts from custom-message/branch-summary entry starts.
-A non-user cut with a turn start produces a split prefix, which may be empty.
+`find_cut_point` accepts an existing half-open index range. It counts every message
+an entry puts in context backwards, including custom messages, nonempty branch
+summaries and compaction summaries, crosses at the retained budget and selects the next
+valid cut, falling back to the first candidate. Tool results cannot start cuts.
+Preceding metadata is absorbed without crossing an entry that is in context or a
+compaction boundary. `find_turn_start_index` treats user, shell, custom, branch-summary
+and compaction-summary messages, and the custom-message and branch-summary entries that
+become them, as turn starts. Stored compaction entries never start turns or cuts.
+A cut that is not itself a turn start but has one before it produces a split prefix,
+which may be empty.
 
 ## Shared summary input
 
@@ -72,13 +78,17 @@ assistant read/write/edit calls. Preparation tracks history and split prefixes, 
 the kept suffix, carrying previous built-in file details only when `fromHook` is falsy.
 `compute_file_lists` removes modified paths from reads, unions edits/writes and sorts
 both lists in UTF-16 lexical order. `format_file_operations` preserves supplied list
-order and duplicates in read-files/modified-files sections.
+order and duplicates in read-files/modified-files sections. Preparation reads each
+entry's message through the same projection as the cut search, so an empty branch summary
+and a compaction summary are not summary input.
 
 `serialize_conversation` accepts typed model messages, not raw application messages.
 Project application messages through the [message conversion interface](sessions/messages.md)
-first. It emits user, assistant-thinking, assistant, assistant-tool-call and tool-result
-labels, with blank-line paragraph separators. Tool arguments use canonical JSON key
-and number spelling; assistant categories appear in thinking/text/tool order.
+first. It emits user, assistant, assistant-tool-call and tool-result labels, with
+blank-line paragraph separators. Assistant thinking is left out: providers return
+summaries of the reasoning, and replaying it can make the summary request larger than the
+context it summarizes. Tool arguments use canonical JSON key and number spelling;
+assistant categories appear in text/tool order.
 Only tool-result text is clipped at 2000 Unicode scalar values with an omitted-character
 notice. User and assistant text remain complete; stored content is not rewritten.
 
@@ -89,6 +99,10 @@ an optional prior summary and `SummaryOptions`. It reads only summary-visible fi
 using the [message projection](sessions/messages.md) formatting and the shared serializer
 above. It starts the registered model completion before returning an owned future;
 borrowed inputs need not outlive that future. A fresh request timestamp is used.
+
+`generate_summary_with_usage` takes the same operands and returns a `GeneratedSummary`:
+the summary text with the `Usage` the provider reported for that request.
+`generate_summary` keeps returning the text alone.
 
 Supply the API key explicitly (empty is retained), optional ordered headers and shared
 cancellation. Reasoning is omitted unless the model supports it and an enabled level
