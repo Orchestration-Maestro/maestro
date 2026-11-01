@@ -514,8 +514,12 @@ pub fn assistant(text: &str, offset: u64, extra: &Value) -> Value {
     message
 }
 
-/// `message` stamped at the compaction summary of `manager`'s context, so it counts as given
-/// after the compaction without reading the clock.
+/// Stamps `message` at the compaction summary of `manager`'s context.
+///
+/// The message then counts as given after the compaction without reading the clock.
+///
+/// # Panics
+/// Panics when the session context cannot be built or holds no compaction summary.
 pub fn after_summary(manager: &SessionManager, mut message: Value) -> Value {
     let context = manager.build_session_context().unwrap();
     let summary = context
