@@ -23,6 +23,7 @@ use std::{
     rc::Rc,
     sync::{Arc, RwLock},
 };
+use url::Url;
 
 /// The agent over `model` at `thinking_level`, converting messages with images withheld when
 /// the settings block them, requesting through the catalog's credentials and the provider
@@ -72,9 +73,9 @@ pub(super) fn build_agent(
     }))
 }
 
-/// The provider request: the catalog's key and headers, the provider retry settings where
-/// the request sets none, and the attribution, credential and request headers merged in that
-/// order.
+/// The provider request: the catalog's key, endpoint and headers, the provider retry settings and then
+/// the HTTP idle timeout where the request sets none, and the attribution, credential and
+/// request headers merged in that order.
 fn stream_fn(services: &Services, spawn: &AgentSpawner<Local>) -> maestro_agent::StreamFn<Local> {
     let registry = Arc::clone(&services.model_registry);
     let settings = Rc::clone(&services.settings_manager);
@@ -85,22 +86,36 @@ fn stream_fn(services: &Services, spawn: &AgentSpawner<Local>) -> maestro_agent:
         let submission = submission.clone();
         Box::pin(async move {
             let shared = Arc::new(RwLock::new(model.clone()));
-            let (api_key, auth_headers) = match registry.get_api_key_and_headers(&shared).await {
-                ResolvedRequestAuth::Ok { api_key, headers } => (api_key, headers),
-                ResolvedRequestAuth::Error { error } => {
-                    return Err(DiagnosticErrorInfo::error(error));
-                }
-            };
-            let (retry, attribution) = {
+            let (api_key, auth_headers, base_url) =
+                match registry.get_api_key_and_headers(&shared).await {
+                    ResolvedRequestAuth::Ok {
+                        api_key,
+                        headers,
+                        base_url,
+                    } => (api_key, headers, base_url),
+                    ResolvedRequestAuth::Error { error } => {
+                        return Err(DiagnosticErrorInfo::error(error));
+                    }
+                };
+            let (retry, idle_timeout, attribution) = {
                 let settings = settings.borrow();
                 (
                     settings.get_provider_retry_settings(),
-                    get_attribution_headers(&model, &settings),
+                    request_timeout(&settings),
+                    get_attribution_headers(
+                        &model,
+                        &settings,
+                        options.common.session_id.as_deref(),
+                    ),
                 )
             };
             let common = &mut options.common;
             common.api_key = api_key;
-            common.timeout_ms = common.timeout_ms.or(retry.timeout_ms);
+            common.base_url = base_url;
+            common.timeout_ms = common
+                .timeout_ms
+                .or(retry.timeout_ms)
+                .or(Some(idle_timeout));
             common.max_retries = common.max_retries.or(retry.max_retries);
             common.max_retry_delay_ms =
                 common.max_retry_delay_ms.or(Some(retry.max_retry_delay_ms));
@@ -108,6 +123,18 @@ fn stream_fn(services: &Services, spawn: &AgentSpawner<Local>) -> maestro_agent:
             maestro_models::stream_simple_for::<Local>(model, context, Some(options), submission)
         })
     })
+}
+
+/// The request timeout the HTTP idle timeout setting supplies, in milliseconds. The setting's
+/// zero disables the limit, which a provider timeout of zero would instead make immediate, so
+/// it asks for the largest timeout the request carries, `i32::MAX` milliseconds.
+fn request_timeout(settings: &SettingsManager) -> f64 {
+    let idle = settings.get_http_idle_timeout_ms();
+    if idle > 0.0 {
+        idle
+    } else {
+        f64::from(i32::MAX)
+    }
 }
 
 /// The headers of each present map, later ones replacing earlier values; absent when none
@@ -121,26 +148,42 @@ fn merge_headers<const N: usize>(
     })
 }
 
-/// The attribution headers `OpenRouter` and Cloudflare requests carry while install
-/// telemetry is on.
+/// Report whether `base_url` parses to the host `host`; a path or query that merely names it
+/// does not match.
+fn has_host(base_url: &str, host: &str) -> bool {
+    Url::parse(base_url).is_ok_and(|url| url.host_str() == Some(host))
+}
+
+/// The session headers `OpenCode` requests carry, and the attribution headers `OpenRouter`,
+/// NVIDIA and Cloudflare requests carry while install telemetry is on, matched by provider
+/// or by the base URL's host.
 fn get_attribution_headers(
     model: &Model,
     settings: &SettingsManager,
+    session_id: Option<&str>,
 ) -> Option<IndexMap<String, String>> {
     let telemetry = std::env::var("MAESTRO_TELEMETRY").ok();
-    if !is_install_telemetry_enabled(settings, telemetry.as_deref()) {
-        return None;
-    }
-    let headers = |pairs: &[(&str, &str)]| {
-        Some(
-            pairs
-                .iter()
-                .map(|&(name, value)| (name.to_owned(), value.to_owned()))
-                .collect(),
-        )
-    };
-    if model.provider == "openrouter" || model.base_url.contains("openrouter.ai") {
-        return headers(&[
+    let attribution = is_install_telemetry_enabled(settings, telemetry.as_deref())
+        .then(|| attribution_pairs(model))
+        .flatten()
+        .unwrap_or_default();
+    let opencode = matches!(model.provider.as_str(), "opencode" | "opencode-go")
+        || has_host(&model.base_url, "opencode.ai");
+    let session = session_id
+        .filter(|_| opencode)
+        .into_iter()
+        .flat_map(|id| [("x-opencode-session", id), ("x-opencode-client", "maestro")]);
+    let headers: IndexMap<String, String> = session
+        .chain(attribution.iter().copied())
+        .map(|(name, value)| (name.to_owned(), value.to_owned()))
+        .collect();
+    (!headers.is_empty()).then_some(headers)
+}
+
+/// The telemetry attribution headers of `model`'s provider or host, when it has any.
+fn attribution_pairs(model: &Model) -> Option<&'static [(&'static str, &'static str)]> {
+    if model.provider == "openrouter" || has_host(&model.base_url, "openrouter.ai") {
+        return Some(&[
             (
                 "HTTP-Referer",
                 "https://github.com/Orchestration-Maestro/maestro",
@@ -149,15 +192,15 @@ fn get_attribution_headers(
             ("X-OpenRouter-Categories", "cli-agent"),
         ]);
     }
+    if model.provider == "nvidia" || has_host(&model.base_url, "integrate.api.nvidia.com") {
+        return Some(&[("X-BILLING-INVOKE-ORIGIN", "maestro")]);
+    }
     let cloudflare = matches!(
         model.provider.as_str(),
         "cloudflare-workers-ai" | "cloudflare-ai-gateway"
-    ) || model.base_url.contains("api.cloudflare.com")
-        || model.base_url.contains("gateway.ai.cloudflare.com");
-    if cloudflare {
-        return headers(&[("User-Agent", "maestro-coding-agent")]);
-    }
-    None
+    ) || has_host(&model.base_url, "api.cloudflare.com")
+        || has_host(&model.base_url, "gateway.ai.cloudflare.com");
+    cloudflare.then_some(&[("User-Agent", "maestro-coding-agent")])
 }
 
 /// The current runner, when it handles `event_type`.

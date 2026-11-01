@@ -43,7 +43,7 @@ impl InteractiveMode {
             .set(settings.get_hide_thinking_block());
         self.ui
             .set_show_hardware_cursor(settings.get_show_hardware_cursor())?;
-        self.ui.set_clear_on_shrink(settings.get_clear_on_shrink());
+        self.apply_clear_on_shrink(settings.get_clear_on_shrink());
         let padding = settings.get_editor_padding_x();
         let max_visible = settings.get_autocomplete_max_visible();
         drop(settings);
@@ -68,7 +68,7 @@ impl InteractiveMode {
     ///
     /// The session and its runner only borrow the mode, which already owns them; a UI
     /// context an extension obtains keeps the mode alive. A shutdown request while idle
-    /// starts the graceful shutdown; while streaming, the agent's end starts it.
+    /// starts the graceful shutdown; an active run defers it until settlement.
     ///
     /// # Errors
     /// Returns the session start, resource discovery, completion, listing or notice failure.
@@ -76,20 +76,32 @@ impl InteractiveMode {
         self: &Rc<Self>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let host = maestro_app::ExtensionUIContext::new(self.clone());
-        let (requester, reporter) = (Rc::downgrade(self), Rc::downgrade(self));
+        let (requester, reporter, aborter) = (
+            Rc::downgrade(self),
+            Rc::downgrade(self),
+            Rc::downgrade(self),
+        );
         self.runtime_host
             .session()
             .bind_extensions(maestro_app::ExtensionBindings {
                 ui_context: Some(maestro_app::ExtensionUIContextBinding::borrowed(&host)),
                 command_context_actions: Some(self.command_context_actions()),
+                abort_handler: Some(Rc::new(move || {
+                    if let Some(mode) = aborter.upgrade() {
+                        let restored = mode.restore_queued_messages_to_editor(
+                            super::queues::RestoreQueuedMessagesOptions {
+                                abort: true,
+                                ..Default::default()
+                            },
+                        );
+                        mode.report(restored.map(drop));
+                    }
+                })),
                 shutdown_handler: Some(Rc::new(move || {
                     let Some(mode) = requester.upgrade() else {
                         return Ok(());
                     };
-                    mode.shutdown_requested.set(true);
-                    if !mode.runtime_host.session().is_streaming() {
-                        mode.spawn_shutdown();
-                    }
+                    mode.request_shutdown();
                     Ok(())
                 })),
                 on_error: Some(Rc::new(move |error| {

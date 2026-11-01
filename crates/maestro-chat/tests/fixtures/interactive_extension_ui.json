@@ -2149,9 +2149,10 @@
       "lines": [
         "",
         " @error@Error: first                                                                   ",
-        " @error@界\u001b[39m                                                                             "
+        " @error@界\u001b[39m                                                                             ",
+        ""
       ],
-      "children": 2,
+      "children": 3,
       "renderRequested": true
     }
   },

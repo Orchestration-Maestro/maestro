@@ -98,6 +98,8 @@ resolving conflicts, then regenerate the table.
 | `hello.rs` | A greeting tool registered by an extension factory. |
 | `hidden_thinking_label.md` | Hidden thinking label |
 | `hidden_thinking_label.rs` | An extension that sets the label shown when thinking blocks are hidden. |
+| `inline_bash.md` | Inline bash expansion |
+| `inline_bash.rs` | An opt-in input hook that expands `!{command}` with shell output before submission. |
 | `input_transform.md` | Input transform |
 | `input_transform.rs` | An opt-in input hook: `?quick <question>` requests a brief answer; `ping` and `time` show immediate feedback without a model call. Extension-injected input passes through. |
 | `interactive_shell.md` | Interactive shell |
@@ -178,6 +180,7 @@ resolving conflicts, then regenerate the table.
 | `summarize.md` | Summarize |
 | `summarize.rs` | An opt-in conversation summary shown in a custom Markdown view. |
 | `support/tail.rs` | Cancellable work handed to the host's independent event-tail executor. |
+| `support/trim.rs` | Example-local trimming through the host's shared whitespace classification. |
 | `system_prompt_header.md` | System prompt header |
 | `system_prompt_header.rs` | Reports the effective system prompt's length as extension status. |
 | `tic_tac_toe.md` | Tic-tac-toe |

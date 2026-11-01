@@ -176,11 +176,14 @@ workspace/tab/pane names, public numbers, selection, working directories, split
 axes and resume provenance. Screen history is stored separately and can be
 removed by saving without history.
 
-Saving writes pretty JSON without a trailing newline through the shared
-[atomic replacement](locking.md#atomic-replacement) operation, following symbolic
-links. Topology commits before history is saved or removed; failure on the second
-file does not undo the first. Snapshot saves ignore postcommit directory-sync
-advisories.
+Saving follows symbolic links and creates missing parent directories. It writes
+pretty JSON without a trailing newline to `<name>.json.tmp`, syncs the temporary
+file, renames it over the target, then syncs the parent directory. A failure before
+the rename removes the temporary file and leaves the previous snapshot unchanged.
+A crash before rename leaves the previous snapshot readable. Existing permission
+bits are retained; ownership and ACLs are not. Hard links keep the old bytes. Topology commits before history is saved or removed; failure on the
+second file does not undo the first. Parent-directory sync errors are returned
+after the new snapshot has committed.
 
 Missing files load silently as absent. Read, parse and unsupported-version failures
 produce warnings and return no snapshot. Only version 1 is accepted; there is no
@@ -336,11 +339,18 @@ recovery follows its retained soft-wrap rows, but rejects an incomplete prompt w
 prefix has been discarded.
 
 `maestro_daemon::pane::launch_env::PaneLaunchEnv` applies terminal defaults
-(`TERM=xterm-256color`, `COLORTERM=truecolor`), removes an inherited agent thread
-id, and applies user environment pairs. User pairs can override terminal defaults.
-The daemon marker, supplied socket/binary paths and managed workspace/tab/pane
-identity then override user pairs. Callers may retain inherited identity or remove
-only the pane id. Existing replacement environments remain replacements.
+(`TERM=xterm-256color`, `COLORTERM=truecolor`) and names the terminal the child runs
+in: `TERM_PROGRAM=maestro` and `TERM_PROGRAM_VERSION` set to the product version,
+whatever the parent holds. It sets `fish_handle_reflow=0` unless the parent already
+holds that exact name; a differently cased name does not count. It removes an
+inherited agent thread id and the markers of the outer terminal or multiplexer
+(`ITERM_SESSION_ID`, `LC_TERMINAL`, `LC_TERMINAL_VERSION`, `WEZTERM_PANE`,
+`KITTY_WINDOW_ID`, `WT_SESSION`, `TMUX`, `TMUX_PANE`, `STY`, `ZELLIJ`,
+`ZELLIJ_SESSION_NAME`, `ZELLIJ_PANE_ID`), then applies user environment pairs.
+User pairs can override these defaults. The daemon marker, supplied socket/binary
+paths and managed workspace/tab/pane identity then override user pairs. Callers may
+retain inherited identity or remove only the pane id. Existing replacement
+environments remain replacements, and both environment modes give the same result.
 
 The native PTY adapter is currently available on Linux; shell policy branches for
 Windows and macOS are exercised with supplied target and environment observations.
@@ -463,9 +473,14 @@ client or background worker.
 
 The catalog resolves safe relative document paths against its own URL directory.
 Each agent updates independently: newer versions publish through the shared
-atomic replacement owner, identical equal-version bytes are left alone, and
-downgrades or changed bytes at the same version are rejected. `status.toml`
-records outcomes under the supplied catalog folder. `auto_update` reloads the
+atomic publication owner, identical equal-version bytes are left alone, and
+downgrades or changed bytes at the same version are rejected. Documents and
+`status.toml` write to `.<file name>.<process id>.<nanoseconds>.tmp` beside the
+target, sync the file, rename it over the target and sync the parent directory.
+Precommit failures remove the temporary file and leave the previous bytes intact.
+A parent-sync failure after rename logs a warning and still succeeds. Unlocked
+readers see a complete old or new document. `status.toml` records outcomes under
+the supplied catalog folder. `auto_update` reloads the
 supplied cache after a commit, before invoking the result callback. Daemon path
 composition, scheduling, offline admission and the catalog-check setting remain
 with the daemon caller.
@@ -565,6 +580,19 @@ values to `SelectionEnvironment`; selection never mutates the process environmen
 | `MAESTRO_ACTION_LINK_HANDLER_ID` | Action runtime |
 | `MAESTRO_DAEMON` | Daemon selection |
 | `MAESTRO_CLIENT_SOCKET_PATH` | Daemon selection |
+
+The daemon finds the workspace home through `maestro_daemon::paths::home_directory`.
+On Unix it uses `HOME` as set, including an empty value. When `HOME` is unset,
+Home and Follow policies without a followed directory use the process working directory,
+or `/` when that cannot be read. Path policies keep `~` and `~/x` literal, and workspace
+labels and window titles do not shorten the account directory to `~`.
+
+On Windows the lookup tries `USERPROFILE`, then `HOMEDRIVE` plus `HOMEPATH`, then `HOME`.
+Empty values and `~` are unusable. The drive and path must both be usable, and the path
+must start with `\` or `/`; otherwise only `HOME` remains to try. Home and Follow policies,
+workspace labels and Path expansion share this lookup without an account fallback.
+Path expansion accepts `~`, `~/x` and, on Windows, `~\x`. When no home is usable,
+Path policies keep the path literal; Home and Follow keep their working-directory fallback.
 
 Optional context fields are injected only when present. The manifest identifier
 and the identifier of an action declared by that manifest are distinct values.
@@ -670,7 +698,14 @@ supplies, then the repository file in the shared metadata directory, then the ch
 `config.worktree` when the repository file turns on `extensions.worktreeConfig`. The
 extension is read from the repository file alone, as Git does, and its last value wins.
 `ConfigEnvironment::from_variables` builds the user list from `XDG_CONFIG_HOME` and the
-home directory; the reader itself reads no environment variable.
+home directory; the reader itself reads no environment variable. The daemon supplies
+`HOME` as set on every platform, including an empty value, without consulting the account
+directory or the Windows workspace-home variables. With `HOME` unset, it supplies no home
+and reads only the user file under `XDG_CONFIG_HOME`, when that variable is set. Otherwise,
+the default user files are `$HOME/.config/git/config` and `$HOME/.gitconfig`.
+A nonempty `XDG_CONFIG_HOME` replaces the first file's directory; an empty value is ignored.
+An empty `HOME` keeps the leading separator, selecting `/.config/git/config` and
+`/.gitconfig` rather than files relative to the daemon's current directory.
 
 Includes apply where they appear. A file already being read is not entered again inside
 itself, so a cycle ends at the repeated file. The `includeIf` conditions are `gitdir`,

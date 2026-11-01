@@ -157,9 +157,10 @@ impl Connection {
         ExtensionBindings {
             ui_context: Some(ExtensionUIContext::new(Rc::clone(&session.ui) as Rc<_>).into()),
             command_context_actions: Some(session.options.runtime.command_context_actions()),
+            abort_handler: None,
             shutdown_handler: Some(Rc::new(move || {
                 if let Some(connection) = weak.upgrade() {
-                    connection.lifecycle.borrow_mut().shutdown_requested = true;
+                    connection.request_shutdown();
                 }
                 Ok(())
             })),
@@ -193,9 +194,34 @@ impl Connection {
         Ok(())
     }
 
-    /// Shuts down after a command when an extension requested it.
+    /// Records an extension shutdown and checks it again when an active run settles.
+    fn request_shutdown(self: &Rc<Self>) {
+        self.lifecycle.borrow_mut().shutdown_requested = true;
+        let Some(owner) = &self.session else {
+            return;
+        };
+        let session = owner.session();
+        if session.is_idle() {
+            return;
+        }
+        let weak = Rc::downgrade(self);
+        drop(tokio::task::spawn_local(async move {
+            session.wait_for_idle().await;
+            if let Some(connection) = weak.upgrade() {
+                connection.check_shutdown_requested().await;
+            }
+        }));
+    }
+
+    /// Starts a requested shutdown after a command or run settlement, only while idle.
     pub(super) async fn check_shutdown_requested(self: &Rc<Self>) {
-        if self.lifecycle.borrow().shutdown_requested {
+        if self.lifecycle.borrow().shutdown_requested
+            && !self.shutting_down()
+            && self
+                .session
+                .as_ref()
+                .is_some_and(|owner| owner.session().is_idle())
+        {
             self.shutdown(RpcConnectionOutcome::Requested).await;
         }
     }

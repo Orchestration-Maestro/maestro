@@ -128,6 +128,7 @@ pub fn missing_cwd(local: Rc<LocalSet>, theme: Rc<ThemeState>) -> MissingSession
                     timeout: None,
                     runtime: runtime.clone(),
                     theme: palette.clone(),
+                    on_toggle_tools_expanded: None,
                 },
             )
             .map_err(io::Error::other)?,

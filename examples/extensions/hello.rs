@@ -1,4 +1,5 @@
 //! A greeting tool registered by an extension factory.
+// maestro-component: MAESTRO_HELLO_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

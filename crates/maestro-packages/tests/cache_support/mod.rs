@@ -429,12 +429,7 @@ async fn replay_ready(
     let first = m.resolve_extension_sources(&sources, scope).await;
     let (actual, error) = match first {
         Ok(v) => (Some(result(v, base)), None),
-        Err(e) => (
-            None,
-            Some(
-                json!({"message":if case.case=="remote_manifest_bad" { assert_eq!(e.kind(),io::ErrorKind::InvalidData); "invalid resource list".to_owned() } else { e.to_string() }}),
-            ),
-        ),
+        Err(e) => (None, Some(json!({"message": e.to_string()}))),
     };
     let mut second = None;
     if error.is_none() {

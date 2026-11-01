@@ -4126,6 +4126,7 @@ dependencies = [
  "indexmap 2.14.2",
  "maestro-dependencies",
  "maestro-entry",
+ "maestro-extensions-wasmtime",
  "maestro-json",
  "maestro-listing",
  "maestro-models",
@@ -4212,6 +4213,7 @@ dependencies = [
  "maestro-path",
  "maestro-test-directory",
  "maestro-test-process",
+ "sha2 0.11.0",
 ]
 
 [[package]]
@@ -4361,6 +4363,7 @@ dependencies = [
  "maestro-test-process",
  "maestro-test-tracing",
  "maestro-text",
+ "nix 0.31.3",
  "process-wrap",
  "rustix",
  "serde",
@@ -4439,6 +4442,7 @@ dependencies = [
  "maestro-entry",
  "maestro-json",
  "maestro-listing",
+ "maestro-lock",
  "maestro-models",
  "maestro-path",
  "maestro-request",
@@ -4449,6 +4453,7 @@ dependencies = [
  "ryu-js",
  "serde",
  "serde_json",
+ "sha2 0.11.0",
  "tokio",
  "uuid",
 ]
@@ -4520,6 +4525,7 @@ version = "0.1.0"
 dependencies = [
  "maestro-dependencies",
  "maestro-test-directory",
+ "rustix",
 ]
 
 [[package]]
@@ -4603,6 +4609,7 @@ dependencies = [
  "maestro-test-process",
  "serde",
  "serde_json",
+ "sha2 0.11.0",
  "toml",
 ]
 

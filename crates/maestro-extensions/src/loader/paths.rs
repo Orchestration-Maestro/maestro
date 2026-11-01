@@ -4,6 +4,7 @@ use crate::{
     EventBusController, ExtensionExecution, create_extension_runtime,
     types::{ExtensionAPI, ExtensionLoadError, LoadExtensionsResult, ModuleLoader},
 };
+use maestro_path::{Tilde, parse_tilde};
 use maestro_resources::paths::{home_directory, resolve};
 use maestro_tools::path_utils::resolve_existing_spelling;
 use std::io;
@@ -24,21 +25,22 @@ fn anchor_path(
 
 /// Join the rest of a leading `~` below the home directory through `home`.
 ///
-/// The rest is always joined, an empty one included, so a home spelling that ends in `/` or `/.`
-/// is normalized. Characters stay as written, so the selector still sees the written candidate
-/// before it falls back to the space-replaced one. Any other path is returned as written without
-/// reading the home directory.
+/// The rest is always joined, an exact `~` included, so a home spelling that ends in `/` or
+/// `/.` is normalized. Characters stay as written, so the selector still sees the written
+/// candidate before it falls back to the space-replaced one. Any other path, `~name` included,
+/// is returned as written without reading the home directory.
 fn expand_extension_path(
     path: &str,
     home: impl FnOnce() -> io::Result<String>,
 ) -> io::Result<String> {
-    if !path.starts_with('~') {
-        return Ok(path.to_owned());
-    }
-    let rest = path.strip_prefix('~').unwrap_or_default();
-    let rest = rest.strip_prefix('/').unwrap_or(rest);
+    let rest = match parse_tilde(path) {
+        Tilde::Other => return Ok(path.to_owned()),
+        Tilde::Home => "",
+        Tilde::Below(rest) => rest,
+    };
     Ok(maestro_path::join(&[&home()?, rest]))
 }
+
 /// Anchors `extension_path` at `cwd` and resolves it through
 /// [`resolve_existing_spelling`], which keeps the spelling of the directories the file
 /// system holds.
@@ -134,9 +136,10 @@ mod tests {
                     ("~", r"C:\h", r"C:\h"),
                     ("~/", r"C:\h", r"C:\h"),
                     ("~/x", r"C:\h", r"C:\h\x"),
-                    ("~x", r"C:\h", r"C:\h\x"),
+                    ("~x", r"C:\h", r"C:\w\~x"),
                     ("~", r"C:\h\.", r"C:\h"),
                     ("~", "", r"C:\w"),
+                    ("~/x", "", r"C:\w\x"),
                 ],
             )
         } else {
@@ -146,9 +149,10 @@ mod tests {
                     ("~", "/h", "/h"),
                     ("~/", "/h", "/h"),
                     ("~/x", "/h", "/h/x"),
-                    ("~x", "/h", "/h/x"),
+                    ("~x", "/h", "/w/~x"),
                     ("~", "/h/.", "/h"),
                     ("~", "", "/w"),
+                    ("~/x", "", "/w/x"),
                 ],
             )
         };
@@ -161,15 +165,17 @@ mod tests {
         }
     }
 
-    /// A path that does not start with `~` never reads the home directory.
+    /// A path that is neither `~` nor `~` plus a separator never reads the home directory.
     #[test]
     fn other_forms_read_no_home_directory() {
         let failing = || Err(io::Error::new(io::ErrorKind::NotFound, "unknown home"));
-        let (cwd, expected) = if cfg!(windows) {
-            (r"C:\w", r"C:\w\x\~\y")
+        let (cwd, rows) = if cfg!(windows) {
+            (r"C:\w", [("x/~/y", r"C:\w\x\~\y"), ("~x", r"C:\w\~x")])
         } else {
-            ("/w", "/w/x/~/y")
+            ("/w", [("x/~/y", "/w/x/~/y"), ("~x", "/w/~x")])
         };
-        assert_eq!(anchor_path("x/~/y", cwd, failing).unwrap(), expected);
+        for (written, expected) in rows {
+            assert_eq!(anchor_path(written, cwd, failing).unwrap(), expected);
+        }
     }
 }

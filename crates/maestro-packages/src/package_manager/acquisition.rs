@@ -3,6 +3,7 @@ use super::{
     DefaultPackageManager, InstalledSourceScope, PackageOperations, ProgressAction,
     sources::{self, Source},
 };
+use maestro_resources::paths::package_home_directory;
 use std::{io, path::Path};
 
 /// Whether acquisition changed an existing Git commit.
@@ -41,7 +42,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     /// Fails unless the local path, resolved against the input base, exists.
     fn require_local(&self, path: &str) -> io::Result<()> {
         let resolved =
-            super::paths::resolve_local(path, &self.options.cwd, super::operations::home_dir)?;
+            super::paths::resolve_local(path, &self.options.cwd, package_home_directory)?;
         if Path::new(&resolved).exists() {
             return Ok(());
         }
@@ -74,8 +75,8 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         source: &str,
         scope: Option<InstalledSourceScope>,
     ) -> io::Result<()> {
-        let acquisition = self.acquire(source, scope).await?;
-        self.record_source(source, scope, acquisition).map(drop)
+        self.acquire(source, scope).await?;
+        self.record_source(source, scope).map(drop)
     }
     /// Removes the contents, then removes the source from settings.
     pub(super) async fn release_and_persist(

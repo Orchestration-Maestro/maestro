@@ -808,7 +808,8 @@
     "expected": {
       "lines": [
         "",
-        " @error@Error: \u001b[39m            "
+        " @error@Error: \u001b[39m            ",
+        ""
       ],
       "renders": 1
     }
@@ -824,7 +825,8 @@
     "expected": {
       "lines": [
         "",
-        " @error@Error: \u001b[39m                                                                        "
+        " @error@Error: \u001b[39m                                                                        ",
+        ""
       ],
       "renders": 1
     }
@@ -841,7 +843,8 @@
       "lines": [
         "",
         " @error@Error: first       ",
-        " @error@second\u001b[39m             "
+        " @error@second\u001b[39m             ",
+        ""
       ],
       "renders": 1
     }
@@ -858,7 +861,8 @@
       "lines": [
         "",
         " @error@Error: first                                                                   ",
-        " @error@second\u001b[39m                                                                         "
+        " @error@second\u001b[39m                                                                         ",
+        ""
       ],
       "renders": 1
     }
@@ -874,7 +878,8 @@
     "expected": {
       "lines": [
         "",
-        " @error@Error: \u001b[7m \u001b[27m\u001b[39m           "
+        " @error@Error: \u001b[7m \u001b[27m\u001b[39m           ",
+        ""
       ],
       "renders": 1
     }
@@ -890,7 +895,8 @@
     "expected": {
       "lines": [
         "",
-        " @error@Error: \u001b[7m \u001b[27m\u001b[39m                                                                       "
+        " @error@Error: \u001b[7m \u001b[27m\u001b[39m                                                                       ",
+        ""
       ],
       "renders": 1
     }
@@ -906,7 +912,8 @@
     "expected": {
       "lines": [
         "",
-        " @error@Error: é界\u001b[39m         "
+        " @error@Error: é界\u001b[39m         ",
+        ""
       ],
       "renders": 1
     }
@@ -922,7 +929,8 @@
     "expected": {
       "lines": [
         "",
-        " @error@Error: é界\u001b[39m                                                                     "
+        " @error@Error: é界\u001b[39m                                                                     ",
+        ""
       ],
       "renders": 1
     }

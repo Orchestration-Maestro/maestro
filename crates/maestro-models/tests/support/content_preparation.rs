@@ -390,7 +390,7 @@ fn check(row: &Row) -> TestResult {
         }
         Operation::Simple => {
             let simple = simple_options(&row.input.options)?;
-            let selected = match build_simple_options(&model, Some(&simple)) {
+            let selected = match build_simple_options(&model, &context, Some(&simple)) {
                 Ok(selected) => selected,
                 Err(error) if row.test == MISSING_KEY_TEST => {
                     return assert_outcome(Err(error), expected);

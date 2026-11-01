@@ -37,7 +37,7 @@ pub(super) async fn input(
             let mut images = Presence::Present(Vec::new());
             let result = run
                 .runner
-                .emit_input("original", &mut images, InputSource::Extension)
+                .emit_input("original", &mut images, InputSource::Extension, None)
                 .await
                 .unwrap();
             (
@@ -54,7 +54,7 @@ pub(super) async fn input(
             let mut images: Presence<Vec<ImageContent>> = typed(json!([image("old")]));
             let result = run
                 .runner
-                .emit_input("original", &mut images, InputSource::Rpc)
+                .emit_input("original", &mut images, InputSource::Rpc, None)
                 .await
                 .unwrap();
             let observed =
@@ -68,7 +68,7 @@ pub(super) async fn input(
             let mut images = Presence::Missing;
             let result = run
                 .runner
-                .emit_input("nonempty", &mut images, InputSource::Interactive)
+                .emit_input("nonempty", &mut images, InputSource::Interactive, None)
                 .await
                 .unwrap();
             (encoded(&result), recorded)
@@ -107,7 +107,7 @@ async fn chained(
     let mut images: Presence<Vec<ImageContent>> = typed(json!([image("old")]));
     let result = run
         .runner
-        .emit_input("original", &mut images, InputSource::Interactive)
+        .emit_input("original", &mut images, InputSource::Interactive, None)
         .await
         .unwrap();
     let observed = json!({ "result": encoded(&result), "trace": labels(harness), "originalImages": encoded(&images) });
@@ -146,7 +146,7 @@ fn component_input_chains_text_preserves_images_and_forwards_sources() {
             let mut images: Presence<Vec<ImageContent>> = typed(json!([image("old")]));
             let result = run
                 .runner
-                .emit_input("X", &mut images, source)
+                .emit_input("X", &mut images, source, None)
                 .await
                 .unwrap();
             assert_eq!(

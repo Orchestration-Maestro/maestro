@@ -187,6 +187,32 @@ mod tests {
     }
 
     #[test]
+    fn http_idle_timeout_reads_numbers_and_disabled() {
+        support::assert_number(manager().0.get_http_idle_timeout_ms(), 300_000.0);
+        for (stored, expected) in [
+            (json!(120_000), 120_000.0),
+            (json!(0), 0.0),
+            (json!("disabled"), 0.0),
+            (json!(" 45000 "), 45_000.0),
+            (json!(1500.7), 1500.0),
+            (json!(-1), 300_000.0),
+            (json!("soon"), 300_000.0),
+            (json!(true), 300_000.0),
+        ] {
+            let settings = manager_with(json!({ "httpIdleTimeoutMs": stored })).0;
+            support::assert_number(settings.get_http_idle_timeout_ms(), expected);
+        }
+    }
+
+    #[test]
+    fn http_idle_timeout_saves_whole_milliseconds() {
+        for (value, saved) in [(60_000.0, 60_000), (0.0, 0), (2500.9, 2500)] {
+            let document = saved_after(|settings| settings.set_http_idle_timeout_ms(value));
+            assert_eq!(document, json!({ "httpIdleTimeoutMs": saved }));
+        }
+    }
+
+    #[test]
     fn image_members_read_independently() {
         let (settings, _) =
             manager_with(json!({"images": {"autoResize": false, "blockImages": true}}));

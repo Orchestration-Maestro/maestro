@@ -148,7 +148,7 @@ impl WidgetImports for Generated {
         Ok((styles, theme.highlight_code))
     }
     fn widget_render(&self, widget: &host::Widget, width: u32) -> ExtensionResult<Vec<String>> {
-        route::drive_render(&widget.render(width))
+        route::lines(&widget.render(width))
     }
     fn widget_invalidate(&self, widget: &host::Widget) -> ExtensionResult<()> {
         route::drive(&widget.invalidate())

@@ -28,7 +28,7 @@ pub(super) async fn bind_with(
     Ok(
         crate::oauth::native::bind_with(state, port, route, environment, accept)
             .await
-            .unwrap_or_else(|_| cancelled()),
+            .unwrap_or_else(|_| CallbackServer::cancelled()),
     )
 }
 /// Serving is unavailable in the browser, independently of shared token primitives.
@@ -44,16 +44,6 @@ pub(super) fn unavailable(
     std::future::ready(Err(OAuthError::message(
         "Response-account OAuth is only available in native environments",
     )))
-}
-/// Represent a failed native bind without inventing another pending listener.
-#[cfg(not(target_arch = "wasm32"))]
-pub(super) fn cancelled() -> CallbackServer {
-    let server = CallbackServer::new();
-    server
-        .wait
-        .push(crate::oauth::native::CallbackOutcome::Cancelled);
-    server.stopped.push(());
-    server
 }
 /// Route state validation before code validation without consuming rejected callbacks.
 #[cfg(not(target_arch = "wasm32"))]

@@ -407,8 +407,8 @@ fn direct_local_line_overflow_writes_complete_artifact() {
                 text
             })
         );
-        assert!(result.output.starts_with("1002\n"));
-        assert!(result.output.ends_with("3000\n"));
+        assert!(result.output.starts_with("1001\n"));
+        assert!(result.output.ends_with("3000"));
         assert!(result.truncated);
         assert_eq!(result.exit_code, Some(0.0));
         assert!(!result.cancelled);

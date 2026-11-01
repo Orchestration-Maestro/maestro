@@ -1,4 +1,5 @@
 //! Animates the terminal title while the agent works, restoring it when work stops.
+// maestro-component: MAESTRO_TITLEBAR_SPINNER_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

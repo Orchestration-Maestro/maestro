@@ -248,8 +248,8 @@ fn git_source_forms_choose_clone_target_and_checkout() {
     let fixture = Fixture::new(&json!({}));
     for (source, added) in [
         ("https://github.com/user/repo", true),
-        ("ssh://git@github.com/user/repo", false),
-        ("git:git@github.com:user/repo", false),
+        ("ssh://git@github.com/user/repo", true),
+        ("git:git@github.com:user/repo", true),
     ] {
         assert_eq!(
             fixture
@@ -388,26 +388,55 @@ fn git_dependencies_use_live_configured_command() {
     assert_eq!(fixture.calls()[1].args, ["install"]);
 }
 
+#[cfg(unix)]
 #[test]
-fn unpinned_existing_git_target_does_not_read_command_or_modify_files() {
+fn unpinned_existing_git_target_refreshes_without_reading_command_or_modifying_files() {
     for as_file in [false, true] {
-        let fixture = Fixture::new(&json!({"npmCommand": [""]}));
-        let target = fixture.agent("git/github.com/user/repo");
+        let (manager, _settings, effects, tree) =
+            crate::support::uninstalled(&json!({"npmCommand": [""]}), &json!([]));
+        let target =
+            crate::support::below(tree.path(), "/home/reader/agent/git/github.com/user/repo");
         if as_file {
             native_support::write(&target, "a file");
         } else {
             native_support::write(format!("{target}/package.json"), "keep");
         }
+        // The refreshed head equals the installed one, so nothing is replaced or prepared.
+        *effects.capture_outputs.borrow_mut() = ["origin/main", "tip", "same", "same"]
+            .map(|text| Ok(text.to_owned()))
+            .into();
         let source = "https://github.com/user/repo";
-        block_on(fixture.manager.install(source, None)).unwrap();
-        assert!(fixture.calls().is_empty());
-        assert!(!std::path::Path::new(&fixture.agent("git/.gitignore")).exists());
+        crate::runtime::runtime()
+            .block_on(manager.install(source, None))
+            .unwrap();
+        let verbs: Vec<_> = effects
+            .calls
+            .borrow()
+            .iter()
+            .map(|(command, args)| format!("{command} {}", args[0]))
+            .collect();
         assert_eq!(
-            fixture.phases(),
+            verbs,
             [
-                (Phase::Start, Some(format!("Installing {source}..."))),
-                (Phase::Complete, None)
+                "git rev-parse",
+                "git rev-parse",
+                "git fetch",
+                "git rev-parse",
+                "git rev-parse"
             ]
+        );
+        if !as_file {
+            assert_eq!(
+                std::fs::read_to_string(format!("{target}/package.json")).unwrap(),
+                "keep"
+            );
+        }
+        assert!(
+            !std::path::Path::new(&crate::support::below(
+                tree.path(),
+                "/home/reader/agent/git/.gitignore"
+            ))
+            .exists()
         );
     }
 }
