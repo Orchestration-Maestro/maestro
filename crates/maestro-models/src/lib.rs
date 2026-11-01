@@ -80,7 +80,7 @@ pub use records::session_resources::{
 };
 pub use records::stream::{
     complete, complete_for, complete_simple, complete_simple_for, stream, stream_for,
-    stream_simple, stream_simple_for,
+    stream_simple, stream_simple_for, stream_simple_via_for,
 };
 pub use records::typebox_helpers::{StringEnumOptions, string_enum};
 pub use records::types::*;

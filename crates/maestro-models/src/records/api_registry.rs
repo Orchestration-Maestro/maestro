@@ -26,6 +26,8 @@ pub struct ApiProvider {
 struct Registration {
     /// Provider callbacks exposed by this registration.
     provider: ApiProvider,
+    /// Original simple callback shared with the checked wrapper.
+    simple: ApiStreamSimpleFunction,
     /// Identifier of the extension that owns this registration.
     source_id: Option<String>,
 }
@@ -78,6 +80,7 @@ fn registration(provider: ApiProvider, source_id: Option<String>) -> Registratio
         stream_simple,
     } = provider;
     Registration {
+        simple: stream_simple.clone(),
         provider: ApiProvider {
             stream: checked(api.clone(), stream),
             stream_simple: checked(api.clone(), stream_simple),
@@ -103,6 +106,10 @@ pub fn register_api_provider(provider: ApiProvider, source_id: Option<String>) {
 #[must_use]
 pub fn get_api_provider(api: &str) -> Option<ApiProvider> {
     with_registry(|registry| registry.get(api).map(|entry| entry.provider.clone()))
+}
+/// Retain the original simple callback for explicit protocol selection.
+pub(crate) fn get_api_stream_simple(api: &str) -> Option<ApiStreamSimpleFunction> {
+    with_registry(|registry| registry.get(api).map(|entry| entry.simple.clone()))
 }
 /// Retain checked providers in original registration order.
 #[must_use]

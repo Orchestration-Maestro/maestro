@@ -67,6 +67,11 @@ path = "../../examples/extensions/custom_header.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "custom_provider_gitlab_duo"
+path = "../../examples/extensions/custom-provider-gitlab-duo/main.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "dirty_repo_guard"
 path = "../../examples/extensions/dirty_repo_guard.rs"
 crate-type = ["cdylib"]

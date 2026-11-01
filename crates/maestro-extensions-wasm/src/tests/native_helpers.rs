@@ -67,3 +67,32 @@ fn helper_fuzzy_filter_rejects_out_of_range_host_positions() -> Result<(), Strin
         Ok(())
     })
 }
+
+/// The proof key the controlled host answers with.
+const PROOF_KEY: (&str, &str) = (
+    "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
+    "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
+);
+
+#[test]
+fn helper_generate_pkce_decodes_the_host_record() -> Result<(), String> {
+    let host = super::controlled::Controlled::default();
+    let api = super::bus_callbacks::captured_api(&host)?;
+    host.observe().actions.value =
+        json!({"oauth.generate_pkce": {"verifier": PROOF_KEY.0, "challenge": PROOF_KEY.1}});
+    let key = crate::generate_pkce(&api)?;
+    assert_eq!((key.verifier.as_str(), key.challenge.as_str()), PROOF_KEY);
+    Ok(())
+}
+
+#[test]
+fn helper_generate_pkce_keeps_the_host_failure() -> Result<(), String> {
+    let host = super::controlled::Controlled::default();
+    let api = super::bus_callbacks::captured_api(&host)?;
+    host.observe().actions.error = Some("system entropy unavailable".into());
+    assert_eq!(
+        crate::generate_pkce(&api).unwrap_err(),
+        "system entropy unavailable"
+    );
+    Ok(())
+}

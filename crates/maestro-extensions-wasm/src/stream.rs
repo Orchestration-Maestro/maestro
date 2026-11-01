@@ -29,7 +29,19 @@ pub fn stream_simple(
     context: Context,
     options: Option<SimpleStreamOptions>,
 ) -> ExtensionResult<AssistantMessageEventStream> {
-    crate::component_adapter::model_streams::simple(model, context, options)
+    crate::component_adapter::model_streams::simple(None, model, context, options)
+}
+/// Invoke a chosen simple protocol without changing the supplied model identity.
+///
+/// # Errors
+/// Returns missing registration or adapter setup failure before returning a stream.
+pub fn stream_simple_via(
+    api: &str,
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions>,
+) -> ExtensionResult<AssistantMessageEventStream> {
+    crate::component_adapter::model_streams::simple(Some(api), model, context, options)
 }
 /// Start raw invocation now; the returned observation reports setup errors without draining events.
 #[must_use]

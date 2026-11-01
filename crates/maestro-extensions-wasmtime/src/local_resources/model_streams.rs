@@ -89,8 +89,12 @@ impl Creation {
     }
     /// Preserve outer option absence and select only the supplied option variant.
     fn start(&self, registry: &Registry) -> Result<Endpoint, String> {
-        let (model, context, options): (Model, Context, Option<serde_json::Value>) =
-            crate::writer_reads::decode(&self.data)?;
+        let (model, context, options, api): (
+            Model,
+            Context,
+            Option<serde_json::Value>,
+            Option<String>,
+        ) = crate::writer_reads::decode(&self.data)?;
         let scopes = self.controls.scopes();
         let submit = registry.model_submit(scopes.clone())?;
         let stream = if self.simple {
@@ -107,7 +111,13 @@ impl Creation {
                     })
                 })
                 .transpose()?;
-            maestro_extensions::stream_simple_for::<Local>(model, context, options, submit)
+            if let Some(api) = api {
+                maestro_extensions::stream_simple_via_for::<Local>(
+                    &api, model, context, options, submit,
+                )
+            } else {
+                maestro_extensions::stream_simple_for::<Local>(model, context, options, submit)
+            }
         } else {
             let options = options
                 .map(|value| {
