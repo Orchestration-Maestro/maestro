@@ -3452,9 +3452,8 @@ fn author_setup_runs_the_built_example_only_while_fresh() {
     assert!(run().starts_with("cargo build "));
 }
 
-/// Makes the example's dependency information name `maestro-request` as a library it builds
-/// on, whose output is `age` old. Gives the example and its copy under an older hash that
-/// information, and returns the copy's path.
+/// Record the example's linked library, `age` old, beside its current and older hashed builds.
+/// Returns the older build's path.
 #[cfg(unix)]
 fn example_builds_on_library(
     root: &Path,
@@ -3475,6 +3474,28 @@ fn example_builds_on_library(
     let copy = profile.join("examples/prepare_author_component-1");
     fs::write(&copy, "#!/bin/sh\necho copy\n").unwrap();
     fs::set_permissions(&copy, fs::Permissions::from_mode(0o755)).unwrap();
+    fs::hard_link(
+        profile.join("examples/prepare_author_component"),
+        profile.join("examples/prepare_author_component-a1"),
+    )
+    .unwrap();
+    for (target, name, hash, dependencies) in [
+        (
+            "maestro-extensions-wasm-1",
+            "example-prepare_author_component",
+            10,
+            vec![("maestro_request", 21)],
+        ),
+        (
+            "maestro-extensions-wasm-a1",
+            "example-prepare_author_component",
+            11,
+            vec![("maestro_request", 21)],
+        ),
+        ("maestro-request-1", "lib-maestro_request", 21, vec![]),
+    ] {
+        cargo_fingerprint(profile, target, name, hash, &dependencies);
+    }
     for name in ["prepare_author_component.d", "prepare_author_component-1.d"] {
         fs::write(profile.join("examples").join(name), information).unwrap();
     }
@@ -3482,6 +3503,73 @@ fn example_builds_on_library(
     fs::write(&library, b"").unwrap();
     set_age(&library, age);
     copy
+}
+
+/// Write the dependency records and little-endian hash Cargo leaves for one compiled target.
+#[cfg(unix)]
+pub(super) fn cargo_fingerprint(
+    profile: &Path,
+    target: &str,
+    name: &str,
+    hash: u64,
+    dependencies: &[(&str, u64)],
+) {
+    let directory = profile.join(".fingerprint").join(target);
+    fs::create_dir_all(&directory).unwrap();
+    let dependencies: Vec<_> = dependencies
+        .iter()
+        .map(|(name, hash)| serde_json::json!([0, name, false, hash]))
+        .collect();
+    fs::write(
+        directory.join(name),
+        hash.to_le_bytes()
+            .map(|byte| format!("{byte:02x}"))
+            .concat(),
+    )
+    .unwrap();
+    fs::write(
+        directory.join(format!("{name}.json")),
+        serde_json::to_vec(&serde_json::json!({"deps": dependencies})).unwrap(),
+    )
+    .unwrap();
+}
+
+/// A newer build of a linked crate under another hash does not outdate the consumer.
+#[cfg(unix)]
+#[test]
+fn author_setup_ignores_unlinked_builds_of_a_consumers_library() {
+    use std::time::{Duration, SystemTime};
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    let (profile, example) = author_setup_checkout(root);
+    example_builds_on_library(root, &profile, Duration::from_mins(30));
+    let consumer = profile.join("deps/integration-b1");
+    fs::copy(&example, &consumer).unwrap();
+    cargo_fingerprint(
+        &profile,
+        "maestro-extensions-wasmtime-b1",
+        "test-integration-test-integration",
+        12,
+        &[("maestro_request", 21)],
+    );
+    let old = SystemTime::now() - Duration::from_mins(20);
+    set_modified(&consumer, old);
+    set_age(&example, Duration::from_mins(10));
+    let unrelated = profile.join("deps/libmaestro_request-2.rlib");
+    fs::write(&unrelated, b"").unwrap();
+    cargo_fingerprint(
+        &profile,
+        "maestro-request-2",
+        "lib-maestro_request",
+        22,
+        &[],
+    );
+
+    assert_eq!(run_author_setup(root, &profile), "example\n");
+    assert_eq!(
+        fs::metadata(&consumer).unwrap().modified().unwrap(),
+        fs::metadata(&example).unwrap().modified().unwrap()
+    );
 }
 
 /// A library the example builds on, rebuilt after the example, outdates it as well, and
@@ -3515,8 +3603,8 @@ fn author_setup_ignores_an_outdated_copy_of_the_example_under_an_older_hash() {
     assert_eq!(run_author_setup(root, &profile), "example\n");
 }
 
-/// Cargo ignores some library outputs that normalization counts, such as the metadata a lint
-/// run writes. When it leaves the example as it is, setup logs the fact and still runs it.
+/// Without fingerprints, setup conservatively counts check-only metadata. When Cargo leaves
+/// the example as it is, setup logs the fact and still runs it.
 #[cfg(unix)]
 #[test]
 fn author_setup_continues_when_cargo_keeps_an_outdated_example() {
@@ -3526,6 +3614,7 @@ fn author_setup_continues_when_cargo_keeps_an_outdated_example() {
     let (profile, example) = author_setup_checkout(root);
     example_builds_on_library(root, &profile, Duration::from_mins(15));
     set_age(&example, Duration::from_mins(10));
+    fs::remove_dir_all(profile.join(".fingerprint")).unwrap();
     let check_only = profile.join("deps/libmaestro_request-2.rmeta");
     fs::write(&check_only, b"").unwrap();
     set_age(&check_only, Duration::from_mins(1));
@@ -3536,6 +3625,237 @@ fn author_setup_continues_when_cargo_keeps_an_outdated_example() {
     assert!(printed.starts_with("cargo build "), "{printed}");
     assert!(printed.ends_with("example\n"), "{printed}");
     assert!(logged.contains("Cargo kept the setup example"), "{logged}");
+}
+
+/// Build a dependency-free workspace with a transitive library and an author example.
+fn cache_fixture(root: &Path) {
+    toolchain_support::declare_toolchain(root, include_str!("../../../rust-toolchain.toml"))
+        .unwrap();
+    for (path, text) in [
+        (
+            "Cargo.toml",
+            "[workspace]\nmembers=['app','middle','leaf']\nresolver='3'\n",
+        ),
+        (
+            "app/Cargo.toml",
+            "[package]\nname='app'\nversion='0.0.0'\nedition='2024'\n[dependencies]\nmiddle={path='../middle'}\n[features]\nother=['middle/other']\n",
+        ),
+        (
+            "app/src/main.rs",
+            "fn main() { println!(\"{}\", middle::value()); }",
+        ),
+        (
+            "app/examples/prepare_author_component.rs",
+            "fn main() { println!(\"{}\", middle::value()); }",
+        ),
+        (
+            "middle/Cargo.toml",
+            "[package]\nname='middle'\nversion='0.0.0'\nedition='2024'\n[dependencies]\naliased_leaf={package='leaf',path='../leaf'}\n[features]\nother=['aliased_leaf/other']\n",
+        ),
+        (
+            "middle/src/lib.rs",
+            "pub fn value() -> u32 { aliased_leaf::value() }",
+        ),
+        (
+            "leaf/Cargo.toml",
+            "[package]\nname='leaf'\nversion='0.0.0'\nedition='2024'\n[features]\nother=[]\n",
+        ),
+        ("leaf/src/lib.rs", "pub fn value() -> u32 { 42 }"),
+    ] {
+        write_input(root, path, text);
+    }
+    cache_cargo(root, &["generate-lockfile", "--offline"]);
+    cache_cargo(
+        root,
+        &[
+            "build",
+            "--offline",
+            "--locked",
+            "-p",
+            "app",
+            "--bins",
+            "--examples",
+        ],
+    );
+}
+
+/// Run Cargo with fixture-local state and build outputs.
+fn cache_cargo(root: &Path, args: &[&str]) {
+    let result = toolchain_support::fixture_command(env!("CARGO"), root, None)
+        .unwrap()
+        .env("CARGO_TARGET_DIR", root.join("target"))
+        .args(args)
+        .output()
+        .unwrap();
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+}
+
+/// Give all initial build outputs a fixed time before introducing an unrelated build.
+fn age_cache_outputs(profile: &Path) {
+    use std::time::{Duration, UNIX_EPOCH};
+    for folder in [profile, &profile.join("deps"), &profile.join("examples")] {
+        for entry in fs::read_dir(folder).unwrap() {
+            let path = entry.unwrap().path();
+            if path.is_file() {
+                fs::File::options()
+                    .write(true)
+                    .open(path)
+                    .unwrap()
+                    .set_modified(UNIX_EPOCH + Duration::from_secs(100))
+                    .unwrap();
+            }
+        }
+    }
+}
+
+/// The pinned Cargo layout identifies exact transitive builds after another package selection.
+#[test]
+fn cache_normalization_reads_the_pinned_cargo_builds() {
+    use std::time::{Duration, UNIX_EPOCH};
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path();
+    cache_fixture(root);
+    let profile = root.join("target/debug");
+    age_cache_outputs(&profile);
+    cache_cargo(
+        root,
+        &[
+            "build",
+            "--offline",
+            "--locked",
+            "-p",
+            "leaf",
+            "--features",
+            "other",
+        ],
+    );
+    let example = profile.join("examples").join(format!(
+        "prepare_author_component{}",
+        std::env::consts::EXE_SUFFIX
+    ));
+    let expected = UNIX_EPOCH + Duration::from_secs(200);
+    fs::File::options()
+        .write(true)
+        .open(&example)
+        .unwrap()
+        .set_modified(expected)
+        .unwrap();
+
+    let result = Command::new(env!("CARGO_BIN_EXE_development"))
+        .args(["nextest-setup", "normalize-component-cache"])
+        .arg(&profile)
+        .env_remove("TEST_ARCHIVE")
+        .output()
+        .unwrap();
+
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    let consumer = profile.join(format!("app{}", std::env::consts::EXE_SUFFIX));
+    assert_eq!(
+        fs::metadata(consumer).unwrap().modified().unwrap(),
+        expected
+    );
+}
+
+/// Rebuilding an exact linked library keeps its existing consumers stale.
+#[test]
+fn cache_normalization_keeps_consumers_of_newer_linked_builds_stale() {
+    use std::time::{Duration, UNIX_EPOCH};
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path();
+    cache_fixture(root);
+    let profile = root.join("target/debug");
+    age_cache_outputs(&profile);
+    let source = root.join("leaf/src/lib.rs");
+    fs::write(&source, fs::read(&source).unwrap()).unwrap();
+    cache_cargo(root, &["build", "--offline", "--locked", "-p", "leaf"]);
+
+    let result = Command::new(env!("CARGO_BIN_EXE_development"))
+        .args(["nextest-setup", "normalize-component-cache"])
+        .arg(&profile)
+        .env_remove("TEST_ARCHIVE")
+        .output()
+        .unwrap();
+
+    assert_eq!(
+        result.status.code(),
+        Some(3),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    let consumer = profile.join(format!("app{}", std::env::consts::EXE_SUFFIX));
+    assert_eq!(
+        fs::metadata(consumer).unwrap().modified().unwrap(),
+        UNIX_EPOCH + Duration::from_secs(100)
+    );
+}
+
+/// Cleaning libraries before another feature build leaves their older consumers stale.
+#[test]
+fn cache_normalization_keeps_consumers_of_replaced_builds_stale() {
+    use std::time::{Duration, UNIX_EPOCH};
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path();
+    cache_fixture(root);
+    let profile = root.join("target/debug");
+    age_cache_outputs(&profile);
+    fs::write(root.join("leaf/src/lib.rs"), "pub fn value() -> u32 { 43 }").unwrap();
+    cache_cargo(
+        root,
+        &[
+            "clean",
+            "--offline",
+            "--locked",
+            "-p",
+            "middle",
+            "-p",
+            "leaf",
+        ],
+    );
+    cache_cargo(
+        root,
+        &[
+            "build",
+            "--offline",
+            "--locked",
+            "-p",
+            "app",
+            "--examples",
+            "--features",
+            "other",
+        ],
+    );
+    let example = profile.join("examples").join(format!(
+        "prepare_author_component{}",
+        std::env::consts::EXE_SUFFIX
+    ));
+    let fresh = fs::metadata(example).unwrap().modified().unwrap();
+
+    let result = Command::new(env!("CARGO_BIN_EXE_development"))
+        .args(["nextest-setup", "normalize-component-cache"])
+        .arg(&profile)
+        .env_remove("TEST_ARCHIVE")
+        .output()
+        .unwrap();
+
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    let consumer = profile.join(format!("app{}", std::env::consts::EXE_SUFFIX));
+    assert_eq!(
+        fs::metadata(consumer).unwrap().modified().unwrap(),
+        UNIX_EPOCH + Duration::from_secs(100)
+    );
+    assert!(fresh > UNIX_EPOCH + Duration::from_secs(100));
 }
 
 /// Run the author setup from `root` with `profile` as nextest's artifact directory.
