@@ -17,7 +17,7 @@ use super::output::{
     PASTE_ON, PROGRESS_CLEAR, first_failure,
 };
 use super::platform::{self, Acquired, Task};
-use super::{InputCallback, OutputPort, ProcessTerminal, ResizeCallback, Shared};
+use super::{InputCallback, ProcessTerminal, ResizeCallback, Shared};
 
 /// How long a drain lasts at most when the caller names no limit.
 const DRAIN_LIMIT: Duration = Duration::from_millis(1000);
@@ -83,9 +83,7 @@ impl ProcessTerminal {
         on_resize: ResizeCallback,
     ) -> io::Result<Task> {
         let stream = platform::acquire(acquired)?;
-        self.shared
-            .output
-            .open(&self.local, Rc::downgrade(&self.shared))?;
+        self.shared.open_output(&self.local)?;
         self.shared
             .emit(&[PASTE_ON, KEYBOARD_PUSH, KEYBOARD_QUERY].concat())?;
         self.shared.pushes.set(self.shared.pushes.get() + 1);

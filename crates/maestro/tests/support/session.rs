@@ -28,6 +28,7 @@ pub async fn component_session(
                 agent_dir: root.path("agent").display().to_string(),
             },
             io,
+            None,
         ));
     resource_session(root, resources, no_tools).await
 }

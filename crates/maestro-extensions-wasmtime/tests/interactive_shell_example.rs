@@ -23,6 +23,7 @@ async fn loaded(
                     agent_dir: "/controlled-agent".into(),
                 },
                 io,
+                None,
             )
         },
     );

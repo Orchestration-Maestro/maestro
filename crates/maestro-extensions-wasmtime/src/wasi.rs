@@ -15,32 +15,33 @@ use wasmtime_wasi::{
 
 /// One caller-owned writer shared by all output handles of an instance.
 #[derive(Clone)]
-pub(crate) struct Output {
+pub struct Stdout {
     /// The caller's retained writer.
     writer: Arc<Mutex<Box<dyn Write + Send>>>,
     /// Whether the writer represents a terminal.
     terminal: bool,
 }
-impl Output {
+impl Stdout {
     /// Retains the supplied writer independently of the factory call.
-    pub(crate) fn new(writer: Box<dyn Write + Send>, terminal: bool) -> Self {
+    #[must_use]
+    pub fn new(writer: Box<dyn Write + Send>, terminal: bool) -> Self {
         Self {
             writer: Arc::new(Mutex::new(writer)),
             terminal,
         }
     }
 }
-impl IsTerminal for Output {
+impl IsTerminal for Stdout {
     fn is_terminal(&self) -> bool {
         self.terminal
     }
 }
-impl StdoutStream for Output {
+impl StdoutStream for Stdout {
     fn async_stream(&self) -> Box<dyn AsyncWrite + Send + Sync> {
         Box::new(self.clone())
     }
 }
-impl AsyncWrite for Output {
+impl AsyncWrite for Stdout {
     fn poll_write(
         self: Pin<&mut Self>,
         _: &mut Context<'_>,
@@ -66,7 +67,7 @@ impl AsyncWrite for Output {
     }
 }
 /// Copies the native environment, reserving the artifact location for this instance.
-pub(crate) fn build(path: &str, output: Option<Output>) -> WasiCtx {
+pub(crate) fn build(path: &str, output: Option<Stdout>) -> WasiCtx {
     let env: Vec<_> = std::env::vars_os()
         .filter(|(key, _)| {
             if cfg!(windows) {
