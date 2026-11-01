@@ -1,12 +1,37 @@
 //! Host-local wall-clock presentation for authored text.
-use chrono::{DateTime, Local, NaiveDateTime, TimeZone};
+use chrono::{DateTime, Datelike, Local, NaiveDateTime, TimeZone, Timelike};
+use maestro_theme::LocaleDateTimeFormat;
 
 use super::{decode, encode};
 
 /// Reads the host's current local time after accepting no operands.
 pub(super) fn local_date_time_string(data: &str) -> Result<String, String> {
     let (): () = decode(data)?;
-    encode(&format_local_date_time(Local::now().naive_local()))
+    encode(&format_local_date_time(
+        Local::now().naive_local(),
+        &|key| std::env::var(key).ok(),
+    )?)
+}
+
+/// Formats supplied local fields using the captured environment's locale.
+fn format_local_date_time(
+    now: NaiveDateTime,
+    environment: &dyn Fn(&str) -> Option<String>,
+) -> Result<String, String> {
+    let formatter = LocaleDateTimeFormat::new(environment).map_err(|error| error.to_string())?;
+    let date = [
+        now.year(),
+        i32::try_from(now.month()).map_err(|error| error.to_string())?,
+        i32::try_from(now.day()).map_err(|error| error.to_string())?,
+    ];
+    let time = [
+        u8::try_from(now.hour()).map_err(|error| error.to_string())?,
+        u8::try_from(now.minute()).map_err(|error| error.to_string())?,
+        u8::try_from(now.second()).map_err(|error| error.to_string())?,
+    ];
+    formatter
+        .format(date, time)
+        .map_err(|error| error.to_string())
 }
 
 /// Reads the host's local time of an instant given in milliseconds since the Unix epoch.
@@ -27,11 +52,6 @@ fn local_time_in<Z: TimeZone>(millis: i64, zone: &Z) -> Option<String> {
 /// Formats local clock fields with the en-US twelve-hour pattern.
 fn format_local_time(at: NaiveDateTime) -> String {
     at.format("%-I:%M:%S %p").to_string()
-}
-
-/// Formats local calendar fields with the en-US date and twelve-hour clock pattern.
-fn format_local_date_time(now: NaiveDateTime) -> String {
-    format!("{}, {}", now.format("%-m/%-d/%Y"), format_local_time(now))
 }
 
 #[cfg(test)]
@@ -80,6 +100,20 @@ mod tests {
         }
     }
 
+    /// Fixed local fields follow the selected environment's date and clock presentation.
+    #[test]
+    fn local_date_time_uses_locale_observations() {
+        let now = NaiveDate::from_ymd_opt(2026, 10, 27)
+            .unwrap()
+            .and_hms_opt(9, 25, 7)
+            .unwrap();
+        assert_eq!(
+            format_local_date_time(now, &|key| (key == "LANG").then(|| "fr_CA.UTF-8".into()))
+                .unwrap(),
+            "2026-10-27 09 h 25 min 07 s"
+        );
+    }
+
     /// Fixed local calendar fields retain midnight, noon and unpadded month/day semantics.
     #[test]
     fn local_date_time_formats_fixed_clock_fields() {
@@ -93,7 +127,7 @@ mod tests {
                 .unwrap()
                 .and_hms_opt(hour, 5, 7)
                 .unwrap();
-            assert_eq!(format_local_date_time(now), expected);
+            assert_eq!(format_local_date_time(now, &|_| None).unwrap(), expected);
         }
     }
 

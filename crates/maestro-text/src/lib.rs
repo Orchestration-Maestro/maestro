@@ -1,7 +1,8 @@
 //! Text primitives shared by Maestro crates: streaming and BOM-aware lossy UTF-8,
 //! whitespace membership, UTF-16 lexical order, markup escaping, CSS string serialization,
 //! environment flag truth,
-//! optional `collation` locale comparison and optional `number-format` locale-number presentation.
+//! optional `collation` locale comparison, `number-format` locale-number presentation,
+//! and `date-time-format` local date-time presentation.
 //!
 //! ```
 //! use maestro_text::{is_whitespace_scalar, markup::{EscapeMode, escape}, utf16_order};
@@ -34,3 +35,9 @@ pub use whitespace::{WHITESPACE, is_whitespace_scalar};
 mod locale;
 #[cfg(feature = "number-format")]
 pub mod number_format;
+
+#[cfg(feature = "date-time-format")]
+pub mod date_time_format;
+
+#[cfg(feature = "date-time-format")]
+mod date_time_calendar;

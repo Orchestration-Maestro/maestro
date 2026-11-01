@@ -20,6 +20,8 @@ pub mod run_tests;
 mod browser_author;
 /// The locked packages and the dependency graph between them.
 mod cargo_lock;
+/// Offline generation of locale date-time tables.
+mod date_time_data;
 /// The source files a dependency file names.
 mod dep_info;
 /// Source-owned example discovery and component preparation.
@@ -85,6 +87,7 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
     match name.to_str() {
         Some("asset-output") => asset_output(args, cargo),
         Some("example-index") => example_index::run(args, checkout),
+        Some("date-time-data") => date_time_data::run(args, checkout),
         Some("browser-author") => browser_author::run(args, cargo, checkout),
         Some("clean-assets") => {
             for owner in ["app", "binary"] {

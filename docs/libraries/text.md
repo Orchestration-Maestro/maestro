@@ -53,3 +53,13 @@ The ICU and supporting data crates use Unicode-3.0. `displaydoc`, `proc-macro2`,
 `quote`, `syn`, `smallvec` and `stable_deref_trait` offer MIT OR Apache-2.0;
 `synstructure` uses MIT. `unicode-ident` requires Unicode-3.0 together with the
 MIT/Apache alternative. `ryu` is used under its Apache-2.0 option.
+
+## Local date-times
+
+The optional `date-time-format` feature reuses the number feature's decimal
+engine, with grouping disabled, and directly enables the already-locked
+`icu_locale_fallback =2.3.0` with default compiled data. No calendar or date-time
+runtime library is added. The formatter renders committed CLDR JSON 48.2.0
+recipes, under Unicode-3.0, and converts the default Gregorian, Buddhist and
+Persian calendars in Maestro code. The data and translated Persian algorithm's
+notices are in `crates/maestro-text/data/date-time/`.

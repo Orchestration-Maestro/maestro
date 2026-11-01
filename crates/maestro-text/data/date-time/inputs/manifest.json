@@ -1,0 +1,22 @@
+{
+  "cldrArchiveVersion": "48.2.0",
+  "runtime": {
+    "node": "24.20.0",
+    "icu": "78.3",
+    "cldr": "48.0"
+  },
+  "archives": {
+    "cldr-dates-full": "0256f1cefeca14f7d515be4872dda48fcdd7e75381430f25aafd0143eae5b430",
+    "cldr-core": "5310e0c7a06c1feb83dc8e54c8584bbe0b9c2ea8320172a18d541986b124585d",
+    "cldr-numbers-full": "2d17a1453c559a62112caeed52e0bcfe3cb8539c99d239ae7b7ed4d0827679d9",
+    "cldr-cal-buddhist-full": "3429cb832bef99a978863f11a6afd8b36f5ce981ab18c51481648cef479400ff",
+    "cldr-cal-persian-full": "937af05a2e84a3a38e9fd6880888c622ff14db6577fc254d71a91d2e0442f41f"
+  },
+  "files": {
+    "oracle.json": "493f414c2742c89f87b7fa524d745c14ed0575870c120ea8526f9d945d970ca5",
+    "source-locales.json": "3a0f2455e397258c9b578eade2021e68a555e791fcb518046dd7daee689439c8",
+    "timeData.json": "2962960c14e40ffb09526e33832fe60ff932ba1b41a01f4964c601c2274ac61d",
+    "calendarPreferenceData.json": "62ff01888eaadc48876b3b02fe0305229cfdc1015d308962da7c44e34b6f12fe",
+    "LICENSE": "b49d0e9f8ead51ca8b7df6fec89cc3ae6809198b4b9d43c74216da0118f23f5b"
+  }
+}
