@@ -3,8 +3,8 @@
 #![cfg(unix)]
 
 use maestro_test_process::child::{
-    Stream, UnknownStream, announce, close_streams, connect, harness, is_null, leave, port,
-    read_input, receive, variable, without_harness, write_stderr, write_stdout,
+    Stream, UnknownStream, announce, close_streams, collect_output, connect, harness, is_null,
+    leave, port, read_input, receive, variable, without_harness, write_stderr, write_stdout,
 };
 use maestro_test_process::{HARNESS_START, TestProcess};
 use std::env::VarError;
@@ -49,6 +49,7 @@ fn child_helpers_serve_a_child_and_its_parent() {
         .stderr(Stdio::piped());
     let mut child = child.spawn().unwrap();
     child.stdin.take().unwrap().write_all(b"abc").unwrap();
+    let collected = collect_output(child, &listener).unwrap();
 
     let (mut socket, _) = listener.accept().unwrap();
     let mut line = Vec::new();
@@ -58,7 +59,7 @@ fn child_helpers_serve_a_child_and_its_parent() {
         line.push(byte[0]);
     }
     socket.write_all(b"!").unwrap();
-    let output = child.wait_with_output().unwrap();
+    let output = collected.join().unwrap().unwrap();
 
     assert_eq!(line, b"helper\n");
     assert_eq!(output.stdout, harness(b"pipe:3"));
@@ -191,4 +192,30 @@ fn leave_fails_when_standard_output_cannot_be_flushed() {
 
     assert_ne!(output.status.code(), Some(0));
     assert!(String::from_utf8_lossy(&output.stderr).contains("flush"));
+}
+
+/// A child that ends without ever connecting.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+fn silent_leaver() {
+    leave(3)
+}
+
+#[test]
+fn collect_output_wakes_an_accept_the_child_never_answers() {
+    let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+    let mut command = TestProcess::child(silent_leaver)
+        .unwrap()
+        .command()
+        .unwrap();
+    command
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    let collected = collect_output(command.spawn().unwrap(), &listener).unwrap();
+
+    let (mut socket, _) = listener.accept().unwrap();
+
+    assert_eq!(socket.read(&mut [0]).unwrap(), 0);
+    assert_eq!(collected.join().unwrap().unwrap().status.code(), Some(3));
 }

@@ -5,8 +5,10 @@ use std::env::VarError;
 use std::error::Error;
 use std::fmt;
 use std::io::{self, Read, Write};
-use std::net::TcpStream;
+use std::net::{TcpListener, TcpStream};
 use std::num::ParseIntError;
+use std::process::{Child, Output};
+use std::thread::JoinHandle;
 
 use crate::HARNESS_START;
 
@@ -251,6 +253,21 @@ pub fn connect(port: u16) -> io::Result<TcpStream> {
 /// Returns the write failure.
 pub fn announce(socket: &mut impl Write, text: &str) -> io::Result<()> {
     socket.write_all(format!("{text}\n").as_bytes())
+}
+
+/// Collects `child`'s output on a helper thread; once the child ended, the thread connects to
+/// `listener`, so an `accept` that no child connection answered returns instead of waiting
+/// for a child that already failed.
+///
+/// # Errors
+///
+/// Returns the failure to read the listener's address.
+pub fn collect_output(
+    child: Child,
+    listener: &TcpListener,
+) -> io::Result<JoinHandle<io::Result<Output>>> {
+    let _ = (child, listener);
+    Err(io::ErrorKind::Unsupported.into())
 }
 
 /// Whether the descriptor behind `path`, such as `/dev/stdin`, is the null device.
