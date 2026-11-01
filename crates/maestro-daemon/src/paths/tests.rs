@@ -74,16 +74,11 @@ fn windows_workspace_paths_use_the_selected_home() {
         for path in ["~", "~/x", "~\\x"] {
             let actual = maestro_path::expand_tilde_native(path, || home_directory().ok_or(()))
                 .unwrap_or_else(|()| path.into());
-            let expected = expected.as_ref().map_or_else(
-                || PathBuf::from(path),
-                |home| {
-                    if path == "~" {
-                        home.clone()
-                    } else {
-                        home.join("x")
-                    }
-                },
-            );
+            let expected = match (expected.as_ref(), path) {
+                (None, _) => PathBuf::from(path),
+                (Some(home), "~") => home.clone(),
+                (Some(home), _) => home.join("x"),
+            };
             assert_eq!(actual, expected);
         }
     }
