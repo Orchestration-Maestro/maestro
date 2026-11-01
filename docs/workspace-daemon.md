@@ -176,14 +176,11 @@ workspace/tab/pane names, public numbers, selection, working directories, split
 axes and resume provenance. Screen history is stored separately and can be
 removed by saving without history.
 
-Saving follows symbolic links and creates missing parent directories. It writes
-pretty JSON without a trailing newline to `<name>.json.tmp`, syncs the temporary
-file, renames it over the target, then syncs the parent directory. A failure before
-the rename removes the temporary file and leaves the previous snapshot unchanged.
-A crash before rename leaves the previous snapshot readable. Existing permission
-bits are retained; ownership and ACLs are not. Hard links keep the old bytes. Topology commits before history is saved or removed; failure on the
-second file does not undo the first. Parent-directory sync errors are returned
-after the new snapshot has committed.
+Saving writes pretty JSON without a trailing newline through the shared
+[recoverable in-place publication](locking.md#recoverable-byte-publication) operation, following symbolic
+links. Topology commits before history is saved or removed; failure on the second
+file does not undo the first. Snapshot saves ignore postcommit directory-sync
+advisories.
 
 Missing files load silently as absent. Read, parse and unsupported-version failures
 produce warnings and return no snapshot. Only version 1 is accepted; there is no
@@ -473,14 +470,9 @@ client or background worker.
 
 The catalog resolves safe relative document paths against its own URL directory.
 Each agent updates independently: newer versions publish through the shared
-atomic publication owner, identical equal-version bytes are left alone, and
-downgrades or changed bytes at the same version are rejected. Documents and
-`status.toml` write to `.<file name>.<process id>.<nanoseconds>.tmp` beside the
-target, sync the file, rename it over the target and sync the parent directory.
-Precommit failures remove the temporary file and leave the previous bytes intact.
-A parent-sync failure after rename logs a warning and still succeeds. Unlocked
-readers see a complete old or new document. `status.toml` records outcomes under
-the supplied catalog folder. `auto_update` reloads the
+recoverable publication owner, identical equal-version bytes are left alone, and
+downgrades or changed bytes at the same version are rejected. `status.toml`
+records outcomes under the supplied catalog folder. `auto_update` reloads the
 supplied cache after a commit, before invoking the result callback. Daemon path
 composition, scheduling, offline admission and the catalog-check setting remain
 with the daemon caller.

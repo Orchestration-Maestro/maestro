@@ -6,6 +6,7 @@ use super::{
 use maestro_request::presence::Presence;
 use serde::Serialize;
 use serde_json::{Map, Value, ser::Formatter};
+use sha2::{Digest, Sha256};
 use std::{
     fs,
     io::{self, Write},
@@ -281,14 +282,17 @@ fn absolute(path: &str) -> io::Result<String> {
     maestro_resources::paths::resolve(&[path])
 }
 
-/// Publishes branch records, overwriting any existing bytes under exclusive ownership.
+/// Publishes a new branch without overwriting a file that another writer created.
 pub(super) fn rewrite(path: &str, entries: &[FileEntry]) -> io::Result<()> {
-    #[cfg(test)]
-    if let Some(before) = super::tests::BEFORE_BRANCH.take() {
-        before(path);
+    if super::storage::rewrite_session_file(
+        path,
+        &Sha256::digest([]).into(),
+        &encode_entries(entries)?,
+    )?
+    .is_some()
+    {
+        return Err(io::ErrorKind::AlreadyExists.into());
     }
-    maestro_lock::acquire_write(std::path::Path::new(path), true)?
-        .replace(&encode_entries(entries)?, None)?;
     Ok(())
 }
 
