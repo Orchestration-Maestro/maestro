@@ -219,15 +219,19 @@ pub(crate) fn generated(entry: &Value, role: &str, fields: &[&str]) -> Value {
 /// Parse independent JSONL lines without validating a header or entry schema.
 ///
 /// Outer ECMAScript whitespace is removed; remaining nonblank lines use native
-/// JSON acceptance and limits. Malformed lines are skipped.
+/// JSON acceptance and limits. Malformed lines are skipped; empty JSON values are kept.
 #[must_use]
 pub fn parse_session_entries(content: &str) -> Vec<super::types::FileEntry> {
     let mut entries = Vec::new();
     // Reading a byte slice cannot fail, so the result holds no error to report.
-    let _ = super::records::for_each_entry(content.as_bytes(), |entry| {
-        entries.push(entry);
-        std::ops::ControlFlow::Continue(())
-    });
+    let _ = super::records::for_each_entry(
+        content.as_bytes(),
+        super::records::Admission::All,
+        |entry| {
+            entries.push(entry);
+            std::ops::ControlFlow::Continue(())
+        },
+    );
     entries
 }
 pub(super) use maestro_text::is_whitespace_scalar as ecma_whitespace;
