@@ -1,10 +1,11 @@
-//! Raw shell output, status and artifact policy through application exports.
+//! Native shell execution and controlled raw output through application exports.
 #![cfg(not(target_arch = "wasm32"))]
 
 use crate::support::{
     io_runtime, run_io,
     session_harness::{
         ScriptedShell, ShellFailure, as_recorded, bash_result_view, case, on_paused_task_set,
+        run_native_tool_child,
     },
 };
 use maestro_app::{BashToolOptions, create_bash_tool};
@@ -24,28 +25,6 @@ fn scripted(shell: ScriptedShell) -> maestro_agent::AgentTool {
             ..BashToolOptions::default()
         },
     )
-}
-
-/// Runs artifact cases in a checked Rust child; returns true when the parent has finished.
-fn run_artifact_child(test: &str) -> bool {
-    if maestro_test_process::selection().is_child() {
-        return false;
-    }
-    let root = maestro_test_directory::Scratch::new().unwrap();
-    let output = maestro_test_process::TestProcess::current(test)
-        .unwrap()
-        .case("*")
-        .nocapture()
-        .temp_dir(root.path())
-        .output()
-        .unwrap();
-    assert!(
-        output.status.success(),
-        "{}\n{}",
-        String::from_utf8_lossy(&output.stdout),
-        String::from_utf8_lossy(&output.stderr)
-    );
-    true
 }
 
 /// Reads only a real artifact within this child's disposable temporary directory.
@@ -72,7 +51,7 @@ fn bash_reports_nonzero_command_status() {
 
 #[test]
 fn bash_failure_artifacts_keep_complete_output() {
-    if run_artifact_child("bash_failure_artifacts_keep_complete_output") {
+    if run_native_tool_child("bash_failure_artifacts_keep_complete_output") {
         return;
     }
     let runtime = io_runtime();
@@ -217,7 +196,7 @@ fn bash_routes_custom_shell_only_to_local_operations() {
 
 #[test]
 fn bash_coalesces_chatty_progress() {
-    if run_artifact_child("bash_coalesces_chatty_progress") {
+    if run_native_tool_child("bash_coalesces_chatty_progress") {
         return;
     }
     let result = on_paused_task_set(|_| async {
@@ -287,7 +266,7 @@ fn direct_shell_operation_cleans_terminal_output() {
 
 #[test]
 fn tool_shell_line_truncation_retains_artifact() {
-    if run_artifact_child("tool_shell_line_truncation_retains_artifact") {
+    if run_native_tool_child("tool_shell_line_truncation_retains_artifact") {
         return;
     }
     let mut content = String::new();
@@ -314,7 +293,7 @@ fn tool_shell_line_truncation_retains_artifact() {
 
 #[test]
 fn direct_shell_line_truncation_retains_artifact() {
-    if run_artifact_child("direct_shell_line_truncation_retains_artifact") {
+    if run_native_tool_child("direct_shell_line_truncation_retains_artifact") {
         return;
     }
     let mut content = String::new();
@@ -326,6 +305,237 @@ fn direct_shell_line_truncation_retains_artifact() {
         "lines",
         "/work",
         &shell,
+        maestro_app::BashExecutorOptions::default(),
+    ))
+    .unwrap();
+    let artifact = result.full_output_path.as_ref().unwrap();
+    let observed = json!({"ok":bash_result_view(&result),"artifact":artifact_contents(artifact)});
+    assert_eq!(
+        as_recorded(observed, &[(artifact, "$ARTIFACT")]),
+        case(
+            "tools_root",
+            "direct_shell_line_truncation_retains_artifact"
+        )["expected"]
+    );
+}
+
+/// A native shell tool rooted in disposable working storage.
+fn native_tool(
+    root: &maestro_test_directory::Scratch,
+    options: BashToolOptions,
+) -> maestro_agent::AgentTool {
+    create_bash_tool(root.path().display().to_string(), String::new(), options)
+}
+
+#[test]
+fn bash_executes_command_without_details() {
+    if run_native_tool_child("bash_executes_command_without_details") {
+        return;
+    }
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let tool = native_tool(&root, BashToolOptions::default());
+    let result = run_io((tool.execute)(
+        "bash".into(),
+        json!({"command":"echo test output"}),
+        None,
+        None,
+    ))
+    .unwrap();
+    assert_eq!(
+        json!(result),
+        json!({"content":[{"type":"text","text":"test output\n"}]})
+    );
+}
+
+#[test]
+fn bash_enforces_supplied_timeout() {
+    if run_native_tool_child("bash_enforces_supplied_timeout") {
+        return;
+    }
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    run_io(async {
+        let tool = native_tool(&root, BashToolOptions::default());
+        let started = Arc::new(tokio::sync::Notify::new());
+        let notify = Arc::clone(&started);
+        let mut executing = tokio::spawn((tool.execute)(
+            "bash".into(),
+            json!({"command":"printf ready; sleep 10","timeout":1}),
+            None,
+            Some(Arc::new(move |result| {
+                if result.content.iter().any(|block| matches!(block, maestro_models::UserBlock::Text(text) if text.text == "ready")) {
+                    notify.notify_one();
+                }
+            })),
+        ));
+        tokio::select! {
+            biased;
+            () = started.notified() => {},
+            settled = &mut executing => panic!("command settled before readiness: {settled:?}"),
+        }
+        assert!(!executing.is_finished());
+        let error = executing.await.unwrap().unwrap_err();
+        assert!(error.message.contains("ready"), "{error:?}");
+        assert!(error.message.contains("timed out after 1"), "{error:?}");
+    });
+}
+
+#[test]
+fn bash_prefix_sets_command_environment() {
+    if run_native_tool_child("bash_prefix_sets_command_environment") {
+        return;
+    }
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let tool = native_tool(
+        &root,
+        BashToolOptions {
+            command_prefix: Some("export TEST_VAR=hello".into()),
+            ..BashToolOptions::default()
+        },
+    );
+    let result = run_io((tool.execute)(
+        "bash".into(),
+        json!({"command":"echo $TEST_VAR"}),
+        None,
+        None,
+    ))
+    .unwrap();
+    assert_eq!(
+        json!(result),
+        json!({"content":[{"type":"text","text":"hello\n"}]})
+    );
+}
+
+#[test]
+fn bash_preserves_prefix_then_command_output() {
+    if run_native_tool_child("bash_preserves_prefix_then_command_output") {
+        return;
+    }
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let tool = native_tool(
+        &root,
+        BashToolOptions {
+            command_prefix: Some("echo prefix-output".into()),
+            ..BashToolOptions::default()
+        },
+    );
+    let result = run_io((tool.execute)(
+        "bash".into(),
+        json!({"command":"echo command-output"}),
+        None,
+        None,
+    ))
+    .unwrap();
+    assert_eq!(
+        json!(result),
+        json!({"content":[{"type":"text","text":"prefix-output\ncommand-output\n"}]})
+    );
+}
+
+#[test]
+fn bash_empty_options_keep_command_output() {
+    if run_native_tool_child("bash_empty_options_keep_command_output") {
+        return;
+    }
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let tool = native_tool(&root, BashToolOptions::default());
+    let result = run_io((tool.execute)(
+        "bash".into(),
+        json!({"command":"echo no-prefix"}),
+        None,
+        None,
+    ))
+    .unwrap();
+    assert_eq!(
+        json!(result),
+        json!({"content":[{"type":"text","text":"no-prefix\n"}]})
+    );
+}
+
+#[test]
+fn bash_local_operations_preserve_explicit_environment() {
+    if run_native_tool_child("bash_local_operations_preserve_explicit_environment") {
+        return;
+    }
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let operations = maestro_app::create_local_bash_operations(String::new(), None);
+    let mut env = std::env::vars_os()
+        .map(|(key, value)| (key, Some(value)))
+        .collect::<indexmap::IndexMap<_, _>>();
+    env.insert("TEST_LOCAL_BASH_OPS".into(), Some("from-local-ops".into()));
+    let mut bytes = Vec::new();
+    let result = run_io(operations.exec(
+        "echo $TEST_LOCAL_BASH_OPS",
+        &root.path().display().to_string(),
+        maestro_app::BashExecOptions {
+            on_data: &mut |chunk| bytes.extend_from_slice(chunk),
+            signal: None,
+            timeout: None,
+            env: Some(&env),
+        },
+    ))
+    .unwrap();
+    assert_eq!(result.exit_code, Some(0.0));
+    assert_eq!(bytes, b"from-local-ops\n");
+}
+
+#[test]
+fn native_direct_shell_operation_cleans_terminal_output() {
+    if run_native_tool_child("native_direct_shell_operation_cleans_terminal_output") {
+        return;
+    }
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let operations = maestro_app::create_local_bash_operations(String::new(), None);
+    let result = run_io(maestro_app::execute_bash_with_operations(
+        "printf '\\033[31mred\\033[0m\\r\\n'",
+        &root.path().display().to_string(),
+        operations.as_ref(),
+        maestro_app::BashExecutorOptions::default(),
+    ))
+    .unwrap();
+    assert_eq!(
+        bash_result_view(&result),
+        case(
+            "tools_root",
+            "direct_shell_operation_cleans_terminal_output"
+        )["expected"]["ok"]
+    );
+}
+
+#[test]
+fn native_tool_shell_line_truncation_retains_artifact() {
+    if run_native_tool_child("native_tool_shell_line_truncation_retains_artifact") {
+        return;
+    }
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let tool = native_tool(&root, BashToolOptions::default());
+    let result = json!(
+        run_io((tool.execute)(
+            "bash".into(),
+            json!({"command":"seq 3000"}),
+            None,
+            None
+        ))
+        .unwrap()
+    );
+    let artifact = result["details"]["fullOutputPath"].as_str().unwrap();
+    let observed = json!({"ok":result,"artifact":artifact_contents(artifact)});
+    assert_eq!(
+        as_recorded(observed, &[(artifact, "$ARTIFACT")]),
+        case("tools_root", "tool_shell_line_truncation_retains_artifact")["expected"]
+    );
+}
+
+#[test]
+fn native_direct_shell_line_truncation_retains_artifact() {
+    if run_native_tool_child("native_direct_shell_line_truncation_retains_artifact") {
+        return;
+    }
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let operations = maestro_app::create_local_bash_operations(String::new(), None);
+    let result = run_io(maestro_app::execute_bash_with_operations(
+        "seq 3000",
+        &root.path().display().to_string(),
+        operations.as_ref(),
         maestro_app::BashExecutorOptions::default(),
     ))
     .unwrap();

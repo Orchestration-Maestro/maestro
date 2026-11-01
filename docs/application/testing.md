@@ -34,6 +34,15 @@ installs.
 Stored entries come from `h.session.session_manager()`. Extension handlers read
 the same history through their context's `session_manager()`.
 
+[Application tools](tools.md) covers root factory calls and direct-shell history.
+`ScriptedShell::raw` supplies byte chunks, exit status and optional `ShellFailure`
+settlement without launching a process. The same adapter supports local sessions
+and threaded executable tools; its existing string constructors remain available.
+`run_native_tool_child` gives native tool checks disposable temporary, home and
+configuration directories through the checked Rust child owner. Native shell
+checks use the real shell; search checks require installed programs and refuse
+downloads.
+
 ## Waiting without clocks
 
 Tests never sleep or poll. They wait on signals the session or the scripted

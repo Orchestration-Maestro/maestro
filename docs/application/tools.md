@@ -57,7 +57,9 @@ scripted provider and disposable files. File tests call the root factories and
 compare complete results, diffs and written bytes with recorded fixtures.
 Controlled shell operations supply raw byte chunks and settlement outcomes;
 the real tools own decoding, progress coalescing, truncation and artifact closure.
-Artifact checks run in checked Rust children with disposable temporary storage.
+Native checks run in checked Rust children with disposable temporary, home and
+configuration directories. Shell checks run the real local shell. Search checks
+require installed `rg` and `fd` or `fdfind`; acquisition attempts fail the test.
 
 The persistence checks retain the same session across an acknowledged waiting
 tool, shell recording and the following prompt. They compare pending state,

@@ -1631,6 +1631,43 @@ pub fn command_extension(
     })
 }
 
+/// Runs native tool cases in a checked child with disposable temporary and home directories.
+/// Returns true when the parent has finished the child.
+pub fn run_native_tool_child(test: &str) -> bool {
+    if maestro_test_process::selection().is_child() {
+        return false;
+    }
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let mut child = maestro_test_process::TestProcess::current(test)
+        .unwrap()
+        .case("*")
+        .nocapture()
+        .temp_dir(root.path());
+    for key in ["HOME", "USERPROFILE", "XDG_CONFIG_HOME"] {
+        child = child.env(key, root.path());
+    }
+    for key in [
+        "BASH_ENV",
+        "ENV",
+        "GIT_CONFIG_PARAMETERS",
+        "GIT_CONFIG_COUNT",
+    ] {
+        child = child.env_remove(key);
+    }
+    let output = child
+        .env("GIT_CONFIG_NOSYSTEM", "1")
+        .env("GIT_CONFIG_GLOBAL", root.path().join("empty-gitconfig"))
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    true
+}
+
 /// A supplied shell's exceptional settlement after streaming its bytes.
 #[derive(Clone, Copy, Debug)]
 pub enum ShellFailure {
