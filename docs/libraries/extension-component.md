@@ -1,10 +1,10 @@
 # Extension component bindings
 
 The custom message-provider example uses workspace-inherited `httpdate =1.0.3`
-(MIT OR Apache-2.0) to read HTTP-date retry hints. It is a portable normal
-dependency of `maestro-extensions-wasm` and works in WASI components. Controlled
-transport tests cover numeric and dated hints, invalid hints and the fallback
-backoff. HTTP attempts and waits still use the existing host operations.
+(MIT OR Apache-2.0) as a portable development dependency to read HTTP-date retry
+hints in WASI components. The guest library does not depend on the parser.
+Controlled transport tests cover numeric and dated hints, invalid hints and the
+fallback backoff. HTTP attempts and waits use the existing host operations.
 
 The shipped `custom_footer` example uses the workspace's `ryu-js =1.0.3`
 (Apache-2.0) as a development dependency to format token counts and dollar costs.
