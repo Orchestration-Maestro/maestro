@@ -52,6 +52,8 @@ pub fn atomic_replace(
     #[cfg(test)]
     crate::replace::tests::before_create(&temporary)?;
     let file = File::create(&temporary)?;
+    #[cfg(test)]
+    crate::replace::tests::created();
     let result = retain_permissions(&file, &target)
         .and_then(|()| write_temporary(file, bytes))
         .and_then(|()| {
