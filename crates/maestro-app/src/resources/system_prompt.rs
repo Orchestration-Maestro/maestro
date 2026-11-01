@@ -74,21 +74,8 @@ pub fn build_system_prompt(options: &BuildSystemPromptOptions) -> io::Result<Str
 /// call for, the trimmed caller guidelines, then the two standing ones.
 fn guidelines(options: &BuildSystemPromptOptions, tools: &[&str]) -> String {
     let has = |name: &str| tools.contains(&name);
-    let searches: Vec<&str> = ["grep", "find", "ls"]
-        .into_iter()
-        .filter(|name| has(name))
-        .collect();
-    let exploration = match (has("bash"), searches.as_slice()) {
-        (true, []) => {
-            Some("Use bash for file operations like listing and searching files".to_owned())
-        }
-        (true, names) => Some(format!(
-            "Prefer the {} {} over bash for file exploration (faster, respects .gitignore)",
-            names.join("/"),
-            if names.len() == 1 { "tool" } else { "tools" },
-        )),
-        (false, _) => None,
-    };
+    let exploration = (has("bash") && !["grep", "find", "ls"].into_iter().any(has))
+        .then_some("Use bash for file operations like ls, rg, find");
     let extra = options
         .prompt_guidelines
         .present()
@@ -99,7 +86,7 @@ fn guidelines(options: &BuildSystemPromptOptions, tools: &[&str]) -> String {
     let mut seen = HashSet::new();
     exploration
         .iter()
-        .map(String::as_str)
+        .copied()
         .chain(extra)
         .chain([
             "Be concise in your responses",
@@ -131,7 +118,6 @@ fn default_prompt(options: &BuildSystemPromptOptions, tools: &[&str]) -> io::Res
     let readme = get_readme_path()?;
     let docs = get_docs_path()?;
     let examples = get_examples_path()?;
-    let package = maestro_path::dirname(&readme);
     Ok(format!(
         "You are an expert coding assistant operating inside maestro, a coding agent harness. You help users by reading files, executing commands, editing code, and writing new files.
 
@@ -147,7 +133,7 @@ Maestro documentation (read only when the user asks about maestro itself, its SD
 - Main documentation: {readme}
 - Additional docs: {docs}
 - Examples: {examples} (extensions, custom tools, SDK)
-- Topic paths below are relative to the installed package directory {package}; resolve each docs/ or examples/ path against it
+- When reading maestro docs or examples, resolve docs/... under Additional docs and examples/... under Examples, not the current working directory
 - When asked about: extensions (docs/extensions.md, examples/extensions/), themes (docs/theme.md), skills (docs/resources/skills.md), prompt templates (docs/resources/prompt-templates.md), TUI components (docs/terminal/components.md), keybindings (docs/terminal/keybindings.md), SDK integrations (docs/application/sdk.md), custom providers (docs/extensions/guest_streams.md), adding models (docs/catalog.md), maestro packages (docs/packages.md)
 - When working on maestro topics, read the docs and examples, and follow .md cross-references before implementing
 - Always read maestro .md files completely and follow links to related docs (e.g., docs/terminal/components.md for TUI API details)"

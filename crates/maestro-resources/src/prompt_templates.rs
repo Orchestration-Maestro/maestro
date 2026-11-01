@@ -121,13 +121,16 @@ pub struct PromptTemplate {
 
 /// Expand the first exact template name following a leading slash.
 ///
-/// The name ends at the first whitespace scalar; the rest is the argument text.
+/// The nonempty name ends at the first whitespace scalar; the rest is the argument text.
 #[must_use]
 pub fn expand_prompt_template(text: &str, templates: &[PromptTemplate]) -> String {
     let Some(command) = text.strip_prefix('/') else {
         return text.into();
     };
     let (name, arguments) = command.split_once(text_whitespace).unwrap_or((command, ""));
+    if name.is_empty() {
+        return text.into();
+    }
     templates
         .iter()
         .find(|template| template.name == name)

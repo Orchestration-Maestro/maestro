@@ -624,10 +624,64 @@
       ],
       "events": [],
       "expected": {
-        "extensions": [],
-        "skills": [],
-        "prompts": [],
-        "themes": []
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/extensions/default.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [
+          {
+            "path": "$ROOT/pkg/skills/alpha/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/skills/beta/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "prompts": [
+          {
+            "path": "$ROOT/pkg/prompts/p.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "themes": [
+          {
+            "path": "$ROOT/pkg/themes/t.json",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ]
       }
     },
     {
@@ -652,10 +706,64 @@
       ],
       "events": [],
       "expected": {
-        "extensions": [],
-        "skills": [],
-        "prompts": [],
-        "themes": []
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/extensions/default.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [
+          {
+            "path": "$ROOT/pkg/skills/alpha/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/skills/beta/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "prompts": [
+          {
+            "path": "$ROOT/pkg/prompts/p.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "themes": [
+          {
+            "path": "$ROOT/pkg/themes/t.json",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ]
       }
     },
     {
@@ -680,10 +788,64 @@
       ],
       "events": [],
       "expected": {
-        "extensions": [],
-        "skills": [],
-        "prompts": [],
-        "themes": []
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/extensions/default.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [
+          {
+            "path": "$ROOT/pkg/skills/alpha/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/skills/beta/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "prompts": [
+          {
+            "path": "$ROOT/pkg/prompts/p.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "themes": [
+          {
+            "path": "$ROOT/pkg/themes/t.json",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ]
       }
     },
     {
@@ -708,10 +870,64 @@
       ],
       "events": [],
       "expected": {
-        "extensions": [],
-        "skills": [],
-        "prompts": [],
-        "themes": []
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/extensions/default.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [
+          {
+            "path": "$ROOT/pkg/skills/alpha/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/skills/beta/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "prompts": [
+          {
+            "path": "$ROOT/pkg/prompts/p.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "themes": [
+          {
+            "path": "$ROOT/pkg/themes/t.json",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ]
       }
     },
     {
@@ -3964,10 +4180,64 @@
       ],
       "events": [],
       "expected": {
-        "extensions": [],
-        "skills": [],
-        "prompts": [],
-        "themes": []
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/extensions/default.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [
+          {
+            "path": "$ROOT/pkg/skills/alpha/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/skills/beta/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "prompts": [
+          {
+            "path": "$ROOT/pkg/prompts/p.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "themes": [
+          {
+            "path": "$ROOT/pkg/themes/t.json",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ]
       }
     },
     {

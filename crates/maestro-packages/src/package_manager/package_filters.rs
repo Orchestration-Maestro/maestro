@@ -51,13 +51,12 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
 /// Collects manifest-admitted candidates with the caller's required emission order.
 fn candidate_files(path: &str, kind: ResourceType, filtered: bool) -> io::Result<Vec<String>> {
     let manifest = read_maestro_manifest_file(&join(&[path, "package.json"]));
-    let present = manifest
-        .as_ref()
-        .is_some_and(|m| m.field(kind.name()).is_some_and(super::manifest::truthy));
     let entries = manifest
         .as_ref()
-        .and_then(|m| m.entries(kind.name()).ok())
-        .unwrap_or_default();
+        .filter(|m| m.field(kind.name()).is_some_and(super::manifest::truthy))
+        .and_then(|m| m.entries(kind.name()).ok());
+    let present = entries.is_some();
+    let entries = entries.unwrap_or_default();
     if !present || (filtered && entries.is_empty()) {
         return collect_resource_files(&join(&[path, kind.name()]), kind);
     }

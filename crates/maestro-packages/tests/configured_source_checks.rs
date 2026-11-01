@@ -437,7 +437,7 @@ fn workflow(
     assert!(manager.add_source_to_settings("./local", None)?);
     assert!(manager.add_source_to_settings("npm:@scope/pkg", None)?);
     assert!(manager.add_source_to_settings("https://github.com/u/r", Some(Project))?);
-    assert!(!manager.add_source_to_settings("ssh://git@github.com/u/r", Some(Project))?);
+    assert!(manager.add_source_to_settings("ssh://git@github.com/u/r", Some(Project))?);
     let rows = manager.list_configured_packages()?;
     assert_eq!(
         rows.iter()
@@ -446,7 +446,7 @@ fn workflow(
         vec![
             ("../project/local", User),
             ("npm:@scope/pkg", User),
-            ("https://github.com/u/r", Project)
+            ("ssh://git@github.com/u/r", Project)
         ]
     );
     assert_eq!(
@@ -597,7 +597,7 @@ fn configuration_writes_publish_before_flush_without_rewriting_noops() {
     let first = storage.writes.load(Ordering::SeqCst);
     assert_eq!(first, 1);
     assert!(
-        !manager
+        manager
             .add_source_to_settings("npm:pkg@latest", None)
             .unwrap()
     );
@@ -607,7 +607,7 @@ fn configuration_writes_publish_before_flush_without_rewriting_noops() {
             .unwrap()
     );
     runtime.block_on(settings.borrow().flush());
-    assert_eq!(storage.writes.load(Ordering::SeqCst), first);
+    assert_eq!(storage.writes.load(Ordering::SeqCst), first + 1);
     assert!(
         manager
             .remove_source_from_settings("npm:pkg", None)
@@ -618,7 +618,7 @@ fn configuration_writes_publish_before_flush_without_rewriting_noops() {
         json!([])
     );
     runtime.block_on(settings.borrow().flush());
-    assert_eq!(storage.writes.load(Ordering::SeqCst), first + 1);
+    assert_eq!(storage.writes.load(Ordering::SeqCst), first + 2);
     let mut text = None;
     storage
         .with_lock(SettingsScope::Global, &mut |current| {
@@ -804,7 +804,7 @@ fn numeric_scp_namespace_matches_git_transport_in_settings() {
         settings.borrow().get_global_settings().0["packages"],
         json!([scp])
     );
-    assert!(!manager.add_source_to_settings(https, None).unwrap());
+    assert!(manager.add_source_to_settings(https, None).unwrap());
     assert!(manager.remove_source_from_settings(https, None).unwrap());
     assert_eq!(
         settings.borrow().get_global_settings().0["packages"],
@@ -818,16 +818,39 @@ fn queried_hosted_shortcut_matches_https_for_add_and_remove() {
     let shortcut = "git:github:octocat/Hello-World?tab=readme";
     let https = "https://github.com/octocat/Hello-World";
     assert!(manager.add_source_to_settings(shortcut, None).unwrap());
-    assert!(!manager.add_source_to_settings(https, None).unwrap());
+    assert!(manager.add_source_to_settings(https, None).unwrap());
     assert_eq!(
         settings.borrow().get_global_settings().0["packages"],
-        json!([shortcut])
+        json!([https])
     );
     assert!(manager.remove_source_from_settings(https, None).unwrap());
     assert_eq!(
         settings.borrow().get_global_settings().0["packages"],
         json!([])
     );
+}
+
+/// Matching entries replace their spelling while retaining object fields and exact no-ops.
+#[test]
+fn source_spelling_replacement_preserves_filters_and_exact_noops() {
+    for entry in [
+        json!("git:example.test/team/repo@old"),
+        json!({"source":"git:example.test/team/repo", "skills":[], "unknown":7}),
+    ] {
+        let (manager, settings, _) = support::manager(&json!({"packages":[entry]}));
+        let source = "https://example.test/team/repo";
+        assert!(manager.add_source_to_settings(source, None).unwrap());
+        let expected = if entry.is_object() {
+            json!({"source":source, "skills":[], "unknown":7})
+        } else {
+            json!(source)
+        };
+        assert_eq!(
+            settings.borrow().get_global_settings().0["packages"],
+            json!([expected])
+        );
+        assert!(!manager.add_source_to_settings(source, None).unwrap());
+    }
 }
 
 /// Package sources select a nonempty HOME on every platform, retaining literal user names.

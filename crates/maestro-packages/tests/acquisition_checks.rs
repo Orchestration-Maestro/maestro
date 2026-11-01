@@ -248,8 +248,8 @@ fn git_source_forms_choose_clone_target_and_checkout() {
     let fixture = Fixture::new(&json!({}));
     for (source, added) in [
         ("https://github.com/user/repo", true),
-        ("ssh://git@github.com/user/repo", false),
-        ("git:git@github.com:user/repo", false),
+        ("ssh://git@github.com/user/repo", true),
+        ("git:git@github.com:user/repo", true),
     ] {
         assert_eq!(
             fixture

@@ -163,7 +163,9 @@ assert_eq!(expand_prompt_template("/review src tests", &templates),
 ```
 
 Expansion selects the first exact name after a leading `/`, ending the name at
-the first whitespace scalar (space, tab, newline or any other). Argument parsing
+the first whitespace scalar (space, tab, newline or any other). The name must
+contain at least one non-whitespace character; `/` and `/ x` stay unchanged.
+Argument parsing
 removes single/double quote delimiters; only unquoted whitespace scalars separate
 arguments. Empty quoted fragments disappear and
 backslashes remain literal. Original `$1`, `$2`, `$ARGUMENTS`, `$@`, `${@:N}` and

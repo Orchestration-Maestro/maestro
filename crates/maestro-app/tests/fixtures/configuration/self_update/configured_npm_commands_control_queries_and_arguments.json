@@ -228,7 +228,7 @@
           "--ignore-scripts",
           "@new/maestro"
         ],
-        "display": "npm --prefix /opt/tool uninstall -g --ignore-scripts @old/agent && npm --prefix /opt/tool install -g --ignore-scripts @new/maestro",
+        "display": "npm --prefix /opt/tool uninstall -g @old/agent && npm --prefix /opt/tool install -g --ignore-scripts @new/maestro",
         "steps": [
           {
             "command": "npm",
@@ -237,10 +237,9 @@
               "/opt/tool",
               "uninstall",
               "-g",
-              "--ignore-scripts",
               "@old/agent"
             ],
-            "display": "npm --prefix /opt/tool uninstall -g --ignore-scripts @old/agent"
+            "display": "npm --prefix /opt/tool uninstall -g @old/agent"
           },
           {
             "command": "npm",

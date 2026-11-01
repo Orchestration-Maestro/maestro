@@ -19,17 +19,16 @@
           "--ignore-scripts",
           "@new/owned"
         ],
-        "display": "npm uninstall -g --ignore-scripts @old/owned && npm install -g --ignore-scripts @new/owned",
+        "display": "npm uninstall -g @old/owned && npm install -g --ignore-scripts @new/owned",
         "steps": [
           {
             "command": "npm",
             "args": [
               "uninstall",
               "-g",
-              "--ignore-scripts",
               "@old/owned"
             ],
-            "display": "npm uninstall -g --ignore-scripts @old/owned"
+            "display": "npm uninstall -g @old/owned"
           },
           {
             "command": "npm",
