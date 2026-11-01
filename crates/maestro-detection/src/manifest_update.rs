@@ -210,10 +210,15 @@ pub fn cached_remote_version(root: &Path, agent: Agent) -> Option<ManifestVersio
         .ok()
         .map(|parsed| parsed.version)
 }
-/// Publishes bytes using the shared durable replacement owner.
+/// Publishes synced temporary bytes with an atomic rename for unlocked readers.
 fn atomic_write(path: &Path, bytes: &[u8]) -> Result<(), String> {
-    let committed = maestro_lock::replace(path, bytes, maestro_lock::Replace::default())
-        .map_err(|error| error.to_string())?;
+    let committed = maestro_lock::atomic_replace(
+        path,
+        bytes,
+        maestro_lock::Symlinks::Replace,
+        maestro_lock::Temporary::Unique,
+    )
+    .map_err(|error| error.to_string())?;
     if let Some(error) = committed.dir_sync {
         tracing::warn!(path = %path.display(), error = %error, "agent detection manifest committed but parent directory sync failed");
     }
@@ -352,7 +357,7 @@ fn agent_outcome(
         },
     )
 }
-/// Saves status through the same recoverable byte publication owner as documents.
+/// Saves status through the same atomic publication owner as documents.
 fn save_status(root: &Path, status: &ManifestUpdateStatus) -> Result<(), String> {
     let content = toml::to_string_pretty(status).map_err(|error| error.to_string())?;
     atomic_write(&status_path(root), content.as_bytes())

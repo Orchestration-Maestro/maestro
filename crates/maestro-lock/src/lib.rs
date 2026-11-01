@@ -1,6 +1,8 @@
 //! File-write exclusion and durable byte publication.
 
+mod atomic;
 mod identity;
+pub use atomic::{Symlinks, Temporary, atomic_replace};
 mod recovery;
 mod replace;
 pub use identity::acquire_write;

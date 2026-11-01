@@ -312,14 +312,29 @@ fn failed_extraction_keeps_a_consistent_owner() {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn branch_publication_refuses_a_competing_file() {
+fn branch_publication_overwrites_a_competing_file() {
     let scratch = Scratch::new().unwrap();
-    let path = scratch.path().join("branch.jsonl");
-    let competing = b"{\"type\":\"session\",\"id\":\"competing\",\"version\":3}\n";
-    std::fs::write(&path, competing).unwrap();
-    let error = super::persistence::rewrite(path.to_str().unwrap(), &[]).unwrap_err();
-    assert_eq!(error.kind(), std::io::ErrorKind::AlreadyExists);
-    assert_eq!(std::fs::read(&path).unwrap(), competing);
+    let mut manager =
+        super::SessionManager::create("cwd", Some(scratch.path().to_str().unwrap()), "").unwrap();
+    let leaf = manager
+        .append_message(serde_json::json!({
+            "role": "assistant", "content": "retained", "timestamp": 1
+        }))
+        .unwrap();
+    BEFORE_BRANCH.set(Some(|path| {
+        std::fs::write(path, b"competing bytes").unwrap();
+    }));
+    let path = manager.create_branched_session(&leaf).unwrap().unwrap();
+    let records = super::parse_session_entries(&std::fs::read_to_string(&path).unwrap());
+    assert_eq!(records.len(), 2);
+    assert_eq!(records[1]["message"]["content"], "retained");
+    assert_eq!(manager.get_session_file(), Some(path.as_str()));
+}
+
+thread_local! {
+    /// One-shot concurrent publication at the branch writer boundary.
+    pub(super) static BEFORE_BRANCH: std::cell::RefCell<Option<fn(&str)>> =
+        std::cell::RefCell::new(None);
 }
 
 /// A readable source below a scratch root, forked into chosen directories.
