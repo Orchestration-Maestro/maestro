@@ -243,3 +243,71 @@ fn oauth_configuration(complete: bool) {
     drop(registration);
     assert!(!registry.has_configured_auth(&model).unwrap());
 }
+
+/// Credential rereads can update the selected descriptor without blocking.
+#[test]
+fn cloudflare_request_reread_releases_descriptor_guard() {
+    use maestro_credentials::{AuthStorage, InMemoryAuthStorageBackend};
+    use std::sync::RwLock;
+
+    let model = Arc::new(RwLock::new(
+        maestro_models::get_models("cloudflare-ai-gateway").remove(0),
+    ));
+    let storage = AuthStorage::from_storage(DescriptorReread {
+        model: model.clone(),
+        inner: InMemoryAuthStorageBackend::default(),
+    });
+    storage.set(
+        "cloudflare-ai-gateway",
+        serde_json::from_value(json!({
+            "type":"api_key", "key":"fixture-key",
+            "env":{"CLOUDFLARE_ACCOUNT_ID":"account","CLOUDFLARE_GATEWAY_ID":"gateway"},
+        }))
+        .unwrap(),
+    );
+    let registry =
+        maestro_catalog::ModelRegistry::in_memory(Arc::new(storage), support::forbidden()).unwrap();
+    model.write().unwrap().name = "before request".into();
+
+    let maestro_catalog::ResolvedRequestAuth::Ok {
+        api_key, base_url, ..
+    } = request_support::run(registry.get_api_key_and_headers(&model))
+    else {
+        panic!("expected resolved Cloudflare auth")
+    };
+    assert_eq!(api_key.as_deref(), Some("fixture-key"));
+    assert_eq!(
+        base_url.as_deref(),
+        Some("https://gateway.ai.cloudflare.com/v1/account/gateway/anthropic")
+    );
+    assert_eq!(model.read().unwrap().name, "reread");
+}
+
+/// A supplied credential backend that writes the selected descriptor on each reread.
+struct DescriptorReread {
+    /// Selected descriptor whose guards must not cross credential effects.
+    model: Arc<std::sync::RwLock<maestro_models::Model>>,
+    /// Existing raw-text memory owner.
+    inner: maestro_credentials::InMemoryAuthStorageBackend,
+}
+
+impl maestro_credentials::AuthStorageBackend for DescriptorReread {
+    fn with_lock(
+        &self,
+        update: &mut dyn FnMut(Option<&str>) -> maestro_credentials::LockUpdate,
+    ) -> Result<(), maestro_credentials::AuthStorageError> {
+        self.model
+            .try_write()
+            .expect("descriptor guard retained across credential reread")
+            .name = "reread".into();
+        self.inner.with_lock(update)
+    }
+
+    fn with_lock_async<'a>(
+        &'a self,
+        update: maestro_credentials::AsyncLockUpdate<'a>,
+    ) -> maestro_credentials::AuthStorageFuture<'a, Result<(), maestro_credentials::AuthStorageError>>
+    {
+        self.inner.with_lock_async(update)
+    }
+}

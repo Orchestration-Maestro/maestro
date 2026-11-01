@@ -75,3 +75,46 @@ fn messages_force_adaptive_thinking_uses_effort_without_a_budget() -> TestResult
         Ok(())
     })
 }
+
+#[cfg(not(target_arch = "wasm32"))]
+/// Recognized model identifiers do not override absent or false adaptive metadata.
+#[test]
+fn messages_adaptive_thinking_requires_explicit_metadata() -> TestResult {
+    use maestro_models::{SimpleStreamOptions, StreamOptions, ThinkingLevel, stream_simple};
+    use serde_json::{Value, json};
+
+    crate::runtime::run(async {
+        for compat in [Value::Null, json!({"forceAdaptiveThinking": false})] {
+            let requests = crate::messages::Requests::default();
+            let model = crate::messages::model(&json!({
+                "id": "claude-opus-4-6", "compat": compat,
+            }))?;
+            let stream = stream_simple(
+                model,
+                crate::messages::context(&Value::Null)?,
+                Some(SimpleStreamOptions {
+                    common: StreamOptions {
+                        api_key: Some("fixture-key".into()),
+                        fetch: Some(crate::messages::scripted_fetch(
+                            &crate::messages::Case::default(),
+                            &requests,
+                        )),
+                        ..StreamOptions::default()
+                    },
+                    reasoning: Some(ThinkingLevel::High),
+                    ..SimpleStreamOptions::default()
+                }),
+            )?;
+            crate::messages::collect(&stream).await?;
+            let requests = requests.lock().unwrap();
+            assert_eq!(requests[0]["body"]["thinking"]["type"], "enabled");
+            assert!(requests[0]["body"]["thinking"]["budget_tokens"].is_number());
+            assert_eq!(requests[0]["body"]["output_config"], Value::Null);
+            assert_eq!(
+                requests[0]["headers"]["anthropic-beta"],
+                "interleaved-thinking-2025-05-14"
+            );
+        }
+        Ok(())
+    })
+}
