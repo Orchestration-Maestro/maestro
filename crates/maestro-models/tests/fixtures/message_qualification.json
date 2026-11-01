@@ -7777,7 +7777,8 @@
         "contextWindow": 1000000,
         "maxTokens": 32000,
         "compat": {
-          "supportsEagerToolInputStreaming": true
+          "supportsEagerToolInputStreaming": true,
+          "forceAdaptiveThinking": true
         }
       },
       "context": {
@@ -15192,7 +15193,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -15412,7 +15416,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -15624,7 +15631,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -15846,7 +15856,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -17821,7 +17834,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -18016,7 +18032,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -18208,7 +18227,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -18404,7 +18426,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -18601,7 +18626,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -18796,7 +18824,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -18988,7 +19019,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -19184,7 +19218,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -19381,7 +19418,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -19581,7 +19621,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -19781,7 +19824,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -19981,7 +20027,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -20181,7 +20230,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -20381,7 +20433,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -20581,7 +20636,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -20781,7 +20839,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -20981,7 +21042,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -21181,7 +21245,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -21381,7 +21448,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -21583,7 +21653,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -21785,7 +21858,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "systemPrompt": "You are a precise assistant. Follow the user's instructions exactly.",
@@ -22054,7 +22130,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "systemPrompt": "You are a precise assistant. Follow the user's instructions exactly.",
@@ -22323,7 +22402,10 @@
           "cacheWrite": 6.25
         },
         "contextWindow": 1000000,
-        "maxTokens": 128000
+        "maxTokens": 128000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "systemPrompt": "You are a precise assistant. Follow the user's instructions exactly.",
@@ -23005,7 +23087,10 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -23259,7 +23344,10 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -23513,7 +23601,10 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -23767,7 +23858,10 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -24021,7 +24115,10 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -24275,7 +24372,10 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -24529,7 +24629,10 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -24783,7 +24886,10 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -25037,7 +25143,10 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -25291,7 +25400,10 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -25545,7 +25657,10 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -25799,7 +25914,10 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -26179,7 +26297,10 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -26464,7 +26585,10 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -26706,7 +26830,10 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -26948,7 +27075,10 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "messages": [
@@ -29146,6 +29276,9 @@
           "Editor-Version": "vscode/1.107.0",
           "Editor-Plugin-Version": "copilot-chat/0.35.0",
           "Copilot-Integration-Id": "vscode-chat"
+        },
+        "compat": {
+          "forceAdaptiveThinking": true
         }
       },
       "context": {
@@ -29354,6 +29487,9 @@
           "Editor-Version": "vscode/1.107.0",
           "Editor-Plugin-Version": "copilot-chat/0.35.0",
           "Copilot-Integration-Id": "vscode-chat"
+        },
+        "compat": {
+          "forceAdaptiveThinking": true
         }
       },
       "context": {
@@ -29563,6 +29699,9 @@
           "Editor-Version": "vscode/1.107.0",
           "Editor-Plugin-Version": "copilot-chat/0.35.0",
           "Copilot-Integration-Id": "vscode-chat"
+        },
+        "compat": {
+          "forceAdaptiveThinking": true
         }
       },
       "context": {
@@ -29772,6 +29911,9 @@
           "Editor-Version": "vscode/1.107.0",
           "Editor-Plugin-Version": "copilot-chat/0.35.0",
           "Copilot-Integration-Id": "vscode-chat"
+        },
+        "compat": {
+          "forceAdaptiveThinking": true
         }
       },
       "context": {
@@ -29982,6 +30124,9 @@
           "Editor-Version": "vscode/1.107.0",
           "Editor-Plugin-Version": "copilot-chat/0.35.0",
           "Copilot-Integration-Id": "vscode-chat"
+        },
+        "compat": {
+          "forceAdaptiveThinking": true
         }
       },
       "context": {
@@ -30191,6 +30336,9 @@
           "Editor-Version": "vscode/1.107.0",
           "Editor-Plugin-Version": "copilot-chat/0.35.0",
           "Copilot-Integration-Id": "vscode-chat"
+        },
+        "compat": {
+          "forceAdaptiveThinking": true
         }
       },
       "context": {
