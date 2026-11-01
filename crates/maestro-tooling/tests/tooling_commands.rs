@@ -3770,10 +3770,22 @@ fn cache_normalization_reads_the_pinned_cargo_builds() {
 /// consumers of a library with one share the example's time.
 #[test]
 fn cache_normalization_skips_build_scripts_named_after_their_file() {
+    use std::time::{Duration, UNIX_EPOCH};
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let root = scratch.path();
     cache_fixture(root);
     let profile = root.join("target/debug");
+    age_cache_outputs(&profile);
+    let example = profile.join("examples").join(format!(
+        "prepare_author_component{}",
+        std::env::consts::EXE_SUFFIX
+    ));
+    fs::File::options()
+        .write(true)
+        .open(example)
+        .unwrap()
+        .set_modified(UNIX_EPOCH + Duration::from_secs(200))
+        .unwrap();
 
     let result = Command::new(env!("CARGO_BIN_EXE_development"))
         .args(["nextest-setup", "normalize-component-cache"])
