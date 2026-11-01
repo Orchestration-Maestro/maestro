@@ -1137,3 +1137,45 @@ fn session_tool_services_survive_resource_reload() {
         assert_eq!(*seen.borrow(), 2);
     });
 }
+
+#[test]
+fn cloudflare_session_request_uses_resolved_endpoint_without_mutating_selection() {
+    on_task_set(|_| async {
+        let h = fixture(Auth::Key).await;
+        h.registry.auth_storage().set("cloudflare-ai-gateway", serde_json::from_value(json!({
+            "type":"api_key", "key":"controlled", "env":{"CLOUDFLARE_ACCOUNT_ID":"account", "CLOUDFLARE_GATEWAY_ID":"gateway"},
+        })).unwrap());
+        let mut descriptor = h.model("faux-1").read().unwrap().clone();
+        descriptor.provider = "cloudflare-ai-gateway".into();
+        descriptor.base_url =
+            "https://custom.invalid/{CLOUDFLARE_ACCOUNT_ID}/{CLOUDFLARE_GATEWAY_ID}".into();
+        let selected = Arc::new(std::sync::RwLock::new(descriptor));
+        let mut options = options(&h, json!({}));
+        options.model = Some(selected.clone());
+        let created = create(options).await;
+        let observed = Arc::new(Mutex::new(Value::Null));
+        let captured = Arc::clone(&observed);
+        observe_next(&h, move |input| {
+            *captured.lock().unwrap() = json!({
+                "model": input.model.base_url,
+                "endpoint": common(input).base_url,
+                "key": common(input).api_key,
+            });
+        });
+        created
+            .session
+            .prompt("hi", PromptOptions::default())
+            .await
+            .unwrap();
+        assert_eq!(
+            *observed.lock().unwrap(),
+            json!({
+                "model":"https://custom.invalid/account/gateway", "endpoint":"https://custom.invalid/account/gateway", "key":"controlled",
+            })
+        );
+        assert_eq!(
+            selected.read().unwrap().base_url,
+            "https://custom.invalid/{CLOUDFLARE_ACCOUNT_ID}/{CLOUDFLARE_GATEWAY_ID}"
+        );
+    });
+}
