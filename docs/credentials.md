@@ -14,24 +14,29 @@ source names; it is not the stored-file writer, which stays with `AuthStorage`.
 
 ## Stored credentials
 
-`AuthStorage` accepts the stored records when it is created, on `reload` and when a
-locked refresh rereads the document, adopting a newer one; other reads and changes use
-that accepted snapshot. Missing or empty
-stored text is an empty store. Text that is not a JSON object, or cannot be read,
+`AuthStorage` accepts the stored records when it is created, on `reload`, before each
+`get`, `get_all`, `list`, `has_auth`, `get_auth_status` and `get_api_key`, and when a
+locked refresh rereads the document, adopting a newer one, so a long-lived storage sees
+what another process wrote and a request uses the key stored now. A read whose document
+is unchanged keeps the accepted records, and one that cannot read or parse the document
+keeps them too, recording nothing; `has` answers from that accepted snapshot. Missing or
+empty stored text is an empty store. Text that is not a JSON object, or cannot be read,
 locked or parsed, is a load failure: the accepted records are kept, the failure
 is recorded for `drain_errors` (oldest first), and `set`/`remove` change only
-accepted memory until a `reload` or a locked refresh reread succeeds. Construction never fails.
+accepted memory until a `reload`, a locked refresh reread or a read that adopts a changed
+document succeeds. Construction never fails.
 
 `set` and `remove` change accepted memory first, then reread the stored text under
 the backend's exclusion and change only that provider in it; records other writers
-added stay in the file and are not imported into memory. A persistence failure is
-recorded and nothing is rolled back. `logout` removes the stored record only.
+added stay in the file, and a successful write accepts the document it wrote. A
+persistence failure is recorded and nothing is rolled back; the change stays in accepted
+memory until the stored text changes. `logout` removes the stored record only.
 
 Text this owner writes is two-space JSON without a trailing newline; reloading
 existing text never rewrites it. Accepted records keep their order: a replaced
 record keeps its position, a new one is appended, and `list` and `get_all` follow
 it. A `set` or `remove` rewrite keeps the order of the freshly reread file, which another
-writer may have changed; a refresh accepts the order of the file it rereads. `get` and `get_all` return
+writer may have changed, and the order of every reread follows the file. `get` and `get_all` return
 typed copies of complete `api_key` and `oauth` objects only; `list` and `has` cover
 every stored record, whatever its shape, and rewrites keep records that do not
 decode. Expiry times of typed credentials you supply are written without a fraction when
@@ -120,9 +125,11 @@ and the lock is released after every outcome. File bytes are read as
 lossy UTF-8. The asynchronous operation `with_lock_async` instead tries the lock
 immediately and after waits of 100, 200, 400, 800, 1600, 3200, 6400 and then three of
 10000 ms (11 attempts, 42,700 ms), returning the lock-held error when the last attempt
-also finds it taken; other lock errors return at once. `InMemoryAuthStorageBackend` runs each callback on an owned copy of
-the text with nothing held, so callbacks may reenter it and the last write wins; this
-holds for the asynchronous operation too.
+also finds it taken; other lock errors return at once. `InMemoryAuthStorageBackend` runs a synchronous callback on an owned copy of the
+text with nothing held, so it may reenter the backend and the last write wins. The
+asynchronous operation `with_lock_async` runs callbacks one at a time: each reads
+the text the previous one stored, so two providers changed at once both stay. An
+awaited callback must not reenter `with_lock_async`.
 `AuthStorage::from_storage` accepts either, or any `AuthStorageBackend`.
 
 ## Configured values

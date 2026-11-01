@@ -3,6 +3,9 @@ use std::path::{Path, PathBuf};
 use cargo_metadata::Metadata;
 use ra_ap_rustc_lexer::{FrontmatterAllowed, TokenKind};
 
+/// Flattened Rust import trees.
+pub(crate) mod imports;
+
 /// Loaded workspace member with its Rust sources.
 pub(crate) struct Member {
     /// Cargo package name used in ownership diagnostics.

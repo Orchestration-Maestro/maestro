@@ -28,22 +28,27 @@ pub struct ConfigEnvironment {
 impl ConfigEnvironment {
     /// Git's user-level files for the supplied `XDG_CONFIG_HOME` and home directory.
     ///
-    /// The XDG file comes from `XDG_CONFIG_HOME` when it is set, else from `~/.config`;
+    /// The XDG file comes from nonempty `XDG_CONFIG_HOME`, else from `~/.config`;
     /// `~/.gitconfig` follows it and takes precedence.
     #[must_use]
     pub fn from_variables(xdg_config_home: Option<&Path>, home: Option<&Path>) -> Self {
         let xdg = xdg_config_home
-            .map(Path::to_path_buf)
-            .or_else(|| home.map(|home| home.join(".config")))
-            .map(|directory| directory.join("git/config"));
+            .filter(|path| !path.as_os_str().is_empty())
+            .map(|directory| directory.join("git/config"))
+            .or_else(|| expand_home("~/.config/git/config", home));
         Self {
             user_files: xdg
                 .into_iter()
-                .chain(home.map(|home| home.join(".gitconfig")))
+                .chain(expand_home("~/.gitconfig", home))
                 .collect(),
             home: home.map(Path::to_path_buf),
         }
     }
+}
+
+/// Expand a leading tilde without an account fallback, preserving native home bytes.
+fn expand_home(value: &str, home: Option<&Path>) -> Option<PathBuf> {
+    maestro_path::expand_tilde_native(value, || home.map(Path::to_path_buf).ok_or(())).ok()
 }
 
 /// The remote and merge reference a branch tracks, with the fetch refspecs that map them.

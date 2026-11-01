@@ -85,8 +85,28 @@ pub fn native_home_directory() -> Option<PathBuf> {
 /// Returns a not-found error when the host knows no home directory, or an invalid-data one
 /// when the home directory is not valid UTF-8.
 pub fn home_directory() -> io::Result<String> {
-    native_home_directory()
-        .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "home directory is unknown"))?
+    home_directory_text(native_home_directory())
+}
+
+/// The package home: a nonempty `HOME` on any platform, otherwise the native home.
+///
+/// The native fallback preserves an empty Unix `HOME`; other resource callers keep
+/// the rule of [`home_directory`].
+///
+/// # Errors
+/// Returns a not-found error for an unknown home, or invalid-data for non-UTF-8 bytes.
+pub fn package_home_directory() -> io::Result<String> {
+    home_directory_text(
+        std::env::var_os("HOME")
+            .filter(|value| !value.is_empty())
+            .map(PathBuf::from)
+            .or_else(native_home_directory),
+    )
+}
+
+/// Convert one observed native home with the resource path boundary's diagnostics.
+fn home_directory_text(home: Option<PathBuf>) -> io::Result<String> {
+    home.ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "home directory is unknown"))?
         .into_os_string()
         .into_string()
         .map_err(|_| {

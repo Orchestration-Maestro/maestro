@@ -60,7 +60,9 @@ mod prepare;
 pub use prepare::prepare_compaction;
 mod generation;
 mod prompts;
-pub use generation::{SummaryOptions, compact, generate_summary};
+pub use generation::{
+    GeneratedSummary, SummaryOptions, compact, generate_summary, generate_summary_with_usage,
+};
 pub use maestro_entry::compaction::CompactionResult;
 
 mod branch_summarization;
