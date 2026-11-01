@@ -131,6 +131,7 @@ fn find_windows_results_keep_drive_context_and_directory_suffix() {
         op: "custom".into(),
         input: serde_json::json!({"cwd":"C:\\work", "results":["C:/work/sub/"]}),
         expected: serde_json::Value::Null,
+        expected_macos: None,
     };
     assert_eq!(
         find_support::custom(&case)["result"]["content"][0]["text"],
