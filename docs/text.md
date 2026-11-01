@@ -94,9 +94,10 @@ root date with a twenty-four-hour clock.
 
 Committed data derives from CLDR JSON 48.2.0, under Unicode-3.0. The
 [asset notes](../crates/maestro-text/data/date-time/README.md) document the schema,
-pinned archive hashes, runtime used for offline pattern selection, licence,
-and regeneration/check commands. Ordinary builds need neither Node nor network
-access. Output follows that pinned data version; other platform releases can
+pinned archive hashes, recorded pattern choices, licence, and the Rust
+regeneration/check commands. The generator verifies the recorded JSON inputs
+before writing any asset. Builds and data generation need neither Node nor
+network access. Output follows that pinned data version; other platform releases can
 choose different defaults. Arbitrary locale extensions and combinations outside
 the measured regional closure are not a claim of full platform equivalence.
 

@@ -12,23 +12,43 @@ Tokens are `%y` (year), `%M` (month), `%d` (day), `%H` (hour), `%m` (minute),
 `hours.tsv` holds CLDR territory hour-cycle preferences. `calendars.tsv` lists
 territories whose first calendar preference is not Gregorian.
 
-The generator verifies SHA-256 hashes for five CLDR 48.2.0 npm archives.
-Download each from
-`https://registry.npmjs.org/<package>/-/<package>-48.2.0.tgz`, using the package
-names and hashes in `tools/generate-date-time.py`. Then run:
+## Regenerate the tables
+
+Run the Rust development command from the repository root:
 
 ```sh
-python3 tools/generate-date-time.py --archives /path/to/archives
-python3 tools/generate-date-time.py --archives /path/to/archives --check
+cargo run --locked -p maestro-tooling --bin development -- date-time-data
+cargo run --locked -p maestro-tooling --bin development -- date-time-data --check
 ```
 
-Generation requires Node 24.20.0 with ICU 78.3 and CLDR 48.0. The package version
-and runtime CLDR version are recorded separately: the archives supply the locale
-domain and preferences; the runtime selects numeric patterns, widths, default
-calendars, and final literals. Each locale is observed in a fresh process as its
-environment default, not as an explicit locale argument. The generator reconciles
-nonbreaking spaces from `formatToParts` only when `format` uses ordinary spaces.
-Morning and evening parts are reconciled independently. It retains directional marks. It does not request explicit calendar overrides,
+Both commands use only the committed `inputs/` directory. Generation requires
+neither Node nor archive extraction nor network access. Check mode reports stale
+assets without writing them. Every input is verified before generation writes
+any asset; a missing file or SHA-256 mismatch stops the command.
+
+`inputs/manifest.json` records the SHA-256 of each input, the five source archive
+hashes, and the runtime versions. The Rust command pins the manifest's own hash,
+so changing an input and its manifest together still fails verification. To
+replace the recorded data deliberately, update the inputs, their manifest and
+the manifest hash in `maestro-tooling::date_time_data` together.
+
+## Recorded inputs
+
+The recording verified five CLDR JSON 48.2.0 npm archives from
+`https://registry.npmjs.org/<package>/-/<package>-48.2.0.tgz` against the hashes
+in the manifest. Only `timeData.json`, `calendarPreferenceData.json` and the
+licence are extracted from the core archive. `source-locales.json` records the
+766 Gregorian locale directory names from the dates archive. The number,
+Buddhist and Persian archives were verified; their contents are not needed by
+the fixed-profile generator.
+
+`oracle.json` records numeric patterns, widths, default calendars and final
+literals selected once with Node 24.20.0, ICU 78.3 and runtime CLDR 48.0. The
+archive and runtime CLDR versions are distinct. Each locale was observed in a
+fresh process as its environment default, rather than as an explicit locale
+argument. The recording reconciles nonbreaking spaces from `formatToParts`
+only when `format` uses ordinary spaces, independently for morning and evening.
+It preserves directional marks and requests no explicit calendar overrides,
 which can add an era absent from the default output.
 
 The index includes the 766 source locales and their US, FR, IR, and TH region
@@ -42,4 +62,5 @@ Its notice reads: © 2016 and later: Unicode, Inc. and others;
 Copyright (C) 2003–2013, International Business Machines Corporation and others.
 All Rights Reserved. The Unicode licence beside these assets covers the translation.
 
-Ordinary builds and runtime formatting neither download archives nor start Node.
+Ordinary builds, data generation and runtime formatting neither download archives
+nor start Node.
