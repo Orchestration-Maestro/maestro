@@ -9,7 +9,7 @@
     clippy::excessive_nesting
 )]
 use maestro_extensions_wasm::{
-    CommandOptions, Component, ComponentDisposer, ComponentView, CustomFactory,
+    CommandOptions, Component, ComponentDisposer, ComponentView, CustomDone, CustomFactory,
     CustomFactoryOutcome, CustomUIOptions, ExtensionAPI, ExtensionCommandContext,
     ExtensionComponent, ExtensionFuture, ExtensionResult, NotificationType, OverlayAnchor,
     OverlayHandleCallback, OverlayMargin, OverlayMarginValue, OverlayOptions, OverlayOptionsHandle,
@@ -264,42 +264,79 @@ async fn percent(api: ExtensionAPI, ctx: ExtensionCommandContext) -> ExtensionRe
     .await
 }
 
-/// Shows three overlapping overlays 400 ms apart and reports the order they closed in.
+/// One stacked layer: its number, its position and its horizontal and vertical offsets.
+type Layer = (u64, &'static str, i64, i64);
+
+/// The layers `/overlay-stack` shows, back to front.
+const LAYERS: [Layer; 3] = [
+    (1, "back, red border", -8, -4),
+    (2, "middle, green border", 0, 0),
+    (3, "front, blue border", 8, 4),
+];
+
+/// Shows three overlapping overlays, each 400 ms after the one below it, and reports the order
+/// they closed in.
 async fn stack(api: ExtensionAPI, ctx: ExtensionCommandContext) -> ExtensionResult<()> {
     let closed = Rc::new(RefCell::new(Vec::new()));
-    let layers = [
-        (1, "back, red border", -8, -4),
-        (2, "middle, green border", 0, 0),
-        (3, "front, blue border", 8, 4),
-    ];
-    let tasks = layers.map(|(number, position, x, y)| {
-        let (api, ctx, closed) = (api.clone(), ctx.clone(), closed.clone());
-        Box::pin(async move {
-            let delay = Duration::from_millis(400 * (number - 1));
-            if !delay.is_zero() {
-                api.native_io().sleep(delay, None).await?;
-            }
-            let order = ["back", "middle", "front"][usize::try_from(number - 1).unwrap_or(0)];
-            let message = format!("Layer {number} of 3 ({order}) shown");
-            ctx.ui()?.notify(&message, Some(NotificationType::Info))?;
-            let options = OverlayOptions {
-                offset_x: Some(x),
-                offset_y: Some(y),
-                max_height: Some(SizeValue::Cells(15)),
-                ..placement(Some(OverlayAnchor::Center), 50)
-            };
-            let view = dialogs::layer(&api, number, position);
-            if let Some(name) =
-                overlay(&ctx, OverlayOptionsHandle::new(options)?, None, view).await?
-            {
-                closed.borrow_mut().push(name);
-            }
-            Ok(())
-        }) as ExtensionFuture<'static, ()>
-    });
-    join_all(tasks.into()).await?;
+    let [back, above @ ..] = &LAYERS;
+    stack_from(api, ctx.clone(), closed.clone(), (*back, above)).await?;
     let message = format!("Close order: {}", closed.borrow().join(", "));
     ctx.ui()?.notify(&message, Some(NotificationType::Info))
+}
+
+/// Shows `layer` and, 400 ms after asking for it, the layers `above` it, recording the order
+/// they close in.
+fn stack_from(
+    api: ExtensionAPI,
+    ctx: ExtensionCommandContext,
+    closed: Rc<RefCell<Vec<String>>>,
+    (layer, above): (Layer, &'static [Layer]),
+) -> ExtensionFuture<'static, ()> {
+    let mut tasks = vec![stack_layer(api.clone(), ctx.clone(), closed.clone(), layer)];
+    if let Some((&next, above)) = above.split_first() {
+        tasks.push(Box::pin(async move {
+            api.native_io()
+                .sleep(Duration::from_millis(400), None)
+                .await?;
+            stack_from(api, ctx, closed, (next, above)).await
+        }));
+    }
+    Box::pin(join_all(tasks))
+}
+
+/// Shows one stacked layer and records its name as it closes.
+///
+/// The name is recorded when `done` closes the layer, not when the command next polls the view,
+/// so layers that close between two polls keep the order they closed in.
+fn stack_layer(
+    api: ExtensionAPI,
+    ctx: ExtensionCommandContext,
+    closed: Rc<RefCell<Vec<String>>>,
+    (number, position, x, y): Layer,
+) -> ExtensionFuture<'static, ()> {
+    Box::pin(async move {
+        let order = ["back", "middle", "front"][usize::try_from(number - 1).unwrap_or(0)];
+        let message = format!("Layer {number} of 3 ({order}) shown");
+        ctx.ui()?.notify(&message, Some(NotificationType::Info))?;
+        let options = OverlayOptions {
+            offset_x: Some(x),
+            offset_y: Some(y),
+            max_height: Some(SizeValue::Cells(15)),
+            ..placement(Some(OverlayAnchor::Center), 50)
+        };
+        let layer = dialogs::layer(&api, number, position);
+        let view: CustomFactory<String> = Rc::new(move |tui, theme, keys, done, emitter| {
+            let closed = closed.clone();
+            let done: CustomDone<String> = Rc::new(move |name: String| {
+                done(name.clone())?;
+                closed.borrow_mut().push(name);
+                Ok(())
+            });
+            layer(tui, theme, keys, done, emitter)
+        });
+        overlay(&ctx, OverlayOptionsHandle::new(options)?, None, view).await?;
+        Ok(())
+    })
 }
 
 /// Places a notice against the right edge of the terminal.
