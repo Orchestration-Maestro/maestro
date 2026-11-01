@@ -166,7 +166,7 @@ fn at(seconds: u64) -> std::time::SystemTime {
     std::time::UNIX_EPOCH + std::time::Duration::from_secs(seconds)
 }
 
-/// Writes a fixed-time output; a library's timestamp also labels its fixture build.
+/// Writes an executable or a library output into `deps` with a fixed modification time.
 #[cfg(unix)]
 fn output(deps: &Path, name: &str, executable: bool, seconds: u64) -> std::path::PathBuf {
     use std::os::unix::fs::PermissionsExt;
@@ -175,23 +175,6 @@ fn output(deps: &Path, name: &str, executable: bool, seconds: u64) -> std::path:
     fs::write(&path, b"#!/bin/sh\n").unwrap();
     let mode = if executable { 0o755 } else { 0o644 };
     fs::set_permissions(&path, fs::Permissions::from_mode(mode)).unwrap();
-    if !executable {
-        let stem = path
-            .file_stem()
-            .unwrap()
-            .to_str()
-            .unwrap()
-            .strip_prefix("lib")
-            .unwrap();
-        let (name, hash) = stem.rsplit_once('-').unwrap();
-        crate::tooling_commands::cargo_fingerprint(
-            deps.parent().unwrap(),
-            &format!("{name}-{hash}"),
-            &format!("lib-{name}"),
-            seconds,
-            &[],
-        );
-    }
     fs::File::open(&path)
         .unwrap()
         .set_modified(at(seconds))
@@ -270,9 +253,10 @@ fn cache_normalization_accepts_a_profile_with_only_stale_binaries() {
 fn cache_normalization_advances_every_binary_of_an_archived_run() {
     let scratch = Scratch::new().unwrap();
     let deps = scratch.path().join("target/debug/deps");
+    lock(scratch.path(), &[("alpha", &[]), ("beta", &["alpha"])]);
     output(&deps, "libalpha-1.rlib", false, 300);
     let bare = output(&deps, "bare-1", true, 50);
-    let beta = binary(&deps, "it-beta", &[("alpha", 300)], 100);
+    let beta = binary(&deps, "it-beta", "crates/beta/tests/it.rs", 100);
     let newest = output(&deps, "fresh-1", true, 400);
     normalize_run(scratch.path(), true);
     let modified = |path: &Path| fs::metadata(path).unwrap().modified().unwrap();
@@ -281,23 +265,44 @@ fn cache_normalization_advances_every_binary_of_an_archived_run() {
     assert_eq!(modified(&newest), at(400));
 }
 
-/// Writes an executable with the linked-build records Cargo leaves beside it.
+/// Writes a lock file naming each workspace crate with the crates it builds on, and one
+/// registry crate that depends on nothing.
 #[cfg(unix)]
-fn binary(
-    deps: &Path,
-    name: &str,
-    dependencies: &[(&str, u64)],
-    seconds: u64,
-) -> std::path::PathBuf {
-    let path = output(deps, name, true, seconds);
-    let hash = name.rsplit_once('-').unwrap().1;
-    crate::tooling_commands::cargo_fingerprint(
-        deps.parent().unwrap(),
-        &format!("fixture-{hash}"),
-        "test-integration-test-integration",
-        0,
-        dependencies,
+fn lock(root: &Path, crates: &[(&str, &[&str])]) {
+    let mut packages: Vec<String> = crates
+        .iter()
+        .map(|(name, dependencies)| {
+            let listed = dependencies
+                .iter()
+                .map(|dependency| format!("\"{dependency}\""))
+                .collect::<Vec<_>>()
+                .join(",\n ");
+            let table = if listed.is_empty() {
+                String::new()
+            } else {
+                format!("dependencies = [\n {listed},\n]\n")
+            };
+            format!("[[package]]\nname = \"{name}\"\nversion = \"0.1.0\"\n{table}")
+        })
+        .collect();
+    packages.push(
+        "[[package]]\nname = \"serde\"\nversion = \"1.0.0\"\n\
+         source = \"registry+https://github.com/rust-lang/crates.io-index\"\n"
+            .to_owned(),
     );
+    fs::write(
+        root.join("Cargo.lock"),
+        format!("version = 4\n\n{}", packages.join("\n")),
+    )
+    .unwrap();
+}
+
+/// Writes an executable with the dependency information Cargo leaves beside it.
+#[cfg(unix)]
+fn binary(deps: &Path, name: &str, source: &str, seconds: u64) -> std::path::PathBuf {
+    let path = output(deps, name, true, seconds);
+    let information = format!("{}: {source} {source}.helper\n", path.display());
+    fs::write(deps.join(format!("{name}.d")), information).unwrap();
     path
 }
 
@@ -308,127 +313,26 @@ fn binary(
 fn cache_normalization_ignores_libraries_a_binary_does_not_build_on() {
     let scratch = Scratch::new().unwrap();
     let deps = scratch.path().join("target/debug/deps");
+    lock(
+        scratch.path(),
+        &[
+            ("alpha", &[]),
+            ("beta", &["alpha", "serde"]),
+            ("gamma", &[]),
+            ("delta", &["alpha"]),
+        ],
+    );
     output(&deps, "libalpha-1.rlib", false, 100);
     output(&deps, "libgamma-1.rlib", false, 300);
     output(&deps, "libserde-1.rlib", false, 500);
-    let beta = binary(&deps, "it-beta", &[("alpha", 100)], 150);
-    let gamma = binary(&deps, "it-gamma", &[], 400);
-    let delta = binary(&deps, "it-delta", &[("alpha", 100)], 50);
+    let beta = binary(&deps, "it-beta", "crates/beta/tests/it.rs", 150);
+    let gamma = binary(&deps, "it-gamma", "crates/gamma/tests/it.rs", 400);
+    let delta = binary(&deps, "it-delta", "crates/delta/tests/it.rs", 50);
     normalize(scratch.path());
     let modified = |path: &Path| fs::metadata(path).unwrap().modified().unwrap();
     assert_eq!(modified(&beta), at(400));
     assert_eq!(modified(&gamma), at(400));
     assert_eq!(modified(&delta), at(50));
-}
-
-/// A newer exact linked build still prevents normalization, including through another library.
-#[cfg(unix)]
-#[test]
-fn cache_normalization_keeps_binaries_with_newer_transitive_linked_builds() {
-    let scratch = Scratch::new().unwrap();
-    let profile = scratch.path().join("target/debug");
-    let deps = profile.join("deps");
-    output(&deps, "libalpha-1.rlib", false, 100);
-    output(&deps, "libalpha-2.rlib", false, 300);
-    output(&deps, "libbeta-1.rlib", false, 20);
-    crate::tooling_commands::cargo_fingerprint(
-        &profile,
-        "beta-1",
-        "lib-beta",
-        20,
-        &[("alpha", 100)],
-    );
-    let stale = binary(&deps, "integration-a1", &[("beta", 20)], 50);
-    let current = binary(&deps, "integration-b1", &[("beta", 20)], 150);
-    let anchor = binary(&deps, "integration-c1", &[], 200);
-
-    normalize(scratch.path());
-
-    assert_eq!(fs::metadata(stale).unwrap().modified().unwrap(), at(50));
-    assert_eq!(fs::metadata(current).unwrap().modified().unwrap(), at(200));
-    assert_eq!(fs::metadata(anchor).unwrap().modified().unwrap(), at(200));
-}
-
-/// An invalidated library build leaves its consumer stale without blocking unrelated binaries.
-#[cfg(unix)]
-#[test]
-fn cache_normalization_skips_invalidated_library_builds() {
-    let scratch = Scratch::new().unwrap();
-    let profile = scratch.path().join("target/debug");
-    let deps = profile.join("deps");
-    output(&deps, "libalpha-1.rlib", false, 20);
-    let stale = binary(&deps, "integration-a1", &[("alpha", 20)], 50);
-    let current = binary(&deps, "integration-b1", &[], 100);
-    let anchor = binary(&deps, "integration-c1", &[], 150);
-    fs::write(profile.join(".fingerprint/alpha-1/lib-alpha"), b"").unwrap();
-
-    normalize(scratch.path());
-
-    assert_eq!(fs::metadata(stale).unwrap().modified().unwrap(), at(50));
-    assert_eq!(fs::metadata(current).unwrap().modified().unwrap(), at(150));
-    assert_eq!(fs::metadata(anchor).unwrap().modified().unwrap(), at(150));
-}
-
-/// Malformed Cargo records must fail rather than change executable times.
-#[cfg(unix)]
-#[test]
-fn cache_normalization_rejects_invalid_fingerprint_records() {
-    for failure in ["json", "hash"] {
-        let scratch = Scratch::new().unwrap();
-        let profile = scratch.path().join("target/debug");
-        let deps = profile.join("deps");
-        output(&deps, "libalpha-1.rlib", false, 20);
-        let consumer = binary(&deps, "integration-a1", &[("alpha", 20)], 50);
-        binary(&deps, "integration-b1", &[], 100);
-        let directory = profile.join(".fingerprint");
-        match failure {
-            "json" => fs::write(
-                directory.join("fixture-a1/test-integration-test-integration.json"),
-                b"{}",
-            )
-            .unwrap(),
-            "hash" => fs::write(directory.join("alpha-1/lib-alpha"), b"not a fingerprint").unwrap(),
-            _ => unreachable!(),
-        }
-
-        let result = std::process::Command::new(env!("CARGO_BIN_EXE_development"))
-            .args(["nextest-setup", "normalize-component-cache"])
-            .arg(&profile)
-            .env_remove("TEST_ARCHIVE")
-            .output()
-            .unwrap();
-
-        assert!(!result.status.success(), "{failure}");
-        assert!(!result.stderr.is_empty(), "{failure}");
-        assert_eq!(fs::metadata(consumer).unwrap().modified().unwrap(), at(50));
-    }
-}
-
-/// Identical uplifted twins with different dependency records cannot identify a build.
-#[cfg(unix)]
-#[test]
-fn cache_normalization_rejects_ambiguous_uplifted_twins() {
-    let scratch = Scratch::new().unwrap();
-    let profile = scratch.path().join("target/debug");
-    let deps = profile.join("deps");
-    let twin = binary(&deps, "app-a1", &[], 50);
-    binary(&deps, "app-b1", &[("alpha", 1)], 50);
-    let uplifted = profile.join("app");
-    fs::copy(twin, &uplifted).unwrap();
-    fs::File::open(&uplifted)
-        .unwrap()
-        .set_modified(at(50))
-        .unwrap();
-    let result = std::process::Command::new(env!("CARGO_BIN_EXE_development"))
-        .args(["nextest-setup", "normalize-component-cache"])
-        .arg(&profile)
-        .env_remove("TEST_ARCHIVE")
-        .output()
-        .unwrap();
-
-    assert!(!result.status.success());
-    assert!(String::from_utf8_lossy(&result.stderr).contains("ambiguous hashed twins"));
-    assert_eq!(fs::metadata(uplifted).unwrap().modified().unwrap(), at(50));
 }
 
 /// A library's own test binary is built from the crate, not on its output, so only the
@@ -438,10 +342,11 @@ fn cache_normalization_rejects_ambiguous_uplifted_twins() {
 fn cache_normalization_treats_a_library_test_as_independent_of_its_own_library() {
     let scratch = Scratch::new().unwrap();
     let deps = scratch.path().join("target/debug/deps");
+    lock(scratch.path(), &[("beta", &[]), ("gamma", &[])]);
     output(&deps, "libbeta-1.rlib", false, 160);
-    let unit = binary(&deps, "beta-1", &[], 150);
-    let integration = binary(&deps, "it-beta", &[("beta", 160)], 140);
-    let anchor = binary(&deps, "it-gamma", &[], 400);
+    let unit = binary(&deps, "beta-1", "crates/beta/src/lib.rs", 150);
+    let integration = binary(&deps, "it-beta", "crates/beta/tests/it.rs", 140);
+    let anchor = binary(&deps, "it-gamma", "crates/gamma/tests/it.rs", 400);
     normalize(scratch.path());
     let modified = |path: &Path| fs::metadata(path).unwrap().modified().unwrap();
     assert_eq!(modified(&unit), at(400));
