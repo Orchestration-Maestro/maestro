@@ -45,8 +45,8 @@ mod tests {
         in_lock: Hook,
         /// Run when a replacement is about to be stored.
         before_write: Hook,
-        /// Run after each synchronous read that succeeded.
-        after_read: Hook,
+        /// Run once after the next synchronous read that succeeded.
+        after_read: Mutex<Option<Box<dyn FnOnce() + Send>>>,
         /// Asynchronous operations started.
         async_calls: AtomicUsize,
         /// Replacement texts stored.
@@ -107,7 +107,10 @@ mod tests {
             probe
                 .inner
                 .with_lock(&mut |current| probe.checked(update(current)?))?;
-            fire(&probe.after_read);
+            let action = probe.after_read.lock().unwrap().take();
+            if let Some(action) = action {
+                action();
+            }
             Ok(())
         }
 
@@ -154,11 +157,8 @@ mod tests {
     /// synchronous read, so the storage decides on the text it read before.
     fn replace_after_next_read(probe: &Arc<Probe>, document: Value) {
         let target = Arc::downgrade(probe);
-        let pending = AtomicBool::new(true);
         *probe.after_read.lock().unwrap() = Some(Box::new(move || {
-            if let Some(probe) = target.upgrade()
-                && pending.swap(false, Ordering::SeqCst)
-            {
+            if let Some(probe) = target.upgrade() {
                 replace_text(&probe, &document);
             }
         }));
