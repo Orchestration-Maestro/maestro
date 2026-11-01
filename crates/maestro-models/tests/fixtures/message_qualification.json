@@ -2367,7 +2367,7 @@
                 "content": "Use the tool"
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true
           }
         }
@@ -2553,7 +2553,7 @@
                 "content": "Use the tool"
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true
           }
         }
@@ -2755,7 +2755,7 @@
                 "content": "Use the tool"
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true,
             "tools": [
               {
@@ -2961,7 +2961,7 @@
                 "content": "Use the tool"
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true
           }
         }
@@ -3150,7 +3150,7 @@
                 "content": "Use the tool"
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true
           }
         }
@@ -3355,7 +3355,7 @@
                 "content": "Use the tool"
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true,
             "tools": [
               {
@@ -3561,7 +3561,7 @@
                 "content": "Use the tool"
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true
           }
         }
@@ -3750,7 +3750,7 @@
                 "content": "Use the tool"
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true
           }
         }
@@ -3956,7 +3956,7 @@
                 "content": "Use the tool"
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true,
             "tools": [
               {
@@ -12825,7 +12825,7 @@
                 "content": "last"
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true,
             "system": [
               {
@@ -13095,7 +13095,7 @@
                 "content": "last"
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true,
             "system": [
               {
@@ -13365,7 +13365,7 @@
                 "content": "last"
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true,
             "system": [
               {
@@ -13640,7 +13640,7 @@
                 ]
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true,
             "system": [
               {
@@ -13924,7 +13924,7 @@
                 ]
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true,
             "system": [
               {
@@ -14208,7 +14208,7 @@
                 ]
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true,
             "system": [
               {
@@ -14490,7 +14490,7 @@
                 ]
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true,
             "system": [
               {
@@ -14777,7 +14777,7 @@
                 ]
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true,
             "system": [
               {
@@ -15063,7 +15063,7 @@
                 ]
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true,
             "system": [
               {
@@ -15329,7 +15329,7 @@
                 ]
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true
           }
         }
@@ -15541,7 +15541,7 @@
                 ]
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true
           }
         }
@@ -15763,7 +15763,7 @@
                 ]
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true
           }
         }
@@ -16021,7 +16021,7 @@
                 ]
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true
           }
         }
@@ -16237,7 +16237,7 @@
                 ]
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true,
             "tools": [
               {
@@ -16472,7 +16472,7 @@
                 ]
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true,
             "tools": [
               {
@@ -16708,7 +16708,7 @@
                 ]
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true,
             "tools": [
               {
@@ -16945,7 +16945,7 @@
                 ]
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true,
             "tools": [
               {
@@ -17155,7 +17155,7 @@
                 ]
               }
             ],
-            "max_tokens": 32000,
+            "max_tokens": 64000,
             "stream": true,
             "thinking": {
               "type": "disabled"
@@ -17348,7 +17348,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true
           }
         }
@@ -17539,7 +17539,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "thinking": {
               "type": "disabled"
@@ -17733,7 +17733,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "thinking": {
               "type": "enabled",
@@ -17930,7 +17930,7 @@
                 ]
               }
             ],
-            "max_tokens": 32000,
+            "max_tokens": 128000,
             "stream": true,
             "thinking": {
               "type": "disabled"
@@ -18125,7 +18125,7 @@
                 ]
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true
           }
         }
@@ -18318,7 +18318,7 @@
                 ]
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true,
             "thinking": {
               "type": "disabled"
@@ -18514,7 +18514,7 @@
                 ]
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true,
             "thinking": {
               "type": "adaptive",
@@ -18710,7 +18710,7 @@
                 ]
               }
             ],
-            "max_tokens": 32000,
+            "max_tokens": 128000,
             "stream": true,
             "thinking": {
               "type": "disabled"
@@ -18905,7 +18905,7 @@
                 ]
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true
           }
         }
@@ -19098,7 +19098,7 @@
                 ]
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true,
             "thinking": {
               "type": "disabled"
@@ -19294,7 +19294,7 @@
                 ]
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true,
             "thinking": {
               "type": "adaptive",
@@ -19491,7 +19491,7 @@
                 ]
               }
             ],
-            "max_tokens": 32000,
+            "max_tokens": 128000,
             "stream": true,
             "thinking": {
               "type": "adaptive",
@@ -19691,7 +19691,7 @@
                 ]
               }
             ],
-            "max_tokens": 32000,
+            "max_tokens": 128000,
             "stream": true,
             "thinking": {
               "type": "adaptive",
@@ -19891,7 +19891,7 @@
                 ]
               }
             ],
-            "max_tokens": 32000,
+            "max_tokens": 128000,
             "stream": true,
             "thinking": {
               "type": "adaptive",
@@ -20091,7 +20091,7 @@
                 ]
               }
             ],
-            "max_tokens": 32000,
+            "max_tokens": 128000,
             "stream": true,
             "thinking": {
               "type": "adaptive",
@@ -20291,7 +20291,7 @@
                 ]
               }
             ],
-            "max_tokens": 32000,
+            "max_tokens": 128000,
             "stream": true,
             "thinking": {
               "type": "adaptive",
@@ -20491,7 +20491,7 @@
                 ]
               }
             ],
-            "max_tokens": 32000,
+            "max_tokens": 128000,
             "stream": true,
             "thinking": {
               "type": "adaptive",
@@ -20691,7 +20691,7 @@
                 ]
               }
             ],
-            "max_tokens": 32000,
+            "max_tokens": 128000,
             "stream": true,
             "thinking": {
               "type": "adaptive",
@@ -20891,7 +20891,7 @@
                 ]
               }
             ],
-            "max_tokens": 32000,
+            "max_tokens": 128000,
             "stream": true,
             "thinking": {
               "type": "adaptive",
@@ -21091,7 +21091,7 @@
                 ]
               }
             ],
-            "max_tokens": 32000,
+            "max_tokens": 128000,
             "stream": true,
             "thinking": {
               "type": "adaptive",
@@ -21291,7 +21291,7 @@
                 ]
               }
             ],
-            "max_tokens": 32000,
+            "max_tokens": 128000,
             "stream": true,
             "thinking": {
               "type": "adaptive",
@@ -21493,7 +21493,7 @@
                 ]
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true,
             "thinking": {
               "type": "adaptive",
@@ -21695,7 +21695,7 @@
                 ]
               }
             ],
-            "max_tokens": 42666,
+            "max_tokens": 128000,
             "stream": true,
             "thinking": {
               "type": "adaptive",
@@ -23138,7 +23138,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -23392,7 +23392,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -23646,7 +23646,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -23900,7 +23900,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -24154,7 +24154,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -24408,7 +24408,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -24662,7 +24662,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -24916,7 +24916,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -25170,7 +25170,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -25424,7 +25424,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -25678,7 +25678,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -26026,7 +26026,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -26327,7 +26327,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -26594,7 +26594,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "tools": [
               {
@@ -26836,7 +26836,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "tools": [
               {
@@ -27081,7 +27081,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -27328,7 +27328,7 @@
                 ]
               }
             ],
-            "max_tokens": 5333,
+            "max_tokens": 16000,
             "stream": true,
             "system": [
               {
@@ -27571,7 +27571,7 @@
                 ]
               }
             ],
-            "max_tokens": 5333,
+            "max_tokens": 16000,
             "stream": true
           }
         }
@@ -27795,7 +27795,7 @@
                 ]
               }
             ],
-            "max_tokens": 5333,
+            "max_tokens": 16000,
             "stream": true
           }
         }
@@ -28001,7 +28001,7 @@
                 ]
               }
             ],
-            "max_tokens": 5333,
+            "max_tokens": 16000,
             "stream": true,
             "thinking": {
               "type": "disabled"
@@ -28210,7 +28210,7 @@
                 ]
               }
             ],
-            "max_tokens": 5333,
+            "max_tokens": 16000,
             "stream": true,
             "thinking": {
               "type": "enabled",
@@ -28421,7 +28421,7 @@
                 ]
               }
             ],
-            "max_tokens": 5333,
+            "max_tokens": 16000,
             "stream": true,
             "thinking": {
               "type": "disabled"
@@ -28630,7 +28630,7 @@
                 ]
               }
             ],
-            "max_tokens": 5333,
+            "max_tokens": 16000,
             "stream": true,
             "thinking": {
               "type": "enabled",
@@ -28842,7 +28842,7 @@
                 ]
               }
             ],
-            "max_tokens": 5333,
+            "max_tokens": 16000,
             "stream": true,
             "thinking": {
               "type": "disabled"
@@ -29052,7 +29052,7 @@
                 ]
               }
             ],
-            "max_tokens": 5333,
+            "max_tokens": 16000,
             "stream": true,
             "thinking": {
               "type": "enabled",
@@ -29262,7 +29262,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "thinking": {
               "type": "disabled"
@@ -29470,7 +29470,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "thinking": {
               "type": "adaptive",
@@ -29680,7 +29680,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "thinking": {
               "type": "disabled"
@@ -29889,7 +29889,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "thinking": {
               "type": "adaptive",
@@ -30099,7 +30099,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "thinking": {
               "type": "disabled"
@@ -30308,7 +30308,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "thinking": {
               "type": "adaptive",
@@ -30535,7 +30535,7 @@
                 ]
               }
             ],
-            "max_tokens": 5333,
+            "max_tokens": 16000,
             "stream": true,
             "tools": [
               {

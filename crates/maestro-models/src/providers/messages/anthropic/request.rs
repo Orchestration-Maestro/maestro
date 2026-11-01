@@ -8,7 +8,6 @@ use std::borrow::Cow;
 use super::messages::{CacheControl, ToolParam, WireMessage, convert, tools};
 use super::tool_names::Naming;
 use super::{AnthropicOptions, AnthropicThinkingDisplay, CallOptions, ThinkingInput};
-use crate::arguments::json_parse::whitespace;
 use crate::options::resolve_cache_retention;
 use crate::providers::chat::cloudflare::resolve_cloudflare_base_url;
 use crate::providers::chat::github_copilot_headers::{
@@ -21,8 +20,6 @@ use crate::providers::json_text::compact_json;
 use crate::providers::model_compat::compat_flag;
 use crate::{CacheRetention, Context, Model, ToolChoice, get_env_api_key};
 
-/// Environment variable that supplies a bearer token next to the key.
-const AMBIENT_TOKEN_VARIABLE: &str = "ANTHROPIC_AUTH_TOKEN";
 /// Service endpoint used when the model names none.
 const DEFAULT_BASE_URL: &str = "https://api.anthropic.com";
 /// Endpoint appended to the base URL.
@@ -245,14 +242,13 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
         }
     }
 
-    /// The output limit: the caller's unless it is zero or not a number, otherwise a third of
-    /// the model's, truncated.
+    /// The output limit: the caller's unless it is zero or not a number, otherwise the model's.
     fn max_tokens(&self) -> f64 {
         self.options
             .common
             .max_tokens
             .filter(|tokens| *tokens != 0.0 && !tokens.is_nan())
-            .unwrap_or_else(|| (self.model.max_tokens / 3.0).trunc())
+            .unwrap_or(self.model.max_tokens)
     }
 
     /// Build the request payload as JSON.
@@ -431,9 +427,6 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
             headers.insert("authorization".to_owned(), format!("Bearer {key}"));
         } else {
             headers.insert("x-api-key".to_owned(), key.to_owned());
-            if let Some(token) = ambient_token() {
-                headers.insert("authorization".to_owned(), format!("Bearer {token}"));
-            }
         }
         if !account && !subscription {
             self.add_session_affinity(&mut headers);
@@ -525,14 +518,6 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
             signal: self.options.common.signal.clone(),
         })
     }
-}
-
-/// The bearer token the environment supplies, without surrounding script whitespace; an empty
-/// token is no token.
-fn ambient_token() -> Option<String> {
-    let token = std::env::var(AMBIENT_TOKEN_VARIABLE).ok()?;
-    let token = token.trim_matches(whitespace);
-    (!token.is_empty()).then(|| token.to_owned())
 }
 
 /// Report whether the model's reasoning is adaptive: Opus 4.6 and 4.7 and Sonnet 4.6, with

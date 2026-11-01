@@ -211,7 +211,7 @@ fn prepared_signals_share_the_callers_cancellation() -> TestResult {
         },
         ..SimpleStreamOptions::default()
     };
-    let selected = build_simple_options(&model, Some(&simple))?;
+    let selected = build_simple_options(&model, &context, Some(&simple))?;
     let params = build_params(&model, &context, Some(&selected))?;
     let composed = params
         .config
@@ -300,12 +300,13 @@ fn simple_options_keep_common_settings_and_hook_handles_without_invocation() -> 
         reasoning: Some(ThinkingLevel::Low),
         ..SimpleStreamOptions::default()
     };
-    let selected = build_simple_options(&model, Some(&simple))?;
+    let context = context()?;
+    let selected = build_simple_options(&model, &context, Some(&simple))?;
     let raw = GoogleOptions {
         common: selected.common.clone(),
         ..GoogleOptions::default()
     };
-    build_params(&model, &context()?, Some(&raw))?;
+    build_params(&model, &context, Some(&raw))?;
     assert_eq!(calls.load(Ordering::SeqCst), 0);
     let common = selected.common;
     assert_scalar_settings(&common, metadata.as_ref());
@@ -362,8 +363,9 @@ fn absent_options_prepare_like_empty_options() -> TestResult {
                     Some(&GoogleOptions::default())
                 )?)?
             );
-            let absent = build_simple_options(&model, None)?;
-            let empty = build_simple_options(&model, Some(&SimpleStreamOptions::default()))?;
+            let absent = build_simple_options(&model, &context, None)?;
+            let empty =
+                build_simple_options(&model, &context, Some(&SimpleStreamOptions::default()))?;
             assert_eq!(absent.common.api_key.as_deref(), Some("env-key"));
             assert_eq!(absent.common.max_tokens, Some(4096.0));
             assert_eq!(

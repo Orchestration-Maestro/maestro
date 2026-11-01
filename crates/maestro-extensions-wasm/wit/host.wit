@@ -183,8 +183,8 @@ interface host {
     /// File constructors resolve absent paths through application-supplied defaults.
     create-auth-storage: func(path: option<string>) -> result<auth-storage, string>;
     auth-storage-in-memory: func(data: string) -> result<auth-storage, string>;
-    create-model-registry: func(auth: borrow<auth-storage>, path: option<string>) -> result<model-registry, string>;
-    in-memory-model-registry: func(auth: borrow<auth-storage>) -> result<model-registry, string>;
+    create-model-registry: func(auth: borrow<auth-storage>, path: option<string>) -> import-route;
+    in-memory-model-registry: func(auth: borrow<auth-storage>) -> import-route;
     /// Receiver of unmodified command-output bytes.
     resource bash-output { on-data: func(data: list<u8>) -> result<_, string>; }
     use session.{new-session-command-data, session-change-result};
@@ -495,7 +495,8 @@ interface host {
     }
     /// One step of a native operation that may call back into this same instance.
     variant route-value {
-        unit, boolean(bool), text(string), lines(list<string>), completion(completion-result),
+        unit, boolean(bool), text(string), optional-text(option<string>), lines(list<string>),
+        completion(completion-result),
         trigger(option<bool>), editor(built-editor), editor-answer(foreign-editor-answer),
         credentials(auth-storage), catalog(model-registry), component(native-component), key(bool),
         /// A terminal dimension.
@@ -1059,14 +1060,14 @@ interface host {
         set-runtime-api-key: func(provider: string, key: string) -> result<_, string>;
         remove-runtime-api-key: func(provider: string) -> result<_, string>;
         reload: func() -> import-route;
-        get: func(provider: string) -> result<option<string>, string>;
+        get: func(provider: string) -> import-route;
         set: func(provider: string, credential: string) -> import-route;
         remove: func(provider: string) -> import-route;
-        %list: func() -> result<list<string>, string>;
+        %list: func() -> import-route;
         has: func(provider: string) -> result<bool, string>;
         has-auth: func(provider: string) -> import-route;
         get-auth-status: func(provider: string) -> import-route;
-        get-all: func() -> result<string, string>;
+        get-all: func() -> import-route;
         drain-errors: func() -> result<string, string>;
         logout: func(provider: string) -> import-route;
         get-api-key: async func(provider: string, include-fallback: option<bool>) -> result<option<string>, string>;
@@ -1085,7 +1086,7 @@ interface host {
         /// The provider's authentication status as JSON.
         get-provider-auth-status: func(provider: string) -> import-route;
         get-provider-display-name: func(provider: string) -> result<string, string>;
-        is-using-oauth: func(model: string) -> result<bool, string>;
+        is-using-oauth: func(model: string) -> import-route;
         /// Registers JSON provider data directly in this catalog.
         register-provider: func(name: string, config: string, callbacks: tuple<option<borrow<callback>>, option<tuple<borrow<callback>, string, option<bool>>>>) -> import-route;
         unregister-provider: func(name: string) -> import-route;

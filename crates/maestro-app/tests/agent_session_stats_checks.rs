@@ -2,8 +2,8 @@
 //! statistics cases.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    HarnessOptions, assistant, harness, load_history, on_task_set, recorded, recorded_number,
-    usage, user,
+    HarnessOptions, after_summary, assistant, harness, load_history, on_task_set, recorded,
+    recorded_number, usage, user,
 };
 use maestro_app::SessionStats;
 use maestro_extensions::ContextUsage;
@@ -122,8 +122,10 @@ fn fresh_usage_after_compaction_replaces_kept_usage() {
         {
             let mut manager = h.session.session_manager().borrow_mut();
             before_compaction(&mut manager);
-            manager.append_message(question("third", 5)).unwrap();
-            manager.append_message(answer(25_000, 6)).unwrap();
+            let third = after_summary(&manager, question("third", 5));
+            manager.append_message(third).unwrap();
+            let fresh = after_summary(&manager, answer(25_000, 6));
+            manager.append_message(fresh).unwrap();
         }
         load_history(&h);
         let stats = h.session.get_session_stats().unwrap();

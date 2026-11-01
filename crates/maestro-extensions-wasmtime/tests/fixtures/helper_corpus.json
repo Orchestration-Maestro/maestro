@@ -4690,7 +4690,7 @@
       ]
     ],
     "context": {},
-    "ok": "[User]: hi\n\n[Assistant thinking]: plan\n\n[Assistant]: hello\n\n[Assistant tool calls]: read(path=\"a\")\n\n[Tool result]: ok\n\n[User]: Ran `echo hi`\n```\nhi\n```\n\n[User]: custom\n\n[User]: The following is a summary of a branch that this conversation came back from:\n\n<summary>\nbranch</summary>\n\n[User]: The conversation history before this point was compacted into the following summary:\n\n<summary>\ncompact\n</summary>"
+    "ok": "[User]: hi\n\n[Assistant]: hello\n\n[Assistant tool calls]: read(path=\"a\")\n\n[Tool result]: ok\n\n[User]: Ran `echo hi`\n```\nhi\n```\n\n[User]: custom\n\n[User]: The following is a summary of a branch that this conversation came back from:\n\n<summary>\nbranch</summary>\n\n[User]: The conversation history before this point was compacted into the following summary:\n\n<summary>\ncompact\n</summary>"
   },
   {
     "test": "helper_conversation_serialization_keeps_text_and_tools",

@@ -331,17 +331,16 @@ impl Writer<'_, '_> {
             return;
         };
         if matches!(self.policy, Policy::Export(_)) {
-            let href = href.trim_matches(is_whitespace_scalar);
-            if export::blocked(href) {
-                self.inline(children, None, out);
-            } else {
+            if let Some(href) = export::sanitized(href.trim_matches(is_whitespace_scalar)) {
                 out.push_str("<a href=\"");
-                escape(href, out);
+                escape(&href, out);
                 out.push('"');
                 title(&meta.title, out);
                 out.push('>');
                 self.inline(children, None, out);
                 out.push_str("</a>");
+            } else {
+                self.inline(children, None, out);
             }
             return;
         }
