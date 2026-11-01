@@ -157,8 +157,7 @@ pub trait PackageManager {
         sources: &'a [String],
         scope: Option<SourceScope>,
     ) -> PackageFuture<'a, ResolvedPaths>;
-    /// Appends a source or replaces the first identity match when its normalized spelling differs.
-    /// An identical spelling changes nothing and returns `false`.
+    /// Appends a source or replaces the first identity match when its parsed pin changes.
     /// Other raw entry fields stay in place; `None` means user scope.
     /// # Errors
     /// Returns consumed settings, borrow or path failures.
