@@ -892,12 +892,16 @@ assert_eq!(observed, continue_run);
 ## Preparing the next turn
 
 `AgentLoopConfig::prepare_next_turn` runs after each normally completed turn, before the stop
-decision. It receives the same turn record as the stop callback and may return an
-`AgentLoopTurnUpdate` holding a replacement context (instructions, history handle and tools), a
-model and a thinking level. The next request uses them; the request already sent keeps its
-payload, and an absent part keeps the current one. `Agent::prepare_next_turn` holds the callback
-for runs admitted later. The application session installs one that reads its active tools, the
-run's system prompt (an empty one included) and the selected model.
+decision. It receives the same turn record as the stop callback and the run's optional
+cancellation signal as a second argument. The signal reports an abort during the turn.
+The hook may return an `AgentLoopTurnUpdate` holding a replacement context
+(instructions, history handle and tools), a model and a thinking level. The next request
+uses them; the request already sent keeps its payload, and an absent part keeps the
+current one. `Agent::prepare_next_turn` holds the callback
+for runs admitted later. The application session calls an already installed hook first,
+with the same turn and signal, and propagates its error. It keeps the returned context
+(or the turn's context), including its messages, then refreshes the active tools,
+the run's system prompt (an empty one included), the selected model and thinking level.
 
 ## Stopping after a turn
 

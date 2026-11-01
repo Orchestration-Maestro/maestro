@@ -644,9 +644,9 @@ async fn failure_shutdown(directory: &Path, phase: &str) {
 }
 
 #[test]
-fn requested_shutdown_runs_after_agent_end_cleanup() {
+fn agent_end_cleans_up_without_starting_requested_shutdown() {
     isolated(
-        "requested_shutdown_runs_after_agent_end_cleanup",
+        "agent_end_cleans_up_without_starting_requested_shutdown",
         async |directory| {
             for requested in [false, true] {
                 for transient in [(false, false), (false, true), (true, false), (true, true)] {
@@ -657,7 +657,7 @@ fn requested_shutdown_runs_after_agent_end_cleanup() {
     );
 }
 
-/// Checks transient cleanup before consuming a requested shutdown, retaining transcript rows.
+/// Checks that agent end retains transcript rows and leaves shutdown to run settlement.
 async fn requested_case(directory: &Path, requested: bool, transient: (bool, bool)) {
     let rig = Rig::new(directory, Setup::default());
     rig.start().await;
@@ -704,7 +704,9 @@ async fn requested_case(directory: &Path, requested: bool, transient: (bool, boo
             },
         );
     }
-    requested_result(&rig, requested);
+    assert!(rig.world.runtime.take_futures().is_empty());
+    assert!(rig.world.runtime.pending() > 0);
+    assert_eq!(*rig.effects.events.borrow(), ["register"]);
 }
 
 #[test]
@@ -811,29 +813,6 @@ fn select_failure(rig: &Rig, phase: &str) {
             .set_stop_error(Some(std::io::ErrorKind::BrokenPipe)),
         "dispose" => {}
         _ => unreachable!(),
-    }
-}
-
-/// Asserts the requested and normal continuations after transient cleanup.
-fn requested_result(rig: &Rig, requested: bool) {
-    let mut work = rig.world.runtime.take_futures();
-    assert_eq!(work.len(), usize::from(requested));
-    if requested {
-        assert_eq!(
-            *rig.effects.events.borrow(),
-            ["register", "remove", "drain"]
-        );
-        assert!(matches!(super::typed::poll(&mut work[0]), Some(Ok(()))));
-        assert_eq!(
-            *rig.effects.events.borrow(),
-            ["register", "remove", "drain", "exit:0"]
-        );
-        assert!(!rig.world.mode.is_initialized.get());
-        rig.world.runtime.settle().unwrap();
-        assert_eq!(rig.world.runtime.pending(), 0);
-    } else {
-        assert!(rig.world.runtime.pending() > 0);
-        assert_eq!(*rig.effects.events.borrow(), ["register"]);
     }
 }
 

@@ -171,6 +171,9 @@ impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Driver<'_, C, 
                 ));
             }
         }
+        if self.aborted() {
+            return Err(failure("Operation aborted"));
+        }
         Ok(prepared)
     }
     /// Whether the run's signal was aborted.

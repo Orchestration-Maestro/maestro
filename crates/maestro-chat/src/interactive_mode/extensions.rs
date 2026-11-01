@@ -68,7 +68,7 @@ impl InteractiveMode {
     ///
     /// The session and its runner only borrow the mode, which already owns them; a UI
     /// context an extension obtains keeps the mode alive. A shutdown request while idle
-    /// starts the graceful shutdown; while streaming, the agent's end starts it.
+    /// starts the graceful shutdown; an active run defers it until settlement.
     ///
     /// # Errors
     /// Returns the session start, resource discovery, completion, listing or notice failure.
@@ -101,10 +101,7 @@ impl InteractiveMode {
                     let Some(mode) = requester.upgrade() else {
                         return Ok(());
                     };
-                    mode.shutdown_requested.set(true);
-                    if !mode.runtime_host.session().is_streaming() {
-                        mode.spawn_shutdown();
-                    }
+                    mode.request_shutdown();
                     Ok(())
                 })),
                 on_error: Some(Rc::new(move |error| {
