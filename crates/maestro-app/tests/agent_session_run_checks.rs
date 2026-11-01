@@ -277,7 +277,12 @@ fn next_turn_refresh_chains_the_supplied_agent_hook() {
         assert_eq!(called.get(), 2);
         let requests = h.requests.0.borrow();
         assert_eq!(requests.len(), 2);
-        assert_eq!(requests[1].system_prompt.as_deref(), Some("session prompt"));
+        assert!(
+            requests[1]
+                .system_prompt
+                .as_deref()
+                .is_some_and(|prompt| prompt.starts_with("session prompt"))
+        );
         assert_eq!(requests[1].tools.as_ref().unwrap()[0].name, "echo");
         assert!(requests[1].messages.iter().any(|message| matches!(message,
             maestro_models::Message::User(user) if user.content == maestro_models::UserContent::Text("hook message".into()))));

@@ -345,7 +345,7 @@ fn abort_during_tool_start_without_hook_skips_execution() {
             called.store(true, std::sync::atomic::Ordering::Relaxed);
             ready(Ok(result()))
         }));
-        let mut options = responses(vec![tool_call()]);
+        let mut options = responses(vec![tool_call(), assistant("stopped")]);
         options.signal = Some(signal);
         let returned = run_agent_loop(
             vec![],

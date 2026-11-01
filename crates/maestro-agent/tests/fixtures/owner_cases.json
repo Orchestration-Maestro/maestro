@@ -11944,8 +11944,7 @@
               },
               "stopReason": "error",
               "errorMessage": "original\nerror"
-            },
-            "errorMessage": "original\nerror"
+            }
           },
           "signalSame": true
         },
@@ -12022,8 +12021,7 @@
               }
             ],
             "isStreaming": true,
-            "pendingToolCalls": [],
-            "errorMessage": "original\nerror"
+            "pendingToolCalls": []
           },
           "signalSame": true
         },
@@ -12359,8 +12357,7 @@
               },
               "stopReason": "error",
               "errorMessage": "original\nerror"
-            },
-            "errorMessage": "original\nerror"
+            }
           },
           "signalSame": true
         },
@@ -12428,8 +12425,7 @@
               }
             ],
             "isStreaming": true,
-            "pendingToolCalls": [],
-            "errorMessage": "original\nerror"
+            "pendingToolCalls": []
           },
           "signalSame": true
         },
@@ -12707,8 +12703,7 @@
               },
               "stopReason": "error",
               "errorMessage": "original\nerror"
-            },
-            "errorMessage": "original\nerror"
+            }
           },
           "signalSame": true
         },
@@ -12776,8 +12771,7 @@
               }
             ],
             "isStreaming": true,
-            "pendingToolCalls": [],
-            "errorMessage": "original\nerror"
+            "pendingToolCalls": []
           },
           "signalSame": true
         },
@@ -13084,8 +13078,7 @@
               },
               "stopReason": "error",
               "errorMessage": "original\nerror"
-            },
-            "errorMessage": "original\nerror"
+            }
           },
           "signalSame": true
         },
@@ -13153,8 +13146,7 @@
               }
             ],
             "isStreaming": true,
-            "pendingToolCalls": [],
-            "errorMessage": "original\nerror"
+            "pendingToolCalls": []
           },
           "signalSame": true
         },
@@ -13501,8 +13493,7 @@
               },
               "stopReason": "error",
               "errorMessage": "original\nerror"
-            },
-            "errorMessage": "original\nerror"
+            }
           },
           "signalSame": true
         },
@@ -13579,8 +13570,7 @@
               }
             ],
             "isStreaming": true,
-            "pendingToolCalls": [],
-            "errorMessage": "original\nerror"
+            "pendingToolCalls": []
           },
           "signalSame": true
         },
@@ -14031,8 +14021,7 @@
               },
               "stopReason": "error",
               "errorMessage": "original\nerror"
-            },
-            "errorMessage": "original\nerror"
+            }
           },
           "signalSame": true
         },
@@ -14109,8 +14098,7 @@
               }
             ],
             "isStreaming": true,
-            "pendingToolCalls": [],
-            "errorMessage": "original\nerror"
+            "pendingToolCalls": []
           },
           "signalSame": true
         },
@@ -14712,8 +14700,7 @@
               },
               "stopReason": "error",
               "errorMessage": "original\nerror"
-            },
-            "errorMessage": "original\nerror"
+            }
           },
           "signalSame": true
         },
@@ -14790,8 +14777,7 @@
               }
             ],
             "isStreaming": true,
-            "pendingToolCalls": [],
-            "errorMessage": "original\nerror"
+            "pendingToolCalls": []
           },
           "signalSame": true
         },
@@ -15389,8 +15375,7 @@
               },
               "stopReason": "error",
               "errorMessage": "original\nerror"
-            },
-            "errorMessage": "original\nerror"
+            }
           },
           "signalSame": true
         },
@@ -15495,8 +15480,7 @@
               }
             ],
             "isStreaming": true,
-            "pendingToolCalls": [],
-            "errorMessage": "original\nerror"
+            "pendingToolCalls": []
           },
           "signalSame": true
         },
@@ -16256,8 +16240,7 @@
               },
               "stopReason": "error",
               "errorMessage": "original\nerror"
-            },
-            "errorMessage": "original\nerror"
+            }
           },
           "signalSame": true
         },
@@ -16362,8 +16345,7 @@
               }
             ],
             "isStreaming": true,
-            "pendingToolCalls": [],
-            "errorMessage": "original\nerror"
+            "pendingToolCalls": []
           },
           "signalSame": true
         },
@@ -17211,8 +17193,7 @@
               },
               "stopReason": "error",
               "errorMessage": "original\nerror"
-            },
-            "errorMessage": "original\nerror"
+            }
           },
           "signalSame": true
         },
@@ -17317,8 +17298,7 @@
               }
             ],
             "isStreaming": true,
-            "pendingToolCalls": [],
-            "errorMessage": "original\nerror"
+            "pendingToolCalls": []
           },
           "signalSame": true
         },
@@ -18068,8 +18048,7 @@
               },
               "stopReason": "error",
               "errorMessage": "original\nerror"
-            },
-            "errorMessage": "original\nerror"
+            }
           },
           "signalSame": true
         },
@@ -18178,8 +18157,7 @@
             "isStreaming": true,
             "pendingToolCalls": [
               "call"
-            ],
-            "errorMessage": "original\nerror"
+            ]
           },
           "signalSame": true
         },
@@ -19015,8 +18993,7 @@
               },
               "stopReason": "error",
               "errorMessage": "original\nerror"
-            },
-            "errorMessage": "original\nerror"
+            }
           },
           "signalSame": true
         },
@@ -19125,8 +19102,7 @@
             "isStreaming": true,
             "pendingToolCalls": [
               "call"
-            ],
-            "errorMessage": "original\nerror"
+            ]
           },
           "signalSame": true
         },
@@ -19959,8 +19935,7 @@
               },
               "stopReason": "error",
               "errorMessage": "original\nerror"
-            },
-            "errorMessage": "original\nerror"
+            }
           },
           "signalSame": true
         },
@@ -20067,8 +20042,7 @@
               }
             ],
             "isStreaming": true,
-            "pendingToolCalls": [],
-            "errorMessage": "original\nerror"
+            "pendingToolCalls": []
           },
           "signalSame": true
         },
@@ -20978,8 +20952,7 @@
               },
               "stopReason": "error",
               "errorMessage": "original\nerror"
-            },
-            "errorMessage": "original\nerror"
+            }
           },
           "signalSame": true
         },
@@ -21086,8 +21059,7 @@
               }
             ],
             "isStreaming": true,
-            "pendingToolCalls": [],
-            "errorMessage": "original\nerror"
+            "pendingToolCalls": []
           },
           "signalSame": true
         },
@@ -22093,8 +22065,7 @@
               },
               "stopReason": "error",
               "errorMessage": "original\nerror"
-            },
-            "errorMessage": "original\nerror"
+            }
           },
           "signalSame": true
         },
@@ -22216,8 +22187,7 @@
               }
             ],
             "isStreaming": true,
-            "pendingToolCalls": [],
-            "errorMessage": "original\nerror"
+            "pendingToolCalls": []
           },
           "signalSame": true
         },
@@ -22778,8 +22748,7 @@
               },
               "stopReason": "error",
               "errorMessage": "original\nerror"
-            },
-            "errorMessage": "original\nerror"
+            }
           },
           "signalSame": true
         },
@@ -22856,8 +22825,7 @@
               }
             ],
             "isStreaming": true,
-            "pendingToolCalls": [],
-            "errorMessage": "original\nerror"
+            "pendingToolCalls": []
           },
           "signalSame": true
         },
@@ -23275,8 +23243,7 @@
               },
               "stopReason": "aborted",
               "errorMessage": "original\nerror"
-            },
-            "errorMessage": "original\nerror"
+            }
           },
           "signalSame": true
         },
@@ -23353,8 +23320,7 @@
               }
             ],
             "isStreaming": true,
-            "pendingToolCalls": [],
-            "errorMessage": "original\nerror"
+            "pendingToolCalls": []
           },
           "signalSame": true
         },
@@ -23771,8 +23737,7 @@
               },
               "stopReason": "error",
               "errorMessage": "original\nerror"
-            },
-            "errorMessage": "original\nerror"
+            }
           },
           "signalSame": true
         },
@@ -23849,8 +23814,7 @@
               }
             ],
             "isStreaming": true,
-            "pendingToolCalls": [],
-            "errorMessage": "original\nerror"
+            "pendingToolCalls": []
           },
           "signalSame": true
         },
@@ -24267,8 +24231,7 @@
               },
               "stopReason": "error",
               "errorMessage": ""
-            },
-            "errorMessage": ""
+            }
           },
           "signalSame": true
         },
@@ -24345,8 +24308,7 @@
               }
             ],
             "isStreaming": true,
-            "pendingToolCalls": [],
-            "errorMessage": ""
+            "pendingToolCalls": []
           },
           "signalSame": true
         },
@@ -24424,8 +24386,7 @@
               }
             ],
             "isStreaming": true,
-            "pendingToolCalls": [],
-            "errorMessage": ""
+            "pendingToolCalls": []
           },
           "signalSame": true
         },
@@ -24504,8 +24465,7 @@
               }
             ],
             "isStreaming": true,
-            "pendingToolCalls": [],
-            "errorMessage": ""
+            "pendingToolCalls": []
           },
           "signalSame": true
         }
@@ -24594,8 +24554,7 @@
           }
         ],
         "isStreaming": false,
-        "pendingToolCalls": [],
-        "errorMessage": ""
+        "pendingToolCalls": []
       },
       "signalAbsent": true
     }
