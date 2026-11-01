@@ -3506,6 +3506,19 @@ fn guest_schema_validation_edge_is_native_development_only() {
     );
 }
 
+/// Repository tooling reuses the resource owner's frontmatter parser.
+#[test]
+fn repository_tooling_may_read_resource_metadata() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-tooling", "maestro-resources"]);
+    workspace.member(
+        "maestro-tooling",
+        "maestro-tooling",
+        "[dependencies]\nmaestro-resources = { path = \"../maestro-resources\" }",
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+}
+
 /// The guest's component tests share the product engine through one native development edge,
 /// never a product edge.
 #[test]

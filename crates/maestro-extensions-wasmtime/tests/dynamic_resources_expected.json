@@ -1,0 +1,5 @@
+{
+  "skillPaths": ["$DIRECTORY/SKILL.md"],
+  "promptPaths": ["$DIRECTORY/dynamic.md"],
+  "themePaths": ["$DIRECTORY/dynamic.json"]
+}

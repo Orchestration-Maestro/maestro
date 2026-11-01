@@ -1,5 +1,6 @@
 //! Render the extension index and the component crate's example targets from source files.
 
+use maestro_resources::frontmatter::{FrontmatterValue, parse_frontmatter};
 use std::ffi::OsString;
 use std::fmt::Write;
 use std::fs;
@@ -80,13 +81,18 @@ fn table(folder: &Path) -> io::Result<String> {
     for file in files {
         let relative = file.strip_prefix(folder).map_err(io::Error::other)?;
         let name = relative.to_string_lossy().replace('\\', "/");
-        let summary = summary(&file)?.replace('|', "\\|");
+        let summary = summary(&file)?
+            .lines()
+            .map(str::trim)
+            .collect::<Vec<_>>()
+            .join(" ")
+            .replace('|', "\\|");
         writeln!(result, "| `{name}` | {summary} |").map_err(io::Error::other)?;
     }
     Ok(result)
 }
 
-/// Read the initial Rust documentation paragraph or Markdown page heading.
+/// Read source documentation, Markdown descriptions or a theme name.
 fn summary(path: &Path) -> io::Result<String> {
     let text = fs::read_to_string(path)?;
     let result = if path.extension().is_some_and(|extension| extension == "rs") {
@@ -96,12 +102,37 @@ fn summary(path: &Path) -> io::Result<String> {
             .take_while(|line| !line.is_empty())
             .collect::<Vec<_>>()
             .join(" ")
-    } else {
-        text.lines()
-            .next()
-            .and_then(|line| line.strip_prefix("# "))
+    } else if path
+        .extension()
+        .is_some_and(|extension| extension == "json")
+    {
+        serde_json::from_str::<serde_json::Value>(&text)
+            .map_err(io::Error::other)?
+            .get("name")
+            .and_then(serde_json::Value::as_str)
             .unwrap_or_default()
             .to_owned()
+    } else if let Some(heading) = text.lines().next().and_then(|line| line.strip_prefix("# ")) {
+        heading.to_owned()
+    } else {
+        match parse_frontmatter(&text)
+            .map_err(io::Error::other)?
+            .frontmatter
+        {
+            FrontmatterValue::Mapping(fields) => fields
+                .into_iter()
+                .find_map(|(key, value)| {
+                    if key == "description"
+                        && let FrontmatterValue::String(description) = value
+                    {
+                        Some(description)
+                    } else {
+                        None
+                    }
+                })
+                .unwrap_or_default(),
+            _ => String::new(),
+        }
     };
     if result.is_empty() {
         return Err(io::Error::other(format!(

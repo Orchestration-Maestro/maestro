@@ -81,9 +81,9 @@ The binary composition root, conventions checker, terminal scenario harness,
 checked test-process owner, disposable test-directory owner, test tracing owner,
 portable fixture owner, repository tooling and the feature unifier
 (`maestro-dependencies`) are `dedicated`; all product libraries and adapters are `core`.
-Repository tooling (`maestro-tooling`) is development-only, never shipped and has
-no internal dependencies apart from the optional utility and the native-only
-feature unifier. Classes are not numeric
+Repository tooling (`maestro-tooling`) is development-only and never shipped. It
+may use the resource owner for authored metadata, the optional utility and the
+native-only feature unifier. Classes are not numeric
 delivery layers. Known absent entries do not require placeholder crates; unknown
 actual members are rejected.
 

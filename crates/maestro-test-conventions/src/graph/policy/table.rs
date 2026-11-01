@@ -91,7 +91,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ("maestro-test-directory", &[]),
     ("maestro-test-fixtures", &[]),
     ("maestro-test-tracing", &[]),
-    ("maestro-tooling", &[]),
+    ("maestro-tooling", &["maestro-resources"]),
     (
         "maestro-tui",
         &[

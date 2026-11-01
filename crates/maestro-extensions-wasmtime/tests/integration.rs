@@ -21,6 +21,7 @@ mod component_events;
 mod component_loading;
 
 mod components;
+mod dynamic_resources_example;
 mod editor_factories;
 mod exec_io;
 mod execution_bridge;
