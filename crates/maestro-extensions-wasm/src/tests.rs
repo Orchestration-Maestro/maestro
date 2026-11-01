@@ -574,7 +574,7 @@ fn assert_catalog_imports(contract: &Contract) {
                 "result<option<record {tokens: option<f64>, context-window: f64, percent: option<f64>}>, string>"
             ],
             vec![
-                "result<variant {ok(record {api-key: option<string>, headers: option<list<tuple<string, string>>>}), error(string)}, string>"
+                "result<variant {ok(record {api-key: option<string>, base-url: option<string>, headers: option<list<tuple<string, string>>>}), error(string)}, string>"
             ],
         ]
     );

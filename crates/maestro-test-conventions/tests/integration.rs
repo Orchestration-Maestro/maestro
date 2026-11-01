@@ -1,6 +1,7 @@
 //! Shared integration-test executable.
 #![cfg(test)]
 
+mod application_exports;
 mod architecture;
 mod boundaries;
 mod child_tests;

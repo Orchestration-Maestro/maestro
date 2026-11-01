@@ -185,21 +185,25 @@ impl<E: ExtensionExecution> AgentSession<E> {
         Ok(Outcome::Compacted { result })
     }
 
-    /// The key and headers automatic compaction uses, absent when none are configured.
-    async fn configured_auth(&self) -> Option<(String, Option<IndexMap<String, String>>)> {
+    /// The key, headers and endpoint automatic compaction uses, absent without a key.
+    async fn configured_auth(
+        &self,
+    ) -> Option<(String, Option<IndexMap<String, String>>, Option<String>)> {
         let model = self.model();
         let auth = self.model_registry.get_api_key_and_headers(&model).await;
         let maestro_catalog::ResolvedRequestAuth::Ok {
             api_key: Some(api_key),
             headers,
+            base_url,
         } = auth
         else {
             return None;
         };
-        (!api_key.is_empty()).then_some((api_key, headers))
+        (!api_key.is_empty()).then_some((api_key, headers, base_url))
     }
 
-    /// The context tokens the finished response reports, absent when nothing is known.
+    /// The context tokens the finished response reports, or the last real usage's estimate when it
+    /// failed or reported none; absent when nothing is known.
     fn context_tokens(
         &self,
         message: &AssistantMessage,
@@ -207,7 +211,10 @@ impl<E: ExtensionExecution> AgentSession<E> {
     ) -> Result<Option<f64>, DiagnosticErrorInfo> {
         if message.stop_reason != StopReason::Error {
             let usage = serde_json::to_value(&message.usage).map_err(thrown)?;
-            return calculate_context_tokens(&usage).map(Some).map_err(thrown);
+            let direct = calculate_context_tokens(&usage).map_err(thrown)?;
+            if direct > 0.0 {
+                return Ok(Some(direct));
+            }
         }
         let records = message_records(&read(&self.messages()))?;
         let estimate = estimate_context_tokens(&records).map_err(thrown)?;

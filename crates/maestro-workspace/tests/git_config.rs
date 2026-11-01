@@ -675,6 +675,18 @@ fn user_files_follow_git_precedence() {
             PathBuf::from("/home/member/.gitconfig")
         ]
     );
+    assert_eq!(
+        files(Some(Path::new("")), Some(home)),
+        files(None, Some(home))
+    );
+    assert!(files(Some(Path::new("")), None).is_empty());
+    assert_eq!(
+        files(None, Some(Path::new(""))),
+        [
+            PathBuf::from("/.config/git/config"),
+            PathBuf::from("/.gitconfig")
+        ]
+    );
     assert_eq!(files(Some(xdg), None), [PathBuf::from("/xdg/git/config")]);
     assert!(files(None, None).is_empty());
     assert_eq!(

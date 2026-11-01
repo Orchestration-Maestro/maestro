@@ -438,8 +438,8 @@ an acquisition or retained query is allowed remains the host's decision.
 sort or deduplicate the supplied lists. `get_api_key_and_headers` awaits the host
 operation for the supplied descriptor, without checking catalog membership.
 `ResolvedRequestAuth` is re-exported from the [shared request owner](../records.md#resolved-request-authentication),
-`maestro_request::model_registry`. `ResolvedRequestAuth::Ok` preserves optional keys and ordered headers, including
-present empty strings; `Error` carries a structured denial, distinct from an
+`maestro_request::model_registry`. `ResolvedRequestAuth::Ok` preserves optional keys,
+endpoints and ordered headers, including present empty strings; `Error` carries a structured denial, distinct from an
 outer host-call failure.
 
 `ModelRegistry` also forwards `refresh`, `get_error`, `has_configured_auth`,
@@ -452,7 +452,10 @@ before the call; `AuthStatus` and `AuthSource` are the
 `ModelRegistry::auth_storage()` returns the catalog's live credential owner, not
 copied credentials. Its `AuthStorage` handle can outlive the creating callback.
 Reads, runtime key overrides, stored credential changes, reload, logout and error
-draining reach that same owner. `get_api_key` uses its original credential-command
+draining reach that same owner. `get`, `list`, `get_all`, `has_auth`, `get_auth_status`
+and `get_api_key` first reread the stored document through the owner's backend, so
+they see what another process wrote, and an authored backend runs inside the read as it
+does inside `reload`. `get_api_key` uses its original credential-command
 effects; `GetApiKeyOptions::include_fallback` defaults to true. Persistence failures
 remain in `drain_errors` rather than rolling back accepted state.
 

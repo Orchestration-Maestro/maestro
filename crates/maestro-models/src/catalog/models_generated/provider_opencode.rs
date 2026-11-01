@@ -87,7 +87,7 @@ cost: crate::ModelCost { input: 5.0, output: 25.0, cache_read: 0.5, cache_write:
 context_window: 1_000_000.0,
 max_tokens: 128_000.0,
 headers: None,
-compat: None,
+compat: Some(crate::ModelCompat([("forceAdaptiveThinking".into(), serde_json::Value::Bool(true))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -105,7 +105,7 @@ cost: crate::ModelCost { input: 5.0, output: 25.0, cache_read: 0.5, cache_write:
 context_window: 1_000_000.0,
 max_tokens: 128_000.0,
 headers: None,
-compat: None,
+compat: Some(crate::ModelCompat([("forceAdaptiveThinking".into(), serde_json::Value::Bool(true))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -159,7 +159,7 @@ cost: crate::ModelCost { input: 3.0, output: 15.0, cache_read: 0.3, cache_write:
 context_window: 1_000_000.0,
 max_tokens: 64_000.0,
 headers: None,
-compat: None,
+compat: Some(crate::ModelCompat([("forceAdaptiveThinking".into(), serde_json::Value::Bool(true))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.

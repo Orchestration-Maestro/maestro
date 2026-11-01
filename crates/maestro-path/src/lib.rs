@@ -25,7 +25,10 @@ pub use os::{homedir, native_homedir};
 pub use path::{
     Cwd, CwdUnavailable, normalize_native, posix, resolve_with, resolve_with_flavor, win32,
 };
-pub use tilde::{Tilde, expand_tilde, expand_tilde_joined, expand_tilde_native, parse_tilde};
+pub use tilde::{
+    Tilde, expand_tilde, expand_tilde_joined, expand_tilde_native, join_home, parse_tilde,
+    shorten_home, shorten_home_normalized,
+};
 
 #[cfg(not(windows))]
 pub use path::posix::{

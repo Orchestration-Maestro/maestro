@@ -593,6 +593,9 @@
     "expected": {
       "chat": [
         "",
+        " \u001b[38;5;6mError: Model stopped because it reached the maximum output token limit. The response may be        ",
+        " \u001b[38;5;6mincomplete.\u001b[39m                                                                                        ",
+        "",
         "\u001b[48;5;73m                                                                                                    \u001b[49m",
         "\u001b[48;5;73m \u001b[38;5;15m\u001b[1munknown_tool\u001b[22m\u001b[39m                                                                                       \u001b[49m",
         "\u001b[48;5;73m                                                                                                    \u001b[49m",

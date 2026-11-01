@@ -17,6 +17,10 @@ that identifier, so replacing or withdrawing a provider implementation between
 the question and the login is visible. Implementation:
 `crates/maestro-cli/src/model_login/cli.rs`.
 
+An Anthropic login listens for the browser's redirect on local port 53692. When
+another program holds that port, the login uses a free local port and names it in the
+redirect address, so sign-in still finishes; see the [account flows](models/oauth.md).
+
 The help examples name `maestro-model-account`. The standalone executable and
 the terminal console it runs on belong to the command-line startup frontend.
 
@@ -51,3 +55,9 @@ readable only by its owner on Unix. Errors keep the `Error:` line and exit statu
 
 This is not the session credential store: the command only reads and writes the
 standalone account file at that caller-relative path, and offers no path option.
+
+## Interactive sign-in
+
+The interactive mode signs in through `LoginDialogComponent`, described with the
+[selectors](chat/selectors.md#sign-in-dialog). A submitted prompt keeps its row,
+frozen as `> value`, and every later prompt starts with an empty input.

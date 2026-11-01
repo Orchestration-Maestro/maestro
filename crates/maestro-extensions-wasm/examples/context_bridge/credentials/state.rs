@@ -56,7 +56,10 @@ impl AuthStorageBackend for Backend {
 
 /// A literal credential without ambient command or environment interpretation.
 fn key(value: &str) -> AuthCredential {
-    AuthCredential::ApiKey(ApiKeyCredential { key: value.into() })
+    AuthCredential::ApiKey(ApiKeyCredential {
+        env: None,
+        key: value.into(),
+    })
 }
 
 /// Records ordered errors and accepted state before recovery from each failed persistence.

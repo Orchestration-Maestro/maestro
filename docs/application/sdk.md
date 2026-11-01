@@ -418,14 +418,26 @@ already exist: their directories, credentials, catalog, preferences and loader.
 Each provider request takes the catalog's key and headers for the model; a
 credential failure fails the request with its message. The provider retry
 settings supply the timeout, the retry limit and the longest retry delay where
-the request sets none. Headers merge in order: attribution headers, then the
+the request sets none, and the `httpIdleTimeoutMs` setting supplies the timeout
+when neither the request nor the provider retry settings set one; its `0` or
+`disabled` asks for the largest timeout a request carries, `i32::MAX` milliseconds, so
+every provider that reads the timeout stops limiting the wait. Headers merge in order: attribution headers, then the
 credential headers, then the request's own, later names replacing earlier
 values.
 
 While install telemetry is on, requests to `openrouter` or an `openrouter.ai`
 address carry `HTTP-Referer: https://github.com/Orchestration-Maestro/maestro`,
 `X-OpenRouter-Title: maestro` and `X-OpenRouter-Categories: cli-agent`. Requests
-to Cloudflare's providers or addresses carry `User-Agent: maestro-coding-agent`.
+to `nvidia` or an `integrate.api.nvidia.com` address carry
+`X-BILLING-INVOKE-ORIGIN: maestro`. Requests to Cloudflare's providers or to
+`api.cloudflare.com` and `gateway.ai.cloudflare.com` addresses carry
+`User-Agent: maestro-coding-agent`. Requests to `opencode`, `opencode-go` or an
+`opencode.ai` address that carry a session ID also send `x-opencode-session` and
+`x-opencode-client: maestro`, whatever the telemetry setting.
+
+An address matches by its parsed host, ignoring case. A path or query that only
+names a host, such as `https://proxy.example/api.cloudflare.com/v1`, matches
+nothing.
 
 Extensions can replace each request payload through `before_provider_request`,
 hear each response status and headers through `after_provider_response`, and

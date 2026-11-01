@@ -16,6 +16,9 @@ API; request processing and payload hooks still receive the original descriptor.
 
 ## Conversation input
 
+Message roles and content kinds are closed typed records. JSON model invocations
+reject an unknown role or content block during decoding, before provider conversion.
+
 History first passes through the [shared projection](../conversation-projection.md). User content keeps
 its text and block order. Blank user and tool-result text is dropped, and a turn or result left
 without content holds the placeholder `<empty>`. Blank assistant text and thinking are skipped;
@@ -51,6 +54,12 @@ endpoint and profile region do not determine that display decision.
 `SimpleStreamOptions`, resolves [base options and token budgets](../model-options.md), adjusts
 fixed-budget Claude token limits and the selected budget slot, then calls `stream_bedrock`.
 Adaptive Claude and other models do not receive that adjustment.
+
+The catalog generator also marks Messages models whose case-sensitive IDs contain
+`opus-4-6`, `opus-4.6`, `opus-4-7`, `opus-4.7`, `opus-4-8`, `opus-4.8`, `sonnet-4-6`,
+`sonnet-4.6`, `sonnet-5` or `sonnet.5` with `forceAdaptiveThinking: true`, retaining their
+other compatibility settings. The [Messages adapter](messages.md#thinking) sends adaptive
+thinking and mapped effort for these models without a thinking budget or interleaved-thinking beta.
 
 Text, thinking and tool-call updates reduce into the shared assistant message. Generic
 `stream`, `stream_simple`, `complete` and `complete_simple` dispatch through the bundled

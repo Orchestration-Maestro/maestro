@@ -804,7 +804,10 @@ struct Displayed {
 fn key_display_capitalizes_each_live_binding_without_reordering() {
     const TEST: &str = "key_display_capitalizes_each_live_binding_without_reordering";
     for (KeyName::CapitalizeKey { key }, expected) in cases::<KeyName, Displayed>(TEST) {
-        assert_eq!(InteractiveMode::capitalize_key(&key), expected.result);
+        assert_eq!(
+            maestro_app::format_key_text(&key, true),
+            super::platform_keys::on_this_platform(&expected.result)
+        );
     }
     isolated(TEST, async |directory| {
         // The mode publishes the application's key registry, which the display reads live.
@@ -819,10 +822,10 @@ fn key_display_capitalizes_each_live_binding_without_reordering() {
             )]);
             InteractiveMode::get_app_key_display("app.message.dequeue")
         };
-        assert_eq!(bind(None), "Alt+Up");
+        assert_eq!(bind(None), super::platform_keys::on_this_platform("Alt+Up"));
         assert_eq!(bind(Some(&["shift+x", "ctrl+q"])), "Shift+X/Ctrl+Q");
         assert_eq!(bind(Some(&["ctrl+q", "shift+x"])), "Ctrl+Q/Shift+X");
-        assert_eq!(bind(None), "Alt+Up");
+        assert_eq!(bind(None), super::platform_keys::on_this_platform("Alt+Up"));
     });
 }
 
@@ -1097,10 +1100,6 @@ fn with_compaction_notice(observed: Observed, world: &World) -> Observed {
 
 /// The failure of the delivered input when no provider is registered.
 const PROVIDER_FAILURE: &str = "No API provider registered for api: unknown";
-
-/// The notice the automatic compaction attempt ends with when no provider is registered.
-const AUTO_COMPACTION_FAILURE: &str =
-    "Auto-compaction failed: No API provider registered for api: unknown";
 
 /// Runs `action` from the start notification of a compaction of `world`'s session, while
 /// the session compacts, then lets the compaction end.
@@ -1662,7 +1661,6 @@ async fn rejection_case(directory: &Path, operation: Operation, expected: Value)
         0,
         format!("{shown}{}", " ".repeat(80 - heading.chars().count() - 1)),
     );
-    let expected = with_notice(expected, &world, AUTO_COMPACTION_FAILURE);
     assert_eq!(observe(&world, &heard, 0), expected);
 }
 

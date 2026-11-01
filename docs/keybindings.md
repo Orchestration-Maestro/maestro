@@ -127,10 +127,12 @@ intend to consume those letters instead of typing them.
 ## Key notation and terminal limits
 
 Combine the modifiers `ctrl`, `shift`, `alt`, `super` and `hyper` with `+`, for
-example `ctrl+shift+x`. The aliases `control`, `option` and `meta` (alt), and `cmd`
-and `command` (super), name the same modifiers. A word before the key that is not a
-modifier name, such as the typo in `ctlr+k`, makes the whole key string name nothing,
-so it never binds the plain key. `hyper+k` binds only a key reported with hyper held.
+example `ctrl+shift+x`. Modifier words may come before or after the key: `k+ctrl`
+names the same key as `ctrl+k`. The aliases `control`, `option` and `meta` (alt), and
+`cmd` and `command` (super), name the same modifiers. A word that is neither a
+modifier name nor the one key, such as the typo in `ctlr+k`, makes the whole key string
+name nothing, so it never binds the plain key. `hyper+k` binds only a key reported with
+hyper held.
 The workspace key combinations use the same notation.
 Use lowercase letters, digits, literal punctuation, `f1` through `f12`, or named
 keys: `escape` (`esc`), `enter` (`return`), `tab`, `space`, `backspace` (`bs`), `delete`,
@@ -294,3 +296,15 @@ Unix job control. The registered Windows defaults above do not imply that the
 executable can open interactive mode there: native Windows startup is blocked by
 [#2844](https://github.com/Orchestration-Maestro/maestro/issues/2844).
 WSL runs the Unix path and is not that native-Windows case.
+
+## Key names in hints
+
+Every hint spells its keys from the live registry through `key_text`, `key_display_text` and
+`format_key_text`, and none writes a key by hand. `key_text` joins the keys bound to an action
+with `/` as written, with `alt` shown as `option` on macOS. `key_display_text` also starts each
+part with a capital letter (`Ctrl+Option+X`), and `format_key_text(key, capitalize)` applies the
+same spelling to a key list that is not a registry action, such as an extension shortcut. The
+settings list, the hotkey list, the startup help and the model-scope line printed before the
+interactive mode starts all use them, so a remapped key shows as configured. The model-scope
+line names the key bound to the next-model action and leaves its hint out when none is bound.
+

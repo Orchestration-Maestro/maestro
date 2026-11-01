@@ -265,6 +265,7 @@ fn oauth_transforms_run_in_registration_order_for_stored_tokens() {
     auth.set(
         ids[2],
         AuthCredential::ApiKey(ApiKeyCredential {
+            env: None,
             key: "unused".into(),
         }),
     );

@@ -65,7 +65,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -83,9 +83,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -106,7 +103,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -172,7 +169,10 @@
           "cacheWrite": 3.75
         },
         "contextWindow": 1000000,
-        "maxTokens": 64000
+        "maxTokens": 64000,
+        "compat": {
+          "forceAdaptiveThinking": true
+        }
       },
       "context": {
         "systemPrompt": "You are a helpful assistant.",
@@ -216,8 +216,12 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
+          "betas": [
+            "claude-code-20250219",
+            "oauth-2025-04-20"
+          ],
           "system": [
             {
               "type": "text",
@@ -266,7 +270,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -533,7 +537,7 @@
               ]
             }
           ],
-          "max_tokens": 5333,
+          "max_tokens": 16000,
           "stream": true,
           "system": [
             {
@@ -551,9 +555,6 @@
           "url": "https://api.individual.githubcopilot.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "authorization": "Bearer fixture-key",
             "content-type": "application/json",
@@ -579,7 +580,7 @@
                 ]
               }
             ],
-            "max_tokens": 5333,
+            "max_tokens": 16000,
             "stream": true,
             "system": [
               {
@@ -951,7 +952,8 @@
               ]
             }
           ],
-          "stream": true
+          "stream": true,
+          "store": false
         }
       ],
       "requests": [
@@ -979,7 +981,8 @@
                 ]
               }
             ],
-            "stream": true
+            "stream": true,
+            "store": false
           }
         }
       ],
@@ -2019,7 +2022,7 @@
               ]
             }
           ],
-          "max_tokens": 43690,
+          "max_tokens": 131072,
           "stream": true,
           "system": [
             {
@@ -2037,9 +2040,6 @@
           "url": "https://api.minimax.io/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -2060,7 +2060,7 @@
                 ]
               }
             ],
-            "max_tokens": 43690,
+            "max_tokens": 131072,
             "stream": true,
             "system": [
               {
@@ -2840,7 +2840,7 @@
               ]
             }
           ],
-          "max_tokens": 10922,
+          "max_tokens": 32768,
           "stream": true,
           "system": [
             {
@@ -2858,9 +2858,6 @@
           "url": "https://api.kimi.com/coding/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "user-agent": "KimiCLI/1.5",
@@ -2882,7 +2879,7 @@
                 ]
               }
             ],
-            "max_tokens": 10922,
+            "max_tokens": 32768,
             "stream": true,
             "system": [
               {
@@ -2992,7 +2989,7 @@
               ]
             }
           ],
-          "max_tokens": 21845,
+          "max_tokens": 65536,
           "stream": true,
           "system": [
             {
@@ -3010,9 +3007,6 @@
           "url": "https://ai-gateway.vercel.sh/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -3033,7 +3027,7 @@
                 ]
               }
             ],
-            "max_tokens": 21845,
+            "max_tokens": 65536,
             "stream": true,
             "system": [
               {
@@ -6203,6 +6197,7 @@
             }
           ],
           "stream": true,
+          "store": false,
           "tools": [
             {
               "type": "function",
@@ -6243,6 +6238,7 @@
               }
             ],
             "stream": true,
+            "store": false,
             "tools": [
               {
                 "type": "function",
@@ -6546,6 +6542,7 @@
             }
           ],
           "stream": true,
+          "store": false,
           "tools": [
             {
               "type": "function",
@@ -6604,6 +6601,7 @@
               }
             ],
             "stream": true,
+            "store": false,
             "tools": [
               {
                 "type": "function",
@@ -6822,6 +6820,7 @@
             }
           ],
           "stream": true,
+          "store": false,
           "tools": [
             {
               "type": "function",
@@ -6862,6 +6861,7 @@
               }
             ],
             "stream": true,
+            "store": false,
             "tools": [
               {
                 "type": "function",
@@ -7173,6 +7173,7 @@
             }
           ],
           "stream": true,
+          "store": false,
           "tools": [
             {
               "type": "function",
@@ -7235,6 +7236,7 @@
               }
             ],
             "stream": true,
+            "store": false,
             "tools": [
               {
                 "type": "function",
@@ -7418,7 +7420,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -7451,9 +7453,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -7474,7 +7473,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -7741,7 +7740,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -7774,9 +7773,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -7827,7 +7823,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -8023,7 +8019,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -8056,9 +8052,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -8079,7 +8072,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -8350,7 +8343,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -8383,9 +8376,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -8436,7 +8426,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -15063,7 +15053,7 @@
               ]
             }
           ],
-          "max_tokens": 10922,
+          "max_tokens": 32768,
           "stream": true,
           "system": [
             {
@@ -15096,9 +15086,6 @@
           "url": "https://api.kimi.com/coding/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "user-agent": "KimiCLI/1.5",
@@ -15120,7 +15107,7 @@
                 ]
               }
             ],
-            "max_tokens": 10922,
+            "max_tokens": 32768,
             "stream": true,
             "system": [
               {
@@ -15390,7 +15377,7 @@
               ]
             }
           ],
-          "max_tokens": 10922,
+          "max_tokens": 32768,
           "stream": true,
           "system": [
             {
@@ -15423,9 +15410,6 @@
           "url": "https://api.kimi.com/coding/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "user-agent": "KimiCLI/1.5",
@@ -15477,7 +15461,7 @@
                 ]
               }
             ],
-            "max_tokens": 10922,
+            "max_tokens": 32768,
             "stream": true,
             "system": [
               {
@@ -15676,7 +15660,7 @@
               ]
             }
           ],
-          "max_tokens": 10922,
+          "max_tokens": 32768,
           "stream": true,
           "system": [
             {
@@ -15709,9 +15693,6 @@
           "url": "https://api.kimi.com/coding/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "user-agent": "KimiCLI/1.5",
@@ -15733,7 +15714,7 @@
                 ]
               }
             ],
-            "max_tokens": 10922,
+            "max_tokens": 32768,
             "stream": true,
             "system": [
               {
@@ -16007,7 +15988,7 @@
               ]
             }
           ],
-          "max_tokens": 10922,
+          "max_tokens": 32768,
           "stream": true,
           "system": [
             {
@@ -16040,9 +16021,6 @@
           "url": "https://api.kimi.com/coding/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "user-agent": "KimiCLI/1.5",
@@ -16094,7 +16072,7 @@
                 ]
               }
             ],
-            "max_tokens": 10922,
+            "max_tokens": 32768,
             "stream": true,
             "system": [
               {
@@ -16290,7 +16268,7 @@
               ]
             }
           ],
-          "max_tokens": 21845,
+          "max_tokens": 65536,
           "stream": true,
           "system": [
             {
@@ -16323,9 +16301,6 @@
           "url": "https://ai-gateway.vercel.sh/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -16346,7 +16321,7 @@
                 ]
               }
             ],
-            "max_tokens": 21845,
+            "max_tokens": 65536,
             "stream": true,
             "system": [
               {
@@ -16613,7 +16588,7 @@
               ]
             }
           ],
-          "max_tokens": 21845,
+          "max_tokens": 65536,
           "stream": true,
           "system": [
             {
@@ -16646,9 +16621,6 @@
           "url": "https://ai-gateway.vercel.sh/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -16699,7 +16671,7 @@
                 ]
               }
             ],
-            "max_tokens": 21845,
+            "max_tokens": 65536,
             "stream": true,
             "system": [
               {
@@ -16895,7 +16867,7 @@
               ]
             }
           ],
-          "max_tokens": 21845,
+          "max_tokens": 65536,
           "stream": true,
           "system": [
             {
@@ -16928,9 +16900,6 @@
           "url": "https://ai-gateway.vercel.sh/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -16951,7 +16920,7 @@
                 ]
               }
             ],
-            "max_tokens": 21845,
+            "max_tokens": 65536,
             "stream": true,
             "system": [
               {
@@ -17222,7 +17191,7 @@
               ]
             }
           ],
-          "max_tokens": 21845,
+          "max_tokens": 65536,
           "stream": true,
           "system": [
             {
@@ -17255,9 +17224,6 @@
           "url": "https://ai-gateway.vercel.sh/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -17308,7 +17274,7 @@
                 ]
               }
             ],
-            "max_tokens": 21845,
+            "max_tokens": 65536,
             "stream": true,
             "system": [
               {
@@ -17504,8 +17470,12 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
+          "betas": [
+            "claude-code-20250219",
+            "oauth-2025-04-20"
+          ],
           "system": [
             {
               "type": "text",
@@ -17546,8 +17516,7 @@
             "accept": "application/json",
             "anthropic-beta": [
               "claude-code-20250219",
-              "oauth-2025-04-20",
-              "interleaved-thinking-2025-05-14"
+              "oauth-2025-04-20"
             ],
             "anthropic-version": "2023-06-01",
             "authorization": "Bearer sk-ant-oat-fixture",
@@ -17570,7 +17539,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -17844,8 +17813,12 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
+          "betas": [
+            "claude-code-20250219",
+            "oauth-2025-04-20"
+          ],
           "system": [
             {
               "type": "text",
@@ -17886,8 +17859,7 @@
             "accept": "application/json",
             "anthropic-beta": [
               "claude-code-20250219",
-              "oauth-2025-04-20",
-              "interleaved-thinking-2025-05-14"
+              "oauth-2025-04-20"
             ],
             "anthropic-version": "2023-06-01",
             "authorization": "Bearer sk-ant-oat-fixture",
@@ -17940,7 +17912,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -18143,8 +18115,12 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
+          "betas": [
+            "claude-code-20250219",
+            "oauth-2025-04-20"
+          ],
           "system": [
             {
               "type": "text",
@@ -18185,8 +18161,7 @@
             "accept": "application/json",
             "anthropic-beta": [
               "claude-code-20250219",
-              "oauth-2025-04-20",
-              "interleaved-thinking-2025-05-14"
+              "oauth-2025-04-20"
             ],
             "anthropic-version": "2023-06-01",
             "authorization": "Bearer sk-ant-oat-fixture",
@@ -18209,7 +18184,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -18487,8 +18462,12 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
+          "betas": [
+            "claude-code-20250219",
+            "oauth-2025-04-20"
+          ],
           "system": [
             {
               "type": "text",
@@ -18529,8 +18508,7 @@
             "accept": "application/json",
             "anthropic-beta": [
               "claude-code-20250219",
-              "oauth-2025-04-20",
-              "interleaved-thinking-2025-05-14"
+              "oauth-2025-04-20"
             ],
             "anthropic-version": "2023-06-01",
             "authorization": "Bearer sk-ant-oat-fixture",
@@ -18583,7 +18561,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -19867,8 +19845,11 @@
               ]
             }
           ],
-          "max_tokens": 5333,
+          "max_tokens": 16000,
           "stream": true,
+          "betas": [
+            "fine-grained-tool-streaming-2025-05-14"
+          ],
           "system": [
             {
               "type": "text",
@@ -19900,8 +19881,7 @@
           "headers": {
             "accept": "application/json",
             "anthropic-beta": [
-              "fine-grained-tool-streaming-2025-05-14",
-              "interleaved-thinking-2025-05-14"
+              "fine-grained-tool-streaming-2025-05-14"
             ],
             "anthropic-version": "2023-06-01",
             "authorization": "Bearer fixture-key",
@@ -19928,7 +19908,7 @@
                 ]
               }
             ],
-            "max_tokens": 5333,
+            "max_tokens": 16000,
             "stream": true,
             "system": [
               {
@@ -20203,8 +20183,11 @@
               ]
             }
           ],
-          "max_tokens": 5333,
+          "max_tokens": 16000,
           "stream": true,
+          "betas": [
+            "fine-grained-tool-streaming-2025-05-14"
+          ],
           "system": [
             {
               "type": "text",
@@ -20236,8 +20219,7 @@
           "headers": {
             "accept": "application/json",
             "anthropic-beta": [
-              "fine-grained-tool-streaming-2025-05-14",
-              "interleaved-thinking-2025-05-14"
+              "fine-grained-tool-streaming-2025-05-14"
             ],
             "anthropic-version": "2023-06-01",
             "authorization": "Bearer fixture-key",
@@ -20294,7 +20276,7 @@
                 ]
               }
             ],
-            "max_tokens": 5333,
+            "max_tokens": 16000,
             "stream": true,
             "system": [
               {
@@ -20498,8 +20480,11 @@
               ]
             }
           ],
-          "max_tokens": 5333,
+          "max_tokens": 16000,
           "stream": true,
+          "betas": [
+            "fine-grained-tool-streaming-2025-05-14"
+          ],
           "system": [
             {
               "type": "text",
@@ -20531,8 +20516,7 @@
           "headers": {
             "accept": "application/json",
             "anthropic-beta": [
-              "fine-grained-tool-streaming-2025-05-14",
-              "interleaved-thinking-2025-05-14"
+              "fine-grained-tool-streaming-2025-05-14"
             ],
             "anthropic-version": "2023-06-01",
             "authorization": "Bearer fixture-key",
@@ -20559,7 +20543,7 @@
                 ]
               }
             ],
-            "max_tokens": 5333,
+            "max_tokens": 16000,
             "stream": true,
             "system": [
               {
@@ -20838,8 +20822,11 @@
               ]
             }
           ],
-          "max_tokens": 5333,
+          "max_tokens": 16000,
           "stream": true,
+          "betas": [
+            "fine-grained-tool-streaming-2025-05-14"
+          ],
           "system": [
             {
               "type": "text",
@@ -20871,8 +20858,7 @@
           "headers": {
             "accept": "application/json",
             "anthropic-beta": [
-              "fine-grained-tool-streaming-2025-05-14",
-              "interleaved-thinking-2025-05-14"
+              "fine-grained-tool-streaming-2025-05-14"
             ],
             "anthropic-version": "2023-06-01",
             "authorization": "Bearer fixture-key",
@@ -20929,7 +20915,7 @@
                 ]
               }
             ],
-            "max_tokens": 5333,
+            "max_tokens": 16000,
             "stream": true,
             "system": [
               {
@@ -22425,7 +22411,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -22443,9 +22429,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -22466,7 +22449,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -22661,7 +22644,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -22680,9 +22663,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -22704,7 +22684,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -22899,7 +22879,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -22917,9 +22897,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -22940,7 +22917,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -23134,7 +23111,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -23152,9 +23129,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -23175,7 +23149,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -23369,7 +23343,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -23387,9 +23361,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -23410,7 +23381,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -23604,7 +23575,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -23622,9 +23593,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -23645,7 +23613,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -23829,7 +23797,7 @@
               "content": "Hello"
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -23844,9 +23812,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -23859,7 +23824,7 @@
                 "content": "Hello"
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -24043,7 +24008,7 @@
               "content": "Hello"
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -24058,9 +24023,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -24073,7 +24035,7 @@
                 "content": "Hello"
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -24257,7 +24219,7 @@
               "content": "Hello"
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -24272,9 +24234,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -24287,7 +24246,7 @@
                 "content": "Hello"
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -24471,7 +24430,7 @@
               "content": "Hello"
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -24486,9 +24445,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -24501,7 +24457,7 @@
                 "content": "Hello"
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -24685,7 +24641,7 @@
               "content": "Hello"
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -24700,9 +24656,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -24715,7 +24668,7 @@
                 "content": "Hello"
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -24899,7 +24852,7 @@
               "content": "Hello"
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -24914,9 +24867,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -24929,7 +24879,7 @@
                 "content": "Hello"
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -25118,7 +25068,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -25136,9 +25086,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -25159,7 +25106,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -25354,7 +25301,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -25372,9 +25319,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -25395,7 +25339,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -25590,7 +25534,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -25608,9 +25552,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -25631,7 +25572,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -25826,7 +25767,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -25844,9 +25785,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -25867,7 +25805,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -26062,7 +26000,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -26080,9 +26018,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -26103,7 +26038,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -26298,7 +26233,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -26316,9 +26251,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -26339,7 +26271,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -26532,7 +26464,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -26551,9 +26483,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -26575,7 +26504,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -26772,7 +26701,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -26791,9 +26720,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -26815,7 +26741,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -27012,7 +26938,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -27031,9 +26957,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -27055,7 +26978,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -27252,7 +27175,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -27271,9 +27194,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -27295,7 +27215,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -27492,7 +27412,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -27511,9 +27431,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -27535,7 +27452,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -27732,7 +27649,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -27751,9 +27668,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -27775,7 +27689,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -27970,7 +27884,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -27988,9 +27902,6 @@
           "url": "https://my-proxy.example.com/v1/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -28011,7 +27922,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -28209,7 +28120,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -28228,9 +28139,6 @@
           "url": "https://my-proxy.example.com/v1/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -28252,7 +28160,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -28450,7 +28358,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -28468,9 +28376,6 @@
           "url": "https://my-proxy.example.com/v1/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -28491,7 +28396,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -28688,7 +28593,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -28706,9 +28611,6 @@
           "url": "https://my-proxy.example.com/v1/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -28729,7 +28631,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -28926,7 +28828,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -28944,9 +28846,6 @@
           "url": "https://my-proxy.example.com/v1/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -28967,7 +28866,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -29164,7 +29063,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -29182,9 +29081,6 @@
           "url": "https://my-proxy.example.com/v1/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -29205,7 +29101,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -29392,7 +29288,7 @@
               "content": "Hello"
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -29407,9 +29303,6 @@
           "url": "https://my-proxy.example.com/v1/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -29422,7 +29315,7 @@
                 "content": "Hello"
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -29609,7 +29502,7 @@
               "content": "Hello"
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -29624,9 +29517,6 @@
           "url": "https://my-proxy.example.com/v1/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -29639,7 +29529,7 @@
                 "content": "Hello"
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -29826,7 +29716,7 @@
               "content": "Hello"
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -29841,9 +29731,6 @@
           "url": "https://my-proxy.example.com/v1/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -29856,7 +29743,7 @@
                 "content": "Hello"
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -30043,7 +29930,7 @@
               "content": "Hello"
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -30058,9 +29945,6 @@
           "url": "https://my-proxy.example.com/v1/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -30073,7 +29957,7 @@
                 "content": "Hello"
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -30260,7 +30144,7 @@
               "content": "Hello"
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -30275,9 +30159,6 @@
           "url": "https://my-proxy.example.com/v1/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -30290,7 +30171,7 @@
                 "content": "Hello"
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -30477,7 +30358,7 @@
               "content": "Hello"
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -30492,9 +30373,6 @@
           "url": "https://my-proxy.example.com/v1/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -30507,7 +30385,7 @@
                 "content": "Hello"
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -30699,7 +30577,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -30717,9 +30595,6 @@
           "url": "https://my-proxy.example.com/v1/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -30740,7 +30615,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -30938,7 +30813,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -30956,9 +30831,6 @@
           "url": "https://my-proxy.example.com/v1/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -30979,7 +30851,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -31177,7 +31049,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -31195,9 +31067,6 @@
           "url": "https://my-proxy.example.com/v1/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -31218,7 +31087,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -31416,7 +31285,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -31434,9 +31303,6 @@
           "url": "https://my-proxy.example.com/v1/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -31457,7 +31323,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -31655,7 +31521,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -31673,9 +31539,6 @@
           "url": "https://my-proxy.example.com/v1/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -31696,7 +31559,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -31894,7 +31757,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -31912,9 +31775,6 @@
           "url": "https://my-proxy.example.com/v1/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -31935,7 +31795,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -32131,7 +31991,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -32150,9 +32010,6 @@
           "url": "https://my-proxy.example.com/v1/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -32174,7 +32031,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -32374,7 +32231,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -32393,9 +32250,6 @@
           "url": "https://my-proxy.example.com/v1/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -32417,7 +32271,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -32617,7 +32471,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -32636,9 +32490,6 @@
           "url": "https://my-proxy.example.com/v1/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -32660,7 +32511,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -32860,7 +32711,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -32879,9 +32730,6 @@
           "url": "https://my-proxy.example.com/v1/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -32903,7 +32751,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -33103,7 +32951,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -33122,9 +32970,6 @@
           "url": "https://my-proxy.example.com/v1/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -33146,7 +32991,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -33346,7 +33191,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -33365,9 +33210,6 @@
           "url": "https://my-proxy.example.com/v1/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -33389,7 +33231,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -33599,7 +33441,7 @@
               "content": "Hello"
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -33636,9 +33478,6 @@
           "url": "https://my-proxy.example.com/v1/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -33651,7 +33490,7 @@
                 "content": "Hello"
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -33887,7 +33726,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -33930,9 +33769,6 @@
           "url": "https://my-proxy.example.com/v1/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -33953,7 +33789,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -34196,7 +34032,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -34241,9 +34077,6 @@
           "url": "https://my-proxy.example.com/v1/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -34265,7 +34098,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -34501,7 +34334,7 @@
               "content": "Hello"
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -34538,9 +34371,6 @@
           "url": "https://my-proxy.example.com/v1/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -34553,7 +34383,7 @@
                 "content": "Hello"
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -34789,7 +34619,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -34832,9 +34662,6 @@
           "url": "https://my-proxy.example.com/v1/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -34855,7 +34682,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -35097,7 +34924,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -35140,9 +34967,6 @@
           "url": "https://my-proxy.example.com/v1/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -35163,7 +34987,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -35380,7 +35204,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -35399,9 +35223,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -35423,7 +35244,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -35617,7 +35438,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -35636,9 +35457,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -35660,7 +35478,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -70788,7 +70606,7 @@
               "content": "Hello"
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -70803,9 +70621,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -70818,7 +70633,7 @@
                 "content": "Hello"
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -71006,7 +70821,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -71024,9 +70839,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -71047,7 +70859,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -71239,7 +71051,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -71258,9 +71070,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -71282,7 +71091,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -71779,7 +71588,7 @@
           "text"
         ],
         "contextWindow": 4096,
-        "maxTokens": 2048,
+        "maxTokens": 1,
         "cost": {
           "input": 0,
           "output": 0,
@@ -72095,7 +71904,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -72128,9 +71937,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -72181,7 +71987,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -72457,7 +72263,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -72490,9 +72296,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -72547,7 +72350,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -72815,7 +72618,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -72848,9 +72651,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -72901,7 +72701,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -73169,7 +72969,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -73202,9 +73002,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -73255,7 +73052,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -73500,7 +73297,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -73533,9 +73330,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -73573,7 +73367,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -73837,7 +73631,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -73870,9 +73664,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -73923,7 +73714,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -74199,7 +73990,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -74232,9 +74023,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -74289,7 +74077,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -74557,7 +74345,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -74590,9 +74378,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -74643,7 +74428,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -74911,7 +74696,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -74944,9 +74729,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -74997,7 +74779,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -75242,7 +75024,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -75275,9 +75057,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -75315,7 +75094,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -75565,7 +75344,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -75598,9 +75377,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -75638,7 +75414,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -75896,7 +75672,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -75929,9 +75705,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -75969,7 +75742,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -76223,7 +75996,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -76256,9 +76029,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -76296,7 +76066,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -76550,7 +76320,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -76583,9 +76353,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -76623,7 +76390,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -76867,7 +76634,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -76900,9 +76667,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -76940,7 +76704,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -77190,7 +76954,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -77223,9 +76987,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -77263,7 +77024,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -77521,7 +77282,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -77554,9 +77315,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -77594,7 +77352,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -77848,7 +77606,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -77881,9 +77639,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -77921,7 +77676,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -78175,7 +77930,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -78208,9 +77963,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -78248,7 +78000,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -78492,7 +78244,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -78525,9 +78277,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -78565,7 +78314,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -91681,6 +91430,7 @@
             }
           ],
           "stream": true,
+          "store": false,
           "tools": [
             {
               "type": "function",
@@ -91738,6 +91488,7 @@
               }
             ],
             "stream": true,
+            "store": false,
             "tools": [
               {
                 "type": "function",
@@ -92049,6 +91800,7 @@
             }
           ],
           "stream": true,
+          "store": false,
           "tools": [
             {
               "type": "function",
@@ -92110,6 +91862,7 @@
               }
             ],
             "stream": true,
+            "store": false,
             "tools": [
               {
                 "type": "function",
@@ -92417,6 +92170,7 @@
             }
           ],
           "stream": true,
+          "store": false,
           "tools": [
             {
               "type": "function",
@@ -92478,6 +92232,7 @@
               }
             ],
             "stream": true,
+            "store": false,
             "tools": [
               {
                 "type": "function",
@@ -92785,6 +92540,7 @@
             }
           ],
           "stream": true,
+          "store": false,
           "tools": [
             {
               "type": "function",
@@ -92846,6 +92602,7 @@
               }
             ],
             "stream": true,
+            "store": false,
             "tools": [
               {
                 "type": "function",
@@ -93133,6 +92890,7 @@
             }
           ],
           "stream": true,
+          "store": false,
           "tools": [
             {
               "type": "function",
@@ -93184,6 +92942,7 @@
               }
             ],
             "stream": true,
+            "store": false,
             "tools": [
               {
                 "type": "function",
@@ -93483,6 +93242,7 @@
             }
           ],
           "stream": true,
+          "store": false,
           "tools": [
             {
               "type": "function",
@@ -93540,6 +93300,7 @@
               }
             ],
             "stream": true,
+            "store": false,
             "tools": [
               {
                 "type": "function",
@@ -93851,6 +93612,7 @@
             }
           ],
           "stream": true,
+          "store": false,
           "tools": [
             {
               "type": "function",
@@ -93912,6 +93674,7 @@
               }
             ],
             "stream": true,
+            "store": false,
             "tools": [
               {
                 "type": "function",
@@ -94219,6 +93982,7 @@
             }
           ],
           "stream": true,
+          "store": false,
           "tools": [
             {
               "type": "function",
@@ -94280,6 +94044,7 @@
               }
             ],
             "stream": true,
+            "store": false,
             "tools": [
               {
                 "type": "function",
@@ -94587,6 +94352,7 @@
             }
           ],
           "stream": true,
+          "store": false,
           "tools": [
             {
               "type": "function",
@@ -94648,6 +94414,7 @@
               }
             ],
             "stream": true,
+            "store": false,
             "tools": [
               {
                 "type": "function",
@@ -94935,6 +94702,7 @@
             }
           ],
           "stream": true,
+          "store": false,
           "tools": [
             {
               "type": "function",
@@ -94986,6 +94754,7 @@
               }
             ],
             "stream": true,
+            "store": false,
             "tools": [
               {
                 "type": "function",
@@ -95278,6 +95047,7 @@
             }
           ],
           "stream": true,
+          "store": false,
           "tools": [
             {
               "type": "function",
@@ -95329,6 +95099,7 @@
               }
             ],
             "stream": true,
+            "store": false,
             "tools": [
               {
                 "type": "function",
@@ -95629,6 +95400,7 @@
             }
           ],
           "stream": true,
+          "store": false,
           "tools": [
             {
               "type": "function",
@@ -95680,6 +95452,7 @@
               }
             ],
             "stream": true,
+            "store": false,
             "tools": [
               {
                 "type": "function",
@@ -95976,6 +95749,7 @@
             }
           ],
           "stream": true,
+          "store": false,
           "tools": [
             {
               "type": "function",
@@ -96027,6 +95801,7 @@
               }
             ],
             "stream": true,
+            "store": false,
             "tools": [
               {
                 "type": "function",
@@ -96323,6 +96098,7 @@
             }
           ],
           "stream": true,
+          "store": false,
           "tools": [
             {
               "type": "function",
@@ -96374,6 +96150,7 @@
               }
             ],
             "stream": true,
+            "store": false,
             "tools": [
               {
                 "type": "function",
@@ -96660,6 +96437,7 @@
             }
           ],
           "stream": true,
+          "store": false,
           "tools": [
             {
               "type": "function",
@@ -96711,6 +96489,7 @@
               }
             ],
             "stream": true,
+            "store": false,
             "tools": [
               {
                 "type": "function",
@@ -97003,6 +96782,7 @@
             }
           ],
           "stream": true,
+          "store": false,
           "tools": [
             {
               "type": "function",
@@ -97054,6 +96834,7 @@
               }
             ],
             "stream": true,
+            "store": false,
             "tools": [
               {
                 "type": "function",
@@ -97354,6 +97135,7 @@
             }
           ],
           "stream": true,
+          "store": false,
           "tools": [
             {
               "type": "function",
@@ -97405,6 +97187,7 @@
               }
             ],
             "stream": true,
+            "store": false,
             "tools": [
               {
                 "type": "function",
@@ -97701,6 +97484,7 @@
             }
           ],
           "stream": true,
+          "store": false,
           "tools": [
             {
               "type": "function",
@@ -97752,6 +97536,7 @@
               }
             ],
             "stream": true,
+            "store": false,
             "tools": [
               {
                 "type": "function",
@@ -98048,6 +97833,7 @@
             }
           ],
           "stream": true,
+          "store": false,
           "tools": [
             {
               "type": "function",
@@ -98099,6 +97885,7 @@
               }
             ],
             "stream": true,
+            "store": false,
             "tools": [
               {
                 "type": "function",
@@ -98385,6 +98172,7 @@
             }
           ],
           "stream": true,
+          "store": false,
           "tools": [
             {
               "type": "function",
@@ -98436,6 +98224,7 @@
               }
             ],
             "stream": true,
+            "store": false,
             "tools": [
               {
                 "type": "function",
@@ -111720,7 +111509,7 @@
               ]
             }
           ],
-          "max_tokens": 21333,
+          "max_tokens": 64000,
           "stream": true,
           "system": [
             {
@@ -111753,9 +111542,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -111818,7 +111604,7 @@
                 ]
               }
             ],
-            "max_tokens": 21333,
+            "max_tokens": 64000,
             "stream": true,
             "system": [
               {
@@ -112868,6 +112654,7 @@
             }
           ],
           "stream": true,
+          "store": false,
           "tools": [
             {
               "type": "function",
@@ -112934,6 +112721,7 @@
               }
             ],
             "stream": true,
+            "store": false,
             "tools": [
               {
                 "type": "function",

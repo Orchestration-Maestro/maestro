@@ -692,6 +692,30 @@ fn overflow_recovery_is_attempted_once_then_reported() {
 }
 
 #[test]
+fn together_and_litellm_overflow_errors_start_compaction_recovery() {
+    on_paused_task_set(|_| async {
+        for text in [
+            "The input (140000 tokens) is longer than the model's context length (131072 tokens).",
+            "Requested token count exceeds the model's maximum context length of 131072 tokens",
+        ] {
+            let calls = Rc::new(Cell::new(0));
+            let h = seeded(json!({}), vec![counted_summary(Rc::clone(&calls))]).await;
+            let overflow = current_response(&StopReason::Error, text);
+            set_agent_messages(
+                &h,
+                &[
+                    user(&json!([{"type": "text", "text": "one"}]), 100),
+                    assistant("", 200, &answer_extra(&StopReason::Stop, None, 10)),
+                    serde_json::to_value(&overflow).unwrap(),
+                ],
+            );
+            h.session.check_compaction(&overflow, true).await.unwrap();
+            assert_eq!(calls.get(), 1, "{text}");
+        }
+    });
+}
+
+#[test]
 fn overflow_recovery_asks_the_run_to_continue() {
     let expected = case(
         "compaction_checks",
@@ -779,6 +803,34 @@ fn error_messages_use_the_last_successful_usage() {
         h.session.check_compaction(&error, true).await.unwrap();
         assert_observation(&h, &expected);
         assert_kept_starts_the_history(&h, &expected["messages"]);
+    });
+}
+
+#[test]
+fn zero_usage_responses_use_the_last_real_usage() {
+    on_paused_task_set(|_| async {
+        for (prior, expected) in [(Some(14), 1), (None, 0)] {
+            let calls = Rc::new(Cell::new(0));
+            let h = seeded_window(
+                100.0,
+                json!({"compaction": {"reserveTokens": 87}}),
+                vec![counted_summary(Rc::clone(&calls))],
+            )
+            .await;
+            let zero = response(400, &answer_extra(&StopReason::Stop, None, 0));
+            let mut records = vec![user(&json!([{"type": "text", "text": "hello"}]), 100)];
+            if let Some(total) = prior {
+                records.push(assistant(
+                    "",
+                    200,
+                    &answer_extra(&StopReason::Stop, None, total),
+                ));
+            }
+            records.push(serde_json::to_value(&zero).unwrap());
+            set_agent_messages(&h, &records);
+            h.session.check_compaction(&zero, true).await.unwrap();
+            assert_eq!(calls.get(), expected, "prior usage {prior:?}");
+        }
     });
 }
 

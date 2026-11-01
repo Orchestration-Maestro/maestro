@@ -51,7 +51,7 @@ cost: crate::ModelCost { input: 0.0, output: 0.0, cache_read: 0.0, cache_write: 
 context_window: 1_000_000.0,
 max_tokens: 64_000.0,
 headers: Some(indexmap::IndexMap::from([("User-Agent".into(), "GitHubCopilotChat/0.35.0".into()),("Editor-Version".into(), "vscode/1.107.0".into()),("Editor-Plugin-Version".into(), "copilot-chat/0.35.0".into()),("Copilot-Integration-Id".into(), "vscode-chat".into())])),
-compat: None,
+compat: Some(crate::ModelCompat([("forceAdaptiveThinking".into(), serde_json::Value::Bool(true))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -69,7 +69,7 @@ cost: crate::ModelCost { input: 0.0, output: 0.0, cache_read: 0.0, cache_write: 
 context_window: 1_000_000.0,
 max_tokens: 64_000.0,
 headers: Some(indexmap::IndexMap::from([("User-Agent".into(), "GitHubCopilotChat/0.35.0".into()),("Editor-Version".into(), "vscode/1.107.0".into()),("Editor-Plugin-Version".into(), "copilot-chat/0.35.0".into()),("Copilot-Integration-Id".into(), "vscode-chat".into())])),
-compat: None,
+compat: Some(crate::ModelCompat([("forceAdaptiveThinking".into(), serde_json::Value::Bool(true))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -123,7 +123,7 @@ cost: crate::ModelCost { input: 0.0, output: 0.0, cache_read: 0.0, cache_write: 
 context_window: 1_000_000.0,
 max_tokens: 32_000.0,
 headers: Some(indexmap::IndexMap::from([("User-Agent".into(), "GitHubCopilotChat/0.35.0".into()),("Editor-Version".into(), "vscode/1.107.0".into()),("Editor-Plugin-Version".into(), "copilot-chat/0.35.0".into()),("Copilot-Integration-Id".into(), "vscode-chat".into())])),
-compat: None,
+compat: Some(crate::ModelCompat([("forceAdaptiveThinking".into(), serde_json::Value::Bool(true))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
