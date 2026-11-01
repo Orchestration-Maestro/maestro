@@ -223,16 +223,17 @@ fn custom_message_provider_registers_models_and_streams_with_api_key() {
     });
 }
 
-/// The session, not the authored transport, retries transient provider errors.
+/// The session retries a message after the extension client's attempt budget is exhausted.
 async fn session_retries(session: &Rc<AgentSession>, status: u16) {
-    let server = Server::new(vec![
+    let mut responses = vec![
         (
             status,
             json!({"error":{"message":"controlled failure"}}).to_string(),
-        ),
-        (200, text_response()),
-    ])
-    .await;
+        );
+        3
+    ];
+    responses.push((200, text_response()));
+    let server = Server::new(responses).await;
     let descriptor = model(session, &server.base);
     session
         .set_model(std::sync::Arc::new(std::sync::RwLock::new(descriptor)))
@@ -262,10 +263,18 @@ async fn session_retries(session: &Rc<AgentSession>, status: u16) {
         .await
         .unwrap();
     unsubscribe();
+    check_retry_events(&events.borrow(), status);
     let requests = server.requests().await;
-    let events = events.borrow();
-    assert_eq!(requests.len(), 2);
-    assert_eq!(requests[0].1["messages"], requests[1].1["messages"]);
+    assert_eq!(requests.len(), 4);
+    assert!(
+        requests
+            .windows(2)
+            .all(|pair| pair[0].1["messages"] == pair[1].1["messages"])
+    );
+}
+
+/// Checks the one session-level retry independently of the client's internal attempts.
+fn check_retry_events(events: &[Value], status: u16) {
     assert_eq!(events.len(), 2);
     assert_eq!(events[0]["type"], "auto_retry_start");
     assert!(

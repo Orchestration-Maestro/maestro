@@ -14,6 +14,9 @@ mod response;
 /// Byte-oriented event framing.
 #[path = "sse.rs"]
 mod sse;
+/// The extension client's retry and headers-deadline policy.
+#[path = "transport.rs"]
+mod transport;
 
 impl CustomAnthropic {
     /// Produces one request's updates and terminal result in the supplied public stream.
@@ -58,13 +61,11 @@ async fn produce(
     options: Option<&StreamOptionsInput>,
     state: &mut response::ResponseState,
 ) -> ExtensionResult<()> {
-    let response = provider
-        .io
-        .fetch(request::build(model, context, options)?)
-        .await?;
+    let received = transport::send(provider, request::build(model, context, options)?).await?;
+    let response = received.response.as_ref();
     if !response.ok() {
         // The status stays in the message, so the session's retry classification sees it.
-        return Err(super::oauth::failure(&*response).await);
+        return Err(super::oauth::failure(response).await);
     }
     let body = response
         .body()

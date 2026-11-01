@@ -40,10 +40,10 @@ pub fn wire_tool_name(name: &str) -> String {
         .map_or_else(|| name.to_owned(), |known| (*known).to_owned())
 }
 
-/// Builds one HTTP attempt without introducing a second retry owner.
+/// Builds the message request for the extension's client transport.
 ///
 /// # Errors
-/// Returns missing authentication, schema serialization or malformed reasoning errors.
+/// Returns missing authentication, request serialization or malformed reasoning errors.
 pub fn build(
     model: &Model,
     context: &Context,
@@ -68,12 +68,16 @@ pub fn build(
     }
     if let Some(tools) = &context.tools {
         body["tools"] = Value::Array(tools.iter().map(|tool| {
-            Ok(json!({
+            json!({
                 "name":if subscribed { wire_tool_name(&tool.name) } else { tool.name.clone() },
                 "description":tool.description,
-                "input_schema":serde_json::to_value(&tool.parameters).map_err(|error| error.to_string())?
-            }))
-        }).collect::<ExtensionResult<_>>()?);
+                "input_schema":{
+                    "type":"object",
+                    "properties":tool.parameters.get("properties").filter(|value| maestro_json::is_truthy(value)).cloned().unwrap_or_else(|| json!({})),
+                    "required":tool.parameters.get("required").filter(|value| maestro_json::is_truthy(value)).cloned().unwrap_or_else(|| json!([]))
+                }
+            })
+        }).collect());
     }
     if model.reasoning
         && let Some(thinking) = thinking(options)?

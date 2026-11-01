@@ -24,19 +24,39 @@ at `https://api.anthropic.com`. Its two models, `claude-opus-4-5` and
 window and 64,000 output tokens.
 
 Subscription sign-in shows an authorization URL. Open it, sign in, then paste
-the returned `code#state`. A state that does not match the issued proof key is
-rejected. Proof keys come from the host-backed `generate_pkce` helper. Saved
+the returned `code#state` or the code alone. A bare code uses the issued proof
+key as its state; an explicitly empty state stays empty. A nonempty state that
+does not match the proof key is rejected. Proof keys come from the host-backed
+`generate_pkce` helper, whose `Pkce` record is shared by native and guest callers. Saved
 tokens count as expired five minutes early and refresh through the same token
 endpoint.
 
-Each request is one HTTP attempt with the conversation, tool schemas and the
-requested thinking budget. Without a limit, it asks for a third of the model's
-output tokens. The response streams text, thinking and tool calls, followed by
-usage and a cost estimate from the model's prices. A missing key fails before
-any HTTP request; cancellation settles the message as aborted. A non-success
-status ends the message with `HTTP <status>` and the response body, or the
-body-read error. The session's automatic retry handles rate limits and server
-errors; the example does not retry on its own.
+Each message request carries the conversation, tool declarations and requested
+thinking budget. Tool schemas send only `type: "object"`, `properties` and
+`required`; absent properties and required names default to `{}` and `[]`.
+Without a token limit, the request asks for a third of the model's output tokens.
+The response streams text, thinking and tool calls, followed by usage and a cost
+estimate from the model's prices. A truncated tool argument keeps the last
+complete JSON value, or `{}` if no value parsed, without changing a length stop
+into an error.
+
+The extension's client allows two retries after the first attempt. It retries
+connection failures, response-header timeouts and HTTP 408, 409, 429 or 500 and
+above. `x-should-retry: true` or `false` overrides status-based admission for
+failed responses. Each attempt has a 600-second response-header deadline; the
+streamed body has no added deadline. A deadline aborts its native attempt, while
+caller cancellation stays attached until body consumption ends. Retry delays
+start at 0.5 seconds and double,
+with jitter reducing each delay by up to 25%. A positive `retry-after-ms`, or
+`retry-after` in seconds or as an HTTP date, takes precedence when below 60
+seconds.
+
+A missing key fails before any HTTP request; cancellation settles the message
+as aborted and interrupts retry waits. After the client exhausts its budget, a
+non-success status ends the message with `HTTP <status>` and the response body,
+or the body-read error. The session's automatic retry can retry the whole
+message after this client budget is exhausted. Token exchanges remain single
+HTTP attempts.
 
 ## Controlled examples
 

@@ -27,6 +27,8 @@ pub struct CustomAnthropic {
     pub api: ExtensionAPI,
     /// Current Unix epoch milliseconds.
     pub now: Rc<dyn Fn() -> f64>,
+    /// Random fraction in [0, 1) for client retry jitter.
+    pub random: Rc<dyn Fn() -> f64>,
 }
 
 /// Token fields accepted from a successful exchange.
@@ -67,10 +69,10 @@ impl OAuthProviderInterface for CustomAnthropic {
                 allow_empty: None,
             })
             .await?;
-            let (code, state) = pasted
-                .split_once('#')
-                .ok_or("Authorization code must include state")?;
-            if state != proof.verifier {
+            let mut parts = pasted.split('#');
+            let code = parts.next().unwrap_or_default();
+            let state = parts.next().unwrap_or(&proof.verifier);
+            if !state.is_empty() && state != proof.verifier {
                 return Err("Authorization state mismatch".into());
             }
             provider

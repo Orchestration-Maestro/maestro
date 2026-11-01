@@ -4124,6 +4124,7 @@ name = "maestro-extensions-wasm"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "httpdate",
  "indexmap 2.14.2",
  "maestro-dependencies",
  "maestro-entry",

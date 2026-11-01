@@ -317,23 +317,16 @@ impl ResponseState {
         })
     }
 
-    /// Closes the wire block and rejects malformed final tool arguments.
+    /// Closes the wire block, retaining the last complete tool arguments.
     fn end(&mut self, event: &Value) -> ExtensionResult<()> {
         let Some(block) = self.blocks.remove(&wire_index(event)?) else {
             return Ok(());
         };
         let index = block.content_index();
-        let mut output = self
+        let output = self
             .output
-            .write()
+            .read()
             .map_err(|_| "Assistant message lock poisoned")?;
-        if let OpenBlock::Tool { json, .. } = &block
-            && !json.is_empty()
-            && let Some(AssistantContent::ToolCall(tool)) = output.content.get_mut(index)
-        {
-            tool.arguments = serde_json::from_str(json)
-                .map_err(|error| format!("Invalid tool arguments: {error}"))?;
-        }
         let partial = Arc::clone(&self.output);
         let update = match output.content.get(index) {
             Some(AssistantContent::Text(text)) => Event::TextEnd {

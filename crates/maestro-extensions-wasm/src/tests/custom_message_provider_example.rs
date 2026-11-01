@@ -54,6 +54,7 @@ fn authorization(host: &Controlled) -> Rc<oauth::CustomAnthropic> {
         io: api.native_io(),
         api,
         now: Rc::new(|| 10_000.0),
+        random: Rc::new(|| 0.0),
     })
 }
 
@@ -154,8 +155,40 @@ fn custom_message_provider_token_failure_keeps_status_when_body_fails() {
     );
 }
 
+#[test]
+fn custom_message_provider_accepts_authorization_code_without_state() -> ExtensionResult<()> {
+    for pasted in ["controlled-code", "controlled-code#"] {
+        let host = Controlled::default();
+        let provider = authorization(&host);
+        tokens(&host, "access", "refresh", 3600);
+        let mut interaction = callbacks();
+        Rc::get_mut(&mut interaction).unwrap().on_prompt =
+            Rc::new(move |_| Box::pin(async move { Ok(pasted.into()) }));
+
+        let credentials = super::block_on(provider.login(interaction))?;
+
+        assert_eq!(credentials.access, "access");
+        let observed = host.observed();
+        let body: Value =
+            serde_json::from_slice(observed.native_http.requests[0].body.as_ref().unwrap())
+                .unwrap();
+        assert_eq!(body["code"], "controlled-code");
+        assert_eq!(
+            body["state"],
+            if pasted.ends_with('#') {
+                json!("")
+            } else {
+                body["code_verifier"].clone()
+            }
+        );
+    }
+    Ok(())
+}
+
 #[path = "../../../../examples/extensions/custom_message_provider/stream.rs"]
 mod stream;
+
+mod transport;
 
 /// The native owner supplies the buffer; this adapter only projects its public interface.
 struct NativeStream(maestro_models::AssistantMessageEventStream);
@@ -180,6 +213,63 @@ impl crate::EventStreamPort<crate::AssistantMessageEvent, crate::SharedAssistant
     }
 }
 
+/// Subscription credentials shared by controlled message requests.
+fn options() -> crate::StreamOptions {
+    crate::StreamOptions {
+        api_key: Some("sk-ant-oat-fixture".into()),
+        ..crate::StreamOptions::default()
+    }
+}
+
+/// Supplies the shared subscription credentials with a caller's cancellation signal.
+fn with_signal(signal: crate::AbortSignal) -> crate::StreamOptionsInput {
+    crate::SimpleStreamOptions {
+        common: crate::StreamOptions {
+            signal: Some(signal),
+            ..options()
+        },
+        ..crate::SimpleStreamOptions::default()
+    }
+    .into()
+}
+
+/// Runs the authored producer against the native event buffer and awaits its final result.
+fn stream(
+    host: &Controlled,
+    options: crate::StreamOptionsInput,
+) -> ExtensionResult<(
+    crate::AssistantMessageEventStream,
+    crate::SharedAssistantMessage,
+)> {
+    stream_provider(&authorization(host), options)
+}
+
+/// Uses the same stream setup with supplied clock and randomness effects.
+fn stream_provider(
+    provider: &oauth::CustomAnthropic,
+    options: crate::StreamOptionsInput,
+) -> ExtensionResult<(
+    crate::AssistantMessageEventStream,
+    crate::SharedAssistantMessage,
+)> {
+    let output = output_stream();
+    super::block_on(provider.stream_custom_anthropic(
+        model(),
+        conversation(),
+        Some(options),
+        output.clone(),
+    ))?;
+    let result = super::block_on(output.result())?;
+    Ok((output, result))
+}
+
+/// Creates the public buffer used by both complete and externally driven producers.
+fn output_stream() -> crate::AssistantMessageEventStream {
+    crate::AssistantMessageEventStream::from_port(Rc::new(NativeStream(
+        maestro_models::AssistantMessageEventStream::new(),
+    )))
+}
+
 /// A supplied model, independent of the ambient catalog.
 fn model() -> crate::Model {
     serde_json::from_value(json!({
@@ -198,7 +288,7 @@ fn conversation() -> crate::Context {
         "systemPrompt":"Prompt 雪🚀", "tools":[{
             "name":"write", "description":"Write a file",
             "parameters":{"type":"object","properties":{"path":{"type":"string"}},"required":["path"],"additionalProperties":false}
-        }],
+        }, {"name":"noop","description":"No arguments","parameters":{}}],
         "messages":[
             {"role":"user","content":"  ","timestamp":0},
             {"role":"user","content":[{"type":"text","text":"Question 雪🚀"},{"type":"image","mimeType":"image/png","data":"image-data"}],"timestamp":0},
@@ -230,6 +320,11 @@ fn response_events() -> String {
         json!({"type":"message_delta","delta":{"stop_reason":"tool_use"},"usage":{"output_tokens":20}}),
         json!({"type":"message_stop"}),
     ];
+    encode_events(&events)
+}
+
+/// Frames provider events after a byte-order mark and heartbeat.
+fn encode_events(events: &[Value]) -> String {
     let mut wire = String::from("\u{feff}: heartbeat\r\n\r\n");
     for event in events {
         wire.push_str("data: ");
@@ -245,26 +340,15 @@ fn custom_message_provider_converts_and_streams_through_public_host_interfaces()
     let host = Controlled::default();
     host.observe().native_http.body =
         Some(response_events().bytes().map(|byte| vec![byte]).collect());
-    let provider = authorization(&host);
-    let output = crate::AssistantMessageEventStream::from_port(Rc::new(NativeStream(
-        maestro_models::AssistantMessageEventStream::new(),
-    )));
     let options = crate::SimpleStreamOptions {
         common: crate::StreamOptions {
-            api_key: Some("sk-ant-oat-fixture".into()),
             max_tokens: Some(1234.0),
-            ..crate::StreamOptions::default()
+            ..options()
         },
         reasoning: Some(crate::RequestedThinkingLevel::High),
         ..crate::SimpleStreamOptions::default()
     };
-    super::block_on(provider.stream_custom_anthropic(
-        model(),
-        conversation(),
-        Some(options.into()),
-        output.clone(),
-    ))?;
-    let result = super::block_on(output.result())?;
+    let (output, result) = stream(&host, options.into())?;
     check_stream_result(&result);
     check_stream_events(&output, &result)?;
     check_message_request(&host);
@@ -332,7 +416,7 @@ fn check_stream_events(
     Ok(())
 }
 
-/// Request conversion preserves images, adjacent results, schema constraints and subscription headers.
+/// Request conversion preserves images, adjacent results, declared tool fields and subscription headers.
 fn check_message_request(host: &Controlled) {
     let observed = host.observed();
     assert_eq!(observed.native_http.requests.len(), 1);
@@ -358,7 +442,10 @@ fn check_message_request(host: &Controlled) {
     );
     assert_eq!(
         body["tools"],
-        json!([{"name":"Write","description":"Write a file","input_schema":{"type":"object","properties":{"path":{"type":"string"}},"required":["path"],"additionalProperties":false}}])
+        json!([
+            {"name":"Write","description":"Write a file","input_schema":{"type":"object","properties":{"path":{"type":"string"}},"required":["path"]}},
+            {"name":"noop","description":"No arguments","input_schema":{"type":"object","properties":{},"required":[]}}
+        ])
     );
     assert_eq!(
         body["messages"],
@@ -378,17 +465,7 @@ fn check_message_request(host: &Controlled) {
 fn request_with_options(options: crate::StreamOptionsInput) -> ExtensionResult<Value> {
     let host = Controlled::default();
     host.observe().native_http.body = Some(vec![response_events().into_bytes()]);
-    let provider = authorization(&host);
-    let output = crate::AssistantMessageEventStream::from_port(Rc::new(NativeStream(
-        maestro_models::AssistantMessageEventStream::new(),
-    )));
-    super::block_on(provider.stream_custom_anthropic(
-        model(),
-        conversation(),
-        Some(options),
-        output.clone(),
-    ))?;
-    let result = super::block_on(output.result())?;
+    let (_, result) = stream(&host, options)?;
     assert_eq!(
         result.read().unwrap().stop_reason,
         crate::StopReason::ToolUse
@@ -399,11 +476,60 @@ fn request_with_options(options: crate::StreamOptionsInput) -> ExtensionResult<V
 }
 
 #[test]
+fn custom_message_provider_keeps_last_tool_arguments_when_truncated() -> ExtensionResult<()> {
+    for (fragments, expected) in [
+        (vec!["{\"path\":"], json!({})),
+        (
+            vec!["{\"path\":\"demo\"}", "truncated"],
+            json!({"path":"demo"}),
+        ),
+    ] {
+        let host = Controlled::default();
+        let mut events = vec![json!({"type":"content_block_start","index":0,
+            "content_block":{"type":"tool_use","id":"call","name":"Write","input":{}}})];
+        events.extend(fragments.into_iter().map(|fragment| {
+            json!({
+                "type":"content_block_delta","index":0,
+                "delta":{"type":"input_json_delta","partial_json":fragment}
+            })
+        }));
+        events.extend([
+            json!({"type":"content_block_stop","index":0}),
+            json!({"type":"message_delta","delta":{"stop_reason":"max_tokens"}}),
+            json!({"type":"message_stop"}),
+        ]);
+        let body = encode_events(&events);
+        host.observe().native_http.body = Some(vec![body.into_bytes()]);
+
+        let (output, result) = stream(
+            &host,
+            crate::SimpleStreamOptions {
+                common: options(),
+                ..crate::SimpleStreamOptions::default()
+            }
+            .into(),
+        )?;
+
+        let value = serde_json::to_value(&*result.read().unwrap()).unwrap();
+        assert_eq!(value["stopReason"], "length");
+        assert_eq!(value["content"][0]["arguments"], expected);
+        let mut ended = false;
+        while let Some(event) = super::block_on(output.next())? {
+            if let crate::AssistantMessageEvent::ToolcallEnd { tool_call, .. } = &*event {
+                assert_eq!(tool_call.arguments, expected);
+                ended = true;
+            }
+        }
+        assert!(ended);
+    }
+    Ok(())
+}
+
+#[test]
 fn custom_message_provider_raw_reasoning_matches_simple_options() -> ExtensionResult<()> {
     let common = crate::StreamOptions {
-        api_key: Some("sk-ant-oat-fixture".into()),
         max_tokens: Some(1234.0),
-        ..crate::StreamOptions::default()
+        ..options()
     };
     let raw = crate::ProviderStreamOptions {
         common: common.clone(),
@@ -439,9 +565,8 @@ fn custom_message_provider_zero_limit_uses_native_default() -> ExtensionResult<(
     for limit in [0.0, -0.0] {
         let options = crate::ProviderStreamOptions {
             common: crate::StreamOptions {
-                api_key: Some("sk-ant-oat-fixture".into()),
                 max_tokens: Some(limit),
-                ..crate::StreamOptions::default()
+                ..options()
             },
             ..crate::ProviderStreamOptions::default()
         };
@@ -458,25 +583,7 @@ fn custom_message_provider_preabort_settles_without_http() -> ExtensionResult<()
     let signal = crate::component_adapter::signal(&host, host.signal(&flag));
     flag.abort();
     host.observe().native_http.body = Some(vec![response_events().into_bytes()]);
-    let provider = authorization(&host);
-    let output = crate::AssistantMessageEventStream::from_port(Rc::new(NativeStream(
-        maestro_models::AssistantMessageEventStream::new(),
-    )));
-    let options = crate::SimpleStreamOptions {
-        common: crate::StreamOptions {
-            api_key: Some("sk-ant-oat-fixture".into()),
-            signal: Some(signal),
-            ..crate::StreamOptions::default()
-        },
-        ..crate::SimpleStreamOptions::default()
-    };
-    super::block_on(provider.stream_custom_anthropic(
-        model(),
-        conversation(),
-        Some(options.into()),
-        output.clone(),
-    ))?;
-    let result = super::block_on(output.result())?;
+    let (output, result) = stream(&host, with_signal(signal))?;
     assert_eq!(
         result.read().unwrap().stop_reason,
         crate::StopReason::Aborted
@@ -505,10 +612,6 @@ fn custom_message_provider_requires_credentials_before_http() -> ExtensionResult
     for key in [None, Some(String::new())] {
         let host = Controlled::default();
         host.observe().native_http.body = Some(vec![response_events().into_bytes()]);
-        let provider = authorization(&host);
-        let output = crate::AssistantMessageEventStream::from_port(Rc::new(NativeStream(
-            maestro_models::AssistantMessageEventStream::new(),
-        )));
         let options = crate::SimpleStreamOptions {
             common: crate::StreamOptions {
                 api_key: key,
@@ -516,13 +619,7 @@ fn custom_message_provider_requires_credentials_before_http() -> ExtensionResult
             },
             ..crate::SimpleStreamOptions::default()
         };
-        super::block_on(provider.stream_custom_anthropic(
-            model(),
-            conversation(),
-            Some(options.into()),
-            output.clone(),
-        ))?;
-        let result = super::block_on(output.result())?;
+        let (_, result) = stream(&host, options.into())?;
         let value = serde_json::to_value(&*result.read().unwrap()).unwrap();
         assert_eq!(value["stopReason"], "error");
         assert!(
@@ -541,24 +638,11 @@ fn custom_message_provider_stream_failure_keeps_status_when_body_fails() -> Exte
     let host = Controlled::default();
     host.observe().native_http.status = 503;
     host.observe().native_http.read_error = Some("body interrupted".into());
-    let provider = authorization(&host);
-    let output = crate::AssistantMessageEventStream::from_port(Rc::new(NativeStream(
-        maestro_models::AssistantMessageEventStream::new(),
-    )));
     let options = crate::SimpleStreamOptions {
-        common: crate::StreamOptions {
-            api_key: Some("sk-ant-oat-fixture".into()),
-            ..crate::StreamOptions::default()
-        },
+        common: options(),
         ..crate::SimpleStreamOptions::default()
     };
-    super::block_on(provider.stream_custom_anthropic(
-        model(),
-        conversation(),
-        Some(options.into()),
-        output.clone(),
-    ))?;
-    let result = super::block_on(output.result())?;
+    let (_, result) = stream(&host, options.into())?;
     let value = serde_json::to_value(&*result.read().unwrap()).unwrap();
     assert_eq!(value["stopReason"], "error");
     assert_eq!(value["errorMessage"], "HTTP 503 body interrupted");

@@ -384,6 +384,7 @@ maestro-request = { path = "../maestro-request" }
 wit-bindgen = { version = "=0.62.0", default-features = false, features = ["macros", "realloc", "async", "async-spawn", "std", "inter-task-wakeup"] }
 serde.workspace = true
 serde_json = { workspace = true, features = ["raw_value", "unbounded_depth"] }
+httpdate.workspace = true
 
 [dev-dependencies]
 maestro-listing = { path = "../maestro-listing" }

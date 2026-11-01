@@ -7,7 +7,7 @@ pub(super) fn call(operation: &str, data: &str) -> Result<String, String> {
         "oauth.generate_pkce" => {
             let (): () = decode(data)?;
             let key = maestro_models::generate_pkce().map_err(|error| error.message)?;
-            encode(&serde_json::json!({"verifier": key.verifier, "challenge": key.challenge}))
+            encode(&key)
         }
         _ => Err(format!("Unknown native helper: {operation}")),
     }

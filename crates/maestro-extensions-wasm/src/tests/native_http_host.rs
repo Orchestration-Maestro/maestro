@@ -6,6 +6,7 @@
 )]
 use super::host::{Imports, State};
 use crate::bindings::host_side::maestro::extension::host;
+use std::sync::{Arc, atomic::AtomicBool};
 use wasmtime::component::{Accessor, Resource};
 
 /// Exact request operands observed before native normalization.
@@ -54,6 +55,8 @@ pub struct Bank {
     pub read_error: Option<String>,
     /// Admitted requests in order.
     pub requests: Vec<Request>,
+    /// Cancellation flags received before each controlled fetch starts waiting.
+    pub signals: Vec<Option<Arc<AtomicBool>>>,
 }
 impl Default for Bank {
     fn default() -> Self {
@@ -66,6 +69,7 @@ impl Default for Bank {
             error: None,
             read_error: None,
             requests: vec![],
+            signals: vec![],
         }
     }
 }

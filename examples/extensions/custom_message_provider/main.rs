@@ -28,6 +28,7 @@ pub fn custom_message_provider_extension(api: ExtensionAPI) -> ExtensionFuture<'
             io: api.native_io(),
             api: api.clone(),
             now: Rc::new(now_millis),
+            random: Rc::new(random_fraction),
         });
         api.register_provider(
             "custom-anthropic",
@@ -111,6 +112,13 @@ fn now_millis() -> f64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map_or(0.0, |time| time.as_secs_f64() * 1000.0)
+}
+
+/// Reads a uniform fraction from the component's WASI random source.
+fn random_fraction() -> f64 {
+    let random = maestro_extensions_wasm::wasi::random::random::get_random_u64();
+    let word = u32::try_from(random & u64::from(u32::MAX)).unwrap_or_default();
+    f64::from(word) / (f64::from(u32::MAX) + 1.0)
 }
 
 maestro_extensions_wasm::export_extension!(custom_message_provider_extension);

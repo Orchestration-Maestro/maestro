@@ -80,7 +80,12 @@ fn helper_generate_pkce_decodes_the_host_record() -> Result<(), String> {
     let api = super::bus_callbacks::captured_api(&host)?;
     host.observe().actions.value =
         json!({"oauth.generate_pkce": {"verifier": PROOF_KEY.0, "challenge": PROOF_KEY.1}});
-    let key = crate::generate_pkce(&api)?;
+    let key: maestro_request::oauth::Pkce = crate::generate_pkce(&api)?;
+    let encoded = serde_json::to_value(&key).map_err(|error| error.to_string())?;
+    assert_eq!(
+        encoded,
+        json!({"verifier":PROOF_KEY.0,"challenge":PROOF_KEY.1})
+    );
     assert_eq!((key.verifier.as_str(), key.challenge.as_str()), PROOF_KEY);
     Ok(())
 }

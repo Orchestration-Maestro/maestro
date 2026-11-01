@@ -87,6 +87,7 @@ resolving conflicts, then regenerate the table.
 | `custom_message_provider/response.rs` | Ordered provider events reduced into one shared assistant message. |
 | `custom_message_provider/sse.rs` | Byte-framed server-sent events, decoded only after each complete line. |
 | `custom_message_provider/stream.rs` | A custom message-stream implementation using the host's transport and event buffer. |
+| `custom_message_provider/transport.rs` | The extension client's transient-failure retries over host-owned HTTP attempts. |
 | `dirty_repo_guard.md` | Dirty repo guard |
 | `dirty_repo_guard.rs` | Opt-in guard that asks before leaving or forking a repository with uncommitted changes. |
 | `dynamic_tools.md` | Dynamic tools |
