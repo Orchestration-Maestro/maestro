@@ -158,7 +158,7 @@ impl Readable for Output {
 
 /// Blocks termination before exec, so every thread of the checked child inherits the mask.
 #[test]
-#[ignore = "runs only as a controlled child"]
+#[ignore = "runs only inside a controlled child"]
 fn launcher() {
     use nix::sys::signal::{SigSet, SigmaskHow, Signal, pthread_sigmask};
     use std::os::unix::process::CommandExt as _;
@@ -176,7 +176,7 @@ fn launcher() {
 
 /// Validates the real launch operands and emits controlled JSON-print messages.
 #[test]
-#[ignore = "runs only as a controlled child"]
+#[ignore = "runs only inside a controlled child"]
 fn program() {
     let args: Vec<String> = serde_json::from_str(&std::env::var(ARGUMENTS).unwrap()).unwrap();
     assert_eq!(&args[..4], ["--mode", "json", "-p", "--no-session"]);
