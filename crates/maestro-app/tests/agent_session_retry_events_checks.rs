@@ -249,7 +249,7 @@ fn registered_slow_end_keeps_prompt_waiting() {
         entered.notified().await;
         ended.notified().await;
         assert_eq!(h.requests.0.borrow().len(), 1);
-        assert!(h.session.is_retrying(), "the retry was already open");
+        assert!(h.session.is_streaming(), "the run is still active");
         assert!(!running.is_finished(), "the prompt still waits");
         release.notify_one();
         entered.notified().await;
@@ -527,5 +527,35 @@ fn abort_finishes_and_stores_partial_assistant() {
             .unwrap();
         assert_eq!(stored["message"]["role"], json!("assistant"));
         assert_eq!(stored["message"]["stopReason"], json!("aborted"));
+    });
+}
+
+/// A final non-retryable response ends the visible retry with its current attempt.
+#[test]
+fn final_non_retryable_error_ends_retry_once() {
+    on_paused_task_set(|_| async {
+        let h = harness(HarnessOptions {
+            settings: json!({"retry": {"enabled": true, "maxRetries": 1, "baseDelayMs": 1}}),
+            ..scripted(vec![
+                Scripted::failure("overloaded_error"),
+                Scripted::failure("invalid api key"),
+            ])
+        })
+        .await;
+        let events = delivered_events(&h.session);
+        start_prompt(&h, "hi").await.unwrap().unwrap();
+        let ends: Vec<Value> = events
+            .borrow()
+            .iter()
+            .filter(|event| event["type"] == "auto_retry_end")
+            .cloned()
+            .collect();
+        assert_eq!(
+            ends,
+            [json!({"type": "auto_retry_end", "success": false,
+            "attempt": 1, "finalError": "invalid api key"})]
+        );
+        assert_eq!(h.session.retry_attempt(), 0);
+        assert_eq!(h.requests.0.borrow().len(), 2);
     });
 }

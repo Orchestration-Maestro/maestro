@@ -21,3 +21,4 @@ mod startup_stdout;
 mod support;
 
 mod startup_mode_dispatch;
+mod workspace_settings;

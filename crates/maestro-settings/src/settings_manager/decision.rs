@@ -40,6 +40,22 @@ pub enum DecisionRequest<'a> {
     },
     /// A requested thinking level before capability clamping.
     ThinkingLevel(&'a str),
+    /// A requested active-tool set, or one candidate during automatic registry refresh.
+    Tools(&'a [String]),
+    /// Explicit acquisition of a package source.
+    PackageInstall {
+        /// The authored package source, including its requested pin.
+        source: &'a str,
+        /// The selected raw configuration scope.
+        scope: SettingsScope,
+    },
+    /// Explicit removal of a package source.
+    PackageRemove {
+        /// The authored package source.
+        source: &'a str,
+        /// The selected raw configuration scope.
+        scope: SettingsScope,
+    },
     /// A one-level merge into the runtime preference view.
     RuntimeOverrides(&'a Settings),
 }
@@ -72,6 +88,12 @@ impl SettingsManager {
         self.decider = Some(decider);
         self.rebuild();
         Ok(())
+    }
+
+    /// Whether explicit operations must preflight with the registered publisher.
+    #[must_use]
+    pub fn has_decider(&self) -> bool {
+        self.decider.is_some()
     }
 
     /// Asks the publisher without changing any settings or acquiring storage locks.
@@ -119,7 +141,7 @@ impl SettingsManager {
 }
 
 /// An admitted preference edit whose effects may follow other owner effects.
-/// Only the preparing manager should apply it, before another explicit operation.
+/// Only the preparing manager should apply it.
 pub struct PreparedSettingsEdit {
     /// The scope checked before the operation started.
     scope: SettingsScope,
@@ -128,6 +150,34 @@ pub struct PreparedSettingsEdit {
 }
 
 impl PreparedSettingsEdit {
+    /// Supplies the recomputed list for the already-admitted delta.
+    ///
+    /// # Errors
+    /// Returns an error unless exactly one admitted edit has an array value and
+    /// retains its scope and key.
+    pub fn with_recomputed_list(
+        mut self,
+        scope: SettingsScope,
+        path: &[&str],
+        entries: Vec<Value>,
+    ) -> Result<Self, String> {
+        let [change] = self.changes.as_slice() else {
+            return Err("Recomputed list requires one admitted list edit".into());
+        };
+        let admitted = change.requested();
+        if self.scope != scope
+            || change.components() != path
+            || !matches!(admitted.value, Some(Value::Array(_)))
+        {
+            return Err("Recomputed list must retain its admitted key and scope".into());
+        }
+        self.changes = vec![super::Change::from_requested(SettingsChange {
+            path: admitted.path,
+            value: Some(Value::Array(entries)),
+        })];
+        Ok(self)
+    }
+
     /// Splits admitted edits so an owner can retain its existing effect order.
     #[must_use]
     pub fn split_at(mut self, index: usize) -> (Self, Self) {

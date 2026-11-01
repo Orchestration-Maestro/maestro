@@ -85,7 +85,7 @@ impl Guard {
     /// process reports them too, then vetoes while `veto` holds.
     fn decide(&self) -> SessionBeforeSwitchResult {
         if let Some(mode) = self.mode.borrow().upgrade() {
-            let released = mode.working.loading_animation.borrow().is_none();
+            let released = mode.working_loader().is_none();
             let empty = mode.status_container.children().borrow().is_empty();
             println!("\nPROBE released={released} empty={empty}");
             self.requests.borrow_mut().push((released, empty));
@@ -361,7 +361,7 @@ async fn new_session_case(directory: &Path, input: &NewInput, expected: &NewExpe
     submit(&world.mode, "/new");
     assert!(settled(&world).await.is_empty());
     assert_eq!(*guard.requests.borrow(), [(true, true)]);
-    assert!(world.mode.working.loading_animation.borrow().is_none());
+    assert!(world.mode.working_loader().is_none());
     assert!(world.mode.status_container.children().borrow().is_empty());
     assert_left(&world, &old, &before, expected);
 }
@@ -710,7 +710,7 @@ fn starts(world: &World) -> (Starts, Box<dyn Fn()>) {
     let recorded = Rc::clone(&seen);
     let unsubscribe = world.host.session().subscribe(Rc::new(move |event| {
         if let (AgentSessionEvent::CompactionStart { .. }, Some(mode)) = (event, mode.upgrade()) {
-            let released = mode.working.loading_animation.borrow().is_none();
+            let released = mode.working_loader().is_none();
             recorded.borrow_mut().push(released);
         }
     }));
@@ -748,10 +748,7 @@ async fn compaction_case(directory: &Path, input: CompactInput, expected: &Compa
     }
     assert!(seen.borrow().is_empty() && guard.instructions.borrow().is_empty());
     assert_eq!(world.mode.status_container.render(80), status);
-    assert_eq!(
-        world.mode.working.loading_animation.borrow().is_some(),
-        input.loader
-    );
+    assert_eq!(world.mode.working_loader().is_some(), input.loader);
     warned(&world, chat);
 }
 

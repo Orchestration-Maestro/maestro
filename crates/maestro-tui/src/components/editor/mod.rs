@@ -116,6 +116,8 @@ struct Editing {
     history: Vec<String>,
     /// Selected history entry, or the current prompt.
     history_index: Option<usize>,
+    /// The prompt being edited when browsing began, restored when browsing returns to it.
+    draft: Option<Buffer>,
     /// Retained deleted strings.
     ring: crate::kill_ring::KillRing,
     /// Invalidates completion after reentrant editing.

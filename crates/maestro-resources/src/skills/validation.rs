@@ -1,13 +1,8 @@
 //! Skill-field validation preserving authored warning order.
 
-/// Validate a name against its containing directory and allowed spelling.
-pub(super) fn name_warnings(name: &str, parent: &str) -> Vec<String> {
+/// Validate a name's length and allowed spelling.
+pub(super) fn name_warnings(name: &str) -> Vec<String> {
     let mut warnings = Vec::new();
-    if name != parent {
-        warnings.push(format!(
-            "name \"{name}\" does not match parent directory \"{parent}\""
-        ));
-    }
     let count = name.chars().count();
     if count > 64 {
         warnings.push(format!("name exceeds 64 characters ({count})"));

@@ -127,3 +127,47 @@ fn missing_roles(harness: &Harness) {
         assert!(harness.component.get_resource_list().render(80).is_empty());
     }
 }
+
+/// A refusing publisher for resource preference edits.
+struct RefuseToggle;
+impl maestro_app::SettingsDecider for RefuseToggle {
+    fn decide(&self, _: &maestro_app::DecisionRequest<'_>) -> Result<(), String> {
+        Err("release refuses resource toggle".into())
+    }
+}
+
+/// Refusal leaves scoped documents, rendered rows and callbacks untouched.
+pub fn refused_toggles() {
+    let _guard = crate::keybindings::bindings_guard();
+    for scope in [SourceScope::User, SourceScope::Project] {
+        for origin in [SourceOrigin::TopLevel, SourceOrigin::Package] {
+            let mut resources = resolved("/pkg/extensions/a.wasm", Some("/pkg"));
+            resources.extensions[0].metadata.scope = scope;
+            resources.extensions[0].metadata.origin = origin;
+            let scopes = Scopes {
+                global: json!({"packages":["npm:target"]}),
+                project: json!({"packages":["npm:target"]}),
+            };
+            let h = Harness::new(resources, &scopes, ("/work", "/agent"), true);
+            h.settings
+                .borrow_mut()
+                .register_decider(std::sync::Arc::new(RefuseToggle))
+                .unwrap();
+            let list = h.component.get_resource_list();
+            let before = list.try_render(80).unwrap();
+            assert_eq!(
+                list.handle_input(" ").unwrap_err().to_string(),
+                "release refuses resource toggle"
+            );
+            assert_eq!(list.try_render(80).unwrap(), before);
+            assert!(h.events.borrow().is_empty());
+            let errors = h.settings.borrow_mut().drain_errors();
+            assert_eq!(errors.len(), 1);
+            assert_eq!(
+                errors[0].error.to_string(),
+                "release refuses resource toggle"
+            );
+            h.persisted(&scopes);
+        }
+    }
+}

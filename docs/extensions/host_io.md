@@ -104,6 +104,21 @@ than 260 characters through a directory link, in both generations. It also
 reads and creates link targets as in the last two rows above. macOS behavior is
 not separately qualified.
 
+## Detached children
+
+A child launched with `SpawnOptions { detached: true, .. }` can outlive its
+initiating callback and an extension reload. Reload releases the old guest's
+controls; it does not terminate the native child. The application's existing
+process collector continues independently and reaps the child when it exits.
+A retained native waiter observes that collector's completion without keeping
+the old guest alive. This requires the application's local executor to remain
+running; it is not a guarantee that a child survives application shutdown.
+
+The Linux real-host check reloads an `AgentSession`, verifies fresh guest
+controls, exchanges a new nonce with the original PID over an independent TCP
+connection, then releases the child and observes its original native waiter.
+This qualification is separate from the broader component example checks.
+
 ## Supplied stdout
 
 `artifact_factory_with_stdout(path, widgets, installation, writer, terminal)`

@@ -169,27 +169,21 @@ pub(crate) fn link<T: crate::callback_imports::CallbackView + 'static>(
         },
     )
 }
-/// Transfers only a newly retained catalog; the supplied credential borrow stays live.
+/// Retains a new catalog through a route, so a credential backend the construction reads
+/// re-enters its own guest; the supplied credential borrow stays live.
 fn construct_catalog<T: ApiView>(
     mut store: StoreContextMut<'_, T>,
     auth: &Resource<crate::credential_reads::Endpoint>,
     path: Source,
-) -> wasmtime::Result<(Result<Resource<crate::catalog_reads::Endpoint>, String>,)> {
+) -> wasmtime::Result<(Resource<crate::import_route::Route>,)> {
     let auth = store.data_mut().ctx().table.get(auth)?.clone();
-    let result = store.data().api().0.request(|id, reply| {
+    let route = store.data().api().0.route(|id, reply| {
         crate::local_resources::Message::Registration(
             id,
             crate::registration_reads::Request::Construct(Request::Catalog(auth, path, reply)),
         )
     });
-    Ok((result.and_then(|owner| {
-        store
-            .data_mut()
-            .ctx()
-            .table
-            .push(owner)
-            .map_err(|error| error.to_string())
-    }),))
+    Ok((crate::import_route::push(store.data_mut(), route)?,))
 }
 
 /// Installs the value-returning constructor that calls an authored backend during reload.

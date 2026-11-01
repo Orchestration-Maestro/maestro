@@ -185,36 +185,21 @@ fn pac_interface_fallback_keeps_order_and_loopback_default() {
 }
 
 #[test]
+fn pac_local_address_needs_no_answering_endpoint() {
+    let endpoint = std::net::UdpSocket::bind("127.0.0.1:0").expect("reserve a UDP endpoint");
+
+    assert_eq!(
+        super::my_ip_address::address(endpoint.local_addr().unwrap()).unwrap(),
+        std::net::Ipv4Addr::LOCALHOST
+    );
+}
+
+#[test]
 fn pac_local_address_falls_back_to_native_interfaces() {
-    crate::tests::runtime::run(async {
-        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let endpoint = listener.local_addr().unwrap();
-        let peer = tokio::spawn(async move {
-            let (mut socket, _) = listener.accept().await.unwrap();
-            let mut byte = [0];
-            assert_eq!(
-                tokio::io::AsyncReadExt::read(&mut socket, &mut byte)
-                    .await
-                    .unwrap(),
-                0
-            );
-        });
-        assert_eq!(
-            super::my_ip_address::address(endpoint).await.unwrap(),
-            std::net::Ipv4Addr::LOCALHOST
-        );
-        peer.await.unwrap();
-        let expected = super::ip::select(
-            if_addrs::get_if_addrs()
-                .unwrap()
-                .iter()
-                .map(|interface| (interface.name.as_str(), interface.ip())),
-        );
-        assert_eq!(
-            super::my_ip_address::address(endpoint).await.unwrap(),
-            expected
-        );
-    });
+    let endpoint = "[::1]:53".parse().expect("an IPv6 endpoint");
+    let expected = super::ip::address().expect("read native interfaces");
+
+    assert_eq!(super::my_ip_address::address(endpoint).unwrap(), expected);
 }
 
 mod alerts;

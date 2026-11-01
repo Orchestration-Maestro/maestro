@@ -49,8 +49,9 @@ support native credentials; see the provider pages: [messages](messages.md),
 `stream`, `stream_simple`, `complete` and `complete_simple` resolve the registry.
 An unregistered `api` returns `No API provider registered for api: {api}`. A
 registered custom callback keeps returning its own setup error immediately (inside
-the future for `complete`). A bundled callback never does: its setup failures are
-settled error streams. Their `_for` counterparts take the hook family's options and
+the future for `complete`). A bundled simple callback also returns its adapter's
+setup error immediately; a missing key returns no stream. Bundled raw projection
+failures remain settled error streams. Their `_for` counterparts take the hook family's options and
 mandatory caller-owned submission facility. Raw projection and simple preparation
 retain that family through the same protocol producer. `complete_for` and
 `complete_simple_for` start invocation before returning an independent result future.

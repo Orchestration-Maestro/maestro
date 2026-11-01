@@ -24,15 +24,18 @@ A candidate is any directory entry whose name ends in exactly `.jsonl`,
 symlinks included. Candidates are enumerated first, in name order on every
 platform. For `list_all` the project directories come in name order too, and
 every directory is enumerated and counted before the first candidate is read.
-All candidate reads then run together in the calling task with no limit on how
-many are in flight.
+The candidates are then read in the calling task, at most ten at a time. Each file
+is read line by line, so a large session costs about its longest line in memory,
+and a file whose reached record is malformed stops being read there.
 
 ## Per-session metadata
 
-A file becomes a `SessionInfo` when its first parsed record has `type` `session`,
+Listing skips `null`, `false`, zero numbers (including `-0` and `0.0`) and empty
+strings before checking records. A file becomes a `SessionInfo` when its first
+remaining record has `type` `session`,
 so the header needs no string `id` (identity and `parentSession` pass through as
 supplied or absent). The file fails, and is silently skipped, when it cannot be
-read or stat-ed, when a reached record is `null`, or when a selected field has an
+read or stat-ed, or when a selected field has an
 unusable type: a `message` record whose `message` member is missing or `null`; for
 a `user` or `assistant` message, `content` that is neither a string nor an array
 or a `null` content block; or a `session_info` name that is neither a string nor
@@ -48,12 +51,17 @@ is not failed; those lines are skipped by the shared parser.
 - `name` is the newest `session_info` name, trimmed; an absent, null or blank name
   clears it, and the whole file is scanned forward, so a wrong-typed earlier name
   fails the file.
-- `cwd` is the header string or empty; `created` is the header time (`NaN` when it
-  is absent or not a date, zero for null).
+- `cwd` is the header string or empty; `created` reads the header time with the
+  same scalar date conversion as record activity: strings parse, numbers are
+  epoch milliseconds, `true` is 1, and `false` and `null` are 0. Missing values,
+  arrays, objects and numbers outside ±8.64e15 milliseconds give `NaN`.
 - `modified` is the greatest activity time of eligible messages when positive,
   independently of whether their text is empty. A
   numeric message `timestamp` is that message's activity (even zero or
-  negative); otherwise its record `timestamp` string is parsed. When no positive
+  negative); otherwise its record `timestamp` is read as a date: strings are
+  parsed, numbers are epoch milliseconds, `true` is 1, and `false` and `null`
+  are 0. Missing values, arrays, objects and numbers outside ±8.64e15 milliseconds
+  contribute no activity. When no positive
   activity exists, a header `timestamp` that is a date-parsable string is used;
   a numeric, null, missing or unparsable header time does not qualify, and the
   file's modification time is used instead.

@@ -31,6 +31,13 @@ static LEADING_NON_PRINTING: LazyLock<Option<Regex>> = LazyLock::new(|| {
     property(r"^[\p{Default_Ignorable_Code_Point}\p{Control}\p{Format}\p{Mark}\p{Surrogate}]+")
 });
 
+/// A scalar of a script whose text may break between any two graphemes.
+static CJK_BREAK: LazyLock<Option<Regex>> = LazyLock::new(|| {
+    property(
+        r"[\p{Script_Extensions=Han}\p{Script_Extensions=Hiragana}\p{Script_Extensions=Katakana}\p{Script_Extensions=Hangul}\p{Script_Extensions=Bopomofo}]",
+    )
+});
+
 /// A complete recommended-for-general-interchange emoji sequence.
 static RGI_EMOJI: LazyLock<Option<Regex>> = LazyLock::new(|| property(r"^\p{RGI_Emoji}$"));
 
@@ -39,6 +46,12 @@ fn matches(expression: &LazyLock<Option<Regex>>, text: &str) -> bool {
     expression
         .as_ref()
         .is_some_and(|expression| expression.find(text).is_some())
+}
+
+/// Whether `segment` holds a Han, Hiragana, Katakana, Hangul or Bopomofo scalar, so a line may
+/// break on either side of it.
+pub(super) fn breaks_anywhere(segment: &str) -> bool {
+    matches(&CJK_BREAK, segment)
 }
 
 /// Cells of one scalar: wide, fullwidth and regional indicator forms take two, everything
@@ -79,7 +92,7 @@ fn could_be_emoji(segment: &str) -> bool {
         || segment.chars().map(char::len_utf16).sum::<usize>() > 2
 }
 
-/// Cells of one grapheme cluster, counting a tab as zero.
+/// Cells of one grapheme cluster; a tab is measured by its callers.
 pub(super) fn grapheme_cells(segment: &str) -> usize {
     let mut scalars = segment.chars();
     if let (Some(only), None) = (scalars.next(), scalars.next())
@@ -157,7 +170,7 @@ pub fn visible_width(text: &str) -> usize {
     }
     let parsed = Parsed::parse(text);
     let width = parsed
-        .graphemes(0..parsed.visible.len(), TAB_CELLS)
+        .graphemes(0..parsed.visible.len())
         .map(|grapheme| grapheme.cells)
         .sum();
     CACHE.with_borrow_mut(|cache| cache.insert(text, width));

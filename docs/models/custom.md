@@ -301,16 +301,24 @@ For an `anthropic-messages` proxy that rejects per-tool eager streaming, put thi
 ```json
 {
   "supportsEagerToolInputStreaming": false,
-  "supportsLongCacheRetention": false
+  "supportsLongCacheRetention": false,
+  "supportsCacheControlOnTools": false
 }
 ```
 
-Both fields default to `true`. With eager streaming disabled, Maestro omits
+These three fields default to `true`. With eager streaming disabled, Maestro omits
 `tools[].eager_input_streaming` and uses the
 `fine-grained-tool-streaming-2025-05-14` beta header when tools are present.
 With long retention disabled it omits the `cache_control.ttl: "1h"` extension,
 including when the caller requests long retention. This does not disable short
-cache markers. See [Messages requests](messages.md).
+cache markers. With cache markers on tools disabled, the last tool carries no
+marker, while the system prompt and last message keep theirs.
+
+Two more fields default to `false`. `sendSessionAffinityHeaders` sends the
+session ID as `x-session-affinity` when caching is on and the request uses an API
+key; the header is skipped for an empty session ID, an account token and a
+subscription token. `allowEmptySignature` replays unsigned thinking with
+`signature: ""` instead of converting it to text. See [Messages requests](messages.md).
 
 ## Chat Completions compatibility
 
@@ -336,7 +344,7 @@ recognized provider IDs/URLs can select different values.
 | `zaiToolStream` | `false` | Enable `tool_stream` for tool-enabled requests. |
 | `sendSessionAffinityHeaders` | `false` | Send session affinity headers when a session ID is available and caching is enabled. |
 | `openRouterRouting` | Absent | Forward routing preferences as `provider` for OpenRouter URLs. |
-| `vercelGatewayRouting` | Absent | Forward `only`/`order` as `providerOptions.gateway` for Vercel gateway URLs. |
+| `vercelGatewayRouting` | Absent | Forward `only`/`order` as `providerOptions.gateway`, whatever the base URL. |
 
 Detection disables store/developer support for nonstandard endpoints such as
 Z.ai, Moonshot, Cloudflare, xAI, Cerebras, Chutes, DeepSeek and OpenCode. Reasoning
@@ -344,8 +352,11 @@ effort defaults off for xAI, Z.ai, Moonshot and Cloudflare Gateway. Strict mode
 defaults off for Moonshot and Cloudflare Gateway; long caching defaults off for
 Cloudflare Workers and Gateway. Moonshot, Chutes and Cloudflare Gateway use
 `max_tokens`. DeepSeek defaults to reasoning-content replay and `deepseek`
-thinking; Z.ai selects `zai`; OpenRouter selects `openrouter`. Override fields
-explicitly when a proxy's URL no longer identifies the upstream behavior.
+thinking; Z.ai selects `zai`; OpenRouter selects `openrouter`. On OpenRouter,
+only model IDs beginning `anthropic/` or `openai/` get the developer role. The
+OpenCode Go gateway streams reasoning as `reasoning`; Maestro replays it as
+`reasoning_content`. Override fields explicitly when a proxy's URL no
+longer identifies the upstream behavior.
 
 ### Reasoning and cache compatibility
 
@@ -354,7 +365,8 @@ explicitly when a proxy's URL no longer identifies the upstream behavior.
 | `openai` | `reasoning_effort` when supported | Mapped `off` value, if supplied and supported |
 | `openrouter` | `reasoning.effort` | Mapped `off`, otherwise `none` |
 | `deepseek` | `thinking.type: "enabled"` and `reasoning_effort` | `thinking.type: "disabled"` |
-| `zai`, `qwen` | Top-level `enable_thinking: true` | `enable_thinking: false` |
+| `zai` | `thinking: {"type": "enabled"}` | `thinking: {"type": "disabled"}` |
+| `qwen` | Top-level `enable_thinking: true` | `enable_thinking: false` |
 | `qwen-chat-template` | `chat_template_kwargs` with `enable_thinking: true`, `preserve_thinking: true` | `chat_template_kwargs.enable_thinking: false` |
 
 Named effort formats use `thinkingLevelMap`. Models with `reasoning: false` do
@@ -363,7 +375,7 @@ top-level controls or `qwen-chat-template` for chat-template controls.
 
 `cacheControlFormat: "anthropic"` marks the system prompt, last tool definition
 and last user/assistant text. It defaults on for provider `openrouter` with model
-IDs beginning `anthropic/`. Long retention adds `ttl: "1h"` when supported;
+IDs beginning `anthropic/` or `~anthropic/`. Long retention adds `ttl: "1h"` when supported;
 OpenAI prompt caching instead uses `prompt_cache_retention: "24h"`. Retention
 `none` suppresses cache and affinity fields. File compatibility describes what
 an endpoint accepts; request [cache retention](../model-options.md#cache-retention)
@@ -383,7 +395,7 @@ written when the base URL contains `openrouter.ai`; Maestro does not choose an
 upstream itself. Check [OpenRouter's routing contract](https://openrouter.ai/docs/guides/routing/provider-selection)
 for service-side meanings and supported values.
 
-For a Vercel gateway URL containing `ai-gateway.vercel.sh`, use:
+For a Vercel gateway, use:
 
 ```json
 {
@@ -394,12 +406,14 @@ For a Vercel gateway URL containing `ai-gateway.vercel.sh`, use:
 }
 ```
 
-This is a `compat` fragment. The gateway, not Maestro, selects the provider.
+This is a `compat` fragment. Maestro sends it for any base URL, so a proxy in
+front of the gateway keeps it. The gateway, not Maestro, selects the provider.
 
 ## Responses compatibility
 
-For `openai-responses`, `sendSessionIdHeader` and `supportsLongCacheRetention`
-default to `true`. The first controls the session ID header; the second allows
-`prompt_cache_retention: "24h"` when long retention is requested. Use `false`
-for either capability a proxy rejects. Chat Completions reasoning-format and
+For `openai-responses`, `supportsDeveloperRole`, `sendSessionIdHeader` and
+`supportsLongCacheRetention` default to `true`. The first sends instructions as
+`developer` on reasoning models, or as `system` when `false`; the second controls
+the session ID header; the third allows `prompt_cache_retention: "24h"` when long
+retention is requested. Use `false` for any capability a proxy rejects. Chat Completions reasoning-format and
 routing switches do not configure the Responses adapter. See [Responses](responses.md).

@@ -4,6 +4,7 @@
 //! emoji, above a menu whose first two entries hold an inline text field. Choosing an entry
 //! reports its name, with the field's text when there is some; Escape closes the overlay
 //! without a report.
+// maestro-component: MAESTRO_OVERLAY_TEST_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

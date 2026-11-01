@@ -84,7 +84,7 @@ are not trimmed. Use the variable spelling shown here. Provider IDs are case-sen
 | Anthropic | `anthropic` | `ANTHROPIC_OAUTH_TOKEN`, `ANTHROPIC_API_KEY` |
 | OpenAI | `openai` | `OPENAI_API_KEY` |
 | OpenAI Codex | `openai-codex` | None; subscription login |
-| GitHub Copilot | `github-copilot` | `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, `GITHUB_TOKEN` |
+| GitHub Copilot | `github-copilot` | `COPILOT_GITHUB_TOKEN` |
 | Azure OpenAI Responses | `azure-openai-responses` | `AZURE_OPENAI_API_KEY` |
 | Amazon Bedrock | `amazon-bedrock` | AWS credential chain, not an API-key field; see below |
 | Google Gemini | `google` | `GEMINI_API_KEY` |
@@ -117,6 +117,18 @@ These mappings come from the [environment-key owner](../crates/maestro-models/sr
 and the [built-in display names](../crates/maestro-catalog/src/provider_display_names.rs).
 Configured authentication is not proof that a token works. Ambient discovery
 checks are described in [request authentication](request-authentication.md).
+
+## Request attribution
+
+Attribution and session headers match the provider name or the base URL's parsed host, not
+a substring of the address, so a proxy path that names a gateway gets none of them. The
+headers and their conditions are listed in the [SDK guide](application/sdk.md).
+
+## Routing preferences
+
+A model's `openRouterRouting` compatibility value is sent as the request's `provider`
+object whenever it is set, through a proxy or custom base URL as well as the routing
+gateway itself.
 
 ## Credential file and key selection
 
@@ -248,8 +260,10 @@ and your IAM permissions before sending a prompt.
 ### Cloudflare
 
 Create a token with access to the intended account/service. Both providers use
-`CLOUDFLARE_API_KEY`; scope identifiers are environment variables even when you
-save the key through `/login`:
+`CLOUDFLARE_API_KEY`. The `/login` key dialog also asks for the account ID and,
+for AI Gateway, the gateway ID. It saves all values together after the final
+prompt; cancelling or entering an empty value keeps the previous credential.
+Alternatively, supply the values through the environment:
 
 ```sh
 export CLOUDFLARE_API_KEY='example-cloudflare-token'
@@ -273,8 +287,21 @@ upstream `Authorization` header through a model/provider override, not a second
 value in `CLOUDFLARE_API_KEY`. See [catalog request headers](catalog.md#request-authentication).
 Workers AI chat requests with a nonempty session ID send `x-session-affinity`
 for [prefix caching](https://developers.cloudflare.com/workers-ai/features/prompt-caching/).
-An unset placeholder variable fails at request preparation; model listing does
-not check account IDs or gateway existence.
+Stored credentials keep account IDs under `env.CLOUDFLARE_ACCOUNT_ID` and gateway
+IDs under `env.CLOUDFLARE_GATEWAY_ID`. Each absent or empty stored ID falls back
+to its environment variable independently. API-key availability checks require a
+key source and all required IDs without executing a secret helper. An extension's
+registered OAuth handler keeps stored OAuth credentials available on presence
+alone, without looking up IDs, extracting keys or refreshing tokens. Request
+authentication still checks the IDs. These checks do not contact Cloudflare or
+verify that the gateway exists.
+
+Request authentication resolves the key and expands both placeholders in the
+selected descriptor's base URL, including custom descriptors. An unresolved
+placeholder fails before HTTP is sent. SDK callers pass the resolved
+`base_url` from `get_api_key_and_headers` into `StreamOptions::base_url`;
+shared raw/simple dispatch applies it to the invocation's owned descriptor,
+without changing the catalog. The application also carries it into summaries.
 
 ### Google Vertex AI
 
@@ -313,6 +340,10 @@ explains custom models, built-in overrides and request-time key/header resolutio
 For a new protocol or OAuth flow, use an extension's provider registration:
 [guest provider interfaces](extensions/guest.md) and [OAuth contracts](models/oauth.md).
 These routes do not change the built-in credential precedence above.
+
+A chat-completions model that sets `vercelGatewayRouting` in its compatibility (`only`, `order`)
+sends that routing to the Vercel AI Gateway whatever its base URL, so a gateway reached through
+your own endpoint keeps the routing you configured.
 
 ## Troubleshoot without exposing a key
 

@@ -18,8 +18,10 @@ use native::{CallbackOutcome, CallbackServer};
 use std::future::poll_fn;
 use std::task::Poll;
 
-/// Redirect identity independent of the listener's binding host.
-const REDIRECT_URI: &str = "http://localhost:53692/callback";
+/// Redirect identity for the listener's port, independent of its binding host.
+fn redirect_uri(port: u16) -> String {
+    format!("http://localhost:{port}/callback")
+}
 /// Requested subscription permissions.
 const SCOPES: &str = "org:create_api_key user:profile user:inference user:sessions:claude_code user:mcp_servers user:file_upload";
 
@@ -27,7 +29,7 @@ const SCOPES: &str = "org:create_api_key user:profile user:inference user:sessio
 /// This provider does not consult the caller's selector or cancellation signal.
 ///
 /// # Errors
-/// Returns entropy, binding, interaction, transport or token validation failures.
+/// Returns entropy, interaction, transport or token validation failures.
 pub fn login_anthropic(
     callbacks: OAuthCallbacks,
     fetch: Option<Fetch>,
@@ -76,10 +78,9 @@ async fn login(
 ) -> Result<OAuthCredentials, OAuthError> {
     let selected = select_code(&callbacks, &pkce, &server).await;
     match selected {
-        Ok((code, state)) => {
+        Ok(grant) => {
             let mut exchange = Box::pin(exchange::exchange(
-                code,
-                state,
+                grant,
                 pkce.verifier,
                 fetch,
                 crate::records::diagnostics::timestamp_now,
@@ -105,13 +106,13 @@ async fn login(
 }
 
 /// Build the ordered authorization form using space-to-plus encoding.
-fn auth_info(pkce: &Pkce) -> OAuthAuthInfo {
+fn auth_info(pkce: &Pkce, redirect_uri: &str) -> OAuthAuthInfo {
     let query = url::form_urlencoded::Serializer::new(String::new())
         .extend_pairs([
             ("code", "true"),
             ("client_id", exchange::CLIENT_ID),
             ("response_type", "code"),
-            ("redirect_uri", REDIRECT_URI),
+            ("redirect_uri", redirect_uri),
             ("scope", SCOPES),
             ("code_challenge", pkce.challenge.as_str()),
             ("code_challenge_method", "S256"),
@@ -126,8 +127,9 @@ async fn select_code(
     callbacks: &OAuthCallbacks,
     pkce: &Pkce,
     server: &CallbackServer,
-) -> Result<(String, String), OAuthError> {
-    callbacks.on_auth(auth_info(pkce))?;
+) -> Result<exchange::Grant, OAuthError> {
+    let redirect_uri = redirect_uri(server.port.unwrap_or(callback::PREFERRED_PORT));
+    callbacks.on_auth(auth_info(pkce, &redirect_uri))?;
     let manual = callbacks
         .on_manual_code_input()
         .map(|future| start_manual(future, server.wait.clone()));
@@ -156,7 +158,7 @@ async fn select_code(
         let input = callbacks
             .on_prompt(OAuthPrompt {
                 message: "Paste the authorization code or full redirect URL:".into(),
-                placeholder: Some(REDIRECT_URI.into()),
+                placeholder: Some(redirect_uri.clone()),
                 allow_empty: None,
             })
             .await?;
@@ -171,7 +173,11 @@ async fn select_code(
         .filter(|state| !state.is_empty())
         .ok_or_else(|| OAuthError::message("Missing OAuth state"))?;
     callbacks.on_progress("Exchanging authorization code for tokens...")?;
-    Ok((code, state))
+    Ok(exchange::Grant {
+        code,
+        state,
+        redirect_uri,
+    })
 }
 
 /// Validate nonempty supplied state before applying the absent-state verifier fallback.

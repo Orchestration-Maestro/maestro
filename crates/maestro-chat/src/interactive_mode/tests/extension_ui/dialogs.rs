@@ -569,3 +569,111 @@ fn ui_context_retains_the_mode_but_completed_dialogs_leave_no_cycle() {
         },
     );
 }
+
+/// Whether the editor area shows a dialog whose rows contain `title`.
+fn shows(world: &World, title: &str) -> bool {
+    world
+        .mode
+        .editor_container
+        .render(80)
+        .iter()
+        .any(|row| row.contains(title))
+}
+
+#[test]
+fn tool_expansion_key_works_while_a_confirmation_is_focused() {
+    isolated(
+        "tool_expansion_key_works_while_a_confirmation_is_focused",
+        async |directory| {
+            let world = retained(directory).await;
+            assert!(!world.mode.tool_output_expanded.get());
+            let mut answer =
+                port(&world.mode).confirm("Title".to_owned(), "Message".to_owned(), None);
+            world.terminal.send_input("\x0f");
+            assert!(world.mode.tool_output_expanded.get());
+            assert!(settled(&mut answer).is_none());
+            assert!(shows(&world, "Title"));
+            world.terminal.send_input("\x0f");
+            assert!(!world.mode.tool_output_expanded.get());
+            world.terminal.send_input("\r");
+            assert_eq!(settled(&mut answer), Some(true));
+        },
+    );
+}
+
+#[test]
+fn concurrent_dialogs_stack_and_reveal_the_one_below() {
+    isolated(
+        "concurrent_dialogs_stack_and_reveal_the_one_below",
+        async |directory| {
+            let world = retained(directory).await;
+            let host = port(&world.mode);
+            let mut first = host.confirm("First".to_owned(), "one".to_owned(), None);
+            let mut second = host.confirm("Second".to_owned(), "two".to_owned(), None);
+            assert!(shows(&world, "Second") && !shows(&world, "First"));
+            assert!(settled(&mut first).is_none());
+            world.terminal.send_input("\x1b");
+            assert_eq!(settled(&mut second), Some(false));
+            assert!(shows(&world, "First"));
+            assert!(settled(&mut first).is_none());
+            world.terminal.send_input("\r");
+            assert_eq!(settled(&mut first), Some(true));
+            assert!(observe(&world, false).restored);
+        },
+    );
+}
+
+#[test]
+fn hidden_dialog_settles_on_abort_without_changing_the_shown_one() {
+    isolated(
+        "hidden_dialog_settles_on_abort_without_changing_the_shown_one",
+        async |directory| {
+            let world = retained(directory).await;
+            let host = port(&world.mode);
+            let signal = Cancellation::new();
+            let mut first = host.confirm(
+                "First".to_owned(),
+                "one".to_owned(),
+                Some(ExtensionUIDialogOptions {
+                    signal: Some(signal.clone()),
+                    timeout: None,
+                }),
+            );
+            let mut second = host.select(
+                "Second".to_owned(),
+                vec!["kept".to_owned(), "other".to_owned()],
+                None,
+            );
+            world.terminal.send_input("j");
+            assert!(settled(&mut first).is_none());
+            signal.abort();
+            assert!(world.runtime.drain_futures().is_empty());
+            assert_eq!(settled(&mut first), Some(false));
+            assert!(shows(&world, "Second"));
+            world.terminal.send_input("\r");
+            assert_eq!(settled(&mut second), Some(Some("other".to_owned())));
+            assert!(observe(&world, false).restored);
+        },
+    );
+}
+
+#[test]
+fn stacked_input_keeps_its_typed_text_while_hidden() {
+    isolated(
+        "stacked_input_keeps_its_typed_text_while_hidden",
+        async |directory| {
+            let world = retained(directory).await;
+            let host = port(&world.mode);
+            let mut typed = host.input("Name".to_owned(), None, None);
+            world.terminal.send_input("abc");
+            let mut confirm = host.confirm("Sure".to_owned(), "?".to_owned(), None);
+            assert!(shows(&world, "Sure"));
+            world.terminal.send_input("\r");
+            assert_eq!(settled(&mut confirm), Some(true));
+            assert!(shows(&world, "Name"));
+            world.terminal.send_input("d");
+            world.terminal.send_input("\r");
+            assert_eq!(settled(&mut typed), Some(Some("abcd".to_owned())));
+        },
+    );
+}

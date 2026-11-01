@@ -57,6 +57,7 @@ pub fn observe<E: maestro_models::ProviderExecution>(
     options: SimpleStreamOptions<E>,
 ) -> SimpleStreamOptions {
     let maestro_models::StreamOptions {
+        base_url,
         temperature,
         max_tokens,
         signal,
@@ -77,6 +78,7 @@ pub fn observe<E: maestro_models::ProviderExecution>(
     assert!(on_response.is_none());
     SimpleStreamOptions {
         common: maestro_models::StreamOptions {
+            base_url,
             temperature,
             max_tokens,
             signal,

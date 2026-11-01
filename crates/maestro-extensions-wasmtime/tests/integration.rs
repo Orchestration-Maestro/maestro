@@ -19,6 +19,7 @@ mod compilation_cache;
 mod completion_providers;
 mod component_events;
 mod component_loading;
+
 mod components;
 mod editor_factories;
 mod exec_io;
@@ -28,6 +29,7 @@ mod factory_capabilities;
 mod factory_shutdown;
 mod git_checkpoint_example;
 mod handoff_example;
+mod inline_bash_example;
 mod interactive_shell_example;
 mod lifetimes;
 mod listener_prefixes;

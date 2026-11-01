@@ -33,3 +33,23 @@ fn user_delivery_options_preserve_empty_and_supported_placements() {
     );
     assert!(serde_json::from_value::<SendMessageOptions>(json!({"triggerTurn": "true"})).is_err());
 }
+
+/// Input delivery uses the same camel-case key as the other event fields.
+#[test]
+fn streaming_input_encodes_camel_case_delivery() {
+    use maestro_request::extension_events::{InputEvent, InputSource};
+    use maestro_request::messages::UserMessageDelivery;
+    use maestro_request::presence::Presence;
+    let event = InputEvent {
+        text: "hello".into(),
+        images: Presence::Missing,
+        source: InputSource::Interactive,
+        streaming_behavior: Presence::Present(UserMessageDelivery::FollowUp),
+    };
+    assert_eq!(
+        serde_json::to_value(event).unwrap(),
+        json!({
+            "text": "hello", "source": "interactive", "streamingBehavior": "followUp"
+        })
+    );
+}

@@ -1639,6 +1639,7 @@ async fn request_key_tiers(
     auth.set(
         "openai",
         maestro_extensions::AuthCredential::ApiKey(maestro_credentials::ApiKeyCredential {
+            env: None,
             key: "stored-key".into(),
         }),
     );

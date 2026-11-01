@@ -2,11 +2,12 @@
 use std::cell::{Cell, RefCell};
 
 use crate::{
-    Component,
+    Component, TruncateOptions,
     images::terminal_image::{
         ImageDimensions, ImageProtocol, ImageRenderOptions, TerminalImage, calculate_image_rows,
-        get_image_dimensions, image_fallback,
+        fallback_name, get_image_dimensions, image_fallback,
     },
+    truncate_to_width,
 };
 
 /// Styling supplied for the text image placeholder.
@@ -19,6 +20,8 @@ pub struct ImageTheme {
 pub struct ImageOptions {
     /// Maximum cell width; absent means 60.
     pub max_width_cells: Option<u32>,
+    /// Maximum cell height; absent means a box as tall in pixels as the width bound is wide.
+    pub max_height_cells: Option<u32>,
     /// Optional filename shown in text fallback.
     pub filename: Option<String>,
     /// Supplied Kitty ID; zero is retained but omitted from protocol parameters.
@@ -78,6 +81,23 @@ impl Image {
     pub fn get_image_id(&self) -> Option<u32> {
         self.id.get()
     }
+    /// The styled fallback text truncated to `width`: the shortened, possibly linked name, the
+    /// MIME type and the pixel size.
+    fn fallback_line(&self, width: usize) -> String {
+        let hyperlinks = self.terminal.get_capabilities().hyperlinks;
+        let name = self
+            .options
+            .filename
+            .as_deref()
+            .filter(|name| !name.is_empty())
+            .map(|name| fallback_name(name, self.terminal.home().as_deref(), hyperlinks));
+        let fallback = image_fallback(&self.mime_type, Some(self.dimensions), name.as_deref());
+        truncate_to_width(
+            &(self.theme.fallback_color)(&fallback),
+            width,
+            TruncateOptions::default(),
+        )
+    }
     /// Encodes usable geometry before reserving lines; invalid geometry never allocates an ID.
     fn image_lines(&self, width: usize) -> Option<Vec<String>> {
         let protocol = self.terminal.get_capabilities().images?;
@@ -85,11 +105,15 @@ impl Image {
         let target = u32::try_from(available)
             .unwrap_or(u32::MAX)
             .min(self.options.max_width_cells.unwrap_or(60));
-        calculate_image_rows(
-            self.dimensions,
-            target,
-            Some(self.terminal.get_cell_dimensions()),
-        )?;
+        let cells = self.terminal.get_cell_dimensions();
+        calculate_image_rows(self.dimensions, target, Some(cells))?;
+        let square = (u64::from(target) * u64::from(cells.width_px))
+            .div_ceil(u64::from(cells.height_px))
+            .max(1);
+        let max_height = self
+            .options
+            .max_height_cells
+            .unwrap_or_else(|| u32::try_from(square).unwrap_or(u32::MAX));
         if protocol == ImageProtocol::Kitty && self.id.get().is_none() {
             self.id.set(Some(self.terminal.allocate_image_id()));
         }
@@ -98,6 +122,7 @@ impl Image {
             self.dimensions,
             ImageRenderOptions {
                 max_width_cells: Some(target),
+                max_height_cells: Some(max_height),
                 image_id: self.id.get(),
                 move_cursor: false,
                 ..ImageRenderOptions::default()
@@ -126,14 +151,9 @@ impl Component for Image {
         {
             return lines.clone();
         }
-        let lines = self.image_lines(width).unwrap_or_else(|| {
-            let fallback = image_fallback(
-                &self.mime_type,
-                Some(self.dimensions),
-                self.options.filename.as_deref(),
-            );
-            vec![(self.theme.fallback_color)(&fallback)]
-        });
+        let lines = self
+            .image_lines(width)
+            .unwrap_or_else(|| vec![self.fallback_line(width)]);
         *self.cache.borrow_mut() = Some((width, lines.clone()));
         lines
     }

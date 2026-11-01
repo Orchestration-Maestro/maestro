@@ -112,12 +112,12 @@
   {
     "input": "~name",
     "scope": "user",
-    "expected": "../../fake/name"
+    "expected": "../../../work/project/~name"
   },
   {
     "input": "~name",
     "scope": "project",
-    "expected": "../../../home/fake/name"
+    "expected": "../~name"
   },
   {
     "input": "./pkg",

@@ -8,7 +8,7 @@ use maestro_agent::QueueMode;
 use maestro_catalog::DEFAULT_THINKING_LEVEL;
 use maestro_extensions::{ExtensionExecution, ModelSelectEvent, ThinkingLevelSelectEvent};
 use maestro_models::{
-    DiagnosticErrorInfo, Model, ModelThinkingLevel, clamp_thinking_level,
+    DiagnosticErrorInfo, Model, ModelThinkingLevel, Transport, clamp_thinking_level,
     extension_events::selection_events::ModelSelectSource, get_supported_thinking_levels,
     models_are_equal,
 };
@@ -231,20 +231,46 @@ impl<E: ExtensionExecution> AgentSession<E> {
         read(&self.model()).reasoning
     }
 
+    /// Gives the agent the steering and follow-up modes the saved preferences now hold.
+    pub(super) fn sync_queue_modes_from_settings(&self) {
+        let settings = self.settings_manager.borrow();
+        self.agent
+            .set_steering_mode(crate::sdk::queue_mode(&settings.get_steering_mode()));
+        self.agent
+            .set_follow_up_mode(crate::sdk::queue_mode(&settings.get_follow_up_mode()));
+    }
+
     /// Sets and saves how steering messages are delivered.
-    pub fn set_steering_mode(&self, mode: QueueMode) {
+    ///
+    /// # Errors
+    /// Returns the publisher's refusal before changing live delivery or preferences.
+    pub fn set_steering_mode(&self, mode: QueueMode) -> Result<(), DiagnosticErrorInfo> {
+        let edit = self.prepare_behaviour(&["steeringMode"], delivery_mode(mode).into())?;
         self.agent.set_steering_mode(mode);
-        self.settings_manager
-            .borrow_mut()
-            .set_steering_mode(delivery_mode(mode));
+        self.settings_manager.borrow_mut().apply_prepared_edit(edit);
+        Ok(())
     }
 
     /// Sets and saves how follow-up messages are delivered.
-    pub fn set_follow_up_mode(&self, mode: QueueMode) {
+    ///
+    /// # Errors
+    /// Returns the publisher's refusal before changing live delivery or preferences.
+    pub fn set_follow_up_mode(&self, mode: QueueMode) -> Result<(), DiagnosticErrorInfo> {
+        let edit = self.prepare_behaviour(&["followUpMode"], delivery_mode(mode).into())?;
         self.agent.set_follow_up_mode(mode);
-        self.settings_manager
-            .borrow_mut()
-            .set_follow_up_mode(delivery_mode(mode));
+        self.settings_manager.borrow_mut().apply_prepared_edit(edit);
+        Ok(())
+    }
+
+    /// Saves the transport before changing the live preference for the next request.
+    ///
+    /// # Errors
+    /// Returns the publisher's refusal before changing preferences or the agent.
+    pub fn set_transport(&self, transport: Transport) -> Result<(), DiagnosticErrorInfo> {
+        let edit = self.prepare_behaviour(&["transport"], serde_json::json!(transport))?;
+        self.settings_manager.borrow_mut().apply_prepared_edit(edit);
+        *write(&self.agent.transport) = transport;
+        Ok(())
     }
 
     /// Announces a model change to extensions, unless the identity is unchanged.

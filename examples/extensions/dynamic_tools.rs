@@ -5,6 +5,7 @@
 //! and underscores, then registers `Echo <name>`, which echoes its message behind `[<name>] `.
 //! A name is admitted once per factory instance, so a repeated spelling only reports that the
 //! tool is already registered.
+// maestro-component: MAESTRO_DYNAMIC_TOOLS_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
