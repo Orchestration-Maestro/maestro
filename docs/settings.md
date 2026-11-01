@@ -324,7 +324,9 @@ Manager saves use `with_write_lock`. The native adapter creates the parent as
 needed and takes the same stable sidecar lock before reading, including when the
 settings file is absent. It holds exclusion through the single callback and
 optional write. Independent manager edits therefore survive concurrent first
-writes as well as existing-file saves. Acquire/read failures skip the callback;
+writes as well as existing-file saves. A writer whose attempts run out while
+another holds the sidecar reports the contention and writes nothing.
+Acquire/read failures skip the callback;
 callback and write failures release exclusion. `Ok(None)` and callback errors
 leave settings bytes untouched, but may leave a new parent and sidecar. Locking
 alone never creates a settings file.
