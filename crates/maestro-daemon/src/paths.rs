@@ -10,15 +10,31 @@ use std::path::PathBuf;
 /// Empty Windows values and `~` are unusable; no platform consults the account directory.
 #[must_use]
 pub fn home_directory() -> Option<PathBuf> {
-    home_directory_from_env(cfg!(windows), |key| std::env::var_os(key))
+    select_home(
+        if cfg!(windows) {
+            Platform::Windows
+        } else {
+            Platform::Unix
+        },
+        |key| std::env::var_os(key),
+    )
+}
+
+/// Environment precedence used for workspace homes.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Platform {
+    /// Keep HOME exactly as supplied.
+    Unix,
+    /// Prefer profile and rooted drive/path observations before HOME.
+    Windows,
 }
 
 /// Select the platform's workspace home from supplied environment observations.
-fn home_directory_from_env(
-    windows: bool,
+fn select_home(
+    platform: Platform,
     environment: impl Fn(&str) -> Option<std::ffi::OsString>,
 ) -> Option<PathBuf> {
-    if !windows {
+    if platform == Platform::Unix {
         return environment("HOME").map(PathBuf::from);
     }
     let usable = |key| environment(key).filter(|value| !value.is_empty() && value != "~");

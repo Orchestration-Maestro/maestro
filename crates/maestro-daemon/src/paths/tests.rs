@@ -39,7 +39,7 @@ fn windows_home_selection_follows_environment_precedence() {
     ];
     for (values, expected) in cases {
         let variables = ["USERPROFILE", "HOMEDRIVE", "HOMEPATH", "HOME"];
-        let home = home_directory_from_env(true, |key| {
+        let home = select_home(Platform::Windows, |key| {
             variables
                 .iter()
                 .position(|name| *name == key)
