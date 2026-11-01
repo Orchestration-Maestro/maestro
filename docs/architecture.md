@@ -17,6 +17,21 @@ conventions crate. `src/graph/policy.rs` keeps the rule logic and re-exports
 `exports/mod.rs` aggregates them without changing the original owners or target
 gates. Unrelated areas therefore need not edit the same declaration file.
 
+### Named exports
+
+Run `just check` to check the application export boundary. Export records and
+operations by name; do not expose the daemon, terminal or Markdown crate itself,
+its modules or its wildcard imports.
+
+The checker follows aliases across source files and local glob imports. A glob
+imports only bindings visible from the importing module and cannot widen their
+visibility through a public relay. Local glob bindings shadow root external-crate
+aliases, including when a later export refers to an earlier alias through `self`.
+
+For example, `pub use maestro_terminal::render::Dirty;` selects one item.
+`pub use maestro_terminal::render;` exposes a whole module and is rejected.
+Application-owned modules may group named records and operations.
+
 ## Inventory and dependencies
 
 Dependency descriptions here state domain edges, subject to the

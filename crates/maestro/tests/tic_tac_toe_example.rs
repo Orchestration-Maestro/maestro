@@ -10,7 +10,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 use tokio::sync::oneshot;
-mod renderers;
+pub(crate) mod renderers;
 mod ui;
 
 /// Builds the shipped component in an isolated session without ambient credentials.

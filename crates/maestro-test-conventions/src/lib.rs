@@ -120,8 +120,9 @@ mod time_limits;
 pub fn check_workspace(root: &Path) -> Result<(), String> {
     test_budget::check(root)?;
     config_scripts::check(root)?;
-    let metadata = graph::check(root)?;
+    let (metadata, packages) = graph::check(root)?;
     let members = source::load(&metadata)?;
+    graph::packages::check(&metadata, &members, &packages)?;
     child_tests::check(&members)?;
     integration_tests::check(&members)?;
     boundaries::check(&members)?;

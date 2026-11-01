@@ -1455,7 +1455,8 @@ fn answering(world: &World) -> Requests {
         .mode
         .runtime_host
         .session()
-        .set_auto_compaction_enabled(false);
+        .set_auto_compaction_enabled(false)
+        .unwrap();
     world
         .host
         .services()

@@ -7,6 +7,17 @@ use super::{
 use serde_json::{Map, Value};
 
 impl SettingsManager {
+    /// Resolves restored preferences over the current view without editing any raw scope.
+    /// Base locks and publisher diagnostics follow the ordinary composition pipeline.
+    #[must_use]
+    pub fn resolve_stored_values(&self, stored: &Settings) -> Settings {
+        Settings(self.compose_effective_settings(
+            self.get_base_layer(),
+            self.effective.clone(),
+            &[(SettingsScope::Global, &stored.0)],
+        ))
+    }
+
     /// Composes supplied scopes with locked inputs and final locks after stored decisions.
     pub(super) fn compose_effective_settings(
         &self,
