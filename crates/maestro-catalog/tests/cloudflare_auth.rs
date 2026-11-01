@@ -183,3 +183,63 @@ fn check_materialized_auth(
     assert_eq!(model.read().unwrap().base_url, original);
     operations.calls.lock().unwrap().clear();
 }
+
+/// Registered OAuth credentials stay available without account lookup or token refresh.
+#[test]
+fn cloudflare_oauth_availability_defers_ids_and_refresh_until_request() {
+    let Some(cases) = maestro_test_process::run_per_environment(
+        std::thread::current().name().unwrap(),
+        [false, true],
+        |&complete| {
+            if complete {
+                [
+                    ("CLOUDFLARE_ACCOUNT_ID", "account"),
+                    ("CLOUDFLARE_GATEWAY_ID", "gateway"),
+                ]
+                .into_iter()
+                .collect()
+            } else {
+                std::collections::BTreeMap::new()
+            }
+        },
+    )
+    .unwrap() else {
+        return;
+    };
+    for complete in cases {
+        oauth_configuration(complete);
+    }
+}
+
+/// Observe metadata separately from the later authenticated endpoint resolution.
+fn oauth_configuration(complete: bool) {
+    let provider = "cloudflare-ai-gateway";
+    let registry = support::memory_with(support::forbidden());
+    let mut descriptor = maestro_models::get_models(provider).remove(0);
+    descriptor.base_url =
+        "https://custom.invalid/{CLOUDFLARE_ACCOUNT_ID}/{CLOUDFLARE_GATEWAY_ID}".into();
+    let model = Arc::new(std::sync::RwLock::new(descriptor));
+    registry
+        .auth_storage()
+        .set(provider, request_support::tokens(0.0));
+    assert!(!registry.has_configured_auth(&model).unwrap());
+    let registration = request_support::OAuth::new(provider, "Cloudflare OAuth").register();
+    assert!(registry.auth_storage().has_auth(provider).unwrap());
+    assert!(registry.has_configured_auth(&model).unwrap());
+    registry
+        .auth_storage()
+        .set(provider, request_support::tokens(f64::MAX));
+    let auth = request_support::run(registry.get_api_key_and_headers(&model));
+    if complete {
+        assert!(
+            matches!(auth, maestro_catalog::ResolvedRequestAuth::Ok {base_url:Some(url), ..} if url == "https://custom.invalid/account/gateway")
+        );
+    } else {
+        request_support::error(
+            auth,
+            "CLOUDFLARE_ACCOUNT_ID is required for provider cloudflare-ai-gateway but is not set.",
+        );
+    }
+    drop(registration);
+    assert!(!registry.has_configured_auth(&model).unwrap());
+}
