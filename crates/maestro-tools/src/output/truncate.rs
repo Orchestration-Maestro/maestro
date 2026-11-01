@@ -75,6 +75,9 @@ pub fn truncate_head(content: &str, options: TruncationOptions) -> TruncationRes
         selected.push(entry);
         bytes += cost;
     }
+    if matches!(reason, TruncationBy::Lines) && selected.len() == result.total_lines {
+        reason = TruncationBy::Bytes;
+    }
     result.content = selected.join("\n");
     result.output_lines = selected.len();
     result.output_bytes = result.content.len();

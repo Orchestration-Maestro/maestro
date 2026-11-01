@@ -57,6 +57,7 @@ pub(super) async fn edit_file(
         "{bom}{}",
         restore_line_endings(&applied.new_content, ending)
     );
+    check_aborted(signal)?;
     operations.write_file(absolute, restored).await?;
     check_aborted(signal)?;
     Ok(AgentToolResult::text_result(
