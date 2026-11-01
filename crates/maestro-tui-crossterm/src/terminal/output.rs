@@ -72,6 +72,7 @@ impl Write for OutputWriter {
 /// Writes join the existing admission sender while queued output runs. Before start,
 /// after stop and for synchronous destinations, they use inherited stdout; flush makes
 /// buffered bytes visible. A queued write or flush checks admission, not physical delivery.
+/// The active-route lock is acquired before the admission sender's lock.
 #[derive(Clone, Default)]
 pub struct StandardOutput {
     /// Serializes foreign writes with output acquisition and final drain.

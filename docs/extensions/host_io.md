@@ -125,6 +125,23 @@ This qualification is separate from the broader component example checks.
 Create a `ProcessTerminal` before loading components, obtain its
 `standard_output_writer()` and pass that writer to the component factory. Start
 the same terminal for interactive rendering; obtaining the writer does not start it.
+For a host that also supplies native operations:
+
+```rust,ignore
+use maestro_extensions_wasmtime::{Stdout, artifact_factory_with_io};
+use std::io::{self, IsTerminal};
+
+let factory = artifact_factory_with_io(
+    path,
+    widgets,
+    installation,
+    native_io,
+    Some(Stdout::new(
+        Box::new(terminal.standard_output_writer()),
+        io::stdout().is_terminal(),
+    )),
+);
+```
 
 `artifact_factory_with_stdout(path, widgets, installation, writer, terminal)`
 retains a standard `Write + Send` sink across initialization and later
@@ -157,3 +174,8 @@ Extensions that write stdout in protocol modes can still interfere with their
 protocol records. The ordered-output guarantee applies only while queued terminal
 output runs; it does not add a second queue or writer task. Windows console output
 remains synchronous.
+
+The shipped stdout route is qualified on Linux with both output generations,
+including blocked output, reload, suspend/resume and separate native exec streams.
+Windows and macOS runtime behavior remains unqualified and is tracked in the
+[native-platform checks](https://github.com/Orchestration-Maestro/maestro-rust-workflows/issues/286).

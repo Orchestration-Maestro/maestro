@@ -5,7 +5,9 @@
     clippy::excessive_nesting
 )]
 use maestro_extensions_wasm::{
-    ExtensionAPI, ExtensionContext, ExtensionEvent, ExtensionEventResult, ExtensionFuture,
+    CommandOptions, ExtensionAPI, ExtensionContext, ExtensionEvent, ExtensionEventResult,
+    ExtensionFuture,
+    child_process::{SpawnOptions, Stdio},
     tools::path_utils::guest_path,
 };
 use serde_json::{Value, json};
@@ -136,7 +138,6 @@ fn basics(request: &Value) -> Result<Value, String> {
 
 /// Registers byte output and native execution through the executable's ordinary loader.
 fn root_output(api: &ExtensionAPI, endpoint: String) -> Result<(), String> {
-    use maestro_extensions_wasm::CommandOptions;
     api.on(
         "session_start",
         Rc::new(|_, context| {
@@ -153,7 +154,7 @@ fn root_output(api: &ExtensionAPI, endpoint: String) -> Result<(), String> {
             description: None,
             get_argument_completions: None,
             handler: Rc::new(move |generation, context| {
-                let (api, endpoint) = (executor.clone(), endpoint.clone());
+                let (executor, endpoint) = (executor.clone(), endpoint.clone());
                 Box::pin(async move {
                     if generation == "reload" {
                         return context.reload().await;
@@ -164,7 +165,7 @@ fn root_output(api: &ExtensionAPI, endpoint: String) -> Result<(), String> {
                     let result =
                         stdio::output(&json!({"generation":generation,"bytes":bytes})).await;
                     let reply = result.unwrap_or_else(|error| json!({"error":error}));
-                    acknowledge(&api, endpoint, reply).await?;
+                    acknowledge(&executor, endpoint, reply).await?;
                     context.ui()?.set_title("ROOT-STDOUT-DONE")
                 })
             }),
@@ -172,18 +173,17 @@ fn root_output(api: &ExtensionAPI, endpoint: String) -> Result<(), String> {
     )
 }
 
-/// Executes the supplied checked Rust child through the real native capability.
+/// Captures native exec streams and spawns a checked child to acknowledge the combined reply.
 async fn acknowledge(api: &ExtensionAPI, endpoint: String, reply: Value) -> Result<(), String> {
-    use maestro_extensions_wasm::child_process::{SpawnOptions, Stdio};
     let command = std::env::var("MAESTRO_WASI_ROOT_COMMAND").map_err(|error| error.to_string())?;
     let command: Value = serde_json::from_str(&command).map_err(|error| error.to_string())?;
-    let execution = execute(api, &command)
-        .await
-        .unwrap_or_else(|error| json!({"error":error}));
-    let reply = json!({"output":reply,"exec":execution});
     let program = command["command"]
         .as_str()
         .ok_or("missing native program")?;
+    let execution = execute(api, program, &command)
+        .await
+        .unwrap_or_else(|error| json!({"error":error}));
+    let reply = json!({"output":reply,"exec":execution});
     let args =
         serde_json::from_value(command["args"].clone()).map_err(|error| error.to_string())?;
     let prologue: Vec<u8> =
@@ -208,7 +208,8 @@ async fn acknowledge(api: &ExtensionAPI, endpoint: String, reply: Value) -> Resu
     while let Some(bytes) = stdout.read().await? {
         output.extend(bytes);
     }
-    if !output.starts_with(&prologue) || child.wait().await?.code != Some(0) {
+    let status = child.wait().await?;
+    if !output.starts_with(&prologue) || status.code != Some(0) {
         return Err("native acknowledgement failed".into());
     }
     Ok(())
@@ -217,11 +218,8 @@ async fn acknowledge(api: &ExtensionAPI, endpoint: String, reply: Value) -> Resu
 /// Captures the literal native program's streams through the application execution path.
 ///
 /// # Errors
-/// Returns missing-command, argument-decoding and native execution failures.
-async fn execute(api: &ExtensionAPI, command: &Value) -> Result<Value, String> {
-    let program = command["command"]
-        .as_str()
-        .ok_or("missing native program")?;
+/// Returns argument-decoding and native execution failures.
+async fn execute(api: &ExtensionAPI, program: &str, command: &Value) -> Result<Value, String> {
     let args: Vec<String> =
         serde_json::from_value(command["exec_args"].clone()).map_err(|error| error.to_string())?;
     let result = api.exec(program, &args, None).await?;
