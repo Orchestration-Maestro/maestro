@@ -119,6 +119,7 @@ fn initialize(path: &Path) -> io::Result<()> {
 /// # Errors
 /// Returns the native error of the narrowing or of the publication.
 pub fn write_auth_file(path: &str, text: &str) -> io::Result<()> {
+    #[cfg(unix)]
     narrow(Path::new(path))?;
     maestro_lock::replace(
         Path::new(path),
@@ -132,20 +133,19 @@ pub fn write_auth_file(path: &str, text: &str) -> io::Result<()> {
 }
 
 /// Narrows an existing writable file before publishing any credential bytes.
+#[cfg(unix)]
 fn narrow(path: &Path) -> io::Result<()> {
-    #[cfg(unix)]
     match OpenOptions::new().write(true).open(path) {
         Ok(file) => file.set_permissions(std::os::unix::fs::PermissionsExt::from_mode(0o600))?,
         Err(error) if error.kind() != ErrorKind::NotFound => return Err(error),
         Err(_) => (),
     }
-    #[cfg(not(unix))]
-    let _ = path;
     Ok(())
 }
 
 /// Publishes on the transaction's retained lock without acquiring it again.
 fn publish(holder: WriteLock, text: &str) -> io::Result<()> {
+    #[cfg(unix)]
     narrow(holder.path())?;
     holder.replace(text.as_bytes(), Some(0o600)).map(|_| ())
 }
