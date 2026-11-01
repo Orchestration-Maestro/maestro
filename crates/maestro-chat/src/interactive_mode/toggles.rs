@@ -71,7 +71,7 @@ impl InteractiveMode {
     ///
     /// # Errors
     /// Returns the failure of a tool row's native formatting or of a text rendering.
-    fn toggle_tool_output_expansion(&self) -> Result<(), Box<dyn Error>> {
+    pub(super) fn toggle_tool_output_expansion(&self) -> Result<(), Box<dyn Error>> {
         self.set_tools_expanded(!self.tool_output_expanded.get())
             .map_err(|error| -> Box<dyn Error> { error })
     }

@@ -1429,7 +1429,7 @@ fn send_pair_phase(
 }
 
 /// Invokes the selected exported method with the same borrowed emitter.
-async fn component_call(
+pub(super) async fn component_call(
     harness: &mut Harness,
     component: Resource<super::host::Identity>,
     call: super::renderer_host::Call<'_>,

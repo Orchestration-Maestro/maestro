@@ -324,6 +324,79 @@ mod entry {
         );
     }
 
+    /// How the explicit session argument selects its fixture.
+    #[derive(Clone, Copy, Debug)]
+    enum RefusalSelection {
+        /// Open an authored file path.
+        Path,
+        /// Match a listed session by its local identifier.
+        Local,
+    }
+
+    /// A non-session path or a listed session whose entry identity prevents opening.
+    fn session_refusal(
+        e: &Entry,
+        file: &str,
+        selection: RefusalSelection,
+    ) -> (String, String, String) {
+        if matches!(selection, RefusalSelection::Local) {
+            let content = format!(
+                "{}\n{{\"type\":\"custom\",\"id\":false}}\n",
+                json!({"type":"session","version":3,"id":"selected-id","cwd":e.commands.cwd})
+            );
+            (
+                content,
+                "selected".to_owned(),
+                "nonstring entry id".to_owned(),
+            )
+        } else {
+            (
+                "not a session\n".to_owned(),
+                file.to_owned(),
+                format!("Session file is not a valid maestro session: {file}"),
+            )
+        }
+    }
+
+    /// Explicit paths and local identifier matches report open failures in the run's style.
+    #[test]
+    fn session_open_errors_are_reported_with_run_styles() {
+        run(
+            "entry::session_open_errors_are_reported_with_run_styles",
+            |local| async move {
+                for (styles, selection) in [
+                    (false, RefusalSelection::Path),
+                    (true, RefusalSelection::Path),
+                    (false, RefusalSelection::Local),
+                    (true, RefusalSelection::Local),
+                ] {
+                    let e = Entry::new();
+                    e.styles.set(styles);
+                    let directory = format!("{}/selected", e.commands.cwd);
+                    std::fs::create_dir_all(&directory).unwrap();
+                    let file = format!("{directory}/broken.jsonl");
+                    let (content, argument, error) = session_refusal(&e, &file, selection);
+                    std::fs::write(&file, &content).unwrap();
+                    let status = e
+                        .run(
+                            &local,
+                            &["--session-dir", &directory, "--session", &argument],
+                            MainOptions::default(),
+                        )
+                        .await
+                        .unwrap();
+                    assert_eq!(status, 1);
+                    let message = format!("Error: {error}");
+                    assert_eq!(
+                        e.stderr(),
+                        format!("{}\n", maestro_theme::Theme::red(&message, styles))
+                    );
+                    assert_eq!(std::fs::read_to_string(&file).unwrap(), content);
+                }
+            },
+        );
+    }
+
     #[test]
     fn fork_errors_are_reported_without_partial_open() {
         run(
@@ -1195,9 +1268,9 @@ mod entry {
     }
 
     #[test]
-    fn runtime_timing_follows_auth_capture() {
+    fn runtime_timing_runs_once_and_credential_reads_follow_the_file() {
         cases(
-            "entry::runtime_timing_follows_auth_capture",
+            "entry::runtime_timing_runs_once_and_credential_reads_follow_the_file",
             &[("capture", &[("MAESTRO_TIMING", "1")])],
             |local, _| async move {
                 let mut e = Entry::new();
@@ -1219,6 +1292,8 @@ mod entry {
                     .auth_storage
                     .has_auth("timing-probe")
                     .unwrap();
+                // The runtime rereads credentials when it reads them, so the file cleared at
+                // the sample is what the accepted records hold afterwards.
                 let observations = e
                     .commands
                     .state
@@ -1227,7 +1302,7 @@ mod entry {
                     .iter()
                     .filter(|step| **step == "agent")
                     .count();
-                assert_eq!((captured, observations), (true, 1));
+                assert_eq!((captured, observations), (false, 1));
             },
         );
     }

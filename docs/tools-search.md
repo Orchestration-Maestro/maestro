@@ -91,7 +91,8 @@ with the caller's startup selection: `Some(true)` skips, `Some(false)` acquires,
 Android instead receives `pkg install fd` or `pkg install ripgrep` advice.
 
 Other hosts request the latest release from `sharkdp/fd` or `BurntSushi/ripgrep`
-on GitHub. Release lookup has a 10-second deadline and archive download a
+on GitHub, except that fd on Intel macOS skips the lookup and downloads the last
+build published for it, release `v10.3.0`. Release lookup has a 10-second deadline and archive download a
 120-second deadline, each including the body. Supported assets are macOS/Linux
 `.tar.gz` archives extracted by system `tar`, and Windows `.zip` archives
 extracted in process. Each install stages inside a separately created directory,

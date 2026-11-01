@@ -304,6 +304,38 @@ fn settings_changes_preserve_each_callback_effect() {
 }
 
 #[test]
+fn settings_http_idle_timeout_change_is_saved_and_announced() {
+    isolated(
+        "settings_http_idle_timeout_change_is_saved_and_announced",
+        async |directory| {
+            let world = started_settings(directory).await;
+            let list = open(&world);
+            let session = world.host.session();
+            let saved = || {
+                session
+                    .settings_manager()
+                    .borrow()
+                    .get_http_idle_timeout_ms()
+            };
+            assert!(saved().total_cmp(&300_000.0).is_eq());
+            choose(&list, "idle", 0);
+            assert!(saved().total_cmp(&0.0).is_eq(), "the choice is saved");
+            assert!(
+                super::actions::shows(&world.mode.chat_container, "HTTP idle timeout: disabled"),
+                "the transcript names the new limit"
+            );
+            choose(&list, "idle", 0);
+            assert!(saved().total_cmp(&30_000.0).is_eq());
+            assert!(super::actions::shows(
+                &world.mode.chat_container,
+                "HTTP idle timeout: 30 sec"
+            ));
+            drop(world.runtime.settle());
+        },
+    );
+}
+
+#[test]
 fn settings_remaining_changes_preserve_each_callback_effect() {
     isolated(
         "settings_remaining_changes_preserve_each_callback_effect",
@@ -1863,6 +1895,74 @@ fn refused_extension_theme_preserves_published_theme_and_settings() {
                     .join("\n")
                     .contains("release refuses behaviour changes")
             );
+            drop(world.runtime.settle());
+        },
+    );
+}
+
+#[test]
+fn refused_http_idle_timeout_keeps_saved_value_and_reports_no_success() {
+    isolated(
+        "refused_http_idle_timeout_keeps_saved_value_and_reports_no_success",
+        async |directory| {
+            let world = started_settings(directory).await;
+            let session = world.host.session();
+            session
+                .settings_manager()
+                .borrow_mut()
+                .register_decider(std::sync::Arc::new(RefuseBehaviour))
+                .unwrap();
+            let list = open(&world);
+            search(&list, "idle");
+            let before = list.render(100);
+            let raw = session.settings_manager().borrow().get_global_settings().0;
+
+            press(&list, "\r");
+
+            assert_eq!(list.render(100), before);
+            assert_eq!(
+                session.settings_manager().borrow().get_global_settings().0,
+                raw
+            );
+            assert!(super::actions::shows(
+                &world.mode.chat_container,
+                "release refuses behaviour changes"
+            ));
+            assert!(!super::actions::shows(
+                &world.mode.chat_container,
+                "HTTP idle timeout:"
+            ));
+            drop(world.runtime.settle());
+        },
+    );
+}
+
+#[test]
+fn invalid_http_idle_timeout_callback_keeps_saved_value_and_reports_no_success() {
+    isolated(
+        "invalid_http_idle_timeout_callback_keeps_saved_value_and_reports_no_success",
+        async |directory| {
+            let world = started_settings(directory).await;
+            let session = world.host.session();
+            let callbacks = world.mode.settings_callbacks(Rc::new(|| {}));
+            let raw = session.settings_manager().borrow().get_global_settings().0;
+
+            for value in [-5.0, f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+                assert!(!(callbacks.on_http_idle_timeout_ms_change)(value));
+                assert_eq!(
+                    session.settings_manager().borrow().get_global_settings().0,
+                    raw
+                );
+            }
+
+            assert!(super::actions::shows(
+                &world.mode.chat_container,
+                "invalid HTTP idle timeout"
+            ));
+            assert!(!super::actions::shows(
+                &world.mode.chat_container,
+                "HTTP idle timeout:"
+            ));
             drop(world.runtime.settle());
         },
     );

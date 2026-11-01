@@ -2,6 +2,7 @@
 #![cfg(test)]
 
 mod capture_lifecycle;
+mod child_programs;
 mod child_status_checks;
 mod detached_server;
 mod helper_launches;

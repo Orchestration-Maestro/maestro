@@ -16,7 +16,12 @@ fn header(path: &str) -> Value {
 }
 
 /// The authored paths one lookup must answer with itself.
-const AUTHORED: [&str; 3] = ["/direct/session.jsonl", "sub/session", "back\\slash"];
+const AUTHORED: [&str; 4] = [
+    "/direct/session.jsonl",
+    "sub/session",
+    "back\\slash",
+    "bare.jsonl",
+];
 
 #[test]
 fn session_locators_choose_first_local_then_global() {
@@ -270,8 +275,8 @@ fn opened_histories(here: (&str, &str, &str), first: &str, second: &str) {
     assert_ne!(created_path, first);
     assert_ne!(created_path, second);
 
-    let in_place = opened(&["--session", "first"]);
     let before = std::fs::read_to_string(first).unwrap();
+    let in_place = opened(&["--session", "first"]);
     assert_eq!(in_place.get_session_file(), Some(first));
     assert_eq!(
         std::fs::read_to_string(first).unwrap(),

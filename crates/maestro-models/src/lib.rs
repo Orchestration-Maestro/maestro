@@ -23,8 +23,9 @@ mod catalog;
 pub mod catalog_generation;
 mod options;
 pub use options::{
-    AdjustedMaxTokens, adjust_max_tokens_for_thinking, build_base_options, build_base_options_for,
-    clamp_reasoning, is_context_overflow, reasoning_from_thinking_level,
+    AdjustedMaxTokens, ESTIMATED_IMAGE_CHARS, adjust_max_tokens_for_thinking, build_base_options,
+    build_base_options_for, clamp_reasoning, is_context_overflow, reasoning_from_thinking_level,
+    tokens_for_chars, utf16_units,
 };
 /// Conversation adaptation for the destination model.
 mod projection;

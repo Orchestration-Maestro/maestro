@@ -108,7 +108,8 @@ pub fn build_session_options(inputs: SessionOptionInputs<'_>) -> BuiltSessionOpt
     built
 }
 
-/// Select the model an explicit `--model` or `--provider` names, with its diagnostics.
+/// Select the model an explicit `--model` names, resolved under `--provider` when one is
+/// given, with its diagnostics. `--provider` alone selects nothing.
 fn select_explicit_model(inputs: SessionOptionInputs<'_>, built: &mut BuiltSessionOptions) {
     let Some(cli_model) = inputs.parsed.model.as_deref() else {
         return;

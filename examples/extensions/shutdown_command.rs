@@ -1,4 +1,5 @@
 //! A quit command and two tools that ask the host to shut down.
+// maestro-component: MAESTRO_SHUTDOWN_COMMAND_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

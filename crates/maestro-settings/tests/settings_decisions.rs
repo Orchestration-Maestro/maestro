@@ -221,3 +221,50 @@ fn numeric_preference_admission_keeps_normalization_and_nan() {
         );
     }
 }
+
+/// Counts admitted edits and checks the exact whole-millisecond value offered.
+struct IdleTimeoutDecider(std::sync::atomic::AtomicUsize);
+impl SettingsDecider for IdleTimeoutDecider {
+    fn decide(&self, request: &DecisionRequest<'_>) -> Result<(), String> {
+        let DecisionRequest::SettingsEdit { changes, .. } = request else {
+            panic!("expected a settings edit");
+        };
+        assert_eq!(changes.len(), 1);
+        assert_eq!(changes[0].path, ["httpIdleTimeoutMs"]);
+        assert_eq!(changes[0].value, Some(json!(2500)));
+        self.0.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        Ok(())
+    }
+}
+
+#[test]
+fn idle_timeout_setter_and_prepared_edit_share_validation() {
+    let storage = ControlledStorage::new();
+    let mut manager = SettingsManager::from_storage(storage.clone());
+    let decider = Arc::new(IdleTimeoutDecider(std::sync::atomic::AtomicUsize::new(0)));
+    manager.register_decider(decider.clone()).unwrap();
+    manager.set_http_idle_timeout_ms(2500.9);
+    block_on(manager.flush());
+    assert_eq!(
+        manager.get_global_settings().0["httpIdleTimeoutMs"],
+        json!(2500)
+    );
+    assert_eq!(decider.0.load(std::sync::atomic::Ordering::Relaxed), 1);
+    let writes = storage.writes();
+
+    for value in [-5.0, f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+        assert!(SettingsManager::prepare_http_idle_timeout_ms(value).is_none());
+        manager.set_http_idle_timeout_ms(value);
+        block_on(manager.flush());
+        assert_eq!(storage.writes(), writes);
+    }
+    let edit = SettingsManager::prepare_http_idle_timeout_ms(2500.9).unwrap();
+    let prepared = manager.admit_settings_edit(edit).unwrap();
+    assert_eq!(decider.0.load(std::sync::atomic::Ordering::Relaxed), 2);
+    manager.apply_prepared_edit(prepared);
+    assert_eq!(decider.0.load(std::sync::atomic::Ordering::Relaxed), 2);
+    assert_eq!(
+        manager.get_global_settings().0["httpIdleTimeoutMs"],
+        json!(2500)
+    );
+}

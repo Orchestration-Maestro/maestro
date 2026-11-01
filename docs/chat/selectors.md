@@ -154,7 +154,8 @@ owning update. The [toolkit](../terminal/components.md) owns wrapping and cursor
 `SettingsSelectorComponent::new` takes a `SettingsConfig`, `SettingsCallbacks`,
 `LiveTheme` and a borrowed `maestro_tui::TerminalImage`. Boolean policies are
 grouped into `SessionSettings` (auto-compact, quiet startup and skill commands),
-`BehaviorSettings` (hidden thinking, collapsed changelog and install telemetry)
+`BehaviorSettings` (hidden thinking, collapsed changelog, install telemetry and the
+HTTP idle timeout in milliseconds)
 and `TerminalDisplaySettings` (hardware cursor, clear on shrink and terminal
 progress). Image display, auto-resize and blocking are direct boolean fields;
 image width, editor padding and autocomplete height are supplied `f64` fields.
@@ -168,24 +169,34 @@ This returns the same retained `SettingsList` handle, independently of the
 `Container` chrome. The searchable main view shows at most ten rows in this
 order: auto-compact, show images, image width, auto-resize images, block images,
 skill commands, hardware cursor, editor padding, autocomplete max items, clear
-on shrink, terminal progress, steering mode, follow-up mode, transport, hidden
-thinking, collapsed changelog, quiet startup, install telemetry, double-escape
-action, tree filter, warnings, thinking level and theme. Show images and image
-width appear only when the supplied terminal supports inline images, giving 23
-rows with image support and 21 without. Support is sampled once at construction;
+on shrink, terminal progress, steering mode, follow-up mode, transport, HTTP idle
+timeout, hidden thinking, collapsed changelog, quiet startup, install telemetry,
+double-escape action, tree filter, warnings, thinking level and theme. Show
+images and image width appear only when the supplied terminal supports inline
+images, giving 24 rows with image support and 22 without. Support is sampled once at construction;
 changing capabilities affects new panels, not retained ones. The toolkit owns
 [settings search and list rendering](../terminal/components.md).
 
 Numeric initial values keep their supplied value and shortest decimal spelling,
 including negative zero displayed as `0` and nonfinite values. Activation cycles
 image width through `60`, `80`, `120`, editor padding through `0`–`3`, and
-autocomplete height through `3`, `5`, `7`, `10`, `15`, `20`. An unmatched value
-advances to the first choice. These fixed decimal choices report `f64` values;
+autocomplete height through `3`, `5`, `7`, `10`, `15`, `20`, and the HTTP idle
+timeout through `30 sec`, `1 min`, `2 min`, `5 min` and `disabled` (reported as
+`30000`, `60000`, `120000`, `300000` and `0` milliseconds; an unmatched value
+displays as its seconds). Interactive mode admits the chosen limit before saving it
+and showing `HTTP idle timeout: <label>` in the transcript. A refused or invalid
+limit keeps the saved value and reports the error without announcing success.
+An unmatched value advances to the first choice. These fixed decimal choices report `f64` values;
 boolean choices report `bool` values.
 
 Preference callbacks return `true` when accepted and `false` when refused. A refusal
 restores the previous main-list value or warning snapshot; a refused theme commit
-restores the same theme as cancellation. Preview and cancel callbacks return no value.
+restores the same theme as cancellation. The HTTP idle-timeout callback follows
+this contract too. Preview and cancel callbacks return no value.
+
+An accepted clear-on-shrink change updates the terminal policy. Turning it off
+also removes retained idle status rows when no indicator is active. A refused
+change leaves both the policy and those rows unchanged.
 
 Cyclic rows report only their typed change callback. Unknown stored delivery,
 transport and double-escape spellings remain visible until activation chooses
@@ -217,18 +228,21 @@ provider-name/browser effects. Default names come from
 wins; a present title override wins even when empty.
 
 `show_auth` replaces content with linked URL, click hint and optional nonempty
-instructions. Native launch uses `open`, `explorer.exe` or `xdg-open`, passing
+instructions. Both rows come from the toolkit's `hyperlink`, on every terminal:
+the URL in the accent colour links to itself, and the dim hint, `Cmd+click to
+open` on macOS and `Ctrl+click to open` elsewhere, links to the URL. Native launch uses `open`, `explorer.exe` or `xdg-open`, passing
 one literal URL argument through the [shared process owner](../tools-process.md).
 Startup and exit failures are silent; the dialog never waits for browser exit.
 Browser embeddings provide their own launcher.
 
-`show_manual_input` appends and retains entered text. `show_prompt` appends,
-optionally shows an example and resets text. Both install an owned
+`show_manual_input` and `show_prompt` append a row and an input that starts empty;
+`show_prompt` also optionally shows an example. Both install an owned
 `LoginInputFuture` eagerly, before requesting rendering. Submission returns the
-exact text once. Dropping an observer does not cancel the dialog; replacing or
+exact text once and freezes the row: the input is replaced by a plain `> value` row, so
+earlier answers stay visible and unchanged while a later prompt is active. Dropping an observer does not cancel the dialog; replacing or
 dropping its sender settles the old observer as `LoginDialogError::Cancelled`.
 Information replaces visible rows, while waiting and progress append. None of
-these updates discards a pending input or its retained text.
+these updates discards a pending input or the text typed into it.
 
 Live cancel bindings win before child input dispatch. Cancellation aborts the
 shared signal, rejects pending input with `Login cancelled`, then reports

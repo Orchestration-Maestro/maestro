@@ -212,7 +212,9 @@ async fn assert_request(
     model: &Arc<std::sync::RwLock<Model>>,
 ) {
     match registry.get_api_key_and_headers(model).await {
-        maestro_catalog::ResolvedRequestAuth::Ok { api_key, headers } => {
+        maestro_catalog::ResolvedRequestAuth::Ok {
+            api_key, headers, ..
+        } => {
             assert!(matches!(api_key.as_deref(), Some("literal-key")));
             let headers = headers.unwrap();
             assert!(matches!(headers["X-Order"].as_str(), "model"));
@@ -312,7 +314,9 @@ fn request_variants(
         registry.register_provider("p", config.clone()).unwrap();
         let model = registry.find("p", "m").unwrap();
         match crate::runtime_support::runtime().block_on(registry.get_api_key_and_headers(&model)) {
-            maestro_catalog::ResolvedRequestAuth::Ok { api_key, headers } => {
+            maestro_catalog::ResolvedRequestAuth::Ok {
+                api_key, headers, ..
+            } => {
                 assert!(matches!(api_key.as_deref(), Some("literal-key")));
                 match headers {
                     Some(headers) => {

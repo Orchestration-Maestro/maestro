@@ -348,7 +348,10 @@ fn native_services_resolve_configured_command_keys() {
                 .get_api_key_and_headers(&model)
                 .await
         });
-        let ResolvedRequestAuth::Ok { api_key, headers } = resolved else {
+        let ResolvedRequestAuth::Ok {
+            api_key, headers, ..
+        } = resolved
+        else {
             panic!("configured command key must resolve")
         };
         assert!(api_key.as_deref().eq(&Some("resolved")));

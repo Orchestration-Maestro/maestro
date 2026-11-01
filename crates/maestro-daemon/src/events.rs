@@ -112,6 +112,13 @@ pub enum AppEvent {
         /// Time of the screen observation.
         observed_at: Instant,
     },
+    /// A background refresh of repository status finished.
+    GitStatusRefreshed {
+        /// One observation for each workspace the refresh covered.
+        results: Vec<maestro_workspace::workspace::WorkspaceGitStatus>,
+        /// Cache entries to retain, keyed by repository.
+        cache_updates: Vec<(std::path::PathBuf, crate::git::status::GitStatusCacheEntry)>,
+    },
 }
 
 impl AppEvent {

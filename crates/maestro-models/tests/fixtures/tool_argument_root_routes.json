@@ -3104,6 +3104,18 @@
       "expected": {
         "events": [
           {
+            "type": "toolcall_start",
+            "contentIndex": 0,
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345|item",
+                "name": "inspect",
+                "arguments": null
+              }
+            ]
+          },
+          {
             "type": "toolcall_end",
             "contentIndex": 0,
             "toolCall": {
@@ -3457,6 +3469,18 @@
       ],
       "expected": {
         "events": [
+          {
+            "type": "toolcall_start",
+            "contentIndex": 0,
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345|item",
+                "name": "inspect",
+                "arguments": false
+              }
+            ]
+          },
           {
             "type": "toolcall_end",
             "contentIndex": 0,
@@ -3812,6 +3836,18 @@
       "expected": {
         "events": [
           {
+            "type": "toolcall_start",
+            "contentIndex": 0,
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345|item",
+                "name": "inspect",
+                "arguments": true
+              }
+            ]
+          },
+          {
             "type": "toolcall_end",
             "contentIndex": 0,
             "toolCall": {
@@ -4152,6 +4188,18 @@
       ],
       "expected": {
         "events": [
+          {
+            "type": "toolcall_start",
+            "contentIndex": 0,
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345|item",
+                "name": "inspect",
+                "arguments": 0
+              }
+            ]
+          },
           {
             "type": "toolcall_end",
             "contentIndex": 0,
@@ -4507,6 +4555,18 @@
       "expected": {
         "events": [
           {
+            "type": "toolcall_start",
+            "contentIndex": 0,
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345|item",
+                "name": "inspect",
+                "arguments": 42
+              }
+            ]
+          },
+          {
             "type": "toolcall_end",
             "contentIndex": 0,
             "toolCall": {
@@ -4860,6 +4920,18 @@
       ],
       "expected": {
         "events": [
+          {
+            "type": "toolcall_start",
+            "contentIndex": 0,
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345|item",
+                "name": "inspect",
+                "arguments": -3.5
+              }
+            ]
+          },
           {
             "type": "toolcall_end",
             "contentIndex": 0,
@@ -5215,6 +5287,18 @@
       "expected": {
         "events": [
           {
+            "type": "toolcall_start",
+            "contentIndex": 0,
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345|item",
+                "name": "inspect",
+                "arguments": ""
+              }
+            ]
+          },
+          {
             "type": "toolcall_end",
             "contentIndex": 0,
             "toolCall": {
@@ -5569,6 +5653,18 @@
       "expected": {
         "events": [
           {
+            "type": "toolcall_start",
+            "contentIndex": 0,
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345|item",
+                "name": "inspect",
+                "arguments": "text"
+              }
+            ]
+          },
+          {
             "type": "toolcall_end",
             "contentIndex": 0,
             "toolCall": {
@@ -5922,6 +6018,18 @@
       ],
       "expected": {
         "events": [
+          {
+            "type": "toolcall_start",
+            "contentIndex": 0,
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345|item",
+                "name": "inspect",
+                "arguments": []
+              }
+            ]
+          },
           {
             "type": "toolcall_end",
             "contentIndex": 0,
@@ -6333,6 +6441,21 @@
       "expected": {
         "events": [
           {
+            "type": "toolcall_start",
+            "contentIndex": 0,
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345|item",
+                "name": "inspect",
+                "arguments": [
+                  1,
+                  1
+                ]
+              }
+            ]
+          },
+          {
             "type": "toolcall_end",
             "contentIndex": 0,
             "toolCall": {
@@ -6695,6 +6818,18 @@
       ],
       "expected": {
         "events": [
+          {
+            "type": "toolcall_start",
+            "contentIndex": 0,
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345|item",
+                "name": "inspect",
+                "arguments": {}
+              }
+            ]
+          },
           {
             "type": "toolcall_end",
             "contentIndex": 0,
@@ -7196,6 +7331,26 @@
       ],
       "expected": {
         "events": [
+          {
+            "type": "toolcall_start",
+            "contentIndex": 0,
+            "contentState": [
+              {
+                "type": "toolCall",
+                "id": "call12345|item",
+                "name": "inspect",
+                "arguments": {
+                  "2": 2,
+                  "10": 10,
+                  "z": 1,
+                  "a": [
+                    false,
+                    null
+                  ]
+                }
+              }
+            ]
+          },
           {
             "type": "toolcall_end",
             "contentIndex": 0,

@@ -115,6 +115,7 @@ impl AssistantMessageComponent {
                 let failure = match message.stop_reason {
                     StopReason::Aborted => Some(Failure::Aborted),
                     StopReason::Error => Some(Failure::Error),
+                    StopReason::Length => Some(Failure::Length),
                     _ => None,
                 };
                 let content = message.content.iter().map(|content| match content {
@@ -128,6 +129,7 @@ impl AssistantMessageComponent {
                 let failure = match record.get("stopReason").and_then(Value::as_str) {
                     Some("aborted") => Some(Failure::Aborted),
                     Some("error") => Some(Failure::Error),
+                    Some("length") => Some(Failure::Length),
                     _ => None,
                 };
                 let content = record.get("content").and_then(Value::as_array);
@@ -210,9 +212,11 @@ enum Failure {
     Aborted,
     /// The request failed.
     Error,
+    /// The model stopped at its output token limit, possibly inside a tool call.
+    Length,
 }
-/// The visible blocks, whether a tool call is present, and the failure notice shown only
-/// without tool calls.
+/// The visible blocks, whether a tool call is present, and the failure notice: shown only
+/// without tool calls, except for an output-length stop, which can cut a tool call short.
 fn select<'a>(
     content: impl Iterator<Item = Shown<'a>>,
     hide: bool,
@@ -220,22 +224,38 @@ fn select<'a>(
     error: Option<&str>,
 ) -> (Vec<Visible>, bool, Option<String>) {
     let mut tools = false;
-    let blocks = content
-        .filter_map(|block| match block {
-            Shown::Text(text) => Visible::from_content(text, Visible::Text, false),
-            Shown::Thinking(text) => Visible::from_content(text, Visible::Thinking, hide),
-            Shown::ToolCall => {
-                tools = true;
-                None
+    let mut blocks = Vec::new();
+    // The trimmed, non-empty thoughts of the consecutive thinking blocks read so far.
+    let mut run: Option<Vec<&str>> = None;
+    for block in content {
+        let text = match block {
+            Shown::Thinking(text) => {
+                let thought = text.trim_matches(is_whitespace_scalar);
+                let thoughts = run.get_or_insert_with(Vec::new);
+                if !thought.is_empty() {
+                    thoughts.push(thought);
+                }
+                continue;
             }
-        })
-        .collect();
-    let notice = if tools {
-        None
-    } else {
-        failure.map(|failure| notice(&failure, error))
-    };
+            Shown::Text(text) => Some(text),
+            Shown::ToolCall => None,
+        };
+        blocks.extend(run.take().and_then(|thoughts| thinking(&thoughts, hide)));
+        match text {
+            Some(text) => blocks.extend(Visible::from_content(text, Visible::Text, false)),
+            None => tools = true,
+        }
+    }
+    blocks.extend(run.and_then(|thoughts| thinking(&thoughts, hide)));
+    let notice = failure
+        .filter(|failure| !tools || matches!(failure, Failure::Length))
+        .map(|failure| notice(&failure, error));
     (blocks, tools, notice)
+}
+/// One section for a run of consecutive thinking blocks: their thoughts joined by a blank
+/// line, or nothing when every thought was empty.
+fn thinking(thoughts: &[&str], hide: bool) -> Option<Visible> {
+    Visible::from_content(&thoughts.join("\n\n"), Visible::Thinking, hide)
 }
 /// Visible Markdown text or a body-free hidden thought; excludes tool calls.
 enum Visible {
@@ -269,6 +289,7 @@ fn notice(failure: &Failure, error: Option<&str>) -> String {
             .unwrap_or("Operation aborted")
             .into(),
         Failure::Error => format!("Error: {}", error.unwrap_or("Unknown error")),
+        Failure::Length => "Error: Model stopped because it reached the maximum output token limit. The response may be incomplete.".into(),
     }
 }
 component_children!(AssistantMessageComponent, Container, container);

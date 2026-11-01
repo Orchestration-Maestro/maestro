@@ -146,7 +146,8 @@ impl ExtensionUIContextPort for InteractiveMode {
         Ok(())
     }
 
-    /// Replaces the current editor's text with `text`, unchanged.
+    /// Hands `text` to the current editor unchanged; the editor stores it with its own
+    /// newline and tab normalization.
     ///
     /// # Errors
     /// Returns the editor's original failure.

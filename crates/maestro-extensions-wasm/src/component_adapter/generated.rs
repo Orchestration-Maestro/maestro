@@ -153,10 +153,7 @@ impl Imports for Generated {
         &self,
         backend: &Self::Callback,
     ) -> ExtensionResult<Self::Credentials> {
-        match route::value(&host::auth_storage_from_backend(backend))? {
-            host::RouteValue::Credentials(owner) => Ok(owner),
-            _ => Err("extension route result kind mismatch".into()),
-        }
+        route::credentials(&host::auth_storage_from_backend(backend))
     }
     fn credentials_set_fallback(
         &self,
@@ -180,6 +177,16 @@ impl Imports for Generated {
         route::text(&owner.get_auth_status(provider))
     }
     type Credentials = host::AuthStorage;
+    forward_resources! { routed values {
+        credentials_get(resource: &Self::Credentials, provider: &str) -> Option<String> => get(provider) via route::optional_text;
+        credentials_list(resource: &Self::Credentials) -> Vec<String> => list() via route::lines;
+        credentials_get_all(resource: &Self::Credentials) -> String => get_all() via route::text;
+        registry_is_using_oauth(resource: &Self::Registry, model: &str) -> bool => is_using_oauth(model) via route::boolean;
+    } }
+    forward_resources! { routed value functions {
+        create_model_registry(auth: &Self::Credentials, path: Option<&str>) -> Self::Registry => host::create_model_registry => route::registry;
+        in_memory_model_registry(auth: &Self::Credentials) -> Self::Registry => host::in_memory_model_registry => route::registry;
+    } }
     forward_resources! { routed {
         credentials_reload(resource: &Self::Credentials) => reload();
         credentials_set(resource: &Self::Credentials, provider: &str, credential: &str) => set(provider, credential);
@@ -189,8 +196,6 @@ impl Imports for Generated {
     forward_resources! { functions {
         create_auth_storage(path: Option<&str>) -> ExtensionResult<Self::Credentials> => host::create_auth_storage;
         auth_storage_in_memory(data: &str) -> ExtensionResult<Self::Credentials> => host::auth_storage_in_memory;
-        create_model_registry(auth: &Self::Credentials, path: Option<&str>) -> ExtensionResult<Self::Registry> => host::create_model_registry;
-        in_memory_model_registry(auth: &Self::Credentials) -> ExtensionResult<Self::Registry> => host::in_memory_model_registry;
     } }
 
     type JsonNode = host::JsonNode;
@@ -312,10 +317,7 @@ impl Imports for Generated {
         registry_auth_storage(resource: &Self::Registry) -> ExtensionResult<Self::Credentials> => auth_storage();
         credentials_set_runtime_api_key(resource: &Self::Credentials, provider: &str, key: &str) -> ExtensionResult<()> => set_runtime_api_key(provider, key);
         credentials_remove_runtime_api_key(resource: &Self::Credentials, provider: &str) -> ExtensionResult<()> => remove_runtime_api_key(provider);
-        credentials_get(resource: &Self::Credentials, provider: &str) -> ExtensionResult<Option<String>> => get(provider);
-        credentials_list(resource: &Self::Credentials) -> ExtensionResult<Vec<String>> => list();
         credentials_has(resource: &Self::Credentials, provider: &str) -> ExtensionResult<bool> => has(provider);
-        credentials_get_all(resource: &Self::Credentials) -> ExtensionResult<String> => get_all();
         credentials_drain_errors(resource: &Self::Credentials) -> ExtensionResult<String> => drain_errors();
         registry_get_all(resource: &Self::Registry) -> ExtensionResult<String> => get_all();
         bash_output(output: &Self::BashOutput, bytes: &[u8]) -> ExtensionResult<()> => on_data(bytes);
@@ -341,7 +343,6 @@ impl Imports for Generated {
         registry_find(resource: &Self::Registry, provider: &str, model_id: &str) -> ExtensionResult<Option<String>> => find(provider, model_id);
         registry_get_error(resource: &Self::Registry) -> ExtensionResult<Option<String>> => get_error();
         registry_get_provider_display_name(resource: &Self::Registry, provider: &str) -> ExtensionResult<String> => get_provider_display_name(provider);
-        registry_is_using_oauth(resource: &Self::Registry, model: &str) -> ExtensionResult<bool> => is_using_oauth(model);
         ui(context: &Self::Context) -> ExtensionResult<Self::Ui> => ui();
         theme_name(theme: &Self::Theme) -> ExtensionResult<Option<String>> => name();
         theme_source_path(theme: &Self::Theme) -> ExtensionResult<Option<String>> => source_path();
@@ -474,6 +475,7 @@ impl Imports for Generated {
                 host::ResolvedRequestAuth::Ok(auth) => crate::ResolvedRequestAuth::Ok {
                     api_key: auth.api_key,
                     headers: auth.headers.map(|headers| headers.into_iter().collect()),
+                    base_url: auth.base_url,
                 },
                 host::ResolvedRequestAuth::Error(error) => {
                     crate::ResolvedRequestAuth::Error { error }

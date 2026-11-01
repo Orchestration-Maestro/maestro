@@ -465,7 +465,7 @@ cost: crate::ModelCost { input: 5.0, output: 25.0, cache_read: 0.5, cache_write:
 context_window: 1_000_000.0,
 max_tokens: 128_000.0,
 headers: None,
-compat: None,
+compat: Some(crate::ModelCompat([("forceAdaptiveThinking".into(), serde_json::Value::Bool(true))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -483,7 +483,7 @@ cost: crate::ModelCost { input: 5.0, output: 25.0, cache_read: 0.5, cache_write:
 context_window: 1_000_000.0,
 max_tokens: 128_000.0,
 headers: None,
-compat: None,
+compat: Some(crate::ModelCompat([("forceAdaptiveThinking".into(), serde_json::Value::Bool(true))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -537,7 +537,7 @@ cost: crate::ModelCost { input: 3.0, output: 15.0, cache_read: 0.3, cache_write:
 context_window: 1_000_000.0,
 max_tokens: 128_000.0,
 headers: None,
-compat: None,
+compat: Some(crate::ModelCompat([("forceAdaptiveThinking".into(), serde_json::Value::Bool(true))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -2115,7 +2115,7 @@ api: "anthropic-messages".into(),
 provider: "vercel-ai-gateway".into(),
 base_url: "https://ai-gateway.vercel.sh".into(),
 reasoning: true,
-thinking_level_map: Some(indexmap::IndexMap::from([(crate::ModelThinkingLevel::Xhigh, Some("xhigh".into()))])),
+thinking_level_map: Some(indexmap::IndexMap::from([(crate::ModelThinkingLevel::Xhigh, Some("xhigh".into())),(crate::ModelThinkingLevel::Off, None),(crate::ModelThinkingLevel::Minimal, None),(crate::ModelThinkingLevel::Low, None)])),
 input: vec![crate::ModelInput::Text,crate::ModelInput::Image],
 cost: crate::ModelCost { input: 30.0, output: 180.0, cache_read: 0.0, cache_write: 0.0 },
 context_window: 1_000_000.0,

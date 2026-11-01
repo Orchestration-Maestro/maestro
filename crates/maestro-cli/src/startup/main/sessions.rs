@@ -169,9 +169,10 @@ async fn opened(
 
 /// Select the session operation, resolving a fork or session argument first.
 ///
-/// An unsaved session and a continue request never look a session up. A fork request
-/// takes precedence over a session request, which takes precedence over resume and
-/// continue. A fork of another project's session copies it in without confirmation;
+/// An unsaved session and a continue request look nothing up while the operation is
+/// selected; continuing finds the latest history when the operation is performed. A fork
+/// request takes precedence over a session request, which takes precedence over resume
+/// and continue. A fork of another project's session copies it in without confirmation;
 /// only a session request confirms before copying it in.
 ///
 /// # Errors
@@ -203,7 +204,8 @@ pub async fn select_session_operation(
 /// Copy `source` into the current project as a new session.
 ///
 /// # Errors
-/// Returns the fork failure, which leaves no partial session behind.
+/// Returns the fork failure. An empty or invalid source fails before anything is created;
+/// a later directory, write or reopen failure leaves the records already written in place.
 pub fn fork_session(
     source: &str,
     cwd: &str,

@@ -248,8 +248,8 @@ fn git_source_forms_choose_clone_target_and_checkout() {
     let fixture = Fixture::new(&json!({}));
     for (source, added) in [
         ("https://github.com/user/repo", true),
-        ("ssh://git@github.com/user/repo", false),
-        ("git:git@github.com:user/repo", false),
+        ("ssh://git@github.com/user/repo", true),
+        ("git:git@github.com:user/repo", true),
     ] {
         assert_eq!(
             fixture
@@ -388,26 +388,55 @@ fn git_dependencies_use_live_configured_command() {
     assert_eq!(fixture.calls()[1].args, ["install"]);
 }
 
+#[cfg(unix)]
 #[test]
-fn unpinned_existing_git_target_does_not_read_command_or_modify_files() {
+fn unpinned_existing_git_target_refreshes_without_reading_command_or_modifying_files() {
     for as_file in [false, true] {
-        let fixture = Fixture::new(&json!({"npmCommand": [""]}));
-        let target = fixture.agent("git/github.com/user/repo");
+        let (manager, _settings, effects, tree) =
+            crate::support::uninstalled(&json!({"npmCommand": [""]}), &json!([]));
+        let target =
+            crate::support::below(tree.path(), "/home/reader/agent/git/github.com/user/repo");
         if as_file {
             native_support::write(&target, "a file");
         } else {
             native_support::write(format!("{target}/package.json"), "keep");
         }
+        // The refreshed head equals the installed one, so nothing is replaced or prepared.
+        *effects.capture_outputs.borrow_mut() = ["origin/main", "tip", "same", "same"]
+            .map(|text| Ok(text.to_owned()))
+            .into();
         let source = "https://github.com/user/repo";
-        block_on(fixture.manager.install(source, None)).unwrap();
-        assert!(fixture.calls().is_empty());
-        assert!(!std::path::Path::new(&fixture.agent("git/.gitignore")).exists());
+        crate::runtime::runtime()
+            .block_on(manager.install(source, None))
+            .unwrap();
+        let verbs: Vec<_> = effects
+            .calls
+            .borrow()
+            .iter()
+            .map(|(command, args)| format!("{command} {}", args[0]))
+            .collect();
         assert_eq!(
-            fixture.phases(),
+            verbs,
             [
-                (Phase::Start, Some(format!("Installing {source}..."))),
-                (Phase::Complete, None)
+                "git rev-parse",
+                "git rev-parse",
+                "git fetch",
+                "git rev-parse",
+                "git rev-parse"
             ]
+        );
+        if !as_file {
+            assert_eq!(
+                std::fs::read_to_string(format!("{target}/package.json")).unwrap(),
+                "keep"
+            );
+        }
+        assert!(
+            !std::path::Path::new(&crate::support::below(
+                tree.path(),
+                "/home/reader/agent/git/.gitignore"
+            ))
+            .exists()
         );
     }
 }
@@ -1566,9 +1595,9 @@ impl maestro_settings::SettingsDecider for AllowPackageEdit {
     }
 }
 
-/// A current checkout keeps an existing pin but still admits a previously unconfigured source.
+/// A current checkout publishes the requested spelling whether already configured or absent.
 #[test]
-fn admitted_current_git_checkout_preserves_addition_and_pin_semantics() {
+fn admitted_current_git_checkout_publishes_requested_source() {
     for configured in [false, true] {
         let initial = if configured {
             json!({"packages":["git:github.com/user/repo#kept"]})
@@ -1582,25 +1611,85 @@ fn admitted_current_git_checkout_preserves_addition_and_pin_semantics() {
             .borrow_mut()
             .register_decider(Arc::new(AllowPackageEdit))
             .unwrap();
-        block_on(
-            fixture
-                .manager
-                .install_and_persist("git:github.com/user/repo", None),
-        )
-        .unwrap();
-        assert_eq!(
-            stored(&fixture),
-            if configured {
-                json!(["git:github.com/user/repo#kept"])
-            } else {
-                json!(["git:github.com/user/repo"])
-            }
+        let effects = Rc::new(crate::support::Effects::default());
+        *effects.capture_outputs.borrow_mut() = ["origin/main", "tip", "same", "same"]
+            .map(|text| Ok(text.to_owned()))
+            .into();
+        let manager = maestro_packages::DefaultPackageManager::new(
+            maestro_packages::PackageManagerOptions {
+                cwd: fixture.project(""),
+                agent_dir: fixture.agent(""),
+                settings_manager: fixture.settings.clone(),
+            },
+            crate::support::Controlled(effects.clone()),
         );
-        assert!(fixture.calls().is_empty());
+
+        block_on(manager.install_and_persist("git:github.com/user/repo", None)).unwrap();
+
+        assert_eq!(stored(&fixture), json!(["git:github.com/user/repo"]));
+        let verbs: Vec<_> = effects
+            .calls
+            .borrow()
+            .iter()
+            .map(|(_, args)| args[0].clone())
+            .collect();
+        assert_eq!(
+            verbs,
+            ["rev-parse", "rev-parse", "fetch", "rev-parse", "rev-parse"]
+        );
         assert_eq!(
             sandbox::read(fixture.agent("git/github.com/user/repo/kept")),
             "contents"
         );
+    }
+}
+
+/// An admitted equivalent spelling replaces its row without changing its pin or filters.
+#[test]
+fn admitted_source_spelling_replaces_same_pin_and_preserves_rows() {
+    for scope in [User, Project] {
+        let source = "npm: pkg@1";
+        let entries = json!([
+            "npm:before",
+            {"source":"npm:pkg@1", "skills":[], "unknown":7},
+            "npm:after"
+        ]);
+        let fixture = Fixture::new(&json!({"packages":entries}));
+        if scope == Project {
+            fixture.settings.borrow_mut().set_project_packages(
+                entries
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .cloned()
+                    .map(PackageSource::Unknown)
+                    .collect(),
+            );
+        }
+        fixture
+            .settings
+            .borrow_mut()
+            .register_decider(Arc::new(AllowPackageEdit))
+            .unwrap();
+
+        block_on(fixture.manager.install_and_persist(source, Some(scope))).unwrap();
+
+        let settings = fixture.settings.borrow();
+        let updated = match scope {
+            User => settings.get_global_settings(),
+            Project => settings.get_project_settings(),
+        };
+        assert_eq!(
+            updated.0["packages"],
+            json!([
+                "npm:before",
+                {"source":source, "skills":[], "unknown":7},
+                "npm:after"
+            ])
+        );
+        if scope == Project {
+            assert_eq!(settings.get_global_settings().0["packages"], entries);
+        }
     }
 }
 

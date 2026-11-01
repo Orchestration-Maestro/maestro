@@ -135,6 +135,7 @@ fn dialogs_release_captures_and_cancel_work_with_containing_writer() {
                         timeout: Some(1000.0),
                         runtime: Rc::new(spy.clone()),
                         theme,
+                        on_toggle_tools_expanded: None,
                     },
                     ("Title".into(), vec!["Alpha".into()], None),
                 )

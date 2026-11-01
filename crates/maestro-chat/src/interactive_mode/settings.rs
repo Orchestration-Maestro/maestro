@@ -1,5 +1,6 @@
 //! Change settings live from the interactive mode.
 use super::InteractiveMode;
+use crate::components::settings_selector::http_idle_timeout_label;
 use crate::{
     AssistantMessageComponent, BehaviorSettings, SessionSettings, SettingsCallbacks,
     SettingsConfig, SettingsSelectorComponent, TerminalDisplaySettings, ToolExecutionComponent,
@@ -46,6 +47,7 @@ impl InteractiveMode {
                 hide_thinking_block: self.hide_thinking_block.get(),
                 collapse_changelog: settings.get_collapse_changelog(),
                 enable_install_telemetry: settings.get_enable_install_telemetry(),
+                http_idle_timeout_ms: settings.get_http_idle_timeout_ms(),
             },
             terminal: TerminalDisplaySettings {
                 show_hardware_cursor: settings.get_show_hardware_cursor(),
@@ -89,15 +91,13 @@ impl InteractiveMode {
                 mode.runtime_host
                     .session()
                     .set_steering_mode(queue_mode(&value))
-                    .map_err(session_setting_error)?;
-                Ok(())
+                    .map_err(session_setting_error)
             }),
             on_follow_up_mode_change: self.fallible_setting_callback(|mode, value| {
                 mode.runtime_host
                     .session()
                     .set_follow_up_mode(queue_mode(&value))
-                    .map_err(session_setting_error)?;
-                Ok(())
+                    .map_err(session_setting_error)
             }),
             on_transport_change: self.fallible_setting_callback(Self::settings_transport),
             on_thinking_level_change: self.fallible_setting_callback(Self::settings_thinking),
@@ -108,6 +108,8 @@ impl InteractiveMode {
             on_collapse_changelog_change: self.save_setting(&["collapseChangelog"], Value::Bool),
             on_enable_install_telemetry_change: self
                 .save_setting(&["enableInstallTelemetry"], Value::Bool),
+            on_http_idle_timeout_ms_change: self
+                .fallible_setting_callback(Self::settings_http_idle_timeout),
             on_double_escape_action_change: self
                 .save_setting(&["doubleEscapeAction"], |value: DoubleEscapeAction| {
                     value.as_str().into()
@@ -298,6 +300,23 @@ impl InteractiveMode {
             .map_err(|error| -> Box<dyn Error> { error })
     }
 
+    /// Saves the idle limit for HTTP waits and names it in the transcript.
+    fn settings_http_idle_timeout(&self, milliseconds: f64) -> Result<(), Box<dyn Error>> {
+        let value = SettingsManager::prepare_http_idle_timeout_ms(milliseconds)
+            .ok_or_else(|| SettingsRefusal("invalid HTTP idle timeout".into()))?;
+        let edit = self.admit_setting(value)?;
+        self.runtime_host
+            .session()
+            .settings_manager()
+            .borrow_mut()
+            .apply_prepared_edit(edit);
+        self.show_status(&format!(
+            "HTTP idle timeout: {}",
+            http_idle_timeout_label(milliseconds)
+        ))?;
+        Ok(())
+    }
+
     /// Saves the transport before changing the next request's live preference.
     fn settings_transport(&self, transport: Transport) -> Result<(), Box<dyn Error>> {
         self.runtime_host
@@ -391,7 +410,7 @@ impl InteractiveMode {
     }
 
     /// Saves the shrink policy and applies it to the terminal.
-    fn settings_clear_on_shrink(&self, enabled: bool) -> Result<(), Box<dyn Error>> {
+    pub(super) fn settings_clear_on_shrink(&self, enabled: bool) -> Result<(), Box<dyn Error>> {
         let edit = self.admit_setting(SettingsEdit::new(
             &["terminal", "clearOnShrink"],
             json!(enabled),
@@ -401,7 +420,7 @@ impl InteractiveMode {
             .settings_manager()
             .borrow_mut()
             .apply_prepared_edit(edit);
-        self.ui.set_clear_on_shrink(enabled);
+        self.apply_clear_on_shrink(enabled);
         Ok(())
     }
 }

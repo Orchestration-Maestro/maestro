@@ -389,10 +389,7 @@ impl ContentSource {
                         "Incomplete JSON segment at the end",
                     ));
                     self.pending.extend(
-                        (!tail
-                            .trim_matches(maestro_text::is_whitespace_scalar)
-                            .is_empty())
-                        .then_some(Err(error)),
+                        (!crate::arguments::json_parse::is_blank(&tail)).then_some(Err(error)),
                     );
                 }
             }

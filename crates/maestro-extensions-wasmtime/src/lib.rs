@@ -21,6 +21,8 @@ mod credential_reads;
 mod custom_imports;
 mod custom_reads;
 mod effect_imports;
+mod engine;
+pub use engine::component_engine;
 mod event_imports;
 mod event_reads;
 mod event_registration;

@@ -1,5 +1,6 @@
 //! Searchable session, display and behavior settings with nested selectors.
 mod items;
+pub(crate) use items::http_idle_timeout_label;
 mod submenus;
 use super::dynamic_border::DynamicBorder;
 use maestro_app::{
@@ -37,6 +38,8 @@ pub struct BehaviorSettings {
     pub collapse_changelog: bool,
     /// Whether anonymous install telemetry is enabled.
     pub enable_install_telemetry: bool,
+    /// Longest idle wait for HTTP headers or body chunks in milliseconds; 0 disables it.
+    pub http_idle_timeout_ms: f64,
 }
 /// A theme-name notification callable.
 pub type ThemeCallback = Rc<dyn Fn(&str)>;
@@ -125,6 +128,8 @@ pub struct SettingsCallbacks {
     pub on_collapse_changelog_change: Rc<dyn Fn(bool) -> bool>,
     /// On enable install telemetry change.
     pub on_enable_install_telemetry_change: Rc<dyn Fn(bool) -> bool>,
+    /// Reports a chosen HTTP idle timeout in milliseconds, retaining the value on refusal.
+    pub on_http_idle_timeout_ms_change: Rc<dyn Fn(f64) -> bool>,
     /// On double escape action change.
     pub on_double_escape_action_change: Rc<dyn Fn(DoubleEscapeAction) -> bool>,
     /// On tree filter mode change.

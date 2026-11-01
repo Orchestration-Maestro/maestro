@@ -674,7 +674,8 @@
     "expected": {
       "lines": [
         "",
-        " @error@Error: cycle refused\u001b[39m                                                                               "
+        " @error@Error: cycle refused\u001b[39m                                                                               ",
+        ""
       ]
     }
   },

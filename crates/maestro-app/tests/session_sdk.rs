@@ -3,8 +3,8 @@
 //! hooks, withheld images and both resource routes, compared with the recorded SDK cases.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Auth, Harness, HarnessOptions, TestResourceLoader, answer, as_recorded, assistant,
-    create_test_extensions_result, create_test_resource_loader, harness, on_task_set,
+    Auth, Harness, HarnessOptions, TestResourceLoader, after_summary, answer, as_recorded,
+    assistant, create_test_extensions_result, create_test_resource_loader, harness, on_task_set,
     recorded_number, script_responses, summary_provider, usage,
 };
 use maestro_app::{
@@ -418,12 +418,13 @@ fn context(created: &CreateAgentSessionResult) -> (Option<f64>, Option<f64>) {
 /// A saved history whose compaction is followed by one answer carrying `extra`.
 fn after_compaction(cwd: &str, extra: &Value) -> SessionManager {
     let mut manager = saved_history(cwd, &usage([7, 3, 2, 1], 1.0, None), true);
-    manager
-        .append_message(json!({"role": "user", "content": "later question", "timestamp": 1000}))
-        .unwrap();
-    manager
-        .append_message(assistant("later answer", 1000, extra))
-        .unwrap();
+    let question = after_summary(
+        &manager,
+        json!({"role": "user", "content": "later question"}),
+    );
+    manager.append_message(question).unwrap();
+    let answer = after_summary(&manager, assistant("later answer", 1000, extra));
+    manager.append_message(answer).unwrap();
     manager
 }
 
@@ -635,6 +636,37 @@ fn carries_provider_retry_settings_into_the_request() {
     });
 }
 
+#[test]
+fn http_idle_timeout_is_the_default_request_timeout_and_zero_disables_it() {
+    on_task_set(|_| async {
+        for (settings, expected) in [
+            (json!({}), 300_000.0),
+            (json!({"httpIdleTimeoutMs": 120_000}), 120_000.0),
+            (json!({"httpIdleTimeoutMs": 0}), 2_147_483_647.0),
+            (
+                json!({"httpIdleTimeoutMs": 120_000, "retry": {"provider": {"timeoutMs": 1234}}}),
+                1234.0,
+            ),
+        ] {
+            let h = fixture(Auth::Key).await;
+            let mut options = options(&h, settings.clone());
+            options.model = Some(h.model("faux-1"));
+            let created = create(options).await;
+            let captured = Arc::new(Mutex::new(None));
+            let capturing = Arc::clone(&captured);
+            observe_next(&h, move |input| {
+                *capturing.lock().unwrap() = common(input).timeout_ms;
+            });
+            created
+                .session
+                .prompt("hi", PromptOptions::default())
+                .await
+                .unwrap();
+            assert_eq!(*captured.lock().unwrap(), Some(expected), "{settings}");
+        }
+    });
+}
+
 /// Exact-spelled request headers captured before protocol normalization.
 type AttributionHeaders = indexmap::IndexMap<String, String>;
 
@@ -646,16 +678,33 @@ struct AttributionCase {
     base_url: String,
     /// Explicit install telemetry preference.
     telemetry_enabled: bool,
+    /// Session identifier the request carries, when the case names one.
+    session_id: Option<String>,
     /// Resolved credential headers.
     credential_headers: Option<AttributionHeaders>,
     /// Headers supplied by this invocation.
     request_headers: Option<AttributionHeaders>,
 }
 
+/// The invocation options a case sends: its session and the caller's headers.
+fn attribution_request(
+    session_id: Option<String>,
+    headers: Option<AttributionHeaders>,
+) -> maestro_models::SimpleStreamOptions<Local> {
+    maestro_models::SimpleStreamOptions {
+        common: StreamOptions {
+            session_id,
+            headers,
+            ..StreamOptions::default()
+        },
+        ..maestro_models::SimpleStreamOptions::default()
+    }
+}
+
 /// The complete header map the provider receives for `case`'s one request, sent through the
 /// request function a created session installs.
 async fn capture_attribution_headers(case: AttributionCase) -> Option<AttributionHeaders> {
-    let h = fixture(Auth::Key).await;
+    let h = attribution_fixture(&case.provider).await;
     let mut descriptor = h.model("faux-1").read().unwrap().clone();
     descriptor.provider.clone_from(&case.provider);
     descriptor.base_url = case.base_url;
@@ -684,13 +733,7 @@ async fn capture_attribution_headers(case: AttributionCase) -> Option<Attributio
     });
     let agent = created.session.agent();
     let stream = Rc::clone(agent.stream_fn.read().unwrap().as_ref().unwrap());
-    let request = maestro_models::SimpleStreamOptions {
-        common: StreamOptions {
-            headers: case.request_headers,
-            ..StreamOptions::default()
-        },
-        ..maestro_models::SimpleStreamOptions::default()
-    };
+    let request = attribution_request(case.session_id, case.request_headers);
     let selected = model.read().unwrap().clone();
     let context = maestro_models::Context {
         system_prompt: None,
@@ -715,6 +758,42 @@ async fn capture_attribution_headers(case: AttributionCase) -> Option<Attributio
     captured.pop().unwrap()
 }
 
+/// Supply complete account configuration for Cloudflare attribution witnesses.
+async fn attribution_fixture(provider: &str) -> Harness {
+    let h = fixture(Auth::Key).await;
+    if matches!(provider, "cloudflare-workers-ai" | "cloudflare-ai-gateway") {
+        h.registry.auth_storage().set(provider, serde_json::from_value(json!({
+            "type":"api_key", "key":"faux-key", "env":{"CLOUDFLARE_ACCOUNT_ID":"account", "CLOUDFLARE_GATEWAY_ID":"gateway"},
+        })).unwrap());
+    }
+    h
+}
+
+/// The case `row` records, checked to hold only the fields the case reads.
+fn attribution_case(id: &str, row: &Value) -> AttributionCase {
+    let input = AttributionCase {
+        provider: row["model"]["provider"].as_str().unwrap().to_owned(),
+        base_url: row["model"]["baseUrl"].as_str().unwrap().to_owned(),
+        telemetry_enabled: row["settings"]["enableInstallTelemetry"].as_bool().unwrap(),
+        session_id: row["sessionId"].as_str().map(str::to_owned),
+        credential_headers: serde_json::from_value(row["credentialHeaders"].clone()).unwrap(),
+        request_headers: serde_json::from_value(row["requestHeaders"].clone()).unwrap(),
+    };
+    let mut read = json!({
+        "name": id,
+        "model": {"provider": input.provider, "baseUrl": input.base_url},
+        "settings": {"enableInstallTelemetry": input.telemetry_enabled},
+        "credentialHeaders": input.credential_headers,
+        "requestHeaders": input.request_headers,
+        "expected": row["expected"],
+    });
+    if let Some(session) = &input.session_id {
+        read["sessionId"] = json!(session);
+    }
+    assert_eq!(&read, row, "{id} holds only the fields the case reads");
+    input
+}
+
 /// Sends each recorded attribution case `ids` names from a child without the telemetry
 /// variable and compares the presence and the whole map of the provider's headers.
 fn check_attribution_cases(ids: &[&str]) {
@@ -726,29 +805,7 @@ fn check_attribution_cases(ids: &[&str]) {
             on_task_set(|_| async {
                 for id in ids {
                     let row = crate::support::session_harness::case("attribution", id);
-                    let input = AttributionCase {
-                        provider: row["model"]["provider"].as_str().unwrap().to_owned(),
-                        base_url: row["model"]["baseUrl"].as_str().unwrap().to_owned(),
-                        telemetry_enabled: row["settings"]["enableInstallTelemetry"]
-                            .as_bool()
-                            .unwrap(),
-                        credential_headers: serde_json::from_value(
-                            row["credentialHeaders"].clone(),
-                        )
-                        .unwrap(),
-                        request_headers: serde_json::from_value(row["requestHeaders"].clone())
-                            .unwrap(),
-                    };
-                    let read = json!({
-                        "name": id,
-                        "model": {"provider": input.provider, "baseUrl": input.base_url},
-                        "settings": {"enableInstallTelemetry": input.telemetry_enabled},
-                        "credentialHeaders": input.credential_headers,
-                        "requestHeaders": input.request_headers,
-                        "expected": row["expected"],
-                    });
-                    assert_eq!(read, row, "{id} holds only the fields the case reads");
-                    let actual = capture_attribution_headers(input).await;
+                    let actual = capture_attribution_headers(attribution_case(id, &row)).await;
                     assert_eq!(
                         json!({"present": actual.is_some(), "headers": actual}),
                         row["expected"],
@@ -791,12 +848,28 @@ fn merges_attribution_auth_and_caller_headers() {
 
 #[test]
 fn attributes_cloudflare_api_url_for_unrelated_providers() {
-    check_attribution_cases(&["cloudflare_api_url", "cloudflare_url_substring"]);
+    check_attribution_cases(&["cloudflare_api_url", "host_comparison_ignores_case"]);
 }
 
 #[test]
 fn attributes_cloudflare_gateway_url_for_unrelated_providers() {
-    check_attribution_cases(&["cloudflare_gateway_url", "gateway_url_substring"]);
+    check_attribution_cases(&["cloudflare_gateway_url"]);
+}
+
+#[test]
+fn attributes_nvidia_by_provider_or_host() {
+    check_attribution_cases(&["nvidia_host", "nvidia_provider"]);
+}
+
+#[test]
+fn sends_opencode_session_headers_by_provider_or_host() {
+    check_attribution_cases(&[
+        "opencode_host_session",
+        "opencode_provider_session",
+        "opencode_without_session",
+        "opencode_session_ignores_telemetry_setting",
+        "caller_overrides_session_headers",
+    ]);
 }
 
 #[test]
@@ -804,8 +877,11 @@ fn leaves_unmatched_requests_without_attribution() {
     check_attribution_cases(&[
         "unmatched_preserves_headers",
         "provider_comparison_is_exact",
-        "url_comparison_is_case_sensitive",
         "empty_unmatched_url",
+        "cloudflare_path_is_not_the_host",
+        "gateway_path_is_not_the_host",
+        "nvidia_path_is_not_the_host",
+        "opencode_path_is_not_the_host",
     ]);
 }
 
@@ -1263,5 +1339,47 @@ fn sdk_explicit_selection_refuses_before_history_and_capability_clamp() {
             );
             assert!(manager.borrow().get_entries().is_empty());
         }
+    });
+}
+
+#[test]
+fn cloudflare_session_request_uses_resolved_endpoint_without_mutating_selection() {
+    on_task_set(|_| async {
+        let h = fixture(Auth::Key).await;
+        h.registry.auth_storage().set("cloudflare-ai-gateway", serde_json::from_value(json!({
+            "type":"api_key", "key":"controlled", "env":{"CLOUDFLARE_ACCOUNT_ID":"account", "CLOUDFLARE_GATEWAY_ID":"gateway"},
+        })).unwrap());
+        let mut descriptor = h.model("faux-1").read().unwrap().clone();
+        descriptor.provider = "cloudflare-ai-gateway".into();
+        descriptor.base_url =
+            "https://custom.invalid/{CLOUDFLARE_ACCOUNT_ID}/{CLOUDFLARE_GATEWAY_ID}".into();
+        let selected = Arc::new(std::sync::RwLock::new(descriptor));
+        let mut options = options(&h, json!({}));
+        options.model = Some(selected.clone());
+        let created = create(options).await;
+        let observed = Arc::new(Mutex::new(Value::Null));
+        let captured = Arc::clone(&observed);
+        observe_next(&h, move |input| {
+            *captured.lock().unwrap() = json!({
+                "model": input.model.base_url,
+                "endpoint": common(input).base_url,
+                "key": common(input).api_key,
+            });
+        });
+        created
+            .session
+            .prompt("hi", PromptOptions::default())
+            .await
+            .unwrap();
+        assert_eq!(
+            *observed.lock().unwrap(),
+            json!({
+                "model":"https://custom.invalid/account/gateway", "endpoint":"https://custom.invalid/account/gateway", "key":"controlled",
+            })
+        );
+        assert_eq!(
+            selected.read().unwrap().base_url,
+            "https://custom.invalid/{CLOUDFLARE_ACCOUNT_ID}/{CLOUDFLARE_GATEWAY_ID}"
+        );
     });
 }

@@ -192,13 +192,28 @@ pub(super) fn assert_last_row(world: &World, role: &ThemeColor, message: &str, l
     let painted = format!(" {}{message}\u{1b}[39m", theme.get_fg_ansi(role).unwrap());
     let padding = WIDTH.saturating_sub(1 + maestro_tui::visible_width(message));
     let expected = format!("{painted}{}", " ".repeat(padding));
-    assert_eq!(rows(world).last().cloned(), Some(expected), "{label}");
+    assert_eq!(notice_row(world, label), expected, "{label}");
 }
 
-/// Asserts the transcript's last row carries `needle`.
+/// Asserts the transcript's last notice row carries `needle`.
 pub(super) fn assert_last_row_holds(world: &World, needle: &str, label: &str) {
-    let row = rows(world).last().cloned().unwrap_or_default();
+    let row = notice_row(world, label);
     assert!(row.contains(needle), "{label}: {row}");
+}
+
+/// The transcript's last notice row; an error notice's own blank row must follow it.
+fn notice_row(world: &World, label: &str) -> String {
+    let mut rendered = rows(world);
+    let row = rendered.pop().unwrap_or_default();
+    if !row.is_empty() {
+        return row;
+    }
+    let notice = rendered.pop().unwrap_or_default();
+    assert!(
+        notice.contains("Error: "),
+        "{label}: only an error notice ends with a blank row"
+    );
+    notice
 }
 
 /// The session file's base name without its `.jsonl` suffix.
@@ -798,7 +813,7 @@ fn transfer_import_missing_argument_shows_usage_without_confirmation() {
                     "Error: Usage: /import <path.jsonl>",
                     text,
                 );
-                assert!(world.mode.working.loading_animation.borrow().is_some());
+                assert!(world.mode.working_loader().is_some());
                 assert!(Rc::ptr_eq(&old, &world.host.session()));
                 assert!(
                     !world
@@ -833,7 +848,7 @@ fn transfer_import_decline_preserves_progress_and_the_current_session() {
                 );
                 import_answer(&world, key);
                 assert_last_row(&world, &ThemeColor::Dim, "Import cancelled", key);
-                assert!(world.mode.working.loading_animation.borrow().is_some());
+                assert!(world.mode.working_loader().is_some());
                 assert!(Rc::ptr_eq(&old, &world.host.session()));
                 assert_eq!(poll(&mut waiter), None);
                 assert!(recalled(&world.mode.editor).is_empty());
@@ -891,7 +906,7 @@ fn transfer_import_success_stops_progress_then_rebuilds_the_replacement() {
                     name,
                 );
                 assert!(rows(&world).join("\n").contains("IMPORTED_HISTORY"));
-                assert!(world.mode.working.loading_animation.borrow().is_none());
+                assert!(world.mode.working_loader().is_none());
                 assert!(world.mode.status_container.render(WIDTH).is_empty());
                 assert_eq!(poll(&mut waiter), None);
                 assert_eq!(recalled(&world.mode.editor), ["IMPORTED_HISTORY"]);
@@ -918,7 +933,7 @@ fn transfer_import_veto_is_distinct_from_confirmation_cancellation() {
                 import_answer(&world, "\r");
                 assert_eq!(calls.get(), 1);
                 assert!(Rc::ptr_eq(&old, &world.host.session()));
-                assert!(world.mode.working.loading_animation.borrow().is_none());
+                assert!(world.mode.working_loader().is_none());
                 assert!(world.mode.status_container.render(WIDTH).is_empty());
                 assert_last_row(&world, &ThemeColor::Dim, "Import cancelled", "veto");
                 assert!(!rows(&world).join("\n").contains("IMPORTED_HISTORY"));
@@ -950,7 +965,7 @@ fn transfer_import_missing_file_is_recoverable() {
                     name,
                 );
                 assert!(Rc::ptr_eq(&old, &world.host.session()));
-                assert!(world.mode.working.loading_animation.borrow().is_none());
+                assert!(world.mode.working_loader().is_none());
                 assert_eq!(poll(&mut waiter), None);
                 submit(&world.mode, "later input");
                 assert_eq!(poll(&mut waiter).as_deref(), Some("later input"));
@@ -1484,7 +1499,7 @@ async fn import_observed_world(directory: &Path) -> World {
     let captured = Rc::clone(&observed);
     let create: maestro_app::CreateAgentSessionRuntimeFactory = Rc::new(move |options| {
         let mode = captured.borrow().upgrade().unwrap();
-        assert!(mode.working.loading_animation.borrow().is_none());
+        assert!(mode.working_loader().is_none());
         assert!(mode.status_container.render(WIDTH).is_empty());
         super::create(mode.runtime_host.services(), false)(options)
     });

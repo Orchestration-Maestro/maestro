@@ -11,3 +11,9 @@ handle, releasing the message lock before notifying readers. An aborted signal
 selects `aborted`; otherwise it selects `error`. Formatting and explicit producer
 settlement remain with callers. A settled stream ignores another event, but the
 retained message still receives the failure state.
+
+The registered `stream_simple` entry returns a missing-key error before creating a
+stream for chat-completions, Responses, Azure Responses, Codex Responses, Messages,
+Google content generation and Mistral. The error is `No API key for provider: <provider>`;
+no transport runs. The `stream_simple_*` convenience roots retain their documented
+settled-error streams; the provider-module simple functions return the setup error.

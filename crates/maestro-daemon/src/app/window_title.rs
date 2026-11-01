@@ -47,7 +47,7 @@ impl<C: FnMut() -> u128> App<C> {
                 .terminals
                 .get(ws.terminal_id(ws.focused_pane_id()?)?)
         });
-        let home = std::env::var_os("HOME").map(std::path::PathBuf::from);
+        let home = crate::paths::home_directory();
         let mut title = String::new();
         for part in template.parts() {
             let value = match part {

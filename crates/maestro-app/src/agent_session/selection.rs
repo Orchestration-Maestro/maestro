@@ -231,6 +231,15 @@ impl<E: ExtensionExecution> AgentSession<E> {
         read(&self.model()).reasoning
     }
 
+    /// Gives the agent the steering and follow-up modes the saved preferences now hold.
+    pub(super) fn sync_queue_modes_from_settings(&self) {
+        let settings = self.settings_manager.borrow();
+        self.agent
+            .set_steering_mode(crate::sdk::queue_mode(&settings.get_steering_mode()));
+        self.agent
+            .set_follow_up_mode(crate::sdk::queue_mode(&settings.get_follow_up_mode()));
+    }
+
     /// Sets and saves how steering messages are delivered.
     ///
     /// # Errors

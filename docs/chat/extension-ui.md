@@ -20,8 +20,11 @@ options remain visible. The input reads confirm and cancel, then delegates other
 keys to the toolkit's [Input](../terminal/input.md). Submission reports the exact
 stored string, including empty input. Both accept LF as confirmation.
 
-Up takes precedence over down, confirmation and cancellation in the selector;
-confirmation takes precedence over cancellation in the input. Hints capture the
+The selector checks `app.tools.expand` before every other key. Given an
+`on_toggle_tools_expanded` callback, the key calls it and does nothing else: the
+selection, the countdown and focus stay as they are. Without the callback the key
+does nothing. Up takes precedence over down, confirmation and cancellation in the
+selector; confirmation takes precedence over cancellation in the input. Hints capture the
 bindings at construction, while handling reads the live registry. Repeated
 confirmation or cancellation repeats the notification. Callbacks may
 synchronously render, handle input or dispose the dialog.
@@ -211,24 +214,30 @@ footers and editors keep their own owners and their published components.
 
 ## Dialogs
 
-`select`, `input` and `editor` show the selector, the text input or the
-multiline editor described above in place of the editor before they return.
-Focus moves to the dialog and the mode requests a frame. Answering, cancelling,
-a countdown expiring or the signal aborting settles the dialog once. The
-countdown stops, the mode's current editor returns with focus, the mode requests
-a frame and the result becomes available. A cancelled, expired or aborted dialog
+`select`, `input` and `editor` push the selector, the text input or the
+multiline editor described above on the dialog stack before they return. The
+newest dialog is shown in place of the editor with focus, and the mode requests
+a frame. A dialog it covers stays open and keeps its state. Answering,
+cancelling, a countdown expiring or the signal aborting settles the dialog once,
+whether it is shown or covered. The countdown stops and the dialog leaves the
+stack. When it was on top, the dialog below it, or the mode's current editor once
+none is left, returns with focus and the mode requests a frame; a covered dialog
+leaves the screen as it is. The result then becomes available. A cancelled, expired or aborted dialog
 answers `None`. The multiline editor takes neither a countdown nor a signal and
 answers with the text its editor submits.
 
 `confirm` shows the selector with the title and message on two lines and the
-options `Yes` and `No`, in that order. Only `Yes` answers true; `No`,
+options `Yes` and `No`, in that order. In the selectors `select` and `confirm`
+show, and in the session-directory, branch-summary and import prompts shown the
+same way, the tool-expand key flips the expansion of tool output and summaries as
+the editor's key does. Only `Yes` answers true; `No`,
 cancelling, expiry and abort answer false.
 
 An already-aborted signal answers at once: the mode shows nothing, keeps focus
 and requests no frame. A countdown starts only when the timeout is greater than
 zero. Aborting after the dialog settled does nothing. The shown dialog holds its
 own settlement, so dropping the returned future leaves it working: a later key
-still settles it and restores the editor. Settled dialogs keep neither the mode
+still settles it and takes it off the stack. Settled dialogs keep neither the mode
 nor its terminal alive.
 
 `prompt_for_missing_session_cwd` asks whether to continue when a session's
@@ -240,11 +249,12 @@ returns `None`.
 
 ## Editor access
 
-`set_editor_text` replaces the current editor's text unchanged, and
-`get_editor_text` returns its expanded text, or its raw text when it does not
-expand. `paste_to_editor` delivers the text to the current editor as a bracketed
-paste, so the editor applies its own paste rules. Nothing is trimmed and no
-history entry is written. An editor's own failure is returned unchanged.
+`set_editor_text` hands the text to the current editor unchanged, and the editor
+stores it with its own newline and tab normalization. `get_editor_text` returns
+the editor's expanded text, or its raw text when it does not expand.
+`paste_to_editor` delivers the text to the current editor as a bracketed paste,
+so the editor applies its own paste rules. Nothing is trimmed and no history
+entry is written. An editor's own failure is returned unchanged.
 
 ## Custom editors
 
@@ -389,8 +399,9 @@ removed. Neither failure rebuilds the last painted containers.
 Before each session replacement invalidates the current session, the mode resets
 what extensions changed, in this order:
 
-1. The latest selector, input and multi-line editor dialogs answer `None`, as
-   their own cancellation does, which stops their countdowns and signal watches.
+1. The dialog stack empties: every dialog answers `None`, as its own
+   cancellation does, which stops its countdown and signal watch, and the editor
+   returns when the stack held anything.
 2. Every custom view that has not settled ends with no value: its own overlay is
    removed and its component disposed once. A view still building disposes its
    component when it arrives, without showing it. The editor is left to step 5.
@@ -411,9 +422,9 @@ calls each disposer while walking the live maps, so widgets a disposer adds are
 disposed too and widgets it removes are skipped; a disposer failure stops before
 either map is emptied.
 
-Each dialog kind retains its component until settlement. Opening another of the
-same kind cancels the previous one. A hidden dialog's answer, cancellation or
-countdown cannot replace the panel currently shown.
+The stack retains each dialog's component until settlement, so dialogs opened
+concurrently, of any kind, wait in order. A dialog opened from inside a custom
+view goes on top, and settling it shows the custom view again.
 
 Working messages, visibility, indicators and hidden-thinking labels an extension
 sets stay in effect across prompt turns until the extension changes them or the
@@ -421,8 +432,9 @@ session is replaced.
 
 ## Custom views
 
-`custom` shows the component an extension builds, at once or later, in place of
-the editor with focus, or as an overlay when `overlay` is `Some(true)`. The
+`custom` shows the component an extension builds, at once or later, on the
+dialog stack in place of the editor with focus, or as an overlay when `overlay`
+is `Some(true)`. Overlays are not on the stack. The
 factory receives the live terminal, theme, application keybindings and the
 view's completion. The current editor's raw text is kept when the view starts.
 
@@ -433,9 +445,10 @@ cells, at least one, as image widths count them; an empty options value still
 wins over the component width. `on_handle` receives the overlay's handle after
 it is shown.
 
-The first `done` closes the view: it removes the view's own overlay, or puts the
-current editor back with the kept text and focus, then settles the result and
-disposes the component. A disposal failure is ignored once the view has closed.
+The first `done` closes the view: it removes the view's own overlay, or takes the
+inline view off the stack, which shows the entry below it or the editor, and puts
+the kept text back in the current editor. It then settles the result and disposes
+the component. A disposal failure is ignored once the view has closed.
 Later calls do not close, restore or dispose again. When putting the editor back
 fails, that original failure is the view's result and every later `done` returns
 it again; no value is committed.
@@ -445,7 +458,8 @@ disposes it once. Completing while the overlay options resolve shows nothing.
 Completing in an admission visibility callback removes that view's overlay
 before setup returns; `on_handle` is not called.
 A failing factory, resolver or handle callback settles the view with the
-original error: an inline view puts the editor back, and an overlay already shown
+original error: an inline view leaves the stack and puts the kept text back, and
+an overlay already shown
 is removed and its component disposed. An overlay cleanup error does not replace
 the initiating failure. A terminal failure during admission removes the overlay
 and disposes its component. When putting the editor back fails too,

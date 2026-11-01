@@ -81,8 +81,8 @@
     },
     "expected": {
       "set": "",
-      "pasted": "paste\n界",
-      "raw": "paste\n界"
+      "pasted": "paste\n界\nrow 2\nrow 3\nrow 4\nrow 5\nrow 6\nrow 7\nrow 8\nrow 9\nrow 10",
+      "raw": "[paste #1 +11 lines]"
     }
   },
   {
@@ -93,8 +93,8 @@
     },
     "expected": {
       "set": "\ufeff text ",
-      "pasted": "\ufeff text paste\n界",
-      "raw": "\ufeff text paste\n界"
+      "pasted": "\ufeff text paste\n界\nrow 2\nrow 3\nrow 4\nrow 5\nrow 6\nrow 7\nrow 8\nrow 9\nrow 10",
+      "raw": "\ufeff text [paste #1 +11 lines]"
     }
   },
   {
@@ -105,8 +105,8 @@
     },
     "expected": {
       "set": "first\nsecond",
-      "pasted": "first\nsecondpaste\n界",
-      "raw": "first\nsecondpaste\n界"
+      "pasted": "first\nsecondpaste\n界\nrow 2\nrow 3\nrow 4\nrow 5\nrow 6\nrow 7\nrow 8\nrow 9\nrow 10",
+      "raw": "first\nsecond[paste #1 +11 lines]"
     }
   },
   {
@@ -2149,9 +2149,10 @@
       "lines": [
         "",
         " @error@Error: first                                                                   ",
-        " @error@界\u001b[39m                                                                             "
+        " @error@界\u001b[39m                                                                             ",
+        ""
       ],
-      "children": 2,
+      "children": 3,
       "renderRequested": true
     }
   },

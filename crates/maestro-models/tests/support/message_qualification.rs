@@ -495,15 +495,15 @@ const OWNERS: [(&str, usize); 20] = [
     ),
     (
         "crates/maestro-models/tests/message_eager_input.rs::maestro_message_uses_configured_provider_probes",
-        13,
+        9,
     ),
     (
         "crates/maestro-models/tests/message_eager_input.rs::maestro_message_forces_only_supported_eager_probes",
-        13,
+        9,
     ),
     (
         "crates/maestro-models/tests/message_long_retention.rs::maestro_message_probes_long_retention_per_provider",
-        13,
+        9,
     ),
     (
         "crates/maestro-models/tests/message_long_retention.rs::maestro_message_places_retention_markers",
