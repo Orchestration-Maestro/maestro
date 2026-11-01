@@ -440,10 +440,11 @@ fn pending_listener_tail_can_resume_its_emitter() {
         let steps = json!([{"op":"emit-and-wait", "channel":"x"}]).to_string();
         let emitter = pair.a.program(&steps);
         let tails = &mut pair.tails;
-        futures_util::join!(emitter, async {
+        futures_util::future::join(emitter, async {
             *resume.borrow_mut() = Some(waiting.recv().await.unwrap());
             tails.try_recv().unwrap().await;
-        });
+        })
+        .await;
         assert_eq!(
             pair.take(),
             [
