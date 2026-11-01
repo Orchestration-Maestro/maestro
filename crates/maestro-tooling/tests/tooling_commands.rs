@@ -3627,7 +3627,8 @@ fn author_setup_continues_when_cargo_keeps_an_outdated_example() {
     assert!(logged.contains("Cargo kept the setup example"), "{logged}");
 }
 
-/// Build a dependency-free workspace with a transitive library and an author example.
+/// Build a dependency-free workspace with a transitive library and an author example. The
+/// transitive library's build script has its own file name, which names its Cargo crate.
 fn cache_fixture(root: &Path) {
     toolchain_support::declare_toolchain(root, include_str!("../../../rust-toolchain.toml"))
         .unwrap();
@@ -3658,8 +3659,9 @@ fn cache_fixture(root: &Path) {
         ),
         (
             "leaf/Cargo.toml",
-            "[package]\nname='leaf'\nversion='0.0.0'\nedition='2024'\n[features]\nother=[]\n",
+            "[package]\nname='leaf'\nversion='0.0.0'\nedition='2024'\nbuild='build/main.rs'\n[features]\nother=[]\n",
         ),
+        ("leaf/build/main.rs", "fn main() {}"),
         ("leaf/src/lib.rs", "pub fn value() -> u32 { 42 }"),
     ] {
         write_input(root, path, text);
@@ -3761,6 +3763,40 @@ fn cache_normalization_reads_the_pinned_cargo_builds() {
     assert_eq!(
         fs::metadata(consumer).unwrap().modified().unwrap(),
         expected
+    );
+}
+
+/// A build script's run is no linked library build, whatever file Cargo names it after, so the
+/// consumers of a library with one share the example's time.
+#[test]
+fn cache_normalization_skips_build_scripts_named_after_their_file() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path();
+    cache_fixture(root);
+    let profile = root.join("target/debug");
+
+    let result = Command::new(env!("CARGO_BIN_EXE_development"))
+        .args(["nextest-setup", "normalize-component-cache"])
+        .arg(&profile)
+        .env_remove("TEST_ARCHIVE")
+        .output()
+        .unwrap();
+
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    let modified = |name: &str| {
+        fs::metadata(profile.join(name))
+            .unwrap()
+            .modified()
+            .unwrap()
+    };
+    let suffix = std::env::consts::EXE_SUFFIX;
+    assert_eq!(
+        modified(&format!("app{suffix}")),
+        modified(&format!("examples/prepare_author_component{suffix}"))
     );
 }
 
