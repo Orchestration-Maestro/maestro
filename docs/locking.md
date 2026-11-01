@@ -98,8 +98,13 @@ fixed temporary extension or a hidden name containing the target name, process
 ID and nanoseconds. Writers hold canonical target exclusion through publication.
 A stale fixed temporary is unlinked without following it, then the new temporary
 is created exclusively. An intervening creator is left untouched and publication
-fails. On Unix, creation uses existing target permission bits from the start;
-final permission bits are retained before writing bytes.
+fails. The fifth argument, `creation_mode: Option<u32>`, selects missing-target
+creation bits on Unix. `None` uses 0666 filtered by the process umask. A requested
+mode is also filtered by the umask when the temporary is exclusively created,
+before any bytes are written. Existing target permissions take precedence over
+the requested creation mode: the temporary starts with no broader access and
+retains the target's exact permissions before writing bytes. Other platforms
+keep native creation semantics; this argument does not emulate Unix modes.
 Renaming replaces the inode: hard links keep their old bytes, while ownership and
 ACLs are not preserved. Lock acquisition completes any pending recovery record
 before atomic publication begins; the new atomic write does not stage one.
@@ -111,3 +116,22 @@ before an update. A session rewrite waits for exclusion, compares the current
 bytes with its expected hash, then publishes through the held lock. Session
 appends consume the guard through `append`, which owns prewrite synchronization.
 A snapshot save uses atomic publication because its readers do not acquire a lock.
+A native private-file save uses the same publisher:
+
+```rust,ignore
+let committed = maestro_lock::atomic_replace(
+    path,
+    bytes,
+    maestro_lock::Symlinks::Follow,
+    maestro_lock::Temporary::Unique,
+    Some(0o600),
+)?;
+if let Some(warning) = committed.dir_sync {
+    // The bytes are committed; report the durability warning without retrying.
+    report_warning(warning);
+}
+```
+
+The component files facade uses this atomic contract, not recoverable in-place
+publication. Its guest operations remain undelivered; see the
+[component host contract](specs/extension-host.md).

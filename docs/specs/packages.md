@@ -147,6 +147,17 @@ While the native terminal's queued output runs, component stdout goes through th
 so it never splits a host frame. Other modes and regular-file destinations inherit stdout.
 Local sockets arrive through `maestro-ipc`, the one local-socket owner (delivery 59).
 
+### Guest files
+
+Component saves delegate through application native I/O to
+`maestro_lock::atomic_replace`, with final-link following and unique adjacent
+temporaries. Requested private creation modes apply before bytes are written;
+rewrites preserve existing modes. The lock owner keeps exclusion, cleanup and
+committed durability warnings. Existing recoverable in-place callers keep their
+native identity contract. The [component host contract](extension-host.md)
+describes the file operations and qualification required before the guest facade
+is delivered.
+
 ### Shared libraries
 
 | Library (class `package`) | One job | Consumers |
