@@ -2171,9 +2171,6 @@
           "url": "https://api.minimax.io/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -2378,9 +2375,6 @@
           "url": "https://api.kimi.com/coding/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "user-agent": "KimiCLI/1.5",
@@ -2583,9 +2577,6 @@
           "url": "https://ai-gateway.vercel.sh/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -2787,9 +2778,6 @@
           "url": "https://api.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -2991,9 +2979,6 @@
           "url": "https://token-plan-cn.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -3195,9 +3180,6 @@
           "url": "https://token-plan-ams.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -3399,9 +3381,6 @@
           "url": "https://token-plan-sgp.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -3586,7 +3565,7 @@
             }
           ],
           "max_tokens": 64000,
-          "stream": true,
+          "stream": true, "betas": ["claude-code-20250219", "oauth-2025-04-20"],
           "system": [
             {
               "type": "text",
@@ -4006,9 +3985,6 @@
           "url": "https://api.individual.githubcopilot.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "authorization": "Bearer fixture-key",
             "content-type": "application/json",
@@ -4454,9 +4430,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -4707,9 +4680,6 @@
           "url": "https://api.anthropic.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -4911,7 +4881,7 @@
             }
           ],
           "max_tokens": 64000,
-          "stream": true,
+          "stream": true, "betas": ["claude-code-20250219", "oauth-2025-04-20"],
           "system": [
             {
               "type": "text",
@@ -5180,7 +5150,7 @@
             }
           ],
           "max_tokens": 64000,
-          "stream": true,
+          "stream": true, "betas": ["claude-code-20250219", "oauth-2025-04-20"],
           "system": [
             {
               "type": "text",
@@ -9916,9 +9886,6 @@
           "url": "https://api.minimax.io/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -10168,9 +10135,6 @@
           "url": "https://api.minimax.io/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -10389,9 +10353,6 @@
           "url": "https://api.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -10642,9 +10603,6 @@
           "url": "https://api.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -10863,9 +10821,6 @@
           "url": "https://token-plan-cn.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -11116,9 +11071,6 @@
           "url": "https://token-plan-cn.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -11337,9 +11289,6 @@
           "url": "https://token-plan-ams.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -11590,9 +11539,6 @@
           "url": "https://token-plan-ams.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -11811,9 +11757,6 @@
           "url": "https://token-plan-sgp.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -12064,9 +12007,6 @@
           "url": "https://token-plan-sgp.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -12287,9 +12227,6 @@
           "url": "https://api.kimi.com/coding/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "user-agent": "KimiCLI/1.5",
@@ -12543,9 +12480,6 @@
           "url": "https://api.kimi.com/coding/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "user-agent": "KimiCLI/1.5",
@@ -12765,9 +12699,6 @@
           "url": "https://ai-gateway.vercel.sh/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -13018,9 +12949,6 @@
           "url": "https://ai-gateway.vercel.sh/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -15570,9 +15498,6 @@
           "url": "https://api.individual.githubcopilot.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "authorization": "Bearer fixture-key",
             "content-type": "application/json",
@@ -15837,9 +15762,6 @@
           "url": "https://api.individual.githubcopilot.com/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "authorization": "Bearer fixture-key",
             "content-type": "application/json",
@@ -25405,9 +25327,6 @@
           "url": "https://api.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -25612,9 +25531,6 @@
           "url": "https://token-plan-cn.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -25819,9 +25735,6 @@
           "url": "https://token-plan-ams.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"
@@ -26026,9 +25939,6 @@
           "url": "https://token-plan-sgp.xiaomimimo.com/anthropic/v1/messages",
           "headers": {
             "accept": "application/json",
-            "anthropic-beta": [
-              "interleaved-thinking-2025-05-14"
-            ],
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
             "x-api-key": "fixture-key"

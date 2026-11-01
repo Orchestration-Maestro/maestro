@@ -88,7 +88,7 @@ fn messages_beta_payload_becomes_transport_header() -> TestResult {
         for (configured, expected) in [
             (" custom, custom , second, ", "custom,second"),
             ("", ""),
-            (" , ", " , "),
+            (" , ", ","),
         ] {
             let requests = messages::Requests::default();
             let seen = Arc::new(Mutex::new(Value::Null));
