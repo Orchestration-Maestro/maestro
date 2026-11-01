@@ -1631,8 +1631,16 @@ pub fn command_extension(
     })
 }
 
-/// Shell operations that record each execution, write the scripted chunks, then wait for
-/// `release` when holding, and settle with the scripted exit status.
+/// A supplied shell's exceptional settlement after streaming its bytes.
+#[derive(Clone, Copy, Debug)]
+pub enum ShellFailure {
+    /// Settle as cancelled.
+    Aborted,
+    /// Report a timeout with the supplied seconds.
+    Timeout(f64),
+}
+
+/// Shell operations that record execution, stream supplied bytes, then optionally wait for release.
 pub struct ScriptedShell {
     /// Each execution's command and directory, in order.
     pub executed: Mutex<Vec<Value>>,
@@ -1640,17 +1648,23 @@ pub struct ScriptedShell {
     pub started: Arc<tokio::sync::Notify>,
     /// Lets a holding execution settle.
     pub release: Arc<tokio::sync::Notify>,
-    /// The output chunks.
-    chunks: Vec<String>,
+    /// The output chunks, including incomplete UTF-8 sequences.
+    chunks: Vec<Vec<u8>>,
     /// The exit status.
     exit_code: Option<f64>,
     /// Whether the execution waits for `release`.
     hold: bool,
+    /// Exceptional settlement instead of the exit status.
+    failure: Option<ShellFailure>,
 }
 
 impl ScriptedShell {
-    /// Operations writing `chunks` and settling with `exit_code` at once.
-    pub fn chunks(chunks: Vec<String>, exit_code: Option<f64>) -> Self {
+    /// Operations streaming `chunks` and settling with the supplied status or failure.
+    pub fn raw(
+        chunks: Vec<Vec<u8>>,
+        exit_code: Option<f64>,
+        failure: Option<ShellFailure>,
+    ) -> Self {
         Self {
             executed: Mutex::default(),
             started: Arc::default(),
@@ -1658,7 +1672,17 @@ impl ScriptedShell {
             chunks,
             exit_code,
             hold: false,
+            failure,
         }
+    }
+
+    /// Operations writing `chunks` and settling with `exit_code` at once.
+    pub fn chunks(chunks: Vec<String>, exit_code: Option<f64>) -> Self {
+        Self::raw(
+            chunks.into_iter().map(String::into_bytes).collect(),
+            exit_code,
+            None,
+        )
     }
 
     /// Operations writing `text`, or nothing when it is empty, and settling at once.
@@ -1678,6 +1702,33 @@ impl ScriptedShell {
             ..Self::chunks(chunks, exit_code)
         }
     }
+
+    /// Streams and acknowledges one execution, preserving local or thread-safe callback ownership.
+    async fn run<S: FnMut(&[u8]) + ?Sized>(
+        &self,
+        command: &str,
+        cwd: &str,
+        on_data: &mut S,
+    ) -> Result<maestro_tools::BashExecResult, maestro_tools::BashError> {
+        self.executed
+            .lock()
+            .unwrap()
+            .push(json!({"command":command,"cwd":cwd}));
+        for chunk in &self.chunks {
+            on_data(chunk);
+        }
+        self.started.notify_one();
+        if self.hold {
+            self.release.notified().await;
+        }
+        match self.failure {
+            Some(ShellFailure::Aborted) => Err(maestro_tools::BashError::Aborted),
+            Some(ShellFailure::Timeout(seconds)) => Err(maestro_tools::BashError::Timeout(seconds)),
+            None => Ok(maestro_tools::BashExecResult {
+                exit_code: self.exit_code,
+            }),
+        }
+    }
 }
 
 impl maestro_tools::BashOperations<Local> for ScriptedShell {
@@ -1686,29 +1737,25 @@ impl maestro_tools::BashOperations<Local> for ScriptedShell {
         command: &'a str,
         cwd: &'a str,
         options: maestro_tools::BashExecOptions<'a, dyn FnMut(&[u8]) + 'a>,
-    ) -> std::pin::Pin<
-        Box<
-            dyn std::future::Future<
-                    Output = Result<maestro_tools::BashExecResult, maestro_tools::BashError>,
-                > + 'a,
-        >,
+    ) -> <Local as Execution>::Future<
+        'a,
+        Result<maestro_tools::BashExecResult, maestro_tools::BashError>,
     > {
-        Box::pin(async move {
-            self.executed
-                .lock()
-                .unwrap()
-                .push(json!({"command": command, "cwd": cwd}));
-            for chunk in &self.chunks {
-                (options.on_data)(chunk.as_bytes());
-            }
-            self.started.notify_one();
-            if self.hold {
-                self.release.notified().await;
-            }
-            Ok(maestro_tools::BashExecResult {
-                exit_code: self.exit_code,
-            })
-        })
+        Box::pin(self.run(command, cwd, options.on_data))
+    }
+}
+
+impl maestro_tools::BashOperations<Threaded> for ScriptedShell {
+    fn exec<'a>(
+        &'a self,
+        command: &'a str,
+        cwd: &'a str,
+        options: maestro_tools::BashExecOptions<'a>,
+    ) -> <Threaded as Execution>::Future<
+        'a,
+        Result<maestro_tools::BashExecResult, maestro_tools::BashError>,
+    > {
+        Box::pin(self.run(command, cwd, options.on_data))
     }
 }
 

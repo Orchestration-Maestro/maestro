@@ -2,8 +2,8 @@
 
 ## Quick start
 
-Create executable tools through `maestro_app`. The application exports the existing
-native factories; it does not add another execution layer.
+Create executable tools through `maestro_app`. The application re-exports the
+native factories from `maestro-tools`.
 
 ```rust
 use maestro_app::{ReadToolOptions, create_read_tool};
