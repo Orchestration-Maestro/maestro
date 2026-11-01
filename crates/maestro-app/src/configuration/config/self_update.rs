@@ -154,7 +154,7 @@ fn step(command: String, args: Vec<String>) -> SelfUpdateCommandStep {
 }
 /// Option every supported package manager accepts to skip package lifecycle scripts.
 const IGNORE_SCRIPTS: &str = "--ignore-scripts";
-/// Select executable and verbs for one known installation method, with lifecycle scripts off.
+/// Selects executable and verbs, disabling lifecycle scripts on installation steps only.
 fn command_for_method(
     context: &SelfUpdateContext<'_>,
     name: &str,
