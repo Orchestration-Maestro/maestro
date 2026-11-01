@@ -1063,12 +1063,14 @@
       "scope": "user"
     },
     "expected": {
-      "changed": false,
+      "changed": true,
       "error": null,
       "packages": [
-        "git:github.com/a/b@v1"
+        "https://github.com/a/b@v1"
       ],
-      "writes": []
+      "writes": [
+        "user"
+      ]
     }
   },
   {
@@ -1101,12 +1103,14 @@
       "scope": "user"
     },
     "expected": {
-      "changed": false,
+      "changed": true,
       "error": null,
       "packages": [
-        "npm:﻿pkg@1﻿"
+        "npm:pkg@1"
       ],
-      "writes": []
+      "writes": [
+        "user"
+      ]
     }
   },
   {

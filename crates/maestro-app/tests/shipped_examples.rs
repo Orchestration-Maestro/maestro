@@ -26,7 +26,10 @@ fn examples_folder_matches_the_shipped_files() {
     let root = Path::new(&folder);
     assert!(root.is_dir(), "{folder}");
     let entries = directory_names(root);
-    assert_eq!(entries, ["README.md", "extensions", "sdk"]);
+    assert_eq!(
+        entries,
+        ["README.md", "extensions", "rpc_extension_ui.rs", "sdk"]
+    );
     assert_index_lists(root, &entries);
     for directory in ["extensions", "sdk"] {
         let path = root.join(directory);

@@ -4,8 +4,8 @@ use super::{AgentSession, ToolDefinitionHandle};
 use crate::utils::lock::{read, write};
 use indexmap::IndexMap;
 use maestro_agent::{
-    AfterToolCallContext, AfterToolCallResult, Agent, AgentToolRecord, BeforeToolCallContext,
-    BeforeToolCallResult, SharedAgentTool,
+    AfterToolCallContext, AfterToolCallResult, Agent, AgentLoopTurnUpdate, AgentToolRecord,
+    BeforeToolCallContext, BeforeToolCallResult, PrepareNextTurnContext, SharedAgentTool,
 };
 use maestro_extensions::{ExtensionExecution, RegisteredToolInput, ToolCallEvent, ToolResultEvent};
 use maestro_models::{DiagnosticErrorInfo, Local};
@@ -14,7 +14,7 @@ use maestro_settings::SettingsManager;
 use maestro_tools::{ToolsManager, local::ToolDef};
 use std::cell::RefCell;
 use std::rc::{Rc, Weak};
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 /// Installs the agent's tool hooks once; each reads the session's current runner when it
 /// runs, so a rebuilt runtime needs no new hooks.
@@ -26,10 +26,59 @@ pub(super) fn install_agent_tool_hooks(
     *write(&agent.before_tool_call) = Some(Rc::new(move |context, _signal| {
         Box::pin(before_tool_call(before.upgrade(), context))
     }));
+    let next = Weak::clone(session);
+    let previous = write(&agent.prepare_next_turn).take();
+    *write(&agent.prepare_next_turn) = Some(Rc::new(move |turn, signal| {
+        let previous = previous.clone();
+        let session = next.upgrade();
+        Box::pin(async move {
+            let base = match previous {
+                Some(previous) => {
+                    previous(
+                        PrepareNextTurnContext {
+                            message: turn.message,
+                            tool_results: turn.tool_results,
+                            context: turn.context,
+                            new_messages: turn.new_messages,
+                        },
+                        signal,
+                    )
+                    .await?
+                }
+                None => None,
+            };
+            Ok(prepare_next_turn(session, &turn, base))
+        })
+    }));
     let after = Weak::clone(session);
     *write(&agent.after_tool_call) = Some(Rc::new(move |context, _signal| {
         Box::pin(after_tool_call(after.upgrade(), context))
     }));
+}
+
+/// The context, model and thinking level the session's current state gives the next
+/// request: the run's system prompt, the active tools and the selected model.
+fn prepare_next_turn(
+    session: Option<Rc<AgentSession<Local>>>,
+    turn: &PrepareNextTurnContext<'_, CustomAgentMessages, Local>,
+    base: Option<AgentLoopTurnUpdate<CustomAgentMessages, Local>>,
+) -> Option<AgentLoopTurnUpdate<CustomAgentMessages, Local>> {
+    let Some(session) = session else {
+        return base;
+    };
+    let mut context = base
+        .and_then(|base| base.context)
+        .unwrap_or_else(|| turn.context.clone());
+    let system_prompt = session.state.borrow().effective_system_prompt();
+    let state = read(session.agent.state());
+    let tools = read(state.tools()).clone();
+    context.system_prompt = system_prompt;
+    context.tools = Some(Rc::new(RwLock::new(tools)));
+    Some(AgentLoopTurnUpdate {
+        context: Some(context),
+        model: Some(Arc::clone(&state.model)),
+        thinking_level: Some(state.thinking_level.clone()),
+    })
 }
 
 /// Lets the extensions edit or block a tool call once the queued session events are

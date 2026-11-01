@@ -9,6 +9,7 @@ use maestro_app::{ReadonlyFooterDataProvider, ReadonlySessionManager, ThinkingLe
 use maestro_chat::FooterComponent;
 use maestro_tui::Component;
 use serde_json::{Value, json};
+use std::path::MAIN_SEPARATOR;
 use std::rc::Rc;
 
 /// The recorded role names of the two shipped palettes.
@@ -34,11 +35,12 @@ fn expectations(test: &str) -> Vec<(Render, Value)> {
 
 /// Replays one render group, comparing the rows the recorded state produces.
 fn replay(test: &str) {
-    replay_arranged(test, |_| {});
+    replay_arranged(test, |_| {}, |_| {});
 }
 
-/// Replays one render group after `arrange` reshapes each recorded world.
-fn replay_arranged(test: &str, arrange: impl Fn(&World)) {
+/// Replays one render group after `arrange` reshapes each recorded world and `adapt` reshapes
+/// each recorded expectation.
+fn replay_arranged(test: &str, arrange: impl Fn(&World), adapt: impl Fn(&mut Lines)) {
     let roles = roles();
     for (render, expected) in expectations(test) {
         let world = render.world();
@@ -47,8 +49,9 @@ fn replay_arranged(test: &str, arrange: impl Fn(&World)) {
         render.apply_auto(&footer);
         match footer.try_render(render.width) {
             Ok(lines) => {
-                let recorded: Lines =
+                let mut recorded: Lines =
                     serde_json::from_value(expected).expect("recorded successful lines");
+                adapt(&mut recorded);
                 corpus::assert_lines(&lines, &render, &recorded, &roles);
             }
             Err(error) => panic!("{test} at width {} failed: {error}", render.width),
@@ -134,6 +137,7 @@ fn footer_usage_comes_from_all_history_not_the_selected_branch() {
     replay_arranged(
         "footer_usage_comes_from_all_history_not_the_selected_branch",
         select_first_answer,
+        |_| {},
     );
 }
 
@@ -218,9 +222,40 @@ fn footer_context_absence_with_zero_window() {
     replay("footer_context_absence_with_zero_window");
 }
 
+/// The recorded rows spell the home path with `/`, where the footer uses the platform's separator.
+fn with_platform_separator(recorded: &mut Lines) {
+    for line in &mut recorded.lines {
+        *line = line.replace("~/", &format!("~{MAIN_SEPARATOR}"));
+    }
+}
+
 #[test]
 fn footer_home_precedence_and_raw_prefix_are_preserved() {
-    replay("footer_home_precedence_and_raw_prefix_are_preserved");
+    replay_arranged(
+        "footer_home_precedence_and_raw_prefix_are_preserved",
+        |_| {},
+        with_platform_separator,
+    );
+}
+
+/// The footer shows the working directory with its dot segments and doubled separators folded.
+#[test]
+fn footer_home_display_folds_the_part_below_the_home() {
+    for (cwd, shown) in [
+        ("/home/a/./b/../project", "project"),
+        ("/home/a//project/", "project"),
+        ("/home/a/x/..", ""),
+    ] {
+        let world = world_at(cwd, 24_600.0, 200_000.0);
+        world.set_environment(Some(&json!("/home/a")), None);
+        let lines = world.footer().try_render(100).expect("a rendered footer");
+        let expected = if shown.is_empty() {
+            "~ (main)".to_owned()
+        } else {
+            format!("~{MAIN_SEPARATOR}{shown} (main)")
+        };
+        assert_eq!(plain(&lines[0]), expected, "{cwd:?}");
+    }
 }
 
 #[test]

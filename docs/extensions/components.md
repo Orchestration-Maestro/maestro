@@ -264,6 +264,7 @@ extraction with controlled provider and terminal inputs. No live keys or paid
 calls are required.
 
 ```sh
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- just prepare-tests
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \

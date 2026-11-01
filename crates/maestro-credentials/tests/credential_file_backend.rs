@@ -10,7 +10,7 @@ mod tests {
         TempDir, api_key, block_on, block_on_paused, is_child, memory_text, run_child,
     };
     use maestro_credentials::{
-        AsyncLockUpdate, AuthStorage, AuthStorageBackend, ConfigValueOperations,
+        AsyncLockUpdate, AuthSource, AuthStorage, AuthStorageBackend, ConfigValueOperations,
         FileAuthStorageBackend, InMemoryAuthStorageBackend, LockUpdate,
     };
     use maestro_models::{BoxFuture, OAuthCredentials, OAuthError};
@@ -340,6 +340,40 @@ mod tests {
         assert_eq!(mode(&path), 0o600);
     }
 
+    #[test]
+    fn writes_reach_a_hard_linked_file_in_place() {
+        let dir = TempDir::without_forks("in-place");
+        let path = dir.path("auth.json");
+        let linked = dir.path("linked.json");
+        std::fs::write(&path, pretty(&[("a", "1")])).unwrap();
+        std::fs::hard_link(&path, &linked).unwrap();
+        let storage = AuthStorage::create(&path);
+        storage.set("b", api_key("2"));
+        let expected = pretty(&[("a", "1"), ("b", "2")]);
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), expected);
+        assert_eq!(std::fs::read_to_string(&linked).unwrap(), expected);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn writes_refuse_a_read_only_file_and_keep_its_mode() {
+        let dir = TempDir::without_forks("read-only");
+        let path = dir.path("auth.json");
+        std::fs::write(&path, pretty(&[("a", "1")])).unwrap();
+        let Some(_restored) = maestro_test_directory::deny(&path, 0o400).unwrap() else {
+            return;
+        };
+
+        let error = maestro_credentials::write_auth_file(&path, "{}").unwrap_err();
+
+        assert_eq!(error.kind(), std::io::ErrorKind::PermissionDenied);
+        assert_eq!(
+            std::fs::read_to_string(&path).unwrap(),
+            pretty(&[("a", "1")])
+        );
+        assert_eq!(mode(&path), 0o400);
+    }
+
     #[cfg(unix)]
     #[test]
     fn removed_or_absent_records_rewrite_the_document() {
@@ -359,7 +393,7 @@ mod tests {
             pretty(&[("b", "2")])
         );
         assert_eq!(mode(&path), 0o600);
-        assert_eq!(storage.list(), ["a", "b"]);
+        assert_eq!(storage.list(), ["b"]);
     }
 
     #[test]
@@ -391,27 +425,16 @@ mod tests {
         })
     }
 
-    /// Callback that expects `"a"`, waits for `wait_for`, raises `raise` and replaces the text.
-    fn handshake<'a>(
-        wait_for: &'a AtomicBool,
-        raise: &'a AtomicBool,
-        next: &'static str,
-    ) -> AsyncLockUpdate<'a> {
-        Box::new(move |current| Box::pin(handshake_body(current, (wait_for, raise), next)))
-    }
-
-    /// Body of [`handshake`]; a waiter that never sees its flag is a test failure by hang.
-    async fn handshake_body(
-        current: Option<String>,
-        flags: (&AtomicBool, &AtomicBool),
-        next: &str,
-    ) -> LockUpdate {
-        assert_eq!(current.as_deref(), Some("a"));
-        flags.1.store(true, Ordering::SeqCst);
-        while !flags.0.load(Ordering::SeqCst) {
-            tokio::task::yield_now().await;
-        }
-        Ok(Some(next.to_owned()))
+    /// Callback that appends `marker` to the text it saw after yielding twice, so a second
+    /// callback started meanwhile would read the same text if nothing serialized them.
+    fn appending<'a>(marker: &'static str) -> AsyncLockUpdate<'a> {
+        Box::new(move |current| {
+            Box::pin(async move {
+                tokio::task::yield_now().await;
+                tokio::task::yield_now().await;
+                Ok(Some(format!("{}{marker}", current.unwrap_or_default())))
+            })
+        })
     }
 
     /// Callback that counts its runs.
@@ -474,7 +497,7 @@ mod tests {
     }
 
     #[test]
-    fn async_memory_callbacks_are_unlocked_and_last_write_wins() {
+    fn async_memory_callbacks_report_input_and_outcome() {
         block_on(async {
             let outcomes = [Ok(None), Ok(Some("b")), Ok(Some("")), Err("refused")];
             for (initial, outcome) in [None, Some(""), Some("a")]
@@ -483,23 +506,74 @@ mod tests {
             {
                 memory_input_and_outcome(initial, outcome).await;
             }
+        });
+    }
 
+    #[test]
+    fn async_memory_callbacks_run_one_at_a_time() {
+        block_on(async {
             let backend = InMemoryAuthStorageBackend::default();
-            backend
-                .with_lock_async(replacing(
-                    &std::sync::Mutex::new(Vec::new()),
-                    Ok(Some("a".into())),
-                ))
-                .await
-                .unwrap();
-            let (first_waits, second_done) = (AtomicBool::new(false), AtomicBool::new(false));
-            let first = backend.with_lock_async(handshake(&second_done, &first_waits, "first"));
-            let second = backend.with_lock_async(handshake(&first_waits, &second_done, "second"));
-            let (first, second) = tokio::join!(first, second);
+            let (first, second) = tokio::join!(
+                backend.with_lock_async(appending("first;")),
+                backend.with_lock_async(appending("second;"))
+            );
             first.unwrap();
             second.unwrap();
-            assert_eq!(memory_text(&backend), Some("first".into()));
+            assert_eq!(memory_text(&backend), Some("first;second;".into()));
         });
+    }
+
+    /// A storage that loaded an empty file, and the document another storage then writes to it.
+    fn after_another_storage_writes(name: &str) -> (TempDir, AuthStorage) {
+        let dir = TempDir::new(name);
+        let path = dir.path("auth.json");
+        let reader = AuthStorage::create(&path);
+        assert!(reader.list().is_empty());
+        AuthStorage::create(&path).set("written", api_key("fresh"));
+        (dir, reader)
+    }
+
+    #[test]
+    fn get_sees_credentials_another_storage_wrote() {
+        let (_dir, reader) = after_another_storage_writes("reread-get");
+        assert_eq!(reader.get("written"), Some(api_key("fresh")));
+    }
+
+    #[test]
+    fn list_sees_credentials_another_storage_wrote() {
+        let (_dir, reader) = after_another_storage_writes("reread-list");
+        assert_eq!(reader.list(), ["written"]);
+    }
+
+    #[test]
+    fn get_all_sees_credentials_another_storage_wrote() {
+        let (_dir, reader) = after_another_storage_writes("reread-all");
+        assert_eq!(
+            reader.get_all().into_iter().collect::<Vec<_>>(),
+            [("written".to_owned(), api_key("fresh"))]
+        );
+    }
+
+    #[test]
+    fn request_key_follows_a_key_another_storage_replaced() {
+        let dir = TempDir::new("reread-request-key");
+        let path = dir.path("auth.json");
+        let reader = AuthStorage::create(&path);
+        reader.set("stored-provider", api_key("old"));
+        AuthStorage::create(&path).set("stored-provider", api_key("new"));
+        let key = block_on(reader.get_api_key("stored-provider", false, &NoOperations)).unwrap();
+        assert_eq!(key.as_deref(), Some("new"));
+    }
+
+    #[test]
+    fn auth_checks_see_credentials_another_storage_wrote() {
+        let (_dir, reader) = after_another_storage_writes("reread-auth");
+        assert!(reader.has_auth("written").unwrap());
+        let status = reader.get_auth_status("written").unwrap();
+        assert_eq!(
+            (status.configured, status.source),
+            (true, Some(AuthSource::Stored))
+        );
     }
 
     #[test]

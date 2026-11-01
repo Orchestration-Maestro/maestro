@@ -7,6 +7,7 @@ mod commands;
 mod concurrency;
 mod configuration;
 mod configured_resolution;
+mod decisions;
 mod git;
 mod git_checks;
 mod inspection;
@@ -157,7 +158,8 @@ pub trait PackageManager {
         sources: &'a [String],
         scope: Option<SourceScope>,
     ) -> PackageFuture<'a, ResolvedPaths>;
-    /// Appends a source or replaces the first identity match when its parsed pin changes.
+    /// Appends a source or replaces the first identity match when its normalized spelling differs.
+    /// An identical spelling changes nothing and returns `false`.
     /// Other raw entry fields stay in place; `None` means user scope.
     /// # Errors
     /// Returns consumed settings, borrow or path failures.
@@ -314,7 +316,7 @@ impl<O: PackageOperations> PackageManager for DefaultPackageManager<O> {
         source: &'a str,
         scope: Option<InstalledSourceScope>,
     ) -> PackageFuture<'a, ()> {
-        Box::pin(async move { self.acquire(source, scope).await.map(drop) })
+        Box::pin(async move { self.acquire(source, scope, None).await.map(drop) })
     }
     fn verify_pin<'a>(
         &'a self,
@@ -358,7 +360,7 @@ impl<O: PackageOperations> PackageManager for DefaultPackageManager<O> {
         source: &'a str,
         scope: Option<InstalledSourceScope>,
     ) -> PackageFuture<'a, ()> {
-        Box::pin(self.release(source, scope))
+        Box::pin(async move { self.release(source, scope, None).await.map(drop) })
     }
     fn remove_and_persist<'a>(
         &'a self,

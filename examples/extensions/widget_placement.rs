@@ -1,4 +1,5 @@
 //! A startup extension that places text widgets above and below the editor.
+// maestro-component: MAESTRO_WIDGET_PLACEMENT_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

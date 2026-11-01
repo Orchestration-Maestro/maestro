@@ -1,7 +1,29 @@
 //! Pane terminal identity and launch environment edits.
 
 use maestro_process::pty::{PtyCommand, PtyEnvironment};
-use std::{ffi::OsString, path::Path};
+use std::{
+    ffi::{OsStr, OsString},
+    path::Path,
+};
+
+/// Shell variable that tells fish to repaint its prompt after a resize.
+const FISH_REFLOW: &str = "fish_handle_reflow";
+
+/// Markers of the terminal or multiplexer around the daemon, which a pane child must not inherit.
+const OUTER_TERMINAL_MARKERS: [&str; 12] = [
+    "ITERM_SESSION_ID",
+    "LC_TERMINAL",
+    "LC_TERMINAL_VERSION",
+    "WEZTERM_PANE",
+    "KITTY_WINDOW_ID",
+    "WT_SESSION",
+    "TMUX",
+    "TMUX_PANE",
+    "STY",
+    "ZELLIJ",
+    "ZELLIJ_SESSION_NAME",
+    "ZELLIJ_PANE_ID",
+];
 
 /// Extra user environment pairs and the pane identity policy.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -61,11 +83,34 @@ impl PaneLaunchEnv {
 
     /// Apply pane identity after terminal defaults and explicit user pairs.
     pub fn apply(&self, command: &mut PtyCommand, socket: &Path, executable: Option<&Path>) {
+        self.apply_with(command, socket, executable, &process_variable);
+    }
+
+    /// Apply the pane policy, reading an inherited parent variable through `parent`.
+    fn apply_with(
+        &self,
+        command: &mut PtyCommand,
+        socket: &Path,
+        executable: Option<&Path>,
+        parent: &dyn Fn(&OsStr) -> Option<OsString>,
+    ) {
         let mut edits = vec![
             ("TERM".into(), Some("xterm-256color".into())),
             ("COLORTERM".into(), Some("truecolor".into())),
             ("CODEX_THREAD_ID".into(), None),
+            (
+                maestro_tui::TERM_PROGRAM.into(),
+                Some(maestro_tui::PANE_TERM_PROGRAM.into()),
+            ),
+            (
+                "TERM_PROGRAM_VERSION".into(),
+                Some(maestro_protocol::build_info::version().into()),
+            ),
         ];
+        edits.extend(OUTER_TERMINAL_MARKERS.map(|name| (name.into(), None)));
+        if !holds(&command.environment, parent, FISH_REFLOW.as_ref()) {
+            edits.push((FISH_REFLOW.into(), Some("0".into())));
+        }
         edits.extend(
             self.extra
                 .iter()
@@ -99,6 +144,25 @@ impl PaneLaunchEnv {
         }
         apply_edits(&mut command.environment, edits);
     }
+}
+
+/// Whether the pane's environment already holds `name`, matched with exact casing.
+fn holds(
+    environment: &PtyEnvironment,
+    parent: &dyn Fn(&OsStr) -> Option<OsString>,
+    name: &OsStr,
+) -> bool {
+    match environment {
+        PtyEnvironment::Inherit(_) => parent(name).is_some(),
+        PtyEnvironment::Replace(values) => values.iter().any(|(key, _)| key == name),
+    }
+}
+
+/// Read a variable of this process by its exact name, whatever the platform's casing rule.
+fn process_variable(name: &OsStr) -> Option<OsString> {
+    std::env::vars_os()
+        .find(|(key, _)| key == name)
+        .map(|(_, value)| value)
 }
 
 /// Preserve the caller's inheritance/replacement choice while applying ordered edits.

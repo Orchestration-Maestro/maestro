@@ -150,7 +150,7 @@ impl InteractiveMode {
         );
         drop(settings);
         self.ui.set_show_hardware_cursor(cursor)?;
-        self.ui.set_clear_on_shrink(clear);
+        self.apply_clear_on_shrink(clear);
         Ok(())
     }
 }

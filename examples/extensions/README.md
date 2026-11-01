@@ -98,6 +98,8 @@ resolving conflicts, then regenerate the table.
 | `hello.rs` | A greeting tool registered by an extension factory. |
 | `hidden_thinking_label.md` | Hidden thinking label |
 | `hidden_thinking_label.rs` | An extension that sets the label shown when thinking blocks are hidden. |
+| `inline_bash.md` | Inline bash expansion |
+| `inline_bash.rs` | An opt-in input hook that expands `!{command}` with shell output before submission. |
 | `input_transform.md` | Input transform |
 | `input_transform.rs` | An opt-in input hook: `?quick <question>` requests a brief answer; `ping` and `time` show immediate feedback without a model call. Extension-injected input passes through. |
 | `interactive_shell.md` | Interactive shell |
@@ -152,6 +154,7 @@ resolving conflicts, then regenerate the table.
 | `rainbow_editor.rs` | Highlights `ultrathink` in the editor with an animated rainbow shine. |
 | `reload_runtime.md` | Reload runtime |
 | `reload_runtime.rs` | A command that reloads runtime resources and a tool that queues that command. |
+| `rpc_demo.rs` | A companion extension exercising the terminal client's RPC UI methods. |
 | `send_user_message.md` | Send user message |
 | `send_user_message.rs` | User-message delivery: commands that send ordinary, steering, follow-up and structured messages, so a user can reach the agent from an extension. |
 | `session_name.md` | Session name |
@@ -173,6 +176,7 @@ resolving conflicts, then regenerate the table.
 | `summarize.md` | Summarize |
 | `summarize.rs` | An opt-in conversation summary shown in a custom Markdown view. |
 | `support/tail.rs` | Cancellable work handed to the host's independent event-tail executor. |
+| `support/trim.rs` | Example-local trimming through the host's shared whitespace classification. |
 | `system_prompt_header.md` | System prompt header |
 | `system_prompt_header.rs` | Reports the effective system prompt's length as extension status. |
 | `tic_tac_toe.md` | Tic-tac-toe |
@@ -200,6 +204,8 @@ resolving conflicts, then regenerate the table.
 | `widget_placement.rs` | A startup extension that places text widgets above and below the editor. |
 | `with-deps.md` | With deps |
 | `with-deps/main.rs` | A duration tool registered by an extension that declares its own parsing dependency. |
+| `working_indicator.md` | Working indicator |
+| `working_indicator.rs` | A command that selects static, animated, hidden or default working indicators. |
 | `working_message_test.md` | Working message test |
 | `working_message_test.rs` | A startup extension that requests a custom working text and indicator. |
 <!-- example-index:end -->

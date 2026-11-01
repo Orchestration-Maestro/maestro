@@ -15,7 +15,7 @@ cost: crate::ModelCost { input: 0.14, output: 0.28, cache_read: 0.0028, cache_wr
 context_window: 1_000_000.0,
 max_tokens: 384_000.0,
 headers: None,
-compat: Some(crate::ModelCompat([("requiresReasoningContentOnAssistantMessages".into(), serde_json::Value::Bool(true)),("thinkingFormat".into(), serde_json::Value::String("deepseek".into()))].into_iter().collect())),
+compat: Some(crate::ModelCompat([("maxTokensField".into(), serde_json::Value::String("max_tokens".into())),("requiresReasoningContentOnAssistantMessages".into(), serde_json::Value::Bool(true)),("thinkingFormat".into(), serde_json::Value::String("deepseek".into()))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -33,7 +33,7 @@ cost: crate::ModelCost { input: 1.74, output: 3.48, cache_read: 0.0145, cache_wr
 context_window: 1_000_000.0,
 max_tokens: 384_000.0,
 headers: None,
-compat: Some(crate::ModelCompat([("requiresReasoningContentOnAssistantMessages".into(), serde_json::Value::Bool(true)),("thinkingFormat".into(), serde_json::Value::String("deepseek".into()))].into_iter().collect())),
+compat: Some(crate::ModelCompat([("maxTokensField".into(), serde_json::Value::String("max_tokens".into())),("requiresReasoningContentOnAssistantMessages".into(), serde_json::Value::Bool(true)),("thinkingFormat".into(), serde_json::Value::String("deepseek".into()))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -51,7 +51,7 @@ cost: crate::ModelCost { input: 1.0, output: 3.2, cache_read: 0.2, cache_write: 
 context_window: 202_752.0,
 max_tokens: 32_768.0,
 headers: None,
-compat: None,
+compat: Some(crate::ModelCompat([("maxTokensField".into(), serde_json::Value::String("max_tokens".into()))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -69,7 +69,7 @@ cost: crate::ModelCost { input: 1.4, output: 4.4, cache_read: 0.26, cache_write:
 context_window: 202_752.0,
 max_tokens: 32_768.0,
 headers: None,
-compat: None,
+compat: Some(crate::ModelCompat([("maxTokensField".into(), serde_json::Value::String("max_tokens".into()))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -87,7 +87,7 @@ cost: crate::ModelCost { input: 0.6, output: 3.0, cache_read: 0.1, cache_write: 
 context_window: 262_144.0,
 max_tokens: 65_536.0,
 headers: None,
-compat: None,
+compat: Some(crate::ModelCompat([("maxTokensField".into(), serde_json::Value::String("max_tokens".into()))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -99,13 +99,13 @@ api: "openai-completions".into(),
 provider: "opencode-go".into(),
 base_url: "https://opencode.ai/zen/go/v1".into(),
 reasoning: true,
-thinking_level_map: None,
+thinking_level_map: Some(indexmap::IndexMap::from([(crate::ModelThinkingLevel::Minimal, None),(crate::ModelThinkingLevel::Low, None),(crate::ModelThinkingLevel::Medium, None)])),
 input: vec![crate::ModelInput::Text,crate::ModelInput::Image],
 cost: crate::ModelCost { input: 0.32, output: 1.34, cache_read: 0.054, cache_write: 0.0 },
 context_window: 262_144.0,
 max_tokens: 65_536.0,
 headers: None,
-compat: None,
+compat: Some(crate::ModelCompat([("supportsReasoningEffort".into(), serde_json::Value::Bool(false)),("maxTokensField".into(), serde_json::Value::String("max_tokens".into())),("thinkingFormat".into(), serde_json::Value::String("deepseek".into()))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -123,7 +123,7 @@ cost: crate::ModelCost { input: 0.4, output: 2.0, cache_read: 0.08, cache_write:
 context_window: 262_144.0,
 max_tokens: 128_000.0,
 headers: None,
-compat: None,
+compat: Some(crate::ModelCompat([("maxTokensField".into(), serde_json::Value::String("max_tokens".into()))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -141,7 +141,7 @@ cost: crate::ModelCost { input: 1.0, output: 3.0, cache_read: 0.2, cache_write: 
 context_window: 1_048_576.0,
 max_tokens: 128_000.0,
 headers: None,
-compat: None,
+compat: Some(crate::ModelCompat([("maxTokensField".into(), serde_json::Value::String("max_tokens".into()))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -159,7 +159,7 @@ cost: crate::ModelCost { input: 0.4, output: 2.0, cache_read: 0.08, cache_write:
 context_window: 1_000_000.0,
 max_tokens: 128_000.0,
 headers: None,
-compat: None,
+compat: Some(crate::ModelCompat([("maxTokensField".into(), serde_json::Value::String("max_tokens".into()))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -177,7 +177,7 @@ cost: crate::ModelCost { input: 1.0, output: 3.0, cache_read: 0.2, cache_write: 
 context_window: 1_048_576.0,
 max_tokens: 128_000.0,
 headers: None,
-compat: None,
+compat: Some(crate::ModelCompat([("maxTokensField".into(), serde_json::Value::String("max_tokens".into()))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -195,7 +195,7 @@ cost: crate::ModelCost { input: 0.3, output: 1.2, cache_read: 0.03, cache_write:
 context_window: 204_800.0,
 max_tokens: 65_536.0,
 headers: None,
-compat: None,
+compat: Some(crate::ModelCompat([("maxTokensField".into(), serde_json::Value::String("max_tokens".into()))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -213,7 +213,7 @@ cost: crate::ModelCost { input: 0.3, output: 1.2, cache_read: 0.06, cache_write:
 context_window: 204_800.0,
 max_tokens: 131_072.0,
 headers: None,
-compat: None,
+compat: Some(crate::ModelCompat([("maxTokensField".into(), serde_json::Value::String("max_tokens".into()))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -231,7 +231,7 @@ cost: crate::ModelCost { input: 0.2, output: 1.2, cache_read: 0.02, cache_write:
 context_window: 262_144.0,
 max_tokens: 65_536.0,
 headers: None,
-compat: Some(crate::ModelCompat([("thinkingFormat".into(), serde_json::Value::String("qwen".into()))].into_iter().collect())),
+compat: Some(crate::ModelCompat([("maxTokensField".into(), serde_json::Value::String("max_tokens".into())),("thinkingFormat".into(), serde_json::Value::String("qwen".into()))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -249,7 +249,7 @@ cost: crate::ModelCost { input: 0.5, output: 3.0, cache_read: 0.05, cache_write:
 context_window: 262_144.0,
 max_tokens: 65_536.0,
 headers: None,
-compat: Some(crate::ModelCompat([("thinkingFormat".into(), serde_json::Value::String("qwen".into()))].into_iter().collect())),
+compat: Some(crate::ModelCompat([("maxTokensField".into(), serde_json::Value::String("max_tokens".into())),("thinkingFormat".into(), serde_json::Value::String("qwen".into()))].into_iter().collect())),
 }
 }
 /// Construct one model descriptor.

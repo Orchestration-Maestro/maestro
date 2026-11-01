@@ -110,6 +110,7 @@ fn bind(runner: &ExtensionRunner<Local>, history: &History, state: &SharedState)
         .set(
             "fixture",
             maestro_credentials::AuthCredential::ApiKey(maestro_credentials::ApiKeyCredential {
+                env: None,
                 key: "!CANONICAL_API_KEY".into(),
             }),
         );

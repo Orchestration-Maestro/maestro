@@ -11,5 +11,9 @@ pub mod clipboard_native;
 pub(crate) mod lock;
 pub(crate) mod numbers;
 #[cfg(not(target_arch = "wasm32"))]
+mod platform_opener;
+#[cfg(not(target_arch = "wasm32"))]
+pub use platform_opener::platform_opener;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod task;
 pub(crate) mod uri;

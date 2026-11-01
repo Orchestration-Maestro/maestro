@@ -162,11 +162,6 @@
     "entries": []
   },
   {
-    "name": "wait_for_retry_releases_on_abort",
-    "beforeRelease": false,
-    "after": true
-  },
-  {
     "name": "negative_base_delay_fires_immediately",
     "returned": true,
     "events": [

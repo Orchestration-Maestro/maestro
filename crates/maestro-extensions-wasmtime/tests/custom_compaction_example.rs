@@ -142,9 +142,8 @@ impl Harness {
             .model_registry
             .register_provider("google", Arc::new(RwLock::new(config)))
             .unwrap();
-        let auth = AuthCredential::ApiKey(ApiKeyCredential {
-            key: "controlled-key".into(),
-        });
+        let auth =
+            serde_json::from_value(json!({"type":"api_key","key":"controlled-key"})).unwrap();
         session.model_registry.auth_storage().set("google", auth);
         let catalog = session.model_registry.clone();
         history
@@ -301,7 +300,10 @@ fn prerequisites(harness: &Harness, case: &str) {
     if matches!(case, "missing_auth" | "auth_failed") {
         harness.catalog.auth_storage().set(
             "google",
-            AuthCredential::ApiKey(ApiKeyCredential { key: String::new() }),
+            AuthCredential::ApiKey(ApiKeyCredential {
+                env: None,
+                key: String::new(),
+            }),
         );
     }
     if case == "auth_failed" {

@@ -31,7 +31,7 @@ pub async fn command(request: &str, context: ExtensionCommandContext) -> Result<
         "id":"gated-model","name":"gated","api":"component-gated-http","provider":"custom",
         "baseUrl":request.base_url,"reasoning":false,"input":["text"],
         "cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0},
-        "contextWindow":1000,"maxTokens":100,"compat":{"maxTokensField":"max_tokens"}
+        "contextWindow":10000,"maxTokens":100,"compat":{"maxTokensField":"max_tokens"}
     }))
     .map_err(|e| e.to_string())?;
     let conversation: Context = serde_json::from_value(json!({

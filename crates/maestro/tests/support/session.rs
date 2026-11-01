@@ -30,6 +30,15 @@ pub async fn component_session(
             io,
             None,
         ));
+    resource_session(root, resources, no_tools).await
+}
+
+/// Builds the same isolated SDK session from caller-supplied component effects.
+pub async fn resource_session(
+    root: &super::Root,
+    mut resources: ResourceLoaderOptions<Local>,
+    no_tools: Option<NoTools>,
+) -> Rc<AgentSession> {
     resources.system_prompt = Some(String::new());
     resources.append_system_prompt = Some(Vec::new());
     resources.offline = Some(true);

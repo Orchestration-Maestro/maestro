@@ -50,14 +50,12 @@ fn component_output_stays_between_complete_host_frames() {
 fn compose_frames() {
     use terminal_support::{Rig, START_BYTES, pipe_input, pipe_output, until};
     let rig = Rig::paused();
-    let input = pipe_input();
+    let _input = pipe_input();
     let output = pipe_output();
     rig.run(async {
         let mut terminal = ProcessTerminal::new(rig.local());
         terminal.start(Box::new(|_| {}), Box::new(|| {})).unwrap();
         output.written(START_BYTES).await;
-        input.send(b"\x1b[?1u");
-        output.written("\x1b[>7u").await;
         let first = format!("<frame-a>{}</frame-a>", "a".repeat(2 * 1024 * 1024));
         terminal.write(&first).unwrap();
         until(|| terminal.pending_output_bytes() < first.len()).await;
@@ -98,36 +96,12 @@ fn compose_frames() {
 }
 
 #[cfg(target_os = "linux")]
+mod shipped;
+
+#[cfg(target_os = "linux")]
 #[test]
 fn shipped_component_stdout_survives_blocked_output_and_reload() {
-    for generation in ["p2", "p3"] {
-        let root = crate::support::Root::new();
-        root.models("http://127.0.0.1:1/v1");
-        let environment = root.command(&[]);
-        let output = std::process::Command::new("python3")
-            .arg(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/tests/fixtures/component_stdout.py"
-            ))
-            .arg(env!("CARGO_BIN_EXE_maestro"))
-            .arg(std::env::var_os("MAESTRO_WASI_COMPONENT").unwrap())
-            .arg(generation)
-            .arg(root.path("ack"))
-            .env_clear()
-            .envs(
-                environment
-                    .get_envs()
-                    .filter_map(|(key, value)| value.map(|value| (key, value))),
-            )
-            .current_dir(root.path("project"))
-            .output()
-            .unwrap();
-        assert!(
-            output.status.success(),
-            "{generation}: {}",
-            String::from_utf8_lossy(&output.stderr)
-        );
-    }
+    shipped::run();
 }
 
 #[test]

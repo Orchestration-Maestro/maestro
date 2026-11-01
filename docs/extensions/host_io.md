@@ -105,7 +105,26 @@ than 260 characters through a directory link, in both generations. It also
 reads and creates link targets as in the last two rows above. macOS behavior is
 not separately qualified.
 
+## Detached children
+
+A child launched with `SpawnOptions { detached: true, .. }` can outlive its
+initiating callback and an extension reload. Reload releases the old guest's
+controls; it does not terminate the native child. The application's existing
+process collector continues independently and reaps the child when it exits.
+A retained native waiter observes that collector's completion without keeping
+the old guest alive. This requires the application's local executor to remain
+running; it is not a guarantee that a child survives application shutdown.
+
+The Linux real-host check reloads an `AgentSession`, verifies fresh guest
+controls, exchanges a new nonce with the original PID over an independent TCP
+connection, then releases the child and observes its original native waiter.
+This qualification is separate from the broader component example checks.
+
 ## Supplied stdout
+
+Create a `ProcessTerminal` before loading components, obtain its
+`standard_output_writer()` and pass that writer to the component factory. Start
+the same terminal for interactive rendering; obtaining the writer does not start it.
 
 `artifact_factory_with_stdout(path, widgets, installation, writer, terminal)`
 retains a standard `Write + Send` sink across initialization and later
@@ -133,8 +152,8 @@ failed queued writer reports its error until stop; it does not bypass the queue.
 Before start, after stop and for regular files, the durable writer uses inherited
 stdout. Writes report partial progress; explicit flush calls deliver buffered bytes
 and report flush errors. Both guest output generations forward flush to that writer.
-Print, JSON and RPC therefore keep stdout, not a suppressed stream or a stderr substitute. Extensions that write
-stdout in protocol modes can still interfere with their protocol records. The
-ordered-output guarantee applies only while queued terminal output runs; it does
-not add a second queue or writer task. Windows interactive startup remains tracked
-in [#2844](https://github.com/Orchestration-Maestro/maestro/issues/2844).
+Print, JSON and RPC keep stdout, not a suppressed stream or a stderr substitute.
+Extensions that write stdout in protocol modes can still interfere with their
+protocol records. The ordered-output guarantee applies only while queued terminal
+output runs; it does not add a second queue or writer task. Windows console output
+remains synchronous.

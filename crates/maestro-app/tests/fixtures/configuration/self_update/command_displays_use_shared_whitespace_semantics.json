@@ -17,9 +17,10 @@
           "/opt/tool prefix",
           "install",
           "-g",
+          "--ignore-scripts",
           "@old/agent"
         ],
-        "display": "npm --prefix \"/opt/tool prefix\" install -g @old/agent"
+        "display": "npm --prefix \"/opt/tool prefix\" install -g --ignore-scripts @old/agent"
       }
     },
     "trace": [
@@ -67,9 +68,10 @@
           "/opt/tool\tprefix",
           "install",
           "-g",
+          "--ignore-scripts",
           "@old/agent"
         ],
-        "display": "npm --prefix \"/opt/tool\tprefix\" install -g @old/agent"
+        "display": "npm --prefix \"/opt/tool\tprefix\" install -g --ignore-scripts @old/agent"
       }
     },
     "trace": [
@@ -117,9 +119,10 @@
           "/opt/tool﻿prefix",
           "install",
           "-g",
+          "--ignore-scripts",
           "@old/agent"
         ],
-        "display": "npm --prefix \"/opt/tool﻿prefix\" install -g @old/agent"
+        "display": "npm --prefix \"/opt/tool﻿prefix\" install -g --ignore-scripts @old/agent"
       }
     },
     "trace": [
@@ -167,9 +170,10 @@
           "/opt/toolprefix",
           "install",
           "-g",
+          "--ignore-scripts",
           "@old/agent"
         ],
-        "display": "npm --prefix /opt/toolprefix install -g @old/agent"
+        "display": "npm --prefix /opt/toolprefix install -g --ignore-scripts @old/agent"
       }
     },
     "trace": [
@@ -217,9 +221,10 @@
           "/opt/tool\"prefix",
           "install",
           "-g",
+          "--ignore-scripts",
           "@old/agent"
         ],
-        "display": "npm --prefix /opt/tool\"prefix install -g @old/agent"
+        "display": "npm --prefix /opt/tool\"prefix install -g --ignore-scripts @old/agent"
       }
     },
     "trace": [

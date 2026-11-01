@@ -171,7 +171,7 @@ struct Recorded {
 ///
 /// # Errors
 /// Returns agent-directory, catalog, history, resource loading or documentation-path
-/// failures, and the failures of [`AgentSession::new`].
+/// failures, publisher admission refusals, and the failures of [`AgentSession::new`].
 pub async fn create_agent_session(
     options: CreateAgentSessionOptions,
 ) -> Result<CreateAgentSessionResult, DiagnosticErrorInfo> {
@@ -183,6 +183,10 @@ pub async fn create_agent_session(
         )),
     };
     let resource_loader = resources(&services, options.resources, options.offline).await?;
+    admit_requested_tools(
+        &services.settings_manager.borrow(),
+        options.tools.as_deref(),
+    )?;
     services
         .model_registry
         .set_base_model_files(resource_loader.get_model_files())
@@ -241,6 +245,58 @@ fn tool_construction(
     }
 }
 
+/// Reports an explicit SDK refusal through the settings diagnostic channel.
+fn admit_sdk_request(
+    settings: &SettingsManager,
+    request: &maestro_settings::DecisionRequest<'_>,
+) -> Result<(), DiagnosticErrorInfo> {
+    settings.decide(request).map_err(|message| {
+        settings.report_refusal(maestro_settings::SettingsScope::Global, message.clone());
+        DiagnosticErrorInfo::new(Some("ConfigurationRefusal".into()), message)
+    })
+}
+
+/// Admits explicit SDK tools before history creation or live tool publication.
+fn admit_requested_tools(
+    settings: &SettingsManager,
+    tools: Option<&[String]>,
+) -> Result<(), DiagnosticErrorInfo> {
+    tools.map_or(Ok(()), |tools| {
+        admit_sdk_request(settings, &maestro_settings::DecisionRequest::Tools(tools))
+    })
+}
+
+/// Admits explicit selections while retaining the requested, unclamped thinking level.
+fn admit_requested_selection(
+    settings: &SettingsManager,
+    model: Option<&Arc<RwLock<Model>>>,
+    level: Option<&ModelThinkingLevel>,
+) -> Result<(), DiagnosticErrorInfo> {
+    let requested = level.cloned().unwrap_or_else(|| {
+        settings
+            .get_default_thinking_level()
+            .as_ref()
+            .map_or(DEFAULT_THINKING_LEVEL, model_level)
+    });
+    let requested = saved_level(&requested);
+    let identity = model.map(|model| {
+        let model = read(model);
+        (model.provider.clone(), model.id.clone())
+    });
+    let request = if let Some((provider, model_id)) = &identity {
+        maestro_settings::DecisionRequest::Model {
+            provider,
+            model_id,
+            thinking_level: requested.as_str(),
+        }
+    } else if level.is_some() {
+        maestro_settings::DecisionRequest::ThinkingLevel(requested.as_str())
+    } else {
+        return Ok(());
+    };
+    admit_sdk_request(settings, &request)
+}
+
 /// Loads resources only after their application-owned construction services are installed.
 async fn resources(
     services: &Services,
@@ -277,6 +333,11 @@ fn prepare_agent(
     explicit_model: Option<Arc<RwLock<Model>>>,
     explicit_level: Option<ModelThinkingLevel>,
 ) -> Result<PreparedAgent, DiagnosticErrorInfo> {
+    admit_requested_selection(
+        &services.settings_manager.borrow(),
+        explicit_model.as_ref(),
+        explicit_level.as_ref(),
+    )?;
     let recorded = recorded(&session_manager.borrow())?;
     let (model, model_fallback_message) = resolve_model(services, explicit_model, &recorded)?;
     let thinking_level = resolve_thinking_level(
@@ -405,7 +466,21 @@ fn resolve_model(
     if recorded.has_messages
         && let Some((provider, model_id)) = &recorded.model
     {
-        if let Some(model) = restore_saved_model(registry, provider, model_id).map_err(thrown)? {
+        let stored = maestro_settings::Settings(
+            serde_json::json!({"defaultProvider": provider, "defaultModel": model_id})
+                .as_object()
+                .cloned()
+                .unwrap_or_default(),
+        );
+        let resolved = services
+            .settings_manager
+            .borrow()
+            .resolve_stored_values(&stored);
+        if resolved.0.get("defaultProvider") == stored.0.get("defaultProvider")
+            && resolved.0.get("defaultModel") == stored.0.get("defaultModel")
+            && let Some(model) =
+                restore_saved_model(registry, provider, model_id).map_err(thrown)?
+        {
             return Ok((Some(model), None));
         }
         fallback_message = Some(format!("Could not restore model {provider}/{model_id}"));
@@ -448,6 +523,11 @@ fn resolve_thinking_level(
     recorded: Option<ModelThinkingLevel>,
     model: Option<&Arc<RwLock<Model>>>,
 ) -> ModelThinkingLevel {
+    let recorded = if explicit.is_none() {
+        recorded.map(|level| resolve_recorded_thinking(settings, &level))
+    } else {
+        None
+    };
     let level = explicit.or(recorded).unwrap_or_else(|| {
         settings
             .get_default_thinking_level()
@@ -457,6 +537,28 @@ fn resolve_thinking_level(
     model.map_or(ModelThinkingLevel::Off, |model| {
         clamp_thinking_level(&read(model), level)
     })
+}
+
+/// Resolves a recorded level through stored-value policy before capability clamping.
+fn resolve_recorded_thinking(
+    settings: &SettingsManager,
+    level: &ModelThinkingLevel,
+) -> ModelThinkingLevel {
+    let stored = maestro_settings::Settings(
+        [(
+            String::from("defaultThinkingLevel"),
+            Value::String(saved_level(level).as_str().into()),
+        )]
+        .into_iter()
+        .collect(),
+    );
+    settings
+        .resolve_stored_values(&stored)
+        .0
+        .get("defaultThinkingLevel")
+        .and_then(Value::as_str)
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(DEFAULT_THINKING_LEVEL)
 }
 
 /// Records the model and thinking level a new history starts with, or the thinking level a
