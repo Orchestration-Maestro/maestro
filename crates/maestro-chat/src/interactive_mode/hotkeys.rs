@@ -153,4 +153,4 @@ fn capitalize_shortcut(key: &str) -> String {
 }
 
 #[cfg(test)]
-mod tests;
+pub(super) mod tests;

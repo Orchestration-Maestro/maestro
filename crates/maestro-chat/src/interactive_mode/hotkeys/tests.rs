@@ -1,6 +1,9 @@
 //! Portable platform guidance through the keyboard-help formatter.
 use super::editing_keys;
 
+#[path = "../../../tests/support/platform_keys.rs"]
+pub(crate) mod platform_keys;
+
 #[test]
 fn hotkeys_newline_guidance_covers_supported_hosts() {
     let ordinary = editing_keys(false);
@@ -58,7 +61,7 @@ fn hotkeys_capitalize_the_start_of_each_extension_key_part() {
         );
         assert_eq!(
             super::capitalize_shortcut(&case.input.key),
-            crate::interactive_mode::tests::platform_keys::on_this_platform(&case.expected.result)
+            platform_keys::on_this_platform(&case.expected.result)
         );
     }
 }
