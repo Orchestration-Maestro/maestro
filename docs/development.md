@@ -796,23 +796,27 @@ platform's own separator.
 Before running the example, the setup's cache normalization (`nextest-setup normalize-component-cache`) gives executable
 artifacts in the profile directory, `deps` and `examples` their newest existing
 modification time. This advances older outputs without making them older than
-their compiler inputs. It skips an executable that a workspace library it builds on
-has outdated: Cargo rebuilds an executable only while a dependency's output is newer
-than it, so advancing a binary that a rebuilt library has outdated would hide the
-rebuild. The libraries an executable builds on come from the crate named in its
-dependency information and the workspace crates `Cargo.lock` lists for it; a library's
-own test binary does not build on its output. Without that information, any newer
-library output outdates the executable. A run from a nextest archive (`TEST_ARCHIVE`
-set) skips this check, because nextest never runs Cargo on an archive. Without the
-skip, the library the setup builds for the setup example would outdate every
-restored test binary, and each would compile its components cold. A skipped test binary
-compiles its components itself on first use. A skipped example would warm code that no
-test binary reads, so normalization then exits with status 3 and the setup rebuilds
-the example through Cargo before it runs. Cargo ignores some library outputs that
-normalization counts, such as the check-only metadata a lint run writes, so the example
-can stay outdated after that build. The setup then logs one line and runs it anyway.
-Test binaries do not read the code it warms, which costs a cache miss and never fails
-setup. The Git-pinned engine includes the shared modification time in its cache
+their compiler inputs. It skips an executable when an exact linked library build
+is newer than it: advancing that binary would hide a rebuild from Cargo.
+Cargo's `.fingerprint` records identify each direct and transitive library build
+by its fingerprint and metadata hash, independently of dependency aliases.
+A newer build of the same crate under
+another hash, including check-only metadata from Clippy, does not outdate it.
+An uplifted executable uses the records of its hashed twin: normalization matches
+length and contents, so copied and hard-linked outputs work alike. Identical twins
+with different dependency records fail rather than select an uncertain build.
+A library's own test binary does not depend on that library's separate output.
+Without an executable fingerprint, normalization conservatively treats any newer
+library output as an input. A present but malformed or unresolved record fails
+setup with a diagnostic. These records follow the pinned Cargo toolchain; a real
+Cargo fixture exercises their layout in the tooling tests.
+A run from a nextest archive (`TEST_ARCHIVE` set) skips the fingerprint check,
+because nextest never rebuilds archived executables. A skipped test binary compiles
+its components itself on first use. A skipped example would warm code that no test
+binary reads, so normalization exits with status 3 and setup rebuilds the example
+through Cargo before running it. If Cargo retains an outdated example, setup logs
+one line and runs it anyway; a cache miss does not prevent preparation.
+The Git-pinned engine includes the shared modification time in its cache
 namespace, so the preparer and consuming test binaries share compiled code.
 The example builds every exported component in one Cargo invocation, so Cargo
 compiles them in parallel, warms their Wasmtime compilation cache

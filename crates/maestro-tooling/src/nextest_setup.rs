@@ -37,7 +37,6 @@ pub(crate) fn run(args: &[OsString]) -> io::Result<ExitCode> {
         Some("fixture-sources") => fixture_sources::run(&checkout),
         Some("browser-author") => browser_graph::run(&checkout),
         Some("normalize-component-cache") => normalize::run(
-            &checkout,
             &checkout.join(argument(args, 1, "directory")?),
             normalize::archive_signalled(),
         ),
