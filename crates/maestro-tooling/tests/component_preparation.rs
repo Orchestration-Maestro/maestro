@@ -63,6 +63,38 @@ fn assert_prepared_consumers(file: &Path, prepared: &HashMap<String, String>) {
     }
 }
 
+/// Fixed cross-package examples join the author examples in the same Cargo build.
+#[test]
+fn subagent_component_build_selects_its_package_in_the_shared_batch() {
+    let command = component_build::build_command(
+        "cargo",
+        Path::new("."),
+        &["author_component", "component", "trigger_compact"],
+        Path::new("target"),
+    );
+    let arguments: Vec<_> = command
+        .get_args()
+        .map(|arg| arg.to_str().unwrap())
+        .collect();
+    let selected = |flag| {
+        arguments
+            .windows(2)
+            .filter(|pair| pair[0] == flag)
+            .map(|pair| pair[1])
+            .collect::<Vec<_>>()
+    };
+
+    assert_eq!(
+        selected("--package"),
+        ["maestro-extensions-wasm", "maestro-subagents"]
+    );
+    assert_eq!(
+        selected("--example"),
+        ["author_component", "component", "trigger_compact"]
+    );
+    assert_eq!(arguments.iter().filter(|arg| **arg == "build").count(), 1);
+}
+
 #[test]
 fn component_build_reuses_the_prepared_example() {
     if !selection().is_child() {

@@ -100,7 +100,7 @@ fn tools(session: &AgentSession, details: &Value) {
 }
 
 /// Supplies the ordinary retained row environment, not a replacement rendering engine.
-fn context<'a>(
+pub(crate) fn context<'a>(
     args: &'a Value,
     rows: &'a ToolRendererState,
 ) -> ToolRenderContext<'a, ToolRendererState> {

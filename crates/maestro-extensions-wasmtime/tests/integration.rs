@@ -19,6 +19,7 @@ mod compilation_cache;
 mod completion_providers;
 mod component_events;
 mod component_loading;
+
 mod components;
 mod editor_factories;
 mod exec_io;
