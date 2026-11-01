@@ -13,6 +13,8 @@ pub struct Case {
     input: Value,
     /// Output decoded by the witness.
     expected: Value,
+    /// Complete macOS layout when its key names differ.
+    expected_macos: Option<Value>,
 }
 /// Load strictly decoded corpus rows.
 pub fn load(source: &str) -> Vec<Case> {
@@ -44,7 +46,12 @@ pub fn cases<I: DeserializeOwned, E: DeserializeOwned>(
         .map(|row| {
             (
                 serde_json::from_value(row.input).unwrap(),
-                serde_json::from_value(row.expected).unwrap(),
+                serde_json::from_value(if cfg!(target_os = "macos") {
+                    row.expected_macos.unwrap_or(row.expected)
+                } else {
+                    row.expected
+                })
+                .unwrap(),
             )
         })
         .collect();

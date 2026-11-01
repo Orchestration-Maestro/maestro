@@ -1415,6 +1415,15 @@
         ],
         "width": 80
       },
+      "expected_macos": [
+        "",
+        "\u001b[38;5;4m... (1 earlier lines,\u001b[39m \u001b[38;5;6moption+x\u001b[39m\u001b[38;5;4m to expand\u001b[39m\u001b[38;5;4m)\u001b[39m",
+        "\u001b[38;5;2m2\u001b[39m                                                                               ",
+        "\u001b[38;5;2m3\u001b[39m                                                                               ",
+        "\u001b[38;5;2m4\u001b[39m                                                                               ",
+        "\u001b[38;5;2m5\u001b[39m                                                                               ",
+        "\u001b[38;5;2m6\u001b[39m                                                                               "
+      ],
       "expected": [
         "",
         "\u001b[38;5;4m... (1 earlier lines,\u001b[39m \u001b[38;5;6malt+x\u001b[39m\u001b[38;5;4m to expand\u001b[39m\u001b[38;5;4m)\u001b[39m",
@@ -1499,6 +1508,15 @@
         ],
         "width": 80
       },
+      "expected_macos": [
+        "",
+        "\u001b[38;5;4m... (1 earlier lines,\u001b[39m \u001b[38;5;6moption+x/ctrl+o\u001b[39m\u001b[38;5;4m to expand\u001b[39m\u001b[38;5;4m)\u001b[39m",
+        "\u001b[38;5;2m2\u001b[39m                                                                               ",
+        "\u001b[38;5;2m3\u001b[39m                                                                               ",
+        "\u001b[38;5;2m4\u001b[39m                                                                               ",
+        "\u001b[38;5;2m5\u001b[39m                                                                               ",
+        "\u001b[38;5;2m6\u001b[39m                                                                               "
+      ],
       "expected": [
         "",
         "\u001b[38;5;4m... (1 earlier lines,\u001b[39m \u001b[38;5;6malt+x/ctrl+o\u001b[39m\u001b[38;5;4m to expand\u001b[39m\u001b[38;5;4m)\u001b[39m",
@@ -2351,6 +2369,35 @@
       "test": "bash_expand_hint_changes_on_retained_render",
       "op": "hint_rebind",
       "input": {},
+      "expected_macos": {
+        "before": [
+          "",
+          "\u001b[38;5;4m... (1 earlier lines,\u001b[39m \u001b[38;5;6mctrl+o\u001b[39m\u001b[38;5;4m to expand\u001b[39m\u001b[38;5;4m)\u001b[39m",
+          "\u001b[38;5;2m2\u001b[39m                                                                               ",
+          "\u001b[38;5;2m3\u001b[39m                                                                               ",
+          "\u001b[38;5;2m4\u001b[39m                                                                               ",
+          "\u001b[38;5;2m5\u001b[39m                                                                               ",
+          "\u001b[38;5;2m6\u001b[39m                                                                               "
+        ],
+        "after": [
+          "",
+          "\u001b[38;5;4m... (1 earlier lines,\u001b[39m \u001b[38;5;6moption+x\u001b[39m\u001b[38;5;4m to expand\u001b[39m\u001b[38;5;4m)\u001b[39m",
+          "\u001b[38;5;2m2\u001b[39m                                                                               ",
+          "\u001b[38;5;2m3\u001b[39m                                                                               ",
+          "\u001b[38;5;2m4\u001b[39m                                                                               ",
+          "\u001b[38;5;2m5\u001b[39m                                                                               ",
+          "\u001b[38;5;2m6\u001b[39m                                                                               "
+        ],
+        "afterTheme": [
+          "",
+          "\u001b[38;5;24m... (1 earlier lines,\u001b[39m \u001b[38;5;26moption+x\u001b[39m\u001b[38;5;24m to expand\u001b[39m\u001b[38;5;24m)\u001b[39m",
+          "\u001b[38;5;2m2\u001b[39m                                                                               ",
+          "\u001b[38;5;2m3\u001b[39m                                                                               ",
+          "\u001b[38;5;2m4\u001b[39m                                                                               ",
+          "\u001b[38;5;2m5\u001b[39m                                                                               ",
+          "\u001b[38;5;2m6\u001b[39m                                                                               "
+        ]
+      },
       "expected": {
         "before": [
           "",

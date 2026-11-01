@@ -5973,6 +5973,12 @@
           "alt+x"
         ]
       },
+      "expected_macos": {
+        "text": "option+x/ctrl+o",
+        "hint": "\u001b[38;5;5moption+x/ctrl+o\u001b[39m\u001b[38;5;6m to expand\u001b[39m",
+        "raw": "\u001b[38;5;5mf2\u001b[39m\u001b[38;5;6m \u001b[39m",
+        "missing": "\u001b[38;5;5m\u001b[39m\u001b[38;5;6m help\u001b[39m"
+      },
       "expected": {
         "text": "alt+x/ctrl+o",
         "hint": "\u001b[38;5;5malt+x/ctrl+o\u001b[39m\u001b[38;5;6m to expand\u001b[39m",
@@ -5997,6 +6003,9 @@
           ]
         }
       },
+      "expected_macos": [
+        "\u001b[38;5;7m\u001b[1m[skill]\u001b[22m \u001b[39m\u001b[38;5;8mattio\u001b[39m\u001b[38;5;4m:1-3\u001b[39m\u001b[38;5;5m (option+x/ctrl+o to expand)\u001b[39m"
+      ],
       "expected": [
         "\u001b[38;5;7m\u001b[1m[skill]\u001b[22m \u001b[39m\u001b[38;5;8mattio\u001b[39m\u001b[38;5;4m:1-3\u001b[39m\u001b[38;5;5m (alt+x/ctrl+o to expand)\u001b[39m"
       ]
@@ -6179,6 +6188,9 @@
           "cwd": "/opt/maestro"
         }
       },
+      "expected_macos": [
+        "\u001b[38;5;1m\u001b[1mread docs\u001b[22m\u001b[39m \u001b[38;5;2mREADME.md\u001b[39m\u001b[38;5;5m (option+x/ctrl+o to expand)\u001b[39m"
+      ],
       "expected": [
         "\u001b[38;5;1m\u001b[1mread docs\u001b[22m\u001b[39m \u001b[38;5;2mREADME.md\u001b[39m\u001b[38;5;5m (alt+x/ctrl+o to expand)\u001b[39m"
       ]
@@ -6221,6 +6233,9 @@
           "cwd": "/elsewhere"
         }
       },
+      "expected_macos": [
+        "\u001b[38;5;1m\u001b[1mread docs\u001b[22m\u001b[39m \u001b[38;5;2mREADME.md\u001b[39m\u001b[38;5;5m (option+x/ctrl+o to expand)\u001b[39m"
+      ],
       "expected": [
         "\u001b[38;5;1m\u001b[1mread docs\u001b[22m\u001b[39m \u001b[38;5;2mREADME.md\u001b[39m\u001b[38;5;5m (alt+x/ctrl+o to expand)\u001b[39m"
       ]

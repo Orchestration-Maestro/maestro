@@ -299,6 +299,11 @@ WSL runs the Unix path and is not that native-Windows case.
 
 ## Key names in hints
 
+On macOS, a binding such as `alt+x` appears as `option+x` in a hint or `Option+X`
+in `/hotkeys`. Keep `alt+x` in `keybindings.json`; the display name does not change
+which key triggers the action. The longer label can wrap a hint or widen a table
+column.
+
 Every hint spells its keys from the live registry through `key_text`, `key_display_text` and
 `format_key_text`, and none writes a key by hand. `key_text` joins the keys bound to an action
 with `/` as written, with `alt` shown as `option` on macOS. `key_display_text` also starts each

@@ -1542,6 +1542,97 @@
       "sibling": "steeringMode",
       "current": "one-at-a-time"
     },
+    "expected_macos": {
+      "before": {
+        "lines": [
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "> \u001b[7m \u001b[27m                                                                             ",
+          "",
+          "  Editor padding          \u001b[38;5;33m0\u001b[39m",
+          "  Autocomplete max items  \u001b[38;5;33m5\u001b[39m",
+          "  Clear on shrink         \u001b[38;5;33mfalse\u001b[39m",
+          "  Terminal progress       \u001b[38;5;33mfalse\u001b[39m",
+          "  Steering mode           \u001b[38;5;33mall\u001b[39m",
+          "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mFollow-up mode        \u001b[39m  \u001b[38;5;32mone-at-a-time\u001b[39m",
+          "  Transport               \u001b[38;5;33mauto\u001b[39m",
+          "  HTTP idle timeout       \u001b[38;5;33m5 min\u001b[39m",
+          "  Hide thinking           \u001b[38;5;33mfalse\u001b[39m",
+          "  Collapse changelog      \u001b[38;5;33mtrue\u001b[39m",
+          "\u001b[38;5;34m  (11/22)\u001b[39m",
+          "",
+          "\u001b[38;5;34m  Option+Enter queues follow-up messages until agent stops. 'one-at-a-time':\u001b[39m",
+          "\u001b[38;5;34m  deliver one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "",
+          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "events": []
+      },
+      "one": {
+        "lines": [
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "> \u001b[7m \u001b[27m                                                                             ",
+          "",
+          "  Editor padding          \u001b[38;5;33m0\u001b[39m",
+          "  Autocomplete max items  \u001b[38;5;33m5\u001b[39m",
+          "  Clear on shrink         \u001b[38;5;33mfalse\u001b[39m",
+          "  Terminal progress       \u001b[38;5;33mfalse\u001b[39m",
+          "  Steering mode           \u001b[38;5;33mall\u001b[39m",
+          "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mFollow-up mode        \u001b[39m  \u001b[38;5;32mall\u001b[39m",
+          "  Transport               \u001b[38;5;33mauto\u001b[39m",
+          "  HTTP idle timeout       \u001b[38;5;33m5 min\u001b[39m",
+          "  Hide thinking           \u001b[38;5;33mfalse\u001b[39m",
+          "  Collapse changelog      \u001b[38;5;33mtrue\u001b[39m",
+          "\u001b[38;5;34m  (11/22)\u001b[39m",
+          "",
+          "\u001b[38;5;34m  Option+Enter queues follow-up messages until agent stops. 'one-at-a-time':\u001b[39m",
+          "\u001b[38;5;34m  deliver one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "",
+          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "events": [
+          [
+            "FollowUpMode",
+            "all"
+          ]
+        ]
+      },
+      "after": {
+        "lines": [
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "> \u001b[7m \u001b[27m                                                                             ",
+          "",
+          "  Editor padding          \u001b[38;5;33m0\u001b[39m",
+          "  Autocomplete max items  \u001b[38;5;33m5\u001b[39m",
+          "  Clear on shrink         \u001b[38;5;33mfalse\u001b[39m",
+          "  Terminal progress       \u001b[38;5;33mfalse\u001b[39m",
+          "  Steering mode           \u001b[38;5;33mall\u001b[39m",
+          "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mFollow-up mode        \u001b[39m  \u001b[38;5;32mone-at-a-time\u001b[39m",
+          "  Transport               \u001b[38;5;33mauto\u001b[39m",
+          "  HTTP idle timeout       \u001b[38;5;33m5 min\u001b[39m",
+          "  Hide thinking           \u001b[38;5;33mfalse\u001b[39m",
+          "  Collapse changelog      \u001b[38;5;33mtrue\u001b[39m",
+          "\u001b[38;5;34m  (11/22)\u001b[39m",
+          "",
+          "\u001b[38;5;34m  Option+Enter queues follow-up messages until agent stops. 'one-at-a-time':\u001b[39m",
+          "\u001b[38;5;34m  deliver one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "",
+          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "events": [
+          [
+            "FollowUpMode",
+            "all"
+          ],
+          [
+            "FollowUpMode",
+            "one-at-a-time"
+          ]
+        ]
+      }
+    },
     "expected": {
       "before": {
         "lines": [
@@ -1642,6 +1733,97 @@
       "sibling": "steeringMode",
       "current": "all"
     },
+    "expected_macos": {
+      "before": {
+        "lines": [
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "> \u001b[7m \u001b[27m                                                                             ",
+          "",
+          "  Editor padding          \u001b[38;5;33m0\u001b[39m",
+          "  Autocomplete max items  \u001b[38;5;33m5\u001b[39m",
+          "  Clear on shrink         \u001b[38;5;33mfalse\u001b[39m",
+          "  Terminal progress       \u001b[38;5;33mfalse\u001b[39m",
+          "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
+          "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mFollow-up mode        \u001b[39m  \u001b[38;5;32mall\u001b[39m",
+          "  Transport               \u001b[38;5;33mauto\u001b[39m",
+          "  HTTP idle timeout       \u001b[38;5;33m5 min\u001b[39m",
+          "  Hide thinking           \u001b[38;5;33mfalse\u001b[39m",
+          "  Collapse changelog      \u001b[38;5;33mtrue\u001b[39m",
+          "\u001b[38;5;34m  (11/22)\u001b[39m",
+          "",
+          "\u001b[38;5;34m  Option+Enter queues follow-up messages until agent stops. 'one-at-a-time':\u001b[39m",
+          "\u001b[38;5;34m  deliver one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "",
+          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "events": []
+      },
+      "one": {
+        "lines": [
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "> \u001b[7m \u001b[27m                                                                             ",
+          "",
+          "  Editor padding          \u001b[38;5;33m0\u001b[39m",
+          "  Autocomplete max items  \u001b[38;5;33m5\u001b[39m",
+          "  Clear on shrink         \u001b[38;5;33mfalse\u001b[39m",
+          "  Terminal progress       \u001b[38;5;33mfalse\u001b[39m",
+          "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
+          "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mFollow-up mode        \u001b[39m  \u001b[38;5;32mone-at-a-time\u001b[39m",
+          "  Transport               \u001b[38;5;33mauto\u001b[39m",
+          "  HTTP idle timeout       \u001b[38;5;33m5 min\u001b[39m",
+          "  Hide thinking           \u001b[38;5;33mfalse\u001b[39m",
+          "  Collapse changelog      \u001b[38;5;33mtrue\u001b[39m",
+          "\u001b[38;5;34m  (11/22)\u001b[39m",
+          "",
+          "\u001b[38;5;34m  Option+Enter queues follow-up messages until agent stops. 'one-at-a-time':\u001b[39m",
+          "\u001b[38;5;34m  deliver one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "",
+          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "events": [
+          [
+            "FollowUpMode",
+            "one-at-a-time"
+          ]
+        ]
+      },
+      "after": {
+        "lines": [
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "> \u001b[7m \u001b[27m                                                                             ",
+          "",
+          "  Editor padding          \u001b[38;5;33m0\u001b[39m",
+          "  Autocomplete max items  \u001b[38;5;33m5\u001b[39m",
+          "  Clear on shrink         \u001b[38;5;33mfalse\u001b[39m",
+          "  Terminal progress       \u001b[38;5;33mfalse\u001b[39m",
+          "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
+          "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mFollow-up mode        \u001b[39m  \u001b[38;5;32mall\u001b[39m",
+          "  Transport               \u001b[38;5;33mauto\u001b[39m",
+          "  HTTP idle timeout       \u001b[38;5;33m5 min\u001b[39m",
+          "  Hide thinking           \u001b[38;5;33mfalse\u001b[39m",
+          "  Collapse changelog      \u001b[38;5;33mtrue\u001b[39m",
+          "\u001b[38;5;34m  (11/22)\u001b[39m",
+          "",
+          "\u001b[38;5;34m  Option+Enter queues follow-up messages until agent stops. 'one-at-a-time':\u001b[39m",
+          "\u001b[38;5;34m  deliver one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "",
+          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "events": [
+          [
+            "FollowUpMode",
+            "one-at-a-time"
+          ],
+          [
+            "FollowUpMode",
+            "all"
+          ]
+        ]
+      }
+    },
     "expected": {
       "before": {
         "lines": [
@@ -1741,6 +1923,97 @@
       "id": "follow-up-mode",
       "sibling": "steeringMode",
       "current": "future-mode"
+    },
+    "expected_macos": {
+      "before": {
+        "lines": [
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "> \u001b[7m \u001b[27m                                                                             ",
+          "",
+          "  Editor padding          \u001b[38;5;33m0\u001b[39m",
+          "  Autocomplete max items  \u001b[38;5;33m5\u001b[39m",
+          "  Clear on shrink         \u001b[38;5;33mfalse\u001b[39m",
+          "  Terminal progress       \u001b[38;5;33mfalse\u001b[39m",
+          "  Steering mode           \u001b[38;5;33mall\u001b[39m",
+          "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mFollow-up mode        \u001b[39m  \u001b[38;5;32mfuture-mode\u001b[39m",
+          "  Transport               \u001b[38;5;33mauto\u001b[39m",
+          "  HTTP idle timeout       \u001b[38;5;33m5 min\u001b[39m",
+          "  Hide thinking           \u001b[38;5;33mfalse\u001b[39m",
+          "  Collapse changelog      \u001b[38;5;33mtrue\u001b[39m",
+          "\u001b[38;5;34m  (11/22)\u001b[39m",
+          "",
+          "\u001b[38;5;34m  Option+Enter queues follow-up messages until agent stops. 'one-at-a-time':\u001b[39m",
+          "\u001b[38;5;34m  deliver one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "",
+          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "events": []
+      },
+      "one": {
+        "lines": [
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "> \u001b[7m \u001b[27m                                                                             ",
+          "",
+          "  Editor padding          \u001b[38;5;33m0\u001b[39m",
+          "  Autocomplete max items  \u001b[38;5;33m5\u001b[39m",
+          "  Clear on shrink         \u001b[38;5;33mfalse\u001b[39m",
+          "  Terminal progress       \u001b[38;5;33mfalse\u001b[39m",
+          "  Steering mode           \u001b[38;5;33mall\u001b[39m",
+          "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mFollow-up mode        \u001b[39m  \u001b[38;5;32mone-at-a-time\u001b[39m",
+          "  Transport               \u001b[38;5;33mauto\u001b[39m",
+          "  HTTP idle timeout       \u001b[38;5;33m5 min\u001b[39m",
+          "  Hide thinking           \u001b[38;5;33mfalse\u001b[39m",
+          "  Collapse changelog      \u001b[38;5;33mtrue\u001b[39m",
+          "\u001b[38;5;34m  (11/22)\u001b[39m",
+          "",
+          "\u001b[38;5;34m  Option+Enter queues follow-up messages until agent stops. 'one-at-a-time':\u001b[39m",
+          "\u001b[38;5;34m  deliver one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "",
+          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "events": [
+          [
+            "FollowUpMode",
+            "one-at-a-time"
+          ]
+        ]
+      },
+      "after": {
+        "lines": [
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "> \u001b[7m \u001b[27m                                                                             ",
+          "",
+          "  Editor padding          \u001b[38;5;33m0\u001b[39m",
+          "  Autocomplete max items  \u001b[38;5;33m5\u001b[39m",
+          "  Clear on shrink         \u001b[38;5;33mfalse\u001b[39m",
+          "  Terminal progress       \u001b[38;5;33mfalse\u001b[39m",
+          "  Steering mode           \u001b[38;5;33mall\u001b[39m",
+          "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mFollow-up mode        \u001b[39m  \u001b[38;5;32mall\u001b[39m",
+          "  Transport               \u001b[38;5;33mauto\u001b[39m",
+          "  HTTP idle timeout       \u001b[38;5;33m5 min\u001b[39m",
+          "  Hide thinking           \u001b[38;5;33mfalse\u001b[39m",
+          "  Collapse changelog      \u001b[38;5;33mtrue\u001b[39m",
+          "\u001b[38;5;34m  (11/22)\u001b[39m",
+          "",
+          "\u001b[38;5;34m  Option+Enter queues follow-up messages until agent stops. 'one-at-a-time':\u001b[39m",
+          "\u001b[38;5;34m  deliver one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "",
+          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "events": [
+          [
+            "FollowUpMode",
+            "one-at-a-time"
+          ],
+          [
+            "FollowUpMode",
+            "all"
+          ]
+        ]
+      }
     },
     "expected": {
       "before": {
@@ -3164,6 +3437,31 @@
     "test": "settings_selected_descriptions_and_scroll_are_exact",
     "input": {
       "id": "follow-up-mode"
+    },
+    "expected_macos": {
+      "lines": [
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "> \u001b[7m \u001b[27m                                                                             ",
+        "",
+        "  Editor padding          \u001b[38;5;33m0\u001b[39m",
+        "  Autocomplete max items  \u001b[38;5;33m5\u001b[39m",
+        "  Clear on shrink         \u001b[38;5;33mfalse\u001b[39m",
+        "  Terminal progress       \u001b[38;5;33mfalse\u001b[39m",
+        "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
+        "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mFollow-up mode        \u001b[39m  \u001b[38;5;32mall\u001b[39m",
+        "  Transport               \u001b[38;5;33mauto\u001b[39m",
+        "  HTTP idle timeout       \u001b[38;5;33m5 min\u001b[39m",
+        "  Hide thinking           \u001b[38;5;33mfalse\u001b[39m",
+        "  Collapse changelog      \u001b[38;5;33mtrue\u001b[39m",
+        "\u001b[38;5;34m  (11/22)\u001b[39m",
+        "",
+        "\u001b[38;5;34m  Option+Enter queues follow-up messages until agent stops. 'one-at-a-time':\u001b[39m",
+        "\u001b[38;5;34m  deliver one, wait for response. 'all': deliver all at once.\u001b[39m",
+        "",
+        "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ],
+      "events": []
     },
     "expected": {
       "lines": [

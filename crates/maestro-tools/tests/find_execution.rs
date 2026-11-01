@@ -60,6 +60,7 @@ fn check_wrapped_decoding() {
             op: "custom".into(),
             input: serde_json::json!({"wrapped":true,"params":params,"results":[]}),
             expected: serde_json::Value::Null,
+            expected_macos: None,
         };
         let observed = find_support::custom(&record);
         assert_eq!(observed.get("error").is_none(), accepted);
