@@ -4,6 +4,7 @@ use std::collections::BTreeSet;
 use std::ops::Range;
 
 use proc_macro2::{TokenStream, TokenTree};
+use syn::{parse::Parser, spanned::Spanned, visit::Visit};
 
 use crate::source::{Member, test_scope, test_spans};
 
@@ -77,15 +78,33 @@ fn strings(
         .collect();
     let mut bindings = inherited.clone();
     let mut command = false;
+    let mut local = None;
+    let mut skip = 0;
     for (index, token) in tokens.iter().enumerate() {
+        if index < skip {
+            continue;
+        }
+        if let Some((count, body, captured)) = closure_body(&tokens[index..], &bindings) {
+            strings(body, &captured, testing, found);
+            skip = index + count;
+            command = false;
+            continue;
+        }
         match token {
             TokenTree::Ident(name) => {
                 if name == "let" {
-                    local_binding(&tokens[index + 1..], &mut bindings);
+                    local = Some(index + 1);
                 }
                 command = name == "Command" || name == "command" || (command && name == "new");
             }
-            TokenTree::Punct(punct) => command &= punct.as_char() == ':',
+            TokenTree::Punct(punct) => {
+                if punct.as_char() == ';'
+                    && let Some(start) = local.take()
+                {
+                    local_binding(&tokens[start..index], &mut bindings);
+                }
+                command &= punct.as_char() == ':';
+            }
             TokenTree::Literal(_) => {
                 if let Some(text) = literal_text(token)
                     && text != "open"
@@ -105,6 +124,44 @@ fn strings(
     }
 }
 
+/// Scan a closure body with only its unshadowed captures, leaving outer bindings intact.
+fn closure_body(
+    tokens: &[TokenTree],
+    inherited: &BTreeSet<String>,
+) -> Option<(usize, TokenStream, BTreeSet<String>)> {
+    if !matches!(tokens.first(), Some(TokenTree::Punct(punct)) if punct.as_char() == '|') {
+        return None;
+    }
+    let parser = |input: syn::parse::ParseStream<'_>| {
+        let closure = input.parse::<syn::ExprClosure>()?;
+        let rest = input.parse::<TokenStream>()?;
+        Ok((closure, rest.into_iter().count()))
+    };
+    let (closure, remaining) = parser.parse2(tokens.iter().cloned().collect()).ok()?;
+    let count = tokens.len() - remaining;
+    let start = closure.body.span().start();
+    let body = tokens[..count]
+        .iter()
+        .filter(|token| token.span().start() >= start)
+        .cloned()
+        .collect();
+    let mut captured = inherited.clone();
+    for parameter in &closure.inputs {
+        Parameters(&mut captured).visit_pat(parameter);
+    }
+    Some((count, body, captured))
+}
+
+/// Remove parameter-bound identifiers, including names inside destructuring patterns.
+struct Parameters<'a>(&'a mut BTreeSet<String>);
+
+impl<'ast> Visit<'ast> for Parameters<'_> {
+    fn visit_pat_ident(&mut self, pattern: &'ast syn::PatIdent) {
+        self.0.remove(&pattern.ident.to_string());
+        syn::visit::visit_pat_ident(self, pattern);
+    }
+}
+
 /// Decode a string token without treating other literal kinds as executable names.
 fn literal_text(token: &TokenTree) -> Option<String> {
     let TokenTree::Literal(literal) = token else {
@@ -115,7 +172,7 @@ fn literal_text(token: &TokenTree) -> Option<String> {
         .map(|text| text.value())
 }
 
-/// Track a simple local literal initializer, replacing a shadowed binding in this group.
+/// Apply a simple local binding after its initializer has been scanned.
 fn local_binding(tokens: &[TokenTree], bindings: &mut BTreeSet<String>) {
     let mut tokens = tokens.iter();
     let name = tokens.next();
