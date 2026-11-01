@@ -256,7 +256,7 @@ pub struct Closed {
 pub struct Peer {
     address: SocketAddr,
     /// Observations shared with the server worker.
-    pub(crate) observed: Arc<Observed>,
+    pub(super) observed: Arc<Observed>,
     stop: Arc<AtomicBool>,
     worker: Option<JoinHandle<std::io::Result<()>>>,
 }
@@ -339,15 +339,15 @@ impl Write for Wire {
 }
 
 /// What the server observed about its connections, shared with the peer that reports it.
-pub(crate) struct Observed {
+pub(super) struct Observed {
     /// Commands the server read, as its log.
-    pub(crate) commands: Arc<watch::Sender<Vec<String>>>,
+    pub(super) commands: watch::Sender<Vec<String>>,
     /// The bytes the server wrote to every connection.
-    pub(crate) written: Arc<AtomicUsize>,
+    pub(super) written: Arc<AtomicUsize>,
     /// Whether the client closed the control connection.
-    pub(crate) control_closed: Arc<AtomicBool>,
+    pub(super) control_closed: AtomicBool,
     /// Whether the client closed a data connection.
-    pub(crate) data_closed: Arc<AtomicBool>,
+    pub(super) data_closed: AtomicBool,
 }
 
 impl Observed {
@@ -679,10 +679,10 @@ pub fn serve(scenarios: Vec<Scenario>) -> TestResult<Peer> {
     let listener = TcpListener::bind("127.0.0.1:0")?;
     let address = listener.local_addr()?;
     let observed = Arc::new(Observed {
-        commands: Arc::new(watch::Sender::new(Vec::new())),
+        commands: watch::Sender::new(Vec::new()),
         written: Arc::new(AtomicUsize::new(0)),
-        control_closed: Arc::new(AtomicBool::new(false)),
-        data_closed: Arc::new(AtomicBool::new(false)),
+        control_closed: AtomicBool::new(false),
+        data_closed: AtomicBool::new(false),
     });
     let stop = Arc::new(AtomicBool::new(false));
     let stopping = Arc::clone(&stop);

@@ -1,5 +1,7 @@
 //! Live FTP peer observations compiled only by the native library tests.
 
+#![cfg(not(target_arch = "wasm32"))]
+
 use std::sync::atomic::Ordering;
 
 use super::ftp_server::Peer;

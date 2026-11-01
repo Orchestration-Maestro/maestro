@@ -126,17 +126,6 @@ The theme examples `brand_themes` and `browser_author_inputs` run their author
 work on native targets; their browser entrypoints do nothing. Native usage
 messages and generated filenames are unchanged.
 
-### FTP peer support
-
-The models tests share the scripted peer in
-`crates/maestro-models/tests/support/ftp_server.rs`. Library tests also load
-`ftp_server_timing.rs` for `Peer::reached` and `Peer::written`; the integration
-program uses only the common peer. Check both programs for unused support:
-
-```sh
-cargo clippy -p maestro-models --all-targets --locked -- -D warnings
-```
-
 ## Browser integration qualification
 
 Lint the browser library, examples and complete integration target with the
@@ -508,6 +497,17 @@ such as name filters and `-- --ignored`, `-- --exact NAME` or `-- --nocapture`.
 An unmatched ordinary-test filter fails rather than passing an empty selection.
 Use direct `cargo test --doc` for doctest-only runs and direct `cargo nextest run`
 for runner-only flags or target selection. `tui-test-ansi` runs only nextest.
+
+### FTP peer support
+
+The models tests share the scripted peer in
+`crates/maestro-models/tests/support/ftp_server.rs`. Library tests also load
+`ftp_server_timing.rs` for `Peer::reached` and `Peer::written`; the integration
+program uses only the common peer. Check both programs for unused support:
+
+```sh
+cargo clippy -p maestro-models --all-targets --locked -- -D warnings
+```
 
 ### Slowest-first test order
 
