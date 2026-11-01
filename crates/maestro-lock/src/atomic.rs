@@ -1,7 +1,7 @@
 //! Atomic byte publication for readers that do not hold a write lock.
 use crate::{Committed, identity::resolve_write_target, replace::sync_parent_dir};
 use std::{
-    fs::{self, File},
+    fs::{self, File, OpenOptions},
     io::{self, Write},
     path::{Path, PathBuf},
     time::{SystemTime, UNIX_EPOCH},
@@ -29,10 +29,13 @@ pub enum Temporary<'a> {
 ///
 /// Missing parents are created. Precommit failures remove the temporary file;
 /// parent-sync failures after rename are returned as a committed warning.
-/// Existing permission bits are retained. Hard links, ownership and ACLs are not preserved.
+/// Writers share canonical target exclusion. Stale fixed temporaries are unlinked
+/// before exclusive creation. Existing permission bits are retained from creation
+/// on Unix. Hard links, ownership and ACLs are not preserved.
 ///
 /// # Errors
-/// Returns native link-resolution, directory-creation, temporary-write, sync or rename errors.
+/// Returns native resolution, lock, recovery, creation, write, sync or rename errors.
+/// A fixed temporary extension that names the target returns `InvalidInput`.
 pub fn atomic_replace(
     path: &Path,
     bytes: &[u8],
@@ -48,10 +51,11 @@ pub fn atomic_replace(
         .filter(|parent| !parent.as_os_str().is_empty())
         .unwrap_or_else(|| Path::new("."));
     fs::create_dir_all(parent)?;
-    let temporary = temporary_path(&target, temporary);
+    let _guard = crate::acquire_write(&target, false)?;
+    let temporary = prepare_temporary(&target, temporary)?;
     #[cfg(test)]
     crate::replace::tests::before_create(&temporary)?;
-    let file = File::create(&temporary)?;
+    let file = create_temporary(&temporary, &target)?;
     #[cfg(test)]
     crate::replace::tests::created();
     let result = retain_permissions(&file, &target)
@@ -69,6 +73,43 @@ pub fn atomic_replace(
     Ok(Committed {
         dir_sync: sync_parent_dir(parent).err(),
     })
+}
+
+/// Removes stale fixed entries under exclusion without following their links.
+fn prepare_temporary(target: &Path, policy: Temporary<'_>) -> io::Result<PathBuf> {
+    let temporary = temporary_path(target, policy);
+    if temporary == target {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "temporary path names the publication target",
+        ));
+    }
+    if matches!(policy, Temporary::Fixed(_)) {
+        match fs::remove_file(&temporary) {
+            Err(error) if error.kind() == io::ErrorKind::NotFound => (),
+            result => result?,
+        }
+    }
+    Ok(temporary)
+}
+
+/// Exclusively creates a temporary with no initial Unix access beyond the target's.
+fn create_temporary(temporary: &Path, target: &Path) -> io::Result<File> {
+    let mut open = OpenOptions::new();
+    open.write(true).create_new(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
+        let mode = match fs::metadata(target) {
+            Ok(metadata) => metadata.permissions().mode(),
+            Err(error) if error.kind() == io::ErrorKind::NotFound => 0o666,
+            Err(error) => return Err(error),
+        };
+        open.mode(mode);
+    }
+    #[cfg(not(unix))]
+    let _ = target;
+    open.open(temporary)
 }
 
 /// Keeps existing access bits before any intended bytes reach the temporary file.

@@ -62,7 +62,11 @@ file; a parent-sync error after rename is returned as a committed warning.
 
 The caller chooses whether to follow final symbolic links and whether to use a
 fixed temporary extension or a hidden name containing the target name, process
-ID and nanoseconds. Existing permission bits are applied before writing bytes.
+ID and nanoseconds. Writers hold canonical target exclusion through publication.
+A stale fixed temporary is unlinked without following it, then the new temporary
+is created exclusively. An intervening creator is left untouched and publication
+fails. On Unix, creation uses existing target permission bits from the start;
+final permission bits are retained before writing bytes.
 Renaming replaces the inode: hard links keep their old bytes, while ownership and
-ACLs are not preserved. This operation does not acquire the recoverable writer's
-lock or replay its recovery records.
+ACLs are not preserved. Lock acquisition completes any pending recovery record
+before atomic publication begins; the new atomic write does not stage a recovery record.
