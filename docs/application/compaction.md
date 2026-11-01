@@ -18,6 +18,8 @@ the retained messages. The original entries remain in the session tree.
 A split turn produces a history summary and a summary of the turn's early
 messages. The combined summary places history first, then the turn context.
 Tool results stay with their calls when Maestro chooses the retained range.
+Summary requests include visible text, tool calls and tool results, but omit
+assistant thinking.
 
 A memory-only session supports compaction without creating a session file.
 Manual compaction announces one `compaction_start` and one `compaction_end`, both
@@ -56,6 +58,16 @@ Automatic compaction starts when reported context use is strictly greater than
 `contextWindow - reserveTokens`. Equality does not trigger compaction. Disabling
 automatic compaction suppresses these checks without disabling manual compaction.
 
+After threshold compaction, the same prompt continues any queued messages. This
+includes follow-ups queued directly on the agent when the application's pending
+message count is zero. The continuation receives the summary and retained
+messages before its queued content.
+
+An error response uses the last successful usage only when that usage is newer
+than the latest compaction. Without fresh usage, no threshold compaction starts.
+Overflow recovery compacts and retries once per turn; a second overflow reports
+that recovery failed instead of compacting again.
+
 ## Reference
 
 `compact(custom_instructions)` returns an error when credentials are unavailable,
@@ -63,7 +75,16 @@ the branch cannot be compacted, an operation fails or compaction is cancelled.
 `abort_compaction()` cancels a running compaction. `is_compacting()` reports
 whether compaction or branch summarization is running.
 
-See [compaction and retries](recovery.md) for recovery and cancellation details.
+The saved compaction settings are:
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `enabled` | `true` | Run automatic checks |
+| `reserveTokens` | `16384` | Leave room for the model's response |
+| `keepRecentTokens` | `20000` | Budget for recent retained messages |
+
+See [compaction and retries](recovery.md) for recovery and cancellation details,
+and [summary generation](../compaction.md) for the lower-level summary API.
 
 ## Examples
 

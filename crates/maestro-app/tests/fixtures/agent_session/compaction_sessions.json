@@ -74,5 +74,84 @@
       }
     ],
     "stored_count": 1
+  },
+  "public_queue": {
+    "requests": [
+      [
+        {
+          "role": "user",
+          "text": "first"
+        },
+        {
+          "role": "assistant",
+          "text": "one"
+        },
+        {
+          "role": "user",
+          "text": "second"
+        },
+        {
+          "role": "assistant",
+          "text": "two"
+        },
+        {
+          "role": "user",
+          "text": "trigger threshold"
+        }
+      ],
+      [
+        {
+          "role": "user",
+          "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\npublic auto summary\n</summary>"
+        },
+        {
+          "role": "assistant",
+          "text": "large response"
+        },
+        {
+          "role": "user",
+          "text": "queued custom"
+        }
+      ]
+    ],
+    "events": [
+      {
+        "type": "compaction_start",
+        "reason": "threshold"
+      },
+      {
+        "type": "compaction_end",
+        "reason": "threshold",
+        "aborted": false,
+        "will_retry": false,
+        "result": {
+          "summary": "public auto summary",
+          "first_kept_index": 5,
+          "tokens_before": 199500
+        }
+      }
+    ],
+    "messages": [
+      {
+        "role": "compactionSummary",
+        "text": "public auto summary"
+      },
+      {
+        "role": "assistant",
+        "text": "large response",
+        "stopReason": "stop"
+      },
+      {
+        "role": "custom",
+        "text": "queued custom"
+      },
+      {
+        "role": "assistant",
+        "text": "queue consumed",
+        "stopReason": "stop"
+      }
+    ],
+    "pending": 0,
+    "queued": false
   }
 }

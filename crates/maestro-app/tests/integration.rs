@@ -1,6 +1,7 @@
 //! Shared integration-test executable.
 #![cfg(test)]
 
+mod agent_session_auto_compaction_queue_checks;
 mod agent_session_branch_summary_checks;
 mod agent_session_branching_checks;
 mod agent_session_compaction_checks;

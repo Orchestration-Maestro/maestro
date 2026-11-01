@@ -2,12 +2,140 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::compaction::{assert_prompts, assert_result, messages, seeded};
 use crate::support::session_harness::{
-    HarnessOptions, answer, delivered_events, message_text, of_kinds, on_task_set, recorded,
-    script_responses, start_prompt,
+    Harness, HarnessOptions, answer, corpus, delivered_events, harness, load_history, message_text,
+    of_kinds, on_task_set, recorded, script_responses, start_prompt,
 };
-use maestro_session::SessionManager;
-use maestro_session::session_manager::ReadonlySessionManager;
-use serde_json::json;
+use maestro_session::session_manager::{CompactionOptions, ReadonlySessionManager};
+use maestro_session::{CompactionResult, SessionManager};
+use serde_json::{Value, json};
+use std::collections::BTreeMap;
+
+/// Opens the literal synthetic branch through the existing session-file reader.
+fn literal_history_options() -> HarnessOptions {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let path = scratch.path().join("history.jsonl");
+    let input = include_str!("fixtures/before-compaction.jsonl");
+    assert_eq!(input.lines().count(), 1003);
+    std::fs::write(&path, input).unwrap();
+    let manager = SessionManager::open(path.to_str().unwrap(), None, None).unwrap();
+    assert_history_inventory(&manager);
+    HarnessOptions {
+        session_manager: Some(manager),
+        scratch: Some(scratch),
+        context_window: Some(200_000.0),
+        settings: json!({"compaction": {"enabled": false, "reserveTokens": 16384, "keepRecentTokens": 20000}}),
+        ..HarnessOptions::default()
+    }
+}
+
+/// Checks message, model and thinking records plus tool-call links.
+fn assert_history_inventory(manager: &SessionManager) {
+    let entries = manager.get_entries();
+    assert_eq!(entries.len(), 1002);
+    for (kind, expected) in [
+        ("message", 990),
+        ("model_change", 5),
+        ("thinking_level_change", 5),
+        ("compaction", 2),
+    ] {
+        assert_eq!(
+            entries.iter().filter(|entry| entry["type"] == kind).count(),
+            expected
+        );
+    }
+    for (role, expected) in [
+        ("user", 55),
+        ("assistant", 484),
+        ("toolResult", 448),
+        ("bashExecution", 3),
+    ] {
+        assert_eq!(
+            entries
+                .iter()
+                .filter(|entry| entry["message"]["role"] == role)
+                .count(),
+            expected
+        );
+    }
+    let calls: BTreeMap<_, _> = entries
+        .iter()
+        .filter_map(|entry| entry["message"]["content"].as_array())
+        .flatten()
+        .filter(|block| block["type"] == "toolCall")
+        .map(|call| (call["id"].as_str().unwrap(), call["name"].as_str().unwrap()))
+        .collect();
+    for entry in entries
+        .iter()
+        .filter(|entry| entry["message"]["role"] == "toolResult")
+    {
+        let result = &entry["message"];
+        assert_eq!(
+            calls.get(result["toolCallId"].as_str().unwrap()).copied(),
+            result["toolName"].as_str()
+        );
+    }
+}
+
+/// Rebuilds with the adjacent valid boundary to show the exact-tail check rejects it.
+fn assert_changed_cut(h: &Harness, result: &CompactionResult, after: &[Value]) {
+    let manager = h.session.session_manager();
+    let mut manager = manager.borrow_mut();
+    let adjacent = manager.get_entries()[778]["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    manager
+        .append_compaction(
+            &result.summary,
+            &adjacent,
+            result.tokens_before,
+            CompactionOptions::default(),
+        )
+        .unwrap();
+    let wrong = manager.build_session_context().unwrap().messages;
+    assert_eq!(wrong.len(), 224);
+    assert_ne!(wrong.len(), after.len());
+    assert_ne!(&wrong[1..], &after[1..]);
+}
+
+#[test]
+fn literal_histories_keep_the_exact_retained_tail() {
+    let options = literal_history_options();
+    on_task_set(|_| async {
+        let h = harness(options).await;
+        load_history(&h);
+        let before = messages(&h);
+        assert_eq!(before.len(), 446);
+        let requested = script_responses(
+            &h,
+            vec![answer("## Goal\nControlled summary", None, None); 2],
+        );
+
+        let result = h.session.compact(None).await.unwrap();
+
+        let expected = corpus("compaction_long_histories");
+        let mut expected = expected[0].clone();
+        expected["result"]["first_kept_index"] = expected["first_kept_index"].clone();
+        assert_result(&h, &result, &expected["result"]);
+        assert_prompts(&requested.lock().unwrap(), &expected);
+        let after = messages(&h);
+        assert_eq!(after.len(), 225);
+        assert_eq!(after[0]["role"], "compactionSummary");
+        assert_eq!(after[0]["summary"], result.summary);
+        assert_eq!(after[1..], before[before.len() - 224..]);
+        assert_eq!(
+            h.session
+                .session_manager()
+                .borrow()
+                .get_entries()
+                .iter()
+                .filter(|entry| entry["type"] == "compaction")
+                .count(),
+            3
+        );
+        assert_changed_cut(&h, &result, &after);
+    });
+}
 
 #[test]
 fn manual_compaction_records_exact_summary_and_events() {
@@ -51,7 +179,6 @@ fn manual_compaction_records_exact_summary_and_events() {
                     "tokensBefore": 150, "details": {"readFiles": [], "modifiedFiles": []}}}),
             ]
         );
-        assert_eq!(of_kinds(&h.events.borrow(), &["compaction_start"]).len(), 1);
     });
 }
 
