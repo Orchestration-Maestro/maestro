@@ -175,7 +175,20 @@ pub fn create_javascript_repl_tool<V: SandboxValue>(
         Tool {
             name: "javascript_repl".into(),
             description: String::new(),
-            parameters: serde_json::json!({"type":"object","required":["title","code"],"properties":{"title":{"type":"string","description":"Brief title describing what the code snippet tries to achieve in active form, e.g. 'Calculating sum'"},"code":{"type":"string","description":"JavaScript code to execute"}}}),
+            parameters: maestro_models::ParameterSchema::authored(
+                serde_json::json!({"type":"object","required":["title","code"],"properties":{"title":{"type":"string","description":"Brief title describing what the code snippet tries to achieve in active form, e.g. 'Calculating sum'"},"code":{"type":"string","description":"JavaScript code to execute"}}}),
+                [
+                    (String::new(), maestro_models::SchemaKind::Object),
+                    (
+                        "/properties/title".to_owned(),
+                        maestro_models::SchemaKind::String,
+                    ),
+                    (
+                        "/properties/code".to_owned(),
+                        maestro_models::SchemaKind::String,
+                    ),
+                ],
+            ),
         },
         "JavaScript REPL".into(),
         SharedHandle::new(move |_, args: JavaScriptReplParams, signal, _| {
@@ -208,6 +221,26 @@ pub fn create_javascript_repl_tool<V: SandboxValue>(
         tool: SharedHandle::new(RwLock::new(tool)),
         runtime_providers_factory,
         sandbox_url_provider,
+    }
+}
+#[cfg(target_arch = "wasm32")]
+impl<V: SandboxValue> JavaScriptReplTool<V> {
+    /// The registered tool as an entry of a browser-local session.
+    ///
+    /// The entry shares this tool's callbacks, so it reads the current runtime providers and
+    /// sandbox address on every description and call.
+    #[must_use]
+    pub fn local_tool(&self) -> SharedAgentTool<maestro_models::Local> {
+        use maestro_agent::AgentExecution as _;
+        let tool = read(&self.tool);
+        std::rc::Rc::new(RwLock::new(maestro_agent::LocalAgentTool {
+            definition: maestro_models::Threaded::local_definition(&tool.definition),
+            description: tool.description.clone(),
+            label: tool.label.clone(),
+            prepare_arguments: tool.prepare_arguments.clone(),
+            execute: tool.execute.clone(),
+            execution_mode: tool.execution_mode,
+        }))
     }
 }
 /// Execute the configured call and encode its downloads.

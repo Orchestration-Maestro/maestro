@@ -5,6 +5,7 @@ use notify::{Event, RecommendedWatcher, RecursiveMode, Watcher};
 use std::{cell::Cell, io, path::Path, rc::Rc, time::Duration};
 use tokio::sync::mpsc::{UnboundedSender, unbounded_channel};
 use tokio::task::{JoinHandle, LocalSet};
+use tokio::time::Instant;
 
 /// Notifications and timers delivered on a caller-driven [`LocalSet`].
 ///
@@ -79,12 +80,40 @@ impl WatchOperations for NativeWatchOperations {
     }
 
     fn schedule(&self, delay: Duration, callback: Box<dyn FnOnce()>) -> Box<dyn WatchTimer> {
-        let task = self.local.spawn_local(async move {
-            tokio::time::sleep(delay).await;
-            callback();
-        });
-        Box::new(Aborting(task))
+        Box::new(NativeTimer::at(
+            &self.local,
+            Instant::now() + delay,
+            callback,
+        ))
     }
+}
+
+/// A one-shot callback that runs at its deadline and is cancelled when dropped.
+pub struct NativeTimer(Aborting);
+
+impl NativeTimer {
+    /// Run `callback` at `deadline` on `local`, never before this method returns.
+    #[must_use]
+    pub fn at(local: &LocalSet, deadline: Instant, callback: Box<dyn FnOnce()>) -> Self {
+        Self(Aborting(local.spawn_local(until(deadline, callback))))
+    }
+
+    /// Run `callback` at `deadline` on the local set this task runs in, never before this
+    /// method returns.
+    ///
+    /// The caller must already run on a [`LocalSet`].
+    #[must_use]
+    pub fn due(deadline: Instant, callback: Box<dyn FnOnce()>) -> Self {
+        Self(Aborting(tokio::task::spawn_local(until(
+            deadline, callback,
+        ))))
+    }
+}
+
+/// Waits for `deadline`, then runs `callback`.
+async fn until(deadline: Instant, callback: Box<dyn FnOnce()>) {
+    tokio::time::sleep_until(deadline).await;
+    callback();
 }
 
 /// Entry names an event changed, excluding reads; `None` marks an unknown name.
@@ -105,12 +134,19 @@ pub(super) fn entry_names(event: &Event, dir: &Path) -> Vec<Option<String>> {
         .collect()
 }
 
-/// A native timer or receiver task that is aborted when dropped.
+/// A task that is aborted when dropped or cancelled.
 struct Aborting(JoinHandle<()>);
+
+impl Aborting {
+    /// Prevents the task from running if it has not finished yet.
+    fn cancel(&mut self) {
+        self.0.abort();
+    }
+}
 
 impl Drop for Aborting {
     fn drop(&mut self) {
-        self.0.abort();
+        self.cancel();
     }
 }
 
@@ -146,8 +182,8 @@ impl Drop for NativeWatcher {
     }
 }
 
-impl WatchTimer for Aborting {
+impl WatchTimer for NativeTimer {
     fn cancel(&mut self) {
-        self.0.abort();
+        self.0.cancel();
     }
 }

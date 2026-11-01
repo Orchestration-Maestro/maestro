@@ -1,0 +1,846 @@
+{
+  "registrations": [
+    "model_select"
+  ],
+  "rows": [
+    {
+      "name": "set-missing",
+      "event": {
+        "type": "model_select",
+        "model": {
+          "id": "new-id",
+          "name": "Controlled model",
+          "api": "openai-completions",
+          "provider": "new-provider",
+          "baseUrl": "https://example.invalid",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 1024
+        },
+        "source": "set"
+      },
+      "effects": [
+        [
+          "notify",
+          "Model: new-provider/new-id",
+          "info"
+        ],
+        [
+          "setStatus",
+          "model",
+          "🤖 new-id"
+        ],
+        [
+          "stdout",
+          "[model_select] none → new-provider/new-id (set)\n"
+        ]
+      ],
+      "outcome": {
+        "ok": true
+      }
+    },
+    {
+      "name": "set-null",
+      "event": {
+        "type": "model_select",
+        "model": {
+          "id": "new-id",
+          "name": "Controlled model",
+          "api": "openai-completions",
+          "provider": "new-provider",
+          "baseUrl": "https://example.invalid",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 1024
+        },
+        "source": "set",
+        "previousModel": null
+      },
+      "effects": [
+        [
+          "notify",
+          "Model: new-provider/new-id",
+          "info"
+        ],
+        [
+          "setStatus",
+          "model",
+          "🤖 new-id"
+        ],
+        [
+          "stdout",
+          "[model_select] none → new-provider/new-id (set)\n"
+        ]
+      ],
+      "outcome": {
+        "ok": true
+      }
+    },
+    {
+      "name": "set-different",
+      "event": {
+        "type": "model_select",
+        "model": {
+          "id": "new-id",
+          "name": "Controlled model",
+          "api": "openai-completions",
+          "provider": "new-provider",
+          "baseUrl": "https://example.invalid",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 1024
+        },
+        "source": "set",
+        "previousModel": {
+          "id": "old-id",
+          "name": "Controlled model",
+          "api": "openai-completions",
+          "provider": "old-provider",
+          "baseUrl": "https://example.invalid",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 1024
+        }
+      },
+      "effects": [
+        [
+          "notify",
+          "Model: new-provider/new-id",
+          "info"
+        ],
+        [
+          "setStatus",
+          "model",
+          "🤖 new-id"
+        ],
+        [
+          "stdout",
+          "[model_select] old-provider/old-id → new-provider/new-id (set)\n"
+        ]
+      ],
+      "outcome": {
+        "ok": true
+      }
+    },
+    {
+      "name": "set-same",
+      "event": {
+        "type": "model_select",
+        "model": {
+          "id": "new-id",
+          "name": "Controlled model",
+          "api": "openai-completions",
+          "provider": "new-provider",
+          "baseUrl": "https://example.invalid",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 1024
+        },
+        "source": "set",
+        "previousModel": {
+          "id": "new-id",
+          "name": "Controlled model",
+          "api": "openai-completions",
+          "provider": "new-provider",
+          "baseUrl": "https://example.invalid",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 1024
+        }
+      },
+      "effects": [
+        [
+          "notify",
+          "Model: new-provider/new-id",
+          "info"
+        ],
+        [
+          "setStatus",
+          "model",
+          "🤖 new-id"
+        ],
+        [
+          "stdout",
+          "[model_select] new-provider/new-id → new-provider/new-id (set)\n"
+        ]
+      ],
+      "outcome": {
+        "ok": true
+      }
+    },
+    {
+      "name": "cycle-missing",
+      "event": {
+        "type": "model_select",
+        "model": {
+          "id": "new-id",
+          "name": "Controlled model",
+          "api": "openai-completions",
+          "provider": "new-provider",
+          "baseUrl": "https://example.invalid",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 1024
+        },
+        "source": "cycle"
+      },
+      "effects": [
+        [
+          "notify",
+          "Model: new-provider/new-id",
+          "info"
+        ],
+        [
+          "setStatus",
+          "model",
+          "🤖 new-id"
+        ],
+        [
+          "stdout",
+          "[model_select] none → new-provider/new-id (cycle)\n"
+        ]
+      ],
+      "outcome": {
+        "ok": true
+      }
+    },
+    {
+      "name": "cycle-null",
+      "event": {
+        "type": "model_select",
+        "model": {
+          "id": "new-id",
+          "name": "Controlled model",
+          "api": "openai-completions",
+          "provider": "new-provider",
+          "baseUrl": "https://example.invalid",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 1024
+        },
+        "source": "cycle",
+        "previousModel": null
+      },
+      "effects": [
+        [
+          "notify",
+          "Model: new-provider/new-id",
+          "info"
+        ],
+        [
+          "setStatus",
+          "model",
+          "🤖 new-id"
+        ],
+        [
+          "stdout",
+          "[model_select] none → new-provider/new-id (cycle)\n"
+        ]
+      ],
+      "outcome": {
+        "ok": true
+      }
+    },
+    {
+      "name": "cycle-different",
+      "event": {
+        "type": "model_select",
+        "model": {
+          "id": "new-id",
+          "name": "Controlled model",
+          "api": "openai-completions",
+          "provider": "new-provider",
+          "baseUrl": "https://example.invalid",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 1024
+        },
+        "source": "cycle",
+        "previousModel": {
+          "id": "old-id",
+          "name": "Controlled model",
+          "api": "openai-completions",
+          "provider": "old-provider",
+          "baseUrl": "https://example.invalid",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 1024
+        }
+      },
+      "effects": [
+        [
+          "notify",
+          "Model: new-provider/new-id",
+          "info"
+        ],
+        [
+          "setStatus",
+          "model",
+          "🤖 new-id"
+        ],
+        [
+          "stdout",
+          "[model_select] old-provider/old-id → new-provider/new-id (cycle)\n"
+        ]
+      ],
+      "outcome": {
+        "ok": true
+      }
+    },
+    {
+      "name": "cycle-same",
+      "event": {
+        "type": "model_select",
+        "model": {
+          "id": "new-id",
+          "name": "Controlled model",
+          "api": "openai-completions",
+          "provider": "new-provider",
+          "baseUrl": "https://example.invalid",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 1024
+        },
+        "source": "cycle",
+        "previousModel": {
+          "id": "new-id",
+          "name": "Controlled model",
+          "api": "openai-completions",
+          "provider": "new-provider",
+          "baseUrl": "https://example.invalid",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 1024
+        }
+      },
+      "effects": [
+        [
+          "notify",
+          "Model: new-provider/new-id",
+          "info"
+        ],
+        [
+          "setStatus",
+          "model",
+          "🤖 new-id"
+        ],
+        [
+          "stdout",
+          "[model_select] new-provider/new-id → new-provider/new-id (cycle)\n"
+        ]
+      ],
+      "outcome": {
+        "ok": true
+      }
+    },
+    {
+      "name": "restore-missing",
+      "event": {
+        "type": "model_select",
+        "model": {
+          "id": "new-id",
+          "name": "Controlled model",
+          "api": "openai-completions",
+          "provider": "new-provider",
+          "baseUrl": "https://example.invalid",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 1024
+        },
+        "source": "restore"
+      },
+      "effects": [
+        [
+          "setStatus",
+          "model",
+          "🤖 new-id"
+        ],
+        [
+          "stdout",
+          "[model_select] none → new-provider/new-id (restore)\n"
+        ]
+      ],
+      "outcome": {
+        "ok": true
+      }
+    },
+    {
+      "name": "restore-null",
+      "event": {
+        "type": "model_select",
+        "model": {
+          "id": "new-id",
+          "name": "Controlled model",
+          "api": "openai-completions",
+          "provider": "new-provider",
+          "baseUrl": "https://example.invalid",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 1024
+        },
+        "source": "restore",
+        "previousModel": null
+      },
+      "effects": [
+        [
+          "setStatus",
+          "model",
+          "🤖 new-id"
+        ],
+        [
+          "stdout",
+          "[model_select] none → new-provider/new-id (restore)\n"
+        ]
+      ],
+      "outcome": {
+        "ok": true
+      }
+    },
+    {
+      "name": "restore-different",
+      "event": {
+        "type": "model_select",
+        "model": {
+          "id": "new-id",
+          "name": "Controlled model",
+          "api": "openai-completions",
+          "provider": "new-provider",
+          "baseUrl": "https://example.invalid",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 1024
+        },
+        "source": "restore",
+        "previousModel": {
+          "id": "old-id",
+          "name": "Controlled model",
+          "api": "openai-completions",
+          "provider": "old-provider",
+          "baseUrl": "https://example.invalid",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 1024
+        }
+      },
+      "effects": [
+        [
+          "setStatus",
+          "model",
+          "🤖 new-id"
+        ],
+        [
+          "stdout",
+          "[model_select] old-provider/old-id → new-provider/new-id (restore)\n"
+        ]
+      ],
+      "outcome": {
+        "ok": true
+      }
+    },
+    {
+      "name": "restore-same",
+      "event": {
+        "type": "model_select",
+        "model": {
+          "id": "new-id",
+          "name": "Controlled model",
+          "api": "openai-completions",
+          "provider": "new-provider",
+          "baseUrl": "https://example.invalid",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 1024
+        },
+        "source": "restore",
+        "previousModel": {
+          "id": "new-id",
+          "name": "Controlled model",
+          "api": "openai-completions",
+          "provider": "new-provider",
+          "baseUrl": "https://example.invalid",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 1024
+        }
+      },
+      "effects": [
+        [
+          "setStatus",
+          "model",
+          "🤖 new-id"
+        ],
+        [
+          "stdout",
+          "[model_select] new-provider/new-id → new-provider/new-id (restore)\n"
+        ]
+      ],
+      "outcome": {
+        "ok": true
+      }
+    },
+    {
+      "name": "empty-identifiers",
+      "event": {
+        "type": "model_select",
+        "model": {
+          "id": "",
+          "name": "Controlled model",
+          "api": "openai-completions",
+          "provider": "",
+          "baseUrl": "https://example.invalid",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 1024
+        },
+        "previousModel": {
+          "id": "",
+          "name": "Controlled model",
+          "api": "openai-completions",
+          "provider": "",
+          "baseUrl": "https://example.invalid",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 1024
+        },
+        "source": "set"
+      },
+      "effects": [
+        [
+          "notify",
+          "Model: /",
+          "info"
+        ],
+        [
+          "setStatus",
+          "model",
+          "🤖 "
+        ],
+        [
+          "stdout",
+          "[model_select] / → / (set)\n"
+        ]
+      ],
+      "outcome": {
+        "ok": true
+      }
+    },
+    {
+      "name": "literal-identifiers",
+      "event": {
+        "type": "model_select",
+        "model": {
+          "id": "m/Ω\n\r\n\u001b[7m \u001b[0m",
+          "name": "Controlled model",
+          "api": "openai-completions",
+          "provider": " p/﻿",
+          "baseUrl": "https://example.invalid",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 1024
+        },
+        "previousModel": {
+          "id": " id ",
+          "name": "Controlled model",
+          "api": "openai-completions",
+          "provider": "o/Ω",
+          "baseUrl": "https://example.invalid",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 1024
+        },
+        "source": "cycle"
+      },
+      "effects": [
+        [
+          "notify",
+          "Model:  p/﻿/m/Ω\n\r\n\u001b[7m \u001b[0m",
+          "info"
+        ],
+        [
+          "setStatus",
+          "model",
+          "🤖 m/Ω\n\r\n\u001b[7m \u001b[0m"
+        ],
+        [
+          "stdout",
+          "[model_select] o/Ω/ id  →  p/﻿/m/Ω\n\r\n\u001b[7m \u001b[0m (cycle)\n"
+        ]
+      ],
+      "outcome": {
+        "ok": true
+      }
+    },
+    {
+      "name": "set-reject-first-ui",
+      "event": {
+        "type": "model_select",
+        "model": {
+          "id": "now",
+          "name": "Controlled model",
+          "api": "openai-completions",
+          "provider": "next",
+          "baseUrl": "https://example.invalid",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 1024
+        },
+        "source": "set"
+      },
+      "reject": "host rejected Ω\nline",
+      "effects": [
+        [
+          "notify",
+          "Model: next/now",
+          "info"
+        ]
+      ],
+      "outcome": {
+        "error": "host rejected Ω\nline"
+      }
+    },
+    {
+      "name": "restore-reject-first-ui",
+      "event": {
+        "type": "model_select",
+        "model": {
+          "id": "now",
+          "name": "Controlled model",
+          "api": "openai-completions",
+          "provider": "next",
+          "baseUrl": "https://example.invalid",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 1024
+        },
+        "source": "restore"
+      },
+      "reject": "host rejected Ω\nline",
+      "effects": [
+        [
+          "setStatus",
+          "model",
+          "🤖 now"
+        ]
+      ],
+      "outcome": {
+        "error": "host rejected Ω\nline"
+      }
+    }
+  ]
+}

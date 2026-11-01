@@ -35,16 +35,26 @@ struct CodeRequest<'a> {
     code: &'a str,
     /// Selected state.
     state: &'a str,
-    /// Fixed redirect identity.
+    /// Redirect identity of the authorization.
     redirect_uri: &'a str,
     /// Proof verifier.
     code_verifier: &'a str,
 }
 
+/// Selected authorization fields with the redirect address they were issued for.
+#[derive(Debug, PartialEq)]
+pub(super) struct Grant {
+    /// Selected code.
+    pub(super) code: String,
+    /// Selected state.
+    pub(super) state: String,
+    /// Redirect address the authorization named.
+    pub(super) redirect_uri: String,
+}
+
 /// Exchange selected authorization fields once.
 pub(super) async fn exchange(
-    code: String,
-    state: String,
+    grant: Grant,
     verifier: String,
     fetch: Fetch,
     clock: fn() -> f64,
@@ -52,14 +62,14 @@ pub(super) async fn exchange(
     let request = CodeRequest {
         grant_type: "authorization_code",
         client_id: CLIENT_ID,
-        code: &code,
-        state: &state,
-        redirect_uri: super::REDIRECT_URI,
+        code: &grant.code,
+        state: &grant.state,
+        redirect_uri: &grant.redirect_uri,
         code_verifier: &verifier,
     };
     let context = format!(
         "redirect_uri={}; response_type=authorization_code; ",
-        super::REDIRECT_URI
+        grant.redirect_uri
     );
     token_operation(&request, fetch, "Token exchange", &context, clock).await
 }

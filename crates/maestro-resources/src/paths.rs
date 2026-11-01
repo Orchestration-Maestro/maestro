@@ -4,6 +4,7 @@ use crate::{
     current_directory, drive_directories, frontmatter::text_whitespace, skills::real_path,
 };
 use std::{
+    convert::Infallible,
     io,
     path::{Path, PathBuf},
 };
@@ -55,28 +56,6 @@ pub fn resolve(paths: &[&str]) -> io::Result<String> {
     resolve_groups(&[paths]).map(|resolved| resolved.into_iter().collect::<String>())
 }
 
-/// Join a leading `~` of `path` below the home directory as text: the rest drops the separator
-/// that introduced it and is normalized lexically, so `.`, `..` and repeated separators resolve.
-///
-/// An exact `~` is the home directory, and any other path is returned as written without reading
-/// the home directory.
-///
-/// # Errors
-/// Returns the error of `home`.
-pub fn expand_tilde_text(
-    path: &str,
-    home: impl FnOnce() -> io::Result<String>,
-) -> io::Result<String> {
-    let Some(rest) = path.strip_prefix('~') else {
-        return Ok(path.to_owned());
-    };
-    if rest.is_empty() {
-        return home();
-    }
-    let rest = rest.strip_prefix('/').unwrap_or(rest);
-    Ok(maestro_path::join(&[&home()?, rest]))
-}
-
 /// Resolve an explicit instruction path: trim it, expand a leading `~` below `home`, keep an
 /// absolute result and resolve any other result against `cwd`.
 ///
@@ -84,7 +63,8 @@ pub fn expand_tilde_text(
 /// Returns the working-directory error of a resolution that needed it.
 pub(crate) fn resolve_explicit_path(path: &str, cwd: &str, home: &str) -> io::Result<String> {
     let path = path.trim_matches(text_whitespace);
-    let normalized = expand_tilde_text(path, || Ok(home.to_owned()))?;
+    let Ok(normalized) =
+        maestro_path::expand_tilde_joined(path, || Ok::<_, Infallible>(home.to_owned()));
     if maestro_path::is_absolute(&normalized) {
         Ok(normalized)
     } else {
@@ -96,12 +76,7 @@ pub(crate) fn resolve_explicit_path(path: &str, cwd: &str, home: &str) -> io::Re
 /// included, otherwise the account entry.
 #[must_use]
 pub fn native_home_directory() -> Option<PathBuf> {
-    maestro_path::homedir(
-        std::env::var_os("HOME")
-            .filter(|_| cfg!(unix))
-            .map(PathBuf::from),
-        std::env::home_dir,
-    )
+    maestro_path::native_homedir()
 }
 
 /// The home directory as text.
@@ -110,8 +85,28 @@ pub fn native_home_directory() -> Option<PathBuf> {
 /// Returns a not-found error when the host knows no home directory, or an invalid-data one
 /// when the home directory is not valid UTF-8.
 pub fn home_directory() -> io::Result<String> {
-    native_home_directory()
-        .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "home directory is unknown"))?
+    home_directory_text(native_home_directory())
+}
+
+/// The package home: a nonempty `HOME` on any platform, otherwise the native home.
+///
+/// The native fallback preserves an empty Unix `HOME`; other resource callers keep
+/// the rule of [`home_directory`].
+///
+/// # Errors
+/// Returns a not-found error for an unknown home, or invalid-data for non-UTF-8 bytes.
+pub fn package_home_directory() -> io::Result<String> {
+    home_directory_text(
+        std::env::var_os("HOME")
+            .filter(|value| !value.is_empty())
+            .map(PathBuf::from)
+            .or_else(native_home_directory),
+    )
+}
+
+/// Convert one observed native home with the resource path boundary's diagnostics.
+fn home_directory_text(home: Option<PathBuf>) -> io::Result<String> {
+    home.ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "home directory is unknown"))?
         .into_os_string()
         .into_string()
         .map_err(|_| {

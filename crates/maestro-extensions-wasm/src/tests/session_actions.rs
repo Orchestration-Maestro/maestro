@@ -51,23 +51,6 @@ async fn control(driver: &mut impl Driver, value: Value) -> Result<(), String> {
         )
         .await
 }
-/// Inventory schema values cross the established opaque-text boundary.
-fn wire_tools(value: &Value) -> Value {
-    let mut value = value.clone();
-    for tool in value.as_array_mut().unwrap() {
-        tool["parameters"] = json!(tool["parameters"].to_string());
-    }
-    value
-}
-/// Decode only the authored opaque details field for semantic corpus comparison.
-fn custom_args(mut args: Value) -> Value {
-    if let Some(details) = args[0]["value"].get_mut("details")
-        && let Some(text) = details.as_str()
-    {
-        *details = serde_json::from_str(text).unwrap();
-    }
-    args
-}
 /// One ordinary case, including empty and absent results.
 async fn ordinary_case(driver: &mut impl Driver, case: &Case) -> Result<(), String> {
     let (method, reply, expected) = ordinary_expected(case)?;
@@ -135,8 +118,7 @@ fn assert_operands(lines: &[String], case: &Case, method: &str, expected: &Value
     let observed: Value =
         serde_json::from_str(lines.iter().find_map(|l| l.strip_prefix(&prefix)).unwrap()).unwrap();
     let observed = match method {
-        "sendMessage" => custom_args(observed),
-        "sendUserMessage" => observed,
+        "sendMessage" | "sendUserMessage" => observed,
         "setLabel" => json!([{"present":true,"value":observed[0]},observed[1]]),
         _ => json!([{"present":true,"value":observed[0]}]),
     };
@@ -177,11 +159,7 @@ async fn live_reads(driver: &mut impl Driver) -> Result<(), String> {
     for case in corpus()?.into_iter().filter(|c| c.group == "liveReads") {
         let method = case.input["method"].as_str().unwrap();
         for (field, expected) in [("first", "before"), ("second", "after")] {
-            let reply = if method == "getAllTools" {
-                wire_tools(&case.input[field])
-            } else {
-                case.input[field].clone()
-            };
+            let reply = &case.input[field];
             control(driver, json!({"value":reply})).await?;
             let expected = if method == "getSessionName" {
                 json!({"present":true,"value":case.expected[expected]})
@@ -273,6 +251,42 @@ async fn compact(driver: &mut impl Driver, input: Value) -> Result<Value, String
     )
     .map_err(|e| e.to_string())
 }
+/// Optional compaction records keep their presence through every context view.
+async fn compaction_presence(driver: &mut impl Driver) -> Result<(), String> {
+    driver
+        .run_plain_command("capture", r#"compact {"view":"register"}"#)
+        .await?;
+    for view in ["ordinary", "command", "replacement"] {
+        let mut observations = Vec::new();
+        for absent in [true, false] {
+            let start = driver.transcript().len();
+            assert_eq!(
+                compact(driver, json!({"view":view,"absent":absent})).await?,
+                json!({"ok":null})
+            );
+            let admissions: Vec<_> = driver.transcript()[start..]
+                .iter()
+                .filter(|line| line.starts_with("compact admission "))
+                .cloned()
+                .collect();
+            assert_eq!(admissions.len(), 1);
+            observations.push(admissions);
+        }
+        assert_ne!(
+            observations[0], observations[1],
+            "compaction import erased options in {view}"
+        );
+    }
+    driver.release_all().await;
+    assert_eq!(driver.live(), 0);
+    Ok(())
+}
+
+#[test]
+fn compaction_options_preserve_presence() -> Result<(), String> {
+    on_both_adapters!(compaction_presence)
+}
+
 /// Notification delivery stays closed until the synchronous admission has returned.
 async fn compaction_returns(driver: &mut impl Driver) -> Result<(), String> {
     driver
@@ -360,15 +374,6 @@ async fn forwarding(driver: &mut impl Driver) -> Result<(), String> {
     assert_eq!(count, 14);
     control(driver, json!({})).await
 }
-/// Opaque details are encoded only at the existing component payload boundary.
-fn wire_result(mut value: Value) -> Value {
-    if let Some(details) = value.get_mut("details")
-        && !details.is_null()
-    {
-        *details = json!(details.to_string());
-    }
-    value
-}
 /// Complete or fail a request after admission, forwarding completion rejection to its error callback.
 async fn notification_case(driver: &mut impl Driver, case: &Case) -> Result<(), String> {
     let mut input =
@@ -397,11 +402,7 @@ async fn notification_case(driver: &mut impl Driver, case: &Case) -> Result<(), 
             );
         }
         let result = driver
-            .notify_compaction(
-                complete,
-                &wire_result(case.input["result"].clone()).to_string(),
-                true,
-            )
+            .notify_compaction(complete, &case.input["result"].to_string(), true)
             .await;
         if case.input["mode"] == "completion-error" {
             assert_eq!(result, Err("notification rejected Ω".into()));
@@ -673,7 +674,7 @@ fn ordinary_expected(case: &Case) -> Result<(&'static str, Value, Value), String
         ),
         "toolInventory" => (
             "getAllTools",
-            wire_tools(&case.input["value"]),
+            case.input["value"].clone(),
             json!({"ok":case.expected["value"]}),
         ),
         "commandInventory" => (
@@ -782,11 +783,12 @@ async fn forward_view(driver: &mut impl Driver, case: &Case, view: &str) -> Resu
                 .unwrap(),
         )
         .unwrap();
-        let expected = if case.group == "compactAbsent" {
+        let mut expected = if case.group == "compactAbsent" {
             json!({"instructions":{"present":false},"complete":false,"error":false})
         } else {
             case.expected.clone()
         };
+        expected["present"] = json!(case.group != "compactAbsent");
         assert_eq!(observed, expected);
     }
 

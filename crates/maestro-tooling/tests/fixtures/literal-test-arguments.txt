@@ -8,3 +8,5 @@ selected_behavior
 --exact
 wrapped_ignored
 --nocapture
+unmatched'quote
+$(exit 91); * $HOME

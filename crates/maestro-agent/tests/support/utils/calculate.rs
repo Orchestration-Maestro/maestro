@@ -51,7 +51,7 @@ pub fn calculate_tool() -> SharedAgentTool {
                 "expression": {"type": "string", "description": "The mathematical expression to evaluate"}
             },
             "required": ["expression"]
-        }),
+        }).into(),
     };
     let execute = Arc::new(|_, params: CalculateParams, _, _| {
         let result = calculate(&params.expression).map_err(DiagnosticErrorInfo::error);

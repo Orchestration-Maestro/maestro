@@ -42,7 +42,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
 impl<O: PackageOperations> DefaultPackageManager<O> {
     /// Compares selected installed and latest strings, suppressing probe failures.
     pub(super) async fn npm_update_available(&self, name: &str, path: &str) -> bool {
-        if super::update::offline() {
+        if self.offline() {
             return false;
         }
         let installed = installed_npm_version(path);

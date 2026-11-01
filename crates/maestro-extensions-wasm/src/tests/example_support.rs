@@ -59,22 +59,80 @@ pub fn assert_registered_command(observed: &Observed, command: &Command) {
     );
 }
 
-/// Parses `text` and decodes the JSON document it carries at `member`.
-pub fn decoded(text: &str, member: &str) -> Value {
+/// One effect a shipped example asked the host for.
+#[derive(Debug, PartialEq)]
+pub enum Observation {
+    /// A notification request, with the message and severity it carries.
+    Notify {
+        /// The message text.
+        message: String,
+        /// The severity, when the request names one.
+        kind: Option<String>,
+    },
+    /// An admitted user-message delivery, with the content and options it carries.
+    Delivery {
+        /// The delivered content.
+        content: Option<Value>,
+        /// The delivery options, absent when the request carries none.
+        options: Option<Value>,
+    },
+}
+
+/// The effects the host recorded in `lines`, in the order it recorded them.
+pub fn observations(lines: &[String]) -> Vec<Observation> {
+    lines
+        .iter()
+        .filter_map(|line| {
+            if let Some(rest) = line.strip_prefix("action sendUserMessage ") {
+                let arguments: [Value; 2] = serde_json::from_str(rest).expect("delivery arguments");
+                return Some(Observation::Delivery {
+                    content: arguments[0].get("value").cloned(),
+                    options: arguments[1].get("value").cloned(),
+                });
+            }
+            let receipt = super::ui_host::receipt(line)?;
+            if receipt.method != "notify" {
+                return None;
+            }
+            Some(Observation::Notify {
+                message: receipt.operands[0]
+                    .as_str()
+                    .expect("a notification message")
+                    .to_owned(),
+                kind: receipt.operands[1].as_str().map(str::to_lowercase),
+            })
+        })
+        .collect()
+}
+
+/// Parses one registration record without the transport's declared-kinds member.
+pub fn registered_metadata(text: &str) -> Value {
     let mut value: Value = serde_json::from_str(text).unwrap();
-    value[member] = serde_json::from_str(value[member].as_str().unwrap()).unwrap();
+    value.as_object_mut().unwrap().shift_remove("schemaKinds");
     value
 }
 
-/// Decodes the SDK's opaque details document before comparing a caller-visible result.
+/// Parses the caller-visible result without re-decoding its structured details.
 pub fn result_value(encoded: &str) -> Value {
-    decoded(encoded, "details")
+    serde_json::from_str(encoded).unwrap()
 }
 
-/// Releases every registration in the order the host received it, asserting the host admitted
+/// Releases list handlers and every registration in arrival order, asserting the host admitted
 /// exactly `expected` and kept nothing lent.
 pub fn release_all(host: &Controlled, expected: &[impl AsRef<str>]) {
+    let handlers = host.observe().ui.lists.take_handlers();
+    for key in handlers {
+        release(key);
+    }
     let expected: Vec<&str> = expected.iter().map(AsRef::as_ref).collect();
+    let names = released(host);
+    assert_eq!(names, expected, "the registrations the host received");
+    assert_eq!(host.observed().live, 0, "the host lent nothing it kept");
+}
+
+/// Releases every registration of the controlled host in the order it received them and
+/// returns their names.
+pub fn released(host: &Controlled) -> Vec<String> {
     let mut names = Vec::new();
     loop {
         let next = host.observe().next_to_release();
@@ -82,8 +140,19 @@ pub fn release_all(host: &Controlled, expected: &[impl AsRef<str>]) {
         release(key);
         names.push(name);
     }
-    assert_eq!(names, expected, "the registrations the host received");
-    assert_eq!(host.observed().live, 0, "the host lent nothing it kept");
+    names
+}
+
+/// Releases every registration of the built component in the order the host received them and
+/// returns their names.
+///
+/// # Errors
+/// Returns the component failure that ended the walk.
+pub fn released_component(harness: &mut Harness) -> Result<Vec<String>, String> {
+    super::block_on(harness.release_all())
+        .into_iter()
+        .map(|(name, outcome)| outcome.map(|()| name).map_err(|error| error.to_string()))
+        .collect()
 }
 
 /// Runs the built component's command callback and returns its outcome; `held` keeps the

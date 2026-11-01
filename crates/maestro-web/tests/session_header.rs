@@ -1,8 +1,6 @@
 //! Public identity drawing through the replaceable native reading boundary.
 #![cfg(test)]
-use crate::attachment_support;
 use crate::session_header_support;
-use crate::support;
 use base64::Engine as _;
 use maestro_theme::BrandMode;
 use maestro_web::browser::attachment_content::AttachmentHostError;
@@ -620,51 +618,6 @@ fn header_keyboard_activation_ignores_pointer_geometry() {
         canvas.frame(vec![key(egui::Key::Enter, true)]).0,
         [HeaderAction::ToggleThinking]
     );
-}
-
-/// The real full-screen attachment backdrop owns input above every header action.
-#[test]
-fn header_pointer_rejects_attachment_overlay_backdrop() {
-    let pack = pack();
-    let p = pack.presentation(BrandMode::Dark).unwrap();
-    let i18n: maestro_web::I18n =
-        maestro_web::I18n::new(Rc::new(support::Host::default())).unwrap();
-    for (index, (cover_press, cover_release)) in
-        (0..3).flat_map(|i| [(true, true), (true, false), (false, true)].map(|ends| (i, ends)))
-    {
-        let mut canvas = Canvas::new(&p);
-        canvas.host.offset.set(egui::vec2(0., 100.));
-        canvas.frame(vec![]);
-        let pos = canvas.host.holes.borrow()[index].center();
-        let host = Rc::new(attachment_support::Host::default());
-        *host.fail.borrow_mut() = Some("file display failed".into());
-        let mut overlay =
-            maestro_web::AttachmentOverlay::open(attachment_support::attachment(), None, host);
-        let covered = std::cell::Cell::new(cover_press);
-        let mut foreground = |ctx: &egui::Context| {
-            if covered.get() {
-                assert!(overlay.render(ctx, &i18n, &p).unwrap());
-            }
-        };
-        canvas.frame_with(vec![], true, &mut foreground);
-        canvas.frame_with(vec![], true, &mut foreground);
-        assert!(
-            canvas
-                .frame_with(pointer(pos, true), true, &mut foreground)
-                .0
-                .is_empty()
-        );
-        covered.set(cover_release);
-        canvas.frame_with(vec![], true, &mut foreground);
-        canvas.frame_with(vec![], true, &mut foreground);
-        assert!(
-            canvas
-                .frame_with(pointer(pos, false), true, &mut foreground)
-                .0
-                .is_empty(),
-            "action {index}, covered endpoints {cover_press}/{cover_release}"
-        );
-    }
 }
 
 /// A disabled caller suppresses every header control's pointer activation.

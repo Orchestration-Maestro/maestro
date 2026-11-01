@@ -3,8 +3,8 @@ use serde_json::{Value, json};
 
 use super::controlled::Controlled;
 use super::example_support::{
-    decoded, invoke_command_on_component, invoke_tool_on_component, release_all, result_value,
-    start,
+    invoke_command_on_component, invoke_tool_on_component, registered_metadata, release_all,
+    result_value, start,
 };
 use super::host_family::guest::ToolCapabilities as ComponentCapabilities;
 use crate::component_adapter::{Exports, ToolCapabilities};
@@ -98,7 +98,8 @@ fn shutdown_example_registers_command_and_tool_contracts() -> Result<(), String>
             .observed()
             .tools
             .iter()
-            .map(|metadata| decoded(metadata, "parameters"))
+            .map(String::as_str)
+            .map(registered_metadata)
             .collect();
         assert_eq!(json!(tools), expected["tools"]);
         assert!(host.observed().callback("prepare finish_and_exit").is_err());

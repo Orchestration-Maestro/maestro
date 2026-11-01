@@ -5,9 +5,8 @@
 use crate::read_support;
 
 use crate::runtime::run;
-use maestro_models::Fetch;
 use maestro_tools::{SearchTool, ToolsManager, ToolsManagerOutput};
-use read_support::{Fixture, Scratch, isolated_os};
+use read_support::{Fixture, Scratch, counting_fetch, isolated_os};
 use std::{
     path::Path,
     sync::{
@@ -16,15 +15,6 @@ use std::{
     },
 };
 use tokio::io::AsyncReadExt;
-
-/// Transport which counts unexpected acquisition attempts.
-fn counting_fetch(calls: &Arc<AtomicUsize>) -> Fetch {
-    let calls = Arc::clone(calls);
-    Arc::new(move |_| {
-        calls.fetch_add(1, Ordering::SeqCst);
-        Box::pin(async { Err(maestro_models::FetchError::Aborted) })
-    })
-}
 
 /// Install a shell probe through a child, with no inherited writable executable descriptor.
 fn script(root: &Path, name: &str, code: i32) {
@@ -213,6 +203,17 @@ fn path_probes_try_aliases_in_order_whatever_the_exit_status() {
             expected.map(|name| format!("{name} --version\n"))
         );
         assert_eq!(calls.load(Ordering::SeqCst), 0);
+        if mode == "alias" {
+            let selected = ToolsManager::new(bin.text(), Some(counting_fetch(&calls)))
+                .with_offline(Some(true));
+            assert_eq!(
+                selected.ensure_tool(SearchTool::Fd, None).await.as_deref(),
+                Some("fdfind"),
+                "an offline selection still uses the program a probe finds"
+            );
+            assert_eq!(probe_log(&root), Some("fdfind --version\n".to_owned()));
+            assert_eq!(calls.load(Ordering::SeqCst), 0);
+        }
     });
 }
 

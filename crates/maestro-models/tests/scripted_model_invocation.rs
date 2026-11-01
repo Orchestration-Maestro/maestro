@@ -32,7 +32,7 @@ mod tests {
                 AssistantContent::Thinking(faux_thinking("plan")),
                 AssistantContent::ToolCall(faux_tool_call(
                     "lookup",
-                    JsonObject::new(),
+                    JsonObject::new().into(),
                     FauxToolCallOptions::default(),
                 )),
                 AssistantContent::Text(faux_text("answer")),
@@ -46,7 +46,7 @@ mod tests {
             matches!(&message.content[0], AssistantContent::Thinking(value) if value.thinking == "plan")
         );
         assert!(
-            matches!(&message.content[1], AssistantContent::ToolCall(value) if value.name == "lookup" && value.arguments.is_empty())
+            matches!(&message.content[1], AssistantContent::ToolCall(value) if value.name == "lookup" && value.arguments.as_object().is_some_and(serde_json::Map::is_empty))
         );
         assert!(
             matches!(&message.content[2], AssistantContent::Text(value) if value.text == "answer")
@@ -94,7 +94,7 @@ mod tests {
         );
         number(message.usage.input, 3.0);
         number(message.usage.output, 2.0);
-        number(message.usage.total_tokens, 5.0);
+        number(message.usage.total_tokens.present().copied().unwrap(), 5.0);
         assert_eq!(registration.state.call_count(), 1);
         registration.unregister();
     }
@@ -191,7 +191,11 @@ mod tests {
         assert_recorded_zero_usage(&message.usage);
         let text = faux_text("text");
         let thinking = faux_thinking("thinking");
-        let tool = faux_tool_call("tool", JsonObject::new(), FauxToolCallOptions::default());
+        let tool = faux_tool_call(
+            "tool",
+            JsonObject::new().into(),
+            FauxToolCallOptions::default(),
+        );
         for content in [
             FauxAssistantContent::from(String::from("text")),
             FauxAssistantContent::from(text.clone()),
@@ -203,7 +207,7 @@ mod tests {
             assert_eq!(message.content.len(), 1);
             assert_eq!(message.stop_reason, StopReason::Stop);
             assert!(message.timestamp > 0.0);
-            number(message.usage.total_tokens, 0.0);
+            number(message.usage.total_tokens.present().copied().unwrap(), 0.0);
         }
         assert!(
             faux_assistant_message(Vec::new(), FauxAssistantMessageOptions::default())
@@ -314,7 +318,11 @@ mod tests {
             std::num::FpCategory::Zero,
             "clock uses integral milliseconds"
         );
-        let tool = faux_tool_call("t", JsonObject::new(), FauxToolCallOptions::default());
+        let tool = faux_tool_call(
+            "t",
+            JsonObject::new().into(),
+            FauxToolCallOptions::default(),
+        );
         for (id, prefix) in [(&first.api, "faux"), (&tool.id, "tool")] {
             let parts: Vec<_> = id.split(':').collect();
             assert_eq!(parts.len(), 3);
@@ -332,7 +340,7 @@ mod tests {
         assert_eq!(
             faux_tool_call(
                 "t",
-                JsonObject::new(),
+                JsonObject::new().into(),
                 FauxToolCallOptions {
                     id: Some(String::new())
                 }
@@ -404,7 +412,7 @@ mod tests {
             Some("No more faux responses queued")
         );
         number(result.usage.cache_write, 2.0);
-        number(result.usage.total_tokens, 2.0);
+        number(result.usage.total_tokens.present().copied().unwrap(), 2.0);
         assert_eq!(registration.state.call_count(), 3);
         assert_eq!(registration.get_pending_response_count(), 0);
         let result = invoke(&registration, context("hi"), Some(session("exhaust", None)));
@@ -539,7 +547,7 @@ mod tests {
             number(usage.cache_read, read);
             number(usage.cache_write, prompt - read);
             number(usage.input, 0.0);
-            number(usage.total_tokens, prompt + 2.0);
+            number(usage.total_tokens.present().copied().unwrap(), prompt + 2.0);
             number(usage.cost.total, 0.0);
         }
         registration.unregister();
@@ -716,7 +724,12 @@ mod tests {
         match &message.content[0] {
             AssistantContent::Text(value) => assert_eq!(value.text, "abcd"),
             AssistantContent::Thinking(value) => assert_eq!(value.thinking, "abcd"),
-            AssistantContent::ToolCall(value) => assert!(value.arguments.is_empty()),
+            AssistantContent::ToolCall(value) => assert!(
+                value
+                    .arguments
+                    .as_object()
+                    .is_some_and(serde_json::Map::is_empty)
+            ),
         }
         registration.unregister();
     }
@@ -809,7 +822,7 @@ mod tests {
             .map(|id| {
                 AssistantContent::ToolCall(faux_tool_call(
                     id,
-                    JsonObject::new(),
+                    JsonObject::new().into(),
                     FauxToolCallOptions {
                         id: Some(id.into()),
                     },
@@ -1030,7 +1043,7 @@ mod tests {
                     AssistantContent::Thinking(faux_thinking("")),
                     AssistantContent::ToolCall(faux_tool_call(
                         "t",
-                        JsonObject::new(),
+                        JsonObject::new().into(),
                         FauxToolCallOptions::default(),
                     )),
                 ],
@@ -1081,7 +1094,7 @@ mod tests {
             number(usage.cache_read, read);
             number(usage.cache_write, write);
             number(usage.output, 2.0);
-            number(usage.total_tokens, 5.0);
+            number(usage.total_tokens.present().copied().unwrap(), 5.0);
         }
         registration.unregister();
     }
@@ -1402,7 +1415,7 @@ mod tests {
         assert_eq!(message.stop_reason, StopReason::Error);
         assert_eq!(message.error_message.as_deref(), Some("boom"));
         assert!(message.content.is_empty());
-        number(message.usage.total_tokens, 0.0);
+        number(message.usage.total_tokens.present().copied().unwrap(), 0.0);
         registration.unregister();
     }
 
@@ -1597,7 +1610,7 @@ mod tests {
             tools: Some(vec![Tool {
                 name: "lookup".into(),
                 description: "Find".into(),
-                parameters: serde_json::json!({"type":"object"}),
+                parameters: serde_json::json!({"type":"object"}).into(),
             }]),
         }
     }
@@ -1613,7 +1626,7 @@ mod tests {
         let usage = invoke(&registration, context, None).usage;
         number(usage.input, 58.0);
         number(usage.output, 10.0);
-        number(usage.total_tokens, 68.0);
+        number(usage.total_tokens.present().copied().unwrap(), 68.0);
         assert_eq!(
             usage.cost,
             UsageCost {
@@ -1630,14 +1643,122 @@ mod tests {
             messages: vec![],
             tools: Some(vec![]),
         };
-        number(invoke(&registration, empty, None).usage.total_tokens, 0.0);
+        number(
+            invoke(&registration, empty, None)
+                .usage
+                .total_tokens
+                .present()
+                .copied()
+                .unwrap(),
+            0.0,
+        );
         registration.unregister();
     }
 
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
-    /// Exercise serialization retains native values through the public invocation boundary.
-    fn maestro_serialization_retains_native_values() {
+    /// A scripted call keeps every root kind through its streamed bytes and its final call.
+    fn scripted_calls_retain_scalar_and_array_roots() {
+        let _serial = crate::bundled::registry();
+        let registration = fixed(None);
+        for (arguments, encoded) in [
+            (serde_json::json!(42), "42"),
+            (serde_json::Value::Null, "null"),
+            (serde_json::json!([1, 1]), "[1,1]"),
+            (serde_json::json!(false), "false"),
+            (serde_json::json!("text"), "\"text\""),
+            (serde_json::json!(-0.0), "0"),
+            (serde_json::json!(42.0), "42"),
+            (serde_json::json!(1e20), "100000000000000000000"),
+            (serde_json::json!({"10": 1, "2": 2}), "{\"2\":2,\"10\":1}"),
+        ] {
+            registration.set_responses(vec![FauxResponseStep::Message(Box::new(
+                faux_assistant_message(
+                    faux_tool_call(
+                        "t",
+                        arguments.clone(),
+                        FauxToolCallOptions {
+                            id: Some("call".into()),
+                        },
+                    ),
+                    FauxAssistantMessageOptions::default(),
+                ),
+            ))]);
+            let stream = stream(model(&registration), context("hello"), None)
+                .expect("the scripted provider streams");
+            let observed = crate::runtime::run(observe_tool(stream));
+            assert!(observed.started, "{arguments}");
+            assert_eq!(observed.streamed, encoded, "{arguments}");
+            let ended = observed.ended.expect("the call ends");
+            assert_eq!(ended.id, "call");
+            assert_eq!(ended.name, "t");
+            assert_eq!(ended.arguments, arguments);
+        }
+        registration.unregister();
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    /// Estimated output usage counts the canonical argument text a scripted call streams.
+    fn scripted_usage_counts_canonical_argument_text() {
+        let _serial = crate::bundled::registry();
+        let registration = fixed(None);
+        registration.set_responses(vec![FauxResponseStep::Message(Box::new(
+            faux_assistant_message(
+                faux_tool_call(
+                    "t",
+                    serde_json::json!(1e20),
+                    FauxToolCallOptions {
+                        id: Some("call".into()),
+                    },
+                ),
+                FauxAssistantMessageOptions::default(),
+            ),
+        ))]);
+        // `t:100000000000000000000` is 23 scalars, counted as six tokens.
+        number(
+            invoke(&registration, context("hello"), None).usage.output,
+            6.0,
+        );
+        registration.unregister();
+    }
+
+    /// What one scripted tool-call stream published.
+    struct Observed {
+        /// Whether the call started.
+        started: bool,
+        /// Concatenated delta text.
+        streamed: String,
+        /// The final call.
+        ended: Option<maestro_models::ToolCall>,
+    }
+
+    /// Consume one scripted stream and record its tool-call events.
+    async fn observe_tool(stream: maestro_models::AssistantMessageEventStream) -> Observed {
+        let mut observed = Observed {
+            started: false,
+            streamed: String::new(),
+            ended: None,
+        };
+        while let Some(event) = stream.next().await {
+            match event {
+                AssistantMessageEvent::ToolcallStart { .. } => observed.started = true,
+                AssistantMessageEvent::ToolcallDelta { delta, .. } => {
+                    observed.streamed.push_str(&delta);
+                }
+                AssistantMessageEvent::ToolcallEnd { tool_call, .. } => {
+                    observed.ended = Some(tool_call);
+                }
+                _ => {}
+            }
+        }
+        observed
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    /// Canonical streamed argument text keeps every supplied value.
+    fn maestro_serialization_keeps_supplied_values() {
         let _serial = crate::bundled::registry();
         let registration = fixed(None);
         let mut arguments = JsonObject::new();
@@ -1647,10 +1768,15 @@ mod tests {
             "a".into(),
             serde_json::json!([true,null,"line\n\"😀",{"nested":false}]),
         );
-        let expected = r#"{"10":-0.0,"2":1e+20,"a":[true,null,"line\n\"😀",{"nested":false}]}"#;
+        let expected =
+            r#"{"2":100000000000000000000,"10":0,"a":[true,null,"line\n\"😀",{"nested":false}]}"#;
         registration.set_responses(vec![FauxResponseStep::Message(Box::new(
             faux_assistant_message(
-                faux_tool_call("t", arguments.clone(), FauxToolCallOptions::default()),
+                faux_tool_call(
+                    "t",
+                    arguments.clone().into(),
+                    FauxToolCallOptions::default(),
+                ),
                 FauxAssistantMessageOptions::default(),
             ),
         ))]);
@@ -1664,7 +1790,7 @@ mod tests {
             .collect();
         assert_eq!(serialized, expected);
         assert!(
-            matches!(observed.iter().find(|event|matches!(event,AssistantMessageEvent::ToolcallEnd{..})),Some(AssistantMessageEvent::ToolcallEnd{tool_call,..}) if tool_call.arguments==arguments)
+            matches!(observed.iter().find(|event|matches!(event,AssistantMessageEvent::ToolcallEnd{..})),Some(AssistantMessageEvent::ToolcallEnd{tool_call,..}) if tool_call.arguments==serde_json::Value::Object(arguments.clone()))
         );
         registration.unregister();
     }
@@ -1804,7 +1930,7 @@ mod tests {
             AssistantMessageEvent::Error { error, .. } => {
                 let error = error.read().unwrap();
                 assert_eq!(error.error_message.as_deref(), Some("hook failed"));
-                number(error.usage.total_tokens, 0.0);
+                number(error.usage.total_tokens.present().copied().unwrap(), 0.0);
             }
             _ => unreachable!(),
         }

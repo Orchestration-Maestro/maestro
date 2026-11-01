@@ -87,12 +87,7 @@ fn update(
     effects: &Rc<support::Effects>,
     source: Option<&str>,
 ) -> std::io::Result<()> {
-    let local = Rc::new(tokio::task::LocalSet::new());
-    *effects.local.borrow_mut() = Rc::downgrade(&local);
-    let runtime = crate::runtime::runtime();
-    let result = runtime.block_on(local.run_until(manager.update(source)));
-    runtime.block_on(Rc::try_unwrap(local).ok().unwrap());
-    result
+    support::drive(effects, manager.update(source))
 }
 
 #[test]

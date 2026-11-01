@@ -22,7 +22,7 @@ pub enum Content {
     /// Literal text operands.
     Text(String, TextView),
     /// Pending document preview.
-    Preview(FileType, Rc<RefCell<Attachment>>, bool),
+    Preview(FileType, maestro_web::SharedAttachment, bool),
 }
 /// Recorded surface and presentation.
 #[derive(Clone)]
@@ -52,7 +52,7 @@ pub struct Host {
     /// Ordered lifecycle effects.
     pub effects: RefCell<Vec<String>>,
     /// Downloaded original handles.
-    pub downloads: RefCell<Vec<Rc<RefCell<Attachment>>>>,
+    pub downloads: RefCell<Vec<maestro_web::SharedAttachment>>,
     /// Platform hover capability.
     pub hover: Cell<bool>,
     /// Controlled presentation failure.
@@ -67,26 +67,6 @@ impl AttachmentHost for Host {
         _: maestro_web::browser::attachment_content::ClipboardMode,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = bool>>> {
         unreachable!("unexpected clipboard operation")
-    }
-    fn capture_focus(
-        &self,
-    ) -> Result<
-        Option<std::rc::Rc<maestro_web::browser::attachment_content::FocusTarget>>,
-        AttachmentHostError,
-    > {
-        unreachable!("no dialog focus in this adapter")
-    }
-    fn restore_focus(
-        &self,
-        _: std::rc::Rc<maestro_web::browser::attachment_content::FocusTarget>,
-    ) -> Result<maestro_web::browser::timer::Timer, AttachmentHostError> {
-        unreachable!("no dialog focus in this adapter")
-    }
-    fn dialog_bounds(&self, _: egui::Id, _: [&str; 2]) -> Result<egui::Rect, AttachmentHostError> {
-        unreachable!("no dialog measurement in this adapter")
-    }
-    fn native_key(&self, _: &web_sys::KeyboardEvent, _: &egui::Context) {
-        unreachable!("no native dialog key in this adapter")
     }
 
     fn reading_layout(
@@ -107,9 +87,6 @@ impl AttachmentHost for Host {
     ) -> Result<(), AttachmentHostError> {
         let content = match s.content {
             AttachmentContent::Reading(reading) => Content::Reading(reading.content, reading.phase),
-            AttachmentContent::Input { .. } => {
-                unreachable!("attachment suite does not create inputs")
-            }
             AttachmentContent::Image { source, alt, fit } => {
                 Content::Image(source.into(), alt.into(), fit)
             }
@@ -155,9 +132,6 @@ impl AttachmentHost for Host {
     fn remove(&self, id: egui::Id) {
         self.effects.borrow_mut().push(format!("remove:{id:?}"));
     }
-    fn take_escape(&self) -> bool {
-        false
-    }
     fn timer(
         &self,
         _: i32,
@@ -172,7 +146,7 @@ impl AttachmentHost for Host {
     fn download_bytes(&self, _: &[u8], _: &str, _: &str) -> Result<(), AttachmentHostError> {
         unreachable!("unexpected byte download")
     }
-    fn download(&self, a: Rc<RefCell<Attachment>>) -> Result<(), AttachmentHostError> {
+    fn download(&self, a: maestro_web::SharedAttachment) -> Result<(), AttachmentHostError> {
         self.downloads.borrow_mut().push(a);
         if self.fail_download.get() {
             Err(AttachmentHostError::Host("download rejected".into()))
@@ -183,8 +157,8 @@ impl AttachmentHost for Host {
 }
 /// A literal original attachment independent of its preview.
 #[must_use]
-pub fn attachment() -> Rc<RefCell<Attachment>> {
-    Rc::new(RefCell::new(Attachment {
+pub fn attachment() -> maestro_web::SharedAttachment {
+    std::sync::Arc::new(std::sync::RwLock::new(Attachment {
         id: "same".into(),
         r#type: AttachmentType::Document,
         file_name: "note.txt".into(),
@@ -272,38 +246,6 @@ impl Frame {
         self.shapes = output.shapes;
         value
     }
-    /// Drive the retained overlay.
-    /// # Errors
-    /// Returns the widget failure.
-    pub fn overlay(
-        &mut self,
-        o: &mut maestro_web::AttachmentOverlay,
-        events: Vec<Event>,
-    ) -> Result<bool, maestro_web::dialogs::attachment_overlay::AttachmentUiError> {
-        self.run(events, |ctx, i, p| o.render(ctx, i, p))
-    }
-    /// Draw one tile at a deterministic position.
-    /// # Errors
-    /// Returns the widget failure.
-    pub fn tile(
-        &mut self,
-        t: &mut maestro_web::AttachmentTile,
-        events: Vec<Event>,
-    ) -> Result<
-        Option<maestro_web::AttachmentOverlay>,
-        maestro_web::dialogs::attachment_overlay::AttachmentUiError,
-    > {
-        self.run(events, |ctx, i, p| {
-            let mut ui = egui::Ui::new(
-                ctx.clone(),
-                egui::Id::new("root"),
-                egui::UiBuilder::new()
-                    .max_rect(ctx.content_rect())
-                    .layout(egui::Layout::top_down(egui::Align::Min)),
-            );
-            t.render(&mut ui, i, p)
-        })
-    }
     /// Complete visible text in painter order.
     #[must_use]
     pub fn texts(&self) -> Vec<String> {
@@ -382,8 +324,8 @@ impl Input {
     /// # Panics
     /// Panics on an unknown fixture discriminant.
     #[must_use]
-    pub fn record(&self) -> Rc<RefCell<maestro_web::Attachment>> {
-        Rc::new(RefCell::new(maestro_web::Attachment {
+    pub fn record(&self) -> maestro_web::SharedAttachment {
+        std::sync::Arc::new(std::sync::RwLock::new(maestro_web::Attachment {
             id: self.id.clone(),
             r#type: match self.r#type.as_str() {
                 "image" => maestro_app::browser::utils::attachment_utils::AttachmentType::Image,

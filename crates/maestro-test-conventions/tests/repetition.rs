@@ -11,7 +11,10 @@ fn generated_bindings_reject_repeated_line_documentation() {
     let workspace = Workspace::new();
     workspace.member("guest", "maestro-extensions-wasm", "");
     workspace.list(&[("maestro-extensions-wasm", "core")]);
-    let path = workspace.root.path().join("crates/guest/src/bindings.rs");
+    let path = workspace
+        .root
+        .path()
+        .join(support::native_path("crates/guest/src/bindings.rs"));
     for marker in ["///", "//!"] {
         std::fs::write(
             &path,
@@ -35,7 +38,10 @@ fn repeated_documentation_reports_both_lines() {
     let workspace = Workspace::new();
     workspace.member("tui", "maestro-tui", "");
     workspace.list(&[("maestro-tui", "core")]);
-    let path = workspace.root.path().join("crates/tui/src/lib.rs");
+    let path = workspace
+        .root
+        .path()
+        .join(support::native_path("crates/tui/src/lib.rs"));
     std::fs::write(
         &path,
         "/// Read a value.\n///   Read a value.  \nfn read() {}\n",
@@ -54,7 +60,10 @@ fn repeated_documentation_lines_count_line_breaks_inside_earlier_tokens() {
     let workspace = Workspace::new();
     workspace.member("tui", "maestro-tui", "");
     workspace.list(&[("maestro-tui", "core")]);
-    let path = workspace.root.path().join("crates/tui/src/lib.rs");
+    let path = workspace
+        .root
+        .path()
+        .join(support::native_path("crates/tui/src/lib.rs"));
     std::fs::write(
         &path,
         "const TEXT: &str = \"one\ntwo\";\n/* one\ntwo */\n/// Read a value.\n/// Read a value.\nfn read() {}\n",
@@ -178,7 +187,10 @@ fn physical_documentation_lines_cover_tight_lists_and_separators() {
     let workspace = Workspace::new();
     workspace.member("tui", "maestro-tui", "");
     workspace.list(&[("maestro-tui", "core")]);
-    let path = workspace.root.path().join("crates/tui/src/lib.rs");
+    let path = workspace
+        .root
+        .path()
+        .join(support::native_path("crates/tui/src/lib.rs"));
     let mut failures = Vec::new();
     for prose in [
         "- Intro.\n  Repeat.\n  Repeat.",
@@ -224,7 +236,10 @@ fn source_test_module_declarations_require_local_convention() {
     let workspace = Workspace::new();
     workspace.member("tui", "maestro-tui", "");
     workspace.list(&[("maestro-tui", "core")]);
-    let path = workspace.root.path().join("crates/tui/src/lib.rs");
+    let path = workspace
+        .root
+        .path()
+        .join(support::native_path("crates/tui/src/lib.rs"));
     let mut failures = Vec::new();
     for declaration in [
         "#[cfg(test)] mod helpers;",
@@ -266,7 +281,10 @@ fn source_test_only_files_require_recognized_layout() {
     let workspace = Workspace::new();
     workspace.member("tui", "maestro-tui", "");
     workspace.list(&[("maestro-tui", "core")]);
-    let path = workspace.root.path().join("crates/tui/src/helpers.rs");
+    let path = workspace
+        .root
+        .path()
+        .join(support::native_path("crates/tui/src/helpers.rs"));
     std::fs::write(&path, "#![cfg(test)]\nmod nested;\n").unwrap();
     let error = check_workspace(workspace.root.path()).unwrap_err();
     assert!(error.contains(&format!("{}:1:", path.display())), "{error}");
@@ -278,7 +296,10 @@ fn initializers_and_signatures_do_not_hide_module_conventions() {
     let workspace = Workspace::new();
     workspace.member("tui", "maestro-tui", "");
     workspace.list(&[("maestro-tui", "core")]);
-    let path = workspace.root.path().join("crates/tui/src/lib.rs");
+    let path = workspace
+        .root
+        .path()
+        .join(support::native_path("crates/tui/src/lib.rs"));
     let mut failures = Vec::new();
     for source in [
         "const VALUE: () = { mod tests {} };",
@@ -307,7 +328,10 @@ fn nested_test_module_declarations_follow_layout_conventions() {
     let workspace = Workspace::new();
     workspace.member("tui", "maestro-tui", "");
     workspace.list(&[("maestro-tui", "core")]);
-    let path = workspace.root.path().join("crates/tui/src/lib.rs");
+    let path = workspace
+        .root
+        .path()
+        .join(support::native_path("crates/tui/src/lib.rs"));
     for enclosing in [
         "fn outer() { BODY }",
         "struct X; impl X { fn outer() { BODY } }",
@@ -327,7 +351,10 @@ fn documentation_code_ranges_match_existing_exclusions() {
     let workspace = Workspace::new();
     workspace.member("tui", "maestro-tui", "");
     workspace.list(&[("maestro-tui", "core")]);
-    let path = workspace.root.path().join("crates/tui/src/lib.rs");
+    let path = workspace
+        .root
+        .path()
+        .join(support::native_path("crates/tui/src/lib.rs"));
     let markdown = [
         "Intro.",
         "",

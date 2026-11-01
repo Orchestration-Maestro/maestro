@@ -14723,6 +14723,9 @@
         "turn_start",
         "message_start:user",
         "message_end:user",
+        "message_start:assistant",
+        "message_end:assistant",
+        "turn_end:assistant",
         "agent_end"
       ],
       "trace": [
@@ -14761,6 +14764,9 @@
         "turn_start",
         "message_start:user",
         "message_end:user",
+        "message_start:assistant",
+        "message_end:assistant",
+        "turn_end:assistant",
         "agent_end"
       ],
       "trace": [
@@ -14800,6 +14806,9 @@
         "turn_start",
         "message_start:user",
         "message_end:user",
+        "message_start:assistant",
+        "message_end:assistant",
+        "turn_end:assistant",
         "agent_end"
       ],
       "trace": [
@@ -15190,6 +15199,9 @@
         "turn_start",
         "message_start:user",
         "message_end:user",
+        "message_start:assistant",
+        "message_end:assistant",
+        "turn_end:assistant",
         "agent_end"
       ],
       "trace": [
@@ -15254,6 +15266,9 @@
         "turn_start",
         "message_start:user",
         "message_end:user",
+        "message_start:assistant",
+        "message_end:assistant",
+        "turn_end:assistant",
         "agent_end"
       ],
       "trace": [

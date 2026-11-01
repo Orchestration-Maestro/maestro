@@ -2,8 +2,7 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-#[path = "support/launch.rs"]
-mod launch;
+use crate::support::launch;
 
 use maestro_daemon::{api::event_hub::EventHub, app::App, settings::model::Config};
 use maestro_workspace::layout::PaneId;
@@ -93,7 +92,7 @@ fn daemon_sync_keeps_latest_raw_title_and_emits_only_for_stripped_changes() {
     if maestro_test_process::run_alone(name).unwrap() {
         return;
     }
-    maestro_test_process::TestProcess::named("setup_entry")
+    maestro_test_process::TestProcess::named("terminal_titles::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()
@@ -165,7 +164,7 @@ fn daemon_syncing_pending_titles_preserves_sidebar_render_impact() {
     if maestro_test_process::run_alone(name).unwrap() {
         return;
     }
-    maestro_test_process::TestProcess::named("setup_entry")
+    maestro_test_process::TestProcess::named("terminal_titles::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()
@@ -236,7 +235,7 @@ fn daemon_loop_consumes_titles_and_publishes_complete_pane_records() {
     if maestro_test_process::run_alone(name).unwrap() {
         return;
     }
-    maestro_test_process::TestProcess::named("setup_entry")
+    maestro_test_process::TestProcess::named("terminal_titles::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()

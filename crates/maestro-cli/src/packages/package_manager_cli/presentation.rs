@@ -5,13 +5,13 @@ use super::help::usage;
 use super::parse::{PackageCommand, PackageCommandOptions};
 use maestro_app::{
     APP_NAME, ConfiguredPackage, InstalledSourceScope, PackageManager, ProgressEvent,
-    ProgressEventType, Settings, SettingsManager, SettingsScope,
+    ProgressEventType, Settings, SettingsManager,
 };
 use maestro_theme::Theme;
 use std::{cell::RefCell, io, io::Write, rc::Rc};
 
 /// Write `text` and one line feed to `writer`.
-fn line(writer: &Rc<RefCell<dyn Write>>, text: &str) -> io::Result<()> {
+pub(crate) fn line(writer: &Rc<RefCell<dyn Write>>, text: &str) -> io::Result<()> {
     writeln!(writer.borrow_mut(), "{text}")
 }
 
@@ -76,10 +76,7 @@ pub(super) fn warn(
 ) -> io::Result<()> {
     let errors = settings.borrow_mut().drain_errors();
     for error in errors {
-        let scope = match error.scope {
-            SettingsScope::Global => "global",
-            SettingsScope::Project => "project",
-        };
+        let scope = error.scope.label();
         let stack = error
             .error
             .source()

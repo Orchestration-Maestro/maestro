@@ -8,9 +8,12 @@ use std::rc::Rc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use chrono::{DateTime, SecondsFormat, Utc};
+use maestro_tui::terminal::OutputErrorHandler;
 use maestro_tui::tui::{LocalFuture, LogContext, RenderCallback, RenderTimer, TuiRuntime};
 use tokio::task::{JoinHandle, LocalSet};
 use tokio::time::{Instant, sleep_until};
+
+use crate::output_errors::{FailureSource, OutputErrors};
 
 /// Runs the toolkit's timers and futures on the [`LocalSet`] its caller drives.
 ///
@@ -26,7 +29,9 @@ use tokio::time::{Instant, sleep_until};
 /// [`cancel`](RenderTimer::cancel) prevents it, and its captures are released once the set
 /// next processes the cancellation. A callback or future that returns an error has the
 /// `Display` text of the error and then of each source error written to standard error, each
-/// followed by a newline; the host then keeps running. A failure to write there is ignored.
+/// followed by a newline; the host then keeps running. A failure to write there reaches the
+/// handlers [`on_output_error`](TuiRuntime::on_output_error) registered, once, after the lock
+/// on standard error is released.
 ///
 /// [`log_context`](TuiRuntime::log_context) reports the process's home directory (empty when
 /// the platform has none), the current UTC time and a random lowercase hexadecimal nonce.
@@ -51,6 +56,8 @@ pub struct ProcessTuiRuntime {
     local: Rc<LocalSet>,
     /// The instant [`now`](TuiRuntime::now) counts from.
     origin: Instant,
+    /// The callbacks registered for output failures of the host's own standard error.
+    errors: Rc<OutputErrors>,
 }
 
 impl ProcessTuiRuntime {
@@ -60,6 +67,7 @@ impl ProcessTuiRuntime {
         Self {
             local,
             origin: Instant::now(),
+            errors: Rc::new(OutputErrors::default()),
         }
     }
 }
@@ -73,13 +81,21 @@ impl RenderTimer for Timer {
     }
 }
 
-/// Prints `error` and each of its sources, each followed by a newline, ignoring a failing standard error.
-fn report(error: &dyn Error) {
-    let mut sink = io::stderr().lock();
-    let mut next = Some(error);
-    while let Some(current) = next {
-        let _ = writeln!(sink, "{current}");
-        next = current.source();
+/// Prints `error` and each of its sources, each followed by a newline; a failing standard
+/// error is announced to the registered handlers once, after its lock is released.
+fn report(errors: &OutputErrors, error: &dyn Error) {
+    let written = {
+        let mut sink = io::stderr().lock();
+        let mut outcome = Ok(());
+        let mut next = Some(error);
+        while let Some(current) = next {
+            outcome = outcome.and(writeln!(sink, "{current}"));
+            next = current.source();
+        }
+        outcome
+    };
+    if let Err(failure) = written {
+        errors.notify_source(FailureSource::Stderr, &failure);
     }
 }
 
@@ -98,19 +114,21 @@ impl TuiRuntime for ProcessTuiRuntime {
 
     fn schedule(&self, delay: Duration, callback: RenderCallback) -> Box<dyn RenderTimer> {
         let deadline = Instant::now() + delay;
+        let errors = Rc::clone(&self.errors);
         let task = self.local.spawn_local(async move {
             sleep_until(deadline).await;
             if let Err(error) = callback() {
-                report(&error);
+                report(&errors, &error);
             }
         });
         Box::new(Timer(task))
     }
 
     fn spawn_local(&self, future: LocalFuture) {
+        let errors = Rc::clone(&self.errors);
         drop(self.local.spawn_local(async move {
             if let Err(error) = future.await {
-                report(&*error);
+                report(&errors, &*error);
             }
         }));
     }
@@ -149,6 +167,10 @@ impl TuiRuntime for ProcessTuiRuntime {
             fs::create_dir_all(parent)?;
         }
         fs::write(path, contents)
+    }
+
+    fn on_output_error(&self, handler: OutputErrorHandler) -> Box<dyn Fn()> {
+        self.errors.register(handler)
     }
 }
 

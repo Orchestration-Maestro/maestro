@@ -16,8 +16,9 @@ default to their model IDs; other omitted fields retain these defaults.
 `faux_assistant_message` defaults to API/provider `faux`, model `faux-1`, stop
 reason `Stop` and the current epoch timestamp in integer milliseconds. Response
 IDs and error messages are absent unless supplied; usage and costs start at zero.
-`faux_tool_call` generates a `tool` identifier unless one is supplied. Text,
-thinking and tool content omit signatures; thinking omits the redacted flag.
+`faux_tool_call` generates a `tool` identifier unless one is supplied and keeps the
+argument value it is given, whatever its root kind. Text, thinking and tool content
+omit signatures; thinking omits the redacted flag.
 
 ## Two-turn tool flow
 
@@ -38,7 +39,7 @@ let mut context = Context {
     })],
     tools: None,
 };
-let arguments = serde_json::from_value(serde_json::json!({"text": "package.json"}))?;
+let arguments = serde_json::json!({"text": "package.json"});
 registration.set_responses(vec![FauxResponseStep::Message(Box::new(
     faux_assistant_message(vec![
         AssistantContent::Thinking(faux_thinking("Need to inspect package metadata first.")),
@@ -125,8 +126,10 @@ No network credentials or server are needed.
   and prompt separators preserve whitespace. Nonempty session IDs with omitted,
   `Short` or `Long` retention enable caching; `Some(CacheRetention::None)` disables
   both reads and writes without changing existing cache. Empty IDs behave as absent.
-- Tool arguments emit compact JSON deltas; partial arguments remain empty until
-  tool end. Partial observations within one block share its accumulation, but
+- Tool arguments emit canonical compact JSON deltas in the spelling an authored
+  script writes: array-index keys first and each number as the double it names. The
+  usage estimate counts that same text. Partial arguments remain empty until tool
+  end. Partial observations within one block share its accumulation, but
   retained earlier observations never gain subsequent content blocks. Terminal
   messages retain original content metadata, while constructed partials are unsigned.
 - Unpaced chunks yield through native async; a positive `tokens_per_second` waits

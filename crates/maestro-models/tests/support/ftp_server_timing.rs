@@ -1,4 +1,4 @@
-//! Observations a test makes on a scripted FTP peer while its work runs.
+//! Live FTP peer observations compiled only by the native library tests.
 
 use std::sync::atomic::Ordering;
 

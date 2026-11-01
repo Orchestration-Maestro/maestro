@@ -3,6 +3,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use crate::loop_support;
+use crate::ls_support::posix_rows;
 use crate::read_support;
 use crate::runtime;
 use crate::write_support;
@@ -123,13 +124,13 @@ fn write_input_fields_follow_shared_preflight_validation() {
         let call = ToolCall {
             id: "call".into(),
             name: "write".into(),
-            arguments,
+            arguments: arguments.into(),
             thought_signature: None,
         };
         match validate_tool_arguments(&tool.definition, &call) {
             Ok(arguments) => {
                 assert!(expected.ok && expected.error.is_none());
-                assert_eq!(Some(Value::Object(arguments)), expected.args);
+                assert_eq!(Some(arguments), expected.args);
             }
             Err(error) => {
                 assert!(!expected.ok && expected.args.is_none());
@@ -163,7 +164,12 @@ fn write_resolves_paths_before_filesystem_work() {
             None,
         ))
         .unwrap();
-        assert_eq!(ops.calls(), expected.calls, "path {:?}", args.path);
+        assert_eq!(
+            posix_rows(&ops.calls()),
+            expected.calls,
+            "path {:?}",
+            args.path
+        );
         assert_eq!(json!({"content": content_json(&result)}), expected.result);
     }
     let dir = Scratch::new().unwrap();
@@ -175,7 +181,8 @@ fn write_resolves_paths_before_filesystem_work() {
         None,
     ))
     .unwrap();
-    assert_eq!(ops.calls()[1][1], format!("{}/shot PM.png", dir.text()));
+    let written = std::path::Path::new(&dir.text()).join("shot PM.png");
+    assert_eq!(ops.calls()[1][1], written.to_str().unwrap());
 }
 
 #[test]
@@ -258,7 +265,8 @@ fn write_abort_during_mkdir_skips_write_after_queue_release() {
     let path = format!("{}/f.txt", dir.text());
     let journal = Journal::default();
     let signal = Cancellation::new();
-    let ops = Arc::new(ScriptedWrite::new(&journal).mkdir_mode(Mode::Pend));
+    let (finish, mode) = Gate::operation();
+    let ops = Arc::new(ScriptedWrite::new(&journal).mkdir_mode(mode));
     let mut call = start(
         &tool_over(&ops, "/work"),
         input(&path, "x"),
@@ -268,8 +276,10 @@ fn write_abort_during_mkdir_skips_write_after_queue_release() {
     let mut next = next_in_line(&path, &journal);
     assert!(poll_once(&mut next).is_pending());
     signal.abort();
+    assert!(poll_once(&mut call).is_pending());
+    assert!(poll_once(&mut next).is_pending());
+    finish.open();
     journal.push(ready(&mut call).err().unwrap().message);
-    assert_eq!(ops.dropped.load(Ordering::SeqCst), 1);
     ready(&mut next).unwrap();
     assert_eq!(journal.entries(), expected);
     assert_eq!(ops.names(), ["mkdir"]);
@@ -292,37 +302,47 @@ fn write_abort_during_mkdir_skips_write_after_queue_release() {
 }
 
 #[test]
-fn write_abort_releases_queue_and_drops_pending_operation() {
+fn write_abort_keeps_queue_until_pending_operation_settles() {
     let expected: Vec<String> = serde_json::from_value(single_expected(
-        "write_abort_releases_queue_and_drops_pending_operation",
+        "write_abort_keeps_queue_until_pending_operation_settles",
     ))
     .unwrap();
     let dir = Scratch::new().unwrap();
     let path = format!("{}/f.txt", dir.text());
     let journal = Journal::default();
     let signal = Cancellation::new();
-    let ops = Arc::new(ScriptedWrite::new(&journal).write_mode(Mode::Pend));
+    let (finish, mode) = Gate::operation();
+    let ops = Arc::new(ScriptedWrite::new(&journal).write_mode(mode));
     let mut call = start(
         &tool_over(&ops, "/work"),
         input(&path, "x"),
         Some(signal.clone()),
     );
     assert!(poll_once(&mut call).is_pending());
-    let mut next = next_in_line(&path, &journal);
+    let successor = Arc::new(ScriptedWrite::new(&Journal::default()));
+    let mut next = start(
+        &tool_over(&successor, "/work"),
+        input(&path, "second"),
+        None,
+    );
     assert!(poll_once(&mut next).is_pending());
-    assert_eq!(ops.dropped.load(Ordering::SeqCst), 0);
     signal.abort();
+    assert!(poll_once(&mut call).is_pending());
+    assert!(poll_once(&mut next).is_pending());
+    assert!(successor.names().is_empty());
+    finish.open();
     journal.push(ready(&mut call).err().unwrap().message);
-    assert_eq!(ops.dropped.load(Ordering::SeqCst), 1);
     ready(&mut next).unwrap();
+    assert_eq!(successor.names(), ["mkdir", "write"]);
+    journal.push("next");
     assert_eq!(journal.entries(), expected);
 }
 
 #[test]
 fn write_late_abort_cannot_replace_success() {
-    for write in [
-        Mode::AbortThenSucceed,
-        Mode::AbortThenFail(failure("late failure")),
+    for (write, expected) in [
+        (Mode::AbortThenSucceed, "Operation aborted"),
+        (Mode::AbortThenFail(failure("late failure")), "late failure"),
     ] {
         let signal = Cancellation::new();
         let ops = Arc::new(
@@ -337,7 +357,7 @@ fn write_late_abort_cannot_replace_success() {
         ))
         .err()
         .unwrap();
-        assert_eq!(error.message, "Operation aborted");
+        assert_eq!(error.message, expected);
         assert_eq!(ops.names(), ["mkdir", "write"]);
     }
 }
@@ -451,15 +471,15 @@ fn write_native_and_supplied_adapters_share_one_caller() {
         json!([{"type": "text", "text": "Successfully wrote 14 bytes to x/y.txt"}])
     );
     assert_eq!(
-        ops.calls(),
-        [
+        posix_rows(&ops.calls()),
+        posix_rows(&[
             vec!["mkdir".to_owned(), format!("{cwd}/x")],
             vec![
                 "write".to_owned(),
                 format!("{cwd}/x/y.txt"),
                 "supplied bytes".to_owned()
             ]
-        ]
+        ])
     );
     assert!(!dir.path().join("x").exists());
 }
@@ -524,8 +544,8 @@ fn write_path_capture_avoids_unneeded_ambient_reads() {
         let pending = start(&tool_over(&ops, "."), input("f.txt", "x"), None);
         std::env::set_current_dir(decoy.path()).unwrap();
         runtime::run(pending).unwrap();
-        let written =
-            std::fs::canonicalize(original.path().join("f.txt").parent().unwrap()).unwrap();
-        assert_eq!(ops.calls()[1][1], written.join("f.txt").to_str().unwrap());
+        // The scratch root is already canonical, without a Windows verbatim prefix.
+        let written = original.path().join("f.txt");
+        assert_eq!(ops.calls()[1][1], written.to_str().unwrap());
     }
 }

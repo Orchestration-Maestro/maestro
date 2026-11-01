@@ -127,10 +127,11 @@ pub(super) fn build_chat_payload<E: ProviderExecution>(
 /// Select the effective simple controls without closing model mapping strings.
 pub(super) fn simple_options<E: ProviderExecution>(
     model: &Model,
+    context: &Context,
     options: &crate::SimpleStreamOptions<E>,
 ) -> (MistralOptions<E>, Option<String>) {
     let mut raw = MistralOptions {
-        common: crate::build_base_options_for(model, Some(options), None),
+        common: crate::build_base_options_for(model, context, Some(options), None),
         ..Default::default()
     };
     let Some(level) = options.reasoning.map(crate::ModelThinkingLevel::from) else {
@@ -185,6 +186,8 @@ pub(super) struct Prepared {
     request: crate::HttpRequest,
     /// One-attempt client.
     fetch: crate::Fetch,
+    /// The configured longest wait for the response or a chunk.
+    timeout: Option<std::time::Duration>,
 }
 
 /// Resolve credentials and URL before the hook, then encode its replacement.
@@ -224,6 +227,11 @@ pub(super) async fn prepare<E: ProviderExecution>(
         .into_bytes();
     let headers = transport::headers(&key, authored_headers(&model, &options.common))?;
     let url = transport::endpoint(&base)?;
+    let timeout = options
+        .common
+        .timeout_ms
+        .map(crate::providers::http::request_timeout)
+        .transpose()?;
     Ok(Prepared {
         request: crate::HttpRequest {
             method: "POST".into(),
@@ -237,6 +245,7 @@ pub(super) async fn prepare<E: ProviderExecution>(
             .fetch
             .clone()
             .unwrap_or_else(crate::default_fetch),
+        timeout,
     })
 }
 

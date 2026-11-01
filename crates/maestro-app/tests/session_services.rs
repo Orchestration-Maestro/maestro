@@ -57,6 +57,7 @@ fn options(
         model_registry: None,
         extension_flag_values: None,
         resource_loader_options: resources,
+        offline: None,
     }
 }
 
@@ -347,10 +348,68 @@ fn native_services_resolve_configured_command_keys() {
                 .get_api_key_and_headers(&model)
                 .await
         });
-        let ResolvedRequestAuth::Ok { api_key, headers } = resolved else {
+        let ResolvedRequestAuth::Ok {
+            api_key, headers, ..
+        } = resolved
+        else {
             panic!("configured command key must resolve")
         };
         assert!(api_key.as_deref().eq(&Some("resolved")));
         assert!(headers.is_none());
     });
+}
+
+#[test]
+fn extension_catalog_defaults_are_available_during_factory_loading() {
+    with_isolated_home(
+        "extension_catalog_defaults_are_available_during_factory_loading",
+        |base| {
+            let root = Root::new(base, "constructor-defaults");
+            std::fs::create_dir_all(root.agent()).unwrap();
+            std::fs::write(
+                format!("{}/auth.json", root.agent()),
+                r#"{"default-provider":{"type":"api_key","key":"default-auth"}}"#,
+            )
+            .unwrap();
+            std::fs::write(format!("{}/models.json", root.agent()), r#"{"providers":{"default-provider":{"baseUrl":"https://default.invalid","apiKey":"model-key","api":"openai-completions","models":[{"id":"default-model","name":"Default","reasoning":false,"input":["text"],"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0},"contextWindow":128,"maxTokens":16}]}}}"#).unwrap();
+            let observed = Rc::new(RefCell::new(None));
+            let capture = observed.clone();
+            let factory: ExtensionFactory<Local> = Rc::new(move |api| {
+                let capture = capture.clone();
+                Box::pin(async move {
+                    let auth = api.create_auth_storage(None)?;
+                    let catalog = api.create_model_registry(auth.clone(), None)?;
+                    let model = catalog
+                        .find("default-provider", "default-model")
+                        .ok_or("default model missing")?;
+                    assert_eq!(
+                        catalog
+                            .get_api_key_for_provider("default-provider")
+                            .await?
+                            .as_deref(),
+                        Some("default-auth")
+                    );
+                    auth.set_runtime_api_key("default-provider", "later-key");
+                    *capture.borrow_mut() = Some(
+                        json!({"model": model.read().unwrap().id, "key":catalog.get_api_key_for_provider("default-provider").await?}),
+                    );
+                    Ok(())
+                })
+            });
+            on_task_set(|local| async move {
+                let services = create_agent_session_services(options(&root, local, vec![factory]))
+                    .await
+                    .unwrap();
+                assert!(
+                    services.resource_loader.get_extensions().errors.is_empty(),
+                    "{:?}",
+                    services.resource_loader.get_extensions().errors
+                );
+            });
+            assert_eq!(
+                *observed.borrow(),
+                Some(json!({"model":"default-model", "key":"later-key"}))
+            );
+        },
+    );
 }

@@ -204,7 +204,8 @@ fn guide_surface() {
             description: "Echo supplied text".into(),
             parameters: serde_json::json!({
                 "type":"object", "properties":{"text":{"type":"string"}}, "required":["text"]
-            }),
+            })
+            .into(),
         }]),
     };
     let (client, _) = local_client();

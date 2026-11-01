@@ -1,0 +1,702 @@
+[
+  {
+    "test": "share_failed_exit_keeps_trimmed_stderr_or_unknown_error",
+    "input": {
+      "code": 1,
+      "stdout": "https://gist.github.com/alice/abc123",
+      "stderr": "  permission denied\n"
+    },
+    "expected": {
+      "kind": "error",
+      "text": "Failed to create gist: permission denied"
+    }
+  },
+  {
+    "test": "share_failed_exit_keeps_trimmed_stderr_or_unknown_error",
+    "input": {
+      "code": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    "expected": {
+      "kind": "error",
+      "text": "Failed to create gist: Unknown error"
+    }
+  },
+  {
+    "test": "share_failed_exit_keeps_trimmed_stderr_or_unknown_error",
+    "input": {
+      "code": 1,
+      "stdout": "",
+      "stderr": "﻿ \t\r\n"
+    },
+    "expected": {
+      "kind": "error",
+      "text": "Failed to create gist: Unknown error"
+    }
+  },
+  {
+    "test": "share_failed_exit_keeps_trimmed_stderr_or_unknown_error",
+    "input": {
+      "code": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    "expected": {
+      "kind": "error",
+      "text": "Failed to create gist: "
+    }
+  },
+  {
+    "test": "share_failed_exit_keeps_trimmed_stderr_or_unknown_error",
+    "input": {
+      "code": null,
+      "stdout": "",
+      "stderr": "terminated"
+    },
+    "expected": {
+      "kind": "error",
+      "text": "Failed to create gist: terminated"
+    }
+  },
+  {
+    "test": "share_output_uses_last_slash_segment",
+    "input": {
+      "code": 0,
+      "stdout": "﻿ \thttps://gist.github.com/alice/abc123\r\n",
+      "stderr": ""
+    },
+    "expected": {
+      "kind": "status",
+      "text": "Gist: https://gist.github.com/alice/abc123"
+    }
+  },
+  {
+    "test": "share_output_uses_last_slash_segment",
+    "input": {
+      "code": 0,
+      "stdout": "abc123",
+      "stderr": ""
+    },
+    "expected": {
+      "kind": "status",
+      "text": "Gist: abc123"
+    }
+  },
+  {
+    "test": "share_output_uses_last_slash_segment",
+    "input": {
+      "code": 0,
+      "stdout": "https://gist.github.com/alice/é🦀",
+      "stderr": ""
+    },
+    "expected": {
+      "kind": "status",
+      "text": "Gist: https://gist.github.com/alice/é🦀"
+    }
+  },
+  {
+    "test": "share_output_uses_last_slash_segment",
+    "input": {
+      "code": 0,
+      "stdout": "https://gist.github.com/alice/abc123",
+      "stderr": ""
+    },
+    "expected": {
+      "kind": "status",
+      "text": "Gist: https://gist.github.com/alice/abc123"
+    }
+  },
+  {
+    "test": "share_output_uses_last_slash_segment",
+    "input": {
+      "code": 0,
+      "stdout": "https://gist.github.com/alice/abc123?q=1#x",
+      "stderr": ""
+    },
+    "expected": {
+      "kind": "status",
+      "text": "Gist: https://gist.github.com/alice/abc123?q=1#x"
+    }
+  },
+  {
+    "test": "share_output_uses_last_slash_segment",
+    "input": {
+      "code": 0,
+      "stdout": "https://gist.github.com/alice/abc123\nextra",
+      "stderr": ""
+    },
+    "expected": {
+      "kind": "status",
+      "text": "Gist: https://gist.github.com/alice/abc123\nextra"
+    }
+  },
+  {
+    "test": "share_output_uses_last_slash_segment",
+    "input": {
+      "code": 0,
+      "stdout": "https://gist.github.com/alice/abc123",
+      "stderr": "warning"
+    },
+    "expected": {
+      "kind": "status",
+      "text": "Gist: https://gist.github.com/alice/abc123"
+    }
+  },
+  {
+    "test": "share_output_uses_last_slash_segment",
+    "input": {
+      "code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    "expected": {
+      "kind": "error",
+      "text": "Failed to parse gist ID from gh output"
+    }
+  },
+  {
+    "test": "share_output_uses_last_slash_segment",
+    "input": {
+      "code": 0,
+      "stdout": "﻿ \t\r\n",
+      "stderr": ""
+    },
+    "expected": {
+      "kind": "error",
+      "text": "Failed to parse gist ID from gh output"
+    }
+  },
+  {
+    "test": "share_output_uses_last_slash_segment",
+    "input": {
+      "code": 0,
+      "stdout": "https://gist.github.com/alice/\n",
+      "stderr": ""
+    },
+    "expected": {
+      "kind": "error",
+      "text": "Failed to parse gist ID from gh output"
+    }
+  },
+  {
+    "test": "share_formats_gist_with_configured_or_empty_viewer",
+    "input": {
+      "code": 0,
+      "stdout": "https://gist.github.com/alice/abc123\n",
+      "stderr": "",
+      "origin": ""
+    },
+    "expected": {
+      "kind": "status",
+      "text": "Gist: https://gist.github.com/alice/abc123"
+    }
+  },
+  {
+    "test": "share_formats_gist_with_configured_or_empty_viewer",
+    "input": {
+      "code": 0,
+      "stdout": "https://gist.github.com/alice/abc123\n",
+      "stderr": "",
+      "origin": "https://viewer.example"
+    },
+    "expected": {
+      "kind": "status",
+      "text": "Share URL: https://viewer.example/session/#abc123\nGist: https://gist.github.com/alice/abc123"
+    }
+  },
+  {
+    "test": "copy_refuses_when_no_assistant_text",
+    "input": {
+      "messages": []
+    },
+    "expected": null
+  },
+  {
+    "test": "copy_refuses_when_no_assistant_text",
+    "input": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "question",
+          "timestamp": 1
+        }
+      ]
+    },
+    "expected": null
+  },
+  {
+    "test": "copy_refuses_when_no_assistant_text",
+    "input": {
+      "messages": [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "older"
+            }
+          ],
+          "api": "faux",
+          "provider": "faux",
+          "model": "plain",
+          "usage": {
+            "input": 1,
+            "output": 1,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 2,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "hidden"
+            }
+          ],
+          "api": "faux",
+          "provider": "faux",
+          "model": "plain",
+          "usage": {
+            "input": 1,
+            "output": 1,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 2,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 2
+        }
+      ]
+    },
+    "expected": null
+  },
+  {
+    "test": "copy_refuses_when_no_assistant_text",
+    "input": {
+      "messages": [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "older"
+            }
+          ],
+          "api": "faux",
+          "provider": "faux",
+          "model": "plain",
+          "usage": {
+            "input": 1,
+            "output": 1,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 2,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": ""
+            }
+          ],
+          "api": "faux",
+          "provider": "faux",
+          "model": "plain",
+          "usage": {
+            "input": 1,
+            "output": 1,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 2,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 2
+        }
+      ]
+    },
+    "expected": null
+  },
+  {
+    "test": "copy_uses_current_last_assistant_and_reports_result",
+    "input": {
+      "messages": [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "older"
+            }
+          ],
+          "api": "faux",
+          "provider": "faux",
+          "model": "plain",
+          "usage": {
+            "input": 1,
+            "output": 1,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 2,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "  latest  "
+            }
+          ],
+          "api": "faux",
+          "provider": "faux",
+          "model": "plain",
+          "usage": {
+            "input": 1,
+            "output": 1,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 2,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 2
+        },
+        {
+          "role": "user",
+          "content": "next",
+          "timestamp": 3
+        }
+      ]
+    },
+    "expected": {
+      "frame": "\u001b]52;c;bGF0ZXN0\u0007"
+    }
+  },
+  {
+    "test": "copy_uses_current_last_assistant_and_reports_result",
+    "input": {
+      "messages": [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "a"
+            },
+            {
+              "type": "thinking",
+              "thinking": "hidden"
+            },
+            {
+              "type": "text",
+              "text": "b"
+            }
+          ],
+          "api": "faux",
+          "provider": "faux",
+          "model": "plain",
+          "usage": {
+            "input": 1,
+            "output": 1,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 2,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1
+        }
+      ]
+    },
+    "expected": {
+      "frame": "\u001b]52;c;YWI=\u0007"
+    }
+  },
+  {
+    "test": "copy_uses_current_last_assistant_and_reports_result",
+    "input": {
+      "messages": [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "older"
+            }
+          ],
+          "api": "faux",
+          "provider": "faux",
+          "model": "plain",
+          "usage": {
+            "input": 1,
+            "output": 1,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 2,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1
+        },
+        {
+          "role": "assistant",
+          "content": [],
+          "api": "faux",
+          "provider": "faux",
+          "model": "plain",
+          "usage": {
+            "input": 1,
+            "output": 1,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 2,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "aborted",
+          "timestamp": 2
+        }
+      ]
+    },
+    "expected": {
+      "frame": "\u001b]52;c;b2xkZXI=\u0007"
+    }
+  },
+  {
+    "test": "copy_uses_current_last_assistant_and_reports_result",
+    "input": {
+      "messages": [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": " partial "
+            }
+          ],
+          "api": "faux",
+          "provider": "faux",
+          "model": "plain",
+          "usage": {
+            "input": 1,
+            "output": 1,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 2,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "aborted",
+          "timestamp": 1
+        }
+      ]
+    },
+    "expected": {
+      "frame": "\u001b]52;c;cGFydGlhbA==\u0007"
+    }
+  },
+  {
+    "test": "copy_uses_current_last_assistant_and_reports_result",
+    "input": {
+      "messages": [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "﻿ \tanswer\n"
+            }
+          ],
+          "api": "faux",
+          "provider": "faux",
+          "model": "plain",
+          "usage": {
+            "input": 1,
+            "output": 1,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 2,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1
+        }
+      ]
+    },
+    "expected": {
+      "frame": "\u001b]52;c;YW5zd2Vy\u0007"
+    }
+  },
+  {
+    "test": "copy_uses_current_last_assistant_and_reports_result",
+    "input": {
+      "messages": [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "answer"
+            }
+          ],
+          "api": "faux",
+          "provider": "faux",
+          "model": "plain",
+          "usage": {
+            "input": 1,
+            "output": 1,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 2,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1
+        }
+      ]
+    },
+    "expected": {
+      "frame": "\u001b]52;c;woVhbnN3ZXLChQ==\u0007"
+    }
+  },
+  {
+    "test": "share_and_copy_commands_clear_editor_after_completion",
+    "input": {
+      "text": "/share"
+    },
+    "expected": {
+      "routed": true
+    }
+  },
+  {
+    "test": "share_and_copy_commands_clear_editor_after_completion",
+    "input": {
+      "text": "/copy"
+    },
+    "expected": {
+      "routed": true
+    }
+  },
+  {
+    "test": "share_and_copy_commands_clear_editor_after_completion",
+    "input": {
+      "text": "/share extra"
+    },
+    "expected": {
+      "routed": false
+    }
+  },
+  {
+    "test": "share_and_copy_commands_clear_editor_after_completion",
+    "input": {
+      "text": "/copy extra"
+    },
+    "expected": {
+      "routed": false
+    }
+  },
+  {
+    "test": "share_and_copy_commands_clear_editor_after_completion",
+    "input": {
+      "text": "/sharex"
+    },
+    "expected": {
+      "routed": false
+    }
+  },
+  {
+    "test": "share_and_copy_commands_clear_editor_after_completion",
+    "input": {
+      "text": "/copyx"
+    },
+    "expected": {
+      "routed": false
+    }
+  }
+]

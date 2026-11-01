@@ -9,8 +9,11 @@ use maestro_session::Presence;
 use maestro_session::messages::{BashExecutionMessage, CustomAgentMessages};
 use maestro_session::session_manager::ReadonlySessionManager;
 use maestro_tools::{
-    BashError, BashExecutorOptions, BashResult, create_local_bash_operations,
-    execute_bash_with_operations,
+    BashError, BashResult,
+    process::{
+        bash::local::create_local_bash_operations,
+        bash_executor::local::{BashExecutorOptions, execute_bash_with_operations},
+    },
 };
 use std::rc::Rc;
 use std::sync::{Arc, RwLock};
@@ -18,24 +21,24 @@ use std::sync::{Arc, RwLock};
 impl<E: ExtensionExecution> AgentSession<E> {
     /// Runs `command` in the session directory and records the result under `command`. The
     /// configured command prefix is put on its own line before the command it runs; the
-    /// configured shell path runs it unless `options` supply the operations. Once started,
-    /// the command belongs to the session: dropping the returned future leaves it running,
+    /// configured shell path runs it unless `options` supply the operations. Calling this starts
+    /// the command. It belongs to the session: dropping even the never-polled future leaves it running,
     /// and `abort_bash` stops it.
     ///
     /// # Errors
     /// Returns the shell operation's failure, an output failure or the session history's
     /// failure.
-    pub async fn execute_bash(
+    pub fn execute_bash(
         self: &Rc<Self>,
         command: &str,
         on_chunk: Option<BashChunkCallback>,
         options: BashRunOptions,
-    ) -> Result<BashResult, DiagnosticErrorInfo> {
+    ) -> impl std::future::Future<Output = Result<BashResult, DiagnosticErrorInfo>> + use<E> {
         let session = Rc::clone(self);
         let command = command.to_owned();
-        self.start_operation(async move { session.run_bash(&command, on_chunk, options).await })
-            .await
-            .map_err(thrown)?
+        let result = self
+            .start_operation(async move { session.run_bash(&command, on_chunk, options).await });
+        async move { result.await.map_err(thrown)? }
     }
 
     /// The shell command the session runs, from installing its signal to recording its
@@ -67,7 +70,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
             // Shortens the callback's lifetime to the signal's borrow.
             on_chunk: on_chunk
                 .as_deref_mut()
-                .map(|chunk| -> &mut (dyn FnMut(&str) + Send) { chunk }),
+                .map(|chunk| -> &mut dyn FnMut(&str) { chunk }),
             signal: Some(&signal),
         };
         let result = execute_bash_with_operations(&resolved, &cwd, &*operations, executor).await;

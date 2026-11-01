@@ -22,7 +22,7 @@ pub struct GenericArtifact {
     /// Original base64 content, never decoded by body drawing.
     content: String,
     /// Replaceable native effects.
-    host: Rc<dyn AttachmentHost>,
+    host: Option<Rc<dyn AttachmentHost>>,
     /// Surface identity independent of the filename.
     id: egui::Id,
     /// Owned current native operands.
@@ -36,6 +36,10 @@ impl GenericArtifact {
     /// Start with empty filename and content using the supplied native host.
     #[must_use]
     pub fn new(host: Rc<dyn AttachmentHost>) -> Self {
+        Self::with_host(Some(host))
+    }
+    /// Create file storage independently of retained effects.
+    fn with_host(host: Option<Rc<dyn AttachmentHost>>) -> Self {
         Self {
             filename: String::new(),
             content: String::new(),
@@ -77,16 +81,17 @@ impl GenericArtifact {
             _ => "application/octet-stream",
         }
     }
+    /// Filename followed by the two localized guidance sentences.
+    fn text_values(&self, i18n: &crate::I18n) -> Result<[String; 3], crate::I18nError> {
+        Ok([
+            self.filename.clone(),
+            i18n.text("Preview not available for this file type.")?,
+            i18n.text("Click the download button above to view it on your computer.")?,
+        ])
+    }
     /// Update owned text operands and only the changed native nodes.
     fn update_text(&self, view: ArtifactView<'_>) -> Result<(), crate::I18nError> {
-        let values = [
-            self.filename.clone(),
-            view.i18n
-                .text("Preview not available for this file type.")?,
-            view.i18n
-                .text("Click the download button above to view it on your computer.")?,
-        ];
-        self.text.borrow_mut().values = values;
+        self.text.borrow_mut().values = self.text_values(view.i18n)?;
         #[cfg(target_arch = "wasm32")]
         {
             let text = self.text.borrow();
@@ -101,19 +106,19 @@ impl GenericArtifact {
 }
 impl Drop for GenericArtifact {
     fn drop(&mut self) {
-        self.host.remove(self.id);
+        if let Some(host) = &self.host {
+            host.remove(self.id);
+        }
+    }
+}
+impl Default for GenericArtifact {
+    /// Empty host-free generic file content.
+    fn default() -> Self {
+        Self::with_host(None)
     }
 }
 impl ArtifactElement for GenericArtifact {
-    fn set_visibility(
-        &mut self,
-        visible: bool,
-        modal: Option<egui::Id>,
-    ) -> Result<(), ArtifactUiError> {
-        self.host
-            .set_retained_visibility(self.id, visible, modal)
-            .map_err(ArtifactUiError::Host)
-    }
+    super::retained::artifact_visibility!();
     fn filename(&self) -> &str {
         &self.filename
     }
@@ -139,7 +144,7 @@ impl ArtifactElement for GenericArtifact {
             download_button::draw(
                 ui,
                 view,
-                self.host.as_ref(),
+                super::retained::host(self.host.as_ref())?.as_ref(),
                 &self.filename,
                 (self.mime(), &bytes),
             )
@@ -154,7 +159,7 @@ impl ArtifactElement for GenericArtifact {
             .allocate_space(ui.available_size().max(egui::Vec2::ZERO))
             .1;
         attachment_content::reading::present(
-            self.host.as_ref(),
+            super::retained::host(self.host.as_ref())?.as_ref(),
             ui,
             (self.id, rect, None),
             &reading,
@@ -166,3 +171,5 @@ impl ArtifactElement for GenericArtifact {
 }
 #[cfg(target_arch = "wasm32")]
 mod browser;
+#[cfg(target_arch = "wasm32")]
+mod dom;

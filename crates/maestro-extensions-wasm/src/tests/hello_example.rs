@@ -2,7 +2,7 @@
 use serde_json::{Value, json};
 
 use super::example_support::{
-    decoded, invoke_tool_on_component, registered, release_all, result_value,
+    invoke_tool_on_component, registered, registered_metadata, release_all, result_value,
 };
 use crate::component_adapter::ToolCapabilities;
 use crate::{Extension, ExtensionAPI, ExtensionFuture};
@@ -27,8 +27,9 @@ fn corpus() -> Value {
 /// Assert the metadata and schema received by the actual host against a recorded document.
 pub(super) fn assert_metadata(metadata: &[String], expected: &Value) {
     assert_eq!(metadata.len(), 1);
-    assert_eq!(decoded(&metadata[0], "parameters"), *expected);
+    assert_eq!(registered_metadata(&metadata[0]), *expected);
 }
+
 /// Register once and assert the declared required string without optional metadata.
 #[test]
 fn hello_registers_the_greeting_schema() -> Result<(), String> {

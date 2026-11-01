@@ -1,0 +1,484 @@
+{
+  "rows": [
+    {
+      "id": "missing",
+      "input": {
+        "role": "user-with-attachments",
+        "content": "  hello  ",
+        "timestamp": 0
+      },
+      "expected": {
+        "persisted": {
+          "role": "user-with-attachments",
+          "content": "  hello  ",
+          "timestamp": 0
+        },
+        "blocks": [],
+        "projected": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "  hello  "
+              }
+            ],
+            "timestamp": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "null",
+      "input": {
+        "role": "user-with-attachments",
+        "content": "  hello  ",
+        "timestamp": 0,
+        "attachments": null
+      },
+      "expected": {
+        "persisted": {
+          "role": "user-with-attachments",
+          "content": "  hello  ",
+          "timestamp": 0,
+          "attachments": null
+        },
+        "blocks": [],
+        "projected": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "  hello  "
+              }
+            ],
+            "timestamp": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "empty",
+      "input": {
+        "role": "user-with-attachments",
+        "content": "  hello  ",
+        "timestamp": 0,
+        "attachments": []
+      },
+      "expected": {
+        "persisted": {
+          "role": "user-with-attachments",
+          "content": "  hello  ",
+          "timestamp": 0,
+          "attachments": []
+        },
+        "blocks": [],
+        "projected": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "  hello  "
+              }
+            ],
+            "timestamp": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "image",
+      "input": {
+        "role": "user-with-attachments",
+        "content": "  hello  ",
+        "timestamp": 0,
+        "attachments": [
+          {
+            "id": "image",
+            "type": "image",
+            "fileName": "picture.png",
+            "mimeType": "image/png",
+            "size": 1,
+            "content": "AA==",
+            "preview": "AA=="
+          }
+        ]
+      },
+      "expected": {
+        "persisted": {
+          "role": "user-with-attachments",
+          "content": "  hello  ",
+          "timestamp": 0,
+          "attachments": [
+            {
+              "id": "image",
+              "type": "image",
+              "fileName": "picture.png",
+              "mimeType": "image/png",
+              "size": 1,
+              "content": "AA==",
+              "preview": "AA=="
+            }
+          ]
+        },
+        "blocks": [
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ],
+        "projected": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "  hello  "
+              },
+              {
+                "type": "image",
+                "data": "AA==",
+                "mimeType": "image/png"
+              }
+            ],
+            "timestamp": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "text-absent",
+      "input": {
+        "role": "user-with-attachments",
+        "content": "  hello  ",
+        "timestamp": 0,
+        "attachments": [
+          {
+            "id": "doc",
+            "type": "document",
+            "fileName": "雪.txt",
+            "mimeType": "text/plain",
+            "size": 1,
+            "content": "YQ=="
+          }
+        ]
+      },
+      "expected": {
+        "persisted": {
+          "role": "user-with-attachments",
+          "content": "  hello  ",
+          "timestamp": 0,
+          "attachments": [
+            {
+              "id": "doc",
+              "type": "document",
+              "fileName": "雪.txt",
+              "mimeType": "text/plain",
+              "size": 1,
+              "content": "YQ=="
+            }
+          ]
+        },
+        "blocks": [],
+        "projected": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "  hello  "
+              }
+            ],
+            "timestamp": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "text-empty",
+      "input": {
+        "role": "user-with-attachments",
+        "content": "  hello  ",
+        "timestamp": 0,
+        "attachments": [
+          {
+            "id": "doc",
+            "type": "document",
+            "fileName": "雪.txt",
+            "mimeType": "text/plain",
+            "size": 1,
+            "content": "YQ==",
+            "extractedText": ""
+          }
+        ]
+      },
+      "expected": {
+        "persisted": {
+          "role": "user-with-attachments",
+          "content": "  hello  ",
+          "timestamp": 0,
+          "attachments": [
+            {
+              "id": "doc",
+              "type": "document",
+              "fileName": "雪.txt",
+              "mimeType": "text/plain",
+              "size": 1,
+              "content": "YQ==",
+              "extractedText": ""
+            }
+          ]
+        },
+        "blocks": [],
+        "projected": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "  hello  "
+              }
+            ],
+            "timestamp": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "text-space",
+      "input": {
+        "role": "user-with-attachments",
+        "content": "  hello  ",
+        "timestamp": 0,
+        "attachments": [
+          {
+            "id": "doc",
+            "type": "document",
+            "fileName": "雪.txt",
+            "mimeType": "text/plain",
+            "size": 1,
+            "content": "YQ==",
+            "extractedText": " "
+          }
+        ]
+      },
+      "expected": {
+        "persisted": {
+          "role": "user-with-attachments",
+          "content": "  hello  ",
+          "timestamp": 0,
+          "attachments": [
+            {
+              "id": "doc",
+              "type": "document",
+              "fileName": "雪.txt",
+              "mimeType": "text/plain",
+              "size": 1,
+              "content": "YQ==",
+              "extractedText": " "
+            }
+          ]
+        },
+        "blocks": [
+          {
+            "type": "text",
+            "text": "\n\n[Document: 雪.txt]\n "
+          }
+        ],
+        "projected": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "  hello  "
+              },
+              {
+                "type": "text",
+                "text": "\n\n[Document: 雪.txt]\n "
+              }
+            ],
+            "timestamp": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "text-unicode",
+      "input": {
+        "role": "user-with-attachments",
+        "content": "  hello  ",
+        "timestamp": 0,
+        "attachments": [
+          {
+            "id": "doc",
+            "type": "document",
+            "fileName": "雪.txt",
+            "mimeType": "text/plain",
+            "size": 1,
+            "content": "YQ==",
+            "extractedText": "雪\r\nline"
+          }
+        ]
+      },
+      "expected": {
+        "persisted": {
+          "role": "user-with-attachments",
+          "content": "  hello  ",
+          "timestamp": 0,
+          "attachments": [
+            {
+              "id": "doc",
+              "type": "document",
+              "fileName": "雪.txt",
+              "mimeType": "text/plain",
+              "size": 1,
+              "content": "YQ==",
+              "extractedText": "雪\r\nline"
+            }
+          ]
+        },
+        "blocks": [
+          {
+            "type": "text",
+            "text": "\n\n[Document: 雪.txt]\n雪\r\nline"
+          }
+        ],
+        "projected": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "  hello  "
+              },
+              {
+                "type": "text",
+                "text": "\n\n[Document: 雪.txt]\n雪\r\nline"
+              }
+            ],
+            "timestamp": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "repeated",
+      "input": {
+        "role": "user-with-attachments",
+        "content": "  hello  ",
+        "timestamp": 0,
+        "attachments": [
+          {
+            "id": "image",
+            "type": "image",
+            "fileName": "picture.png",
+            "mimeType": "image/png",
+            "size": 1,
+            "content": "AA==",
+            "preview": "AA=="
+          },
+          {
+            "id": "image",
+            "type": "image",
+            "fileName": "picture.png",
+            "mimeType": "image/png",
+            "size": 1,
+            "content": "AA==",
+            "preview": "AA=="
+          },
+          {
+            "id": "doc",
+            "type": "document",
+            "fileName": "雪.txt",
+            "mimeType": "text/plain",
+            "size": 1,
+            "content": "YQ==",
+            "extractedText": "body"
+          }
+        ]
+      },
+      "expected": {
+        "persisted": {
+          "role": "user-with-attachments",
+          "content": "  hello  ",
+          "timestamp": 0,
+          "attachments": [
+            {
+              "id": "image",
+              "type": "image",
+              "fileName": "picture.png",
+              "mimeType": "image/png",
+              "size": 1,
+              "content": "AA==",
+              "preview": "AA=="
+            },
+            {
+              "id": "image",
+              "type": "image",
+              "fileName": "picture.png",
+              "mimeType": "image/png",
+              "size": 1,
+              "content": "AA==",
+              "preview": "AA=="
+            },
+            {
+              "id": "doc",
+              "type": "document",
+              "fileName": "雪.txt",
+              "mimeType": "text/plain",
+              "size": 1,
+              "content": "YQ==",
+              "extractedText": "body"
+            }
+          ]
+        },
+        "blocks": [
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "\n\n[Document: 雪.txt]\nbody"
+          }
+        ],
+        "projected": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "  hello  "
+              },
+              {
+                "type": "image",
+                "data": "AA==",
+                "mimeType": "image/png"
+              },
+              {
+                "type": "image",
+                "data": "AA==",
+                "mimeType": "image/png"
+              },
+              {
+                "type": "text",
+                "text": "\n\n[Document: 雪.txt]\nbody"
+              }
+            ],
+            "timestamp": 0
+          }
+        ]
+      }
+    }
+  ]
+}

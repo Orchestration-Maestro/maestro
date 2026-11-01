@@ -48,9 +48,7 @@ struct Row {
     #[serde(default)]
     manifest_directory: bool,
     /// Successful output.
-    expected: Option<Expected>,
-    /// Failure category.
-    error: Option<Failure>,
+    expected: Expected,
 }
 /// Expected public resources by kind.
 #[derive(Deserialize)]
@@ -88,13 +86,6 @@ struct Metadata {
     origin: maestro_resources::SourceOrigin,
     /// Package base.
     base_dir: Option<String>,
-}
-/// Expected error category.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Failure {
-    /// Native category.
-    kind: String,
 }
 /// Exclusively creates one setup file.
 pub(crate) fn write(path: &Path, text: &str) {
@@ -226,24 +217,7 @@ async fn run_case(row: Row) {
         .map(|s| s.replace("$ROOT", &root))
         .collect();
     let result = manager.resolve_extension_sources(&sources, None).await;
-    match (row.expected, row.error) {
-        (Some(expected), None) => {
-            compare_result(&result.unwrap(), &expected, &root, &row.id);
-        }
-        (None, Some(error)) => {
-            assert_eq!(error.kind, "InvalidData");
-            assert_eq!(
-                result
-                    .err()
-                    .expect("installed remote malformed list must fail")
-                    .kind(),
-                std::io::ErrorKind::InvalidData,
-                "{}",
-                row.id
-            );
-        }
-        _ => panic!("case must specify one outcome"),
-    }
+    compare_result(&result.unwrap(), &row.expected, &root, &row.id);
     assert_eq!(
         events.borrow().len(),
         row.events.len(),
@@ -341,10 +315,52 @@ fn a_failed_local_source_does_not_stop_later_sources() {
     cases("a_failed_local_source_does_not_stop_later_sources");
 }
 
-/// Recorded installed remote manifest errors propagate behavior.
+/// Recorded installed remote malformed lists are ignored behavior.
 #[test]
-fn installed_remote_manifest_errors_propagate() {
-    cases("installed_remote_manifest_errors_propagate");
+fn installed_remote_malformed_lists_are_ignored() {
+    cases("installed_remote_malformed_lists_are_ignored");
+}
+
+/// A malformed resource list is ignored while valid lists still load, with and without
+/// a resource filter on the package.
+#[test]
+fn malformed_resource_lists_are_ignored_while_valid_lists_load() {
+    for filtered in [false, true] {
+        crate::runtime::run(async move {
+            let scratch = scratch::Scratch::new().unwrap();
+            let root = scratch.path().to_string_lossy();
+            let package = format!("{root}/pkg");
+            write(&Path::new(&package).join("prompts/a.md"), "");
+            write(
+                &Path::new(&package).join("package.json"),
+                r#"{"maestro":{"skills":5,"prompts":["prompts/a.md"]}}"#,
+            );
+            let entry = if filtered {
+                serde_json::json!({"source": package, "skills": ["*"]})
+            } else {
+                serde_json::json!(package)
+            };
+            let (_, settings, _) = support::manager(&serde_json::json!({"packages": [entry]}));
+            let manager = DefaultPackageManager::new(
+                PackageManagerOptions {
+                    cwd: maestro_path::join(&[&root, "project"]),
+                    agent_dir: maestro_path::join(&[&root, "agent"]),
+                    settings_manager: settings,
+                },
+                support::Controlled(Rc::new(support::Effects::default())),
+            );
+
+            let result = manager.resolve(None).await.unwrap();
+
+            assert!(result.skills.is_empty(), "filtered: {filtered}");
+            let prompts: Vec<_> = result.prompts.iter().map(|p| p.path.as_str()).collect();
+            assert_eq!(
+                prompts,
+                [format!("{package}/prompts/a.md")],
+                "filtered: {filtered}"
+            );
+        });
+    }
 }
 
 /// Recorded manifest duplicates use the last selected member behavior.
@@ -393,4 +409,68 @@ fn manifest_exclusions_keep_explicit_dependency_resources() {
 #[test]
 fn manifest_overrides_apply_to_prompts_and_themes() {
     cases("manifest_overrides_apply_to_prompts_and_themes");
+}
+
+/// Unfiltered kinds in object registrations use conventions for malformed manifest lists.
+#[test]
+fn filtered_packages_fall_back_only_for_absent_or_malformed_lists() {
+    for value in [
+        serde_json::json!(5),
+        serde_json::json!("x"),
+        serde_json::json!(["a", 7]),
+        serde_json::json!([]),
+    ] {
+        crate::runtime::run(async move {
+            let scratch = scratch::Scratch::new().unwrap();
+            let root = scratch.path().to_str().unwrap();
+            let package = maestro_path::join(&[root, "pkg"]);
+            let files = [
+                "extensions/a.wasm",
+                "skills/a.md",
+                "prompts/a.md",
+                "themes/a.json",
+            ];
+            for file in files {
+                write(&Path::new(&package).join(file), "");
+            }
+            write(
+                &Path::new(&package).join("package.json"),
+                &serde_json::json!({"maestro": {
+                    "extensions":value, "skills":value, "prompts":value, "themes":value
+                }})
+                .to_string(),
+            );
+            let (_, settings, _) =
+                support::manager(&serde_json::json!({"packages":[{"source":package}]}));
+            let manager = DefaultPackageManager::new(
+                PackageManagerOptions {
+                    cwd: maestro_path::join(&[root, "project"]),
+                    agent_dir: maestro_path::join(&[root, "agent"]),
+                    settings_manager: settings,
+                },
+                support::Controlled(Rc::new(support::Effects::default())),
+            );
+
+            let result = manager.resolve(None).await.unwrap();
+
+            let actual: Vec<_> = [
+                &result.extensions,
+                &result.skills,
+                &result.prompts,
+                &result.themes,
+            ]
+            .into_iter()
+            .flatten()
+            .map(|r| r.path.clone())
+            .collect();
+            let expected: Vec<_> = if value == serde_json::json!([]) {
+                Vec::new()
+            } else {
+                files
+                    .map(|file| maestro_path::join(&[&package, file]))
+                    .into()
+            };
+            assert_eq!(actual, expected, "manifest list: {value}");
+        });
+    }
 }

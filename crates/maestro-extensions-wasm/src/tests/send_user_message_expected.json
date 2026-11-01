@@ -1,0 +1,2074 @@
+{
+  "metadata": [
+    {
+      "name": "ask",
+      "description": "Send a user message to the agent",
+      "completions": false
+    },
+    {
+      "name": "steer",
+      "description": "Send a steering message (interrupts current processing)",
+      "completions": false
+    },
+    {
+      "name": "followup",
+      "description": "Queue a follow-up message (waits for current processing)",
+      "completions": false
+    },
+    {
+      "name": "askwith",
+      "description": "Send a user message with structured content",
+      "completions": false
+    }
+  ],
+  "rows": [
+    {
+      "name": "ask_idle_empty",
+      "group": "ask",
+      "input": {
+        "command": "ask",
+        "args": "",
+        "idle": true,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /ask <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "ask_idle_ascii_blank",
+      "group": "ask",
+      "input": {
+        "command": "ask",
+        "args": " \t\r\n ",
+        "idle": true,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /ask <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "ask_idle_unicode_blank",
+      "group": "ask",
+      "input": {
+        "command": "ask",
+        "args": "       　",
+        "idle": true,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /ask <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "ask_idle_bom_only",
+      "group": "ask",
+      "input": {
+        "command": "ask",
+        "args": "﻿",
+        "idle": true,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "sendUserMessage",
+            "content": "﻿",
+            "options": null
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "ask_idle_nel_only",
+      "group": "ask",
+      "input": {
+        "command": "ask",
+        "args": "",
+        "idle": true,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /ask <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "ask_idle_literal",
+      "group": "ask",
+      "input": {
+        "command": "ask",
+        "args": "  What is 雪 + é?\r\n/steer literal  ",
+        "idle": true,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "sendUserMessage",
+            "content": "  What is 雪 + é?\r\n/steer literal  ",
+            "options": null
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "ask_idle_zero_width_neighbour",
+      "group": "ask",
+      "input": {
+        "command": "ask",
+        "args": "​",
+        "idle": true,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "sendUserMessage",
+            "content": "​",
+            "options": null
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "ask_busy_empty",
+      "group": "ask",
+      "input": {
+        "command": "ask",
+        "args": "",
+        "idle": false,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /ask <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "ask_busy_ascii_blank",
+      "group": "ask",
+      "input": {
+        "command": "ask",
+        "args": " \t\r\n ",
+        "idle": false,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /ask <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "ask_busy_unicode_blank",
+      "group": "ask",
+      "input": {
+        "command": "ask",
+        "args": "       　",
+        "idle": false,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /ask <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "ask_busy_bom_only",
+      "group": "ask",
+      "input": {
+        "command": "ask",
+        "args": "﻿",
+        "idle": false,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Agent is busy. Use /steer or /followup instead.",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "ask_busy_nel_only",
+      "group": "ask",
+      "input": {
+        "command": "ask",
+        "args": "",
+        "idle": false,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /ask <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "ask_busy_literal",
+      "group": "ask",
+      "input": {
+        "command": "ask",
+        "args": "  What is 雪 + é?\r\n/steer literal  ",
+        "idle": false,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Agent is busy. Use /steer or /followup instead.",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "ask_busy_zero_width_neighbour",
+      "group": "ask",
+      "input": {
+        "command": "ask",
+        "args": "​",
+        "idle": false,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Agent is busy. Use /steer or /followup instead.",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "steer_idle_empty",
+      "group": "steer",
+      "input": {
+        "command": "steer",
+        "args": "",
+        "idle": true,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /steer <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "steer_idle_ascii_blank",
+      "group": "steer",
+      "input": {
+        "command": "steer",
+        "args": " \t\r\n ",
+        "idle": true,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /steer <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "steer_idle_unicode_blank",
+      "group": "steer",
+      "input": {
+        "command": "steer",
+        "args": "       　",
+        "idle": true,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /steer <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "steer_idle_bom_only",
+      "group": "steer",
+      "input": {
+        "command": "steer",
+        "args": "﻿",
+        "idle": true,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "sendUserMessage",
+            "content": "﻿",
+            "options": null
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "steer_idle_nel_only",
+      "group": "steer",
+      "input": {
+        "command": "steer",
+        "args": "",
+        "idle": true,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /steer <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "steer_idle_literal",
+      "group": "steer",
+      "input": {
+        "command": "steer",
+        "args": "  What is 雪 + é?\r\n/steer literal  ",
+        "idle": true,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "sendUserMessage",
+            "content": "  What is 雪 + é?\r\n/steer literal  ",
+            "options": null
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "steer_idle_zero_width_neighbour",
+      "group": "steer",
+      "input": {
+        "command": "steer",
+        "args": "​",
+        "idle": true,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "sendUserMessage",
+            "content": "​",
+            "options": null
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "steer_busy_empty",
+      "group": "steer",
+      "input": {
+        "command": "steer",
+        "args": "",
+        "idle": false,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /steer <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "steer_busy_ascii_blank",
+      "group": "steer",
+      "input": {
+        "command": "steer",
+        "args": " \t\r\n ",
+        "idle": false,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /steer <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "steer_busy_unicode_blank",
+      "group": "steer",
+      "input": {
+        "command": "steer",
+        "args": "       　",
+        "idle": false,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /steer <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "steer_busy_bom_only",
+      "group": "steer",
+      "input": {
+        "command": "steer",
+        "args": "﻿",
+        "idle": false,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "sendUserMessage",
+            "content": "﻿",
+            "options": {
+              "deliverAs": "steer"
+            }
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "steer_busy_nel_only",
+      "group": "steer",
+      "input": {
+        "command": "steer",
+        "args": "",
+        "idle": false,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /steer <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "steer_busy_literal",
+      "group": "steer",
+      "input": {
+        "command": "steer",
+        "args": "  What is 雪 + é?\r\n/steer literal  ",
+        "idle": false,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "sendUserMessage",
+            "content": "  What is 雪 + é?\r\n/steer literal  ",
+            "options": {
+              "deliverAs": "steer"
+            }
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "steer_busy_zero_width_neighbour",
+      "group": "steer",
+      "input": {
+        "command": "steer",
+        "args": "​",
+        "idle": false,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "sendUserMessage",
+            "content": "​",
+            "options": {
+              "deliverAs": "steer"
+            }
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "followup_idle_empty",
+      "group": "followup",
+      "input": {
+        "command": "followup",
+        "args": "",
+        "idle": true,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /followup <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "followup_idle_ascii_blank",
+      "group": "followup",
+      "input": {
+        "command": "followup",
+        "args": " \t\r\n ",
+        "idle": true,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /followup <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "followup_idle_unicode_blank",
+      "group": "followup",
+      "input": {
+        "command": "followup",
+        "args": "       　",
+        "idle": true,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /followup <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "followup_idle_bom_only",
+      "group": "followup",
+      "input": {
+        "command": "followup",
+        "args": "﻿",
+        "idle": true,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "sendUserMessage",
+            "content": "﻿",
+            "options": null
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "followup_idle_nel_only",
+      "group": "followup",
+      "input": {
+        "command": "followup",
+        "args": "",
+        "idle": true,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /followup <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "followup_idle_literal",
+      "group": "followup",
+      "input": {
+        "command": "followup",
+        "args": "  What is 雪 + é?\r\n/steer literal  ",
+        "idle": true,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "sendUserMessage",
+            "content": "  What is 雪 + é?\r\n/steer literal  ",
+            "options": null
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "followup_idle_zero_width_neighbour",
+      "group": "followup",
+      "input": {
+        "command": "followup",
+        "args": "​",
+        "idle": true,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "sendUserMessage",
+            "content": "​",
+            "options": null
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "followup_busy_empty",
+      "group": "followup",
+      "input": {
+        "command": "followup",
+        "args": "",
+        "idle": false,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /followup <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "followup_busy_ascii_blank",
+      "group": "followup",
+      "input": {
+        "command": "followup",
+        "args": " \t\r\n ",
+        "idle": false,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /followup <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "followup_busy_unicode_blank",
+      "group": "followup",
+      "input": {
+        "command": "followup",
+        "args": "       　",
+        "idle": false,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /followup <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "followup_busy_bom_only",
+      "group": "followup",
+      "input": {
+        "command": "followup",
+        "args": "﻿",
+        "idle": false,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "sendUserMessage",
+            "content": "﻿",
+            "options": {
+              "deliverAs": "followUp"
+            }
+          },
+          {
+            "operation": "notify",
+            "message": "Follow-up queued",
+            "kind": "info"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "followup_busy_nel_only",
+      "group": "followup",
+      "input": {
+        "command": "followup",
+        "args": "",
+        "idle": false,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /followup <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "followup_busy_literal",
+      "group": "followup",
+      "input": {
+        "command": "followup",
+        "args": "  What is 雪 + é?\r\n/steer literal  ",
+        "idle": false,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "sendUserMessage",
+            "content": "  What is 雪 + é?\r\n/steer literal  ",
+            "options": {
+              "deliverAs": "followUp"
+            }
+          },
+          {
+            "operation": "notify",
+            "message": "Follow-up queued",
+            "kind": "info"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "followup_busy_zero_width_neighbour",
+      "group": "followup",
+      "input": {
+        "command": "followup",
+        "args": "​",
+        "idle": false,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "sendUserMessage",
+            "content": "​",
+            "options": {
+              "deliverAs": "followUp"
+            }
+          },
+          {
+            "operation": "notify",
+            "message": "Follow-up queued",
+            "kind": "info"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "askwith_idle_empty",
+      "group": "askwith",
+      "input": {
+        "command": "askwith",
+        "args": "",
+        "idle": true,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /askwith <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "askwith_idle_ascii_blank",
+      "group": "askwith",
+      "input": {
+        "command": "askwith",
+        "args": " \t\r\n ",
+        "idle": true,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /askwith <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "askwith_idle_unicode_blank",
+      "group": "askwith",
+      "input": {
+        "command": "askwith",
+        "args": "       　",
+        "idle": true,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /askwith <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "askwith_idle_bom_only",
+      "group": "askwith",
+      "input": {
+        "command": "askwith",
+        "args": "﻿",
+        "idle": true,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "sendUserMessage",
+            "content": [
+              {
+                "type": "text",
+                "text": "User request: ﻿"
+              },
+              {
+                "type": "text",
+                "text": "Please respond concisely."
+              }
+            ],
+            "options": null
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "askwith_idle_nel_only",
+      "group": "askwith",
+      "input": {
+        "command": "askwith",
+        "args": "",
+        "idle": true,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /askwith <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "askwith_idle_literal",
+      "group": "askwith",
+      "input": {
+        "command": "askwith",
+        "args": "  What is 雪 + é?\r\n/steer literal  ",
+        "idle": true,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "sendUserMessage",
+            "content": [
+              {
+                "type": "text",
+                "text": "User request:   What is 雪 + é?\r\n/steer literal  "
+              },
+              {
+                "type": "text",
+                "text": "Please respond concisely."
+              }
+            ],
+            "options": null
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "askwith_idle_zero_width_neighbour",
+      "group": "askwith",
+      "input": {
+        "command": "askwith",
+        "args": "​",
+        "idle": true,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "sendUserMessage",
+            "content": [
+              {
+                "type": "text",
+                "text": "User request: ​"
+              },
+              {
+                "type": "text",
+                "text": "Please respond concisely."
+              }
+            ],
+            "options": null
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "askwith_busy_empty",
+      "group": "askwith",
+      "input": {
+        "command": "askwith",
+        "args": "",
+        "idle": false,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /askwith <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "askwith_busy_ascii_blank",
+      "group": "askwith",
+      "input": {
+        "command": "askwith",
+        "args": " \t\r\n ",
+        "idle": false,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /askwith <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "askwith_busy_unicode_blank",
+      "group": "askwith",
+      "input": {
+        "command": "askwith",
+        "args": "       　",
+        "idle": false,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /askwith <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "askwith_busy_bom_only",
+      "group": "askwith",
+      "input": {
+        "command": "askwith",
+        "args": "﻿",
+        "idle": false,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Agent is busy",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "askwith_busy_nel_only",
+      "group": "askwith",
+      "input": {
+        "command": "askwith",
+        "args": "",
+        "idle": false,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /askwith <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "askwith_busy_literal",
+      "group": "askwith",
+      "input": {
+        "command": "askwith",
+        "args": "  What is 雪 + é?\r\n/steer literal  ",
+        "idle": false,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Agent is busy",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "askwith_busy_zero_width_neighbour",
+      "group": "askwith",
+      "input": {
+        "command": "askwith",
+        "args": "​",
+        "idle": false,
+        "reject": null
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Agent is busy",
+            "kind": "warning"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "failure_0_ask_notify",
+      "group": "failures",
+      "input": {
+        "command": "ask",
+        "args": "",
+        "idle": false,
+        "reject": "notify"
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /ask <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": "notification refused"
+      }
+    },
+    {
+      "name": "failure_1_steer_notify",
+      "group": "failures",
+      "input": {
+        "command": "steer",
+        "args": "",
+        "idle": false,
+        "reject": "notify"
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /steer <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": "notification refused"
+      }
+    },
+    {
+      "name": "failure_2_followup_notify",
+      "group": "failures",
+      "input": {
+        "command": "followup",
+        "args": "",
+        "idle": false,
+        "reject": "notify"
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /followup <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": "notification refused"
+      }
+    },
+    {
+      "name": "failure_3_askwith_notify",
+      "group": "failures",
+      "input": {
+        "command": "askwith",
+        "args": "",
+        "idle": false,
+        "reject": "notify"
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Usage: /askwith <message>",
+            "kind": "warning"
+          }
+        ],
+        "error": "notification refused"
+      }
+    },
+    {
+      "name": "failure_4_ask_notify",
+      "group": "failures",
+      "input": {
+        "command": "ask",
+        "args": "message",
+        "idle": false,
+        "reject": "notify"
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Agent is busy. Use /steer or /followup instead.",
+            "kind": "warning"
+          }
+        ],
+        "error": "notification refused"
+      }
+    },
+    {
+      "name": "failure_5_askwith_notify",
+      "group": "failures",
+      "input": {
+        "command": "askwith",
+        "args": "message",
+        "idle": false,
+        "reject": "notify"
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "notify",
+            "message": "Agent is busy",
+            "kind": "warning"
+          }
+        ],
+        "error": "notification refused"
+      }
+    },
+    {
+      "name": "failure_6_followup_notify",
+      "group": "failures",
+      "input": {
+        "command": "followup",
+        "args": "message",
+        "idle": false,
+        "reject": "notify"
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [
+          {
+            "operation": "sendUserMessage",
+            "content": "message",
+            "options": {
+              "deliverAs": "followUp"
+            }
+          },
+          {
+            "operation": "notify",
+            "message": "Follow-up queued",
+            "kind": "info"
+          }
+        ],
+        "error": "notification refused"
+      }
+    },
+    {
+      "name": "failure_7_ask_send",
+      "group": "failures",
+      "input": {
+        "command": "ask",
+        "args": "message",
+        "idle": true,
+        "reject": "send"
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [],
+        "error": "delivery refused"
+      }
+    },
+    {
+      "name": "failure_8_steer_send",
+      "group": "failures",
+      "input": {
+        "command": "steer",
+        "args": "message",
+        "idle": true,
+        "reject": "send"
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [],
+        "error": "delivery refused"
+      }
+    },
+    {
+      "name": "failure_9_followup_send",
+      "group": "failures",
+      "input": {
+        "command": "followup",
+        "args": "message",
+        "idle": true,
+        "reject": "send"
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [],
+        "error": "delivery refused"
+      }
+    },
+    {
+      "name": "failure_10_askwith_send",
+      "group": "failures",
+      "input": {
+        "command": "askwith",
+        "args": "message",
+        "idle": true,
+        "reject": "send"
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [],
+        "error": "delivery refused"
+      }
+    },
+    {
+      "name": "failure_11_steer_send",
+      "group": "failures",
+      "input": {
+        "command": "steer",
+        "args": "message",
+        "idle": false,
+        "reject": "send"
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [],
+        "error": "delivery refused"
+      }
+    },
+    {
+      "name": "failure_12_followup_send",
+      "group": "failures",
+      "input": {
+        "command": "followup",
+        "args": "message",
+        "idle": false,
+        "reject": "send"
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [],
+        "error": "delivery refused"
+      }
+    },
+    {
+      "name": "failure_13_ask_idle",
+      "group": "failures",
+      "input": {
+        "command": "ask",
+        "args": "message",
+        "idle": true,
+        "reject": "idle"
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [],
+        "error": "idle refused"
+      }
+    },
+    {
+      "name": "failure_14_ask_idle",
+      "group": "failures",
+      "input": {
+        "command": "ask",
+        "args": "message",
+        "idle": false,
+        "reject": "idle"
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [],
+        "error": "idle refused"
+      }
+    },
+    {
+      "name": "failure_15_steer_idle",
+      "group": "failures",
+      "input": {
+        "command": "steer",
+        "args": "message",
+        "idle": true,
+        "reject": "idle"
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [],
+        "error": "idle refused"
+      }
+    },
+    {
+      "name": "failure_16_steer_idle",
+      "group": "failures",
+      "input": {
+        "command": "steer",
+        "args": "message",
+        "idle": false,
+        "reject": "idle"
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [],
+        "error": "idle refused"
+      }
+    },
+    {
+      "name": "failure_17_followup_idle",
+      "group": "failures",
+      "input": {
+        "command": "followup",
+        "args": "message",
+        "idle": true,
+        "reject": "idle"
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [],
+        "error": "idle refused"
+      }
+    },
+    {
+      "name": "failure_18_followup_idle",
+      "group": "failures",
+      "input": {
+        "command": "followup",
+        "args": "message",
+        "idle": false,
+        "reject": "idle"
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [],
+        "error": "idle refused"
+      }
+    },
+    {
+      "name": "failure_19_askwith_idle",
+      "group": "failures",
+      "input": {
+        "command": "askwith",
+        "args": "message",
+        "idle": true,
+        "reject": "idle"
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [],
+        "error": "idle refused"
+      }
+    },
+    {
+      "name": "failure_20_askwith_idle",
+      "group": "failures",
+      "input": {
+        "command": "askwith",
+        "args": "message",
+        "idle": false,
+        "reject": "idle"
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup",
+          "askwith"
+        ],
+        "calls": [],
+        "error": "idle refused"
+      }
+    },
+    {
+      "name": "failure_21_ask_register:ask",
+      "group": "failures",
+      "input": {
+        "command": "ask",
+        "args": "",
+        "idle": true,
+        "reject": "register:ask"
+      },
+      "expected": {
+        "registration": [],
+        "calls": [],
+        "error": "registration refused"
+      }
+    },
+    {
+      "name": "failure_22_steer_register:steer",
+      "group": "failures",
+      "input": {
+        "command": "steer",
+        "args": "",
+        "idle": true,
+        "reject": "register:steer"
+      },
+      "expected": {
+        "registration": [
+          "ask"
+        ],
+        "calls": [],
+        "error": "registration refused"
+      }
+    },
+    {
+      "name": "failure_23_followup_register:followup",
+      "group": "failures",
+      "input": {
+        "command": "followup",
+        "args": "",
+        "idle": true,
+        "reject": "register:followup"
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer"
+        ],
+        "calls": [],
+        "error": "registration refused"
+      }
+    },
+    {
+      "name": "failure_24_askwith_register:askwith",
+      "group": "failures",
+      "input": {
+        "command": "askwith",
+        "args": "",
+        "idle": true,
+        "reject": "register:askwith"
+      },
+      "expected": {
+        "registration": [
+          "ask",
+          "steer",
+          "followup"
+        ],
+        "calls": [],
+        "error": "registration refused"
+      }
+    }
+  ]
+}

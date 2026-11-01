@@ -18,6 +18,27 @@ fn replay_fixed(names: &[&str]) {
     replay(names, |_, _| {});
 }
 
+/// Empty values neither replace the header candidate nor stop later metadata reads.
+#[test]
+fn discovery_skips_empty_records_before_header_and_between_messages() {
+    let scratch = Scratch::new().unwrap();
+    let ordinary = session_text(
+        "empty",
+        &[("user", "before", 2000), ("assistant", "after", 3000)],
+    );
+    std::fs::write(scratch.path().join("case.jsonl"), &ordinary).unwrap();
+    let expected = list(&scratch);
+    for empty in ["null", "false", "0", "-0", "0.0", "\"\""] {
+        let content = format!(
+            "{empty}\n{}",
+            ordinary.replace('\n', &format!("\n{empty}\n"))
+        );
+        std::fs::write(scratch.path().join("case.jsonl"), content).unwrap();
+        let actual = list(&scratch);
+        assert_eq!(format!("{actual:?}"), format!("{expected:?}"), "{empty}");
+    }
+}
+
 #[test]
 fn discovery_framing_requires_only_the_first_header_type() {
     replay_fixed(&[
@@ -50,6 +71,46 @@ fn discovery_keeps_open_metadata_and_cwd_fallback() {
     ]);
 }
 
+/// Record dates accept scalar timestamps, bounded to the valid date range.
+#[test]
+fn discovery_activity_reads_record_timestamp_types() {
+    let scratch = Scratch::new().unwrap();
+    let fallback = 1_735_787_045_000.0;
+    for (timestamp, expected) in [
+        (Some(json!(5000)), 5000.0),
+        (Some(json!(true)), 1.0),
+        (Some(json!(false)), fallback),
+        (Some(Value::Null), fallback),
+        (Some(json!(0)), fallback),
+        (Some(json!(-5000)), fallback),
+        (Some(json!(5000.9)), 5000.0),
+        (Some(json!(8.64e15)), 8.64e15),
+        (Some(json!(8.64e15 + 1.0)), fallback),
+        (Some(json!(-8.64e15 - 1.0)), fallback),
+        (Some(json!("1970-01-01T00:00:05Z")), 5000.0),
+        (Some(json!("invalid")), fallback),
+        (Some(json!([5])), fallback),
+        (Some(json!({})), fallback),
+        (None, fallback),
+    ] {
+        for role in ["user", "assistant"] {
+            let mut record = json!({"type":"message","message":{"role":role,"content":"text"}});
+            if let Some(timestamp) = &timestamp {
+                record["timestamp"] = timestamp.clone();
+            }
+            std::fs::write(
+                scratch.path().join("case.jsonl"),
+                format!("{}\n{record}\n", session_header("activity")),
+            )
+            .unwrap();
+            let listed = list(&scratch);
+            assert_eq!(listed.len(), 1);
+            let expected: f64 = expected;
+            assert_eq!(listed[0].modified.to_bits(), expected.to_bits(), "{record}");
+        }
+    }
+}
+
 #[test]
 fn discovery_created_dates_preserve_invalid_observations() {
     replay_fixed(&[
@@ -57,6 +118,8 @@ fn discovery_created_dates_preserve_invalid_observations() {
         "invalid_created",
         "null_created",
         "numeric_created",
+        "boolean_created",
+        "out_of_range_created",
     ]);
 }
 
@@ -115,7 +178,10 @@ fn discovery_reached_malformed_fields_discard_only_the_file() {
     write_session(&scratch, "bad.jsonl", "bad", &[]);
     std::fs::write(
         scratch.path().join("bad.jsonl"),
-        format!("{}\nnull\n", session_header("bad")),
+        format!(
+            "{}\n{{\"type\":\"message\",\"message\":null}}\n",
+            session_header("bad")
+        ),
     )
     .unwrap();
     write_session(&scratch, "good.jsonl", "good", &[("user", "hi", 5000)]);
@@ -160,6 +226,9 @@ fn discovery_missing_timestamp_uses_parsed_entry_time() {
 fn discovery_local_dates_use_native_local_zone() {
     let name = "discovery_local_dates_use_native_local_zone";
     if !maestro_test_process::selection().is_child() {
+        if !maestro_test_process::local_zone_follows_tz() {
+            return;
+        }
         let output = maestro_test_process::TestProcess::current(name)
             .unwrap()
             .nocapture()
@@ -254,6 +323,7 @@ fn directory_listing_filters_jsonl_and_keeps_stable_activity_ties() {
     write_session(&scratch, "old.jsonl", "old", &[("user", "x", 1000)]);
     write_session(&scratch, "UPPER.JSONL", "upper", &[("user", "x", 9000)]);
     write_session(&scratch, "note.jsonl.bak", "bak", &[("user", "x", 9000)]);
+    write_session(&scratch, "aa.jsonl.lock", "lock", &[("user", "x", 9000)]);
     write_session(&elsewhere, "target.jsonl", "linked", &[("user", "x", 4000)]);
     #[cfg(unix)]
     std::os::unix::fs::symlink(
@@ -413,6 +483,11 @@ fn all_projects_lists_real_directories_and_ignores_root_files() {
         &[("a", "a1", 1000), ("b", "b1", 3000), ("b", "b2", 2000)],
     );
     let sessions = Path::new(&agent).join("sessions");
+    std::fs::write(
+        sessions.join("b/b1.jsonl.lock"),
+        session_text("lock", &[("user", "x", 9000)]),
+    )
+    .unwrap();
     std::fs::write(
         sessions.join("root.jsonl"),
         session_text("root", &[("user", "x", 9000)]),

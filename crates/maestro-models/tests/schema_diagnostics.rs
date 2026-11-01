@@ -19,15 +19,15 @@ fn schema_check_does_not_coerce_values() {
     );
     assert_eq!((schema.clone(), value.clone()), original);
     assert!(validate_schema(&json!({"type":"string","pattern":"["}), &json!("x")).is_err());
-    let tool = Tool {
+    let tool: Tool = Tool {
         name: "counter".into(),
         description: String::new(),
-        parameters: schema,
+        parameters: schema.into(),
     };
     let call = ToolCall {
         id: "call".into(),
         name: "counter".into(),
-        arguments: value.as_object().unwrap().clone(),
+        arguments: value,
         thought_signature: None,
     };
     assert_eq!(

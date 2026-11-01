@@ -59,3 +59,16 @@ impl std::str::FromStr for ModelThinkingLevel {
             .map_err(|_| ParseModelThinkingLevelError)
     }
 }
+
+impl std::fmt::Display for ModelThinkingLevel {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str(match self {
+            Self::Off => "off",
+            Self::Minimal => "minimal",
+            Self::Low => "low",
+            Self::Medium => "medium",
+            Self::High => "high",
+            Self::Xhigh => "xhigh",
+        })
+    }
+}

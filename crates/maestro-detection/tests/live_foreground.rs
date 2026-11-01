@@ -27,7 +27,7 @@ fn setup_entry() {
 /// Observes exec completion through process facts, then reaps the controlled terminal.
 fn capture_job(script: &str, input: &[u8], release: &[u8], argv0: &str) -> ForegroundJob {
     let mut observed = None;
-    TestProcess::named("setup_entry")
+    TestProcess::named("live_foreground::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()

@@ -1,36 +1,21 @@
-//! Greedy word wrapping over grapheme ranges.
+//! Greedy word wrapping that writes text and escapes in source order.
 
 use std::ops::Range;
 
 use super::is_whitespace_scalar;
-use super::measure::TAB_CELLS;
+use super::measure::breaks_anywhere;
 use super::parsed::{Grapheme, Parsed};
-use super::render::Emission;
-
-/// A run of graphemes between ASCII spaces, or a run of spaces.
-struct Token {
-    /// Grapheme indices of the run.
-    range: Range<usize>,
-    /// Cells the run occupies.
-    cells: usize,
-    /// Whether every scalar of the run is whitespace.
-    whitespace: bool,
-}
-
-/// Grapheme indices and cells of the line being filled.
-struct Fill {
-    /// Grapheme indices on the line.
-    range: Range<usize>,
-    /// Cells used so far.
-    cells: usize,
-}
+use super::render::{Emission, trim_end};
 
 /// Breaks `text` into unpadded lines at ASCII spaces, and between whole graphemes inside a
 /// word wider than `width`.
 ///
-/// Escapes are read within a literal line, never across a line feed. A line that has text
-/// begins with the style in effect at its first grapheme and closes the hyperlink still open
-/// at its end. A non-whitespace grapheme wider than `width` is kept whole.
+/// Escapes are read within a literal line, never across a line feed, and stay where they were
+/// written: inside a word wider than `width`, an escape before the grapheme that starts a new
+/// row ends the row it follows, and one before a whole word that moves to a new row starts
+/// that row. A row that has text begins with the style in effect where it starts and closes
+/// the hyperlink still open at its end. A non-whitespace grapheme wider than `width` is kept
+/// whole.
 #[must_use]
 pub fn wrap_text_with_ansi(text: &str, width: usize) -> Vec<String> {
     if text.is_empty() {
@@ -44,177 +29,328 @@ pub fn wrap_text_with_ansi(text: &str, width: usize) -> Vec<String> {
         .collect()
 }
 
-/// A wrapped line: the graphemes it was filled with and the part that stays visible.
-struct Placed {
-    /// Graphemes added to the line, trailing whitespace included.
-    added: Range<usize>,
-    /// The added graphemes; the trailing whitespace is left out only when the literal line
-    /// overflows the width.
-    kept: Range<usize>,
+/// A run of graphemes between ASCII spaces, or a run of spaces, with the escapes written before
+/// its graphemes. The last token also carries the escapes after the last grapheme.
+struct Token {
+    /// Grapheme indices of the run.
+    graphemes: Range<usize>,
+    /// Index after the last escape the run carries.
+    events_end: usize,
+    /// Cells the run occupies.
+    cells: usize,
+    /// Whether the run holds only whitespace and no escape.
+    whitespace: bool,
 }
 
-/// Breaks the graphemes of one literal line into lines.
-///
-/// A literal line that fits the width stays whole, whitespace included. An overflowing one
-/// is broken into lines; each loses its trailing whitespace and a line left empty by that is
-/// dropped.
-fn place_lines(parsed: &Parsed<'_>, graphemes: &[Grapheme], width: usize) -> Vec<Placed> {
-    let total: usize = graphemes.iter().map(|grapheme| grapheme.cells).sum();
-    let fits = total <= width;
-    let added = if fits {
-        std::iter::once(0..graphemes.len()).collect()
-    } else {
-        line_ranges(parsed, graphemes, width)
-    };
-    added
-        .into_iter()
-        .map(|added| {
-            let end = if fits {
-                added.end
-            } else {
-                trim_end(parsed, graphemes, &added)
-            };
-            Placed {
-                kept: added.start..end,
-                added,
+/// A wrapped row before rows that show nothing are removed.
+struct Candidate {
+    /// The row as written.
+    text: String,
+    /// Byte position after the inherited style that opens the row.
+    prefix: usize,
+    /// Source escapes the row holds.
+    events: Range<usize>,
+}
+
+/// The row being filled.
+struct Row<'p, 'a> {
+    /// Text of the row so far.
+    emission: Emission<'p, 'a>,
+    /// Byte position after the inherited style that opens the row.
+    prefix: usize,
+    /// Index of the first source escape the row holds.
+    first_event: usize,
+}
+
+/// The rows one literal line wraps into, filled in source order.
+struct Wrap<'p, 'a> {
+    /// Source of the text and escapes.
+    parsed: &'p Parsed<'a>,
+    /// Cells a row may hold.
+    width: usize,
+    /// Rows finished so far.
+    rows: Vec<Candidate>,
+    /// Row being filled; `None` until a source escape or grapheme is written to it, so no row
+    /// holds only the style it inherits.
+    row: Option<Row<'p, 'a>>,
+    /// Cells of the row being filled.
+    cells: usize,
+    /// Style state of the source read so far, kept across the closes written at row ends.
+    state: usize,
+    /// Index of the next source escape to write.
+    cursor: usize,
+}
+
+impl<'p, 'a> Row<'p, 'a> {
+    /// Opens a row in `state`, holding source escapes from `first_event` on.
+    fn open(parsed: &'p Parsed<'a>, state: usize, first_event: usize) -> Self {
+        let mut emission = Emission::new(parsed);
+        let prefix = emission.inherit(state);
+        Self {
+            emission,
+            prefix,
+            first_event,
+        }
+    }
+}
+
+impl<'p, 'a> Wrap<'p, 'a> {
+    /// The row being filled, opened when there is none.
+    fn row(&mut self) -> &mut Emission<'p, 'a> {
+        let (parsed, state, cursor) = (self.parsed, self.state, self.cursor);
+        &mut self
+            .row
+            .get_or_insert_with(|| Row::open(parsed, state, cursor))
+            .emission
+    }
+
+    /// Writes source escapes to the row.
+    fn events(&mut self, range: Range<usize>) {
+        let end = range.end;
+        self.row().events(range);
+        self.cursor = end;
+    }
+
+    /// Writes a grapheme's text and the escapes inside it to the row.
+    fn content(&mut self, grapheme: &Grapheme) {
+        self.row().content(grapheme);
+        self.cursor = grapheme.events.end;
+        self.cells += grapheme.cells;
+    }
+
+    /// Writes a whole token to the row.
+    fn append(&mut self, graphemes: &[Grapheme], token: &Token) {
+        for grapheme in &graphemes[token.graphemes.clone()] {
+            self.events(self.parsed.leading_events(grapheme));
+            self.content(grapheme);
+        }
+        self.events(self.cursor..token.events_end);
+    }
+
+    /// Places a token of an overflowing line: a word wider than the width breaks between
+    /// graphemes, a token that does not fit starts a new row, and whitespace never opens one.
+    fn token(&mut self, graphemes: &[Grapheme], token: &Token) {
+        if token.cells > self.width && !token.whitespace {
+            self.flush(false);
+            self.long_token(graphemes, token);
+            return;
+        }
+        if self.cells > 0 && self.cells + token.cells > self.width {
+            if token.whitespace || self.paints_nothing(graphemes, token) {
+                self.flush_blank(graphemes, token);
+                return;
             }
+            self.flush(true);
+        }
+        self.append(graphemes, token);
+    }
+
+    /// Whether every grapheme of a token is a blank its style leaves unpainted.
+    fn paints_nothing(&self, graphemes: &[Grapheme], token: &Token) -> bool {
+        graphemes[token.graphemes.clone()].iter().all(|grapheme| {
+            is_whitespace(self.parsed, grapheme) && !self.parsed.shows_blank(grapheme)
         })
-        .filter(|line| !line.kept.is_empty())
-        .collect()
+    }
+
+    /// Ends the row at a blank token, which is dropped instead of starting the next row, also
+    /// when escapes are attached to it. Its metadata escapes and the escapes after the
+    /// line's last grapheme end the row; its style escapes only carry over to the next row.
+    fn flush_blank(&mut self, graphemes: &[Grapheme], token: &Token) {
+        let start = graphemes[token.graphemes.start].events.start;
+        let trailing = graphemes[token.graphemes.end - 1].events.end;
+        if let Some(row) = self.row.as_mut() {
+            row.emission.trim_end();
+            row.emission.opaque_events(start..trailing);
+            row.emission.events(trailing..token.events_end);
+        }
+        self.cursor = token.events_end;
+        self.flush(false);
+        if token.events_end > start {
+            self.state = self.parsed.events[token.events_end - 1].state;
+        }
+    }
+
+    /// Breaks a word between whole graphemes. The escapes before a grapheme are written before
+    /// its width is tested, so they end the row when the grapheme starts the next one.
+    fn long_token(&mut self, graphemes: &[Grapheme], token: &Token) {
+        for grapheme in &graphemes[token.graphemes.clone()] {
+            self.events(self.parsed.leading_events(grapheme));
+            if grapheme.cells > 0 && self.cells > 0 && self.cells + grapheme.cells > self.width {
+                self.flush(false);
+            }
+            self.content(grapheme);
+        }
+        self.events(self.cursor..token.events_end);
+    }
+
+    /// Ends the row being filled, closing underline and the hyperlink, and trims its trailing
+    /// whitespace; `trim` trims it before the closes as well.
+    fn flush(&mut self, trim: bool) {
+        if let Some(mut row) = self.row.take() {
+            if trim {
+                row.emission.trim_end();
+            }
+            self.state = row.emission.state();
+            let mut text = row.emission.finish(true);
+            trim_end(&mut text);
+            self.rows.push(Candidate {
+                text,
+                prefix: row.prefix,
+                events: row.first_event..self.cursor,
+            });
+        }
+        self.cells = 0;
+    }
+
+    /// Ends the line with its last row, closing only the hyperlink.
+    fn finish(mut self, trim: bool) -> Vec<Candidate> {
+        if let Some(mut row) = self.row.take() {
+            if trim {
+                row.emission.trim_end();
+            }
+            self.rows.push(Candidate {
+                text: row.emission.finish(false),
+                prefix: row.prefix,
+                events: row.first_event..self.cursor,
+            });
+        }
+        self.rows
+    }
 }
 
 /// Wraps one literal line.
 fn wrap_line(parsed: &Parsed<'_>, span: Range<usize>, width: usize) -> Vec<String> {
     let events = parsed.events_in(&span);
-    let graphemes: Vec<Grapheme> = parsed.graphemes(span, TAB_CELLS).collect();
-    let trailing_start = graphemes
-        .last()
-        .map_or(events.start, |last| last.events.end);
-    let placed = place_lines(parsed, &graphemes, width);
-    if placed.is_empty() {
-        let mut empty = Emission::new(parsed);
-        empty.opaque_events(events);
-        return vec![empty.into_string()];
-    }
-    let event_start = |index: usize| {
-        graphemes
-            .get(index)
-            .map_or(trailing_start, |g| g.events.start)
+    let graphemes: Vec<Grapheme> = parsed.graphemes(span).collect();
+    let Some(first) = graphemes.first() else {
+        return vec![metadata(parsed, events)];
     };
-    let last = placed.len() - 1;
-    placed
+    let trailing = graphemes
+        .last()
+        .map_or(events.start, |last| last.events.end)..events.end;
+    let fits = graphemes
         .iter()
-        .enumerate()
-        .map(|(position, line)| {
-            let mut emission = Emission::new(parsed);
-            emission.inherit(graphemes[line.kept.start].state);
-            if position == 0 {
-                emission.opaque_events(events.start..event_start(line.kept.start));
-            }
-            for grapheme in &graphemes[line.kept.clone()] {
-                emission.grapheme(grapheme);
-            }
-            emission.events(event_start(line.kept.end)..event_start(line.added.end));
-            let dropped_end = placed
-                .get(position + 1)
-                .map_or(trailing_start, |next| event_start(next.kept.start));
-            emission.opaque_events(event_start(line.added.end)..dropped_end);
-            if position == last {
-                emission.events(trailing_start..events.end);
-            }
-            emission.finish(position != last)
-        })
-        .collect()
-}
-
-/// Grapheme ranges of the lines a too-wide literal line breaks into.
-fn line_ranges(parsed: &Parsed<'_>, graphemes: &[Grapheme], width: usize) -> Vec<Range<usize>> {
-    let mut lines = Vec::new();
-    let mut current: Option<Fill> = None;
-    for token in tokens(parsed, graphemes) {
-        if token.cells > width && !token.whitespace {
-            lines.extend(current.take().map(|fill| fill.range));
-            current = Some(break_word(graphemes, token.range, width, &mut lines));
-            continue;
-        }
-        match current.as_mut() {
-            Some(fill) if fill.cells > 0 && fill.cells + token.cells > width => {
-                lines.push(fill.range.clone());
-                current = (!token.whitespace).then_some(Fill {
-                    range: token.range,
-                    cells: token.cells,
-                });
-            }
-            Some(fill) => {
-                fill.range.end = token.range.end;
-                fill.cells += token.cells;
-            }
-            None => {
-                current = Some(Fill {
-                    range: token.range,
-                    cells: token.cells,
-                });
-            }
+        .map(|grapheme| grapheme.cells)
+        .sum::<usize>()
+        <= width;
+    let mut wrap = Wrap {
+        parsed,
+        width,
+        rows: Vec::new(),
+        row: None,
+        cells: 0,
+        state: first.state,
+        cursor: events.start,
+    };
+    for token in tokens(parsed, &graphemes, events.end) {
+        if fits {
+            wrap.append(&graphemes, &token);
+        } else {
+            wrap.token(&graphemes, &token);
         }
     }
-    lines.extend(current.map(|fill| fill.range));
-    lines
+    let rows = wrap.finish(!fits);
+    if fits {
+        rows.into_iter().map(|row| row.text).collect()
+    } else {
+        select(parsed, rows, trailing)
+    }
 }
 
-/// Splits `graphemes` into runs at ASCII spaces.
-fn tokens(parsed: &Parsed<'_>, graphemes: &[Grapheme]) -> Vec<Token> {
+/// Splits `graphemes` into runs at ASCII spaces, with each CJK grapheme a run of its own; the
+/// last run takes the escapes up to `events_end`.
+fn tokens(parsed: &Parsed<'_>, graphemes: &[Grapheme], events_end: usize) -> Vec<Token> {
     let mut tokens: Vec<Token> = Vec::new();
     let mut previous_space = false;
+    let mut previous_break = false;
     for (index, grapheme) in graphemes.iter().enumerate() {
-        let text = parsed.text(grapheme);
-        let space = text == " ";
-        let whitespace = text.chars().all(is_whitespace_scalar);
+        let space = parsed.text(grapheme) == " ";
+        let spans = !space && breaks_anywhere(parsed.text(grapheme));
+        let whitespace = grapheme.events.is_empty() && is_whitespace(parsed, grapheme);
         match tokens.last_mut() {
-            Some(token) if space == previous_space => {
-                token.range.end = index + 1;
+            Some(token) if space == previous_space && !spans && !previous_break => {
+                token.graphemes.end = index + 1;
+                token.events_end = grapheme.events.end;
                 token.cells += grapheme.cells;
                 token.whitespace &= whitespace;
             }
             _ => tokens.push(Token {
-                range: index..index + 1,
+                graphemes: index..index + 1,
+                events_end: grapheme.events.end,
                 cells: grapheme.cells,
                 whitespace,
             }),
         }
         previous_space = space;
+        previous_break = spans;
+    }
+    if let Some(last) = tokens.last_mut() {
+        last.whitespace &= last.events_end == events_end;
+        last.events_end = events_end;
     }
     tokens
 }
 
-/// Breaks an over-wide word between whole graphemes; returns the unfinished last piece.
-fn break_word(
-    graphemes: &[Grapheme],
-    word: Range<usize>,
-    width: usize,
-    lines: &mut Vec<Range<usize>>,
-) -> Fill {
-    let mut piece = Fill {
-        range: word.start..word.start,
-        cells: 0,
-    };
-    for (index, grapheme) in graphemes.iter().enumerate().take(word.end).skip(word.start) {
-        if grapheme.cells > 0 && piece.cells > 0 && piece.cells + grapheme.cells > width {
-            lines.push(piece.range.clone());
-            piece = Fill {
-                range: index..index,
-                cells: 0,
-            };
+/// Removes the rows of an overflowing line that show nothing.
+///
+/// Each metadata escape is written once, by the row that holds it. The metadata escapes of a
+/// removed row move to the next row kept, after its inherited style, or to the end of the last
+/// row kept, followed by the escapes after the line's last grapheme that removed rows held. A
+/// line left without rows keeps one holding only its metadata escapes.
+fn select(parsed: &Parsed<'_>, candidates: Vec<Candidate>, trailing: Range<usize>) -> Vec<String> {
+    let mut rows: Vec<String> = Vec::new();
+    let mut held = String::new();
+    let mut lost = Vec::new();
+    for Candidate {
+        mut text,
+        prefix,
+        events,
+    } in candidates
+    {
+        if shows(&text) {
+            text.insert_str(prefix, &std::mem::take(&mut held));
+            rows.push(text);
+        } else {
+            let split = events.end.min(trailing.start).max(events.start);
+            held.push_str(&metadata(parsed, events.start..split));
+            lost.push(split..events.end);
         }
-        piece.range.end = index + 1;
-        piece.cells += grapheme.cells;
     }
-    piece
+    if let Some(last) = rows.last_mut() {
+        let mut tail = Emission::new(parsed);
+        for range in lost {
+            tail.events(range);
+        }
+        last.push_str(&held);
+        last.push_str(&tail.into_string());
+    } else {
+        rows.push(
+            lost.into_iter()
+                .fold(held, |row, range| row + &metadata(parsed, range)),
+        );
+    }
+    rows
 }
 
-/// Index after the last non-whitespace grapheme of `line`, or its start when all are whitespace.
-fn trim_end(parsed: &Parsed<'_>, graphemes: &[Grapheme], line: &Range<usize>) -> usize {
-    graphemes[line.start..line.end]
-        .iter()
-        .rposition(|grapheme| !parsed.text(grapheme).chars().all(is_whitespace_scalar))
-        .map_or(line.start, |last| line.start + last + 1)
+/// Whether a wrapped row shows anything: a grapheme that is not whitespace, a blank its style
+/// paints, or an inverse or background style left open that paints the cells after the row.
+fn shows(row: &str) -> bool {
+    let parsed = Parsed::parse(row);
+    let end = parsed.events.last().map_or(0, |event| event.state);
+    parsed
+        .graphemes(0..parsed.visible.len())
+        .any(|grapheme| !is_whitespace(&parsed, &grapheme) || parsed.shows_blank(&grapheme))
+        || parsed.states[end].paints_after_row()
+}
+
+/// The metadata escapes of a range of source escapes, without style escapes.
+fn metadata(parsed: &Parsed<'_>, range: Range<usize>) -> String {
+    let mut emission = Emission::new(parsed);
+    emission.opaque_events(range);
+    emission.into_string()
+}
+
+/// Whether `grapheme` is whitespace by its text.
+fn is_whitespace(parsed: &Parsed<'_>, grapheme: &Grapheme) -> bool {
+    parsed.text(grapheme).chars().all(is_whitespace_scalar)
 }

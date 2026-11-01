@@ -64,3 +64,47 @@ fn export_images_keep_literal_alt_bytes() {
         );
     }
 }
+
+#[test]
+fn export_targets_keep_only_allowed_schemes() {
+    let highlighter = maestro_theme::SyntectHighlighter::new().unwrap();
+    for (source, html) in [
+        ("[a](<java\u{1}script:alert(1)>)", "<p>a</p>\n"),
+        ("[a](<jav\u{1f}ascript:alert(1)>)", "<p>a</p>\n"),
+        ("[a](java&#1;script:alert(1))", "<p>a</p>\n"),
+        ("![i](vbscript:x)", "<p>i</p>\n"),
+        ("![i](<vb\u{7f}script:x>)", "<p>i</p>\n"),
+        ("[a](custom:thing)", "<p>a</p>\n"),
+        ("![i](data:image/png;base64,AAAA)", "<p>i</p>\n"),
+        (
+            "[a](https://a.b/c)",
+            "<p><a href=\"https://a.b/c\">a</a></p>\n",
+        ),
+        (
+            "[a](HTTP://a.b/c)",
+            "<p><a href=\"HTTP://a.b/c\">a</a></p>\n",
+        ),
+        (
+            "[a](mailto:x@y.z)",
+            "<p><a href=\"mailto:x@y.z\">a</a></p>\n",
+        ),
+        ("[a](tel:+1)", "<p><a href=\"tel:+1\">a</a></p>\n"),
+        ("[a](ftp://h/f)", "<p><a href=\"ftp://h/f\">a</a></p>\n"),
+        ("[a](/relative)", "<p><a href=\"/relative\">a</a></p>\n"),
+        ("[a](#top)", "<p><a href=\"#top\">a</a></p>\n"),
+        (
+            "[a](<https://a.b/\u{1}c>)",
+            "<p><a href=\"https://a.b/c\">a</a></p>\n",
+        ),
+        (
+            "![i](https://a.b/i.png)",
+            "<p><img src=\"https://a.b/i.png\" alt=\"i\"></p>\n",
+        ),
+    ] {
+        assert_eq!(
+            super::prepare_export(source, &highlighter),
+            html,
+            "{source:?}"
+        );
+    }
+}

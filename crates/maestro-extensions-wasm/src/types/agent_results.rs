@@ -14,7 +14,7 @@ pub type MessageEndEventResult =
 /// Shared schema specialized for the guest operands.
 pub type BeforeAgentStartEventResult =
     maestro_request::extension_events::agent_results::BeforeAgentStartEventResult<
-        maestro_request::messages::CustomMessageInput<String>,
+        maestro_request::messages::CustomMessageInput<crate::JsonText>,
     >;
 /// Custom message supplied before starting.
-pub type BeforeAgentStartMessage = maestro_request::messages::CustomMessageInput<String>;
+pub type BeforeAgentStartMessage = maestro_request::messages::CustomMessageInput<crate::JsonText>;

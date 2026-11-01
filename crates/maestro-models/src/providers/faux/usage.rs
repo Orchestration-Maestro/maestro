@@ -3,6 +3,7 @@ use crate::{
     AssistantContent, AssistantMessage, CacheRetention, Context, DiagnosticErrorInfo, Message,
     ProviderExecution, StreamOptions, UserBlock, UserContent,
 };
+use maestro_request::presence::Presence;
 use std::{borrow::Cow, sync::Mutex};
 
 /// Estimate tokens from Unicode scalar count in groups of four.
@@ -12,6 +13,11 @@ pub(super) fn tokens(text: &str) -> f64 {
 /// Serialize compact JSON using native insertion order and number spelling.
 pub(super) fn json<T: serde::Serialize>(value: &T) -> Result<String, DiagnosticErrorInfo> {
     serde_json::to_string(value).map_err(|error| DiagnosticErrorInfo::new(None, error.to_string()))
+}
+/// Serialize canonical compact JSON text, the spelling an authored script writes.
+pub(super) fn canonical(value: &serde_json::Value) -> Result<String, DiagnosticErrorInfo> {
+    maestro_json::compact_json(value)
+        .map_err(|error| DiagnosticErrorInfo::new(None, error.to_string()))
 }
 /// Project a user text or image block into estimated prompt text.
 fn user_block(block: &UserBlock) -> Cow<'_, str> {
@@ -34,7 +40,7 @@ pub(super) fn assistant_text(content: &[AssistantContent]) -> Result<String, Dia
             AssistantContent::ToolCall(value) => Ok(Cow::Owned(format!(
                 "{}:{}",
                 value.name,
-                json(&value.arguments)?
+                canonical(&value.arguments)?
             ))),
         })
         .collect::<Result<Vec<_>, _>>()
@@ -88,7 +94,7 @@ pub(super) fn estimate<E: ProviderExecution>(
     let mut usage = crate::Usage {
         input: prompt_tokens,
         output,
-        total_tokens: prompt_tokens + output,
+        total_tokens: Presence::Present(prompt_tokens + output),
         ..Default::default()
     };
     if let Some(session) = options

@@ -5,7 +5,6 @@ use std::iter::Peekable;
 use std::vec::IntoIter;
 
 use base64::Engine as _;
-use serde_json::Value;
 
 use super::request::Message;
 use super::thinking::is_anthropic_claude_model;
@@ -15,7 +14,7 @@ use super::wire::{
     ToolConfiguration, ToolInputSchema, ToolResultBlock, ToolResultContentBlock, ToolSpecification,
     ToolUseBlock, Union, Unit,
 };
-use crate::arguments::json_parse::whitespace;
+use crate::arguments::json_parse::is_blank;
 use crate::projection::normalize_tool_call_id;
 use crate::providers::base64_text::FORGIVING;
 use crate::providers::http::RequestFailure;
@@ -132,7 +131,7 @@ pub(super) fn tool_config(
                             description: Some(tool.description),
                             input_schema: Some(
                                 ToolInputSchema {
-                                    json: Some(tool.parameters),
+                                    json: Some(tool.parameters.into_json()),
                                 }
                                 .into(),
                             ),
@@ -148,6 +147,9 @@ pub(super) fn tool_config(
     })
 }
 
+/// Text sent in place of a required block that has no text.
+const EMPTY_TEXT_PLACEHOLDER: &str = "<empty>";
+
 /// A text block holding `text` as written.
 fn text_block(text: String) -> Union<ContentBlock> {
     ContentBlock {
@@ -157,23 +159,29 @@ fn text_block(text: String) -> Union<ContentBlock> {
     .into()
 }
 
-/// A user turn; text is kept as written.
+/// A user turn; blank text blocks are dropped and a turn left without a block, or whose plain
+/// text is blank, holds the placeholder.
 fn user_message(content: UserContent) -> Result<Message, RequestFailure> {
-    let blocks = match content {
+    let mut blocks = match content {
+        UserContent::Text(text) if is_blank(&text) => Vec::new(),
         UserContent::Text(text) => vec![text_block(text)],
         UserContent::Blocks(blocks) => blocks
             .into_iter()
-            .map(|block| {
-                let (text, image) = media(block)?;
-                Ok(ContentBlock {
+            .filter_map(|block| match media(block) {
+                Ok((Some(text), _)) if is_blank(&text) => None,
+                Ok((text, image)) => Some(Ok(ContentBlock {
                     text,
                     image,
                     ..ContentBlock::default()
                 }
-                .into())
+                .into())),
+                Err(failure) => Some(Err(failure)),
             })
-            .collect::<Result<_, RequestFailure>>()?,
+            .collect::<Result<Vec<_>, RequestFailure>>()?,
     };
+    if blocks.is_empty() {
+        blocks.push(text_block(EMPTY_TEXT_PLACEHOLDER.to_owned()));
+    }
     Ok(Message {
         role: Some("user".to_owned()),
         content: Some(blocks),
@@ -213,15 +221,13 @@ fn assistant_block(block: AssistantContent, claude: bool) -> Option<Union<Conten
         .into()
     };
     match block {
-        AssistantContent::Text(text) => {
-            (!text.text.trim_matches(whitespace).is_empty()).then(|| text_block(text.text))
-        }
+        AssistantContent::Text(text) => (!is_blank(&text.text)).then(|| text_block(text.text)),
         AssistantContent::ToolCall(call) => Some(
             ContentBlock {
                 tool_use: Some(ToolUseBlock {
                     tool_use_id: Some(call.id),
                     name: Some(call.name),
-                    input: Some(Value::Object(call.arguments)),
+                    input: Some(call.arguments),
                     ..ToolUseBlock::default()
                 }),
                 ..ContentBlock::default()
@@ -229,12 +235,12 @@ fn assistant_block(block: AssistantContent, claude: bool) -> Option<Union<Conten
             .into(),
         ),
         AssistantContent::Thinking(thinking) => {
-            if thinking.thinking.trim_matches(whitespace).is_empty() {
+            if is_blank(&thinking.thinking) {
                 return None;
             }
             let signature = thinking
                 .thinking_signature
-                .filter(|signature| !signature.trim_matches(whitespace).is_empty());
+                .filter(|signature| !is_blank(signature));
             Some(match (claude, signature) {
                 (true, None) => text_block(thinking.thinking),
                 (true, signature) => reasoning(thinking.thinking, signature),
@@ -261,21 +267,33 @@ fn tool_results(
     })
 }
 
-/// One tool result with its status.
+/// One tool result with its status; blank text is dropped and a result left without content
+/// holds the placeholder.
 fn tool_result(result: ToolResultMessage) -> Result<Union<ContentBlock>, RequestFailure> {
-    let content = result
-        .content
-        .into_iter()
-        .map(|block| {
-            let (text, image) = media(block)?;
-            Ok(ToolResultContentBlock {
+    let mut content = Vec::new();
+    for block in result.content {
+        let (text, image) = media(block)?;
+        if text.as_deref().is_some_and(is_blank) {
+            continue;
+        }
+        content.push(
+            ToolResultContentBlock {
                 text,
                 image,
                 ..ToolResultContentBlock::default()
             }
-            .into())
-        })
-        .collect::<Result<_, RequestFailure>>()?;
+            .into(),
+        );
+    }
+    if content.is_empty() {
+        content.push(
+            ToolResultContentBlock {
+                text: Some(EMPTY_TEXT_PLACEHOLDER.to_owned()),
+                ..ToolResultContentBlock::default()
+            }
+            .into(),
+        );
+    }
     Ok(ContentBlock {
         tool_result: Some(ToolResultBlock {
             tool_use_id: Some(result.tool_call_id),

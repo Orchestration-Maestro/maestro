@@ -55,7 +55,7 @@ const TEST_NAMES: [&str; 36] = [
     "tool_arguments_keep_objects_and_compact_numeric_key_order",
     "duplicate_argument_keys_keep_the_last_value_and_first_position",
     "finish_reason_maps_every_declared_outcome",
-    "existing_tool_call_overrides_each_recognized_finish_reason",
+    "tool_call_keeps_length_and_error_finish_reasons",
     "tool_without_finish_reason_keeps_the_previous_stop_outcome",
     "later_finish_reason_replaces_the_previous_one",
     "empty_finish_reason_does_not_change_the_outcome",
@@ -517,8 +517,8 @@ fn finish_reason_maps_every_declared_outcome() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn existing_tool_call_overrides_each_recognized_finish_reason() -> TestResult {
-    check("existing_tool_call_overrides_each_recognized_finish_reason")
+fn tool_call_keeps_length_and_error_finish_reasons() -> TestResult {
+    check("tool_call_keeps_length_and_error_finish_reasons")
 }
 
 #[cfg(not(target_arch = "wasm32"))]

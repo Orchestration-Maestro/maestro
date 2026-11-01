@@ -1,6 +1,7 @@
-//! User text in a live themed panel with prompt-zone markers.
+//! User text as one padded Markdown layer on its live background, with prompt-zone
+//! markers.
 use maestro_theme::{LiveTheme, ThemeBg, ThemeColor};
-use maestro_tui::{Box, Component, Container, MarkdownTheme, TerminalImage};
+use maestro_tui::{Component, Container, MarkdownOptions, MarkdownTheme, TerminalImage};
 use std::rc::Rc;
 
 /// An editable user-message container.
@@ -17,15 +18,23 @@ impl UserMessageComponent {
         markdown_theme: Rc<MarkdownTheme>,
         terminal_image: TerminalImage,
     ) -> Self {
-        let panel = Box::new(
-            1,
-            1,
-            Some(super::background(theme.clone(), ThemeBg::UserMessageBg)),
-        );
+        let background = super::background(theme.clone(), ThemeBg::UserMessageBg);
         let rendering = super::MessageRendering::new(theme, markdown_theme, terminal_image);
-        panel.add_child(rendering.markdown(text, 0, Some(ThemeColor::UserMessageText), false));
+        let mut style = rendering
+            .text_style(Some(ThemeColor::UserMessageText), false)
+            .unwrap_or_default();
+        style.bg_color = Some(Box::new(move |text| background(text)));
+        let message = rendering.markdown_with(
+            text,
+            MarkdownOptions {
+                padding_x: 1,
+                padding_y: 1,
+                default_text_style: Some(style),
+                clean_content: false,
+            },
+        );
         let container = Container::new();
-        container.add_child(Rc::new(panel));
+        container.add_child(message);
         Self { container }
     }
 }

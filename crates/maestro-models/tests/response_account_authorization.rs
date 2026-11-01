@@ -106,6 +106,9 @@ struct Protocol {
 }
 #[cfg(not(target_arch = "wasm32"))]
 impl maestro_models::OAuthLoginCallbacks for Protocol {
+    fn callback_presence(&self) -> (bool, bool, bool) {
+        (false, true, false)
+    }
     fn on_auth(
         &self,
         info: maestro_models::OAuthAuthInfo,

@@ -395,6 +395,37 @@ fn native_timers_obey_deadlines_and_per_handle_teardown() {
     });
 }
 
+#[test]
+fn native_debounce_timer_keeps_its_deadline_through_a_delayed_first_poll() {
+    let local = Rc::new(LocalSet::new());
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_time()
+        .start_paused(true)
+        .build()
+        .unwrap();
+    let operations = NativeWatchOperations::new(Rc::clone(&local));
+    let calls = Rc::new(Cell::new(0));
+    local.block_on(&runtime, async {
+        let counted = Rc::clone(&calls);
+        let timer = operations.schedule(
+            Duration::from_millis(500),
+            Box::new(move || counted.set(counted.get() + 1)),
+        );
+        // The caller's own work occupies the executor, so the timer's task first runs
+        // only after 499 of its 500 milliseconds have passed.
+        tokio::time::advance(Duration::from_millis(499)).await;
+        assert_eq!(calls.get(), 0);
+        tokio::time::advance(Duration::from_millis(1)).await;
+        tokio::task::yield_now().await;
+        assert_eq!(
+            calls.get(),
+            1,
+            "the deadline is fixed when the timer is scheduled, not when its task runs"
+        );
+        drop(timer);
+    });
+}
+
 /// Observe receiver teardown.
 #[cfg(test)]
 async fn closed(results: &tokio::sync::mpsc::UnboundedSender<notify::Result<Event>>) {

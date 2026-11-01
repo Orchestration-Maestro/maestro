@@ -3,8 +3,8 @@
 // The page keeps both library URLs as the reference writes them, so this script
 // intercepts those requests and answers them from a digest-checked local cache:
 // the exact versions are fetched once and reused. A missing cache entry downloads
-// again, and a failed download, a digest mismatch or a request that would leave
-// the machine fails the run instead of skipping.
+// again, and a failed download, a digest mismatch or any request outside the
+// script's own loopback origin fails the run instead of skipping.
 const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
@@ -70,9 +70,10 @@ async function cachedAssets() {
   return bodies;
 }
 
-// Answer the page's two library URLs from the verified cache and record every
-// request that is not local, so a downloaded asset fails the run.
-function serveFromCache(page, bodies) {
+// Answer the page's two library URLs from the verified cache and abort and record
+// every other request outside `origin`, whatever its scheme, so a downloaded asset
+// or a request that would leave the machine fails the run.
+function serveFromCache(page, bodies, origin) {
   const escaped = [];
   page.route('**/*', route => {
     const url = route.request().url();
@@ -85,7 +86,7 @@ function serveFromCache(page, bodies) {
       });
       return;
     }
-    if (url.startsWith('https://')) {
+    if (!url.startsWith(`${origin}/`)) {
       escaped.push(url);
       route.abort();
       return;
@@ -297,7 +298,7 @@ async function run(url) {
       if (!ok) failures.push(`${name}: ${JSON.stringify(actual)} !== ${JSON.stringify(expected)}`);
       console.log(`${ok ? 'PASS' : 'FAIL'} ${name}`);
     };
-    const escaped = serveFromCache(page, await cachedAssets());
+    const escaped = serveFromCache(page, await cachedAssets(), new URL(url).origin);
     await page.addInitScript(hookRenders);
     page.on('pageerror', error => errors.push(error.message));
     await page.goto(url);
@@ -400,6 +401,8 @@ async function run(url) {
     const ink = inkWidth(heading.pixels, Math.round(heading.box.width * deviceScaleFactor), roles.background);
     observe('heading_paints_the_brand_font', Math.abs(ink / deviceScaleFactor - declared) <= 8, true);
     observe('page_errors', errors, []);
+    // The check after navigation misses a request a later interaction makes.
+    observe('no_request_left_the_loopback_origin', escaped, []);
     if (failures.length > 0) {
       throw new Error(failures.join('; '));
     }

@@ -53,13 +53,18 @@ pub trait PackageOperations {
     ) -> PackageFuture<'a, Option<i32>>;
 }
 
+/// Admission into the caller's native local task facility.
+#[cfg(not(target_arch = "wasm32"))]
+type Admission =
+    std::rc::Rc<dyn Fn(std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>) -> io::Result<()>>;
+
 /// Native process effects.
 ///
 /// Its asynchronous commands must be driven by a Tokio runtime with process support.
 #[cfg(not(target_arch = "wasm32"))]
 pub struct NativePackageOperations {
-    /// Weak handle to the caller-driven local runtime.
-    local: std::rc::Weak<tokio::task::LocalSet>,
+    /// Caller-owned admission for owned local work.
+    spawn: Admission,
     /// Caller-owned query for whether output is routed to standard error.
     pub(super) is_stdout_taken_over: std::rc::Rc<dyn Fn() -> bool>,
 }
@@ -71,8 +76,24 @@ impl NativePackageOperations {
         is_stdout_taken_over: std::rc::Rc<dyn Fn() -> bool>,
         local: &std::rc::Rc<tokio::task::LocalSet>,
     ) -> Self {
+        let local = std::rc::Rc::downgrade(local);
+        Self::with_spawn(is_stdout_taken_over, move |operation| {
+            let local = local
+                .upgrade()
+                .ok_or_else(|| io::Error::other("package runtime is no longer available"))?;
+            drop(local.spawn_local(operation));
+            Ok(())
+        })
+    }
+    /// Stores supplied work admission without changing any native command route.
+    #[must_use]
+    pub fn with_spawn(
+        is_stdout_taken_over: std::rc::Rc<dyn Fn() -> bool>,
+        spawn: impl Fn(std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>) -> io::Result<()>
+        + 'static,
+    ) -> Self {
         Self {
-            local: std::rc::Rc::downgrade(local),
+            spawn: std::rc::Rc::new(spawn),
             is_stdout_taken_over,
         }
     }
@@ -91,12 +112,7 @@ impl PackageOperations for NativePackageOperations {
         &self,
         operation: std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>>,
     ) -> io::Result<()> {
-        let local = self
-            .local
-            .upgrade()
-            .ok_or_else(|| io::Error::other("package runtime is no longer available"))?;
-        drop(local.spawn_local(operation));
-        Ok(())
+        (self.spawn)(operation)
     }
     fn run_command_sync(&self, command: &str, args: &[String]) -> io::Result<CommandOutput> {
         Self::capture(command, args)
@@ -111,33 +127,6 @@ impl PackageOperations for NativePackageOperations {
     }
 }
 
-/// The user's home directory: a nonempty `HOME`, else the platform's home.
-///
-/// # Errors
-/// Returns `NotFound` when neither is available.
-pub(super) fn home_dir() -> io::Result<String> {
-    home(
-        std::env::var_os("HOME").map(|text| text.to_string_lossy().into_owned()),
-        || {
-            std::env::home_dir()
-                .map(|path| path.to_string_lossy().into_owned())
-                .ok_or_else(|| {
-                    io::Error::new(io::ErrorKind::NotFound, "home directory unavailable")
-                })
-        },
-    )
-}
-
-/// Selects a nonempty authored home before invoking the platform fallback.
-pub(super) fn home(
-    explicit: Option<String>,
-    fallback: impl FnOnce() -> io::Result<String>,
-) -> io::Result<String> {
-    if let Some(home) = explicit.filter(|text| !text.is_empty()) {
-        return Ok(home);
-    }
-    fallback()
-}
 /// Recovers an empty Linux environment, retaining first-equals and last-duplicate semantics.
 #[cfg(not(target_arch = "wasm32"))]
 pub(super) fn recover_environment(

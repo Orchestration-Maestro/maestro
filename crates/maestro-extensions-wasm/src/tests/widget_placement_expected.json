@@ -1,0 +1,307 @@
+{
+  "registrations": [
+    "session_start"
+  ],
+  "cases": [
+    {
+      "name": "headless_start",
+      "steps": [
+        {
+          "input": {
+            "hasUI": false
+          },
+          "expected": {
+            "calls": [],
+            "outcome": {
+              "kind": "fulfilled"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "interactive_start",
+      "steps": [
+        {
+          "input": {
+            "hasUI": true
+          },
+          "expected": {
+            "calls": [
+              {
+                "owner": 0,
+                "key": "widget-above",
+                "lines": [
+                  "Above editor widget"
+                ],
+                "options": null
+              },
+              {
+                "owner": 0,
+                "key": "widget-below",
+                "lines": [
+                  "Below editor widget"
+                ],
+                "options": {
+                  "placement": "belowEditor"
+                }
+              }
+            ],
+            "outcome": {
+              "kind": "fulfilled"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "ui_presence_changes_between_starts",
+      "steps": [
+        {
+          "input": {
+            "hasUI": false
+          },
+          "expected": {
+            "calls": [],
+            "outcome": {
+              "kind": "fulfilled"
+            }
+          }
+        },
+        {
+          "input": {
+            "hasUI": true
+          },
+          "expected": {
+            "calls": [
+              {
+                "owner": 0,
+                "key": "widget-above",
+                "lines": [
+                  "Above editor widget"
+                ],
+                "options": null
+              },
+              {
+                "owner": 0,
+                "key": "widget-below",
+                "lines": [
+                  "Below editor widget"
+                ],
+                "options": {
+                  "placement": "belowEditor"
+                }
+              }
+            ],
+            "outcome": {
+              "kind": "fulfilled"
+            }
+          }
+        },
+        {
+          "input": {
+            "hasUI": false
+          },
+          "expected": {
+            "calls": [],
+            "outcome": {
+              "kind": "fulfilled"
+            }
+          }
+        },
+        {
+          "input": {
+            "hasUI": true
+          },
+          "expected": {
+            "calls": [
+              {
+                "owner": 0,
+                "key": "widget-above",
+                "lines": [
+                  "Above editor widget"
+                ],
+                "options": null
+              },
+              {
+                "owner": 0,
+                "key": "widget-below",
+                "lines": [
+                  "Below editor widget"
+                ],
+                "options": {
+                  "placement": "belowEditor"
+                }
+              }
+            ],
+            "outcome": {
+              "kind": "fulfilled"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "ui_binding_changes_after_above",
+      "steps": [
+        {
+          "input": {
+            "hasUI": true,
+            "rebindAfterAbove": true
+          },
+          "expected": {
+            "calls": [
+              {
+                "owner": 0,
+                "key": "widget-above",
+                "lines": [
+                  "Above editor widget"
+                ],
+                "options": null
+              },
+              {
+                "owner": 1,
+                "key": "widget-below",
+                "lines": [
+                  "Below editor widget"
+                ],
+                "options": {
+                  "placement": "belowEditor"
+                }
+              }
+            ],
+            "outcome": {
+              "kind": "fulfilled"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "above_request_rejected",
+      "steps": [
+        {
+          "input": {
+            "hasUI": true,
+            "rejectAt": 0,
+            "error": "above refused: Ω"
+          },
+          "expected": {
+            "calls": [
+              {
+                "owner": 0,
+                "key": "widget-above",
+                "lines": [
+                  "Above editor widget"
+                ],
+                "options": null
+              }
+            ],
+            "outcome": {
+              "kind": "rejected",
+              "error": "above refused: Ω"
+            }
+          }
+        },
+        {
+          "input": {
+            "hasUI": true
+          },
+          "expected": {
+            "calls": [
+              {
+                "owner": 0,
+                "key": "widget-above",
+                "lines": [
+                  "Above editor widget"
+                ],
+                "options": null
+              },
+              {
+                "owner": 0,
+                "key": "widget-below",
+                "lines": [
+                  "Below editor widget"
+                ],
+                "options": {
+                  "placement": "belowEditor"
+                }
+              }
+            ],
+            "outcome": {
+              "kind": "fulfilled"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "below_request_rejected",
+      "steps": [
+        {
+          "input": {
+            "hasUI": true,
+            "rejectAt": 1,
+            "error": "below refused: Ω"
+          },
+          "expected": {
+            "calls": [
+              {
+                "owner": 0,
+                "key": "widget-above",
+                "lines": [
+                  "Above editor widget"
+                ],
+                "options": null
+              },
+              {
+                "owner": 0,
+                "key": "widget-below",
+                "lines": [
+                  "Below editor widget"
+                ],
+                "options": {
+                  "placement": "belowEditor"
+                }
+              }
+            ],
+            "outcome": {
+              "kind": "rejected",
+              "error": "below refused: Ω"
+            }
+          }
+        },
+        {
+          "input": {
+            "hasUI": true
+          },
+          "expected": {
+            "calls": [
+              {
+                "owner": 0,
+                "key": "widget-above",
+                "lines": [
+                  "Above editor widget"
+                ],
+                "options": null
+              },
+              {
+                "owner": 0,
+                "key": "widget-below",
+                "lines": [
+                  "Below editor widget"
+                ],
+                "options": {
+                  "placement": "belowEditor"
+                }
+              }
+            ],
+            "outcome": {
+              "kind": "fulfilled"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

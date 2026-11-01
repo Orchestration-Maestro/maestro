@@ -6,7 +6,7 @@ mod error;
 pub use error::CatalogError;
 mod loading;
 mod provider_config;
-pub use provider_config::{ProviderConfigInput, ProviderModelInput};
+pub use provider_config::{ProviderCallbacks, ProviderConfigInput, ProviderModelInput};
 use std::borrow::Cow;
 mod request_auth;
 use indexmap::IndexMap;
@@ -64,8 +64,10 @@ type ModelList = Arc<RwLock<Vec<Arc<RwLock<Model>>>>>;
 pub struct ModelRegistry {
     /// Accepted credential owner, shared natively and local in the browser.
     auth_storage: SharedHandle<AuthStorage>,
-    /// Explicit model-file path; empty disables file access.
-    path: String,
+    /// Ordered model-file paths; empty entries disable file access for that entry.
+    paths: Vec<String>,
+    /// Base files ranked before the construction-time files, replaced at resource reload.
+    base_paths: RwLock<Vec<String>>,
     /// Caller-selected file effects.
     operations: Box<dyn ModelFileOperations>,
     /// Runs the commands that configured credentials name.
@@ -87,6 +89,9 @@ struct CatalogState {
     next_provider: u64,
     /// Model request sources indexed by exact identity.
     model_headers: HashMap<(String, String), IndexMap<String, String>>,
+    /// Per-model overrides of the model files, by provider and exact identity, for models a
+    /// provider registration adds after the files load.
+    model_overrides: HashMap<String, HashMap<String, composition::ModelOverride>>,
 }
 
 impl ModelRegistry {
@@ -135,9 +140,27 @@ impl ModelRegistry {
         operations: impl ModelFileOperations + 'static,
         config_values: ConfigValues,
     ) -> Result<Self, CatalogError> {
+        Self::with_model_files(
+            auth_storage,
+            vec![models_json_path.into()],
+            operations,
+            config_values,
+        )
+    }
+    /// Loads ordered model files with later fields overriding earlier ones.
+    ///
+    /// # Errors
+    /// Returns a catalog error wrapping an account transformation failure.
+    pub fn with_model_files(
+        auth_storage: SharedHandle<AuthStorage>,
+        paths: Vec<String>,
+        operations: impl ModelFileOperations + 'static,
+        config_values: ConfigValues,
+    ) -> Result<Self, CatalogError> {
         let registry = Self {
             auth_storage,
-            path: models_json_path.into(),
+            paths,
+            base_paths: RwLock::default(),
             operations: Box::new(operations),
             config_values,
             state: RwLock::new(CatalogState {
@@ -147,11 +170,33 @@ impl ModelRegistry {
                 registered_providers: IndexMap::new(),
                 next_provider: 0,
                 model_headers: HashMap::new(),
+                model_overrides: HashMap::new(),
             }),
         };
         registry.load_models()?;
         Ok(registry)
     }
+    /// Replaces the base files below the construction-time files and restores dynamic providers.
+    /// An empty base that was already empty leaves the existing catalog untouched.
+    ///
+    /// # Errors
+    /// Returns a stored account transformation failure during refresh.
+    pub fn set_base_model_files(&self, paths: Vec<String>) -> Result<(), CatalogError> {
+        let reload = {
+            let mut base = self
+                .base_paths
+                .write()
+                .unwrap_or_else(PoisonError::into_inner);
+            let reload = !base.is_empty() || !paths.is_empty();
+            *base = paths;
+            reload
+        };
+        if reload {
+            self.refresh()?;
+        }
+        Ok(())
+    }
+
     /// Validate and apply the incoming record, then merge defined fields into retained state.
     ///
     /// The configuration is the platform handle, retained as the browser's local owner or
@@ -164,13 +209,18 @@ impl ModelRegistry {
         provider_name: &str,
         config: SharedHandle<RwLock<ProviderConfigInput>>,
     ) -> Result<(), CatalogError> {
-        config
-            .read()
-            .unwrap_or_else(PoisonError::into_inner)
-            .validate(provider_name)?;
+        provider_config::validate(
+            &config.read().unwrap_or_else(PoisonError::into_inner),
+            provider_name,
+        )?;
         self.apply_provider_config(provider_name, &config)?;
         self.upsert_registered_provider(provider_name, config);
         Ok(())
+    }
+    /// Borrows the credential-command effects supplied at construction.
+    #[must_use]
+    pub fn config_values(&self) -> &ConfigValues {
+        &self.config_values
     }
     /// Borrow the platform credential owner supplied at construction.
     #[must_use]
@@ -187,6 +237,7 @@ impl ModelRegistry {
             state.load_error = None;
             state.provider_configs.clear();
             state.model_headers.clear();
+            state.model_overrides.clear();
         }
         maestro_models::reset_api_providers();
         maestro_models::reset_oauth_providers();
@@ -218,7 +269,13 @@ impl ModelRegistry {
     }
     /// Prepare descriptors after supplied file effects return.
     fn prepare_load(&self) -> Vec<Arc<RwLock<Model>>> {
-        let config = loading::load(&self.path, self.operations.as_ref());
+        let mut paths = self
+            .base_paths
+            .read()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone();
+        paths.extend(self.paths.iter().cloned());
+        let config = loading::load(&paths, self.operations.as_ref());
         let mut models: Vec<Model> = get_providers().iter().flat_map(|p| get_models(p)).collect();
         {
             let mut state = self.state.write().unwrap_or_else(PoisonError::into_inner);
@@ -320,6 +377,8 @@ impl CatalogState {
                     auth_header: config.auth_header,
                 }),
             );
+            self.model_overrides
+                .insert(provider.clone(), config.model_overrides.clone());
             self.retain_model_headers(provider, &mut config.model_overrides);
         }
     }

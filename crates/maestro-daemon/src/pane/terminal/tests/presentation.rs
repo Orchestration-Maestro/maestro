@@ -55,13 +55,15 @@ fn pane_kitty_graphics_write_requests_render_with_settle_backstop() {
     let result = process(&pane, b"\x1b_Ga=d,d=A\x1b\\");
     assert!(result.request_render);
     assert_eq!(result.render_delay, Some(Duration::from_millis(20)));
-    assert_eq!(process(&pane, b"ordinary").render_delay, None);
+    // Windows holds a moved cursor until it settles, so ordinary output waits for that.
+    let settle = cfg!(windows).then_some(crate::pane::cursor::CURSOR_POSITION_SETTLE);
+    assert_eq!(process(&pane, b"ordinary").render_delay, settle);
     let synchronized = process(&pane, b"\x1b[?2026h\x1b_Ga=d\x1b\\");
     assert!(!synchronized.request_render);
     assert_eq!(synchronized.render_delay, None);
     process(&pane, b"\x1b[?2026l");
     pane.set_kitty_graphics_enabled(false);
-    assert_eq!(process(&pane, b"\x1b_Ga=d\x1b\\").render_delay, None);
+    assert_eq!(process(&pane, b"\x1b_Ga=d\x1b\\").render_delay, settle);
 }
 
 #[test]

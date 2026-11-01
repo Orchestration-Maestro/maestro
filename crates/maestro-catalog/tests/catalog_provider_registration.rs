@@ -16,7 +16,7 @@ fn registration_checks_incoming_fields_before_any_effect() {
     }
     let registry = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
     let retained = dynamic::config(&["m"]);
-    retained.write().unwrap().oauth = Some(dynamic::oauth("retained"));
+    retained.write().unwrap().callbacks.oauth = Some(dynamic::oauth("retained"));
     dynamic::callback(&retained, "retained");
     registry.register_provider("p", retained.clone()).unwrap();
     let old = registry.get_all();
@@ -58,15 +58,47 @@ fn registration_checks_incoming_fields_before_any_effect() {
     registry.refresh().unwrap();
     assert_eq!(dynamic::failure(&registry, "p", "m"), "retained");
 }
+#[test]
+fn provider_config_json_decodes_into_native_registration() {
+    let shared: maestro_request::provider_config::ProviderModelConfig = dynamic::model("m");
+    let _: maestro_catalog::ProviderModelInput = shared;
+    let config: ProviderConfigInput = serde_json::from_str(
+        r#"{"name":"","baseUrl":"https://json.invalid/v1","apiKey":"json-key",
+            "api":"openai-completions","headers":{"b":"2","a":"1"},"authHeader":false,
+            "models":[{"id":"j","name":"J","baseUrl":"","reasoning":true,
+            "thinkingLevelMap":{"high":null},"input":["text","text"],
+            "cost":{"input":-0.0,"output":0.5,"cacheRead":0,"cacheWrite":-2},
+            "contextWindow":128000,"maxTokens":0.25,"compat":{"x":[1]}}]}"#,
+    )
+    .unwrap();
+    assert!(config.callbacks.stream_simple.is_none() && config.callbacks.oauth.is_none());
+    let registry = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
+    registry
+        .register_provider("json", SharedHandle::new(RwLock::new(config)))
+        .unwrap();
+    let model = registry.find("json", "j").unwrap();
+    let model = model.read().unwrap();
+    assert_eq!(
+        serde_json::to_value(&*model).unwrap(),
+        serde_json::json!({"id":"j","name":"J","api":"openai-completions","provider":"json",
+            "baseUrl":"","reasoning":true,"thinkingLevelMap":{"high":null},
+            "input":["text","text"],
+            "cost":{"input":-0.0,"output":0.5,"cacheRead":0.0,"cacheWrite":-2.0},
+            "contextWindow":128_000.0,"maxTokens":0.25,"compat":{"x":[1]}})
+    );
+    assert!(model.cost.input.is_sign_negative());
+    assert_eq!(registry.get_provider_display_name("json"), "");
+}
+
 /// Competing admission failures selected from independent incoming records.
 fn invalid_config(case: usize) -> SharedHandle<RwLock<ProviderConfigInput>> {
     let config = dynamic::config(&["m"]);
     let mut incoming = config.write().unwrap();
-    incoming.oauth = Some(dynamic::oauth("incoming"));
+    incoming.callbacks.oauth = Some(dynamic::oauth("incoming"));
     if case < 2 {
         incoming.api = (case == 1).then(String::new);
         incoming.base_url = None;
-        incoming.stream_simple = Some(Arc::new(UnexpectedProvider));
+        incoming.callbacks.stream_simple = Some(Arc::new(UnexpectedProvider));
     } else if case < 5 {
         incoming.base_url = (case == 3).then(String::new);
         incoming.api_key = None;
@@ -74,7 +106,7 @@ fn invalid_config(case: usize) -> SharedHandle<RwLock<ProviderConfigInput>> {
             incoming.models.as_mut().unwrap()[0].base_url = Some("model-url".into());
         }
     } else if case < 7 {
-        incoming.oauth = None;
+        incoming.callbacks.oauth = None;
         incoming.api_key = (case == 6).then(String::new);
         incoming.api = None;
     } else {
@@ -349,7 +381,10 @@ fn oauth_registration_forces_id_and_delegates_existing_operations() {
         .register_provider(
             "p",
             SharedHandle::new(RwLock::new(ProviderConfigInput {
-                oauth: Some(supplied.clone()),
+                callbacks: maestro_catalog::ProviderCallbacks {
+                    oauth: Some(supplied.clone()),
+                    ..Default::default()
+                },
                 ..Default::default()
             })),
         )
@@ -387,7 +422,7 @@ fn callback_failures_propagate_without_invocation_during_listing() {
     let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
     let observed = calls.clone();
     let config = dynamic::config(&["m"]);
-    config.write().unwrap().stream_simple = Some(Arc::new(CountFailure(observed)));
+    config.write().unwrap().callbacks.stream_simple = Some(Arc::new(CountFailure(observed)));
     registry.register_provider("p", config).unwrap();
     let _ = registry.get_all();
     let _ = registry.get_available().unwrap();
@@ -462,7 +497,7 @@ fn incoming_oauth_transform_runs_after_replacement_only_with_tokens() {
     for kind in 0..3 {
         set_credential_kind(&auth, kind);
         let config = dynamic::config(&["m"]);
-        config.write().unwrap().oauth = Some(oauth.clone());
+        config.write().unwrap().callbacks.oauth = Some(oauth.clone());
         registry.register_provider("p", config).unwrap();
         assert_eq!(
             registry.find("p", "m").unwrap().read().unwrap().base_url,
@@ -474,7 +509,7 @@ fn incoming_oauth_transform_runs_after_replacement_only_with_tokens() {
         );
     }
     let empty = dynamic::config(&[]);
-    empty.write().unwrap().oauth = Some(oauth);
+    empty.write().unwrap().callbacks.oauth = Some(oauth);
     registry.register_provider("p", empty).unwrap();
     assert_eq!(
         registry
@@ -597,7 +632,7 @@ fn builtin_oauth_transform_changes_only_matching_values() {
         .collect();
     assert!(!Arc::ptr_eq(&duplicates[0], &duplicates[1]));
     let config = dynamic::config(&["m"]);
-    config.write().unwrap().oauth = Some(Arc::clone(&oauth));
+    config.write().unwrap().callbacks.oauth = Some(Arc::clone(&oauth));
     registry
         .register_provider("github-copilot", Arc::clone(&config))
         .unwrap();
@@ -678,7 +713,7 @@ fn builtin_oauth_transform_detaches_changed_descriptors() {
         maestro_credentials::AuthCredential::OAuth(credentials),
     );
     let transform = dynamic::config(&["trigger"]);
-    transform.write().unwrap().oauth = Some(oauth);
+    transform.write().unwrap().callbacks.oauth = Some(oauth);
     registry.register_provider("transform", transform).unwrap();
     let changed = registry.find("github-copilot", "m").unwrap();
     assert!(!Arc::ptr_eq(&matching, &changed));
@@ -761,7 +796,7 @@ fn raw_and_simple_callbacks_keep_open_options_results_and_source_ownership() {
     let weak = Arc::downgrade(&owner);
     let calls = Arc::new(std::sync::Mutex::new(Vec::new()));
     let config = dynamic::config(&["m"]);
-    config.write().unwrap().stream_simple = Some(raw_callback(
+    config.write().unwrap().callbacks.stream_simple = Some(raw_callback(
         hook.clone(),
         object.clone(),
         owner.clone(),
@@ -937,6 +972,7 @@ fn set_credential_kind(auth: &maestro_credentials::AuthStorage, kind: usize) {
         auth.set(
             "p",
             maestro_credentials::AuthCredential::ApiKey(maestro_credentials::ApiKeyCredential {
+                env: None,
                 key: "unused".into(),
             }),
         );
@@ -965,7 +1001,8 @@ fn absent_oauth_modifier_preserves_unrelated_descriptor_alias() {
         maestro_credentials::AuthCredential::OAuth(dynamic::tokens()),
     );
     let config = dynamic::config(&["m"]);
-    config.write().unwrap().oauth = Some(maestro_models::get_oauth_provider("anthropic").unwrap());
+    config.write().unwrap().callbacks.oauth =
+        Some(maestro_models::get_oauth_provider("anthropic").unwrap());
     registry.register_provider("p", config).unwrap();
     assert!(Arc::ptr_eq(
         &unrelated,
@@ -986,7 +1023,7 @@ fn nonempty_models_accept_oauth_without_configured_key() {
     let registry = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
     let config = dynamic::config(&["m"]);
     config.write().unwrap().api_key = None;
-    config.write().unwrap().oauth = Some(dynamic::oauth("OAuth only"));
+    config.write().unwrap().callbacks.oauth = Some(dynamic::oauth("OAuth only"));
     registry.register_provider("p", config).unwrap();
     assert_eq!(
         registry.find("p", "m").unwrap().read().unwrap().api,
@@ -1014,7 +1051,7 @@ fn repeated_borrowed_descriptor_keeps_one_shared_alias() {
         maestro_credentials::AuthCredential::OAuth(dynamic::tokens()),
     );
     let config = dynamic::config(&["trigger"]);
-    config.write().unwrap().oauth = Some(Arc::new(dynamic::OAuth {
+    config.write().unwrap().callbacks.oauth = Some(Arc::new(dynamic::OAuth {
         calls: None,
         id: "ignored",
         name: "Repeated borrow",
@@ -1075,7 +1112,7 @@ fn owned_descriptor_preserves_key_order_and_signed_zero() {
         maestro_credentials::AuthCredential::OAuth(dynamic::tokens()),
     );
     let config = dynamic::config(&["trigger"]);
-    config.write().unwrap().oauth = Some(Arc::new(dynamic::OAuth {
+    config.write().unwrap().callbacks.oauth = Some(Arc::new(dynamic::OAuth {
         calls: None,
         id: "ignored",
         name: "Exact returned values",

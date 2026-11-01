@@ -3,15 +3,20 @@
 `maestro-models` exports pure helpers without catalog lookup, environment
 credential resolution, provider invocation or hook execution.
 
-- `build_base_options` copies the 14 common invocation fields, retaining callback
-  and cancellation handles. A missing token limit uses the positive model limit
-  capped at 32,000; nonpositive model limits leave it absent. Explicit limits,
-  including zero or negative values, remain unchanged. A separately supplied
-  nonempty key overrides the option key; empty or absent keys fall back without
-  trimming. Reasoning settings and thinking budgets are not common output fields.
+- `build_base_options` copies the common invocation fields, retaining callback
+  and cancellation handles. A missing token limit uses the positive model limit;
+  nonpositive model limits leave it absent. Every limit, supplied or defaulted, is
+  then fitted to the room the model's context window leaves: the window less the
+  estimated tokens of the system prompt, tools and messages and 4,096 safety tokens,
+  never below one token. A limit already inside that room, such as an explicit 2,000,
+  is kept; a model with no window keeps its limit, raised to one token when it is
+  lower. A separately supplied nonempty key overrides the option key; empty or absent
+  keys fall back without trimming. Reasoning settings and thinking budgets are not common output fields.
   `build_base_options_for` performs the same preparation for an explicit execution
   family, sharing its original payload and response hooks without invoking them.
-  `build_base_options` keeps the default thread-safe SDK signature.
+  `build_base_options` keeps the default thread-safe SDK signature. It also copies
+  `base_url`: shared raw/simple entry points apply that endpoint to the request
+  descriptor without changing its catalog entry.
 - `reasoning_from_thinking_level` borrows an already-selected model thinking level:
   Off becomes absent; minimal through extra-high retain their level. Model support
   clamping remains with the caller.
@@ -19,11 +24,15 @@ credential resolution, provider invocation or hook execution.
 - `adjust_max_tokens_for_thinking` selects budgets of 1,024 (minimal), 2,048 (low),
   8,192 (medium) or 16,384 (high and extra-high). Custom slots override individually,
   including zero. `AdjustedMaxTokens` carries the combined `max_tokens` and
-  `thinking_budget`: add the budget to the base and cap at the model limit. Only
+  `thinking_budget`: add the budget to the base and cap at the model limit; without
+  a base the combined limit is the model limit, and the budget fits inside it. Only
   when that limit is no larger than the budget, reduce the budget to leave 1,024
   output tokens, never below zero. There is no unconditional output reserve,
   rounding or input validation. A NaN sum or model limit produces a NaN combined limit.
 - `is_context_overflow` classifies a borrowed assistant response as described below.
+- `utf16_units`, `tokens_for_chars` and `ESTIMATED_IMAGE_CHARS` are the parts of the
+  token estimate: four UTF-16 units per token, rounded up, and 4,800 units per image.
+  The output limit above and session compaction both count with them.
 
 ## Cache retention
 
@@ -32,6 +41,14 @@ Provider request builders share the options owner's retention resolution: an exp
 `MAESTRO_CACHE_RETENTION=long` selects long retention. An absent, empty, differently
 cased or whitespace-padded value selects short. Each provider keeps its own markers,
 affinity and compatibility policy.
+
+## Request timeouts
+
+A session request without its own `timeout_ms` takes the provider retry setting, then
+the `httpIdleTimeoutMs` setting, so every provider that reads the timeout honours it;
+see the [SDK guide](application/sdk.md). The Mistral transport applies the same timeout
+to the wait for each stream chunk, and rejects a negative or fractional value as the
+other providers do; see [reasoning conversations](models/reasoning-conversations.md).
 
 ## Three context-overflow signals
 
@@ -69,7 +86,7 @@ rule to the classifier. These helpers never send such a request themselves.
 use maestro_models::{ThinkingLevel, adjust_max_tokens_for_thinking, clamp_reasoning};
 
 assert_eq!(clamp_reasoning(Some(ThinkingLevel::Xhigh)), Some(ThinkingLevel::High));
-let adjusted = adjust_max_tokens_for_thinking(16.0, 10_000.0, ThinkingLevel::Low, None);
+let adjusted = adjust_max_tokens_for_thinking(Some(16.0), 10_000.0, ThinkingLevel::Low, None);
 assert_eq!(adjusted.max_tokens, 2_064.0);
 assert_eq!(adjusted.thinking_budget, 2_048.0);
 ```

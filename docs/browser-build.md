@@ -10,10 +10,10 @@ mise exec -- just browser-example-preview --port 9000
 This builds a real editable WebAssembly **author fixture**, not a shipped browser
 application or installable package. The standalone Cargo package is under
 `crates/maestro-tooling/tests/fixtures/browser_author/`, outside the workspace
-member list. Product packaging, the complete embedding application and browser
-interaction qualification remain tracked in [#111](https://github.com/Orchestration-Maestro/maestro/issues/111),
-[#823](https://github.com/Orchestration-Maestro/maestro/issues/823) and
-[#825](https://github.com/Orchestration-Maestro/maestro/issues/825).
+member list. The complete embedding application is the
+[browser chat example](browser/example.md). Product packaging and browser
+interaction qualification remain tracked in [#111](https://github.com/Orchestration-Maestro/maestro/issues/111)
+and [#825](https://github.com/Orchestration-Maestro/maestro/issues/825).
 
 ## Commands
 

@@ -66,14 +66,14 @@ pub fn create_write_tool_definition<C: 'static>(
         definition: Tool {
             name: "write".into(),
             description: "Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.".into(),
-            parameters: json!({
+            parameters: maestro_models::ParameterSchema::authored(json!({
                 "type": "object",
                 "required": ["path", "content"],
                 "properties": {
                     "path": {"type": "string", "description": "Path to the file to write (relative or absolute)"},
                     "content": {"type": "string", "description": "Content to write to the file"},
                 },
-            }),
+            }), [("".to_owned(), maestro_models::SchemaKind::Object), ("/properties/path".to_owned(), maestro_models::SchemaKind::String), ("/properties/content".to_owned(), maestro_models::SchemaKind::String)]),
         },
         label: "write".into(),
         prompt_snippet: Some("Create or overwrite files".into()),

@@ -20,6 +20,8 @@ stable sorting and comparator lifetime.
   Process output and Office package entries share it.
 - **Environment flags.** `is_truthy_env_flag` accepts `1`, ASCII-case-insensitive
   `true` or `yes` without trimming; absent values are false. Tools and packages share it.
+  `is_offline_selected` returns a caller's offline selection, or reads `MAESTRO_OFFLINE`
+  through that rule when the selection is absent.
 - **Whitespace.** `WHITESPACE` lists the 25 scalars once: Unicode white space except
   U+0085, plus U+FEFF. `is_whitespace_scalar` tests membership. HTTP edge
   whitespace and JSON token whitespace are different rules and stay with their owners.

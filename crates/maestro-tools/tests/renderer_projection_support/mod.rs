@@ -155,7 +155,7 @@ pub fn definition<S, D>() -> maestro_tools::types::local::ToolDefinition<(), (),
         definition: maestro_models::Tool {
             name: "custom".into(),
             description: String::new(),
-            parameters: json!({}),
+            parameters: json!({}).into(),
         },
         label: "custom".into(),
         prompt_snippet: None,

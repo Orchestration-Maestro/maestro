@@ -138,10 +138,6 @@ impl BashOperations for Script {
                 self.log.lock().unwrap().ops[index]["signalAtEnd"] = json!(signal.is_aborted());
             }
             match self.input.error.as_deref() {
-                Some("aborted") => Err(BashError::Aborted),
-                Some(error) if error.starts_with("timeout:") => {
-                    Err(BashError::Timeout(error[8..].parse().unwrap()))
-                }
                 Some(error) => Err(std::io::Error::other(error).into()),
                 None => Ok(BashExecResult {
                     exit_code: self.input.code.0,
@@ -167,7 +163,7 @@ impl Script {
                     .env
                     .unwrap()
                     .iter()
-                    .map(|(k, v)| (k.to_str().unwrap(), v.to_str().unwrap()))
+                    .map(|(k, v)| (k.to_str().unwrap(), v.as_ref().unwrap().to_str().unwrap()))
                     .collect::<std::collections::BTreeMap<_, _>>()
             );
         }
@@ -415,7 +411,11 @@ fn hook(input: &Arc<Input>, log: &Log) -> Option<maestro_tools::BashSpawnHook> {
         Ok(BashSpawnContext {
             command: hook.command.clone(),
             cwd: hook.cwd.clone(),
-            env: hook.env.iter().map(|(k, v)| (k.into(), v.into())).collect(),
+            env: hook
+                .env
+                .iter()
+                .map(|(k, v)| (k.into(), Some(v.into())))
+                .collect(),
         })
     }))
 }
@@ -643,7 +643,7 @@ fn selected_context(context: &BashSpawnContext) -> Value {
             context
                 .env
                 .get(std::ffi::OsStr::new(key))
-                .map(|value| (key, value.to_str().unwrap()))
+                .map(|value| (key, value.as_ref().unwrap().to_str().unwrap()))
         })
         .collect::<std::collections::BTreeMap<_, _>>();
     json!({"command":context.command, "cwd":context.cwd, "env":env})
@@ -670,7 +670,7 @@ fn environment_definition(
     let hook_bases = bases.clone();
     let hook = Arc::new(move |mut context: BashSpawnContext| {
         hook_bases.lock().unwrap().push(selected_context(&context));
-        context.env.insert("ADDED".into(), "call-only".into());
+        context.env.insert("ADDED".into(), Some("call-only".into()));
         Ok(context)
     });
     let operation_calls = calls.clone();

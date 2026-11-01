@@ -77,7 +77,9 @@ async fn prepared_loop<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<
         })
         .await?;
     }
-    let driver = Driver {
+    let mut driver = Driver {
+        model: Arc::clone(&config.model),
+        reasoning: config.options.reasoning,
         context,
         config,
         emit,
@@ -102,6 +104,10 @@ fn prepare_prompt<C: CustomAgentMessages, E: AgentExecution>(
 struct Driver<'a, C: CustomAgentMessages, E: AgentExecution> {
     /// Instruction, history and tool handles.
     context: AgentContextRecord<C, E>,
+    /// Model for the next request.
+    model: Arc<RwLock<maestro_models::Model>>,
+    /// Thinking level for the next request.
+    reasoning: Option<maestro_models::ThinkingLevel>,
     /// Caller request configuration.
     config: &'a AgentLoopConfigRecord<C, E>,
     /// Awaited observation callback.
@@ -109,10 +115,21 @@ struct Driver<'a, C: CustomAgentMessages, E: AgentExecution> {
     /// Invocation overrides.
     options: CapturedOptions<E>,
 }
+/// One completed turn: its response, its tool results and what comes next.
+struct FinishedTurn {
+    /// The assistant's response.
+    response: maestro_models::SharedAssistantMessage,
+    /// The turn's tool results.
+    results: Vec<Arc<RwLock<maestro_models::ToolResultMessage>>>,
+    /// Whether the response ended in an error or an abort.
+    failed: bool,
+    /// Whether the tools asked for another turn.
+    again: bool,
+}
 impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Driver<'_, C, E> {
     /// Complete turns until controls and ordinary continuation are exhausted.
     async fn run(
-        &self,
+        &mut self,
         mut messages: Vec<AgentMessage<C>>,
     ) -> Result<Vec<AgentMessage<C>>, DiagnosticErrorInfo> {
         let mut first = true;
@@ -126,24 +143,16 @@ impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Driver<'_, C, 
             first = false;
             self.inject_messages(std::mem::take(&mut pending), &mut messages)
                 .await?;
-            let response = self.assistant().await?;
-            messages.push(AgentMessage::Assistant(Arc::clone(&response)));
-            let failed = matches!(
-                read(&response).stop_reason,
-                maestro_models::StopReason::Error | maestro_models::StopReason::Aborted
-            );
-            let (results, again) = if failed {
-                (Vec::new(), false)
-            } else {
-                self.tools(&response).await?
-            };
-            self.complete_turn(&response, &results, &mut messages)
-                .await?;
-            if failed || self.stop_after_turn(&response, &results, &messages).await? {
+            let turn = self.turn(&mut messages).await?;
+            if turn.failed
+                || self
+                    .stop_after_turn(&turn.response, &turn.results, &messages)
+                    .await?
+            {
                 break;
             }
-            pending = self.next_messages(again).await?;
-            if !again && pending.is_empty() {
+            pending = self.next_messages(turn.again).await?;
+            if !turn.again && pending.is_empty() {
                 break;
             }
         }
@@ -152,6 +161,34 @@ impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Driver<'_, C, 
         })
         .await?;
         Ok(messages)
+    }
+    /// One request, its tool calls and its end; a normal turn then prepares the next one.
+    async fn turn(
+        &mut self,
+        messages: &mut Vec<AgentMessage<C>>,
+    ) -> Result<FinishedTurn, DiagnosticErrorInfo> {
+        let response = self.assistant().await?;
+        messages.push(AgentMessage::Assistant(Arc::clone(&response)));
+        let failed = matches!(
+            read(&response).stop_reason,
+            maestro_models::StopReason::Error | maestro_models::StopReason::Aborted
+        );
+        let (results, again) = if failed {
+            (Vec::new(), false)
+        } else {
+            self.tools(&response).await?
+        };
+        self.complete_turn(&response, &results, messages).await?;
+        if !failed {
+            self.prepare_next_turn(&response, &results, messages)
+                .await?;
+        }
+        Ok(FinishedTurn {
+            response,
+            results,
+            failed,
+            again,
+        })
     }
 }
 

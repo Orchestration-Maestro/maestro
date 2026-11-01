@@ -1,0 +1,40 @@
+[package]
+name = "maestro"
+version = "0.1.0"
+edition.workspace = true
+autotests = false
+default-run = "maestro"
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+maestro-app = { path = "../maestro-app" }
+maestro-cli = { path = "../maestro-cli" }
+maestro-chat = { path = "../maestro-chat" }
+maestro-rpc = { path = "../maestro-rpc" }
+maestro-extensions-wasmtime = { path = "../maestro-extensions-wasmtime" }
+maestro-theme = { path = "../maestro-theme" }
+maestro-tui = { path = "../maestro-tui" }
+maestro-tui-crossterm = { path = "../maestro-tui-crossterm" }
+maestro-process = { path = "../maestro-process" }
+tokio = { version = "=1.53.3", default-features = false, features = ["rt", "io-std", "io-util", "sync", "time", "net", "signal"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+maestro-dependencies.workspace = true
+
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+serde_json.workspace = true
+maestro-test-directory.workspace = true
+maestro-test-process.workspace = true
+tokio = { version = "=1.53.3", default-features = false, features = ["test-util"] }
+
+[target.'cfg(unix)'.dev-dependencies]
+nix.workspace = true
+rustix = { version = "=1.1.5", default-features = false, features = ["std", "event", "fs", "stdio", "termios", "pipe", "pty", "process"] }
+
+[[test]]
+name = "integration"
+path = "tests/integration.rs"
+
+[lints]
+workspace = true

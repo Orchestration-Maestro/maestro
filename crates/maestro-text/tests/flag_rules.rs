@@ -22,3 +22,9 @@ fn truthy_env_flags_accept_one_true_or_yes_exactly() {
         assert!(maestro_text::is_truthy_env_flag(Some(value)));
     }
 }
+
+#[test]
+fn offline_selections_override_the_ambient_flag() {
+    assert!(maestro_text::is_offline_selected(Some(true)));
+    assert!(!maestro_text::is_offline_selected(Some(false)));
+}

@@ -27,7 +27,9 @@ enum Node<'a> {
 fn at(root: &str, path: &str) -> String {
     match path {
         "/" => root.into(),
-        path if path.starts_with('/') => format!("{root}{path}"),
+        path if path.starts_with('/') => {
+            format!("{root}{}", path.replace('/', std::path::MAIN_SEPARATOR_STR))
+        }
         path => path.into(),
     }
 }
@@ -125,6 +127,12 @@ fn run_cases(test: &str, cases: &[LoadCase<'_>]) {
     }
     for case in cases {
         let dir = support::Directory::new();
+        let paths: Vec<&str> = case.entries.iter().map(|(path, _)| *path).collect();
+        let folded = dir.0.folded_names(&paths).unwrap();
+        if !folded.is_empty() {
+            eprintln!("{test} case needs names this host keeps apart: {folded:?}");
+            continue;
+        }
         let root = support::text(dir.0.path());
         let Some(_locks) = materialize(root, case.entries) else {
             continue;
@@ -485,7 +493,7 @@ fn slice_placeholders_compose_with_original_tokens() {
 }
 
 /// Distinct authored inputs and independently recorded expected outputs.
-const COMMAND_ARGS_SPLIT_ONLY_SPACES_AND_TABS_CASES: &[(&str, &[&str])] = &[
+const COMMAND_ARGS_SPLIT_ON_ALL_WHITESPACE_CASES: &[(&str, &[&str])] = &[
     ("a b c", &["a", "b", "c"]),
     ("", &[]),
     ("a  b   c", &["a", "b", "c"]),
@@ -495,14 +503,16 @@ const COMMAND_ARGS_SPLIT_ONLY_SPACES_AND_TABS_CASES: &[(&str, &[&str])] = &[
     ("\"line1\nline2\" second", &["line1\nline2", "second"]),
     ("a b c   ", &["a", "b", "c"]),
     ("   a b c", &["a", "b", "c"]),
-    ("a\nb", &["a\nb"]),
-    ("a\rb", &["a\rb"]),
-    ("a\u{b} b", &["a\u{b}", "b"]),
-    ("a\u{c} b", &["a\u{c}", "b"]),
-    ("a b", &["a b"]),
-    ("a﻿b", &["a﻿b"]),
-    ("ab", &["ab"]),
-    ("a b", &["a b"]),
+    ("a\nb", &["a", "b"]),
+    ("a\rb", &["a", "b"]),
+    ("a\tb\nc", &["a", "b", "c"]),
+    ("a\u{b}b", &["a", "b"]),
+    ("a\u{c}b", &["a", "b"]),
+    ("a\u{a0}b", &["a", "b"]),
+    ("a\u{feff}b", &["a", "b"]),
+    ("a\u{85}b", &["a\u{85}b"]),
+    ("a\u{2028}b", &["a", "b"]),
+    ("\"a\nb\"\nc", &["a\nb", "c"]),
     ("a\\ b", &["a\\", "b"]),
     ("  \t  ", &[]),
     ("a\0b", &["a\0b"]),
@@ -510,8 +520,8 @@ const COMMAND_ARGS_SPLIT_ONLY_SPACES_AND_TABS_CASES: &[(&str, &[&str])] = &[
 
 /// Exercise original inputs through the public template seam.
 #[test]
-fn command_args_split_only_spaces_and_tabs() {
-    for (text, expected) in COMMAND_ARGS_SPLIT_ONLY_SPACES_AND_TABS_CASES {
+fn command_args_split_on_all_whitespace() {
+    for (text, expected) in COMMAND_ARGS_SPLIT_ON_ALL_WHITESPACE_CASES {
         assert_eq!(parse_command_args(text), *expected);
     }
 }
@@ -847,8 +857,14 @@ fn prompt_hints_retain_optional_string_values() {
             include_defaults: false,
         })
         .unwrap();
-        let paths: Vec<_> = expected.iter().map(|t| dir.0.path().join(t.path)).collect();
-        let bases: Vec<_> = expected.iter().map(|t| dir.0.path().join(t.base)).collect();
+        let paths: Vec<_> = expected
+            .iter()
+            .map(|t| support::under(dir.0.path(), t.path))
+            .collect();
+        let bases: Vec<_> = expected
+            .iter()
+            .map(|t| support::under(dir.0.path(), t.base))
+            .collect();
         let expected: Vec<_> = expected
             .iter()
             .zip(&paths)
@@ -1054,7 +1070,7 @@ const MAESTRO_PROMPT_TEMPLATE_EXPANDS_FIRST_MATCHING_NAME_CASES: &[ExpansionCase
             ("go\ttab", "tab:$1"),
             ("go\nline", "newline:$1"),
         ],
-        "/go\tx",
+        "x||x",
     ),
     (
         "/go\nx",
@@ -1066,7 +1082,7 @@ const MAESTRO_PROMPT_TEMPLATE_EXPANDS_FIRST_MATCHING_NAME_CASES: &[ExpansionCase
             ("go\ttab", "tab:$1"),
             ("go\nline", "newline:$1"),
         ],
-        "/go\nx",
+        "x||x",
     ),
     (
         "/go\ttab z",
@@ -1078,7 +1094,7 @@ const MAESTRO_PROMPT_TEMPLATE_EXPANDS_FIRST_MATCHING_NAME_CASES: &[ExpansionCase
             ("go\ttab", "tab:$1"),
             ("go\nline", "newline:$1"),
         ],
-        "tab:z",
+        "tab|z|tab z",
     ),
     (
         "/go\nline z",
@@ -1090,7 +1106,7 @@ const MAESTRO_PROMPT_TEMPLATE_EXPANDS_FIRST_MATCHING_NAME_CASES: &[ExpansionCase
             ("go\ttab", "tab:$1"),
             ("go\nline", "newline:$1"),
         ],
-        "newline:z",
+        "line|z|line z",
     ),
     (
         "/",
@@ -1102,7 +1118,7 @@ const MAESTRO_PROMPT_TEMPLATE_EXPANDS_FIRST_MATCHING_NAME_CASES: &[ExpansionCase
             ("go\ttab", "tab:$1"),
             ("go\nline", "newline:$1"),
         ],
-        "empty:",
+        "/",
     ),
     (
         "/ x",
@@ -1114,7 +1130,7 @@ const MAESTRO_PROMPT_TEMPLATE_EXPANDS_FIRST_MATCHING_NAME_CASES: &[ExpansionCase
             ("go\ttab", "tab:$1"),
             ("go\nline", "newline:$1"),
         ],
-        "empty:x",
+        "/ x",
     ),
     (
         "//go x",
@@ -1150,7 +1166,7 @@ const MAESTRO_PROMPT_TEMPLATE_EXPANDS_FIRST_MATCHING_NAME_CASES: &[ExpansionCase
             ("go\ttab", "tab:$1"),
             ("go\nline", "newline:$1"),
         ],
-        "a\nq||a\nq",
+        "a|q|a q",
     ),
     ("/go x", &[], "/go x"),
 ];
@@ -1164,6 +1180,24 @@ fn maestro_prompt_template_expands_first_matching_name() {
             .map(|(name, content)| template(name, content))
             .collect();
         assert_eq!(expand_prompt_template(text, &templates), *expected);
+    }
+}
+
+/// A template name ends at the first whitespace scalar, whatever its kind.
+#[test]
+fn prompt_template_name_ends_at_first_whitespace() {
+    let templates = [template("tpl", "$1,$2,$3")];
+    for (text, expected) in [
+        ("/tpl a\tb\nc", "a,b,c"),
+        ("/tpl\nx", "x,,"),
+        ("/tpl\tx y", "x,y,"),
+        ("/tpl", ",,"),
+    ] {
+        assert_eq!(
+            expand_prompt_template(text, &templates),
+            expected,
+            "{text:?}"
+        );
     }
 }
 
@@ -2711,7 +2745,7 @@ const PROMPT_PATHS_KEEP_ENTRY_SPECIFIC_RESOLUTION_AND_SPELLING_CASES: &[LoadCase
             ("/extra/q.md", Node::File(Some("explicit-q"))),
             ("/home/user/t.md", Node::File(Some("home"))),
             ("/home/user", Node::Dir),
-            ("/home/user/extra/a.md", Node::File(Some("tildeuser"))),
+            ("/work/~extra/a.md", Node::File(Some("tildeuser"))),
             ("/work/relative.md", Node::File(Some("relative"))),
         ],
         process: "/ambient",
@@ -2746,9 +2780,9 @@ const PROMPT_PATHS_KEEP_ENTRY_SPECIFIC_RESOLUTION_AND_SPELLING_CASES: &[LoadCase
                 description: "tildeuser",
                 hint: None,
                 content: "tildeuser",
-                path: "/home/user/extra/a.md",
+                path: "/work/~extra/a.md",
                 scope: SourceScope::Temporary,
-                base: "/home/user/extra",
+                base: "/work/~extra",
             },
             ExpectedTemplate {
                 name: "t",

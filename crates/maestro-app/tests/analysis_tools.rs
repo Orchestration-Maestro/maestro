@@ -56,7 +56,7 @@ fn write(directory: &str, files: &[(&str, String)]) {
 
 /// Run the report over `sessions` and read back the page it wrote.
 fn report(scratch: &maestro_test_directory::Scratch, sessions: &str) -> (Run, String) {
-    let output = format!("{}/report.html", root(scratch));
+    let output = maestro_path::join(&[&root(scratch), "report.html"]);
     let run = run_tools(&["--sessions-dir", sessions, "--output", &output])
         .expect("the report reads its directory");
     let page = std::fs::read_to_string(&output).unwrap_or_default();
@@ -70,7 +70,7 @@ fn tool_arguments_and_recursive_file_selection() {
         assert!(help.succeeded());
         assert_eq!(help.stdout, HELP);
         let scratch = scratch();
-        let sessions = format!("{}/sessions", root(&scratch));
+        let sessions = maestro_path::join(&[&root(&scratch), "sessions"]);
         write(
             &sessions,
             &[
@@ -82,7 +82,7 @@ fn tool_arguments_and_recursive_file_selection() {
             ],
         );
         write(
-            &format!("{sessions}/nested.jsonl"),
+            &maestro_path::join(&[&sessions, "nested.jsonl"]),
             &[(
                 "b.jsonl",
                 call("2", "write", serde_json::json!({"path": "b"})),
@@ -90,26 +90,24 @@ fn tool_arguments_and_recursive_file_selection() {
         );
         #[cfg(unix)]
         std::os::unix::fs::symlink(
-            format!("{sessions}/a.jsonl"),
-            format!("{sessions}/link.jsonl"),
+            maestro_path::join(&[&sessions, "a.jsonl"]),
+            maestro_path::join(&[&sessions, "link.jsonl"]),
         )
         .expect("the fixture link is creatable");
-        let output = format!("{}/ignored.html", root(&scratch));
+        let output = maestro_path::join(&[&root(&scratch), "ignored.html"]);
+        let report = maestro_path::join(&[&root(&scratch), "report.html"]);
         let run = run_tools(&[
             "--unknown",
             "value",
             "-o",
-            &format!("{}/report.html", root(&scratch)),
+            &report,
             "--sessions-dir",
             &sessions,
         ])
         .expect("the report reads its directory");
         assert!(run.succeeded());
-        assert_eq!(
-            run.stdout,
-            format!("Wrote {}/report.html\n", root(&scratch))
-        );
-        let page = std::fs::read_to_string(format!("{}/report.html", root(&scratch))).unwrap();
+        assert_eq!(run.stdout, format!("Wrote {report}\n"));
+        let page = std::fs::read_to_string(&report).unwrap();
         let data = page_data(&page);
         assert_eq!(data["files"], serde_json::json!(2));
         assert_eq!(data["sessionsDir"], serde_json::json!(sessions));
@@ -129,7 +127,7 @@ fn tool_arguments_and_recursive_file_selection() {
 fn tool_counts_calls_results_errors_and_orphans() {
     with_controlled_viewer("tool_counts_calls_results_errors_and_orphans", |_base| {
         let scratch = scratch();
-        let sessions = format!("{}/sessions", root(&scratch));
+        let sessions = maestro_path::join(&[&root(&scratch), "sessions"]);
         let entries = [
             call("1", "bash", serde_json::json!({"command": "git status"})),
             call("2", "bash", serde_json::json!({"command": 7})),
@@ -168,7 +166,7 @@ fn tool_counts_calls_results_errors_and_orphans() {
 fn tool_pairing_keeps_last_call_across_files() {
     with_controlled_viewer("tool_pairing_keeps_last_call_across_files", |_base| {
         let scratch = scratch();
-        let sessions = format!("{}/sessions", root(&scratch));
+        let sessions = maestro_path::join(&[&root(&scratch), "sessions"]);
         write(
             &sessions,
             &[
@@ -215,7 +213,7 @@ fn tool_pairing_keeps_last_call_across_files() {
 fn tool_result_text_keeps_images_and_other_blocks() {
     with_controlled_viewer("tool_result_text_keeps_images_and_other_blocks", |_base| {
         let scratch = scratch();
-        let sessions = format!("{}/sessions", root(&scratch));
+        let sessions = maestro_path::join(&[&root(&scratch), "sessions"]);
         let blocks = serde_json::json!([
             {"type": "text", "text": "a"},
             {"type": "image", "data": "raw"},
@@ -256,7 +254,7 @@ fn tool_result_text_keeps_images_and_other_blocks() {
 fn tool_estimates_tokens_and_bucket_boundaries() {
     with_controlled_viewer("tool_estimates_tokens_and_bucket_boundaries", |_base| {
         let scratch = scratch();
-        let sessions = format!("{}/sessions", root(&scratch));
+        let sessions = maestro_path::join(&[&root(&scratch), "sessions"]);
         let samples = [0_usize, 1, 4, 5, 200, 32_000 * 4, 32_001 * 4];
         let entries = samples
             .iter()
@@ -329,7 +327,7 @@ fn bash_command_keys_keep_prefix_and_separator_rules() {
         "bash_command_keys_keep_prefix_and_separator_rules",
         |_base| {
             let scratch = scratch();
-            let sessions = format!("{}/sessions", root(&scratch));
+            let sessions = maestro_path::join(&[&root(&scratch), "sessions"]);
             let entries = SEPARATOR_COMMANDS
                 .iter()
                 .enumerate()
@@ -377,7 +375,7 @@ fn bash_command_keys_keep_prefix_and_separator_rules() {
 fn bash_command_keys_keep_a_final_command_word() {
     with_controlled_viewer("bash_command_keys_keep_a_final_command_word", |_base| {
         let scratch = scratch();
-        let sessions = format!("{}/sessions", root(&scratch));
+        let sessions = maestro_path::join(&[&root(&scratch), "sessions"]);
         let commands = ["FOO=bar", "FOO=bar baz", "sudo", "A=1 sudo"];
         let entries = commands
             .iter()
@@ -426,7 +424,7 @@ fn tool_results_for_empty_commands_keep_no_bash_row() {
         "tool_results_for_empty_commands_keep_no_bash_row",
         |_base| {
             let scratch = scratch();
-            let sessions = format!("{}/sessions", root(&scratch));
+            let sessions = maestro_path::join(&[&root(&scratch), "sessions"]);
             write(
                 &sessions,
                 &[(
@@ -463,7 +461,7 @@ fn tool_results_for_empty_commands_keep_no_bash_row() {
 fn tool_rows_sort_stably_and_limit_bash_rows() {
     with_controlled_viewer("tool_rows_sort_stably_and_limit_bash_rows", |_base| {
         let scratch = scratch();
-        let sessions = format!("{}/sessions", root(&scratch));
+        let sessions = maestro_path::join(&[&root(&scratch), "sessions"]);
         let mut entries = Vec::new();
         for index in 0..60 {
             let command = format!("cmd{index:02} arg");
@@ -504,7 +502,7 @@ fn tool_report_keeps_empty_and_nonempty_page_states() {
         "tool_report_keeps_empty_and_nonempty_page_states",
         |_base| {
             let scratch = scratch();
-            let empty = format!("{}/empty", root(&scratch));
+            let empty = maestro_path::join(&[&root(&scratch), "empty"]);
             std::fs::create_dir_all(&empty).expect("the fixture directory is creatable");
             let (run, page) = report(&scratch, &empty);
             assert!(run.succeeded());
@@ -526,7 +524,16 @@ fn tool_report_keeps_empty_and_nonempty_page_states() {
 fn tool_report_treats_data_and_paths_as_text() {
     with_controlled_viewer("tool_report_treats_data_and_paths_as_text", |_base| {
         let scratch = scratch();
-        let sessions = format!("{}/sessions<img src=x>", root(&scratch));
+        let name = "sessions<img src=x>";
+        // Windows refuses `<` and `>` in a name, so the premise cannot be exercised there.
+        if !scratch
+            .keeps_distinct(&[std::ffi::OsStr::new(name)])
+            .unwrap()
+        {
+            eprintln!("premise not met: this host refuses the name {name:?}");
+            return;
+        }
+        let sessions = maestro_path::join(&[&root(&scratch), name]);
         write(
             &sessions,
             &[(
@@ -559,7 +566,7 @@ fn tool_report_uses_shared_brand_and_pinned_asset_links() {
         "tool_report_uses_shared_brand_and_pinned_asset_links",
         |_base| {
             let scratch = scratch();
-            let sessions = format!("{}/sessions", root(&scratch));
+            let sessions = maestro_path::join(&[&root(&scratch), "sessions"]);
             std::fs::create_dir_all(&sessions).expect("the fixture directory is creatable");
             let (run, page) = report(&scratch, &sessions);
             assert!(run.succeeded());
@@ -623,7 +630,16 @@ fn fixture_records() -> String {
 fn tool_report_page_matches_the_committed_fixture() {
     with_controlled_viewer("tool_report_page_matches_the_committed_fixture", |_base| {
         let scratch = scratch();
-        let sessions = format!("{}/sessions-<img src=x>", root(&scratch));
+        let name = "sessions-<img src=x>";
+        // Windows refuses `<` and `>` in a name, so the premise cannot be exercised there.
+        if !scratch
+            .keeps_distinct(&[std::ffi::OsStr::new(name)])
+            .unwrap()
+        {
+            eprintln!("premise not met: this host refuses the name {name:?}");
+            return;
+        }
+        let sessions = maestro_path::join(&[&root(&scratch), name]);
         write(&sessions, &[("a.jsonl", fixture_records())]);
         let (run, page) = report(&scratch, &sessions);
         assert!(run.succeeded());
@@ -642,9 +658,9 @@ fn tool_report_opens_the_page_with_the_recorded_arguments() {
     with_controlled_viewer(
         "tool_report_opens_the_page_with_the_recorded_arguments",
         |base| {
-            let sessions = format!("{base}/sessions");
+            let sessions = maestro_path::join(&[base, "sessions"]);
             write(&sessions, &[("a.jsonl", String::new())]);
-            let output = format!("{base}/report.html");
+            let output = maestro_path::join(&[base, "report.html"]);
             // Help writes no page, so it hands nothing to the opener.
             run_tools(&["--help"]).expect("help is printed");
             assert!(

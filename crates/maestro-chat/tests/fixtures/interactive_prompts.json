@@ -1,0 +1,1279 @@
+[
+  {
+    "test": "startup_prompts_keep_order_images_empty_messages_and_error_recovery",
+    "input": {
+      "options": {
+        "migratedProviders": [
+          "zeta",
+          "alpha",
+          "zeta"
+        ],
+        "modelFallbackMessage": "restored fallback",
+        "initialMessage": "first",
+        "initialImages": [
+          {
+            "type": "image",
+            "data": "ZmFrZQ==",
+            "mimeType": "image/png"
+          }
+        ],
+        "initialMessages": [
+          "",
+          "  extra  ",
+          "repeat",
+          "repeat"
+        ]
+      },
+      "catalogError": "bad catalog",
+      "typed": [
+        "typed"
+      ]
+    },
+    "expected": [
+      {
+        "warning": "Migrated credentials to auth.json: zeta, alpha, zeta"
+      },
+      {
+        "catalogError": "bad catalog"
+      },
+      {
+        "warning": "restored fallback"
+      },
+      {
+        "prompt": "first",
+        "images": [
+          {
+            "type": "image",
+            "data": "ZmFrZQ==",
+            "mimeType": "image/png"
+          }
+        ],
+        "session": "old"
+      },
+      {
+        "prompt": "",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "  extra  ",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "repeat",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "repeat",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "typed",
+        "images": null,
+        "session": "old"
+      }
+    ]
+  },
+  {
+    "test": "startup_empty_options_skip_notices_and_orphan_images",
+    "input": {
+      "options": {
+        "initialMessages": [
+          "",
+          "same",
+          "same"
+        ]
+      },
+      "typed": [
+        "later"
+      ]
+    },
+    "expected": [
+      {
+        "prompt": "",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "later",
+        "images": null,
+        "session": "old"
+      }
+    ]
+  },
+  {
+    "test": "startup_empty_options_skip_notices_and_orphan_images",
+    "input": {
+      "options": {
+        "initialMessages": [
+          "",
+          "same",
+          "same"
+        ],
+        "initialImages": []
+      },
+      "typed": [
+        "later"
+      ]
+    },
+    "expected": [
+      {
+        "prompt": "",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "later",
+        "images": null,
+        "session": "old"
+      }
+    ]
+  },
+  {
+    "test": "startup_empty_options_skip_notices_and_orphan_images",
+    "input": {
+      "options": {
+        "initialMessages": [
+          "",
+          "same",
+          "same"
+        ],
+        "initialImages": [
+          {
+            "type": "image",
+            "data": "Zmlyc3Q=",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "image",
+            "data": "c2Vjb25k",
+            "mimeType": "image/jpeg"
+          }
+        ]
+      },
+      "typed": [
+        "later"
+      ]
+    },
+    "expected": [
+      {
+        "prompt": "",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "later",
+        "images": null,
+        "session": "old"
+      }
+    ]
+  },
+  {
+    "test": "startup_empty_options_skip_notices_and_orphan_images",
+    "input": {
+      "options": {
+        "initialMessages": [
+          "",
+          "same",
+          "same"
+        ],
+        "initialMessage": ""
+      },
+      "typed": [
+        "later"
+      ]
+    },
+    "expected": [
+      {
+        "prompt": "",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "later",
+        "images": null,
+        "session": "old"
+      }
+    ]
+  },
+  {
+    "test": "startup_empty_options_skip_notices_and_orphan_images",
+    "input": {
+      "options": {
+        "initialMessages": [
+          "",
+          "same",
+          "same"
+        ],
+        "initialMessage": "",
+        "initialImages": []
+      },
+      "typed": [
+        "later"
+      ]
+    },
+    "expected": [
+      {
+        "prompt": "",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "later",
+        "images": null,
+        "session": "old"
+      }
+    ]
+  },
+  {
+    "test": "startup_empty_options_skip_notices_and_orphan_images",
+    "input": {
+      "options": {
+        "initialMessages": [
+          "",
+          "same",
+          "same"
+        ],
+        "initialMessage": "",
+        "initialImages": [
+          {
+            "type": "image",
+            "data": "Zmlyc3Q=",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "image",
+            "data": "c2Vjb25k",
+            "mimeType": "image/jpeg"
+          }
+        ]
+      },
+      "typed": [
+        "later"
+      ]
+    },
+    "expected": [
+      {
+        "prompt": "",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "later",
+        "images": null,
+        "session": "old"
+      }
+    ]
+  },
+  {
+    "test": "startup_prompts_keep_order_images_empty_messages_and_error_recovery",
+    "input": {
+      "options": {
+        "initialMessages": [
+          "",
+          "same",
+          "same"
+        ],
+        "initialMessage": " "
+      },
+      "typed": [
+        "later"
+      ]
+    },
+    "expected": [
+      {
+        "prompt": " ",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "later",
+        "images": null,
+        "session": "old"
+      }
+    ]
+  },
+  {
+    "test": "startup_prompts_keep_order_images_empty_messages_and_error_recovery",
+    "input": {
+      "options": {
+        "initialMessages": [
+          "",
+          "same",
+          "same"
+        ],
+        "initialMessage": " ",
+        "initialImages": []
+      },
+      "typed": [
+        "later"
+      ]
+    },
+    "expected": [
+      {
+        "prompt": " ",
+        "images": [],
+        "session": "old"
+      },
+      {
+        "prompt": "",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "later",
+        "images": null,
+        "session": "old"
+      }
+    ]
+  },
+  {
+    "test": "startup_prompts_keep_order_images_empty_messages_and_error_recovery",
+    "input": {
+      "options": {
+        "initialMessages": [
+          "",
+          "same",
+          "same"
+        ],
+        "initialMessage": " ",
+        "initialImages": [
+          {
+            "type": "image",
+            "data": "Zmlyc3Q=",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "image",
+            "data": "c2Vjb25k",
+            "mimeType": "image/jpeg"
+          }
+        ]
+      },
+      "typed": [
+        "later"
+      ]
+    },
+    "expected": [
+      {
+        "prompt": " ",
+        "images": [
+          {
+            "type": "image",
+            "data": "Zmlyc3Q=",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "image",
+            "data": "c2Vjb25k",
+            "mimeType": "image/jpeg"
+          }
+        ],
+        "session": "old"
+      },
+      {
+        "prompt": "",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "later",
+        "images": null,
+        "session": "old"
+      }
+    ]
+  },
+  {
+    "test": "startup_prompts_keep_order_images_empty_messages_and_error_recovery",
+    "input": {
+      "options": {
+        "initialMessages": [
+          "",
+          "same",
+          "same"
+        ],
+        "initialMessage": "\ufeff"
+      },
+      "typed": [
+        "later"
+      ]
+    },
+    "expected": [
+      {
+        "prompt": "\ufeff",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "later",
+        "images": null,
+        "session": "old"
+      }
+    ]
+  },
+  {
+    "test": "startup_prompts_keep_order_images_empty_messages_and_error_recovery",
+    "input": {
+      "options": {
+        "initialMessages": [
+          "",
+          "same",
+          "same"
+        ],
+        "initialMessage": "\ufeff",
+        "initialImages": []
+      },
+      "typed": [
+        "later"
+      ]
+    },
+    "expected": [
+      {
+        "prompt": "\ufeff",
+        "images": [],
+        "session": "old"
+      },
+      {
+        "prompt": "",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "later",
+        "images": null,
+        "session": "old"
+      }
+    ]
+  },
+  {
+    "test": "startup_prompts_keep_order_images_empty_messages_and_error_recovery",
+    "input": {
+      "options": {
+        "initialMessages": [
+          "",
+          "same",
+          "same"
+        ],
+        "initialMessage": "\ufeff",
+        "initialImages": [
+          {
+            "type": "image",
+            "data": "Zmlyc3Q=",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "image",
+            "data": "c2Vjb25k",
+            "mimeType": "image/jpeg"
+          }
+        ]
+      },
+      "typed": [
+        "later"
+      ]
+    },
+    "expected": [
+      {
+        "prompt": "\ufeff",
+        "images": [
+          {
+            "type": "image",
+            "data": "Zmlyc3Q=",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "image",
+            "data": "c2Vjb25k",
+            "mimeType": "image/jpeg"
+          }
+        ],
+        "session": "old"
+      },
+      {
+        "prompt": "",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "later",
+        "images": null,
+        "session": "old"
+      }
+    ]
+  },
+  {
+    "test": "startup_prompts_keep_order_images_empty_messages_and_error_recovery",
+    "input": {
+      "options": {
+        "initialMessages": [
+          "",
+          "same",
+          "same"
+        ],
+        "initialMessage": "\u0085"
+      },
+      "typed": [
+        "later"
+      ]
+    },
+    "expected": [
+      {
+        "prompt": "\u0085",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "later",
+        "images": null,
+        "session": "old"
+      }
+    ]
+  },
+  {
+    "test": "startup_prompts_keep_order_images_empty_messages_and_error_recovery",
+    "input": {
+      "options": {
+        "initialMessages": [
+          "",
+          "same",
+          "same"
+        ],
+        "initialMessage": "\u0085",
+        "initialImages": []
+      },
+      "typed": [
+        "later"
+      ]
+    },
+    "expected": [
+      {
+        "prompt": "\u0085",
+        "images": [],
+        "session": "old"
+      },
+      {
+        "prompt": "",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "later",
+        "images": null,
+        "session": "old"
+      }
+    ]
+  },
+  {
+    "test": "startup_prompts_keep_order_images_empty_messages_and_error_recovery",
+    "input": {
+      "options": {
+        "initialMessages": [
+          "",
+          "same",
+          "same"
+        ],
+        "initialMessage": "\u0085",
+        "initialImages": [
+          {
+            "type": "image",
+            "data": "Zmlyc3Q=",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "image",
+            "data": "c2Vjb25k",
+            "mimeType": "image/jpeg"
+          }
+        ]
+      },
+      "typed": [
+        "later"
+      ]
+    },
+    "expected": [
+      {
+        "prompt": "\u0085",
+        "images": [
+          {
+            "type": "image",
+            "data": "Zmlyc3Q=",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "image",
+            "data": "c2Vjb25k",
+            "mimeType": "image/jpeg"
+          }
+        ],
+        "session": "old"
+      },
+      {
+        "prompt": "",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "later",
+        "images": null,
+        "session": "old"
+      }
+    ]
+  },
+  {
+    "test": "startup_prompts_keep_order_images_empty_messages_and_error_recovery",
+    "input": {
+      "options": {
+        "initialMessages": [
+          "",
+          "same",
+          "same"
+        ],
+        "initialMessage": "line\n\u754c"
+      },
+      "typed": [
+        "later"
+      ]
+    },
+    "expected": [
+      {
+        "prompt": "line\n\u754c",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "later",
+        "images": null,
+        "session": "old"
+      }
+    ]
+  },
+  {
+    "test": "startup_prompts_keep_order_images_empty_messages_and_error_recovery",
+    "input": {
+      "options": {
+        "initialMessages": [
+          "",
+          "same",
+          "same"
+        ],
+        "initialMessage": "line\n\u754c",
+        "initialImages": []
+      },
+      "typed": [
+        "later"
+      ]
+    },
+    "expected": [
+      {
+        "prompt": "line\n\u754c",
+        "images": [],
+        "session": "old"
+      },
+      {
+        "prompt": "",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "later",
+        "images": null,
+        "session": "old"
+      }
+    ]
+  },
+  {
+    "test": "startup_prompts_keep_order_images_empty_messages_and_error_recovery",
+    "input": {
+      "options": {
+        "initialMessages": [
+          "",
+          "same",
+          "same"
+        ],
+        "initialMessage": "line\n\u754c",
+        "initialImages": [
+          {
+            "type": "image",
+            "data": "Zmlyc3Q=",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "image",
+            "data": "c2Vjb25k",
+            "mimeType": "image/jpeg"
+          }
+        ]
+      },
+      "typed": [
+        "later"
+      ]
+    },
+    "expected": [
+      {
+        "prompt": "line\n\u754c",
+        "images": [
+          {
+            "type": "image",
+            "data": "Zmlyc3Q=",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "image",
+            "data": "c2Vjb25k",
+            "mimeType": "image/jpeg"
+          }
+        ],
+        "session": "old"
+      },
+      {
+        "prompt": "",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "same",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "later",
+        "images": null,
+        "session": "old"
+      }
+    ]
+  },
+  {
+    "test": "startup_empty_options_skip_notices_and_orphan_images",
+    "input": {
+      "options": {},
+      "catalogError": "",
+      "typed": [
+        "typed"
+      ]
+    },
+    "expected": [
+      {
+        "prompt": "typed",
+        "images": null,
+        "session": "old"
+      }
+    ]
+  },
+  {
+    "test": "startup_empty_options_skip_notices_and_orphan_images",
+    "input": {
+      "options": {
+        "migratedProviders": [],
+        "modelFallbackMessage": "",
+        "initialMessage": "",
+        "initialImages": [
+          {
+            "type": "image",
+            "data": "ZmFrZQ==",
+            "mimeType": "image/png"
+          }
+        ],
+        "initialMessages": []
+      },
+      "catalogError": "",
+      "typed": [
+        "typed"
+      ]
+    },
+    "expected": [
+      {
+        "prompt": "typed",
+        "images": null,
+        "session": "old"
+      }
+    ]
+  },
+  {
+    "test": "startup_empty_options_skip_notices_and_orphan_images",
+    "input": {
+      "options": {
+        "migratedProviders": [
+          "",
+          "beta",
+          ""
+        ],
+        "modelFallbackMessage": " \n"
+      },
+      "catalogError": "",
+      "typed": [
+        "typed"
+      ]
+    },
+    "expected": [
+      {
+        "warning": "Migrated credentials to auth.json: , beta, "
+      },
+      {
+        "warning": " \n"
+      },
+      {
+        "prompt": "typed",
+        "images": null,
+        "session": "old"
+      }
+    ]
+  },
+  {
+    "test": "startup_prompt_failures_do_not_stop_following_input",
+    "input": {
+      "options": {
+        "initialMessage": "first",
+        "initialImages": [
+          {
+            "type": "image",
+            "data": "ZmFrZQ==",
+            "mimeType": "image/png"
+          }
+        ],
+        "initialMessages": [
+          "additional",
+          "tail"
+        ]
+      },
+      "typed": [
+        "typed",
+        "after"
+      ],
+      "failures": {
+        "first": "error"
+      }
+    },
+    "expected": [
+      {
+        "refused": "first"
+      },
+      {
+        "prompt": "additional",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "tail",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "typed",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "after",
+        "images": null,
+        "session": "old"
+      }
+    ]
+  },
+  {
+    "test": "startup_prompt_failures_do_not_stop_following_input",
+    "input": {
+      "options": {
+        "initialMessage": "first",
+        "initialImages": [
+          {
+            "type": "image",
+            "data": "ZmFrZQ==",
+            "mimeType": "image/png"
+          }
+        ],
+        "initialMessages": [
+          "additional",
+          "tail"
+        ]
+      },
+      "typed": [
+        "typed",
+        "after"
+      ],
+      "failures": {
+        "additional": "error"
+      }
+    },
+    "expected": [
+      {
+        "prompt": "first",
+        "images": [
+          {
+            "type": "image",
+            "data": "ZmFrZQ==",
+            "mimeType": "image/png"
+          }
+        ],
+        "session": "old"
+      },
+      {
+        "refused": "additional"
+      },
+      {
+        "prompt": "tail",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "typed",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "after",
+        "images": null,
+        "session": "old"
+      }
+    ]
+  },
+  {
+    "test": "startup_prompt_failures_do_not_stop_following_input",
+    "input": {
+      "options": {
+        "initialMessage": "first",
+        "initialImages": [
+          {
+            "type": "image",
+            "data": "ZmFrZQ==",
+            "mimeType": "image/png"
+          }
+        ],
+        "initialMessages": [
+          "additional",
+          "tail"
+        ]
+      },
+      "typed": [
+        "typed",
+        "after"
+      ],
+      "failures": {
+        "typed": "error"
+      }
+    },
+    "expected": [
+      {
+        "prompt": "first",
+        "images": [
+          {
+            "type": "image",
+            "data": "ZmFrZQ==",
+            "mimeType": "image/png"
+          }
+        ],
+        "session": "old"
+      },
+      {
+        "prompt": "additional",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "tail",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "refused": "typed"
+      },
+      {
+        "prompt": "after",
+        "images": null,
+        "session": "old"
+      }
+    ]
+  },
+  {
+    "test": "startup_prompt_failures_do_not_stop_following_input",
+    "input": {
+      "options": {
+        "initialMessage": "first"
+      },
+      "typed": [
+        "stream",
+        "after"
+      ],
+      "failures": {
+        "stream": "stream"
+      }
+    },
+    "expected": [
+      {
+        "prompt": "first",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "stream",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "assistantError": "controlled refusal"
+      },
+      {
+        "prompt": "after",
+        "images": null,
+        "session": "old"
+      }
+    ]
+  },
+  {
+    "test": "typed_submission_follows_the_current_runtime_session",
+    "input": {
+      "options": {
+        "initialMessage": "first"
+      },
+      "typed": [
+        "old typed",
+        "new typed"
+      ],
+      "replaceBeforeTyped": 1
+    },
+    "expected": [
+      {
+        "prompt": "first",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "old typed",
+        "images": null,
+        "session": "old"
+      },
+      {
+        "prompt": "new typed",
+        "images": null,
+        "session": "new"
+      }
+    ]
+  },
+  {
+    "test": "startup_message_traversal_has_linear_work",
+    "input": {
+      "n": 64
+    },
+    "expected": {
+      "prompts": 64,
+      "rescanNegative": 2080
+    }
+  },
+  {
+    "test": "startup_message_traversal_has_linear_work",
+    "input": {
+      "n": 128
+    },
+    "expected": {
+      "prompts": 128,
+      "rescanNegative": 8256
+    }
+  },
+  {
+    "test": "startup_message_traversal_has_linear_work",
+    "input": {
+      "n": 256
+    },
+    "expected": {
+      "prompts": 256,
+      "rescanNegative": 32896
+    }
+  }
+]

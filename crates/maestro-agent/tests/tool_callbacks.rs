@@ -43,7 +43,7 @@ fn definition() -> Tool {
     Tool {
         name: "double".into(),
         description: String::new(),
-        parameters: json!({"type":"object"}),
+        parameters: json!({"type":"object"}).into(),
     }
 }
 /// Controlled body with a distinct progress result.

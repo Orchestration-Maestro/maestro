@@ -46,7 +46,13 @@ for failure reporting and in-place limitations.
 
 Pass a caller-owned `Rc<tokio::task::LocalSet>` to `NativePackageOperations::new`
 and drive it inside a Tokio runtime with process and timer support. The adapter
-retains the local set weakly. Up to four workers preserve input result order, even when
+retains the local set weakly. `NativePackageOperations::with_spawn` instead accepts
+owned-work admission from a caller's existing runtime, returning its admission
+errors unchanged. Both constructors use the same native command implementations.
+The interactive mode supplies weak terminal-runtime admission and starts the
+immediate prefix before its input hooks run.
+
+Up to four workers preserve input result order, even when
 checks finish out of order. The first worker error rejects the check; admitted
 siblings continue claiming sources while the caller drives the local runtime.
 A dropped runtime rejects admission when work is required; an empty or offline

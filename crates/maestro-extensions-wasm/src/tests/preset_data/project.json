@@ -1,0 +1,1 @@
+{"plan":{"provider":"configured","model":"custom-model","thinkingLevel":"high","tools":["read","missing","extra"],"instructions":"Project instructions with more than thirty characters."},"alpha":{"thinkingLevel":"off","tools":[],"instructions":"Alpha"}}

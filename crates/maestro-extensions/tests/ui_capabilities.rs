@@ -16,16 +16,17 @@ use local_support::{
 use maestro_extensions::footer_data_provider::{ExtensionStatuses, ReadonlyFooterDataProvider};
 use maestro_extensions::types::{
     ComponentDisposer, ComponentFactory, CustomClose, CustomComponentFactory, CustomDone,
-    CustomFactory, CustomFactoryOutcome, CustomUIOptions, ExtensionCollection, ExtensionComponent,
-    ExtensionShortcutOptions, ExtensionUIContextPort, ExtensionUIFuture, FooterFactory,
-    NotificationType, OverlayHandleCallback, OverlayOptionsResolver, OverlayOptionsSource,
-    RegisteredCommandOptions, ThemeSelection, ThemeSetResult, WidgetContent,
+    CustomFactory, CustomFactoryOutcome, CustomUIOptions, EditorFactoryOutcome,
+    ExtensionCollection, ExtensionComponent, ExtensionKeybindings, ExtensionShortcutOptions,
+    ExtensionUIContextPort, ExtensionUIFuture, FooterFactory, NotificationType,
+    OverlayHandleCallback, OverlayOptionsResolver, OverlayOptionsSource, RegisteredCommandOptions,
+    ThemeSelection, ThemeSetResult, WidgetContent,
 };
 use maestro_extensions::{
     AutocompleteProviderFactory, CallbackEmitter, EditorFactory, EventError, ExtensionAPI,
-    ExtensionRunner, ExtensionUIContext, ExtensionUIDialogOptions, ExtensionWidgetOptions,
-    MessageRenderOptions, MessageRenderer, TerminalInputHandler, WidgetPlacement,
-    WorkingIndicatorOptions,
+    ExtensionRunner, ExtensionUIContext, ExtensionUIContextBinding, ExtensionUIDialogOptions,
+    ExtensionWidgetOptions, MessageRenderOptions, MessageRenderer, ReplacedSessionContext,
+    TerminalInputHandler, WidgetPlacement, WorkingIndicatorOptions,
 };
 use maestro_models::{Cancellation, Local, UserContent};
 use maestro_session::Presence;
@@ -45,7 +46,7 @@ use std::{
     cell::{Cell, RefCell},
     future::Future,
     pin::Pin,
-    rc::Rc,
+    rc::{Rc, Weak},
     sync::{Arc, RwLock},
 };
 use tokio::sync::oneshot;
@@ -275,6 +276,57 @@ fn runner_with_fallback_of(
     other
 }
 
+/// A replacement-session context reads its own runner's host, not its creator's.
+fn replacement_context_reads_its_own_runner(
+    owners: &ExtensionCollection<Local>,
+    creator: &ExtensionRunner<Local>,
+) {
+    let fresh = runner(owners);
+    fresh.set_ui_context(Some(Named::install("r").0));
+    let replaced = ReplacedSessionContext::new(
+        fresh.create_command_context(),
+        Rc::new(|_, _| Box::pin(async { Ok(()) })),
+        Rc::new(|_, _| Box::pin(async { Ok(()) })),
+    );
+    let ui = replaced.ui().unwrap();
+    ui.set_editor_text("replacement".into()).unwrap();
+    assert_eq!(
+        creator.get_ui_context().get_editor_text().unwrap(),
+        "second"
+    );
+    fresh.set_ui_context(None);
+    assert_eq!(replaced.ui().unwrap().get_editor_text().unwrap(), "");
+    assert_eq!(ui.get_editor_text().unwrap(), "replacement");
+}
+
+/// An acquired handle's aliases keep its host until the last one drops.
+fn last_alias_releases_host(handle: Ui, released: &Weak<Named>) {
+    let alias = handle.clone();
+    drop(handle);
+    assert!(released.upgrade().is_some());
+    drop(alias);
+    assert!(released.upgrade().is_none());
+}
+
+/// A borrowed binding serves its host only while another owner retains it.
+fn borrowed_binding_does_not_retain_its_host(runner: &ExtensionRunner<Local>) {
+    let (installed, host) = Named::install("c");
+    let released = Rc::downgrade(&host);
+    runner.set_ui_context_binding(Some(ExtensionUIContextBinding::borrowed(&installed)));
+    drop(installed);
+    let acquired = runner.get_ui_context();
+    drop(host);
+    acquired.set_editor_text("borrowed".into()).unwrap();
+    assert!(runner.has_ui());
+    assert_eq!(
+        runner.get_ui_context().get_editor_text().unwrap(),
+        "borrowed"
+    );
+    last_alias_releases_host(acquired, &released);
+    assert!(!runner.has_ui());
+    assert_eq!(runner.get_ui_context().get_editor_text().unwrap(), "");
+}
+
 #[test]
 fn retained_ui_handles_keep_old_hosts_after_rebinding() {
     local(async {
@@ -284,13 +336,19 @@ fn retained_ui_handles_keep_old_hosts_after_rebinding() {
         let released = Rc::downgrade(&host);
         drop(host);
         runner.set_ui_context(Some(first));
-        let old = runner.get_ui_context();
+        let (event, command) = (runner.create_context(), runner.create_command_context());
+        let old = event.ui().unwrap();
+        let old_command = command.ui().unwrap();
         runner.set_ui_context(Some(Named::install("b").0));
         let current = runner.get_ui_context();
         old.set_editor_text("first".into()).unwrap();
         current.set_editor_text("second".into()).unwrap();
         assert_eq!(old.get_editor_text().unwrap(), "first");
+        assert_eq!(old_command.get_editor_text().unwrap(), "first");
         assert_eq!(runner.get_ui_context().get_editor_text().unwrap(), "second");
+        assert_eq!(event.ui().unwrap().get_editor_text().unwrap(), "second");
+        assert_eq!(command.ui().unwrap().get_editor_text().unwrap(), "second");
+        replacement_context_reads_its_own_runner(&owners, &runner);
         let choice = old.select("t".into(), vec!["x".into()], None).await;
         assert_eq!(choice.unwrap().as_deref(), Some("a:t:x"));
         let choice = current.select("t".into(), vec!["x".into()], None).await;
@@ -298,11 +356,9 @@ fn retained_ui_handles_keep_old_hosts_after_rebinding() {
         runner.set_ui_context(None);
         assert_eq!(runner.get_ui_context().get_editor_text().unwrap(), "");
         assert_eq!(old.get_editor_text().unwrap(), "first");
-        let alias = old.clone();
-        drop(old);
-        assert!(released.upgrade().is_some());
-        drop(alias);
-        assert!(released.upgrade().is_none());
+        drop(old_command);
+        last_alias_releases_host(old, &released);
+        borrowed_binding_does_not_retain_its_host(&runner);
     });
 }
 
@@ -633,6 +689,8 @@ fn input_factory(
         Ok(ExtensionComponent {
             component: input,
             dispose: Some(dispose),
+            set_expanded: None,
+            width: None,
         })
     })
 }
@@ -1256,8 +1314,8 @@ impl Editors {
         };
         let theme = get_editor_theme(LiveTheme::default());
         factory
-            .call((self.tui.clone(), theme, self.keys.clone()))
-            .map(Some)
+            .call((self.tui.clone(), theme, factory_keys(self.keys.clone())))
+            .map(|built| Some(built.editor()))
     }
 }
 impl ExtensionUIContextPort for Editors {
@@ -1287,21 +1345,35 @@ fn application_keys() -> KeybindingsManager {
     KeybindingsManager::new(definitions, Vec::new())
 }
 
+/// Shared application bindings with an independently supplied reload.
+fn factory_keys(manager: KeybindingsManager) -> ExtensionKeybindings {
+    let shared = manager.clone();
+    ExtensionKeybindings {
+        manager,
+        reload: Some(Rc::new(move || {
+            shared.set_user_bindings(vec![(
+                "app.custom".into(),
+                Some(KeybindingKeys::Single("ctrl+j".into())),
+            )]);
+        })),
+    }
+}
+
 /// An editor factory that requires the application action and keeps its manager.
 fn vim_factory(
     api: &ExtensionAPI<Local>,
-    captured: &Rc<RefCell<Option<KeybindingsManager>>>,
+    captured: &Rc<RefCell<Option<ExtensionKeybindings>>>,
 ) -> EditorFactory {
     let captured = captured.clone();
     api.ui_callback(
-        move |(tui, theme, keys): (TUI, EditorTheme, KeybindingsManager), _| {
+        move |(tui, theme, keys): (TUI, EditorTheme, ExtensionKeybindings), _| {
             if keys.get_keys("app.custom").is_empty() {
                 return Err("toolkit defaults".into());
             }
             let editor: Rc<dyn EditorComponent<Signal = Cancellation>> =
                 Rc::new(Editor::new(&tui, theme, EditorOptions::default()));
             *captured.borrow_mut() = Some(keys);
-            Ok(editor)
+            Ok(EditorFactoryOutcome::Editor(editor))
         },
     )
 }
@@ -1327,9 +1399,14 @@ fn custom_editor_factory_keeps_theme_keys_and_live_bindings() {
     )];
     host.keys.set_user_bindings(rebound);
     assert_eq!(keys.get_keys("app.custom"), ["ctrl+h"]);
+    let mut snapshot = keys.get_effective_config();
+    snapshot.clear();
+    keys.reload();
+    assert_eq!(keys.get_keys("app.custom"), ["ctrl+j"]);
+    assert!(!keys.get_effective_config().is_empty());
     let toolkit = KeybindingsManager::new(TUI_KEYBINDINGS.clone(), Vec::new());
     let theme = get_editor_theme(LiveTheme::default());
-    let defaults = factory.call((tui, theme, toolkit));
+    let defaults = factory.call((tui, theme, factory_keys(toolkit)));
     assert_eq!(
         defaults.map(|_| ()).unwrap_err().to_string(),
         "toolkit defaults"
@@ -1410,6 +1487,8 @@ fn branch_footer(api: &ExtensionAPI<Local>, trace: &Trace, kept: &Rc<Kept>) -> F
             Ok(ExtensionComponent {
                 component: Rc::new(Input::new()),
                 dispose: None,
+                set_expanded: None,
+                width: None,
             })
         },
     )
@@ -1664,7 +1743,7 @@ impl ExtensionUIContextPort for Customs {
             let session = session.clone();
             move || session.close()
         });
-        let keys = KeybindingsManager::new(TUI_KEYBINDINGS.clone(), Vec::new());
+        let keys = factory_keys(application_keys());
         let built = factory.call((self.tui.clone(), LiveTheme::default(), keys, close));
         let installed = match built {
             Ok(CustomFactoryOutcome::Ready(component)) => {
@@ -1702,6 +1781,8 @@ fn traced_component(
             mark(&trace, "disposed");
             Ok(())
         })),
+        set_expanded: None,
+        width: None,
     }
 }
 
@@ -1720,7 +1801,7 @@ fn ready_factory<T: 'static>(
         slot.clone(),
     );
     bind.ui_callback(
-        move |(_, _, _, done): (TUI, LiveTheme, KeybindingsManager, CustomDone<T>), _| {
+        move |(_, _, _, done): (TUI, LiveTheme, ExtensionKeybindings, CustomDone<T>), _| {
             *slot.borrow_mut() = Some(done);
             Ok(CustomFactoryOutcome::Ready(traced_component(
                 &inner,
@@ -1793,11 +1874,13 @@ async fn both_factory_outcomes(ui: &Ui, host: &Customs) {
 async fn completed<T: 'static>(api: &ExtensionAPI<Local>, ui: &Ui, value: T) -> Option<T> {
     let value = RefCell::new(Some(value));
     let factory: CustomFactory<T> = api.ui_callback(
-        move |(_, _, _, done): (TUI, LiveTheme, KeybindingsManager, CustomDone<T>), _| {
+        move |(_, _, _, done): (TUI, LiveTheme, ExtensionKeybindings, CustomDone<T>), _| {
             done(value.borrow_mut().take().unwrap())?;
             Ok(CustomFactoryOutcome::Ready(ExtensionComponent {
                 component: Rc::new(Input::new()),
                 dispose: None,
+                set_expanded: None,
+                width: None,
             }))
         },
     );
@@ -1823,7 +1906,7 @@ async fn result_values(api: &ExtensionAPI<Local>, ui: &Ui) {
 /// A factory failing with `error` after optionally completing with `value`.
 fn failing_factory(api: &ExtensionAPI<Local>, value: Option<u8>, error: u8) -> CustomFactory<u8> {
     api.ui_callback(
-        move |(_, _, _, done): (TUI, LiveTheme, KeybindingsManager, CustomDone<u8>), _| {
+        move |(_, _, _, done): (TUI, LiveTheme, ExtensionKeybindings, CustomDone<u8>), _| {
             if let Some(value) = value {
                 done(value)?;
             }
@@ -1846,7 +1929,7 @@ async fn failures_and_restoration(ui: &Ui, host: &Customs) {
         Some(5)
     );
     let late: CustomFactory<u8> = host.api.ui_callback(
-        |(_, _, _, done): (TUI, LiveTheme, KeybindingsManager, CustomDone<u8>), _| {
+        |(_, _, _, done): (TUI, LiveTheme, ExtensionKeybindings, CustomDone<u8>), _| {
             done(6)?;
             Ok(CustomFactoryOutcome::Async(Box::pin(async {
                 Err(Box::new(Marked(3)) as EventError)
@@ -2004,7 +2087,7 @@ async fn admitted_work_outlives_its_observer(ui: &Ui, host: &Customs) {
     let trace = host.trace.clone();
     let api = host.api.clone();
     let early: CustomFactory<u8> = host.api.ui_callback(
-        move |(_, _, _, done): (TUI, LiveTheme, KeybindingsManager, CustomDone<u8>), _| {
+        move |(_, _, _, done): (TUI, LiveTheme, ExtensionKeybindings, CustomDone<u8>), _| {
             done(8)?;
             let (opened, trace) = (opened.borrow_mut().take().unwrap(), trace.clone());
             let api = api.clone();
@@ -2023,6 +2106,33 @@ async fn admitted_work_outlives_its_observer(ui: &Ui, host: &Customs) {
     );
 }
 
+/// Typed completion keeps the same application manager the custom factory received.
+async fn custom_factory_keys(api: &ExtensionAPI<Local>, ui: &Ui, trace: &Trace) {
+    let (api, trace) = (api.clone(), trace.clone());
+    let factory: CustomFactory<ExtensionKeybindings> = api.clone().ui_callback(
+        move |(_, _, keys, done): (
+            TUI,
+            LiveTheme,
+            ExtensionKeybindings,
+            CustomDone<ExtensionKeybindings>,
+        ),
+              _| {
+            done(keys)?;
+            Ok(CustomFactoryOutcome::Ready(traced_component(
+                &api,
+                &trace,
+                Rc::new(Input::new()),
+            )))
+        },
+    );
+    let keys = ui.custom(factory, None).await.unwrap().unwrap();
+    assert_eq!(keys.get_keys("app.custom"), ["ctrl+g"]);
+    let snapshot = keys.get_effective_config();
+    keys.reload();
+    assert_eq!(keys.get_keys("app.custom"), ["ctrl+j"]);
+    assert_ne!(keys.get_effective_config(), snapshot);
+}
+
 #[test]
 fn custom_ui_keeps_both_factory_outcomes_and_overlay_callbacks() {
     local(async {
@@ -2035,6 +2145,7 @@ fn custom_ui_keeps_both_factory_outcomes_and_overlay_callbacks() {
         failures_and_restoration(&ui, &host).await;
         overlays(&ui, &host).await;
         admitted_work_outlives_its_observer(&ui, &host).await;
+        custom_factory_keys(&host.api, &ui, &host.trace).await;
         bus.settle().await;
         assert!(bus.errors.borrow().is_empty());
         assert_eq!(bus.spawned.get(), 0);
@@ -2430,7 +2541,7 @@ fn facade_renderer(
 fn facade_editor(bind: &ExtensionAPI<Local>, released: Released) -> EditorFactory {
     let api = bind.clone();
     bind.ui_callback(
-        move |(_, _, _): (TUI, EditorTheme, KeybindingsManager), _| {
+        move |(_, _, _): (TUI, EditorTheme, ExtensionKeybindings), _| {
             let _ = &released;
             api.get_flag("verbose")?;
             Err("unreachable".into())
@@ -2535,4 +2646,43 @@ fn ui_defaults_preserve_threaded_registration_contracts() {
             .is_some()
     });
     assert!(elsewhere.join().unwrap());
+}
+
+#[test]
+fn retained_ui_errors_share_live_runner_listeners_and_original_extension_attribution() {
+    let bus = LocalBus::new();
+    let loaded = loaded("/original-extension", bus.controller.for_extension());
+    let runner = runner(&loaded.owners);
+    let host = ExtensionUIContext::new(Rc::new(limited_host::Limited));
+    runner.set_ui_context_binding(Some(ExtensionUIContextBinding::borrowed(&host)));
+    let retained = runner.get_ui_context();
+    runner.set_ui_context(None);
+    let seen = Rc::new(RefCell::new(Vec::new()));
+    let output = seen.clone();
+    let remove = runner.on_error(Rc::new(move |error| {
+        output.borrow_mut().push(error.clone());
+        Ok(())
+    }));
+    let report = loaded.api.ui_error_reporter(&retained).unwrap();
+    drop(retained);
+    report("custom.visibility", &"hidden failure".into()).unwrap();
+    let expected = maestro_extensions::ExtensionError {
+        extension_path: "/original-extension".into(),
+        event: "custom.visibility".into(),
+        error: "hidden failure".into(),
+        stack: None,
+    };
+    assert_eq!(*seen.borrow(), std::slice::from_ref(&expected));
+    runner.emit_error(&expected).unwrap();
+    assert_eq!(*seen.borrow(), [expected.clone(), expected]);
+    remove();
+    report("custom.visibility", &"hidden failure".into()).unwrap();
+    assert_eq!(seen.borrow().len(), 2);
+    let _remove = runner.on_error(Rc::new(|_| Err("listener refused".into())));
+    assert_eq!(
+        report("custom.visibility", &"hidden failure".into())
+            .unwrap_err()
+            .to_string(),
+        "listener refused"
+    );
 }

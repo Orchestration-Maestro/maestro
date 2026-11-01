@@ -56,7 +56,9 @@ indicators on.
 
 `warnings.anthropicExtraUsage` controls the paid-extra-usage warning for
 subscription sign-in. The settings getter returns what is stored; the consumer
-applies the default.
+applies the default. The interactive mode shows the
+[billing notice](../chat/commands.md#subscription-billing-notice) unless the value
+is `false`.
 
 ```json
 { "warnings": { "anthropicExtraUsage": false } }
@@ -101,8 +103,11 @@ most) and `images.blockImages` (never send images to a model).
 ## Shell and package manager
 
 `shellPath` selects the shell and `shellCommandPrefix` prefixes every shell
-command. `npmCommand` is the argument vector used for every npm operation,
-including installs, uninstalls and dependency installs inside git packages;
+command. For Bash initialization and a dedicated alias file, see
+[Use aliases in shell commands](../shell-aliases.md).
+
+`npmCommand` is the argument vector used for every npm operation, including
+installs, uninstalls and dependency installs inside git packages;
 write it exactly as the process should be launched.
 
 ```json
@@ -124,7 +129,8 @@ project's default directory described in the
 ## Model cycling
 
 `enabledModels` lists the patterns used when cycling models, in the same format
-as the model-selection option.
+as the model-selection option. The interactive
+[scope panel](../chat/commands.md#editing-the-model-scope) edits and saves it.
 
 ```json
 { "enabledModels": ["claude-*", "gpt-4o", "gemini-2*"] }

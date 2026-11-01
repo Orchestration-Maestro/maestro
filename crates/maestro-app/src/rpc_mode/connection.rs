@@ -2,11 +2,14 @@
 //! until the input ends or the connection shuts down.
 use super::commands::Reply;
 use super::lifecycle::{Finish, Lifecycle};
+use super::output::Writer;
 use super::ui::RpcUi;
-use super::{RpcConnectionOutcome, RpcLine, RpcModeOptions, RpcOutput, RpcRecord};
+use super::{
+    RpcConnectionOutcome, RpcLine, RpcModeOptions, RpcOutput, RpcRecord, RpcSessionOptions,
+    WorkspaceOperations,
+};
 use crate::agent_session::AgentSession;
 use crate::rpc_types::{RpcCommandBody, RpcCommandRejection, RpcResponse, parse_rpc_command};
-use crate::runtime::agent_session_runtime::AgentSessionRuntime;
 use crate::utils::task::start_now;
 use maestro_json::jsonl::JsonlLineSplitter;
 use serde_json::Value;
@@ -19,6 +22,7 @@ use std::{
     rc::{Rc, Weak},
 };
 use tokio::io::{AsyncRead, AsyncReadExt};
+use tokio::task::JoinSet;
 
 /// What a line reader observed next.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -103,14 +107,14 @@ pub(super) type Record = Result<Value, serde_json::Error>;
 
 /// The state one connection shares between its loop, its tasks and its callbacks.
 pub(super) struct Connection {
-    /// The session runtime.
-    pub(super) runtime: Rc<AgentSessionRuntime>,
-    /// The output, which only [`Connection::write`] reaches.
-    output: RpcOutput,
-    /// The extension interface.
-    pub(super) ui: Rc<RpcUi>,
-    /// The caller's facilities.
-    pub(super) options: RpcModeOptions,
+    /// The session facilities, absent on workspace-only connections.
+    pub(super) session: Option<Rc<SessionConnection>>,
+    /// The output, which only [`Connection::send`] reaches.
+    writer: Writer,
+    /// The commands still running.
+    tasks: RefCell<JoinSet<()>>,
+    /// The caller's workspace operations.
+    pub(super) workspace: Option<Rc<dyn WorkspaceOperations>>,
     /// Records admitted during the initial binding, in arrival order; `None` once bound.
     pub(super) early: RefCell<Option<Vec<Record>>>,
     /// Notifies every waiter once the initial binding has handled the records that arrived
@@ -120,43 +124,80 @@ pub(super) struct Connection {
     pub(super) lifecycle: RefCell<Lifecycle>,
 }
 
-/// Serves `runtime_host` over `input` and `output` until the input ends, an extension
+/// Session-only state, with a non-owning route to the shared connection writer.
+pub(super) struct SessionConnection {
+    /// The session's runtime and native facilities.
+    pub(super) options: RpcSessionOptions,
+    /// The extension interface shared across session rebindings.
+    pub(super) ui: Rc<RpcUi>,
+    /// The shared protocol writer's owner.
+    connection: Weak<Connection>,
+}
+
+impl SessionConnection {
+    /// The current session.
+    pub(super) fn session(&self) -> Rc<AgentSession> {
+        self.options.runtime.session()
+    }
+
+    /// Writes a session record through the connection's only writer.
+    pub(super) fn write(&self, record: RpcRecord<'_>) -> io::Result<()> {
+        write_to(&self.connection, record)
+    }
+}
+
+/// Serves the supplied workspace and optional session over `input` and `output` until the input ends, an extension
 /// requests shutdown or a termination signal arrives; returns how it ended.
 ///
-/// The session is bound to the protocol's extension interface first; meanwhile dialog
+/// A supplied session is bound to the protocol's extension interface first; meanwhile dialog
 /// responses are answered and every other line waits, in arrival order, until binding ends.
-/// Commands run concurrently and answer as they finish. Must run inside a
+/// Commands run concurrently and answer as they finish. Lines already admitted to `output`
+/// are written before this returns; commands still running are dropped. Must run inside a
 /// [`tokio::task::LocalSet`].
 ///
 /// # Errors
 /// Returns an input or output failure, or the failure of binding or disposing the session.
 pub async fn run_rpc_connection(
-    runtime_host: Rc<AgentSessionRuntime>,
     mut input: Box<dyn RpcLineReader>,
     output: RpcOutput,
     options: RpcModeOptions,
 ) -> io::Result<RpcConnectionOutcome> {
-    let (connection, mut finished) = Connection::start(runtime_host, output, options);
+    let (connection, mut finished) = Connection::start(output, options);
+    let _commands = Commands(Rc::clone(&connection));
     let outcome = connection.serve(&mut *input, &mut finished).await;
     input.detach();
-    outcome
+    connection.writer.finish().await;
+    let late = connection.lifecycle.borrow_mut().take_failure();
+    outcome.and_then(|outcome| late.map_or(Ok(outcome), Err))
+}
+
+/// Drops the connection's running commands once the runner ends or is dropped.
+struct Commands(Rc<Connection>);
+
+impl Drop for Commands {
+    fn drop(&mut self) {
+        drop(self.0.tasks.take());
+    }
 }
 
 impl Connection {
-    /// A connection serving `runtime` over `output` with `lifecycle`, before its initial
-    /// binding.
+    /// A connection with its workspace operations and optional unbound session.
     pub(super) fn new(
-        runtime: Rc<AgentSessionRuntime>,
         output: RpcOutput,
         options: RpcModeOptions,
         lifecycle: Lifecycle,
     ) -> Rc<Self> {
-        let theme = options.theme.clone();
         Rc::new_cyclic(|connection| Self {
-            ui: Rc::new(RpcUi::new(Weak::clone(connection), theme)),
-            runtime,
-            output,
-            options,
+            session: options.session.map(|options| {
+                Rc::new(SessionConnection {
+                    ui: Rc::new(RpcUi::new(Weak::clone(connection), options.theme.clone())),
+                    options,
+                    connection: Weak::clone(connection),
+                })
+            }),
+            writer: Writer::start(output, failing(Weak::clone(connection))),
+            tasks: RefCell::default(),
+            workspace: options.workspace,
             early: RefCell::new(Some(Vec::new())),
             bound: tokio::sync::Notify::new(),
             lifecycle: RefCell::new(lifecycle),
@@ -198,6 +239,9 @@ impl Connection {
             self.shutdown(RpcConnectionOutcome::Eof).await;
             return finished.await.map_err(io::Error::other)?;
         }
+        if self.session.is_none() {
+            return self.end_without_session(tail, finished).await;
+        }
         // A startup dialog may wait for this answer, so it comes before the binding's end.
         let tail = tail.and_then(|line| self.decode(&line));
         // Input is served after the initial binding, so its end waits for the binding too.
@@ -221,6 +265,22 @@ impl Connection {
             Some(outcome) => outcome.map_err(io::Error::other)?,
             None => finished.await.map_err(io::Error::other)?,
         }
+    }
+
+    /// Ends the input of a connection without a session: a final command starts, the
+    /// commands still waiting are dropped, since nobody can read their answers, and the
+    /// connection shuts down.
+    async fn end_without_session(
+        self: &Rc<Self>,
+        tail: Option<String>,
+        finished: &mut Finish,
+    ) -> io::Result<RpcConnectionOutcome> {
+        if let Some(record) = tail.and_then(|line| self.decode(&line)) {
+            self.spawn(record);
+        }
+        self.tasks.take().shutdown().await;
+        self.shutdown(RpcConnectionOutcome::Eof).await;
+        finished.await.map_err(io::Error::other)?
     }
 
     /// Admits `line` and handles its record unless it was answered or held.
@@ -249,7 +309,9 @@ impl Connection {
         if let Ok(value) = &record
             && value.get("type").and_then(Value::as_str) == Some("extension_ui_response")
         {
-            self.ui.answer(value);
+            if let Some(session) = &self.session {
+                session.ui.answer(value);
+            }
             return None;
         }
         Some(record)
@@ -262,7 +324,11 @@ impl Connection {
         let task = Box::pin(async move {
             connection.handle(record).await;
         });
-        start_now(task, |task| drop(tokio::task::spawn_local(task)));
+        start_now(task, |task| {
+            let mut tasks = self.tasks.borrow_mut();
+            while tasks.try_join_next().is_some() {}
+            tasks.spawn_local(task);
+        });
     }
 
     /// Answers `record`; a handled command checks for a requested shutdown afterwards.
@@ -304,32 +370,52 @@ impl Connection {
         };
         let kind = value["type"].as_str().unwrap_or_default().to_owned();
         match command.command {
-            RpcCommandBody::Session(session) => {
-                self.run_session_command(command.id, kind, session).await
-            }
-            RpcCommandBody::Workspace(workspace) => Reply::Handled(Some(
+            RpcCommandBody::Session(session) => match &self.session {
+                Some(owner) => owner.run_session_command(command.id, kind, session).await,
+                None => Reply::Handled(Some(RpcResponse::Error {
+                    id: command.id,
+                    command: Some(kind),
+                    error: "Session command unavailable; open in a session to use it".into(),
+                })),
+            },
+            RpcCommandBody::Workspace(workspace) => {
                 self.run_workspace_command(command.id, kind, *workspace)
-                    .await,
-            )),
+                    .await
+            }
         }
     }
 
-    /// The current session.
-    pub(super) fn session(&self) -> Rc<AgentSession> {
-        self.runtime.session()
+    /// Writes `record` immediately for synchronous output, or queues it for asynchronous output.
+    /// Serialization, admission and synchronous write failures are returned and end the
+    /// connection; asynchronous write failures end the connection later.
+    pub(super) fn write(self: &Rc<Self>, record: RpcRecord<'_>) -> io::Result<()> {
+        self.send(record, None)
     }
 
-    /// Writes `record` as one line; a failed write ends the connection with that failure,
-    /// and the caller receives a failure of the same kind and message.
-    pub(super) fn write(self: &Rc<Self>, record: RpcRecord<'_>) -> io::Result<()> {
+    /// Admits `record` as [`Connection::write`] does; `attempted` settles once the line's
+    /// write was attempted, and disconnects if the line is dropped first.
+    pub(super) fn send(
+        self: &Rc<Self>,
+        record: RpcRecord<'_>,
+        attempted: Option<tokio::sync::oneshot::Sender<()>>,
+    ) -> io::Result<()> {
         let written = RpcLine::new(&record)
             .map_err(io::Error::from)
-            .and_then(|line| (self.output)(&line));
+            .and_then(|line| self.writer.write(line, attempted));
         written.map_err(|error| {
             let reported = io::Error::new(error.kind(), error.to_string());
             self.fail(error);
             reported
         })
+    }
+}
+
+/// Ends `connection` with a failure its writer task reports, while the connection lasts.
+fn failing(connection: Weak<Connection>) -> impl FnOnce(io::Error) {
+    move |error| {
+        if let Some(connection) = connection.upgrade() {
+            connection.fail(error);
+        }
     }
 }
 

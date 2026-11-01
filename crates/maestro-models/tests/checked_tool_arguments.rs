@@ -1,11 +1,12 @@
-use maestro_models::{JsonObject, Tool, ToolCall, validate_tool_arguments};
+use crate::json_equivalence::equivalent;
+use maestro_models::{Tool, ToolCall, validate_tool_arguments};
 use serde_json::{Value, json};
 
 fn declaration(schema: Value) -> Tool {
     Tool {
         name: "count".into(),
         description: String::new(),
-        parameters: schema,
+        parameters: schema.into(),
     }
 }
 
@@ -65,17 +66,19 @@ fn maestro_validation_preserves_inputs_and_schema_changes() {
         json!({"type":"object","properties":{"nested":{"type":"object","properties":{"count":{"type":"number","minimum":1}}}}}),
     );
     let call = invocation(json!({"nested":{"count":"2"}})).unwrap();
-    let schema = tool.parameters.clone();
+    let schema = tool.parameters.as_json().clone();
     let mut result = validate_tool_arguments(&tool, &call).unwrap();
     result["nested"]["count"] = json!(999);
     assert_eq!(call.arguments["nested"]["count"], "2");
-    assert_eq!(tool.parameters, schema);
-    tool.parameters["properties"]["nested"]["properties"]["count"]["minimum"] = json!(3);
+    assert_eq!(tool.parameters.as_json(), &schema);
+    let mut edited = tool.parameters.as_json().clone();
+    edited["properties"]["nested"]["properties"]["count"]["minimum"] = json!(3);
+    tool.parameters = edited.into();
     assert_eq!(
         validate_tool_arguments(&tool, &call).unwrap_err().message,
         "Validation failed for tool \"count\":\n  - nested.count: must be >= 3\n\nReceived arguments:\n{\n  \"nested\": {\n    \"count\": \"2\"\n  }\n}"
     );
-    tool.parameters = json!({"type":"object","required":["missing"]});
+    tool.parameters = json!({"type":"object","required":["missing"]}).into();
     assert_eq!(
         validate_tool_arguments(&tool, &call).unwrap_err().message,
         "Validation failed for tool \"count\":\n  - missing: must have required properties missing\n\nReceived arguments:\n{\n  \"nested\": {\n    \"count\": \"2\"\n  }\n}"
@@ -112,11 +115,11 @@ struct Fixture {
     case: String,
     group: String,
     schema: Value,
-    arguments: JsonObject,
+    arguments: Value,
     name: String,
     declaration: String,
     mode: FixtureMode,
-    expected: Result<JsonObject, String>,
+    expected: Result<Value, String>,
 }
 
 #[derive(serde::Deserialize)]
@@ -142,10 +145,10 @@ fn run_cases(group: &str) -> Result<(), serde_json::Error> {
 }
 
 fn run_case(fixture: Fixture) {
-    let tool = Tool {
+    let tool: Tool = Tool {
         name: fixture.declaration,
         description: String::new(),
-        parameters: fixture.schema,
+        parameters: fixture.schema.into(),
     };
     let call = ToolCall {
         name: fixture.name,
@@ -153,19 +156,19 @@ fn run_case(fixture: Fixture) {
         arguments: fixture.arguments,
         thought_signature: None,
     };
-    let schema = tool.parameters.clone();
+    let schema = tool.parameters.as_json().clone();
     let arguments = call.arguments.clone();
     let result = match fixture.mode {
         FixtureMode::Arguments => validate_tool_arguments(&tool, &call),
         FixtureMode::Duplicate => {
             let second = Tool {
-                parameters: json!(false),
+                parameters: json!(false).into(),
                 ..tool.clone()
             };
             maestro_models::validate_tool_call(&[tool.clone(), second], &call)
         }
         FixtureMode::Missing if call.name == tool.name => {
-            maestro_models::validate_tool_call(&[], &call)
+            maestro_models::validate_tool_call::<()>(&[], &call)
         }
         FixtureMode::Missing => {
             maestro_models::validate_tool_call(std::slice::from_ref(&tool), &call)
@@ -173,7 +176,7 @@ fn run_case(fixture: Fixture) {
     };
     match (result, fixture.expected) {
         (Ok(actual), Ok(expected)) => assert!(
-            equivalent_objects(&actual, &expected),
+            equivalent(&actual, &expected),
             "{}: actual {actual:?}, expected {expected:?}",
             fixture.case
         ),
@@ -190,30 +193,8 @@ fn run_case(fixture: Fixture) {
             fixture.case
         ),
     }
-    assert_eq!(tool.parameters, schema, "{}", fixture.case);
+    assert_eq!(tool.parameters.as_json(), &schema, "{}", fixture.case);
     assert_eq!(call.arguments, arguments, "{}", fixture.case);
-}
-
-fn equivalent_objects(left: &JsonObject, right: &JsonObject) -> bool {
-    left.len() == right.len()
-        && left
-            .iter()
-            .all(|(key, left)| right.get(key).is_some_and(|right| equivalent(left, right)))
-}
-
-fn equivalent(left: &Value, right: &Value) -> bool {
-    match (left, right) {
-        (Value::Number(left), Value::Number(right)) => left.as_f64() == right.as_f64(),
-        (Value::Array(left), Value::Array(right)) => {
-            left.len() == right.len()
-                && left
-                    .iter()
-                    .zip(right)
-                    .all(|(left, right)| equivalent(left, right))
-        }
-        (Value::Object(left), Value::Object(right)) => equivalent_objects(left, right),
-        _ => left == right,
-    }
 }
 
 #[test]

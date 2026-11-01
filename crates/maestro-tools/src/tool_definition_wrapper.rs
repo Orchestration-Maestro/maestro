@@ -26,7 +26,7 @@ pub enum ToolDefinitionInput<
     I: maestro_agent::AgentExecution = E,
 > {
     /// A standalone owned definition.
-    Owned(ToolDefinitionRecord<C, P, D, S, E, I>),
+    Owned(Box<ToolDefinitionRecord<C, P, D, S, E, I>>),
     /// The original shared mutable definition.
     Retained(RetainedToolDefinition<C, P, D, S, E, I>),
 }
@@ -34,7 +34,7 @@ impl<C, P, D, S, E: ToolExecution, I: maestro_agent::AgentExecution>
     From<ToolDefinitionRecord<C, P, D, S, E, I>> for ToolDefinitionInput<C, P, D, S, E, I>
 {
     fn from(definition: ToolDefinitionRecord<C, P, D, S, E, I>) -> Self {
-        Self::Owned(definition)
+        Self::Owned(Box::new(definition))
     }
 }
 impl<C, P, D, S, E: ToolExecution, I: maestro_agent::AgentExecution>
@@ -55,7 +55,7 @@ impl<C, P, D, S, E: ToolExecution, I: maestro_agent::AgentExecution>
 
 /// One wrapper implementation for the two concrete callback families.
 macro_rules! wrappers {
-    ($mode:ty, $ptr:ident, [$($extra:tt)*], $storage:ty, $prepare:expr) => {
+    ($mode:ty, $ptr:ident, [$($extra:tt)*], $storage:ty, $prepare:expr, $schema:expr) => {
         /// Wrap a definition as an agent tool.
         ///
         /// Once the arguments decode (see `AgentTool::typed` for rejected arguments), each
@@ -74,7 +74,7 @@ macro_rules! wrappers {
         {
             let definition = definition.into();
             let (model, label, preparation, mode) = definition.read(|definition| (
-                definition.definition.clone(), definition.label.clone(),
+                ($schema)(&definition.definition), definition.label.clone(),
                 definition.prepare_arguments.clone(), definition.execution_mode,
             ));
             let run: ExecuteTool<P, D, $mode> = $ptr::new(move |id, params, signal, update| {
@@ -136,7 +136,14 @@ macro_rules! wrappers {
         }
     };
 }
-wrappers!(Threaded, SharedHandle, [], Threaded, std::convert::identity);
+wrappers!(
+    Threaded,
+    SharedHandle,
+    [],
+    Threaded,
+    std::convert::identity,
+    Clone::clone
+);
 /// Caller-local bridges over the existing typed agent boundary.
 pub mod local {
     use super::{
@@ -146,5 +153,5 @@ pub mod local {
     use crate::types::local::{ToolContextFactory, ToolDefinition};
     /// Caller-local executable agent tool.
     type AgentTool = maestro_agent::AgentToolRecord<Local>;
-    wrappers!(Local, Rc, [H: ToolExecution], H, H::local_prepare);
+    wrappers!(Local, Rc, [H: ToolExecution], H, H::local_prepare, H::local_definition);
 }

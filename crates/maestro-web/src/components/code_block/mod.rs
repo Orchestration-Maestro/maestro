@@ -122,8 +122,6 @@ pub struct CodeBlock {
     pub language: String,
     /// Replaceable platform effects.
     host: Rc<dyn AttachmentHost>,
-    /// Whether input is already literal tool text.
-    literal: bool,
     /// Stable native surface identity.
     id: egui::Id,
     /// Current native content, read when a root is mounted.
@@ -143,7 +141,6 @@ impl CodeBlock {
             code: String::new(),
             language: String::new(),
             host,
-            literal: false,
             id: crate::browser::attachment_content::identity(),
             prepared: Rc::new(Prepared {
                 language: String::new(),
@@ -155,12 +152,6 @@ impl CodeBlock {
             copy: None,
         }
     }
-    /// Retain literal input without changing the public encoded-input route.
-    pub(crate) fn new_literal(host: Rc<dyn AttachmentHost>) -> Self {
-        let mut block = Self::new(host);
-        block.literal = true;
-        block
-    }
     /// Draw the listing and its copy control for this frame.
     /// # Errors
     /// Returns localization, highlighting, glyph, presentation or native placement failures.
@@ -169,12 +160,7 @@ impl CodeBlock {
         ui: &mut egui::Ui,
         view: CodeBlockView<'_, F>,
     ) -> Result<egui::Response, ReadingUiError> {
-        let text = if self.literal {
-            self.code.clone()
-        } else {
-            decode(&self.code)
-        };
-        let next = Prepared::new(view.highlighter, text, self.language.clone())?;
+        let next = Prepared::new(view.highlighter, decode(&self.code), self.language.clone())?;
         let mut copy = match self.copy.take() {
             Some(copy) => copy,
             None => CopyButton::new(Rc::clone(&self.host), view.i18n)?,

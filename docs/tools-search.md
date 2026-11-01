@@ -62,14 +62,15 @@ own result or error. Dropping the pending operation is the whole cancellation.
 ## Rendering
 
 The call line shows `ls`, the listed path (`.` when absent, null or empty, a leading `~` for
-the home directory or a path below it, `[invalid arg]` when it is not a string) and, when the arguments carry a
-`limit`, ` (limit <value>)`, with a present `null` shown as `null`. The result shows the
-text trimmed of leading and trailing whitespace, the first 20 lines unless the row is
-expanded, the count of hidden lines with the live expand key, and a warning
-`[Truncated: <n> entries limit, <size> limit]` that names the entry limit when the details
-carry a nonzero one and the byte limit, formatted as `<size>` from the record's byte
-budget (50.0KB for a normal listing), when their truncation record says it cut. Only the
-result options decide expansion. Both renderers reuse the previous `Text` component of
+the home directory or a path below it unless that home is empty or `/`, `[invalid arg]`
+when it is not a string) and, when the arguments carry a `limit`, ` (limit <value>)`, with
+a present `null` shown as `null`. The result shows the text trimmed of leading and
+trailing whitespace, the first 20 lines unless the row is expanded, the count of
+hidden lines with the live expand key, and a warning `[Truncated: <n> entries limit,
+<size> limit]` that names the entry limit when the details carry a nonzero one and the
+byte limit, formatted as `<size>` from the record's byte budget (50.0KB for a normal
+listing), when their truncation record says it cut. Only the result options decide
+expansion. Both renderers reuse the previous `Text` component of
 the row and leave it unchanged when a theme color is missing.
 
 ## Search programs
@@ -84,11 +85,14 @@ Dropping discovery kills its running probe.
 
 `ensure_tool` returns an existing result without advice. Otherwise it reads
 `MAESTRO_OFFLINE` at the call through the [environment flag helper](text.md);
-an enabled flag skips acquisition.
+an enabled flag skips acquisition. `ToolsManager::with_offline` replaces that read
+with the caller's startup selection: `Some(true)` skips, `Some(false)` acquires, and
+`None` keeps reading the flag.
 Android instead receives `pkg install fd` or `pkg install ripgrep` advice.
 
 Other hosts request the latest release from `sharkdp/fd` or `BurntSushi/ripgrep`
-on GitHub. Release lookup has a 10-second deadline and archive download a
+on GitHub, except that fd on Intel macOS skips the lookup and downloads the last
+build published for it, release `v10.3.0`. Release lookup has a 10-second deadline and archive download a
 120-second deadline, each including the body. Supported assets are macOS/Linux
 `.tar.gz` archives extracted by system `tar`, and Windows `.zip` archives
 extracted in process. Each install stages inside a separately created directory,
@@ -126,7 +130,9 @@ The program handles glob syntax and scoped ignore files. It includes hidden user
 files and unignored dependencies, excludes `.git`, and receives zero as unlimited.
 Negative and fractional limits are left for fd to reject. Patterns containing `/`
 use full-path mode, with `**/` prefixed unless already rooted or prefixed; `--`
-separates patterns from options. NUL-delimited output keeps filename whitespace,
+separates patterns from options. fd matches a full-path pattern against the native
+absolute path, so on Windows the glob reaches fd as the regex fd compiles from it,
+with every separator it matches widened to `/` or `\`. NUL-delimited output keeps filename whitespace,
 embedded newlines and directory markers. Native nonzero exits with records return
 those records; without records they fail with trimmed stderr or an exit-code message.
 

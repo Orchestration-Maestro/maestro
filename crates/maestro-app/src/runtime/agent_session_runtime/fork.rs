@@ -22,7 +22,8 @@ pub struct ForkResult {
 impl AgentSessionRuntime {
     /// Forks the session at `entry_id`, or before it when it is a user message, unless an
     /// extension cancels. A persisted session forks into a new file; an in-memory one
-    /// branches its own history.
+    /// branches its own history. Rebinding and continuation retain the forked session
+    /// if another operation replaces it while a callback is suspended.
     ///
     /// # Errors
     /// Returns `Invalid entry ID for forking`, `Persisted session is missing a session file`,
@@ -74,7 +75,7 @@ impl AgentSessionRuntime {
             )),
         })
         .await?;
-        self.finish_session_replacement(options.with_session.as_ref())
+        self.finish_session_replacement(&self.session(), options.with_session.as_ref())
             .await?;
         Ok(ForkResult {
             cancelled: false,

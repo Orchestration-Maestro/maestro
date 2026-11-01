@@ -2,7 +2,10 @@
 use super::error::Text;
 use crate::browser::attachment_content::{AttachmentHost, AttachmentHostError, ReadingContent};
 use maestro_app::browser::ssf::{Ssf, read, sheet_to_html};
-use std::{cell::RefCell, rc::Rc};
+use std::{
+    cell::{Cell, RefCell},
+    rc::Rc,
+};
 /// Prepared content for one successfully decoded or failed worksheet.
 type SheetContent = Result<String, Rc<RefCell<Text>>>;
 /// Prepared sheet names and native content in workbook order.
@@ -12,10 +15,10 @@ struct Sheets {
     values: Vec<(String, SheetContent)>,
     /// Mounted sheet bodies, retained independently of selection.
     #[cfg(target_arch = "wasm32")]
-    nodes: std::cell::RefCell<Vec<web_sys::Element>>,
+    nodes: RefCell<Vec<web_sys::Element>>,
     /// Bounded native root, independent of natural-height registry measurement.
     #[cfg(target_arch = "wasm32")]
-    root: std::cell::RefCell<Option<web_sys::Element>>,
+    root: RefCell<Option<web_sys::Element>>,
     /// Last surface height in unscaled canvas points.
     #[cfg(target_arch = "wasm32")]
     height: std::cell::Cell<f32>,
@@ -26,7 +29,7 @@ pub(crate) struct Excel {
     /// Prepared owned content shared with the native mount.
     sheets: Rc<Sheets>,
     /// Current workbook-order index.
-    selected: usize,
+    selected: Rc<Cell<usize>>,
     /// One factory for one successfully prepared workbook.
     reading: Option<Rc<ReadingContent>>,
     /// Primary gesture admitted at its pressed endpoint.
@@ -66,13 +69,27 @@ impl Excel {
                 })
                 .collect(),
             #[cfg(target_arch = "wasm32")]
-            nodes: std::cell::RefCell::default(),
+            nodes: RefCell::default(),
             #[cfg(target_arch = "wasm32")]
-            root: std::cell::RefCell::default(),
+            root: RefCell::default(),
             #[cfg(target_arch = "wasm32")]
             height: std::cell::Cell::new(0.),
         });
         Ok(())
+    }
+    /// Mount native table bodies and their retained tab subscriptions.
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) fn mount_root(
+        &self,
+        view: &crate::dom::DomView,
+        padded: bool,
+    ) -> Result<crate::dom::DomRoot, crate::tools::types::ToolUiError> {
+        for (_, content) in &self.sheets.values {
+            if let Err(text) = content {
+                text.borrow_mut().values[0] = view.i18n.text("Error loading spreadsheet")?;
+            }
+        }
+        browser::native(view, &self.sheets, &self.selected, padded)
     }
     /// Admit tables and draw the canvas controls in native measured slots.
     pub(crate) fn present(
@@ -99,14 +116,18 @@ impl Excel {
         if self.reading.is_none() {
             #[cfg(target_arch = "wasm32")]
             let sheets = Rc::clone(&self.sheets);
+            #[cfg(target_arch = "wasm32")]
+            let selected = Rc::clone(&self.selected);
             self.reading = Some(Rc::new(ReadingContent {
                 #[cfg(target_arch = "wasm32")]
-                mount: Rc::new(move |document| browser::mount(document, &sheets, surface)),
+                mount: Rc::new(move |document| {
+                    browser::mount(document, &sheets, surface, selected.get())
+                }),
             }));
         }
         controls::present(self, host, ui, surface, operands.0)?;
         #[cfg(target_arch = "wasm32")]
-        browser::select(&self.sheets, self.selected)?;
+        browser::select(&self.sheets, self.selected.get())?;
         Ok(())
     }
 }

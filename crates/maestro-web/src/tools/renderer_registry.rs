@@ -51,7 +51,7 @@ pub(crate) fn unregister_tool_renderer<P: 'static, D: 'static>(
         let mut all = all.borrow_mut();
         let current = all
             .get(tool_name)
-            .and_then(ToolRendererBinding::slot::<P, D, Box<dyn crate::dom::DomContent>>);
+            .and_then(ToolRendererBinding::renderer::<P, D>);
         let owned = current.is_some_and(|current| Rc::ptr_eq(&current, renderer));
         owned.then(|| all.shift_remove(tool_name)).flatten()
     });
@@ -87,4 +87,4 @@ pub(crate) fn get_text_output<D>(result: Option<&ToolResultMessageView<'_, D>>) 
 
 /// Shared tool header content.
 pub mod header;
-pub use header::{ToolHeaderText, render_collapsible_header, render_header};
+pub use header::{ToolHeaderRefs, ToolHeaderText, render_collapsible_header, render_header};

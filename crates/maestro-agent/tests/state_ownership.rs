@@ -425,7 +425,7 @@ fn tool(
         definition: maestro_models::Tool {
             name: name.into(),
             description: format!("{name} tool"),
-            parameters: json!({"type":"object"}),
+            parameters: json!({"type":"object"}).into(),
         },
         label: label.into(),
         prepare_arguments: Some(SharedHandle::new(move |_| {
@@ -544,7 +544,7 @@ fn maestro_heterogeneous_typed_tools_are_retained_by_identity() {
     let typed = |name: &str| maestro_models::Tool {
         name: name.into(),
         description: String::new(),
-        parameters: json!({}),
+        parameters: json!({}).into(),
     };
     let numeric: SharedAgentTool = SharedHandle::new(RwLock::new(AgentTool::typed::<u32, String>(
         typed("numeric"),

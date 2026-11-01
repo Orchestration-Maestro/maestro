@@ -48,7 +48,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     {
         let manager = Rc::clone(self);
         Box::pin(async move {
-            if offline() {
+            if manager.offline() {
                 return Ok(Vec::new());
             }
             manager
@@ -124,7 +124,7 @@ impl<O: PackageOperations + 'static> DefaultPackageManager<O> {
         source: Option<String>,
     ) -> io::Result<()> {
         let rows = self.selected_update_sources(source.as_deref())?;
-        if offline() {
+        if self.offline() {
             return Ok(());
         }
         let mut npm = Vec::new();
@@ -258,9 +258,4 @@ impl<O: PackageOperations + 'static> DefaultPackageManager<O> {
             })
             .collect()
     }
-}
-
-/// Reads offline mode without trimming the environment value.
-pub(super) fn offline() -> bool {
-    maestro_text::is_truthy_env_flag(std::env::var("MAESTRO_OFFLINE").ok().as_deref())
 }

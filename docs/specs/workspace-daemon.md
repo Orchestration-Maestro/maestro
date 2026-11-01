@@ -137,10 +137,10 @@ converts topology rectangles to frame rectangles with free functions.
 - **Spawning in topology.** `FnOnce(PaneId, SpawnRequest) -> io::Result<T>` is passed to every topology
   operation that creates a pane. The operation returns `(PaneId, T)` and removes the new leaf when the spawn
   fails.
-- **Atomic replacement.** `maestro_lock::replace(path, bytes, Replace { through_symlinks })`.
+- **Recoverable publication.** `maestro_lock::replace(path, bytes, Replace { through_symlinks })`.
 - **Paths and names.** `maestro_daemon::paths::DaemonPaths` and `maestro_daemon::environment::NAMES`.
 - **Server.** `maestro_daemon::server::run::run_server` starts the API socket and runs the daemon loop. The
-  executable's `server` arm and the in-process tests call it.
+  executable's `daemon` arm and the in-process tests call it.
 - **Daemon client.** `maestro_app::daemon::client::{DaemonClient, ensure_running}`.
 
 ### Libraries
@@ -168,7 +168,11 @@ need `unsafe` to hand its descriptor to the async runtime.
   read no variable and name no root.
 - **Dispatch.** Workspace commands reach the daemon through the shared RPC dispatch path, on stdio and on the
   socket. The socket adapter lives in `maestro-rpc::daemon`; daemon state, subscriptions and waits live in
-  `maestro-daemon::api`.
+  `maestro-daemon::api`. `maestro-rpc::daemon::run_server` owns socket bind, accept and
+  connection teardown and drives the existing daemon `App::run` loop. Each accepted socket
+  uses the application connection runner with no session; supplied sessions remain supported
+  by that same runner. Typed requests flow down to daemon-owned handlers, never through a
+  second dispatch loop. Startup announces only resources that have actually bound.
 - **Continued requests.** A connection reads lines full duplex. A line that arrives during a subscription or
   a wait is the next command. End of input drops the pending work, which ends the wait or the subscription.
 
@@ -413,6 +417,49 @@ Each edge lands in the first commit of its delivery, with the crate-table row in
 | `maestro-multiplexer` → `maestro-protocol` | frame records for the pane render and the frame encoder | 26 |
 | `maestro-daemon` → `maestro-lock` | announcements store | 27 |
 
-- **`maestro-lock`.** Delivery 6 changes its job to "guard file writes (exclusive locks and atomic
-  replacement)".
+- **`maestro-lock`.** Delivery 6 changes its job to "guard file writes (exclusive locks and recoverable
+  publication)".
 - **No other change.** No crate, upward edge or library is added.
+
+### Command-line grammar
+
+The first word selects a workspace command before chat flags are parsed:
+`attach`, `daemon`, `status`, `api`, `completion`, `settings`, `workspace`,
+`worktree`, `tab`, `pane`, `agent`, `terminal`, `notification`, `integration`,
+`action`. Bare `maestro` opens chat; `--session <path|id>` and `--skill <path>`
+remain chat inputs. There are no `server`, `session` or `channel` nouns.
+
+Daemon operations share one noun and one target selector, `--daemon <name>`:
+
+| Grammar | Help |
+| --- | --- |
+| `daemon [--daemon <name>]` | Run the selected workspace daemon. |
+| `daemon stop [--daemon <name>] [--json]` | Stop the selected daemon. |
+| `daemon reload [--daemon <name>]` | Reload the daemon's settings. |
+| `daemon reload --manifests [--daemon <name>]` | Reload detection manifests without fetching. |
+| `daemon manifests [--daemon <name>] [--json]` | Show detection manifest status. |
+| `daemon update-manifests [--daemon <name>] [--json]` | Fetch detection manifests, reload them, then show status. |
+| `daemon live-handoff [--daemon <name>] [--import-exe <path>] [--expected-protocol <number>] [--expected-version <version>]` | Transfer live panes to a new local daemon. |
+| `daemon list [--json]` | List named daemons. |
+| `daemon delete --daemon <name> [--json]` | Delete a stopped named daemon. |
+| `daemon attach <name>` | Print guidance to use `maestro attach --daemon <name>`. |
+
+`status [--daemon <name>] [--json]` reports client and daemon versions, protocol,
+capabilities and whether restart is needed. Protocol compatibility is checked
+before sending an operation. Usage errors exit 2 before accessing a socket.
+
+`settings check` prints `settings: ok` or diagnostics, returning 1 for diagnostics.
+`settings defaults` prints annotated JSONC for reading; `settings.json` remains
+strict JSON. `settings reset-keys` backs up the exact bytes of `keybindings.json`
+with a timestamped exclusive filename before removing only top-level
+`multiplexer.*` members. Chat and unknown entries are retained. The application
+keybinding owner reads, validates and serializes the document and publishes it
+through `maestro-lock::replace`, following existing symlinks. Backup or precommit
+publication failure leaves the original unchanged; postcommit directory-sync
+warnings are reported separately from failure. Successful reset reports reload
+or restart guidance.
+
+Help, completions for bash, elvish, fish, PowerShell and zsh, annotated defaults
+and shipped workspace skill-path discovery perform no daemon, model or package
+startup. Invalid UTF-8 arguments are rejected. A closed stdout exits silently
+with status 141.

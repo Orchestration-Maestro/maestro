@@ -4,9 +4,7 @@ use maestro_web::{
     tools::types::ToolUiError,
     tools::{
         renderer_registry::TOOL_RENDERERS,
-        types::{
-            ToolContent, ToolRenderResult, ToolRenderView, ToolRenderer, ToolResultMessageView,
-        },
+        types::{ToolRenderResult, ToolRenderer, ToolResultMessageView},
     },
 };
 use std::rc::Rc;
@@ -28,18 +26,27 @@ impl<P, D> ToolRenderer<P, D> for Renderer<P, D> {
     }
 }
 pub struct Caption(pub String);
-impl ToolContent for Caption {
-    fn render(
+#[cfg(not(target_arch = "wasm32"))]
+pub type PreparedContent = Box<dyn std::any::Any>;
+#[cfg(target_arch = "wasm32")]
+pub type PreparedContent = Box<dyn maestro_web::dom::DomContent>;
+#[cfg(target_arch = "wasm32")]
+impl maestro_web::dom::DomContent for Caption {
+    fn mount(
         &self,
-        ui: &mut egui::Ui,
-        _: ToolRenderView<'_>,
-        _: &maestro_app::ToolRendererState,
-    ) -> maestro_web::tools::types::ToolContentOutput {
-        let response = Ok(ui.label(&self.0));
-        maestro_web::tools::types::ToolContentOutput {
-            response,
-            overlays: Vec::new(),
-        }
+        view: &maestro_web::dom::DomView,
+    ) -> Result<maestro_web::dom::DomRoot, ToolUiError> {
+        let node = view.document.create_element("span").unwrap();
+        node.set_text_content(Some(&self.0));
+        Ok(maestro_web::dom::DomRoot::new(node))
+    }
+    fn update(
+        &self,
+        root: &maestro_web::dom::DomRoot,
+        _: &maestro_web::dom::DomView,
+    ) -> Result<(), ToolUiError> {
+        root.node.set_text_content(Some(&self.0));
+        Ok(())
     }
 }
 #[must_use]
@@ -68,41 +75,26 @@ pub fn message<D>(details: Option<D>) -> maestro_app::ToolResultMessage<D> {
     }
 }
 
-/// Owned rich text drawn through the ordinary retained recipe state.
+/// Caller-owned Markdown mounted through the published page-content contract.
 #[cfg(target_arch = "wasm32")]
 pub struct RichText(pub String);
 #[cfg(target_arch = "wasm32")]
-impl ToolContent for RichText {
-    fn render(
+impl maestro_web::dom::DomContent for RichText {
+    fn mount(
         &self,
-        ui: &mut egui::Ui,
-        view: ToolRenderView<'_>,
-        state: &maestro_app::ToolRendererState,
-    ) -> maestro_web::tools::types::ToolContentOutput {
-        let response = {
-            let owner =
-                state.state::<Option<maestro_web::components::markdown_block::MarkdownBlock>>();
-            let mut block = owner.borrow_mut().take().unwrap_or_else(|| {
-                maestro_web::components::markdown_block::MarkdownBlock::new(Rc::clone(view.host))
-            });
-            block.content.clone_from(&self.0);
-            let result = block
-                .render(
-                    ui,
-                    maestro_web::components::code_block::CodeBlockView {
-                        i18n: view.i18n,
-                        presentation: view.presentation,
-                        highlighter: view.highlighter,
-                        modal: view.modal,
-                    },
-                )
-                .map_err(ToolUiError::Reading);
-            *owner.borrow_mut() = Some(block);
-            result
-        };
-        maestro_web::tools::types::ToolContentOutput {
-            response,
-            overlays: Vec::new(),
-        }
+        view: &maestro_web::dom::DomView,
+    ) -> Result<maestro_web::dom::DomRoot, ToolUiError> {
+        let mut block = maestro_web::components::markdown_block::MarkdownBlock::default();
+        block.content.clone_from(&self.0);
+        block.mount(view)
+    }
+    fn update(
+        &self,
+        root: &maestro_web::dom::DomRoot,
+        view: &maestro_web::dom::DomView,
+    ) -> Result<(), ToolUiError> {
+        let mut block = maestro_web::components::markdown_block::MarkdownBlock::default();
+        block.content.clone_from(&self.0);
+        block.update(root, view)
     }
 }

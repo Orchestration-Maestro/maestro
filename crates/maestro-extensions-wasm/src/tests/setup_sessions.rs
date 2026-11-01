@@ -675,7 +675,7 @@ async fn command_options(driver: &mut impl Driver) -> Result<(), String> {
             );
             assert!(lines.contains(&format!(
                 "setup-options {}",
-                json!({"parent":parent,"setup":setup,"continuation":continuation})
+                json!({"present":true,"parent":parent,"setup":setup,"continuation":continuation})
             )));
         }
     }
@@ -752,4 +752,38 @@ async fn command_outcomes(driver: &mut impl Driver) -> Result<(), String> {
         json!("none")
     );
     Ok(())
+}
+
+/// Writable children share the entry payload decoder used by history and events.
+async fn opaque_children(driver: &mut impl Driver) -> Result<(), String> {
+    driver
+        .run_plain_command("capture", "setup-register")
+        .await?;
+    for payload in [
+        Some(json!({"z": {"b": [false, null, "Ω"]}, "a": 1})),
+        Some(json!([null, true, {"z": 1, "a": 2}])),
+        Some(json!(2.5)),
+        Some(json!(9_007_199_254_740_993_u64)),
+        Some(json!("literal \"text\"")),
+        Some(Value::Null),
+        None,
+    ] {
+        let entries = super::session_records::opaque_entries(payload.as_ref());
+        let (answer, lines) = ask(
+            driver,
+            &json!({"method":"getChildren", "args":["root"],
+            "control":{"value":entries}}),
+        )
+        .await?;
+        assert_eq!(answer, json!(entries));
+        assert!(lines.contains(&format!("writer get_children {}", json!(["root"]))));
+    }
+    driver.release_all().await;
+    assert_eq!(driver.live(), 0);
+    Ok(())
+}
+
+#[test]
+fn maestro_setup_children_roundtrip_arbitrary_entry_payloads() -> Result<(), String> {
+    on_both_adapters!(opaque_children)
 }

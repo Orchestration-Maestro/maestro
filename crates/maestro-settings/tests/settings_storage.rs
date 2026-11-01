@@ -417,6 +417,46 @@ mod tests {
     }
 
     #[test]
+    fn saves_reach_a_hard_linked_file_in_place() {
+        let root = Scratch::new().unwrap();
+        let file = support::settings_file(root.path(), SettingsScope::Global);
+        let linked = file.with_file_name("linked.json");
+        fs::create_dir_all(file.parent().unwrap()).unwrap();
+        fs::write(&file, "{\"theme\": \"old\"}").unwrap();
+        fs::hard_link(&file, &linked).unwrap();
+
+        file_storage(root.path())
+            .with_write_lock(SettingsScope::Global, &mut |_| {
+                Ok(Some("{\"theme\": \"new\"}".into()))
+            })
+            .unwrap();
+
+        assert_eq!(fs::read_to_string(&file).unwrap(), "{\"theme\": \"new\"}");
+        assert_eq!(fs::read_to_string(&linked).unwrap(), "{\"theme\": \"new\"}");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn saves_refuse_a_read_only_file_and_leave_it_whole() {
+        let root = Scratch::new().unwrap();
+        let file = support::settings_file(root.path(), SettingsScope::Global);
+        fs::create_dir_all(file.parent().unwrap()).unwrap();
+        fs::write(&file, "{\"theme\": \"old\"}").unwrap();
+        let Some(_restored) = maestro_test_directory::deny(&file, 0o444).unwrap() else {
+            return;
+        };
+
+        let result = file_storage(root.path()).with_write_lock(SettingsScope::Global, &mut |_| {
+            Ok(Some("{\"theme\": \"new\"}".into()))
+        });
+
+        let error = result.unwrap_err();
+        let io = error.downcast_ref::<std::io::Error>().unwrap();
+        assert_eq!(io.kind(), std::io::ErrorKind::PermissionDenied);
+        assert_eq!(fs::read_to_string(&file).unwrap(), "{\"theme\": \"old\"}");
+    }
+
+    #[test]
     fn global_key_edit_merges_fresh_global_scope() {
         if support::run_lock_child() {
             return;
@@ -527,8 +567,8 @@ mod tests {
             "{}"
         );
         assert!(
-            config.join("settings.json.lock").exists(),
-            "the sidecar is created for the write"
+            !config.join("settings.json.lock").exists(),
+            "the write removes its lock file"
         );
 
         let mut settings = create_manager(root.path());
@@ -692,35 +732,67 @@ mod tests {
     }
 
     #[test]
-    fn sidecar_remains_stable_after_release() {
-        const TEST: &str = "settings_storage::tests::sidecar_remains_stable_after_release";
-        if support::run_lock_child() {
-            return;
-        }
+    fn settings_writes_leave_only_the_settings_file() {
         let root = Scratch::new().unwrap();
         let storage = file_storage(root.path());
         let agent = root.path().join("agent");
-        transact(&storage, SettingsScope::Global, Ok(Some("one")))
-            .1
-            .unwrap();
-        let sidecar = agent.join("settings.json.lock");
-        let first = fs::metadata(&sidecar).unwrap();
-        transact(&storage, SettingsScope::Global, Ok(Some("two")))
-            .1
-            .unwrap();
-        let second = fs::metadata(&sidecar).unwrap();
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::MetadataExt;
-            assert_eq!(first.ino(), second.ino(), "the sidecar is never replaced");
+        for text in ["one", "two"] {
+            transact(&storage, SettingsScope::Global, Ok(Some(text)))
+                .1
+                .unwrap();
+            assert_eq!(
+                fs::read_to_string(agent.join("settings.json")).unwrap(),
+                text
+            );
+            assert_eq!(fs::read_dir(&agent).unwrap().count(), 1);
         }
-        assert!(first.is_file() && second.is_file());
+    }
 
-        let holder = Holder::start(TEST, &sidecar);
-        assert_eq!(probe_lock(TEST, &sidecar), "blocked");
-        holder.release();
-        assert_eq!(probe_lock(TEST, &sidecar), "free");
-        assert!(sidecar.exists(), "release never unlinks the sidecar");
+    #[cfg(unix)]
+    #[test]
+    fn linked_settings_lock_beside_the_linked_file() {
+        let root = Scratch::new().unwrap();
+        let storage = file_storage(root.path());
+        let agent = root.path().join("agent");
+        fs::create_dir(&agent).unwrap();
+        let target = root.path().join("actual.json");
+        fs::write(&target, "before").unwrap();
+        std::os::unix::fs::symlink(&target, agent.join("settings.json")).unwrap();
+        storage
+            .with_lock(SettingsScope::Global, &mut |current| {
+                assert_eq!(current, Some("before"));
+                assert!(root.path().join("actual.json.lock").is_file());
+                assert!(!agent.join("settings.json.lock").exists());
+                Ok(Some("after".into()))
+            })
+            .unwrap();
+        assert_eq!(fs::read_to_string(target).unwrap(), "after");
+        assert!(!root.path().join("actual.json.lock").exists());
+    }
+
+    #[test]
+    fn settings_write_succeeds_without_a_home() {
+        const TEST: &str = "settings_storage::tests::settings_write_succeeds_without_a_home";
+        if support::child_case().is_some() {
+            let root = std::env::current_dir().unwrap();
+            let storage = file_storage(&root);
+            transact(&storage, SettingsScope::Global, Ok(Some("saved")))
+                .1
+                .unwrap();
+            return;
+        }
+        let root = Scratch::new().unwrap();
+        let output = support::child_command(TEST, "no-home")
+            .current_dir(root.path())
+            .env("HOME", root.path().join("missing-home"))
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{output:?}");
+        assert!(!root.path().join("missing-home").exists());
+        assert_eq!(
+            fs::read_to_string(root.path().join("agent/settings.json")).unwrap(),
+            "saved"
+        );
     }
 
     /// Child side: successful saves, a reload and a failed load, with nothing printed.

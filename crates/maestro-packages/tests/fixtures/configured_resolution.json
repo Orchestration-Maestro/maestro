@@ -7398,17 +7398,7 @@
     },
     "expected": {
       "result": {
-        "extensions": [
-          {
-            "path": "$BASE/home/file.ts",
-            "enabled": true,
-            "metadata": {
-              "source": "local",
-              "scope": "user",
-              "origin": "top-level"
-            }
-          }
-        ],
+        "extensions": [],
         "skills": [],
         "prompts": [],
         "themes": []
@@ -7769,6 +7759,297 @@
             }
           }
         ]
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "selection-_true_",
+    "recipe": {
+      "action": "error",
+      "project": {
+        "packages": [
+          "npm:missing",
+          "https://github.com/team/missing",
+          "npm:ready"
+        ]
+      },
+      "packages": {
+        "project/.maestro/npm/node_modules/ready": {
+          "extensions": [
+            "entry.ts"
+          ]
+        }
+      },
+      "selection": true
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/project/.maestro/npm/node_modules/ready/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "npm:ready",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$BASE/project/.maestro/npm/node_modules/ready"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "selection-_false_",
+    "recipe": {
+      "action": "error",
+      "project": {
+        "packages": [
+          "npm:missing",
+          "https://github.com/team/missing",
+          "npm:ready"
+        ]
+      },
+      "packages": {
+        "project/.maestro/npm/node_modules/ready": {
+          "extensions": [
+            "entry.ts"
+          ]
+        }
+      },
+      "selection": false
+    },
+    "expected": {
+      "result": null,
+      "error": {
+        "message": "Missing source: npm:missing"
+      },
+      "calls": [],
+      "events": [],
+      "callbacks": [
+        "npm:missing"
+      ],
+      "second": null
+    }
+  },
+  {
+    "case": "selection-_absent_",
+    "recipe": {
+      "offline": "1",
+      "action": "error",
+      "project": {
+        "packages": [
+          "npm:missing",
+          "https://github.com/team/missing",
+          "npm:ready"
+        ]
+      },
+      "packages": {
+        "project/.maestro/npm/node_modules/ready": {
+          "extensions": [
+            "entry.ts"
+          ]
+        }
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/project/.maestro/npm/node_modules/ready/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "npm:ready",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$BASE/project/.maestro/npm/node_modules/ready"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "selection-ambient-truthy",
+    "recipe": {
+      "action": "error",
+      "project": {
+        "packages": [
+          "npm:missing",
+          "https://github.com/team/missing",
+          "npm:ready"
+        ]
+      },
+      "packages": {
+        "project/.maestro/npm/node_modules/ready": {
+          "extensions": [
+            "entry.ts"
+          ]
+        }
+      },
+      "selection": false,
+      "offline": "1"
+    },
+    "expected": {
+      "result": null,
+      "error": {
+        "message": "Missing source: npm:missing"
+      },
+      "calls": [],
+      "events": [],
+      "callbacks": [
+        "npm:missing"
+      ],
+      "second": null
+    }
+  },
+  {
+    "case": "selection-pin-exact",
+    "recipe": {
+      "project": {
+        "packages": [
+          "npm:p@1.0.0"
+        ]
+      },
+      "packages": {
+        "project/.maestro/npm/node_modules/p": {
+          "extensions": [
+            "entry.ts"
+          ]
+        }
+      },
+      "action": "install",
+      "selection": true
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/project/.maestro/npm/node_modules/p/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "npm:p@1.0.0",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$BASE/project/.maestro/npm/node_modules/p"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "selection-pin-mismatch",
+    "recipe": {
+      "project": {
+        "packages": [
+          "npm:p@2.0.0"
+        ]
+      },
+      "packages": {
+        "project/.maestro/npm/node_modules/p": {
+          "extensions": [
+            "entry.ts"
+          ]
+        }
+      },
+      "action": "install",
+      "selection": true
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "selection-unpinned",
+    "recipe": {
+      "project": {
+        "packages": [
+          "npm:p",
+          "https://github.com/team/repo"
+        ]
+      },
+      "packages": {
+        "project/.maestro/npm/node_modules/p": {
+          "extensions": [
+            "entry.ts"
+          ]
+        },
+        "project/.maestro/git/github.com/team/repo": {
+          "extensions": [
+            "entry.ts"
+          ]
+        }
+      },
+      "action": "error",
+      "selection": true
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/project/.maestro/npm/node_modules/p/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "npm:p",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$BASE/project/.maestro/npm/node_modules/p"
+            }
+          },
+          {
+            "path": "$BASE/project/.maestro/git/github.com/team/repo/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "https://github.com/team/repo",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$BASE/project/.maestro/git/github.com/team/repo"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
       },
       "error": null,
       "calls": [],

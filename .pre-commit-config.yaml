@@ -16,6 +16,11 @@ repos:
         entry: just pre-commit
         pass_filenames: false
         always_run: true
+      - id: gitleaks
+        name: Secrets in the staged change
+        language: system
+        entry: gitleaks git --pre-commit --staged --redact --no-banner
+        pass_filenames: false
       - id: conventional-commit-header
         name: Commit message opens with a conventional header
         language: pygrep

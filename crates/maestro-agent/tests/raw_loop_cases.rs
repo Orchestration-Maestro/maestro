@@ -186,7 +186,7 @@ fn maestro_before_hook_mutates_validated_arguments() {
             ready(Ok(artifact("numeric", true)))
         }),
     );
-    echo.write().unwrap().definition.parameters = serde_json::json!({"type":"object","properties":{"value":{"type":"string"}},"required":["value"]});
+    echo.write().unwrap().definition.parameters = serde_json::json!({"type":"object","properties":{"value":{"type":"string"}},"required":["value"]}).into();
     let mut config = config();
     config.before_tool_call = Some(Arc::new(|call, _| {
         assert_eq!(call.args["value"], "hello");
@@ -220,7 +220,7 @@ fn maestro_preparation_runs_before_validation() {
     );
     {
         let mut echo = echo.write().unwrap();
-        echo.definition.parameters = serde_json::json!({"type":"object","properties":{"edits":{"type":"array","items":{"type":"object","properties":{"oldText":{"type":"string"},"newText":{"type":"string"}},"required":["oldText","newText"]}}},"required":["edits"]});
+        echo.definition.parameters = serde_json::json!({"type":"object","properties":{"edits":{"type":"array","items":{"type":"object","properties":{"oldText":{"type":"string"},"newText":{"type":"string"}},"required":["oldText","newText"]}}},"required":["edits"]}).into();
         echo.prepare_arguments = Some(Arc::new(|args| {
             Ok(serde_json::json!({"edits":[{"oldText":args["oldText"],"newText":args["newText"]}]}))
         }));
@@ -703,6 +703,7 @@ fn notice_context() -> (AgentContext<Notice>, AgentLoopConfig<Notice>) {
             before_tool_call: None,
             after_tool_call: None,
             should_stop_after_turn: None,
+            prepare_next_turn: None,
             get_steering_messages: None,
             get_follow_up_messages: None,
             tool_execution: None,

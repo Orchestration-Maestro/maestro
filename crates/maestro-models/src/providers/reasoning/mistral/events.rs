@@ -11,6 +11,7 @@ use crate::{
     AssistantContent, AssistantMessageEvent as Event, AssistantMessageEventStream,
     SharedAssistantMessage, TextContent, ThinkingContent, ToolCall,
 };
+use maestro_request::presence::Presence;
 use num_traits::ToPrimitive;
 use std::sync::{Arc, PoisonError};
 
@@ -37,13 +38,15 @@ impl Events {
                 message.usage.input = usage.0.prompt_tokens.0.as_f64().unwrap_or_default() + 0.0;
                 message.usage.output =
                     usage.0.completion_tokens.0.as_f64().unwrap_or_default() + 0.0;
-                message.usage.total_tokens = usage
-                    .0
-                    .total_tokens
-                    .0
-                    .as_f64()
-                    .filter(|total| *total != 0.0)
-                    .unwrap_or(message.usage.input + message.usage.output);
+                message.usage.total_tokens = Presence::Present(
+                    usage
+                        .0
+                        .total_tokens
+                        .0
+                        .as_f64()
+                        .filter(|total| *total != 0.0)
+                        .unwrap_or(message.usage.input + message.usage.output),
+                );
                 message.usage.cache_read = 0.0;
                 message.usage.cache_write = 0.0;
                 crate::calculate_cost(model, &mut message.usage);
@@ -220,7 +223,7 @@ impl Events {
                     message.content.push(AssistantContent::ToolCall(ToolCall {
                         id,
                         name: tool.function.0.name,
-                        arguments: crate::JsonObject::new(),
+                        arguments: crate::JsonObject::new().into(),
                         thought_signature: None,
                     }));
                     content_index

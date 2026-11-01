@@ -1,5 +1,7 @@
 //! Provider configuration and binding records.
 use super::ExtensionExecution;
+/// Native callable operations supplied with a provider registration.
+pub use maestro_catalog::ProviderCallbacks;
 /// Configuration for registering a provider.
 pub use maestro_catalog::ProviderConfigInput as ProviderConfig;
 /// Configuration for a model within a provider.

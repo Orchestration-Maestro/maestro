@@ -10,6 +10,8 @@ pub struct BuiltinSlashCommand {
     pub name: String,
     /// Description shown in command selection.
     pub description: String,
+    /// Placeholder shown beside the command in completion.
+    pub argument_hint: Option<String>,
 }
 
 /// Ordinary built-in commands in presentation order.
@@ -17,6 +19,7 @@ pub static BUILTIN_SLASH_COMMANDS: LazyLock<Vec<BuiltinSlashCommand>> = LazyLock
     [
         ("settings", "Open settings menu"),
         ("model", "Select model (opens selector UI)"),
+        ("thinking", "Set thinking level"),
         ("scoped-models", "Enable/disable models for Ctrl+P cycling"),
         (
             "export",
@@ -49,10 +52,12 @@ pub static BUILTIN_SLASH_COMMANDS: LazyLock<Vec<BuiltinSlashCommand>> = LazyLock
     .map(|(name, description)| BuiltinSlashCommand {
         name: name.into(),
         description: description.into(),
+        argument_hint: (name == "thinking").then(|| "<level>".into()),
     })
     .chain(std::iter::once(BuiltinSlashCommand {
         name: "quit".into(),
         description: format!("Quit {}", crate::configuration::config::APP_NAME),
+        argument_hint: None,
     }))
     .collect()
 });

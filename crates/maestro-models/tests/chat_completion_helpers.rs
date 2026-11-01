@@ -54,6 +54,19 @@ const SUBSTITUTIONS: &[Substitution] = &[
         Err("ACCOUNT is required for provider cloudflare-ai-gateway but is not set."),
     ),
     (
+        "https://gateway.ai.cloudflare.com/v1/{CLOUDFLARE_ACCOUNT_ID}/{CLOUDFLARE_GATEWAY_ID}/compat",
+        &[("CLOUDFLARE_ACCOUNT_ID", "account")],
+        Err("CLOUDFLARE_GATEWAY_ID is required for provider cloudflare-ai-gateway but is not set."),
+    ),
+    (
+        "https://gateway.ai.cloudflare.com/v1/{CLOUDFLARE_ACCOUNT_ID}/{CLOUDFLARE_GATEWAY_ID}/compat",
+        &[
+            ("CLOUDFLARE_ACCOUNT_ID", "account"),
+            ("CLOUDFLARE_GATEWAY_ID", "gateway"),
+        ],
+        Ok("https://gateway.ai.cloudflare.com/v1/account/gateway/compat"),
+    ),
+    (
         "https://x/{lower}/{9BAD}/{_GOOD}/{A2}",
         &[("_GOOD", "ok"), ("A2", "next")],
         Ok("https://x/{lower}/{9BAD}/ok/next"),

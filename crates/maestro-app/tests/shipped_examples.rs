@@ -3,7 +3,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use maestro_app::configuration::config;
-use maestro_markdown::{Cell, Kind, LinkType, Node};
+use maestro_markdown::{Cell, Kind, LinkType, Node, Table};
 use std::fs;
 use std::path::Path;
 
@@ -26,7 +26,10 @@ fn examples_folder_matches_the_shipped_files() {
     let root = Path::new(&folder);
     assert!(root.is_dir(), "{folder}");
     let entries = directory_names(root);
-    assert_eq!(entries, ["README.md", "extensions", "sdk"]);
+    assert_eq!(
+        entries,
+        ["README.md", "extensions", "rpc_extension_ui.rs", "sdk"]
+    );
     assert_index_lists(root, &entries);
     for directory in ["extensions", "sdk"] {
         let path = root.join(directory);
@@ -71,13 +74,67 @@ fn index_entries(index: &str) -> Vec<String> {
             {
                 entries.push(destination.clone());
             }
-            Kind::Table(table) => {
-                entries.extend(table.rows.iter().filter_map(|row| first_code(row)));
-            }
+            Kind::Table(table) => entries.extend(table_entries(table)),
             _ => {}
         }
     }
     entries
+}
+
+/// The file names one table lists, in row order.
+fn table_entries(table: &Table) -> impl Iterator<Item = String> + '_ {
+    table.rows.iter().filter_map(|row| first_code(row))
+}
+
+/// The examples index keeps its table rows and its controlled-run commands in file-name
+/// order, so a new example inserts at its own place instead of appending at the end.
+#[test]
+fn examples_index_stays_in_file_name_order() {
+    let folder = config::get_examples_path().unwrap();
+    let index = fs::read_to_string(Path::new(&folder).join("extensions/README.md")).unwrap();
+    let rows = table_rows(&index);
+    assert!(
+        rows.is_sorted(),
+        "the examples table is not in file-name order: {rows:?}"
+    );
+    let filters = run_filters(&index);
+    assert!(
+        filters.is_sorted(),
+        "the controlled-run commands are not in file-name order: {filters:?}"
+    );
+}
+
+/// The file names every table of one index page lists, in authored order.
+fn table_rows(index: &str) -> Vec<String> {
+    let document = maestro_markdown::parse(index.to_owned());
+    descendants(document.nodes.iter(), nodes::children)
+        .filter_map(|node| match &node.kind {
+            Kind::Table(table) => Some(table),
+            _ => None,
+        })
+        .flat_map(table_entries)
+        .collect()
+}
+
+/// The test filters one index page's controlled-run commands name, in authored order.
+fn run_filters(index: &str) -> Vec<String> {
+    let document = maestro_markdown::parse(index.to_owned());
+    descendants(document.nodes.iter(), nodes::children)
+        .filter_map(|node| match &node.kind {
+            Kind::CodeBlock(code, _) => Some(code.as_str()),
+            _ => None,
+        })
+        .flat_map(str::lines)
+        .filter_map(|line| line.split_once("--lib "))
+        .map(|(_, filter)| filter.trim().trim_start_matches("-- ").to_owned())
+        .collect()
+}
+
+/// A flag mentioned in prose is not a controlled run, so only code blocks supply commands.
+#[test]
+fn run_filters_reads_only_commands_the_page_blocks_hold() {
+    let index = "Pass `--lib -- filter` to narrow a run.\n\n```sh\ncargo nextest run --lib -- bookmark_\n```\n";
+    assert_eq!(run_filters(index), ["bookmark_"]);
 }
 
 /// The first code span among one table row's cells.
@@ -192,12 +249,10 @@ fn recursive_names(root: &Path, directory: &Path) -> Vec<String> {
         if path.is_dir() {
             names.extend(recursive_names(root, &path));
         } else {
-            names.push(
-                path.strip_prefix(root)
-                    .unwrap()
-                    .to_string_lossy()
-                    .into_owned(),
-            );
+            // Index pages link with `/`, whatever the host separator.
+            let relative = path.strip_prefix(root).unwrap();
+            let parts: Vec<_> = relative.iter().map(|part| part.to_string_lossy()).collect();
+            names.push(parts.join("/"));
         }
     }
     names.sort();

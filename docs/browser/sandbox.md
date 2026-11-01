@@ -27,6 +27,11 @@ active. Failed loads return their first diagnostic and attempt this cleanup too.
 The subscription uses the existing native event owner, not a separate teardown
 mechanism.
 
+The [HTML artifact](artifacts.md#native-html-artifact) loads through this adapter
+under the sandbox name `artifact-<filename>`, with the completion signal appended
+after the whole authored source. Its downloads use `prepare_html_document` with
+both the authored-HTML and standalone options.
+
 `prepare_html_document` does not mount or register a frame or add a console
 provider. Its module's `PrepareHtmlOptions` selects authored-HTML insertion or an
 asynchronous JavaScript wrapper. Standalone documents retain supplied provider

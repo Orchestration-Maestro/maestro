@@ -49,6 +49,8 @@ struct State {
     files: Vec<FileEffect>,
     /// Futures handed over and not yet finished.
     futures: Vec<Local>,
+    /// The failure every file replacement returns, when set.
+    write_error: Option<io::ErrorKind>,
 }
 
 /// Shared handle to the controlled host; clones observe the same world.
@@ -122,6 +124,20 @@ impl ManualRuntime {
         self.state.borrow().pending.len()
     }
 
+    /// Every pending deadline, in ascending order.
+    #[must_use]
+    pub fn deadlines(&self) -> Vec<Duration> {
+        let mut deadlines: Vec<Duration> = self
+            .state
+            .borrow()
+            .pending
+            .iter()
+            .map(|entry| entry.due)
+            .collect();
+        deadlines.sort_unstable();
+        deadlines
+    }
+
     /// Earliest pending deadline, if any.
     #[must_use]
     pub fn next_deadline(&self) -> Option<Duration> {
@@ -131,6 +147,11 @@ impl ManualRuntime {
             .iter()
             .map(|entry| entry.due)
             .min()
+    }
+
+    /// Makes every later file replacement fail with `kind`, without an effect, or succeed again.
+    pub fn set_write_error(&self, kind: Option<io::ErrorKind>) {
+        self.state.borrow_mut().write_error = kind;
     }
 
     /// Log effects in the order requested.
@@ -274,6 +295,9 @@ impl TuiRuntime for ManualRuntime {
     }
 
     fn write_log(&self, path: &Path, contents: &str) -> io::Result<()> {
+        if let Some(kind) = self.state.borrow().write_error {
+            return Err(kind.into());
+        }
         let effect = FileEffect::Write(path.to_path_buf(), contents.to_owned());
         self.state.borrow_mut().files.push(effect);
         Ok(())

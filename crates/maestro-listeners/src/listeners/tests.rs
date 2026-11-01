@@ -5,7 +5,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
 
-use super::{Listeners, reset_visits, visits};
+use super::{Admission, Listeners, reset_visits, visits};
 
 /// A shared collection of identity payloads, as its runtime callers hold it.
 type Shared = Rc<RefCell<Listeners<Rc<usize>>>>;
@@ -103,13 +103,20 @@ fn labels(log: &Log) -> Vec<usize> {
     log.borrow().iter().map(|(label, _)| *label).collect()
 }
 
+/// The collection a callback registers into, held weakly so the callback registered in it
+/// does not keep it alive.
+fn registrar(registry: &Registry) -> impl Fn() -> Registry + 'static {
+    let weak = Rc::downgrade(registry);
+    move || weak.upgrade().expect("the collection outlives its walk")
+}
+
 /// A collection with callback 1 adding a tail callback while it runs.
 fn live_add(log: &Log) -> Registry {
     let registry: Registry = Rc::default();
     let appended = plain(2, log);
-    let registrar = Rc::clone(&registry);
+    let registrar = registrar(&registry);
     registry.borrow_mut().add(recording(1, log, move |_| {
-        registrar.borrow_mut().add(Rc::clone(&appended));
+        registrar().borrow_mut().add(Rc::clone(&appended));
     }));
     registry
 }
@@ -118,10 +125,11 @@ fn live_add(log: &Log) -> Registry {
 fn live_remove(log: &Log) -> Registry {
     let registry: Registry = Rc::default();
     let skipped = plain(2, log);
-    let registrar = Rc::clone(&registry);
+    let registrar = registrar(&registry);
     let removed = Rc::clone(&skipped);
     registry.borrow_mut().add(recording(1, log, move |_| {
-        drop(registrar.borrow_mut().remove(Rc::as_ptr(&removed)));
+        let removed = registrar().borrow_mut().remove(Rc::as_ptr(&removed));
+        drop(removed);
     }));
     registry.borrow_mut().add(skipped);
     registry
@@ -130,9 +138,10 @@ fn live_remove(log: &Log) -> Registry {
 /// A collection whose first callback removes itself during its own visit.
 fn self_removing(log: &Log) -> (Registry, Rc<RefCell<Option<Callback>>>) {
     let registry: Registry = Rc::default();
-    let registrar = Rc::clone(&registry);
+    let registrar = registrar(&registry);
     let (holder, callback) = self_referencing(1, log, move |this| {
-        drop(registrar.borrow_mut().remove(Rc::as_ptr(this)));
+        let removed = registrar().borrow_mut().remove(Rc::as_ptr(this));
+        drop(removed);
     });
     registry.borrow_mut().add(callback);
     registry.borrow_mut().add(plain(3, log));
@@ -144,10 +153,11 @@ fn readd_moves_to_tail(log: &Log) -> Registry {
     let registry: Registry = Rc::default();
     let moved = plain(2, log);
     let tail = plain(3, log);
-    let registrar = Rc::clone(&registry);
+    let registrar = registrar(&registry);
     let moved_again = Rc::clone(&moved);
     registry.borrow_mut().add(recording(1, log, move |_| {
-        let mut listeners = registrar.borrow_mut();
+        let registry = registrar();
+        let mut listeners = registry.borrow_mut();
         drop(listeners.remove(Rc::as_ptr(&moved_again)));
         listeners.add(Rc::clone(&moved_again));
     }));
@@ -159,13 +169,14 @@ fn readd_moves_to_tail(log: &Log) -> Registry {
 /// A collection whose first callback re-registers itself once.
 fn self_readd_once(log: &Log) -> (Registry, Rc<RefCell<Option<Callback>>>) {
     let registry: Registry = Rc::default();
-    let registrar = Rc::clone(&registry);
+    let registrar = registrar(&registry);
     let once = Cell::new(false);
     let (holder, callback) = self_referencing(1, log, move |this| {
         if once.replace(true) {
             return;
         }
-        let mut listeners = registrar.borrow_mut();
+        let registry = registrar();
+        let mut listeners = registry.borrow_mut();
         drop(listeners.remove(Rc::as_ptr(this)));
         listeners.add(Rc::clone(this));
     });
@@ -177,10 +188,10 @@ fn self_readd_once(log: &Log) -> (Registry, Rc<RefCell<Option<Callback>>>) {
 /// A collection whose first callback walks the same collection once.
 fn nested_dispatch(log: &Log) -> Registry {
     let registry: Registry = Rc::default();
-    let nested = Rc::clone(&registry);
+    let nested = registrar(&registry);
     registry.borrow_mut().add(recording(1, log, move |text| {
         if text == "original" {
-            dispatch(&nested, "nested");
+            dispatch(&nested(), "nested");
         }
     }));
     registry.borrow_mut().add(plain(2, log));
@@ -249,7 +260,8 @@ fn removers_follow_identity_and_release_outside_borrows() {
     let value = Rc::new(5);
     let old = subscribe(&registry, &value);
     assert_eq!(walk(&registry), [5]);
-    drop(registry.borrow_mut().remove(Rc::as_ptr(&value)));
+    let removed = registry.borrow_mut().remove(Rc::as_ptr(&value));
+    drop(removed);
     drop(subscribe(&registry, &value));
     old();
     assert_eq!(walk(&registry), Vec::<usize>::new());
@@ -277,34 +289,101 @@ fn removers_follow_identity_and_release_outside_borrows() {
     assert_eq!(released.get(), Some(true));
 }
 
+/// A capture whose release unsubscribes another registration.
+struct Unsubscribing(Option<Box<dyn Fn()>>);
+
+impl Drop for Unsubscribing {
+    fn drop(&mut self) {
+        if let Some(unsubscribe) = &self.0 {
+            unsubscribe();
+        }
+    }
+}
+
+#[test]
+fn removal_releases_a_capture_that_unsubscribes_another() {
+    for admission in [Admission::Identity, Admission::Every] {
+        let registry = Rc::new(RefCell::new(Listeners::new(admission)));
+        let other = Rc::new(Unsubscribing(None));
+        let released = Rc::downgrade(&other);
+        let unsubscribe_other = Listeners::subscribe(&registry, other);
+        let capture = Rc::new(Unsubscribing(Some(Box::new(unsubscribe_other))));
+        Listeners::subscribe(&registry, capture)();
+        assert!(
+            released.upgrade().is_none(),
+            "the other registration is released"
+        );
+        assert!(registry.borrow().identities.is_empty());
+    }
+}
+
+#[test]
+fn every_registration_admission_removes_each_registration_once() {
+    let registry: Shared = Rc::new(RefCell::new(Listeners::new(Admission::Every)));
+    let value = Rc::new(3);
+    let removers: Vec<_> = (0..4).map(|_| subscribe(&registry, &value)).collect();
+    assert_eq!(walk(&registry), [3, 3, 3, 3]);
+    assert_eq!(registry.borrow_mut().remove(Rc::as_ptr(&value)), None);
+    for remover in &removers[..3] {
+        remover();
+        remover();
+    }
+    assert_eq!(walk(&registry), [3]);
+    removers[3]();
+    assert_eq!(walk(&registry), Vec::<usize>::new());
+    assert!(registry.borrow().entries.is_empty());
+}
+
+/// Drops `registry` and checks that no callback outlived it: the collection is freed and
+/// the callbacks released the `log` they recorded into.
+fn assert_released(log: &Log, registry: Registry) {
+    let weak = Rc::downgrade(&registry);
+    drop(registry);
+    assert!(weak.upgrade().is_none(), "a callback keeps its collection");
+    assert_eq!(
+        Rc::strong_count(log),
+        1,
+        "a callback outlives its collection"
+    );
+}
+
 #[test]
 fn live_walks_observe_remove_append_and_readd() {
     let log: Log = Rc::default();
-    dispatch(&live_add(&log), "original");
+    let registry = live_add(&log);
+    dispatch(&registry, "original");
     assert_eq!(labels(&log), [1, 2]);
+    assert_released(&log, registry);
 
     let log: Log = Rc::default();
-    dispatch(&live_remove(&log), "original");
+    let registry = live_remove(&log);
+    dispatch(&registry, "original");
     assert_eq!(labels(&log), [1]);
+    assert_released(&log, registry);
 
     let log: Log = Rc::default();
     let (registry, holder) = self_removing(&log);
     dispatch(&registry, "original");
     assert_eq!(labels(&log), [1, 3]);
     drop(holder);
+    assert_released(&log, registry);
 
     let log: Log = Rc::default();
-    dispatch(&readd_moves_to_tail(&log), "original");
+    let registry = readd_moves_to_tail(&log);
+    dispatch(&registry, "original");
     assert_eq!(labels(&log), [1, 3, 2]);
+    assert_released(&log, registry);
 
     let log: Log = Rc::default();
     let (registry, holder) = self_readd_once(&log);
     dispatch(&registry, "original");
     assert_eq!(labels(&log), [1, 2, 1]);
     drop(holder);
+    assert_released(&log, registry);
 
     let log: Log = Rc::default();
-    dispatch(&nested_dispatch(&log), "original");
+    let registry = nested_dispatch(&log);
+    dispatch(&registry, "original");
     assert_eq!(
         *log.borrow(),
         [
@@ -314,6 +393,7 @@ fn live_walks_observe_remove_append_and_readd() {
             (2, "original".to_owned()),
         ]
     );
+    assert_released(&log, registry);
 }
 
 #[test]
@@ -331,7 +411,8 @@ fn early_exit_releases_cursor_and_preserves_first_error() {
     assert_eq!(outcome, Err("stop"));
     assert_eq!(seen, [1, 2]);
     assert_eq!(registry.borrow().active.load(Ordering::Relaxed), 0);
-    drop(registry.borrow_mut().remove(Rc::as_ptr(&values[2])));
+    let removed = registry.borrow_mut().remove(Rc::as_ptr(&values[2]));
+    drop(removed);
     reset_visits();
     assert_eq!(walk(&registry), [1, 2]);
     assert!(visits() <= 3);
@@ -396,7 +477,7 @@ fn rescan(listeners: &mut Listeners<Rc<usize>>) -> Vec<usize> {
 }
 
 #[test]
-fn ordered_walk_has_linear_work() {
+fn widget_map_walk_has_linear_slot_work() {
     for count in [128, 256, 512] {
         let mut listeners: Listeners<Rc<usize>> = Listeners::default();
         for slot in 0..count {
@@ -411,6 +492,22 @@ fn ordered_walk_has_linear_work() {
         assert_eq!(rescan(&mut listeners), seen);
         let rescanned = visits();
         assert!(rescanned > count + 1, "{count}: {rescanned}");
+        let mut cursor = listeners.cursor();
+        reset_visits();
+        let mut observed = 0;
+        while let Some(value) = listeners.next_from(&mut cursor).cloned() {
+            observed += 1;
+            drop(listeners.remove(Rc::as_ptr(&value)));
+            if *value == 0 {
+                listeners.add(Rc::new(count));
+            }
+        }
+        assert_eq!(observed, count + 1);
+        assert!(visits() <= 3 * count + 4);
+        drop(cursor);
+        reset_visits();
+        assert!(walk_owned(&mut listeners).is_empty());
+        assert!(visits() <= count + 1);
     }
 }
 
@@ -496,4 +593,55 @@ fn cursor_can_cross_a_threaded_await() {
         drop(cursor);
         value
     });
+}
+
+#[test]
+fn retained_snapshots_keep_membership_order_and_owned_values() {
+    let mut listeners = Listeners::default();
+    assert!(listeners.snapshot().is_empty());
+    let first = Rc::new(7);
+    let second = Rc::new(3);
+    let weak = Rc::downgrade(&first);
+    listeners.add(Rc::clone(&first));
+    listeners.add(Rc::clone(&second));
+    let snapshot = listeners.snapshot();
+    assert!(Rc::ptr_eq(&snapshot[0], &first));
+    assert!(Rc::ptr_eq(&snapshot[1], &second));
+    drop(listeners.remove(Rc::as_ptr(&first)));
+    listeners.add(Rc::new(9));
+    assert_eq!(
+        listeners
+            .snapshot()
+            .iter()
+            .map(|value| **value)
+            .collect::<Vec<_>>(),
+        [3, 9]
+    );
+    drop(listeners);
+    drop(first);
+    drop(second);
+    assert_eq!(
+        snapshot.iter().map(|value| **value).collect::<Vec<_>>(),
+        [7, 3]
+    );
+    assert!(weak.upgrade().is_some());
+    drop(snapshot);
+    assert!(weak.upgrade().is_none());
+}
+
+#[test]
+fn retained_snapshot_walk_keeps_linear_work() {
+    for count in [128, 256, 512] {
+        let mut listeners = Listeners::default();
+        for value in 0..count {
+            listeners.add(Rc::new(value));
+        }
+        reset_visits();
+        let snapshot = listeners.snapshot();
+        assert_eq!(
+            snapshot.iter().map(|value| **value).collect::<Vec<_>>(),
+            (0..count).collect::<Vec<_>>()
+        );
+        assert!(visits() <= count + 1, "{count}: {}", visits());
+    }
 }

@@ -1,0 +1,328 @@
+[
+  {
+    "test": "widgets_bound_text_rows_and_placement",
+    "input": {
+      "placement": null,
+      "count": 0
+    },
+    "expected": {
+      "above": [
+        ""
+      ],
+      "below": [],
+      "aboveKeys": [
+        "b"
+      ],
+      "belowKeys": []
+    }
+  },
+  {
+    "test": "widgets_bound_text_rows_and_placement",
+    "input": {
+      "placement": null,
+      "count": 1
+    },
+    "expected": {
+      "above": [
+        "",
+        " L0                                                                             "
+      ],
+      "below": [],
+      "aboveKeys": [
+        "b"
+      ],
+      "belowKeys": []
+    }
+  },
+  {
+    "test": "widgets_bound_text_rows_and_placement",
+    "input": {
+      "placement": null,
+      "count": 10
+    },
+    "expected": {
+      "above": [
+        "",
+        " L0                                                                             ",
+        " L1                                                                             ",
+        " L2                                                                             ",
+        " L3                                                                             ",
+        " L4                                                                             ",
+        " L5                                                                             ",
+        " L6                                                                             ",
+        " L7                                                                             ",
+        " L8                                                                             ",
+        " L9                                                                             "
+      ],
+      "below": [],
+      "aboveKeys": [
+        "b"
+      ],
+      "belowKeys": []
+    }
+  },
+  {
+    "test": "widgets_bound_text_rows_and_placement",
+    "input": {
+      "placement": null,
+      "count": 11
+    },
+    "expected": {
+      "above": [
+        "",
+        " L0                                                                             ",
+        " L1                                                                             ",
+        " L2                                                                             ",
+        " L3                                                                             ",
+        " L4                                                                             ",
+        " L5                                                                             ",
+        " L6                                                                             ",
+        " L7                                                                             ",
+        " L8                                                                             ",
+        " L9                                                                             ",
+        " @muted@... (widget truncated)\u001b[39m                                                         "
+      ],
+      "below": [],
+      "aboveKeys": [
+        "b"
+      ],
+      "belowKeys": []
+    }
+  },
+  {
+    "test": "widgets_bound_text_rows_and_placement",
+    "input": {
+      "placement": "aboveEditor",
+      "count": 0
+    },
+    "expected": {
+      "above": [
+        ""
+      ],
+      "below": [],
+      "aboveKeys": [
+        "b"
+      ],
+      "belowKeys": []
+    }
+  },
+  {
+    "test": "widgets_bound_text_rows_and_placement",
+    "input": {
+      "placement": "aboveEditor",
+      "count": 1
+    },
+    "expected": {
+      "above": [
+        "",
+        " L0                                                                             "
+      ],
+      "below": [],
+      "aboveKeys": [
+        "b"
+      ],
+      "belowKeys": []
+    }
+  },
+  {
+    "test": "widgets_bound_text_rows_and_placement",
+    "input": {
+      "placement": "aboveEditor",
+      "count": 10
+    },
+    "expected": {
+      "above": [
+        "",
+        " L0                                                                             ",
+        " L1                                                                             ",
+        " L2                                                                             ",
+        " L3                                                                             ",
+        " L4                                                                             ",
+        " L5                                                                             ",
+        " L6                                                                             ",
+        " L7                                                                             ",
+        " L8                                                                             ",
+        " L9                                                                             "
+      ],
+      "below": [],
+      "aboveKeys": [
+        "b"
+      ],
+      "belowKeys": []
+    }
+  },
+  {
+    "test": "widgets_bound_text_rows_and_placement",
+    "input": {
+      "placement": "aboveEditor",
+      "count": 11
+    },
+    "expected": {
+      "above": [
+        "",
+        " L0                                                                             ",
+        " L1                                                                             ",
+        " L2                                                                             ",
+        " L3                                                                             ",
+        " L4                                                                             ",
+        " L5                                                                             ",
+        " L6                                                                             ",
+        " L7                                                                             ",
+        " L8                                                                             ",
+        " L9                                                                             ",
+        " @muted@... (widget truncated)\u001b[39m                                                         "
+      ],
+      "below": [],
+      "aboveKeys": [
+        "b"
+      ],
+      "belowKeys": []
+    }
+  },
+  {
+    "test": "widgets_bound_text_rows_and_placement",
+    "input": {
+      "placement": "belowEditor",
+      "count": 0
+    },
+    "expected": {
+      "above": [
+        ""
+      ],
+      "below": [],
+      "aboveKeys": [],
+      "belowKeys": [
+        "b"
+      ]
+    }
+  },
+  {
+    "test": "widgets_bound_text_rows_and_placement",
+    "input": {
+      "placement": "belowEditor",
+      "count": 1
+    },
+    "expected": {
+      "above": [
+        ""
+      ],
+      "below": [
+        " L0                                                                             "
+      ],
+      "aboveKeys": [],
+      "belowKeys": [
+        "b"
+      ]
+    }
+  },
+  {
+    "test": "widgets_bound_text_rows_and_placement",
+    "input": {
+      "placement": "belowEditor",
+      "count": 10
+    },
+    "expected": {
+      "above": [
+        ""
+      ],
+      "below": [
+        " L0                                                                             ",
+        " L1                                                                             ",
+        " L2                                                                             ",
+        " L3                                                                             ",
+        " L4                                                                             ",
+        " L5                                                                             ",
+        " L6                                                                             ",
+        " L7                                                                             ",
+        " L8                                                                             ",
+        " L9                                                                             "
+      ],
+      "aboveKeys": [],
+      "belowKeys": [
+        "b"
+      ]
+    }
+  },
+  {
+    "test": "widgets_bound_text_rows_and_placement",
+    "input": {
+      "placement": "belowEditor",
+      "count": 11
+    },
+    "expected": {
+      "above": [
+        ""
+      ],
+      "below": [
+        " L0                                                                             ",
+        " L1                                                                             ",
+        " L2                                                                             ",
+        " L3                                                                             ",
+        " L4                                                                             ",
+        " L5                                                                             ",
+        " L6                                                                             ",
+        " L7                                                                             ",
+        " L8                                                                             ",
+        " L9                                                                             ",
+        " @muted@... (widget truncated)\u001b[39m                                                         "
+      ],
+      "aboveKeys": [],
+      "belowKeys": [
+        "b"
+      ]
+    }
+  },
+  {
+    "test": "widgets_keep_empty_unicode_multiline_and_visible_styles",
+    "input": {
+      "lines": [
+        ""
+      ]
+    },
+    "expected": {
+      "above": [
+        ""
+      ],
+      "below": []
+    }
+  },
+  {
+    "test": "widgets_keep_empty_unicode_multiline_and_visible_styles",
+    "input": {
+      "lines": [
+        "界",
+        "a\nb",
+        "﻿x",
+        "x"
+      ]
+    },
+    "expected": {
+      "above": [
+        "",
+        " 界                                                                             ",
+        " a                                                                              ",
+        " b                                                                              ",
+        " ﻿x                                                                              ",
+        " x                                                                              "
+      ],
+      "below": []
+    }
+  },
+  {
+    "test": "widgets_keep_empty_unicode_multiline_and_visible_styles",
+    "input": {
+      "lines": [
+        "\u001b[7m \u001b[27m",
+        "\u001b[4m \u001b[24m"
+      ]
+    },
+    "expected": {
+      "above": [
+        "",
+        " \u001b[7m \u001b[27m                                                                              ",
+        " \u001b[4m \u001b[24m                                                                              "
+      ],
+      "below": []
+    }
+  }
+]

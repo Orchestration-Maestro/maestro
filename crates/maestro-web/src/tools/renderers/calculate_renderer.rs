@@ -1,5 +1,5 @@
 //! Calculation result cards without expression evaluation.
-use super::card_content::{Body, Caption, CardContent, field, state};
+use super::card_content::{Body, Caption, CardContent, CardOutput, field, state};
 use crate::tools::{
     renderer_registry::get_text_output,
     types::{ToolRenderResult, ToolRenderer, ToolResultMessageView, ToolUiError},
@@ -7,13 +7,13 @@ use crate::tools::{
 use maestro_app::JsonObject;
 /// Stateless calculation-result renderer; it evaluates no expression.
 pub struct CalculateRenderer;
-impl<D> ToolRenderer<JsonObject, D> for CalculateRenderer {
+impl<D, C: CardOutput> ToolRenderer<JsonObject, D, C> for CalculateRenderer {
     fn render(
         &self,
         params: Option<&JsonObject>,
         result: Option<ToolResultMessageView<'_, D>>,
         _is_streaming: bool,
-    ) -> Result<ToolRenderResult, ToolUiError> {
+    ) -> Result<ToolRenderResult<C>, ToolUiError> {
         let state = state(result.as_ref());
         let expression = field(params, "expression")?;
         let (caption, body) = match (expression, result.as_ref()) {

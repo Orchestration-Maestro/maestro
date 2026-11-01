@@ -121,7 +121,11 @@ pub fn tree(doc: &SessionDocument) -> Value {
 }
 /// Observe reported components without conflating their unused total slots.
 pub fn stats(s: &maestro_web::export_html::template::Stats) -> Value {
-    assert_eq!(s.tokens.total_tokens.to_bits(), 0.0_f64.to_bits());
+    assert!(matches!(
+        s.tokens.total_tokens,
+        maestro_app::Presence::Present(total)
+            if total.to_bits() == 0.0_f64.to_bits()
+    ));
     assert_eq!(s.tokens.cost.total.to_bits(), 0.0_f64.to_bits());
     json!({"userMessages":s.user_messages,"assistantMessages":s.assistant_messages,
         "toolResults":s.tool_results,"customMessages":s.custom_messages,"compactions":s.compactions,

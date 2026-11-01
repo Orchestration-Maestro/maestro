@@ -35,6 +35,7 @@ impl WorkspaceOperations for ClosureWorkspace {
         &self,
         command: workspace::RpcCommand,
         events: WorkspaceEventSink,
+        _write_complete: tokio::sync::oneshot::Receiver<()>,
     ) -> RpcFuture<WorkspaceResult> {
         Box::pin(std::future::ready((self.0)(command, events)))
     }
@@ -81,6 +82,7 @@ fn runtime_factory(
                 model_registry: None,
                 extension_flag_values: None,
                 resource_loader_options: resources,
+                offline: None,
             })
             .await
             .unwrap();
@@ -130,26 +132,33 @@ pub async fn runtime(
 
 /// The server's facilities: the native signals, the live theme and HTML export over the
 /// real rendering environment.
-pub fn options(local: Rc<LocalSet>, workspace: WorkspaceAnswer) -> RpcModeOptions {
+pub fn options(
+    local: Rc<LocalSet>,
+    runtime: Rc<maestro_app::AgentSessionRuntime>,
+    workspace: WorkspaceAnswer,
+) -> RpcModeOptions {
     // The export facilities borrow the theme state for the process's lifetime.
     let state: &'static ThemeState =
         Box::leak(Box::new(ThemeState::new(get_theme_directories().unwrap())));
     let theme = state.theme();
     RpcModeOptions {
-        workspace: Rc::new(ClosureWorkspace(workspace)),
-        process: Rc::new(NativeRpcProcess),
-        theme: theme.clone(),
-        export_operations: Rc::new(NativeExportOperations {
-            app_name: "maestro",
-            template_dir: "",
-            theme: state,
-        }),
-        render_environment: Rc::new(ToolRenderEnvironment {
-            runtime: Rc::new(maestro_tui_crossterm::ProcessTuiRuntime::new(local)),
-            readme_path: String::new(),
-            live_theme: theme,
-            highlighter: Rc::new(SyntectHighlighter::new().unwrap()),
-            terminal_image: inferred(),
+        workspace: Some(Rc::new(ClosureWorkspace(workspace))),
+        session: Some(maestro_app::RpcSessionOptions {
+            runtime,
+            process: Rc::new(NativeRpcProcess),
+            theme: theme.clone(),
+            export_operations: Rc::new(NativeExportOperations {
+                app_name: "maestro",
+                template_dir: "",
+                theme: state,
+            }),
+            render_environment: Rc::new(ToolRenderEnvironment {
+                runtime: Rc::new(maestro_tui_crossterm::ProcessTuiRuntime::new(local)),
+                readme_path: String::new(),
+                live_theme: theme,
+                highlighter: Rc::new(SyntectHighlighter::new().unwrap()),
+                terminal_image: inferred(),
+            }),
         }),
     }
 }
@@ -171,9 +180,14 @@ pub fn serve(served: Served) -> ! {
         .unwrap();
     let failure = executor.block_on(local.run_until(async {
         let runtime = runtime(&local, served.factories).await;
-        let options = options(Rc::clone(&local), served.workspace);
-        let Err(failure) = run_rpc_mode(Rc::new(runtime), options).await;
-        failure
+        let runtime = Rc::new(runtime);
+        let running = Rc::clone(&local);
+        let runner: maestro_app::presentation_data::mode_dispatch::RpcModeRunner =
+            Rc::new(move |runtime| {
+                let options = options(Rc::clone(&running), runtime, Rc::clone(&served.workspace));
+                Box::pin(async move { match run_rpc_mode(options).await? {} })
+            });
+        runner(runtime).await.unwrap_err()
     }));
     panic!("the server failed: {failure}");
 }

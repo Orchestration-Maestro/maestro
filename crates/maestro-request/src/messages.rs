@@ -92,7 +92,7 @@ pub struct CustomMessageInput<T = serde_json::Value> {
     pub details: Presence<T>,
 }
 /// Custom-message delivery placement.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum MessageDelivery {
     /// Request steering delivery.
@@ -117,7 +117,7 @@ pub enum UserMessageDelivery {
     FollowUp,
 }
 /// Custom-message delivery options; no local defaults are applied.
-#[derive(Debug, Clone, Default, Serialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SendMessageOptions {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -128,7 +128,7 @@ pub struct SendMessageOptions {
     pub deliver_as: Option<MessageDelivery>,
 }
 /// User-message delivery options.
-#[derive(Debug, Clone, Default, Serialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SendUserMessageOptions {
     #[serde(skip_serializing_if = "Option::is_none")]

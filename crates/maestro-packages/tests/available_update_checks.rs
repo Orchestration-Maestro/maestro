@@ -80,12 +80,7 @@ fn check(
     manager: &Rc<DefaultPackageManager<support::Controlled>>,
     effects: &Rc<support::Effects>,
 ) -> std::io::Result<Vec<maestro_packages::PackageUpdate>> {
-    let local = Rc::new(tokio::task::LocalSet::new());
-    *effects.local.borrow_mut() = Rc::downgrade(&local);
-    let runtime = crate::runtime::runtime();
-    let result = runtime.block_on(local.run_until(manager.check_for_available_updates()));
-    runtime.block_on(Rc::try_unwrap(local).ok().unwrap());
-    result
+    support::drive(effects, manager.check_for_available_updates())
 }
 /// Queues completed captured responses.
 fn responses(effects: &support::Effects, values: &[&str]) {

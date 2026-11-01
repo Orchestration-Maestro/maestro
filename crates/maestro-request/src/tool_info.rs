@@ -3,7 +3,7 @@ use crate::source_info::SourceInfo;
 /// Tool description and caller-selected schema representation.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ToolInfo<P = serde_json::Value> {
+pub struct ToolInfo<P = crate::parameter_schema::ParameterSchema> {
     /// Literal tool name.
     pub name: String,
     /// Supplied description.

@@ -1,0 +1,2319 @@
+[
+  {
+    "test": "unchanged_theme_does_not_enqueue_a_setting_write",
+    "input": {
+      "op": "set-theme",
+      "name": "dark"
+    },
+    "expected": {
+      "result": {
+        "success": true
+      },
+      "writes": [],
+      "renderRequested": true
+    }
+  },
+  {
+    "test": "named_theme_switch_persists_before_redraw",
+    "input": {
+      "op": "set-theme",
+      "name": "light"
+    },
+    "expected": {
+      "result": {
+        "success": true
+      },
+      "writes": [
+        "light"
+      ],
+      "renderRequested": true
+    }
+  },
+  {
+    "test": "theme_rejection_does_not_persist_or_redraw",
+    "input": {
+      "op": "set-theme",
+      "name": "__missing_theme__"
+    },
+    "expected": {
+      "result": {
+        "success": false,
+        "error": "Theme not found: __missing_theme__"
+      },
+      "writes": [],
+      "renderRequested": false
+    }
+  },
+  {
+    "test": "theme_instances_publish_without_changing_the_saved_name",
+    "input": {
+      "op": "set-theme-instance"
+    },
+    "expected": {
+      "result": {
+        "success": true
+      },
+      "writes": [],
+      "publishedError": "@error@probe\u001b[39m",
+      "renderRequested": true
+    }
+  },
+  {
+    "test": "theme_queries_keep_lookup_separate_from_live_publication",
+    "input": {
+      "op": "theme-queries"
+    },
+    "expected": {
+      "names": [
+        "dark",
+        "light"
+      ],
+      "missing": null,
+      "lookupDoesNotPublish": true,
+      "retainedLivePublishes": true
+    }
+  },
+  {
+    "test": "editor_context_uses_bracketed_paste_and_expanded_text",
+    "input": {
+      "op": "editor-access",
+      "text": ""
+    },
+    "expected": {
+      "set": "",
+      "pasted": "paste\n界\nrow 2\nrow 3\nrow 4\nrow 5\nrow 6\nrow 7\nrow 8\nrow 9\nrow 10",
+      "raw": "[paste #1 +11 lines]"
+    }
+  },
+  {
+    "test": "editor_context_uses_bracketed_paste_and_expanded_text",
+    "input": {
+      "op": "editor-access",
+      "text": "\ufeff text "
+    },
+    "expected": {
+      "set": "\ufeff text ",
+      "pasted": "\ufeff text paste\n界\nrow 2\nrow 3\nrow 4\nrow 5\nrow 6\nrow 7\nrow 8\nrow 9\nrow 10",
+      "raw": "\ufeff text [paste #1 +11 lines]"
+    }
+  },
+  {
+    "test": "editor_context_uses_bracketed_paste_and_expanded_text",
+    "input": {
+      "op": "editor-access",
+      "text": "first\nsecond"
+    },
+    "expected": {
+      "set": "first\nsecond",
+      "pasted": "first\nsecondpaste\n界\nrow 2\nrow 3\nrow 4\nrow 5\nrow 6\nrow 7\nrow 8\nrow 9\nrow 10",
+      "raw": "first\nsecond[paste #1 +11 lines]"
+    }
+  },
+  {
+    "test": "terminal_title_forwards_the_supplied_text",
+    "input": {
+      "op": "set-title",
+      "text": ""
+    },
+    "expected": {
+      "title": ""
+    }
+  },
+  {
+    "test": "terminal_title_forwards_the_supplied_text",
+    "input": {
+      "op": "set-title",
+      "text": "title\u001b]0;raw\u0007"
+    },
+    "expected": {
+      "title": "title\u001b]0;raw\u0007"
+    }
+  },
+  {
+    "test": "terminal_title_forwards_the_supplied_text",
+    "input": {
+      "op": "set-title",
+      "text": "界\nnext"
+    },
+    "expected": {
+      "title": "界\nnext"
+    }
+  },
+  {
+    "test": "ui_tool_expansion_reaches_the_existing_transcript_owner",
+    "input": {
+      "op": "tool-expansion-forward",
+      "expanded": false
+    },
+    "expected": {
+      "before": false,
+      "selected": [
+        true
+      ]
+    }
+  },
+  {
+    "test": "ui_tool_expansion_reaches_the_existing_transcript_owner",
+    "input": {
+      "op": "tool-expansion-forward",
+      "expanded": true
+    },
+    "expected": {
+      "before": true,
+      "selected": [
+        false
+      ]
+    }
+  },
+  {
+    "test": "dialog_answer_restores_editor_before_completion",
+    "input": {
+      "op": "dialog",
+      "kind": "selector",
+      "scenario": "accept"
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@\u001b[1mChoose\u001b[22m\u001b[39m                                                                         ",
+          "",
+          " @accent@→ \u001b[39m@accent@Alpha\u001b[39m                                                                        ",
+          "   @text@Beta\u001b[39m                                                                         ",
+          "   @text@Alpha\u001b[39m                                                                        ",
+          "",
+          " @dim@↑↓\u001b[39m@muted@ navigate\u001b[39m  @dim@enter\u001b[39m@muted@ select\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      },
+      "value": "Beta",
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "dialog_cancel_restores_editor_and_removes_abort_work",
+    "input": {
+      "op": "dialog",
+      "kind": "selector",
+      "scenario": "cancel"
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@\u001b[1mChoose\u001b[22m\u001b[39m                                                                         ",
+          "",
+          " @accent@→ \u001b[39m@accent@Alpha\u001b[39m                                                                        ",
+          "   @text@Beta\u001b[39m                                                                         ",
+          "   @text@Alpha\u001b[39m                                                                        ",
+          "",
+          " @dim@↑↓\u001b[39m@muted@ navigate\u001b[39m  @dim@enter\u001b[39m@muted@ select\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      },
+      "value": null,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "aborted_dialogs_do_not_replace_or_render",
+    "input": {
+      "op": "dialog",
+      "kind": "selector",
+      "scenario": "preabort"
+    },
+    "expected": {
+      "first": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": false
+      },
+      "value": null,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": false
+      }
+    }
+  },
+  {
+    "test": "dialog_abort_restores_editor_and_stops_countdown",
+    "input": {
+      "op": "dialog",
+      "kind": "selector",
+      "scenario": "abort"
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@\u001b[1mChoose\u001b[22m\u001b[39m                                                                         ",
+          "",
+          " @accent@→ \u001b[39m@accent@Alpha\u001b[39m                                                                        ",
+          "   @text@Beta\u001b[39m                                                                         ",
+          "   @text@Alpha\u001b[39m                                                                        ",
+          "",
+          " @dim@↑↓\u001b[39m@muted@ navigate\u001b[39m  @dim@enter\u001b[39m@muted@ select\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      },
+      "value": null,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "dialog_answer_restores_editor_before_completion",
+    "input": {
+      "op": "dialog",
+      "kind": "input",
+      "scenario": "accept",
+      "text": "界 é",
+      "placeholder": "unused hint"
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@Enter\u001b[39m                                                                          ",
+          "",
+          "> \u001b_maestro:c\u0007\u001b[7m \u001b[27m                                                                             ",
+          "",
+          " @dim@enter\u001b[39m@muted@ submit\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                             ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      },
+      "value": "界 é",
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "dialog_cancel_restores_editor_and_removes_abort_work",
+    "input": {
+      "op": "dialog",
+      "kind": "input",
+      "scenario": "cancel",
+      "text": "界 é",
+      "placeholder": "unused hint"
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@Enter\u001b[39m                                                                          ",
+          "",
+          "> \u001b_maestro:c\u0007\u001b[7m \u001b[27m                                                                             ",
+          "",
+          " @dim@enter\u001b[39m@muted@ submit\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                             ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      },
+      "value": null,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "aborted_dialogs_do_not_replace_or_render",
+    "input": {
+      "op": "dialog",
+      "kind": "input",
+      "scenario": "preabort",
+      "text": "界 é",
+      "placeholder": "unused hint"
+    },
+    "expected": {
+      "first": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": false
+      },
+      "value": null,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": false
+      }
+    }
+  },
+  {
+    "test": "dialog_abort_restores_editor_and_stops_countdown",
+    "input": {
+      "op": "dialog",
+      "kind": "input",
+      "scenario": "abort",
+      "text": "界 é",
+      "placeholder": "unused hint"
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@Enter\u001b[39m                                                                          ",
+          "",
+          "> \u001b_maestro:c\u0007\u001b[7m \u001b[27m                                                                             ",
+          "",
+          " @dim@enter\u001b[39m@muted@ submit\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                             ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      },
+      "value": null,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "dialog_timeout_uses_the_existing_countdown",
+    "input": {
+      "op": "dialog",
+      "kind": "selector",
+      "scenario": "timeout",
+      "timeout": 0.5
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@\u001b[1mChoose (1s)\u001b[22m\u001b[39m                                                                    ",
+          "",
+          " @accent@→ \u001b[39m@accent@Alpha\u001b[39m                                                                        ",
+          "   @text@Beta\u001b[39m                                                                         ",
+          "   @text@Alpha\u001b[39m                                                                        ",
+          "",
+          " @dim@↑↓\u001b[39m@muted@ navigate\u001b[39m  @dim@enter\u001b[39m@muted@ select\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 1,
+        "renderRequested": true
+      },
+      "value": null,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "dialog_timeout_uses_the_existing_countdown",
+    "input": {
+      "op": "dialog",
+      "kind": "selector",
+      "scenario": "timeout",
+      "timeout": 1
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@\u001b[1mChoose (1s)\u001b[22m\u001b[39m                                                                    ",
+          "",
+          " @accent@→ \u001b[39m@accent@Alpha\u001b[39m                                                                        ",
+          "   @text@Beta\u001b[39m                                                                         ",
+          "   @text@Alpha\u001b[39m                                                                        ",
+          "",
+          " @dim@↑↓\u001b[39m@muted@ navigate\u001b[39m  @dim@enter\u001b[39m@muted@ select\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 1,
+        "renderRequested": true
+      },
+      "value": null,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "dialog_timeout_uses_the_existing_countdown",
+    "input": {
+      "op": "dialog",
+      "kind": "selector",
+      "scenario": "timeout",
+      "timeout": 999
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@\u001b[1mChoose (1s)\u001b[22m\u001b[39m                                                                    ",
+          "",
+          " @accent@→ \u001b[39m@accent@Alpha\u001b[39m                                                                        ",
+          "   @text@Beta\u001b[39m                                                                         ",
+          "   @text@Alpha\u001b[39m                                                                        ",
+          "",
+          " @dim@↑↓\u001b[39m@muted@ navigate\u001b[39m  @dim@enter\u001b[39m@muted@ select\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 1,
+        "renderRequested": true
+      },
+      "value": null,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "dialog_timeout_uses_the_existing_countdown",
+    "input": {
+      "op": "dialog",
+      "kind": "selector",
+      "scenario": "timeout",
+      "timeout": 1000
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@\u001b[1mChoose (1s)\u001b[22m\u001b[39m                                                                    ",
+          "",
+          " @accent@→ \u001b[39m@accent@Alpha\u001b[39m                                                                        ",
+          "   @text@Beta\u001b[39m                                                                         ",
+          "   @text@Alpha\u001b[39m                                                                        ",
+          "",
+          " @dim@↑↓\u001b[39m@muted@ navigate\u001b[39m  @dim@enter\u001b[39m@muted@ select\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 1,
+        "renderRequested": true
+      },
+      "value": null,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "dialog_timeout_uses_the_existing_countdown",
+    "input": {
+      "op": "dialog",
+      "kind": "selector",
+      "scenario": "timeout",
+      "timeout": 1000.5
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@\u001b[1mChoose (2s)\u001b[22m\u001b[39m                                                                    ",
+          "",
+          " @accent@→ \u001b[39m@accent@Alpha\u001b[39m                                                                        ",
+          "   @text@Beta\u001b[39m                                                                         ",
+          "   @text@Alpha\u001b[39m                                                                        ",
+          "",
+          " @dim@↑↓\u001b[39m@muted@ navigate\u001b[39m  @dim@enter\u001b[39m@muted@ select\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 1,
+        "renderRequested": true
+      },
+      "value": null,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "dialog_timeout_uses_the_existing_countdown",
+    "input": {
+      "op": "dialog",
+      "kind": "selector",
+      "scenario": "timeout",
+      "timeout": 1001
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@\u001b[1mChoose (2s)\u001b[22m\u001b[39m                                                                    ",
+          "",
+          " @accent@→ \u001b[39m@accent@Alpha\u001b[39m                                                                        ",
+          "   @text@Beta\u001b[39m                                                                         ",
+          "   @text@Alpha\u001b[39m                                                                        ",
+          "",
+          " @dim@↑↓\u001b[39m@muted@ navigate\u001b[39m  @dim@enter\u001b[39m@muted@ select\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 1,
+        "renderRequested": true
+      },
+      "value": null,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "dialog_timeout_uses_the_existing_countdown",
+    "input": {
+      "op": "dialog",
+      "kind": "selector",
+      "scenario": "timeout",
+      "timeout": 1500
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@\u001b[1mChoose (2s)\u001b[22m\u001b[39m                                                                    ",
+          "",
+          " @accent@→ \u001b[39m@accent@Alpha\u001b[39m                                                                        ",
+          "   @text@Beta\u001b[39m                                                                         ",
+          "   @text@Alpha\u001b[39m                                                                        ",
+          "",
+          " @dim@↑↓\u001b[39m@muted@ navigate\u001b[39m  @dim@enter\u001b[39m@muted@ select\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 1,
+        "renderRequested": true
+      },
+      "value": null,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "dialog_timeout_uses_the_existing_countdown",
+    "input": {
+      "op": "dialog",
+      "kind": "input",
+      "scenario": "timeout",
+      "timeout": 0.5
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@Enter (1s)\u001b[39m                                                                     ",
+          "",
+          "> \u001b_maestro:c\u0007\u001b[7m \u001b[27m                                                                             ",
+          "",
+          " @dim@enter\u001b[39m@muted@ submit\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                             ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 1,
+        "renderRequested": true
+      },
+      "value": null,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "dialog_timeout_uses_the_existing_countdown",
+    "input": {
+      "op": "dialog",
+      "kind": "input",
+      "scenario": "timeout",
+      "timeout": 1
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@Enter (1s)\u001b[39m                                                                     ",
+          "",
+          "> \u001b_maestro:c\u0007\u001b[7m \u001b[27m                                                                             ",
+          "",
+          " @dim@enter\u001b[39m@muted@ submit\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                             ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 1,
+        "renderRequested": true
+      },
+      "value": null,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "dialog_timeout_uses_the_existing_countdown",
+    "input": {
+      "op": "dialog",
+      "kind": "input",
+      "scenario": "timeout",
+      "timeout": 999
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@Enter (1s)\u001b[39m                                                                     ",
+          "",
+          "> \u001b_maestro:c\u0007\u001b[7m \u001b[27m                                                                             ",
+          "",
+          " @dim@enter\u001b[39m@muted@ submit\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                             ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 1,
+        "renderRequested": true
+      },
+      "value": null,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "dialog_timeout_uses_the_existing_countdown",
+    "input": {
+      "op": "dialog",
+      "kind": "input",
+      "scenario": "timeout",
+      "timeout": 1000
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@Enter (1s)\u001b[39m                                                                     ",
+          "",
+          "> \u001b_maestro:c\u0007\u001b[7m \u001b[27m                                                                             ",
+          "",
+          " @dim@enter\u001b[39m@muted@ submit\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                             ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 1,
+        "renderRequested": true
+      },
+      "value": null,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "dialog_timeout_uses_the_existing_countdown",
+    "input": {
+      "op": "dialog",
+      "kind": "input",
+      "scenario": "timeout",
+      "timeout": 1000.5
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@Enter (2s)\u001b[39m                                                                     ",
+          "",
+          "> \u001b_maestro:c\u0007\u001b[7m \u001b[27m                                                                             ",
+          "",
+          " @dim@enter\u001b[39m@muted@ submit\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                             ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 1,
+        "renderRequested": true
+      },
+      "value": null,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "dialog_timeout_uses_the_existing_countdown",
+    "input": {
+      "op": "dialog",
+      "kind": "input",
+      "scenario": "timeout",
+      "timeout": 1001
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@Enter (2s)\u001b[39m                                                                     ",
+          "",
+          "> \u001b_maestro:c\u0007\u001b[7m \u001b[27m                                                                             ",
+          "",
+          " @dim@enter\u001b[39m@muted@ submit\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                             ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 1,
+        "renderRequested": true
+      },
+      "value": null,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "dialog_timeout_uses_the_existing_countdown",
+    "input": {
+      "op": "dialog",
+      "kind": "input",
+      "scenario": "timeout",
+      "timeout": 1500
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@Enter (2s)\u001b[39m                                                                     ",
+          "",
+          "> \u001b_maestro:c\u0007\u001b[7m \u001b[27m                                                                             ",
+          "",
+          " @dim@enter\u001b[39m@muted@ submit\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                             ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 1,
+        "renderRequested": true
+      },
+      "value": null,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "confirmation_maps_only_yes_to_true",
+    "input": {
+      "op": "dialog",
+      "kind": "confirm",
+      "scenario": "timeout",
+      "timeout": 0.5
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@\u001b[1mTitle\u001b[22m                                                                          ",
+          " @accent@\u001b[1mMessage (1s)\u001b[22m\u001b[39m                                                                   ",
+          "",
+          " @accent@→ \u001b[39m@accent@Yes\u001b[39m                                                                          ",
+          "   @text@No\u001b[39m                                                                           ",
+          "",
+          " @dim@↑↓\u001b[39m@muted@ navigate\u001b[39m  @dim@enter\u001b[39m@muted@ select\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 1,
+        "renderRequested": true
+      },
+      "value": false,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "confirmation_maps_only_yes_to_true",
+    "input": {
+      "op": "dialog",
+      "kind": "confirm",
+      "scenario": "timeout",
+      "timeout": 1
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@\u001b[1mTitle\u001b[22m                                                                          ",
+          " @accent@\u001b[1mMessage (1s)\u001b[22m\u001b[39m                                                                   ",
+          "",
+          " @accent@→ \u001b[39m@accent@Yes\u001b[39m                                                                          ",
+          "   @text@No\u001b[39m                                                                           ",
+          "",
+          " @dim@↑↓\u001b[39m@muted@ navigate\u001b[39m  @dim@enter\u001b[39m@muted@ select\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 1,
+        "renderRequested": true
+      },
+      "value": false,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "confirmation_maps_only_yes_to_true",
+    "input": {
+      "op": "dialog",
+      "kind": "confirm",
+      "scenario": "timeout",
+      "timeout": 999
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@\u001b[1mTitle\u001b[22m                                                                          ",
+          " @accent@\u001b[1mMessage (1s)\u001b[22m\u001b[39m                                                                   ",
+          "",
+          " @accent@→ \u001b[39m@accent@Yes\u001b[39m                                                                          ",
+          "   @text@No\u001b[39m                                                                           ",
+          "",
+          " @dim@↑↓\u001b[39m@muted@ navigate\u001b[39m  @dim@enter\u001b[39m@muted@ select\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 1,
+        "renderRequested": true
+      },
+      "value": false,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "confirmation_maps_only_yes_to_true",
+    "input": {
+      "op": "dialog",
+      "kind": "confirm",
+      "scenario": "timeout",
+      "timeout": 1000
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@\u001b[1mTitle\u001b[22m                                                                          ",
+          " @accent@\u001b[1mMessage (1s)\u001b[22m\u001b[39m                                                                   ",
+          "",
+          " @accent@→ \u001b[39m@accent@Yes\u001b[39m                                                                          ",
+          "   @text@No\u001b[39m                                                                           ",
+          "",
+          " @dim@↑↓\u001b[39m@muted@ navigate\u001b[39m  @dim@enter\u001b[39m@muted@ select\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 1,
+        "renderRequested": true
+      },
+      "value": false,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "confirmation_maps_only_yes_to_true",
+    "input": {
+      "op": "dialog",
+      "kind": "confirm",
+      "scenario": "timeout",
+      "timeout": 1000.5
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@\u001b[1mTitle\u001b[22m                                                                          ",
+          " @accent@\u001b[1mMessage (2s)\u001b[22m\u001b[39m                                                                   ",
+          "",
+          " @accent@→ \u001b[39m@accent@Yes\u001b[39m                                                                          ",
+          "   @text@No\u001b[39m                                                                           ",
+          "",
+          " @dim@↑↓\u001b[39m@muted@ navigate\u001b[39m  @dim@enter\u001b[39m@muted@ select\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 1,
+        "renderRequested": true
+      },
+      "value": false,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "confirmation_maps_only_yes_to_true",
+    "input": {
+      "op": "dialog",
+      "kind": "confirm",
+      "scenario": "timeout",
+      "timeout": 1001
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@\u001b[1mTitle\u001b[22m                                                                          ",
+          " @accent@\u001b[1mMessage (2s)\u001b[22m\u001b[39m                                                                   ",
+          "",
+          " @accent@→ \u001b[39m@accent@Yes\u001b[39m                                                                          ",
+          "   @text@No\u001b[39m                                                                           ",
+          "",
+          " @dim@↑↓\u001b[39m@muted@ navigate\u001b[39m  @dim@enter\u001b[39m@muted@ select\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 1,
+        "renderRequested": true
+      },
+      "value": false,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "confirmation_maps_only_yes_to_true",
+    "input": {
+      "op": "dialog",
+      "kind": "confirm",
+      "scenario": "timeout",
+      "timeout": 1500
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@\u001b[1mTitle\u001b[22m                                                                          ",
+          " @accent@\u001b[1mMessage (2s)\u001b[22m\u001b[39m                                                                   ",
+          "",
+          " @accent@→ \u001b[39m@accent@Yes\u001b[39m                                                                          ",
+          "   @text@No\u001b[39m                                                                           ",
+          "",
+          " @dim@↑↓\u001b[39m@muted@ navigate\u001b[39m  @dim@enter\u001b[39m@muted@ select\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 1,
+        "renderRequested": true
+      },
+      "value": false,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "confirmation_maps_only_yes_to_true",
+    "input": {
+      "op": "dialog",
+      "kind": "confirm",
+      "scenario": "accept",
+      "answer": "Yes"
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@\u001b[1mTitle\u001b[22m                                                                          ",
+          " @accent@\u001b[1mMessage\u001b[22m\u001b[39m                                                                        ",
+          "",
+          " @accent@→ \u001b[39m@accent@Yes\u001b[39m                                                                          ",
+          "   @text@No\u001b[39m                                                                           ",
+          "",
+          " @dim@↑↓\u001b[39m@muted@ navigate\u001b[39m  @dim@enter\u001b[39m@muted@ select\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      },
+      "value": true,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "confirmation_maps_only_yes_to_true",
+    "input": {
+      "op": "dialog",
+      "kind": "confirm",
+      "scenario": "cancel",
+      "answer": "Yes"
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@\u001b[1mTitle\u001b[22m                                                                          ",
+          " @accent@\u001b[1mMessage\u001b[22m\u001b[39m                                                                        ",
+          "",
+          " @accent@→ \u001b[39m@accent@Yes\u001b[39m                                                                          ",
+          "   @text@No\u001b[39m                                                                           ",
+          "",
+          " @dim@↑↓\u001b[39m@muted@ navigate\u001b[39m  @dim@enter\u001b[39m@muted@ select\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      },
+      "value": false,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "confirmation_maps_only_yes_to_true",
+    "input": {
+      "op": "dialog",
+      "kind": "confirm",
+      "scenario": "preabort",
+      "answer": "Yes"
+    },
+    "expected": {
+      "first": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": false
+      },
+      "value": false,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": false
+      }
+    }
+  },
+  {
+    "test": "confirmation_maps_only_yes_to_true",
+    "input": {
+      "op": "dialog",
+      "kind": "confirm",
+      "scenario": "abort",
+      "answer": "Yes"
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@\u001b[1mTitle\u001b[22m                                                                          ",
+          " @accent@\u001b[1mMessage\u001b[22m\u001b[39m                                                                        ",
+          "",
+          " @accent@→ \u001b[39m@accent@Yes\u001b[39m                                                                          ",
+          "   @text@No\u001b[39m                                                                           ",
+          "",
+          " @dim@↑↓\u001b[39m@muted@ navigate\u001b[39m  @dim@enter\u001b[39m@muted@ select\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      },
+      "value": false,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "confirmation_maps_only_yes_to_true",
+    "input": {
+      "op": "dialog",
+      "kind": "confirm",
+      "scenario": "accept",
+      "answer": "No"
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@\u001b[1mTitle\u001b[22m                                                                          ",
+          " @accent@\u001b[1mMessage\u001b[22m\u001b[39m                                                                        ",
+          "",
+          " @accent@→ \u001b[39m@accent@Yes\u001b[39m                                                                          ",
+          "   @text@No\u001b[39m                                                                           ",
+          "",
+          " @dim@↑↓\u001b[39m@muted@ navigate\u001b[39m  @dim@enter\u001b[39m@muted@ select\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      },
+      "value": false,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "multiline_dialog_restores_the_retained_editor",
+    "input": {
+      "op": "dialog",
+      "kind": "editor",
+      "scenario": "accept"
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@Edit\u001b[39m                                                                           ",
+          "",
+          "@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m",
+          "",
+          " @dim@enter\u001b[39m@muted@ submit\u001b[39m  @dim@shift+enter\u001b[39m@muted@ newline\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                        ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      },
+      "value": "",
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "multiline_dialog_restores_the_retained_editor",
+    "input": {
+      "op": "dialog",
+      "kind": "editor",
+      "scenario": "cancel"
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@Edit\u001b[39m                                                                           ",
+          "",
+          "@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m",
+          "",
+          " @dim@enter\u001b[39m@muted@ submit\u001b[39m  @dim@shift+enter\u001b[39m@muted@ newline\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                        ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      },
+      "value": null,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "multiline_dialog_restores_the_retained_editor",
+    "input": {
+      "op": "dialog",
+      "kind": "editor",
+      "scenario": "accept",
+      "prefill": ""
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@Edit\u001b[39m                                                                           ",
+          "",
+          "@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m",
+          "",
+          " @dim@enter\u001b[39m@muted@ submit\u001b[39m  @dim@shift+enter\u001b[39m@muted@ newline\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                        ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      },
+      "value": "",
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "multiline_dialog_restores_the_retained_editor",
+    "input": {
+      "op": "dialog",
+      "kind": "editor",
+      "scenario": "cancel",
+      "prefill": ""
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@Edit\u001b[39m                                                                           ",
+          "",
+          "@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m",
+          "",
+          " @dim@enter\u001b[39m@muted@ submit\u001b[39m  @dim@shift+enter\u001b[39m@muted@ newline\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                        ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      },
+      "value": null,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "multiline_dialog_restores_the_retained_editor",
+    "input": {
+      "op": "dialog",
+      "kind": "editor",
+      "scenario": "accept",
+      "prefill": "first\nsecond"
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@Edit\u001b[39m                                                                           ",
+          "",
+          "@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m",
+          "",
+          " @dim@enter\u001b[39m@muted@ submit\u001b[39m  @dim@shift+enter\u001b[39m@muted@ newline\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                        ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      },
+      "value": "first\nsecond",
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "multiline_dialog_restores_the_retained_editor",
+    "input": {
+      "op": "dialog",
+      "kind": "editor",
+      "scenario": "cancel",
+      "prefill": "first\nsecond"
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@Edit\u001b[39m                                                                           ",
+          "",
+          "@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m",
+          "",
+          " @dim@enter\u001b[39m@muted@ submit\u001b[39m  @dim@shift+enter\u001b[39m@muted@ newline\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                        ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      },
+      "value": null,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "multiline_dialog_restores_the_retained_editor",
+    "input": {
+      "op": "dialog",
+      "kind": "editor",
+      "scenario": "accept",
+      "prefill": "\ufeffé\u0085"
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@Edit\u001b[39m                                                                           ",
+          "",
+          "@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m",
+          "",
+          " @dim@enter\u001b[39m@muted@ submit\u001b[39m  @dim@shift+enter\u001b[39m@muted@ newline\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                        ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      },
+      "value": "é\u0085",
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "multiline_dialog_restores_the_retained_editor",
+    "input": {
+      "op": "dialog",
+      "kind": "editor",
+      "scenario": "cancel",
+      "prefill": "\ufeffé\u0085"
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@Edit\u001b[39m                                                                           ",
+          "",
+          "@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m@borderMuted@─\u001b[39m",
+          "",
+          " @dim@enter\u001b[39m@muted@ submit\u001b[39m  @dim@shift+enter\u001b[39m@muted@ newline\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                        ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      },
+      "value": null,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "dialog_answer_restores_editor_before_completion",
+    "input": {
+      "op": "dialog",
+      "kind": "input",
+      "scenario": "accept",
+      "text": "",
+      "placeholder": ""
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@Enter\u001b[39m                                                                          ",
+          "",
+          "> \u001b_maestro:c\u0007\u001b[7m \u001b[27m                                                                             ",
+          "",
+          " @dim@enter\u001b[39m@muted@ submit\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                             ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      },
+      "value": "",
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "missing_directory_confirmation_returns_only_the_offered_fallback",
+    "input": {
+      "op": "missing-cwd",
+      "fallbackCwd": "/current/界",
+      "answer": "Yes"
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@\u001b[1mSession cwd not found\u001b[22m                                                          ",
+          " @accent@\u001b[1mcwd from session file does not exist\u001b[22m                                           ",
+          " @accent@\u001b[1m/missing\u001b[22m                                                                       ",
+          "                                                                                ",
+          " @accent@\u001b[1mcontinue in current cwd\u001b[22m                                                        ",
+          " @accent@\u001b[1m/current/界\u001b[22m\u001b[39m                                                                    ",
+          "",
+          " @accent@→ \u001b[39m@accent@Yes\u001b[39m                                                                          ",
+          "   @text@No\u001b[39m                                                                           ",
+          "",
+          " @dim@↑↓\u001b[39m@muted@ navigate\u001b[39m  @dim@enter\u001b[39m@muted@ select\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      },
+      "value": "/current/界",
+      "restored": true
+    }
+  },
+  {
+    "test": "missing_directory_confirmation_returns_only_the_offered_fallback",
+    "input": {
+      "op": "missing-cwd",
+      "fallbackCwd": "/current/界",
+      "answer": "No"
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@\u001b[1mSession cwd not found\u001b[22m                                                          ",
+          " @accent@\u001b[1mcwd from session file does not exist\u001b[22m                                           ",
+          " @accent@\u001b[1m/missing\u001b[22m                                                                       ",
+          "                                                                                ",
+          " @accent@\u001b[1mcontinue in current cwd\u001b[22m                                                        ",
+          " @accent@\u001b[1m/current/界\u001b[22m\u001b[39m                                                                    ",
+          "",
+          " @accent@→ \u001b[39m@accent@Yes\u001b[39m                                                                          ",
+          "   @text@No\u001b[39m                                                                           ",
+          "",
+          " @dim@↑↓\u001b[39m@muted@ navigate\u001b[39m  @dim@enter\u001b[39m@muted@ select\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      },
+      "value": null,
+      "restored": true
+    }
+  },
+  {
+    "test": "missing_directory_confirmation_returns_only_the_offered_fallback",
+    "input": {
+      "op": "missing-cwd",
+      "fallbackCwd": "/current/界",
+      "answer": "cancel"
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@\u001b[1mSession cwd not found\u001b[22m                                                          ",
+          " @accent@\u001b[1mcwd from session file does not exist\u001b[22m                                           ",
+          " @accent@\u001b[1m/missing\u001b[22m                                                                       ",
+          "                                                                                ",
+          " @accent@\u001b[1mcontinue in current cwd\u001b[22m                                                        ",
+          " @accent@\u001b[1m/current/界\u001b[22m\u001b[39m                                                                    ",
+          "",
+          " @accent@→ \u001b[39m@accent@Yes\u001b[39m                                                                          ",
+          "   @text@No\u001b[39m                                                                           ",
+          "",
+          " @dim@↑↓\u001b[39m@muted@ navigate\u001b[39m  @dim@enter\u001b[39m@muted@ select\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      },
+      "value": null,
+      "restored": true
+    }
+  },
+  {
+    "test": "missing_directory_confirmation_returns_only_the_offered_fallback",
+    "input": {
+      "op": "missing-cwd",
+      "fallbackCwd": "",
+      "answer": "Yes"
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@\u001b[1mSession cwd not found\u001b[22m                                                          ",
+          " @accent@\u001b[1mcwd from session file does not exist\u001b[22m                                           ",
+          " @accent@\u001b[1m/missing\u001b[22m                                                                       ",
+          "                                                                                ",
+          " @accent@\u001b[1mcontinue in current cwd\u001b[22m                                                        ",
+          "                                                                                ",
+          "",
+          " @accent@→ \u001b[39m@accent@Yes\u001b[39m                                                                          ",
+          "   @text@No\u001b[39m                                                                           ",
+          "",
+          " @dim@↑↓\u001b[39m@muted@ navigate\u001b[39m  @dim@enter\u001b[39m@muted@ select\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      },
+      "value": "",
+      "restored": true
+    }
+  },
+  {
+    "test": "missing_directory_confirmation_returns_only_the_offered_fallback",
+    "input": {
+      "op": "missing-cwd",
+      "fallbackCwd": "",
+      "answer": "No"
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@\u001b[1mSession cwd not found\u001b[22m                                                          ",
+          " @accent@\u001b[1mcwd from session file does not exist\u001b[22m                                           ",
+          " @accent@\u001b[1m/missing\u001b[22m                                                                       ",
+          "                                                                                ",
+          " @accent@\u001b[1mcontinue in current cwd\u001b[22m                                                        ",
+          "                                                                                ",
+          "",
+          " @accent@→ \u001b[39m@accent@Yes\u001b[39m                                                                          ",
+          "   @text@No\u001b[39m                                                                           ",
+          "",
+          " @dim@↑↓\u001b[39m@muted@ navigate\u001b[39m  @dim@enter\u001b[39m@muted@ select\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      },
+      "value": null,
+      "restored": true
+    }
+  },
+  {
+    "test": "missing_directory_confirmation_returns_only_the_offered_fallback",
+    "input": {
+      "op": "missing-cwd",
+      "fallbackCwd": "",
+      "answer": "cancel"
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@\u001b[1mSession cwd not found\u001b[22m                                                          ",
+          " @accent@\u001b[1mcwd from session file does not exist\u001b[22m                                           ",
+          " @accent@\u001b[1m/missing\u001b[22m                                                                       ",
+          "                                                                                ",
+          " @accent@\u001b[1mcontinue in current cwd\u001b[22m                                                        ",
+          "                                                                                ",
+          "",
+          " @accent@→ \u001b[39m@accent@Yes\u001b[39m                                                                          ",
+          "   @text@No\u001b[39m                                                                           ",
+          "",
+          " @dim@↑↓\u001b[39m@muted@ navigate\u001b[39m  @dim@enter\u001b[39m@muted@ select\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      },
+      "value": null,
+      "restored": true
+    }
+  },
+  {
+    "test": "dialog_nonpositive_timeout_and_completed_abort_leave_no_work",
+    "input": {
+      "op": "dialog-no-timeout",
+      "kind": "selector",
+      "timeout": null
+    },
+    "expected": {
+      "activeTimers": 0,
+      "renderRequested": true,
+      "abortAfterCompletionRequestedExtraRender": false
+    }
+  },
+  {
+    "test": "dialog_nonpositive_timeout_and_completed_abort_leave_no_work",
+    "input": {
+      "op": "dialog-no-timeout",
+      "kind": "selector",
+      "timeout": 0
+    },
+    "expected": {
+      "activeTimers": 0,
+      "renderRequested": true,
+      "abortAfterCompletionRequestedExtraRender": false
+    }
+  },
+  {
+    "test": "dialog_nonpositive_timeout_and_completed_abort_leave_no_work",
+    "input": {
+      "op": "dialog-no-timeout",
+      "kind": "selector",
+      "timeout": -1
+    },
+    "expected": {
+      "activeTimers": 0,
+      "renderRequested": true,
+      "abortAfterCompletionRequestedExtraRender": false
+    }
+  },
+  {
+    "test": "dialog_nonpositive_timeout_and_completed_abort_leave_no_work",
+    "input": {
+      "op": "dialog-no-timeout",
+      "kind": "input",
+      "timeout": null
+    },
+    "expected": {
+      "activeTimers": 0,
+      "renderRequested": true,
+      "abortAfterCompletionRequestedExtraRender": false
+    }
+  },
+  {
+    "test": "dialog_nonpositive_timeout_and_completed_abort_leave_no_work",
+    "input": {
+      "op": "dialog-no-timeout",
+      "kind": "input",
+      "timeout": 0
+    },
+    "expected": {
+      "activeTimers": 0,
+      "renderRequested": true,
+      "abortAfterCompletionRequestedExtraRender": false
+    }
+  },
+  {
+    "test": "dialog_nonpositive_timeout_and_completed_abort_leave_no_work",
+    "input": {
+      "op": "dialog-no-timeout",
+      "kind": "input",
+      "timeout": -1
+    },
+    "expected": {
+      "activeTimers": 0,
+      "renderRequested": true,
+      "abortAfterCompletionRequestedExtraRender": false
+    }
+  },
+  {
+    "test": "dialog_observer_drop_does_not_cancel_host_owned_work",
+    "input": {
+      "op": "dialog-observer-release",
+      "kind": "selector"
+    },
+    "expected": {
+      "restored": true,
+      "activeTimers": 0
+    }
+  },
+  {
+    "test": "dialog_observer_drop_does_not_cancel_host_owned_work",
+    "input": {
+      "op": "dialog-observer-release",
+      "kind": "input"
+    },
+    "expected": {
+      "restored": true,
+      "activeTimers": 0
+    }
+  },
+  {
+    "test": "dialog_observer_drop_does_not_cancel_host_owned_work",
+    "input": {
+      "op": "dialog-observer-release",
+      "kind": "editor"
+    },
+    "expected": {
+      "restored": true,
+      "activeTimers": 0
+    }
+  },
+  {
+    "test": "notifications_choose_status_warning_or_error",
+    "input": {
+      "op": "notify",
+      "kind": null
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@first                                                                          ",
+        " @dim@界\u001b[39m                                                                             "
+      ],
+      "children": 2,
+      "renderRequested": true
+    }
+  },
+  {
+    "test": "notifications_choose_status_warning_or_error",
+    "input": {
+      "op": "notify",
+      "kind": "info"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @dim@first                                                                          ",
+        " @dim@界\u001b[39m                                                                             "
+      ],
+      "children": 2,
+      "renderRequested": true
+    }
+  },
+  {
+    "test": "notifications_choose_status_warning_or_error",
+    "input": {
+      "op": "notify",
+      "kind": "warning"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @warning@Warning: first                                                                 ",
+        " @warning@界\u001b[39m                                                                             "
+      ],
+      "children": 2,
+      "renderRequested": true
+    }
+  },
+  {
+    "test": "notifications_choose_status_warning_or_error",
+    "input": {
+      "op": "notify",
+      "kind": "error"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @error@Error: first                                                                   ",
+        " @error@界\u001b[39m                                                                             ",
+        ""
+      ],
+      "children": 3,
+      "renderRequested": true
+    }
+  },
+  {
+    "test": "notification_status_reuses_only_the_adjacent_pair",
+    "input": {
+      "op": "notify-sequence"
+    },
+    "expected": {
+      "adjacent": [
+        "",
+        " @dim@second\u001b[39m                                                                         "
+      ],
+      "final": [
+        "",
+        " @dim@second\u001b[39m                                                                         ",
+        "",
+        " @warning@Warning: break\u001b[39m                                                                 ",
+        "",
+        " @dim@third\u001b[39m                                                                          "
+      ],
+      "renderRequested": true
+    }
+  },
+  {
+    "test": "dialog_cancel_restores_editor_and_removes_abort_work",
+    "input": {
+      "op": "dialog",
+      "kind": "selector",
+      "scenario": "cancel",
+      "timeout": 1500
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@\u001b[1mChoose (2s)\u001b[22m\u001b[39m                                                                    ",
+          "",
+          " @accent@→ \u001b[39m@accent@Alpha\u001b[39m                                                                        ",
+          "   @text@Beta\u001b[39m                                                                         ",
+          "   @text@Alpha\u001b[39m                                                                        ",
+          "",
+          " @dim@↑↓\u001b[39m@muted@ navigate\u001b[39m  @dim@enter\u001b[39m@muted@ select\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 1,
+        "renderRequested": true
+      },
+      "value": null,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "dialog_cancel_restores_editor_and_removes_abort_work",
+    "input": {
+      "op": "dialog",
+      "kind": "input",
+      "scenario": "cancel",
+      "timeout": 1500
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@Enter (2s)\u001b[39m                                                                     ",
+          "",
+          "> \u001b_maestro:c\u0007\u001b[7m \u001b[27m                                                                             ",
+          "",
+          " @dim@enter\u001b[39m@muted@ submit\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                             ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 1,
+        "renderRequested": true
+      },
+      "value": null,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "confirmation_maps_only_yes_to_true",
+    "input": {
+      "op": "dialog",
+      "kind": "confirm",
+      "scenario": "cancel",
+      "timeout": 1500
+    },
+    "expected": {
+      "first": {
+        "lines": [
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          " @accent@\u001b[1mTitle\u001b[22m                                                                          ",
+          " @accent@\u001b[1mMessage (2s)\u001b[22m\u001b[39m                                                                   ",
+          "",
+          " @accent@→ \u001b[39m@accent@Yes\u001b[39m                                                                          ",
+          "   @text@No\u001b[39m                                                                           ",
+          "",
+          " @dim@↑↓\u001b[39m@muted@ navigate\u001b[39m  @dim@enter\u001b[39m@muted@ select\u001b[39m  @dim@escape/ctrl+c\u001b[39m@muted@ cancel\u001b[39m                                ",
+          "",
+          "@border@────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "restored": false,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 1,
+        "renderRequested": true
+      },
+      "value": false,
+      "after": {
+        "restored": true,
+        "editor": "retained text",
+        "children": 1,
+        "activeTimers": 0,
+        "renderRequested": true
+      }
+    }
+  },
+  {
+    "test": "dialog_observer_drop_does_not_cancel_host_owned_work",
+    "input": {
+      "op": "dialog-observer-release",
+      "kind": "selector",
+      "abort": true
+    },
+    "expected": {
+      "restored": true,
+      "activeTimers": 0
+    }
+  },
+  {
+    "test": "dialog_observer_drop_does_not_cancel_host_owned_work",
+    "input": {
+      "op": "dialog-observer-release",
+      "kind": "input",
+      "abort": true
+    },
+    "expected": {
+      "restored": true,
+      "activeTimers": 0
+    }
+  }
+]

@@ -1,6 +1,6 @@
 //! Agent shell records and factories.
 
-use super::{BashExecution, BashOperations, create_local_bash_operations};
+use super::{BashExecution, create_local_bash_operations};
 use crate::{
     ToolDefinition, TruncationResult, tool_definition_wrapper::wrap_tool_definition,
     utils::shell::ShellEnv,
@@ -51,7 +51,7 @@ pub type BashSpawnHook<E = Threaded> =
 /// Selects the shell operation and command preparation.
 pub struct BashToolOptionsRecord<E: BashExecution = Threaded> {
     /// Supplied operation; otherwise uses the local shell.
-    pub operations: Option<Arc<dyn BashOperations<E>>>,
+    pub operations: Option<E::Shared<E::Operations>>,
     /// Nonempty literal prefix, followed by one newline.
     pub command_prefix: Option<String>,
     /// Explicit executable for local operations only.
@@ -90,10 +90,10 @@ pub fn create_bash_tool_definition<C: 'static>(
         definition: Tool {
             name: "bash".into(),
             description: "Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to last 2000 lines or 50KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.".into(),
-            parameters: json!({"type": "object", "required": ["command"], "properties": {
+            parameters: maestro_models::ParameterSchema::authored(json!({"type": "object", "required": ["command"], "properties": {
                 "command": {"type": "string", "description": "Bash command to execute"},
                 "timeout": {"type": "number", "description": "Timeout in seconds (optional, no default timeout)"}
-            }}),
+            }}), [("".to_owned(), maestro_models::SchemaKind::Object), ("/properties/command".to_owned(), maestro_models::SchemaKind::String), ("/properties/timeout".to_owned(), maestro_models::SchemaKind::Number)]),
         },
         label: "bash".into(),
         prompt_snippet: Some("Execute bash commands (ls, grep, find, etc.)".into()),
@@ -114,7 +114,7 @@ pub fn create_bash_tool_definition<C: 'static>(
                 }
             } else { context };
             if let Some(update) = &update { update(AgentToolResult { content: Vec::new(), details: None, terminate: None }); }
-            let operations = Arc::clone(&operations);
+            let operations = $ptr::clone(&operations);
             Box::pin($run(operations, context, input.timeout, signal, update))
         }),
         render_call: Some($ptr::new(crate::process::bash::render::render_call)),
@@ -136,8 +136,8 @@ factories!(Arc, super::execute::run);
 /// Caller-local shell definitions and executables.
 pub mod local {
     use super::{
-        AgentToolResult, Arc, BashSpawnContext, BashToolDetails, BashToolInput,
-        BashToolOptionsRecord, Local, Rc, Tool, json,
+        AgentToolResult, BashSpawnContext, BashToolDetails, BashToolInput, BashToolOptionsRecord,
+        Local, Rc, Tool, json,
     };
     use crate::process::bash::local::create_local_bash_operations;
     use crate::tool_definition_wrapper::local::wrap_tool_definition;

@@ -72,7 +72,7 @@ pub fn create_edit_tool_definition<C: 'static>(
         definition: Tool {
             name: "edit".into(),
             description: "Edit a single file using exact text replacement. Every edits[].oldText must match a unique, non-overlapping region of the original file. If two changes affect the same block or nearby lines, merge them into one edit instead of emitting overlapping edits. Do not include large unchanged regions just to connect distant changes.".into(),
-            parameters: json!({
+            parameters: maestro_models::ParameterSchema::authored(json!({
                 "type": "object", "required": ["path", "edits"],
                 "properties": {
                     "path": {"type": "string", "description": "Path to the file to edit (relative or absolute)"},
@@ -84,7 +84,7 @@ pub fn create_edit_tool_definition<C: 'static>(
                         }, "additionalProperties": false
                     }, "description": "One or more targeted replacements. Each edit is matched against the original file, not incrementally. Do not include overlapping or nested edits. If two changes touch the same block or nearby lines, merge them into one edit instead."}
                 }, "additionalProperties": false
-            }),
+            }), [("".to_owned(), maestro_models::SchemaKind::Object), ("/properties/path".to_owned(), maestro_models::SchemaKind::String), ("/properties/edits".to_owned(), maestro_models::SchemaKind::Array), ("/properties/edits/items".to_owned(), maestro_models::SchemaKind::Object), ("/properties/edits/items/properties/oldText".to_owned(), maestro_models::SchemaKind::String), ("/properties/edits/items/properties/newText".to_owned(), maestro_models::SchemaKind::String)]),
         },
         label: "edit".into(),
         prompt_snippet: Some("Make precise file edits with exact text replacement, including multiple disjoint edits in one call".into()),

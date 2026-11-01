@@ -3,9 +3,11 @@
 use std::collections::HashMap;
 use std::sync::{Arc, PoisonError};
 
+use serde_json::Value;
 use serde_json::value::RawValue;
 
 use super::chunk::{Chunk, Delta, RawUsage, StreamIndex, ToolCallDelta};
+use super::compat::reasoning_field;
 use super::usage::parse_usage;
 use crate::providers::json_text::{compact_raw, is_truthy, member, parsed_arguments};
 use crate::{
@@ -186,7 +188,7 @@ impl Reducer {
     fn open_thinking(&mut self, field: &str) -> usize {
         let content = AssistantContent::Thinking(ThinkingContent {
             thinking: String::new(),
-            thinking_signature: Some(field.to_owned()),
+            thinking_signature: Some(reasoning_field(&self.model, field).to_owned()),
             redacted: None,
         });
         let position = self.push_block(content, Block::Thinking);
@@ -208,7 +210,7 @@ impl Reducer {
         let content = AssistantContent::ToolCall(ToolCall {
             id: id.unwrap_or_default().to_owned(),
             name: name.unwrap_or_default().to_owned(),
-            arguments: JsonObject::new(),
+            arguments: JsonObject::new().into(),
             thought_signature: None,
         });
         let scratch = ToolScratch {
@@ -387,7 +389,7 @@ fn complete_tool(
     tool: &mut ToolCall,
     id: Option<&str>,
     name: Option<&str>,
-    arguments: Option<JsonObject>,
+    arguments: Option<Value>,
 ) {
     if let Some(id) = id.filter(|_| tool.id.is_empty()) {
         tool.id = id.to_owned();

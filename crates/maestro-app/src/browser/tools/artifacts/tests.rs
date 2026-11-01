@@ -573,7 +573,7 @@ fn artifact_schema_routes_prepare_before_typed_execution() {
                     &maestro_models::ToolCall {
                         id: "call".into(),
                         name: "artifacts".into(),
-                        arguments: arguments.clone(),
+                        arguments: arguments.clone().into(),
                         thought_signature: None,
                     },
                 )
@@ -582,7 +582,7 @@ fn artifact_schema_routes_prepare_before_typed_execution() {
             assert_eq!(prepared.is_some(), row.accepted);
             assert_eq!(prepared.as_ref().map(|value| json!(value)), row.prepared);
             if let Some(prepared) = prepared {
-                let value = Value::Object(prepared);
+                let value = prepared;
                 let params: maestro_app::ArtifactsParams =
                     serde_json::from_value(value.clone()).unwrap();
                 assert_eq!(
@@ -819,7 +819,7 @@ fn artifact_tool_declares_six_commands_and_plain_results() {
         let host = Arc::new(Host::default());
         let panel = maestro_app::ArtifactsPanel::new(host);
         let tool = panel.tool();
-        assert_eq!(tool.definition.parameters, corpus.schema);
+        assert_eq!(*tool.definition.parameters, corpus.schema);
         assert_eq!(tool.definition.name, corpus.declaration.name);
         assert_eq!(tool.label, corpus.declaration.label);
         let cancellation = maestro_models::Cancellation::new();

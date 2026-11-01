@@ -1,64 +1,41 @@
 //! Page-content presentation of the default input and output listings.
-use super::{DefaultRenderer, Listing, format_params, prepare, status};
+use super::{DefaultContent, Listing, prepare};
 use crate::{
     browser::attachment_content::browser::{element, host_error},
     dom::{DomContent, DomRoot, DomView},
-    tools::{
-        renderer_registry::{ToolHeaderState, get_text_output},
-        types::{ToolRenderResult, ToolRenderer, ToolResultMessageView, ToolUiError},
-    },
+    tools::types::ToolUiError,
 };
-use base64::Engine as _;
-use serde_json::Value;
+use std::cell::RefCell;
 use wasm_bindgen::JsCast as _;
 use web_sys::Element;
 
-/// Retain formatted inputs and raw output as page content.
-pub(crate) fn render_prepared(
-    state: ToolHeaderState,
-    params: Option<String>,
-    output: Option<String>,
-) -> ToolRenderResult<Box<dyn DomContent>> {
-    ToolRenderResult {
-        content: Box::new(DefaultDomContent {
-            state,
-            params,
-            output,
-        }),
-        is_custom: false,
-    }
+/// A labelled section retaining its listing's native resources.
+struct Section {
+    /// Section placed after the header.
+    node: Element,
+    /// Highlighted body and copy-control owner.
+    listing: DomRoot,
 }
-impl<D> ToolRenderer<Value, D, Box<dyn DomContent>> for DefaultRenderer {
-    fn render(
-        &self,
-        params: Option<&Value>,
-        result: Option<ToolResultMessageView<'_, D>>,
-        is_streaming: bool,
-    ) -> Result<ToolRenderResult<Box<dyn DomContent>>, ToolUiError> {
-        let state = status(result.as_ref(), is_streaming);
-        let params = params.map(format_params).transpose()?.flatten();
-        let output = result.as_ref().map(|result| get_text_output(Some(result)));
-        Ok(render_prepared(state, params, output))
-    }
-}
-/// Call-owned default content.
-struct DefaultDomContent {
-    /// Status selected before formatting input.
-    state: ToolHeaderState,
-    /// Optional already-formatted input.
-    params: Option<String>,
-    /// Raw joined output; absence means no result yet.
-    output: Option<String>,
-}
-impl DomContent for DefaultDomContent {
+/// Independently selected input and output sections.
+type Sections = RefCell<[Option<Section>; 2]>;
+
+impl DomContent for DefaultContent {
     fn mount(&self, view: &DomView) -> Result<DomRoot, ToolUiError> {
-        let root = DomRoot::new(element(&view.document, "div", "maestro-tool-default")?);
+        let root = DomRoot {
+            node: element(&view.document, "div", "maestro-tool-default")?.into(),
+            owner: Some(Box::new(Sections::default())),
+        };
         self.update(&root, view)?;
         Ok(root)
     }
-    /// Replace the header and change the existing listings in place, keeping selection and copy feedback.
+    /// Keep the containing root and each still-selected listing's native resources.
     fn update(&self, root: &DomRoot, view: &DomView) -> Result<(), ToolUiError> {
-        let root: &Element = root.node.unchecked_ref();
+        let sections = root
+            .owner
+            .as_ref()
+            .and_then(|owner| owner.downcast_ref::<Sections>())
+            .ok_or_else(|| ToolUiError::Presentation("Missing default tool state".into()))?;
+        let node: &Element = root.node.unchecked_ref();
         let no_output = view.i18n.text("(no output)")?;
         let prepared = prepare(
             self.params.as_deref(),
@@ -66,77 +43,83 @@ impl DomContent for DefaultDomContent {
             self.state,
             &no_output,
         )?;
-        let header = crate::tools::renderer_registry::header::dom::render_header(
-            &view.document,
+        let header = crate::tools::renderer_registry::header::dom::render_header_element(
+            view,
             self.state,
             "Code",
             prepared.caption,
         )?;
-        match root.first_element_child() {
-            Some(old) => root.replace_child(&header, &old),
-            None => root.append_child(&header),
+        for (index, (name, label, listing)) in [
+            ("input", "Input", &prepared.input),
+            ("output", "Output", &prepared.output),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            show_section(
+                node,
+                &mut sections.borrow_mut()[index],
+                (name, label),
+                listing.as_ref(),
+                view,
+            )?;
+        }
+        match node
+            .query_selector(":scope > .maestro-tool-header")
+            .map_err(|error| host_error(&error))?
+        {
+            Some(old) => node.replace_child(&header, &old),
+            None => node.insert_before(&header, node.first_child().as_ref()),
         }
         .map_err(|error| host_error(&error))?;
-        // Input directly follows the header; output closes the content.
-        for (name, label, listing, after_header) in [
-            ("input", "Input", &prepared.input, true),
-            ("output", "Output", &prepared.output, false),
-        ] {
-            match (find(root, name)?, listing) {
-                (Some(section), Some(listing)) => show_listing(&section, listing)?,
-                (Some(section), None) => section.remove(),
-                (None, Some(listing)) => {
-                    let section = section(view, name, &view.i18n.text(label)?, listing)?;
-                    let anchor = after_header.then(|| header.next_sibling()).flatten();
-                    root.insert_before(&section, anchor.as_ref())
-                        .map_err(|error| host_error(&error))?;
-                }
-                (None, None) => {}
-            }
-        }
         Ok(())
     }
 }
-/// The root's section named `name`, if shown.
-fn find(root: &Element, name: &str) -> Result<Option<Element>, ToolUiError> {
-    root.query_selector(&format!(":scope > [data-section={name}]"))
-        .map_err(|error| ToolUiError::Host(host_error(&error)))
-}
-/// Point a section's listing at `listing`, encoded so its text always shows literally.
-fn show_listing(section: &Element, listing: &Listing) -> Result<(), ToolUiError> {
-    let code = section
-        .query_selector(crate::components::code_block::dom::TAG)
-        .map_err(|error| host_error(&error))?
-        .ok_or_else(|| ToolUiError::Presentation("Missing listing".into()))?;
-    let encoded = base64::engine::general_purpose::STANDARD.encode(&listing.code);
-    for (name, value) in [("code", encoded.as_str()), ("language", listing.language)] {
-        code.set_attribute(name, value)
-            .map_err(|error| host_error(&error))?;
-    }
-    Ok(())
-}
-/// One labelled listing section.
-fn section(
+/// Update or replace one selected section, mounting fallible children before publication.
+fn show_section(
+    root: &Element,
+    section: &mut Option<Section>,
+    (name, label): (&str, &str),
+    listing: Option<&Listing>,
     view: &DomView,
-    name: &str,
-    label: &str,
+) -> Result<(), ToolUiError> {
+    match (section.as_ref(), listing) {
+        (Some(section), Some(listing)) => listing.update(&section.listing, view),
+        (Some(old), None) => {
+            old.node.remove();
+            *section = None;
+            Ok(())
+        }
+        (None, Some(listing)) => {
+            let candidate = create_section(view, (name, label), listing)?;
+            let anchor = if name == "input" {
+                root.query_selector(":scope > [data-section=output]")
+                    .map_err(|error| host_error(&error))?
+            } else {
+                None
+            };
+            root.insert_before(&candidate.node, anchor.as_ref().map(AsRef::as_ref))
+                .map_err(|error| host_error(&error))?;
+            *section = Some(candidate);
+            Ok(())
+        }
+        (None, None) => Ok(()),
+    }
+}
+/// Build a labelled listing without attaching it to the published content.
+fn create_section(
+    view: &DomView,
+    (name, label): (&str, &str),
     listing: &Listing,
-) -> Result<Element, ToolUiError> {
+) -> Result<Section, ToolUiError> {
     let document = &view.document;
-    let section = document
-        .create_element("div")
-        .map_err(|error| host_error(&error))?;
-    section
-        .set_attribute("data-section", name)
+    let node = element(document, "div", "")?;
+    node.set_attribute("data-section", name)
         .map_err(|error| host_error(&error))?;
     let caption = element(document, "div", "maestro-tool-section-label")?;
-    caption.set_text_content(Some(label));
-    let code = document
-        .create_element(crate::components::code_block::dom::TAG)
+    caption.set_text_content(Some(&view.i18n.text(label)?));
+    let listing = listing.mount(view)?;
+    node.append_with_node_2(&caption, &listing.node)
         .map_err(|error| host_error(&error))?;
-    section
-        .append_with_node_2(&caption, &code)
-        .map_err(|error| host_error(&error))?;
-    show_listing(&section, listing)?;
-    Ok(section)
+    Ok(Section { node, listing })
 }

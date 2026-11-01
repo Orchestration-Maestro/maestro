@@ -1,0 +1,270 @@
+[
+  {
+    "name": "empty",
+    "group": "utf16",
+    "steps": [
+      {
+        "event": "agent_start",
+        "prompt": "",
+        "requests": [
+          [
+            "system-prompt",
+            "System: 0 chars"
+          ]
+        ],
+        "error": null
+      }
+    ]
+  },
+  {
+    "name": "ascii",
+    "group": "utf16",
+    "steps": [
+      {
+        "event": "agent_start",
+        "prompt": "Be concise.",
+        "requests": [
+          [
+            "system-prompt",
+            "System: 11 chars"
+          ]
+        ],
+        "error": null
+      }
+    ]
+  },
+  {
+    "name": "bmp",
+    "group": "utf16",
+    "steps": [
+      {
+        "event": "agent_start",
+        "prompt": "雪é",
+        "requests": [
+          [
+            "system-prompt",
+            "System: 2 chars"
+          ]
+        ],
+        "error": null
+      }
+    ]
+  },
+  {
+    "name": "astral",
+    "group": "utf16",
+    "steps": [
+      {
+        "event": "agent_start",
+        "prompt": "A😀B",
+        "requests": [
+          [
+            "system-prompt",
+            "System: 4 chars"
+          ]
+        ],
+        "error": null
+      }
+    ]
+  },
+  {
+    "name": "combining-and-joiners",
+    "group": "utf16",
+    "steps": [
+      {
+        "event": "agent_start",
+        "prompt": "é👨‍👩‍👧‍👦",
+        "requests": [
+          [
+            "system-prompt",
+            "System: 13 chars"
+          ]
+        ],
+        "error": null
+      }
+    ]
+  },
+  {
+    "name": "untrimmed-controls",
+    "group": "utf16",
+    "steps": [
+      {
+        "event": "agent_start",
+        "prompt": "﻿ \t\r\n",
+        "requests": [
+          [
+            "system-prompt",
+            "System: 6 chars"
+          ]
+        ],
+        "error": null
+      }
+    ]
+  },
+  {
+    "name": "live-prompt",
+    "group": "utf16",
+    "steps": [
+      {
+        "event": "agent_start",
+        "prompt": "first",
+        "requests": [
+          [
+            "system-prompt",
+            "System: 5 chars"
+          ]
+        ],
+        "error": null
+      },
+      {
+        "event": "agent_start",
+        "prompt": "second 😀",
+        "requests": [
+          [
+            "system-prompt",
+            "System: 9 chars"
+          ]
+        ],
+        "error": null
+      }
+    ]
+  },
+  {
+    "name": "shutdown-and-restart",
+    "group": "lifecycle",
+    "steps": [
+      {
+        "event": "session_shutdown",
+        "prompt": "unused 😀",
+        "requests": [
+          [
+            "system-prompt",
+            null
+          ]
+        ],
+        "error": null
+      },
+      {
+        "event": "session_shutdown",
+        "prompt": "unused 😀",
+        "requests": [
+          [
+            "system-prompt",
+            null
+          ]
+        ],
+        "error": null
+      },
+      {
+        "event": "agent_start",
+        "prompt": "new",
+        "requests": [
+          [
+            "system-prompt",
+            "System: 3 chars"
+          ]
+        ],
+        "error": null
+      }
+    ]
+  },
+  {
+    "name": "shutdown-before-start",
+    "group": "lifecycle",
+    "steps": [
+      {
+        "event": "session_shutdown",
+        "prompt": "unused 😀",
+        "requests": [
+          [
+            "system-prompt",
+            null
+          ]
+        ],
+        "error": null
+      }
+    ]
+  },
+  {
+    "name": "getter-failure",
+    "group": "errors",
+    "steps": [
+      {
+        "event": "agent_start",
+        "prompt": "no fallback",
+        "getError": "prompt unavailable",
+        "requests": [],
+        "error": "prompt unavailable"
+      },
+      {
+        "event": "agent_start",
+        "prompt": "recovered prompt",
+        "requests": [
+          [
+            "system-prompt",
+            "System: 16 chars"
+          ]
+        ],
+        "error": null
+      }
+    ]
+  },
+  {
+    "name": "status-failure",
+    "group": "errors",
+    "steps": [
+      {
+        "event": "agent_start",
+        "prompt": "status write",
+        "setError": "status unavailable",
+        "requests": [
+          [
+            "system-prompt",
+            "System: 12 chars"
+          ]
+        ],
+        "error": "status unavailable"
+      },
+      {
+        "event": "session_shutdown",
+        "prompt": "unused 😀",
+        "requests": [
+          [
+            "system-prompt",
+            null
+          ]
+        ],
+        "error": null
+      }
+    ]
+  },
+  {
+    "name": "shutdown-failure",
+    "group": "errors",
+    "steps": [
+      {
+        "event": "session_shutdown",
+        "prompt": "unused 😀",
+        "setError": "clear unavailable",
+        "requests": [
+          [
+            "system-prompt",
+            null
+          ]
+        ],
+        "error": "clear unavailable"
+      },
+      {
+        "event": "agent_start",
+        "prompt": "after rejected clear",
+        "requests": [
+          [
+            "system-prompt",
+            "System: 20 chars"
+          ]
+        ],
+        "error": null
+      }
+    ]
+  }
+]

@@ -462,6 +462,7 @@ mod tests {
     fn common_options() -> maestro_models::records::types::StreamOptions {
         use maestro_models::records::types::{CacheRetention, StreamOptions, Transport};
         StreamOptions {
+            base_url: None,
             temperature: Some(0.25),
             max_tokens: Some(17.0),
             signal: Some(maestro_models::Cancellation::new()),

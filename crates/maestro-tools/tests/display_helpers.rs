@@ -4,7 +4,11 @@
 
 use crate::display_cases::{cases, search_cases, search_keys};
 #[cfg(not(target_arch = "wasm32"))]
-use crate::display_support::{Env, bind};
+use crate::display_support::{Env, Setup, bind, context};
+#[cfg(not(target_arch = "wasm32"))]
+use crate::read_support::isolated;
+#[cfg(not(target_arch = "wasm32"))]
+use maestro_theme::{Theme, ThemeColor};
 use maestro_tools::output::render_utils::{normalize_display_text, replace_tabs, str, strip_ansi};
 use maestro_tools::utils::shell::sanitize_binary_output;
 use maestro_tui::{TruncateOptions, truncate_to_width, visible_width};
@@ -16,7 +20,7 @@ use maestro_agent::AgentToolResult;
 use maestro_models::UserBlock;
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_tools::{
-    key_hint, key_text,
+    ReadToolOptions, create_read_tool_definition, key_hint, key_text,
     output::render_utils::{get_text_output, shorten_path},
     raw_key_hint,
 };
@@ -75,8 +79,19 @@ fn display_literal_transforms_preserve_other_whitespace() {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn display_paths_abbreviate_only_home_and_descendants() {
+    let test = "display_paths_abbreviate_only_home_and_descendants";
+    if !isolated(
+        test,
+        "home",
+        &[
+            ("HOME", Some("/home/maestro")),
+            ("USERPROFILE", Some("/home/maestro")),
+        ],
+    ) {
+        return;
+    }
     let home = maestro_tools::expand_path("~").unwrap();
-    for case in cases("display_paths_abbreviate_only_home_and_descendants") {
+    for case in cases(test) {
         let path = case.input["path"].as_str().unwrap().replace("$HOME", &home);
         let expected = case.expected.as_str().unwrap().replace("$HOME", &home);
         assert_eq!(
@@ -87,6 +102,130 @@ fn display_paths_abbreviate_only_home_and_descendants() {
         );
     }
     assert_eq!(shorten_path(None).unwrap(), "");
+}
+
+/// The homes the native path display is driven with, each with a child-case name.
+#[cfg(not(target_arch = "wasm32"))]
+const NATIVE_HOMES: [(&str, &str); 5] = [
+    ("root", "/"),
+    ("empty", ""),
+    ("home", "/home/user"),
+    ("unicode", "/home/élève"),
+    ("trailing", "/home/user/"),
+];
+
+/// The literal home and path operands of the native path display, and what each shows.
+#[cfg(not(target_arch = "wasm32"))]
+const SHORTENED_PATHS: [(&str, &str, &str); 18] = [
+    ("/", "/tmp/supplied-home/file", "/tmp/supplied-home/file"),
+    ("/", "/", "/"),
+    ("/", "//server/share", "//server/share"),
+    ("/", "relative/file", "relative/file"),
+    ("/", "", ""),
+    ("", "/tmp/supplied-home/file", "/tmp/supplied-home/file"),
+    ("", "", ""),
+    ("/home/user", "/home/user/file", "~/file"),
+    ("/home/user", "/home/user", "~"),
+    ("/home/user", "/home/username/file", "/home/username/file"),
+    ("/home/user", "/tmp/file", "/tmp/file"),
+    ("/home/user", "relative/file", "relative/file"),
+    ("/home/user", "", ""),
+    ("/home/élève", "/home/élève/文書", "~/文書"),
+    ("/home/user/", "/home/user/file", "~/file"),
+    ("/home/user", "/home/user/a/../file", "~/a/../file"),
+    ("/home/user", "/home/user/", "~/"),
+    ("/home/user", "/home/user//file", "~//file"),
+];
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn display_paths_keep_root_and_empty_homes_unchanged() {
+    let test = "display_paths_keep_root_and_empty_homes_unchanged";
+    for (mode, home) in NATIVE_HOMES {
+        if !isolated(
+            test,
+            mode,
+            &[("HOME", Some(home)), ("USERPROFILE", Some(home))],
+        ) {
+            continue;
+        }
+        for (case_home, path, expected) in SHORTENED_PATHS {
+            if case_home == home {
+                assert_eq!(
+                    shorten_path(Some(path)).unwrap(),
+                    expected,
+                    "{path:?} below {home:?}"
+                );
+            }
+        }
+    }
+    assert_eq!(shorten_path(None).unwrap(), "");
+}
+
+/// The complete `read` call row for `args` under the current home.
+#[cfg(not(target_arch = "wasm32"))]
+fn read_call_row(args: &Value) -> String {
+    let setup = Setup::from(&json!({"readme": "/work/README.md"}));
+    let env = Env::new(setup.shift);
+    let ctx = context(args, &setup, &env, None);
+    let tool = create_read_tool_definition::<()>("/work".into(), ReadToolOptions::default());
+    let row = (tool.render_call.as_ref().unwrap())(Some(args), &env.live, &ctx).unwrap();
+    row.render(crate::display_support::WIDTH)
+        .join("\n")
+        .trim_end()
+        .to_owned()
+}
+
+/// The complete `read` call row showing `text` in `role`.
+#[cfg(not(target_arch = "wasm32"))]
+fn styled_read_call(role: &ThemeColor, text: &str) -> String {
+    let env = Env::new(0);
+    let theme = env.live.get().unwrap();
+    let title = theme
+        .fg(&ThemeColor::ToolTitle, &Theme::bold("read", true))
+        .unwrap();
+    let display = theme.fg(role, text).unwrap();
+    format!("{title} {display}")
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn read_call_keeps_root_and_empty_home_paths_absolute() {
+    let test = "read_call_keeps_root_and_empty_home_paths_absolute";
+    for (mode, home, shown) in [
+        ("root", "/", "/tmp/supplied-home/file"),
+        ("empty", "", "/tmp/supplied-home/file"),
+        ("home", "/tmp/supplied-home", "~/file"),
+    ] {
+        if !isolated(
+            test,
+            mode,
+            &[("HOME", Some(home)), ("USERPROFILE", Some(home))],
+        ) {
+            continue;
+        }
+        let path = json!({"path": "/tmp/supplied-home/file"});
+        assert_eq!(
+            read_call_row(&path),
+            styled_read_call(&ThemeColor::Accent, shown),
+            "{mode} home"
+        );
+        if home == "/tmp/supplied-home" {
+            continue;
+        }
+        for absent in [json!({}), json!({"path": null}), json!({"path": ""})] {
+            assert_eq!(
+                read_call_row(&absent),
+                styled_read_call(&ThemeColor::ToolOutput, "..."),
+                "{mode} home, {absent}"
+            );
+        }
+        assert_eq!(
+            read_call_row(&json!({"path": true})),
+            styled_read_call(&ThemeColor::Error, "[invalid arg]"),
+            "{mode} home, boolean path"
+        );
+    }
 }
 
 #[cfg(not(target_arch = "wasm32"))]

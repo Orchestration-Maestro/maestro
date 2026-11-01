@@ -1,11 +1,8 @@
-//! Attachment tiles exercised through actual drawing and pointer input.
-#![cfg(test)]
-/// Controlled drawing and platform effects.
+//! Attachment thumbnails exercised through their native page controls.
+#![cfg(all(test, target_arch = "wasm32"))]
 use crate::attachment_support;
-use attachment_support::*;
-use maestro_web::{AttachmentTile, browser::attachment_content::ImageFit};
+use attachment_support::Input;
 use serde::Deserialize;
-use std::rc::Rc;
 /// Expected tile output.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -38,351 +35,216 @@ struct Case {
 fn cases() -> Vec<Case> {
     serde_json::from_str(include_str!("fixtures/attachment_tiles.json")).unwrap()
 }
-#[test]
-fn tile_preview_preserves_mime_badge_and_filename() {
-    for c in cases().into_iter().filter(|c| c.expected.preview.is_some()) {
-        let record = c.input.record();
-        let name = record.borrow().file_name.clone();
-        let host = Rc::new(Host::default());
-        let mut tile = AttachmentTile::new(record, host.clone());
-        tile.show_delete = c.show_delete;
-        let mut frame = Frame::default();
-        frame.tile(&mut tile, vec![]).unwrap();
-        assert!(
-            matches!(&host.surfaces.borrow().last().unwrap().content,Content::Image(s,alt,ImageFit::Cover) if Some(s)==c.expected.preview.as_ref()&&alt==&name),
+/// Replay the tile corpus through native controls rather than drawing placements.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn native_cases(view: &maestro_web::dom::DomView) {
+    use maestro_web::dom::DomContent as _;
+    use wasm_bindgen::JsCast as _;
+    for case in cases() {
+        let attachment = case.input.record();
+        let name = attachment.read().unwrap().file_name.clone();
+        let mut tile = maestro_web::components::attachment_tile::AttachmentTile::from(attachment);
+        tile.show_delete = case.show_delete;
+        let root = tile.mount(view).unwrap();
+        let node: web_sys::Element = root.node.clone().unchecked_into();
+        assert_eq!(
+            node.query_selector("[data-remove]").unwrap().is_some(),
+            case.expected.remove,
             "{}",
-            c.name
+            case.name
         );
-        let occluders = host.surfaces.borrow().last().unwrap().occluders.clone();
-        assert_eq!(occluders.len(), usize::from(c.expected.pdf_badge));
-        if c.expected.pdf_badge {
-            assert_eq!(occluders[0].size(), egui::vec2(64., 19.));
-            let badge_pos = occluders[0].center();
-            frame
-                .tile(&mut tile, vec![egui::Event::PointerMoved(badge_pos)])
-                .unwrap();
+        let target = node.query_selector("[data-open]").unwrap().unwrap();
+        assert_eq!(
+            target.get_attribute("title").as_deref(),
+            Some(name.as_str()),
+            "{}",
+            case.name
+        );
+        if let Some(expected) = case.expected.preview {
+            let image = node.query_selector("img").unwrap().unwrap();
             assert_eq!(
-                host.surfaces.borrow().last().unwrap().opacity.to_bits(),
-                1_f32.to_bits()
+                image.get_attribute("src").unwrap(),
+                expected,
+                "{}",
+                case.name
             );
-            assert!(frame.tile(&mut tile, click(badge_pos)).unwrap().is_none());
-            let image_pos = occluders[0].left_top() - egui::vec2(-8., 8.);
-            frame
-                .tile(&mut tile, vec![egui::Event::PointerMoved(image_pos)])
-                .unwrap();
+            assert_eq!(image.get_attribute("alt").unwrap(), name, "{}", case.name);
+        } else {
             assert_eq!(
-                host.surfaces.borrow().last().unwrap().opacity.to_bits(),
-                0.8_f32.to_bits()
+                node.query_selector(".maestro-tile-label")
+                    .unwrap()
+                    .unwrap()
+                    .text_content()
+                    .unwrap(),
+                case.expected.label.unwrap(),
+                "{}",
+                case.name
             );
-            assert!(frame.tile(&mut tile, click(image_pos)).unwrap().is_some());
+            native_glyph(&node, case.expected.icon.as_ref().unwrap());
         }
         assert_eq!(
-            frame.texts().contains(&"PDF".into()),
-            c.expected.pdf_badge,
+            node.query_selector(".maestro-tile-badge")
+                .unwrap()
+                .is_some(),
+            case.expected.pdf_badge,
             "{}",
-            c.name
+            case.name
         );
-    }
-}
-#[test]
-fn tile_fallback_keeps_its_own_spreadsheet_rules() {
-    for c in cases().into_iter().filter(|c| c.expected.icon.is_some()) {
-        let host = Rc::new(Host::default());
-        let mut tile = AttachmentTile::new(c.input.record(), host.clone());
-        let mut frame = Frame::default();
-        frame.tile(&mut tile, vec![]).unwrap();
-        let catalog = maestro_web::icons::icons().unwrap();
-        let glyph = maestro_web::icons::icon(
-            &catalog[c.expected.icon.as_ref().unwrap()],
-            maestro_web::icons::IconSize::Md,
-            egui::Color32::from_hex(frame.pack.presentation(frame.mode).unwrap().colors["muted"])
-                .unwrap(),
-            1.,
-        )
-        .unwrap();
-        assert!(
-            frame
-                .images
-                .iter()
-                .any(|image| image.pixels == glyph.pixels),
-            "{}",
-            c.name
-        );
-        assert!(host.surfaces.borrow().is_empty());
-    }
-}
-#[test]
-fn tile_filename_preserves_utf16_length_boundaries() {
-    for c in cases().into_iter().filter(|c| c.expected.label.is_some()) {
-        let mut tile = AttachmentTile::new(c.input.record(), Rc::new(Host::default()));
-        let mut frame = Frame::default();
-        frame.tile(&mut tile, vec![]).unwrap();
-        assert_eq!(frame.texts(), vec![c.expected.label.unwrap()], "{}", c.name);
-    }
-}
-#[test]
-fn tile_hover_and_remove_keep_pointer_capabilities() {
-    let record = attachment();
-    record.borrow_mut().preview = Some("thumb".into());
-    let host = Rc::new(Host::default());
-    host.hover.set(true);
-    let mut tile = AttachmentTile::new(record, host.clone());
-    tile.show_delete = true;
-    let mut frame = Frame::default();
-    frame.tile(&mut tile, vec![]).unwrap();
-    let initial = host.surfaces.borrow().last().unwrap().clone();
-    assert_eq!(initial.rect.size(), egui::vec2(64., 64.));
-    assert_eq!(initial.opacity.to_bits(), (1.0_f32).to_bits());
-    assert!(frame.images.is_empty());
-    assert!(initial.occluders.is_empty());
-    frame
-        .tile(
-            &mut tile,
-            vec![egui::Event::PointerMoved(initial.rect.center())],
-        )
-        .unwrap();
-    assert_eq!(
-        host.surfaces.borrow().last().unwrap().opacity.to_bits(),
-        (0.8_f32).to_bits()
-    );
-    assert_eq!(frame.images.len(), 1);
-    assert_eq!(
-        host.surfaces.borrow().last().unwrap().occluders,
-        vec![egui::Rect::from_min_size(
-            initial.rect.right_top() + egui::vec2(-16., -4.),
-            egui::vec2(20., 20.)
-        )]
-    );
-    host.hover.set(false);
-    frame
-        .tile(&mut tile, vec![egui::Event::PointerGone])
-        .unwrap();
-    assert_eq!(
-        host.surfaces.borrow().last().unwrap().opacity.to_bits(),
-        (1.0_f32).to_bits()
-    );
-    assert_eq!(frame.images.len(), 1);
-    tile.show_delete = false;
-    frame.tile(&mut tile, vec![]).unwrap();
-    assert!(frame.images.is_empty());
-}
-#[test]
-fn tile_click_opens_with_the_same_attachment_handle() {
-    let record = attachment();
-    let host = Rc::new(Host::default());
-    let mut tile = AttachmentTile::new(record.clone(), host.clone());
-    let mut frame = Frame::default();
-    frame.tile(&mut tile, vec![]).unwrap();
-    let mut overlay = frame
-        .tile(&mut tile, click(egui::pos2(32., 32.)))
-        .unwrap()
-        .expect("tile opens");
-    record.borrow_mut().extracted_text = Some("edited after opening".into());
-    drop(tile);
-    frame.overlay(&mut overlay, vec![]).unwrap();
-    assert!(
-        matches!(&host.surfaces.borrow().last().unwrap().content,Content::Text(s,_) if s=="edited after opening")
-    );
-}
-#[test]
-fn tile_delete_does_not_open_the_overlay() {
-    let calls = Rc::new(std::cell::Cell::new(0));
-    for c in cases().into_iter().filter(|c| c.expected.remove) {
-        let mut tile = AttachmentTile::new(c.input.record(), Rc::new(Host::default()));
-        tile.show_delete = c.show_delete;
-        let count = calls.clone();
-        tile.on_delete = Some(Rc::new(move || count.set(count.get() + 1)));
-        let mut frame = Frame::default();
-        frame.tile(&mut tile, vec![]).unwrap();
-        let before = calls.get();
-        assert!(
-            frame
-                .tile(&mut tile, click(egui::pos2(58., 6.)))
-                .unwrap()
-                .is_none()
-        );
-        assert_eq!(calls.get(), before + 1, "{}", c.name);
-        tile.on_delete = None;
-        assert!(
-            frame
-                .tile(&mut tile, click(egui::pos2(58., 6.)))
-                .unwrap()
-                .is_none()
-        );
-        assert_eq!(calls.get(), before + 1);
-        tile.show_delete = false;
-        assert!(
-            frame
-                .tile(&mut tile, click(egui::pos2(32., 32.)))
-                .unwrap()
-                .is_some()
-        );
-        assert_eq!(calls.get(), before + 1);
-    }
-    assert!(calls.get() > 0);
-}
-#[test]
-fn tile_replacement_reuses_and_releases_dom_surfaces() {
-    let record = attachment();
-    record.borrow_mut().preview = Some("first".into());
-    let host = Rc::new(Host::default());
-    let mut tile = AttachmentTile::new(record, host.clone());
-    let mut frame = Frame::default();
-    frame.tile(&mut tile, vec![]).unwrap();
-    let id = host.surfaces.borrow()[0].id;
-    let next = attachment();
-    next.borrow_mut().preview = Some("second".into());
-    tile.attachment = next.clone();
-    frame.tile(&mut tile, vec![]).unwrap();
-    let second = host.surfaces.borrow().last().unwrap().clone();
-    assert_eq!(second.id, id);
-    assert!(matches!(second.content,Content::Image(s,_,_) if s.ends_with(",second")));
-    next.borrow_mut().preview = None;
-    let n = host.effects.borrow().len();
-    frame.tile(&mut tile, vec![]).unwrap();
-    assert_eq!(&host.effects.borrow()[n..], &[format!("remove:{id:?}")]);
-    let n = host.effects.borrow().len();
-    drop(tile);
-    assert_eq!(&host.effects.borrow()[n..], &[format!("remove:{id:?}")]);
-}
-#[test]
-fn tile_wide_caption_is_elided_inside_padded_bounds() {
-    let record = attachment();
-    record.borrow_mut().file_name = "WWWWWWWWWW".into();
-    let mut tile = AttachmentTile::new(record, Rc::new(Host::default()));
-    let mut frame = Frame::default();
-    frame.tile(&mut tile, vec![]).unwrap();
-    let text = frame
-        .shapes
-        .iter()
-        .find_map(|s| match &s.shape {
-            egui::Shape::Text(t) => Some((s.clip_rect, t)),
-            _ => None,
-        })
-        .unwrap();
-    assert!(text.1.galley.elided);
-    assert!(text.1.galley.size().x <= 48.);
-    assert!(
-        egui::Rect::from_min_max(egui::pos2(8., 8.), egui::pos2(56., 56.)).contains_rect(text.0)
-    );
-}
-#[test]
-fn tile_remove_keeps_visible_brand_boundary() {
-    let record = attachment();
-    record.borrow_mut().mime_type = "application/pdf".into();
-    record.borrow_mut().preview = Some("pdf".into());
-    let mut tile = AttachmentTile::new(record, Rc::new(Host::default()));
-    tile.show_delete = true;
-    let mut frame = Frame::default();
-    frame.tile(&mut tile, vec![]).unwrap();
-    let p = frame.pack.presentation(frame.mode).unwrap();
-    let border = egui::Color32::from_hex(p.colors["border"]).unwrap();
-    assert!(frame.shapes.iter().any(|s| matches!(&s.shape, egui::Shape::Circle(c) if c.radius.to_bits() == 10_f32.to_bits() && c.stroke.color == border && c.stroke.width.to_bits() == 1_f32.to_bits())));
-}
-#[test]
-fn tile_badge_tessellation_shares_tile_contour_in_both_packs() {
-    for pack in ["packs/signal.json", "brand.json"] {
-        let record = attachment();
-        record.borrow_mut().mime_type = "application/pdf".into();
-        record.borrow_mut().preview = Some("pdf".into());
-        let host = Rc::new(Host::default());
-        let mut tile = AttachmentTile::new(record, host.clone());
-        let mut frame = Frame {
-            pack: crate::support::brand::pack(&format!(
-                "{}/../../assets/brand/{pack}",
-                env!("CARGO_MANIFEST_DIR")
-            ))
-            .unwrap(),
-            ..Frame::default()
-        };
-        frame.tile(&mut tile, vec![]).unwrap();
-        let background = egui::Color32::from_hex(
-            frame.pack.presentation(frame.mode).unwrap().colors["background"],
-        )
-        .unwrap();
-        let badge = host.surfaces.borrow().last().unwrap().occluders[0];
-        let actual = frame
-            .shapes
-            .iter()
-            .find(|s| matches!(&s.shape, egui::Shape::Rect(r) if r.fill == background))
-            .unwrap()
-            .clone();
-        let mut outline = frame
-            .shapes
-            .iter()
-            .find_map(|s| match &s.shape {
-                egui::Shape::Rect(r) if r.rect.size() == egui::vec2(64., 64.) => Some(r.clone()),
-                _ => None,
-            })
-            .unwrap();
-        outline.stroke = egui::Stroke::NONE;
-        outline.fill = background;
-        let expected = egui::epaint::ClippedShape {
-            clip_rect: badge,
-            shape: egui::Shape::Rect(outline),
-        };
-        let actual = frame.ctx.tessellate(vec![actual], 1.);
-        let expected = frame.ctx.tessellate(vec![expected], 1.);
-        assert_eq!(actual.len(), 1, "{pack}");
-        assert_eq!(expected.len(), 1, "{pack}");
-        let clip = actual[0].clip_rect;
-        let egui::epaint::Primitive::Mesh(actual) = &actual[0].primitive else {
-            panic!("badge must tessellate to triangles");
-        };
-        let egui::epaint::Primitive::Mesh(expected) = &expected[0].primitive else {
-            panic!("tile must tessellate to triangles");
-        };
-        assert!(!actual.indices.is_empty());
-        assert_eq!(actual.indices, expected.indices, "{pack}");
-        assert_eq!(actual.vertices, expected.vertices, "{pack}");
-        assert_eq!(clip, badge, "badge region: {pack}");
     }
 }
 
-#[test]
-fn user_attachment_tiles_wrap_as_single_fixed_items() {
-    use maestro_web::{UserMessage, UserMessageInput};
-    let host = Rc::new(Host::default());
+/// Native geometry follows the same catalog glyph as the retained corpus.
+#[cfg(target_arch = "wasm32")]
+fn native_glyph(node: &web_sys::Element, icon: &str) {
+    let expected = maestro_web::icons::icons()
+        .unwrap()
+        .swap_remove(icon)
+        .unwrap();
+    let expected =
+        maestro_web::icons::icon_dom(&expected, maestro_web::icons::IconSize::Md, None).unwrap();
+    assert_eq!(
+        node.query_selector("svg").unwrap().unwrap().inner_html(),
+        expected.inner_html()
+    );
+}
+
+/// Attachments remain indivisible fixed-size items when the native row wraps.
+pub(crate) fn user_attachment_tiles_wrap_as_single_fixed_items(view: &maestro_web::dom::DomView) {
+    use crate::contributions_support::{body, select, text};
+    use maestro_web::dom::DomContent as _;
+    use wasm_bindgen::JsCast as _;
     let records: Vec<_> = (0..14)
         .map(|index| {
-            let record = attachment();
-            record.borrow_mut().file_name = format!("wrapped-{index}.png");
-            record.borrow_mut().preview = Some("AA==".into());
+            let record = attachment_support::attachment();
+            record.write().unwrap().file_name = format!("wrapped-{index}.png");
+            record.write().unwrap().preview = Some("AA==".into());
             record
         })
         .collect();
-    let content = maestro_app::UserContent::Text(String::new());
-    let mut row = UserMessage::new(host.clone());
-    let mut frame = Frame::default();
-    let input = UserMessageInput::WithAttachments {
-        content: &content,
-        attachments: Some(&records),
-    };
-    let output =
-        crate::document_card_support::frame_owner(&mut frame, &host, vec![], |ui, view| {
-            row.render(ui, input, view)
-        });
-    output.response.unwrap();
-    assert!(output.overlays.is_empty());
-    let tiles: Vec<_> = host
-        .surfaces
-        .borrow()
-        .iter()
-        .filter(|s| matches!(s.content, Content::Image(..)))
-        .map(|s| s.rect)
-        .collect();
-    assert_eq!(tiles.len(), 14);
-    for rect in &tiles {
-        assert_eq!(rect.size(), egui::vec2(64., 64.));
-        assert!(frame.screen.contains_rect(*rect));
+    let row = wrapped_row(&records);
+    let root = row.mount(view).unwrap();
+    let parent = view.document.create_element("div").unwrap();
+    parent.set_attribute("style", "width:320px").unwrap();
+    body().append_child(&parent).unwrap();
+    parent.append_child(&root.node).unwrap();
+    let tiles = root
+        .node
+        .unchecked_ref::<web_sys::Element>()
+        .query_selector_all("[data-open]")
+        .unwrap();
+    assert_eq!(tiles.length(), 14);
+    let top = tiles
+        .item(0)
+        .unwrap()
+        .unchecked_into::<web_sys::Element>()
+        .get_bounding_client_rect();
+    for index in 0..14 {
+        let rect = tiles
+            .item(index)
+            .unwrap()
+            .unchecked_into::<web_sys::Element>()
+            .get_bounding_client_rect();
+        assert_eq!((rect.width(), rect.height()), (64., 64.));
+        let bounds = parent.get_bounding_client_rect();
+        assert!(rect.left() >= bounds.left() && rect.right() <= bounds.right());
     }
-    assert!(tiles[13].top() > tiles[0].bottom());
-    let output = crate::document_card_support::frame_owner(
-        &mut frame,
-        &host,
-        click(tiles[13].center()),
-        |ui, view| row.render(ui, input, view),
+    let last: web_sys::HtmlElement = tiles.item(13).unwrap().unchecked_into();
+    assert!(last.get_bounding_client_rect().top() > top.bottom());
+    records[13].write().unwrap().file_name = "current last attachment".into();
+    last.click();
+    let overlay = view
+        .document
+        .query_selector("attachment-overlay")
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        text(&select(&overlay, ".maestro-attachment-name")),
+        "current last attachment"
     );
-    output.response.unwrap();
-    assert_eq!(output.overlays.len(), 1);
+    parent.remove();
+    drop((row, root, records));
+    assert!(overlay.is_connected());
+    select(&overlay, "[data-close]")
+        .unchecked_ref::<web_sys::HtmlElement>()
+        .click();
+    assert!(!overlay.is_connected());
+}
+
+/// The badge intercepts pointer clicks while the thumbnail keeps its own hover and opening route.
+pub(crate) async fn tile_badge_keeps_image_pointer_route(
+    view: &maestro_web::dom::DomView,
+    import_module: &js_sys::Function,
+) {
+    use crate::contributions_support::{body, call, computed, driver, page_module, select};
+    use maestro_web::{AttachmentTile, dom::DomContent as _};
+    use wasm_bindgen::JsCast as _;
+    let record = attachment_support::attachment();
+    record.write().unwrap().preview = Some("AA==".into());
+    record.write().unwrap().mime_type = "application/pdf".into();
+    let root = AttachmentTile::from(record).mount(view).unwrap();
+    body().append_child(&root.node).unwrap();
+    let page = page_module(import_module).await;
+    let target = select(&root.node, "[data-open]");
+    let badge = select(&root.node, ".maestro-tile-badge");
+    let rect = badge.get_bounding_client_rect();
+    driver(
+        "driverPointer",
+        &format!(
+            "[{}, {}, true]",
+            rect.x() + rect.width() / 2.,
+            rect.y() + rect.height() / 2.
+        ),
+    )
+    .await;
+    call(&page, "finish", &js_sys::Array::of1(&target)).await;
+    assert_eq!(computed(&target, "opacity"), "1");
+    assert!(
+        view.document
+            .query_selector("attachment-overlay")
+            .unwrap()
+            .is_none()
+    );
+    let rect = target.get_bounding_client_rect();
+    driver(
+        "driverPointer",
+        &format!("[{}, {}, false]", rect.x() + 10., rect.y() + 10.),
+    )
+    .await;
+    call(&page, "finish", &js_sys::Array::of1(&target)).await;
+    assert_eq!(computed(&target, "opacity"), "0.8");
+    driver(
+        "driverPointer",
+        &format!("[{}, {}, true]", rect.x() + 10., rect.y() + 10.),
+    )
+    .await;
+    let overlay = view
+        .document
+        .query_selector("attachment-overlay")
+        .unwrap()
+        .unwrap();
+    select(&overlay, "[data-close]")
+        .unchecked_ref::<web_sys::HtmlElement>()
+        .click();
+    assert!(!overlay.is_connected());
+    root.node.unchecked_ref::<web_sys::Element>().remove();
+}
+
+/// Construct an attachment-bearing row with the original handles, not serialized copies.
+fn wrapped_row(records: &[maestro_web::SharedAttachment]) -> maestro_web::UserMessage {
+    use maestro_app::{
+        AgentMessage, UserContent,
+        browser::components::messages::{CustomAgentMessages, UserMessageWithAttachments},
+    };
+    use maestro_web::UserMessage;
+    UserMessage::<maestro_app::NoCustomMessages> {
+        message: Some(AgentMessage::Custom(std::sync::Arc::new(
+            std::sync::RwLock::new(CustomAgentMessages::UserWithAttachments(
+                UserMessageWithAttachments {
+                    content: UserContent::Text(String::new()),
+                    timestamp: 0.,
+                    attachments: Some(records.to_vec()),
+                },
+            )),
+        ))),
+    }
 }

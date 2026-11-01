@@ -90,7 +90,7 @@ impl FooterDataProvider {
     pub fn set_extension_status(&self, key: &str, text: Option<&str>) {
         match text {
             Some(text) => self.statuses.insert(key.to_owned(), text.to_owned()),
-            None => self.statuses.remove(key),
+            None => drop(self.statuses.remove(key)),
         }
     }
 
@@ -152,6 +152,8 @@ impl ReadonlyFooterDataProvider for FooterDataProvider {
         self.callbacks
             .insert(identity(&callback), Rc::clone(&callback));
         let watch = Rc::clone(&self.watch);
-        Box::new(move || watch.callbacks.remove(&identity(&callback)))
+        Box::new(move || {
+            drop(watch.callbacks.remove(&identity(&callback)));
+        })
     }
 }

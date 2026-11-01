@@ -1,4 +1,5 @@
 //! A duration tool registered by an extension that declares its own parsing dependency.
+// maestro-component: MAESTRO_WITH_DEPS_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
@@ -61,6 +62,8 @@ fn parse_duration(duration: &str, pattern: &Regex) -> ExtensionResult<f64> {
 fn duration_tool() -> ExtensionResult<ToolDefinition> {
     let pattern = Regex::new(GRAMMAR).map_err(|error| error.to_string())?;
     Ok(ToolDefinition {
+        render_call: None,
+        render_result: None,
         metadata: ToolMetadata {
             name: "parse_duration".into(),
             label: "Parse Duration".into(),
@@ -74,7 +77,7 @@ fn duration_tool() -> ExtensionResult<ToolDefinition> {
             parameters: json!({"type":"object","required":["duration"],"properties":{
                 "duration":{"type":"string","description":"Duration string like '2 days', '1h', '5m'"}
             }})
-            .to_string(),
+            .into(),
             render_shell: Presence::Missing,
             execution_mode: Presence::Missing,
         },
@@ -92,7 +95,7 @@ fn duration_tool() -> ExtensionResult<ToolDefinition> {
                         "{} = {rendered} milliseconds",
                         params.duration
                     )))],
-                    details: Presence::Present(json!({}).to_string()),
+                    details: Presence::Present(json!({}).to_string().into()),
                     terminate: Presence::Missing,
                 })
             })

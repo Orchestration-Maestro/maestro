@@ -759,13 +759,7 @@ async fn compaction(driver: &mut impl Driver) -> Result<(), String> {
     let Decision::Returned(Ok(Some(result))) = delivered.decision else {
         return Err("compaction callback did not return content".into());
     };
-    let mut result: Value = serde_json::from_str(&result).map_err(|e| e.to_string())?;
-    result["compaction"]["details"] = serde_json::from_str(
-        result["compaction"]["details"]
-            .as_str()
-            .ok_or("missing opaque details")?,
-    )
-    .map_err(|e| e.to_string())?;
+    let result: Value = serde_json::from_str(&result).map_err(|e| e.to_string())?;
     assert_eq!(
         result,
         json!({"compaction":{"summary":"User requests:\n- first request 雪\n- [complex]","firstKeptEntryId":"keep from preparation","tokensBefore":4321.5,"details":{"leaf":"live leaf 雪","models":["model z","model a"],"branchEntries":[branch]}}})
