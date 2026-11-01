@@ -2,6 +2,7 @@ use std::path::{Path, PathBuf};
 
 use cargo_metadata::Metadata;
 use ra_ap_rustc_lexer::{FrontmatterAllowed, TokenKind};
+use syn::{spanned::Spanned, visit::Visit};
 
 /// Flattened Rust import trees.
 pub(crate) mod imports;
@@ -227,7 +228,55 @@ macro_rules! inherit_test_context {
     };
 }
 
-pub(crate) use {exclude_test_item, inherit_test_context};
+/// Locate parsed test-gated items without excluding neighboring production syntax.
+pub(crate) fn test_spans(syntax: Option<&syn::File>) -> Vec<std::ops::Range<(usize, usize)>> {
+    let mut testing = TestSpans::default();
+    if let Some(syntax) = syntax {
+        testing.visit_file(syntax);
+    }
+    testing.spans
+}
+
+#[derive(Default)]
+/// Source spans owned by test-gated items.
+struct TestSpans {
+    /// Half-open character ranges occupied by test-only syntax.
+    spans: Vec<std::ops::Range<(usize, usize)>>,
+}
+
+impl<'ast> Visit<'ast> for TestSpans {
+    fn visit_item(&mut self, item: &'ast syn::Item) {
+        exclude_test_item!(self, item, item_attributes(item), visit_item);
+    }
+
+    fn visit_impl_item(&mut self, item: &'ast syn::ImplItem) {
+        exclude_test_item!(self, item, impl_item_attributes(item), visit_impl_item);
+    }
+
+    fn visit_trait_item(&mut self, item: &'ast syn::TraitItem) {
+        exclude_test_item!(self, item, trait_item_attributes(item), visit_trait_item);
+    }
+
+    fn visit_foreign_item(&mut self, item: &'ast syn::ForeignItem) {
+        let attributes = match item {
+            syn::ForeignItem::Fn(item) => &item.attrs,
+            syn::ForeignItem::Static(item) => &item.attrs,
+            syn::ForeignItem::Type(item) => &item.attrs,
+            syn::ForeignItem::Macro(item) => &item.attrs,
+            _ => return,
+        };
+        exclude_test_item!(self, item, attributes, visit_foreign_item);
+    }
+}
+
+/// Convert a syntax span into comparable line and character coordinates.
+fn span_positions(span: proc_macro2::Span) -> std::ops::Range<(usize, usize)> {
+    let start = span.start();
+    let end = span.end();
+    (start.line, start.column)..(end.line, end.column)
+}
+
+pub(crate) use inherit_test_context;
 
 /// Read a Cargo manifest through the native TOML parser.
 pub(crate) fn read_manifest(manifest: &Path) -> Result<toml::Table, String> {
