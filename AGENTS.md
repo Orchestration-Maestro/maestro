@@ -168,12 +168,13 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   inheritance (lint inheritance and the workspace precision entry still apply).
   Never hand-edit its generated manifest section.
 - `maestro-watch` is a core leaf below layer 0 without workspace dependencies.
-  `maestro-lock` depends only on `maestro-path` for `native_homedir` and uses the
-  existing external sha2 for canonical target identity. Only theme/application
-  may depend on watch; only settings/credentials/workspace/detection/session/application may depend on lock. Follow the
+  `maestro-lock` depends only on `maestro-path` for final-link resolution and uses
+  the existing external `sha2 =0.11.0` to shorten lock and record names for long
+  file names. Only theme/application may depend on watch; only
+  settings/credentials/workspace/detection/session/application may depend on lock. Follow the
   [shared filesystem effect contract](docs/specs/maestro-port.md#crates-and-delivery-order):
   watch owns creation/close helpers, injected watch/timer interfaces and native
-  notifications; lock owns bounded and waiting acquisition, canonical target identity and
+  notifications; lock owns waiting, bounded and single-attempt acquisition plus
   recoverable in-place byte publication. Workspace owns snapshot serialization and link-following policy.
   Feature policies remain with their owners, including asynchronous credential
   acquisition. Add no common background runtime, scheduler or listener framework;

@@ -47,7 +47,7 @@ Credentials maintain a tolerant accepted snapshot until explicit reload, ordered
 
 Settings retain user/project scopes, runtime overrides, established names/defaults, a top-level merge with one nested object spread, immediate cache publication, queued writes, flush and error drain. Reload accepts each healthy scope independently, retains a failed scope and rebuilds effective values without preserving runtime overrides. Use Rust `std::fs::File` locking as-is for native storage mutual exclusion. Keep application read/callback/write ordering, explicit application retry loops, permissions, memory publication and failure handling. Do not reproduce lock-directory leases, heartbeats, mtime probing or library retry internals.
 
-Settings persistence uses explicit write intent: native `SettingsStorage::with_write_lock` creates the parent as needed and holds the stable sidecar lock before reading, through its single callback and optional write, including first creation. `Ok(None)` and callback failure may leave a parent/sidecar but never create the settings file. Concurrent independent manager edits therefore merge against fresh text under exclusion. The legacy `with_lock` remains noncreating for missing-file reads and calls its callback before locking a first replacement; raw callers needing concurrent first-write exclusion choose write intent. Supplied adapters default to their existing `with_lock` contract; native decorators forward write intent to retain native exclusion.
+Settings persistence uses explicit write intent: native `SettingsStorage::with_write_lock` creates the parent as needed and holds the shared write lock beside the settings file before reading, through its single callback and optional write, including first creation. `Ok(None)` and callback failure may leave a new parent but never create the settings file. Concurrent independent manager edits therefore merge against fresh text under exclusion. The legacy `with_lock` remains noncreating for missing-file reads and calls its callback before locking a first replacement; raw callers needing concurrent first-write exclusion choose write intent. Supplied adapters default to their existing `with_lock` contract; native decorators forward write intent to retain native exclusion.
 
 Workspace preference saves use the same captured-edit queue at literal nested
 key paths. `SettingsManager::set_global_key_path(field, keys, value)` publishes
@@ -539,8 +539,8 @@ Move the existing matchers only after this contract lands, through
 [shared file-pattern ownership](https://github.com/Orchestration-Maestro/maestro/issues/561).
 
 `maestro-watch` is a core leaf below layer 0 without workspace dependencies.
-`maestro-lock` is below layer 0 and depends only on `maestro-path`, which owns
-`native_homedir`; it uses the existing external `sha2 =0.11.0` for target identity. Only theme and application
+`maestro-lock` is below layer 0 and depends only on `maestro-path` and the existing
+external `sha2 =0.11.0`, which shortens lock and record names for long file names. Only theme and application
 may depend on watch; only settings, credentials, workspace, detection, session and application
 may depend on lock. Application uses maestro-lock for recoverable file publication.
 
@@ -549,18 +549,25 @@ watch/timer interface and the native notification adapter. Reload, refresh,
 retry and polling policy remain in their feature owners. Existing theme watch
 paths may re-export the same moved types, not retain a second implementation.
 
-`maestro-lock` owns bounded and waiting acquisition of caller-opened file-write
-locks. Waiting acquisition uses the operating system's file lock, which is released
-when the holder exits. It also owns recoverable in-place byte publication, canonical target identity
-and the per-user lock root described in [file locking](../locking.md).
-A durable copy of the intended bytes is replayed by the next holder after an
-interrupted write. Native ownership, access controls and hard links survive.
-Workspace snapshot storage, detection catalogs and session rewrites use this
-operation; feature owners retain serialization and symbolic-link policy.
-Settings and credentials retain their existing bounded, in-place persistence.
-Neither leaf introduces a common background runtime, scheduler,
-retry policy or listener framework. Feature-specific timing, process,
-subscription and teardown semantics and current public capabilities are retained.
+`maestro-lock` owns file-write exclusion. A write lock is the file `<target>.lock`
+beside the canonical target, after final symbolic links when the caller follows
+them. It is created on acquisition, held through the operating system's file lock,
+and removed on release. The operating system releases a dead holder's lock; the
+next holder reuses any lock file left behind. Acquisition never reads the home
+directory or configuration root. It waits until free, makes at most ten attempts
+with 20 ms between contended attempts, or makes one attempt. Names that would
+exceed the platform's limit keep a cut file name and a short digest of the full
+name. The owner also provides recoverable in-place publication: a durable copy of
+the intended bytes, `<target>.recovery`, sits beside the target and is replayed by
+the next holder after an interrupted write. Native ownership, access controls and
+hard links survive. Settings and credentials hold this lock across read, update
+and replace, keeping their retry schedules. Session appends and rewrites and
+keybinding writes publish through it. Workspace snapshots and detection catalogs
+use the same owner's atomic publication because their readers hold no lock.
+Feature owners keep serialization and symbolic-link policy. Neither leaf
+introduces a common background runtime, scheduler, retry policy or listener
+framework. Feature-specific timing, process, subscription and teardown semantics
+and current public capabilities are retained.
 
 `maestro-listing` is a core leaf below layer 0 with no workspace dependencies,
 including the path utility. Its one job is listing directory entries: it returns
