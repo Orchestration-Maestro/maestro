@@ -51,21 +51,42 @@ pub fn expand_tilde_joined<E>(
     path: &str,
     home: impl FnOnce() -> Result<String, E>,
 ) -> Result<String, E> {
-    match parse_tilde(path) {
+    join_tilde(path, parse_tilde(path), home)
+}
+
+/// Expands only `~` and `~/` with the compile target's normalizing join.
+///
+/// Backslash home forms stay as written, even on Windows, without reading `home`.
+/// An exact `~` returns the home as supplied; `~/` joins the rest through [`join`].
+///
+/// # Errors
+/// Returns the error `home` returns when the path needs the home directory.
+pub fn expand_tilde_slash_joined<E>(
+    path: &str,
+    home: impl FnOnce() -> Result<String, E>,
+) -> Result<String, E> {
+    join_tilde(path, parse(path, false), home)
+}
+
+/// Joins a parsed home form, reading the home only when expansion needs it.
+fn join_tilde<E>(
+    path: &str,
+    form: Tilde<'_>,
+    home: impl FnOnce() -> Result<String, E>,
+) -> Result<String, E> {
+    match form {
         Tilde::Other => Ok(path.to_owned()),
         Tilde::Home => home(),
         Tilde::Below(rest) => Ok(join(&[&home()?, rest])),
     }
 }
 
-/// Expands a leading `~` by appending the rest to the home directory, in the compile target's
-/// flavor.
+/// Expands `~` and `~/` by appending the suffix to the home text unchanged.
 ///
-/// An exact `~` is the home directory and `~` plus a separator appends the rest as written
-/// below it. The home contributes its own text, so an empty home leaves a rooted result and a
-/// home that ends in a separator gains none. Every other spelling, `~name` included, is
-/// returned as written, and the home is read only for the two expanded forms. On Windows
-/// either separator introduces the rest, which joins with `\` and drops empty components.
+/// An exact `~` returns the supplied home. For `~/`, the leading slash and the rest
+/// are appended verbatim, including repeated separators and `..`. A trailing home
+/// separator is kept too. Every other spelling, including `~name` and `~\` on
+/// Windows, stays as written without reading the home.
 ///
 /// # Errors
 /// Returns the error `home` returns when the path needs the home directory.
@@ -79,25 +100,19 @@ pub fn expand_tilde_joined<E>(
 /// assert_eq!(maestro_path::expand_tilde("~ada", home), Ok("~ada".to_owned()));
 /// ```
 pub fn expand_tilde<E>(path: &str, home: impl FnOnce() -> Result<String, E>) -> Result<String, E> {
-    expand_tilde_with_flavor(path, cfg!(windows), home)
-}
-
-/// The rule of [`expand_tilde`] in a supplied flavor, independently of the compile target.
-///
-/// # Errors
-/// Returns the error `home` returns when the path needs the home directory.
-pub(crate) fn expand_tilde_with_flavor<E>(
-    path: &str,
-    windows: bool,
-    home: impl FnOnce() -> Result<String, E>,
-) -> Result<String, E> {
-    Ok(expand(path, windows, home, String::push_str)?.unwrap_or_else(|| path.to_owned()))
+    match parse(path, false) {
+        Tilde::Other => Ok(path.to_owned()),
+        Tilde::Home => home(),
+        Tilde::Below(rest) => Ok(format!("{}/{rest}", home()?)),
+    }
 }
 
 /// Expands a leading `~` below a native home directory, keeping the bytes of the home.
 ///
-/// The rule is that of [`expand_tilde`]; only the home and the result are native paths, so
-/// a home that text cannot hold still expands.
+/// Either separator introduces the rest on Windows; empty components drop and
+/// the rest joins with `\`. Other targets accept only `~/` and append the rest
+/// without adding a slash when the home ends in one. A home that text cannot hold
+/// still expands. Every unsupported spelling stays as written without reading the home.
 ///
 /// # Errors
 /// Returns the error `home` returns when the path needs the home directory.
