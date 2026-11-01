@@ -156,6 +156,13 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
     };
     run_example(cargo, checkout, &example, target, &supplied)?;
     let components = stage_components(checkout, output, target, &artifacts.shared, &supplied)?;
+    let reused = supplied.len();
+    let built = components.len().checked_sub(reused).ok_or_else(|| {
+        io::Error::other(format!(
+            "base supplied {reused} components but preparation staged only {}",
+            components.len()
+        ))
+    })?;
     stage_browser_graph(cargo, checkout, output)?;
     let mut unchanged = artifacts.is_current(checkout)?;
     for component in components.values() {
@@ -186,8 +193,6 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
         compiled,
     };
     std::fs::write(output.join(MANIFEST), serde_json::to_vec(&manifest)?)?;
-    let reused = supplied.len();
-    let built = manifest.components.len() - reused;
     writeln!(io::stdout(), "components: {reused} reused, {built} built")
 }
 
