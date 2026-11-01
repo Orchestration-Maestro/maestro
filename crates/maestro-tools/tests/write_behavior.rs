@@ -265,7 +265,8 @@ fn write_abort_during_mkdir_skips_write_after_queue_release() {
     let path = format!("{}/f.txt", dir.text());
     let journal = Journal::default();
     let signal = Cancellation::new();
-    let ops = Arc::new(ScriptedWrite::new(&journal).mkdir_mode(Mode::Pend));
+    let (finish, mode) = Gate::operation();
+    let ops = Arc::new(ScriptedWrite::new(&journal).mkdir_mode(mode));
     let mut call = start(
         &tool_over(&ops, "/work"),
         input(&path, "x"),
@@ -275,8 +276,10 @@ fn write_abort_during_mkdir_skips_write_after_queue_release() {
     let mut next = next_in_line(&path, &journal);
     assert!(poll_once(&mut next).is_pending());
     signal.abort();
+    assert!(poll_once(&mut call).is_pending());
+    assert!(poll_once(&mut next).is_pending());
+    finish.open();
     journal.push(ready(&mut call).err().unwrap().message);
-    assert_eq!(ops.dropped.load(Ordering::SeqCst), 1);
     ready(&mut next).unwrap();
     assert_eq!(journal.entries(), expected);
     assert_eq!(ops.names(), ["mkdir"]);
@@ -299,37 +302,47 @@ fn write_abort_during_mkdir_skips_write_after_queue_release() {
 }
 
 #[test]
-fn write_abort_releases_queue_and_drops_pending_operation() {
+fn write_abort_keeps_queue_until_pending_operation_settles() {
     let expected: Vec<String> = serde_json::from_value(single_expected(
-        "write_abort_releases_queue_and_drops_pending_operation",
+        "write_abort_keeps_queue_until_pending_operation_settles",
     ))
     .unwrap();
     let dir = Scratch::new().unwrap();
     let path = format!("{}/f.txt", dir.text());
     let journal = Journal::default();
     let signal = Cancellation::new();
-    let ops = Arc::new(ScriptedWrite::new(&journal).write_mode(Mode::Pend));
+    let (finish, mode) = Gate::operation();
+    let ops = Arc::new(ScriptedWrite::new(&journal).write_mode(mode));
     let mut call = start(
         &tool_over(&ops, "/work"),
         input(&path, "x"),
         Some(signal.clone()),
     );
     assert!(poll_once(&mut call).is_pending());
-    let mut next = next_in_line(&path, &journal);
+    let successor = Arc::new(ScriptedWrite::new(&Journal::default()));
+    let mut next = start(
+        &tool_over(&successor, "/work"),
+        input(&path, "second"),
+        None,
+    );
     assert!(poll_once(&mut next).is_pending());
-    assert_eq!(ops.dropped.load(Ordering::SeqCst), 0);
     signal.abort();
+    assert!(poll_once(&mut call).is_pending());
+    assert!(poll_once(&mut next).is_pending());
+    assert!(successor.names().is_empty());
+    finish.open();
     journal.push(ready(&mut call).err().unwrap().message);
-    assert_eq!(ops.dropped.load(Ordering::SeqCst), 1);
     ready(&mut next).unwrap();
+    assert_eq!(successor.names(), ["mkdir", "write"]);
+    journal.push("next");
     assert_eq!(journal.entries(), expected);
 }
 
 #[test]
 fn write_late_abort_cannot_replace_success() {
-    for write in [
-        Mode::AbortThenSucceed,
-        Mode::AbortThenFail(failure("late failure")),
+    for (write, expected) in [
+        (Mode::AbortThenSucceed, "Operation aborted"),
+        (Mode::AbortThenFail(failure("late failure")), "late failure"),
     ] {
         let signal = Cancellation::new();
         let ops = Arc::new(
@@ -344,7 +357,7 @@ fn write_late_abort_cannot_replace_success() {
         ))
         .err()
         .unwrap();
-        assert_eq!(error.message, "Operation aborted");
+        assert_eq!(error.message, expected);
         assert_eq!(ops.names(), ["mkdir", "write"]);
     }
 }

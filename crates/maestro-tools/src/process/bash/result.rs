@@ -43,14 +43,13 @@ fn format(
     let end = truncation.total_lines;
     let path = full_output_path.as_deref().unwrap_or_default();
     let notice = if truncation.last_line_partial {
-        // A final newline ends the partial line, leaving an empty entry after it.
-        let (line, bytes) = if text.ends_with('\n') {
-            (end - 1, line_bytes.ended)
+        let bytes = if line_bytes.last == 0 {
+            line_bytes.ended
         } else {
-            (end, line_bytes.last)
+            line_bytes.last
         };
         format!(
-            "[Showing last {} of line {line} (line is {}). Full output: {path}]",
+            "[Showing last {} of line {end} (line is {}). Full output: {path}]",
             format_size(float(truncation.output_bytes)),
             format_size(float(bytes))
         )

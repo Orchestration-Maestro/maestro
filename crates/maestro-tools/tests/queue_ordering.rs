@@ -233,14 +233,53 @@ fn mutation_queue_dropped_middle_waiter_preserves_active_head() {
 #[test]
 fn mutation_queue_returns_canonicalization_errors_other_than_not_found() {
     let dir = Scratch::new().unwrap();
-    let file = dir.file("file.txt", b"x");
-    let through_a_file = format!("{file}/child");
+    let loop_path = format!("{}/loop", dir.text());
+    std::os::unix::fs::symlink("loop", &loop_path).unwrap();
     let journal = Journal::default();
-    let mut queued = queue(&through_a_file, tracked(&journal, "a", None));
+    let mut queued = queue(&loop_path, tracked(&journal, "a", None));
     let error = ready(&mut queued).unwrap_err();
     assert_eq!(
         error.code,
-        Some(maestro_models::DiagnosticCode::Number(20.0))
+        Some(maestro_models::DiagnosticCode::Number(
+            if cfg!(target_os = "macos") {
+                62.0
+            } else {
+                40.0
+            }
+        ))
     );
     assert!(journal.entries().is_empty());
+}
+
+#[test]
+fn mutation_queue_runs_below_a_regular_file() {
+    let dir = Scratch::new().unwrap();
+    let file = dir.file("file.txt", b"x");
+    let journal = Journal::default();
+    let mut call = queue(&format!("{file}/child"), tracked(&journal, "a", None));
+    ready(&mut call).unwrap();
+    assert_eq!(journal.entries(), ["a:start", "a:end"]);
+}
+
+#[cfg(unix)]
+#[test]
+fn edit_below_a_regular_file_reports_access_failure() {
+    let dir = Scratch::new().unwrap();
+    let file = dir.file("file.txt", b"x");
+    let path = format!("{file}/child");
+    let tool: crate::edit_support::Tool = maestro_tools::create_edit_tool_definition(
+        dir.text(),
+        maestro_tools::EditToolOptions::default(),
+    );
+    let error = crate::runtime::run(crate::edit_support::start(
+        &tool,
+        crate::edit_support::input(&path, "x", "y"),
+        None,
+    ))
+    .err()
+    .unwrap();
+    assert_eq!(
+        error.message,
+        format!("Could not edit file: {path}. Error code: 20.")
+    );
 }

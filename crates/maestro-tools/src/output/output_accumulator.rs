@@ -55,7 +55,7 @@ pub struct OutputAccumulator {
     tail: String,
     /// Complete decoded byte count.
     decoded_bytes: usize,
-    /// Complete newline-entry count.
+    /// Completed lines plus a nonempty open line.
     lines: usize,
     /// Current decoded line's byte count.
     last_line_bytes: usize,
@@ -91,7 +91,7 @@ impl OutputAccumulator {
             raw_bytes: 0,
             tail: String::new(),
             decoded_bytes: 0,
-            lines: 1,
+            lines: 0,
             last_line_bytes: 0,
             ended_line_bytes: 0,
             path: None,
@@ -212,7 +212,7 @@ impl OutputAccumulator {
             self.trim_tail();
         }
         let newlines = text.bytes().filter(|&byte| byte == b'\n').count();
-        self.lines += newlines;
+        self.lines = self.lines - usize::from(self.last_line_bytes > 0) + newlines;
         if let Some(last_newline) = text.rfind('\n') {
             self.ended_line_bytes = text[..last_newline]
                 .rfind('\n')
@@ -223,6 +223,7 @@ impl OutputAccumulator {
         } else {
             self.last_line_bytes += text.len();
         }
+        self.lines += usize::from(self.last_line_bytes > 0);
     }
     /// Evict old text only beyond the hysteresis threshold.
     fn trim_tail(&mut self) {

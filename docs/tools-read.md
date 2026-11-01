@@ -11,15 +11,16 @@ mutation queue are described in [file-changing tools](tools-edit.md).
 and accounting. `TruncationOptions::default()` independently selects 2000
 newline-separated entries and 51200 UTF-8 bytes. Explicit zero stays zero;
 `usize::MAX` leaves the corresponding budget unbounded for native-sized text.
-A final newline adds an empty entry. CR, BOM, NUL, tabs and ANSI bytes remain text.
+A final newline terminates the last line without adding an empty entry; empty text
+has zero lines. CR, BOM, NUL, tabs and ANSI bytes remain text.
 
 `truncate_head` keeps complete leading entries. An oversized first entry returns
 empty content with `first_line_exceeds_limit`, even with a zero line quota.
 `truncate_tail` keeps trailing entries, or a UTF-8-aligned suffix when the final
 line alone exceeds the byte budget. That partial line reports byte truncation. When
-a newline ends the oversized line, the newline keeps one byte of the budget and the
-suffix follows it, so `output_lines` counts the line and the empty entry after it.
-A zero line quota selects no entries; a zero byte quota can retain an empty
+a newline ends the oversized line, the suffix uses the full byte budget and omits
+the newline. An omitted final newline reports bytes, not lines, when no line was
+omitted. A zero line quota selects no entries; a zero byte quota can retain an empty
 partial tail entry. Consequently `output_lines` is not necessarily the split
 count of the returned text.
 
@@ -62,6 +63,10 @@ finish flushes pending UTF-8 once without closing the artifact. Raw decoding use
 the shared [streaming text primitive](text.md). Snapshots observe
 selected decoded text without finishing decoding; selection is owned by
 [`output::truncate`](../crates/maestro-tools/src/output/truncate.rs).
+
+Streamed line counts include completed lines plus one nonempty open line. Empty
+streams have zero lines. For 4,000 newline-terminated lines, bash retains lines
+2001 through 4000 and reports `[Showing lines 2001-4000 of 4000. Full output: <path>]`.
 
 A snapshot drops a leading fragment of a trimmed line only when more text follows its
 newline; a fragment that is the whole retained tail is the end of an oversized line and
@@ -273,9 +278,10 @@ against no directory, so nothing in its spelling comes from one. A directory the
 file system holds under the written spelling keeps it for absolute paths too.
 
 The signal is checked before each of the three operations and watched while one is
-pending. An abort seen there settles the read with `Operation aborted`, and a
-later operation does not start. A started operating-system call is not
-interrupted.
+pending, including image processing. An abort settles the read with `Operation
+aborted` immediately, and a later operation does not start. A started
+operating-system call or blocking-pool resize is not interrupted; it finishes in
+the background.
 
 Text is decoded lossily as UTF-8, split on LF with trailing empty entries kept,
 and selected with `offset` (one-based) and `limit`, both finite numbers handled
@@ -294,8 +300,9 @@ detection) lacks image input, and an image block. Fitting uses the image helpers
 above; `auto_resize_images: false` sends the original bytes, and an image that
 cannot be fitted yields only the text with the omission line. Base64 encoding, decoding,
 resizing and re-encoding run on the runtime's blocking pool, so a large image never
-stalls the terminal loop or other tasks. Native detection
-uses the [MIME sniff](#inline-image-preparation) and ignores extensions.
+stalls the terminal loop or other tasks. An abort does not wait for that blocking
+work to finish. Native detection uses the [MIME sniff](#inline-image-preparation)
+and ignores extensions.
 
 ## Read rendering
 
