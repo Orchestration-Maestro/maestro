@@ -17,7 +17,6 @@ pub enum Tilde<'a> {
 }
 
 /// Which separators introduce a path below the home.
-#[cfg(test)]
 #[derive(Clone, Copy, Debug)]
 enum Separators {
     /// Only a forward slash introduces the suffix.
@@ -26,26 +25,35 @@ enum Separators {
     Windows,
 }
 
+impl Separators {
+    /// The separators of the compile target.
+    const NATIVE: Self = if cfg!(windows) {
+        Self::Windows
+    } else {
+        Self::Slash
+    };
+
+    /// Whether `c` separates path components with these separators.
+    fn contains(self, c: char) -> bool {
+        c == '/' || (matches!(self, Self::Windows) && c == '\\')
+    }
+}
+
 /// Reads a leading `~` of `path` in the compile target's flavor.
 #[must_use]
 pub fn parse_tilde(path: &str) -> Tilde<'_> {
-    parse(path, cfg!(windows))
+    parse(path, Separators::NATIVE)
 }
 
 /// Reads a leading `~` of `path` in a supplied flavor.
-fn parse(path: &str, windows: bool) -> Tilde<'_> {
+fn parse(path: &str, separators: Separators) -> Tilde<'_> {
     match path.strip_prefix('~') {
         None => Tilde::Other,
         Some("") => Tilde::Home,
         Some(rest) => rest
-            .strip_prefix(|c| is_separator(c, windows))
+            .strip_prefix(|c| separators.contains(c))
             .map_or(Tilde::Other, Tilde::Below),
     }
-}
-
-/// Whether `c` separates path components in the supplied flavor.
-fn is_separator(c: char, windows: bool) -> bool {
-    c == '/' || (windows && c == '\\')
 }
 
 /// Expands a leading `~` below the home directory with a normalizing join.
@@ -61,7 +69,7 @@ pub fn expand_tilde_joined<E>(
     path: &str,
     home: impl FnOnce() -> Result<String, E>,
 ) -> Result<String, E> {
-    join_tilde(path, parse_tilde(path), home)
+    join_form(path, parse_tilde(path), home)
 }
 
 /// Expands only `~` and `~/` with the compile target's normalizing join.
@@ -71,15 +79,12 @@ pub fn expand_tilde_joined<E>(
 ///
 /// # Errors
 /// Returns the error `home` returns when the path needs the home directory.
-pub fn expand_tilde_slash_joined<E>(
-    path: &str,
-    home: impl FnOnce() -> Result<String, E>,
-) -> Result<String, E> {
-    join_tilde(path, parse(path, false), home)
+pub fn join_home<E>(path: &str, home: impl FnOnce() -> Result<String, E>) -> Result<String, E> {
+    join_form(path, parse(path, Separators::Slash), home)
 }
 
 /// Joins a parsed home form, reading the home only when expansion needs it.
-fn join_tilde<E>(
+fn join_form<E>(
     path: &str,
     form: Tilde<'_>,
     home: impl FnOnce() -> Result<String, E>,
@@ -110,7 +115,7 @@ fn join_tilde<E>(
 /// assert_eq!(maestro_path::expand_tilde("~ada", home), Ok("~ada".to_owned()));
 /// ```
 pub fn expand_tilde<E>(path: &str, home: impl FnOnce() -> Result<String, E>) -> Result<String, E> {
-    match parse(path, false) {
+    match parse(path, Separators::Slash) {
         Tilde::Other => Ok(path.to_owned()),
         Tilde::Home => home(),
         Tilde::Below(rest) => Ok(format!("{}/{rest}", home()?)),
@@ -133,7 +138,7 @@ pub fn expand_tilde_native<E>(
     let home = || home().map(PathBuf::into_os_string);
     Ok(expand(
         path,
-        cfg!(windows),
+        Separators::NATIVE,
         home,
         |path: &mut OsString, tail: &str| path.push(tail),
     )?
@@ -144,11 +149,12 @@ pub fn expand_tilde_native<E>(
 /// the home that `home` supplies and extended through `push`.
 fn expand<H: AsRef<OsStr>, E>(
     path: &str,
-    windows: bool,
+    separators: Separators,
     home: impl FnOnce() -> Result<H, E>,
     push: fn(&mut H, &str),
 ) -> Result<Option<H>, E> {
-    let below = match parse(path, windows) {
+    let windows = matches!(separators, Separators::Windows);
+    let below = match parse(path, separators) {
         Tilde::Other => return Ok(None),
         Tilde::Home => return home().map(Some),
         Tilde::Below(below) => below,
@@ -164,7 +170,7 @@ fn expand<H: AsRef<OsStr>, E>(
     };
     if windows {
         below
-            .split(|c| is_separator(c, windows))
+            .split(|c| separators.contains(c))
             .filter(|part| !part.is_empty())
             .for_each(append);
     } else {

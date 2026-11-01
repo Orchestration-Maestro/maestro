@@ -36,7 +36,7 @@ fn parse_reads_three_forms() {
     ];
     for (written, separators, expected) in rows {
         assert_eq!(
-            parse(written, matches!(separators, Separators::Windows)),
+            parse(written, separators),
             expected,
             "{written:?} {separators:?}"
         );
@@ -130,13 +130,13 @@ fn native_windows_expansion_keeps_its_separator_rules() {
     for (written, home, expected) in rows {
         let expanded = super::expand(
             written,
-            true,
+            Separators::Windows,
             || Ok::<_, io::Error>(home.to_owned()),
             String::push_str,
         )
         .unwrap();
         assert_eq!(expanded.as_deref(), expected, "{written:?} over {home:?}");
     }
-    let error = super::expand(r"~\x", true, unread, String::push_str).unwrap_err();
+    let error = super::expand(r"~\x", Separators::Windows, unread, String::push_str).unwrap_err();
     assert_eq!(error.to_string(), "the home directory was read");
 }

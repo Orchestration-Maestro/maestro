@@ -73,7 +73,7 @@ pub(super) fn expand_home<O: AutocompleteOperations>(
     operations: &O,
     raw: &str,
 ) -> io::Result<String> {
-    let mut expanded = maestro_path::expand_tilde_slash_joined(raw, || operations.home_dir())?;
+    let mut expanded = maestro_path::join_home(raw, || operations.home_dir())?;
     if raw.ends_with('/') && !expanded.ends_with('/') {
         expanded.push('/');
     }

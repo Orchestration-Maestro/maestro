@@ -1,6 +1,6 @@
 //! Terminal, image, editor and session-directory preferences.
 
-use maestro_path::expand_tilde_slash_joined;
+use maestro_path::join_home;
 use maestro_resources::paths::native_home_directory;
 use serde_json::Value;
 use std::io;
@@ -33,7 +33,7 @@ fn expand_session_dir(configured: &str) -> String {
 /// Expand the two supported home forms through `home`, keeping every other spelling as
 /// written and returning the configured text when the home lookup fails.
 fn expand_session_dir_with(configured: &str, home: impl FnOnce() -> io::Result<String>) -> String {
-    expand_tilde_slash_joined(configured, home).unwrap_or_else(|_| configured.to_owned())
+    join_home(configured, home).unwrap_or_else(|_| configured.to_owned())
 }
 
 impl SettingsManager {
