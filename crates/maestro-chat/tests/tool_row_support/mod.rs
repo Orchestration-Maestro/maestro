@@ -399,7 +399,12 @@ pub fn self_rendered_rows_walk_live_children() {
         array: Rc::downgrade(&row.children()),
         done: Cell::new(false),
     }));
-    row.add_child(Rc::new(maestro_tui::Text::new("removed".into(), 0, 0, None)));
+    row.add_child(Rc::new(maestro_tui::Text::new(
+        "removed".into(),
+        0,
+        0,
+        None,
+    )));
     assert_eq!(plain(&row), ["editor", "added"]);
 }
 /// The rows of `row` without styles or trailing padding.
