@@ -3,6 +3,7 @@
 
 mod agent_session_branch_summary_checks;
 mod agent_session_branching_checks;
+mod agent_session_compaction_checks;
 mod agent_session_concurrent_checks;
 mod agent_session_custom_message_checks;
 mod agent_session_input_checks;
@@ -204,6 +205,7 @@ mod support {
     pub mod attachments;
     pub mod browser_records;
     pub mod browser_storage_records;
+    pub mod compaction;
     #[cfg(not(target_arch = "wasm32"))]
     pub mod document_attachments;
     #[cfg(not(target_arch = "wasm32"))]
