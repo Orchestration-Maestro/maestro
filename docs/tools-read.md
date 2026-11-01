@@ -20,8 +20,7 @@ empty content with `first_line_exceeds_limit`, even with a zero line quota.
 line alone exceeds the byte budget. That partial line reports byte truncation. When
 a newline ends the oversized line, the suffix uses the full byte budget and omits
 the newline. An omitted final newline reports bytes, not lines, when no line was
-omitted.
-A zero line quota selects no entries; a zero byte quota can retain an empty
+omitted. A zero line quota selects no entries; a zero byte quota can retain an empty
 partial tail entry. Consequently `output_lines` is not necessarily the split
 count of the returned text.
 
@@ -301,8 +300,8 @@ above; `auto_resize_images: false` sends the original bytes, and an image that
 cannot be fitted yields only the text with the omission line. Base64 encoding, decoding,
 resizing and re-encoding run on the runtime's blocking pool, so a large image never
 stalls the terminal loop or other tasks. An abort does not wait for that blocking
-work to finish. Native detection
-uses the [MIME sniff](#inline-image-preparation) and ignores extensions.
+work to finish. Native detection uses the [MIME sniff](#inline-image-preparation)
+and ignores extensions.
 
 ## Read rendering
 

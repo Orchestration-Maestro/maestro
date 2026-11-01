@@ -62,9 +62,7 @@ pub(crate) async fn guarded<T, F: Future<Output = Result<T, DiagnosticErrorInfo>
         return start().await;
     };
     let cancelled = signal.cancelled();
-    if signal.is_aborted() {
-        return Err(aborted());
-    }
+    check_aborted(Some(signal))?;
     match select(pin!(start()), pin!(cancelled)).await {
         Either::Left((result, _)) if !signal.is_aborted() => result,
         _ => Err(aborted()),

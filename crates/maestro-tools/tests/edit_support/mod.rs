@@ -87,7 +87,7 @@ use std::sync::{Arc, Mutex};
 pub type Tool = ToolDefinition<(), EditToolInput, EditToolDetails, maestro_tools::EditRenderState>;
 /// File stages for a supplied edit adapter.
 pub struct Operations {
-    /// Shared scripted behavior, including pending-future drop witnesses.
+    /// Shared scripted behavior, including gates for in-flight operations.
     pub script: ScriptedWrite,
     /// Actual start and successful settlement events.
     pub events: Journal,
