@@ -69,32 +69,15 @@ pub struct BranchPreparation {
 }
 /// Select only consumed entry fields, excluding tool results and metadata.
 fn message(entry: &Value) -> Result<Option<Value>, serde_json::Error> {
-    use crate::session_manager::context::{generated, property};
+    use crate::session_manager::context::{generated_message, property};
+    if property(Some(entry), "type")?.and_then(Value::as_str) != Some("message") {
+        return Ok(generated_message(entry));
+    }
     Ok(
-        match property(Some(entry), "type")?.and_then(Value::as_str) {
-            Some("message") => {
-                if property(entry.get("message"), "role")?.and_then(Value::as_str)
-                    == Some("toolResult")
-                {
-                    None
-                } else {
-                    entry.get("message").cloned()
-                }
-            }
-            Some("custom_message") => Some(generated(
-                entry,
-                "custom",
-                &["customType", "content", "display", "details"],
-            )),
-            Some("branch_summary") => {
-                Some(generated(entry, "branchSummary", &["summary", "fromId"]))
-            }
-            Some("compaction") => Some(generated(
-                entry,
-                "compactionSummary",
-                &["summary", "tokensBefore"],
-            )),
-            _ => None,
+        if property(entry.get("message"), "role")?.and_then(Value::as_str) == Some("toolResult") {
+            None
+        } else {
+            entry.get("message").cloned()
         },
     )
 }

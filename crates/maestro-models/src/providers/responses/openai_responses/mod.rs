@@ -25,6 +25,7 @@ use crate::providers::http::{
 };
 use crate::providers::json_text::compact_json;
 use crate::providers::model_compat::compat_flag;
+use crate::providers::openai_prompt_cache::prompt_cache_key;
 use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, CacheRetention, Context,
     DiagnosticErrorInfo, Local, Model, ModelThinkingLevel, ProviderExecution, ProviderInvocation,
@@ -340,7 +341,7 @@ impl<E: ProviderExecution> Request<'_, E> {
                 .common
                 .max_tokens
                 .filter(|n| *n != 0.0 && !n.is_nan()),
-            prompt_cache_key: self.session(),
+            prompt_cache_key: self.session().map(prompt_cache_key),
             prompt_cache_retention: long.then_some("24h"),
         })
         .map_err(|e| RequestFailure::new(e.to_string()))

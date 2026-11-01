@@ -807,6 +807,34 @@ fn error_messages_use_the_last_successful_usage() {
 }
 
 #[test]
+fn zero_usage_responses_use_the_last_real_usage() {
+    on_paused_task_set(|_| async {
+        for (prior, expected) in [(Some(14), 1), (None, 0)] {
+            let calls = Rc::new(Cell::new(0));
+            let h = seeded_window(
+                100.0,
+                json!({"compaction": {"reserveTokens": 87}}),
+                vec![counted_summary(Rc::clone(&calls))],
+            )
+            .await;
+            let zero = response(400, &answer_extra(&StopReason::Stop, None, 0));
+            let mut records = vec![user(&json!([{"type": "text", "text": "hello"}]), 100)];
+            if let Some(total) = prior {
+                records.push(assistant(
+                    "",
+                    200,
+                    &answer_extra(&StopReason::Stop, None, total),
+                ));
+            }
+            records.push(serde_json::to_value(&zero).unwrap());
+            set_agent_messages(&h, &records);
+            h.session.check_compaction(&zero, true).await.unwrap();
+            assert_eq!(calls.get(), expected, "prior usage {prior:?}");
+        }
+    });
+}
+
+#[test]
 fn errors_without_usage_emit_nothing() {
     let expected = case("compaction_checks", "error_without_usage_does_nothing");
     on_paused_task_set(|_| async {

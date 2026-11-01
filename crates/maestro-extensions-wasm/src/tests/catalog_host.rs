@@ -288,8 +288,9 @@ impl host::HostModelRegistry for State {
         &mut self,
         this: Resource<Reader>,
         model: String,
-    ) -> wasmtime::Result<Result<bool, String>> {
-        Ok(self.table.get(&this)?.flag("isUsingOAuth", &[json!(model)]))
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let result = self.table.get(&this)?.flag("isUsingOAuth", &[json!(model)]);
+        self.routed_value(result.map(host::RouteValue::Boolean))
     }
     fn register_provider(
         &mut self,

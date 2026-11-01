@@ -128,7 +128,7 @@ fn add_metadata<T: crate::callback_imports::CallbackView + 'static>(
         Request::HasConfiguredAuth,
         operand::<T, Endpoint, String>,
     )?;
-    add_operand(
+    add_routed_operand(
         host,
         "[method]model-registry.is-using-oauth",
         Request::IsUsingOAuth,

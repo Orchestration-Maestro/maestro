@@ -15,6 +15,7 @@ use crate::providers::http::{
     send_with_status_error,
 };
 use crate::providers::json_text::compact_json;
+use crate::providers::openai_prompt_cache::prompt_cache_key;
 use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, Context, DiagnosticErrorInfo, Local, Model,
     ProviderExecution, ProviderInvocation, ProviderSpawner, SharedAssistantMessage,
@@ -319,6 +320,8 @@ struct Payload<'a> {
     input: Vec<Value>,
     /// Request streaming.
     stream: bool,
+    /// Asks the service not to keep the response.
+    store: bool,
     /// Supplied session key, independent of cache retention.
     #[serde(skip_serializing_if = "Option::is_none")]
     prompt_cache_key: Option<&'a str>,
@@ -364,7 +367,8 @@ fn build_params<E: ProviderExecution>(
             None,
         )?,
         stream: true,
-        prompt_cache_key: options.common.session_id.as_deref(),
+        store: false,
+        prompt_cache_key: options.common.session_id.as_deref().map(prompt_cache_key),
         max_output_tokens: options
             .common
             .max_tokens

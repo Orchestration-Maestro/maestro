@@ -1098,10 +1098,6 @@ fn with_compaction_notice(observed: Observed, world: &World) -> Observed {
 /// The failure of the delivered input when no provider is registered.
 const PROVIDER_FAILURE: &str = "No API provider registered for api: unknown";
 
-/// The notice the automatic compaction attempt ends with when no provider is registered.
-const AUTO_COMPACTION_FAILURE: &str =
-    "Auto-compaction failed: No API provider registered for api: unknown";
-
 /// Runs `action` from the start notification of a compaction of `world`'s session, while
 /// the session compacts, then lets the compaction end.
 pub(super) async fn during_compaction(
@@ -1662,7 +1658,6 @@ async fn rejection_case(directory: &Path, operation: Operation, expected: Value)
         0,
         format!("{shown}{}", " ".repeat(80 - heading.chars().count() - 1)),
     );
-    let expected = with_notice(expected, &world, AUTO_COMPACTION_FAILURE);
     assert_eq!(observe(&world, &heard, 0), expected);
 }
 

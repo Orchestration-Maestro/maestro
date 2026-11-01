@@ -25,6 +25,8 @@ pub(super) struct CallbackServer {
     pub(super) stop: Cancellation,
     /// Completes once no accepting listener is owned.
     pub(super) stopped: EventStream<(), ()>,
+    /// Port the listener is bound to; `None` when it holds none.
+    pub(super) port: Option<u16>,
 }
 
 impl CallbackServer {
@@ -35,7 +37,18 @@ impl CallbackServer {
             wait: EventStream::new(|_| true, |_| ()),
             stop: Cancellation::new(),
             stopped: EventStream::new(|()| true, |()| ()),
+            port: None,
         }
+    }
+
+    /// Represent a failed bind: the wait is already cancelled, so login continues with pasted
+    /// input, and no listener exists to stop.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(super) fn cancelled() -> Self {
+        let server = Self::new();
+        server.wait.push(CallbackOutcome::Cancelled);
+        server.stopped.push(());
+        server
     }
     /// Request admission shutdown and await its completion witness, not peer drain.
     pub(super) async fn close(&self) {
@@ -58,23 +71,6 @@ pub(super) fn callback_host(value: Option<String>) -> String {
         .unwrap_or_else(|| "127.0.0.1".into())
 }
 
-/// Bind the native accepting listener.
-#[cfg(not(target_arch = "wasm32"))]
-pub(super) async fn bind(
-    state: String,
-    port: u16,
-    route: fn(&str, &str) -> CallbackResponse,
-) -> Result<CallbackServer, OAuthError> {
-    bind_with(
-        state,
-        port,
-        route,
-        |key| std::env::var(key).ok(),
-        native_accept,
-    )
-    .await
-}
-
 /// One borrowing native accept step, replaceable at the effect boundary.
 #[cfg(not(target_arch = "wasm32"))]
 pub(super) type Accept<'a> = std::pin::Pin<
@@ -88,7 +84,7 @@ pub(super) type Accept<'a> = std::pin::Pin<
 
 /// Accept a real native peer without transferring listener ownership.
 #[cfg(not(target_arch = "wasm32"))]
-fn native_accept(listener: &tokio::net::TcpListener) -> Accept<'_> {
+pub(super) fn native_accept(listener: &tokio::net::TcpListener) -> Accept<'_> {
     Box::pin(listener.accept())
 }
 
@@ -103,18 +99,21 @@ pub(super) async fn bind_with(
 ) -> Result<CallbackServer, OAuthError> {
     let host = callback_host(environment("MAESTRO_OAUTH_CALLBACK_HOST"));
     let listener = bind_host(&host, port).await?;
-    Ok(listen(listener, state, route, accept))
+    let bound = listener.local_addr().map_err(|error| io_error(&error))?;
+    Ok(listen(listener, bound.port(), state, route, accept))
 }
 
 /// Own the accepting socket until stop or an accept failure is published.
 #[cfg(not(target_arch = "wasm32"))]
 fn listen(
     listener: tokio::net::TcpListener,
+    port: u16,
     state: String,
     route: fn(&str, &str) -> CallbackResponse,
     accept: impl for<'a> Fn(&'a tokio::net::TcpListener) -> Accept<'a> + Send + 'static,
 ) -> CallbackServer {
-    let server = CallbackServer::new();
+    let mut server = CallbackServer::new();
+    server.port = Some(port);
     let wait = server.wait.clone();
     let stop = server.stop.clone();
     let stopped = server.stopped.clone();

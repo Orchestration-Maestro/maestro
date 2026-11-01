@@ -11,6 +11,7 @@ publish = false
 # names the series tooling uses.
 [dependencies]
 cargo_metadata = "*"
+rustix = { version = "*", default-features = false, features = ["std", "stdio"] }
 serde = { version = "*", features = ["derive"] }
 serde_json = "*"
 sha2 = "0.11"
