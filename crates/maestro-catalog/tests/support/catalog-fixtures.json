@@ -11848,18 +11848,6 @@
           ],
           [
             "xiaomi",
-            "mimo-v2-flash"
-          ],
-          [
-            "xiaomi",
-            "mimo-v2-omni"
-          ],
-          [
-            "xiaomi",
-            "mimo-v2-pro"
-          ],
-          [
-            "xiaomi",
             "mimo-v2.5"
           ],
           [
@@ -11867,16 +11855,20 @@
             "mimo-v2.5-pro"
           ],
           [
-            "xiaomi-token-plan-ams",
-            "mimo-v2-flash"
+            "xiaomi",
+            "mimo-v2.5-pro-ultraspeed"
           ],
           [
-            "xiaomi-token-plan-ams",
-            "mimo-v2-omni"
+            "xiaomi",
+            "mimo-v2.6-flash"
           ],
           [
-            "xiaomi-token-plan-ams",
-            "mimo-v2-pro"
+            "xiaomi",
+            "mimo-v2.6-pro"
+          ],
+          [
+            "xiaomi",
+            "mimo-v2.6-pro-ultraspeed"
           ],
           [
             "xiaomi-token-plan-ams",
@@ -11887,16 +11879,20 @@
             "mimo-v2.5-pro"
           ],
           [
-            "xiaomi-token-plan-cn",
-            "mimo-v2-flash"
+            "xiaomi-token-plan-ams",
+            "mimo-v2.5-pro-ultraspeed"
           ],
           [
-            "xiaomi-token-plan-cn",
-            "mimo-v2-omni"
+            "xiaomi-token-plan-ams",
+            "mimo-v2.6-flash"
           ],
           [
-            "xiaomi-token-plan-cn",
-            "mimo-v2-pro"
+            "xiaomi-token-plan-ams",
+            "mimo-v2.6-pro"
+          ],
+          [
+            "xiaomi-token-plan-ams",
+            "mimo-v2.6-pro-ultraspeed"
           ],
           [
             "xiaomi-token-plan-cn",
@@ -11907,16 +11903,20 @@
             "mimo-v2.5-pro"
           ],
           [
-            "xiaomi-token-plan-sgp",
-            "mimo-v2-flash"
+            "xiaomi-token-plan-cn",
+            "mimo-v2.5-pro-ultraspeed"
           ],
           [
-            "xiaomi-token-plan-sgp",
-            "mimo-v2-omni"
+            "xiaomi-token-plan-cn",
+            "mimo-v2.6-flash"
           ],
           [
-            "xiaomi-token-plan-sgp",
-            "mimo-v2-pro"
+            "xiaomi-token-plan-cn",
+            "mimo-v2.6-pro"
+          ],
+          [
+            "xiaomi-token-plan-cn",
+            "mimo-v2.6-pro-ultraspeed"
           ],
           [
             "xiaomi-token-plan-sgp",
@@ -11925,6 +11925,22 @@
           [
             "xiaomi-token-plan-sgp",
             "mimo-v2.5-pro"
+          ],
+          [
+            "xiaomi-token-plan-sgp",
+            "mimo-v2.5-pro-ultraspeed"
+          ],
+          [
+            "xiaomi-token-plan-sgp",
+            "mimo-v2.6-flash"
+          ],
+          [
+            "xiaomi-token-plan-sgp",
+            "mimo-v2.6-pro"
+          ],
+          [
+            "xiaomi-token-plan-sgp",
+            "mimo-v2.6-pro-ultraspeed"
           ],
           [
             "zai",
@@ -15865,18 +15881,6 @@
           ],
           [
             "xiaomi",
-            "mimo-v2-flash"
-          ],
-          [
-            "xiaomi",
-            "mimo-v2-omni"
-          ],
-          [
-            "xiaomi",
-            "mimo-v2-pro"
-          ],
-          [
-            "xiaomi",
             "mimo-v2.5"
           ],
           [
@@ -15884,16 +15888,20 @@
             "mimo-v2.5-pro"
           ],
           [
-            "xiaomi-token-plan-ams",
-            "mimo-v2-flash"
+            "xiaomi",
+            "mimo-v2.5-pro-ultraspeed"
           ],
           [
-            "xiaomi-token-plan-ams",
-            "mimo-v2-omni"
+            "xiaomi",
+            "mimo-v2.6-flash"
           ],
           [
-            "xiaomi-token-plan-ams",
-            "mimo-v2-pro"
+            "xiaomi",
+            "mimo-v2.6-pro"
+          ],
+          [
+            "xiaomi",
+            "mimo-v2.6-pro-ultraspeed"
           ],
           [
             "xiaomi-token-plan-ams",
@@ -15904,16 +15912,20 @@
             "mimo-v2.5-pro"
           ],
           [
-            "xiaomi-token-plan-cn",
-            "mimo-v2-flash"
+            "xiaomi-token-plan-ams",
+            "mimo-v2.5-pro-ultraspeed"
           ],
           [
-            "xiaomi-token-plan-cn",
-            "mimo-v2-omni"
+            "xiaomi-token-plan-ams",
+            "mimo-v2.6-flash"
           ],
           [
-            "xiaomi-token-plan-cn",
-            "mimo-v2-pro"
+            "xiaomi-token-plan-ams",
+            "mimo-v2.6-pro"
+          ],
+          [
+            "xiaomi-token-plan-ams",
+            "mimo-v2.6-pro-ultraspeed"
           ],
           [
             "xiaomi-token-plan-cn",
@@ -15924,16 +15936,20 @@
             "mimo-v2.5-pro"
           ],
           [
-            "xiaomi-token-plan-sgp",
-            "mimo-v2-flash"
+            "xiaomi-token-plan-cn",
+            "mimo-v2.5-pro-ultraspeed"
           ],
           [
-            "xiaomi-token-plan-sgp",
-            "mimo-v2-omni"
+            "xiaomi-token-plan-cn",
+            "mimo-v2.6-flash"
           ],
           [
-            "xiaomi-token-plan-sgp",
-            "mimo-v2-pro"
+            "xiaomi-token-plan-cn",
+            "mimo-v2.6-pro"
+          ],
+          [
+            "xiaomi-token-plan-cn",
+            "mimo-v2.6-pro-ultraspeed"
           ],
           [
             "xiaomi-token-plan-sgp",
@@ -15942,6 +15958,22 @@
           [
             "xiaomi-token-plan-sgp",
             "mimo-v2.5-pro"
+          ],
+          [
+            "xiaomi-token-plan-sgp",
+            "mimo-v2.5-pro-ultraspeed"
+          ],
+          [
+            "xiaomi-token-plan-sgp",
+            "mimo-v2.6-flash"
+          ],
+          [
+            "xiaomi-token-plan-sgp",
+            "mimo-v2.6-pro"
+          ],
+          [
+            "xiaomi-token-plan-sgp",
+            "mimo-v2.6-pro-ultraspeed"
           ],
           [
             "zai",
@@ -19840,18 +19872,6 @@
           ],
           [
             "xiaomi",
-            "mimo-v2-flash"
-          ],
-          [
-            "xiaomi",
-            "mimo-v2-omni"
-          ],
-          [
-            "xiaomi",
-            "mimo-v2-pro"
-          ],
-          [
-            "xiaomi",
             "mimo-v2.5"
           ],
           [
@@ -19859,16 +19879,20 @@
             "mimo-v2.5-pro"
           ],
           [
-            "xiaomi-token-plan-ams",
-            "mimo-v2-flash"
+            "xiaomi",
+            "mimo-v2.5-pro-ultraspeed"
           ],
           [
-            "xiaomi-token-plan-ams",
-            "mimo-v2-omni"
+            "xiaomi",
+            "mimo-v2.6-flash"
           ],
           [
-            "xiaomi-token-plan-ams",
-            "mimo-v2-pro"
+            "xiaomi",
+            "mimo-v2.6-pro"
+          ],
+          [
+            "xiaomi",
+            "mimo-v2.6-pro-ultraspeed"
           ],
           [
             "xiaomi-token-plan-ams",
@@ -19879,16 +19903,20 @@
             "mimo-v2.5-pro"
           ],
           [
-            "xiaomi-token-plan-cn",
-            "mimo-v2-flash"
+            "xiaomi-token-plan-ams",
+            "mimo-v2.5-pro-ultraspeed"
           ],
           [
-            "xiaomi-token-plan-cn",
-            "mimo-v2-omni"
+            "xiaomi-token-plan-ams",
+            "mimo-v2.6-flash"
           ],
           [
-            "xiaomi-token-plan-cn",
-            "mimo-v2-pro"
+            "xiaomi-token-plan-ams",
+            "mimo-v2.6-pro"
+          ],
+          [
+            "xiaomi-token-plan-ams",
+            "mimo-v2.6-pro-ultraspeed"
           ],
           [
             "xiaomi-token-plan-cn",
@@ -19899,16 +19927,20 @@
             "mimo-v2.5-pro"
           ],
           [
-            "xiaomi-token-plan-sgp",
-            "mimo-v2-flash"
+            "xiaomi-token-plan-cn",
+            "mimo-v2.5-pro-ultraspeed"
           ],
           [
-            "xiaomi-token-plan-sgp",
-            "mimo-v2-omni"
+            "xiaomi-token-plan-cn",
+            "mimo-v2.6-flash"
           ],
           [
-            "xiaomi-token-plan-sgp",
-            "mimo-v2-pro"
+            "xiaomi-token-plan-cn",
+            "mimo-v2.6-pro"
+          ],
+          [
+            "xiaomi-token-plan-cn",
+            "mimo-v2.6-pro-ultraspeed"
           ],
           [
             "xiaomi-token-plan-sgp",
@@ -19917,6 +19949,22 @@
           [
             "xiaomi-token-plan-sgp",
             "mimo-v2.5-pro"
+          ],
+          [
+            "xiaomi-token-plan-sgp",
+            "mimo-v2.5-pro-ultraspeed"
+          ],
+          [
+            "xiaomi-token-plan-sgp",
+            "mimo-v2.6-flash"
+          ],
+          [
+            "xiaomi-token-plan-sgp",
+            "mimo-v2.6-pro"
+          ],
+          [
+            "xiaomi-token-plan-sgp",
+            "mimo-v2.6-pro-ultraspeed"
           ],
           [
             "zai",
