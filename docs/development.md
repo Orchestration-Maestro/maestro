@@ -800,8 +800,8 @@ their compiler inputs. It skips an executable when an exact linked library build
 is newer than it: advancing that binary would hide a rebuild from Cargo.
 Cargo's `.fingerprint` records identify each direct and transitive library build
 by its fingerprint and metadata hash, independently of dependency aliases.
-A newer build of the same crate under
-another hash, including check-only metadata from Clippy, does not outdate it.
+A newer build of the same crate under another hash, including check-only metadata
+from Clippy, does not outdate it.
 An uplifted executable uses the records of its hashed twin: normalization matches
 length and contents, so copied and hard-linked outputs work alike. Identical twins
 with different dependency records fail rather than select an uncertain build.
@@ -810,12 +810,11 @@ Without an executable fingerprint, normalization conservatively treats any newer
 library output as an input. If a recorded dependency build no longer exists,
 its consumer stays stale. This can happen after cleaning dependency packages
 and rebuilding with another feature selection while older consumers remain.
-An empty library fingerprint hash marks a build Cargo has invalidated. Normalization
-skips that build, keeps its consumers stale and advances unrelated current binaries.
-Cargo can leave the hash empty after a failed or interrupted rebuild.
-A malformed non-empty hash or dependency record fails setup with a diagnostic.
-These records follow the pinned Cargo toolchain; real Cargo fixtures exercise
-their layout and rebuild behavior in the tooling tests.
+An empty library fingerprint hash marks a build Cargo has invalidated.
+Normalization skips that build, keeps its consumers stale and advances unrelated
+current binaries. Cargo can leave the hash empty after a failed or interrupted
+rebuild. A malformed non-empty hash or dependency record fails setup with a
+diagnostic. These records follow the pinned Cargo toolchain.
 A run from a nextest archive (`TEST_ARCHIVE` set) skips the fingerprint check,
 because nextest never rebuilds archived executables. A skipped test binary compiles
 its components itself on first use. A skipped example would warm code that no test

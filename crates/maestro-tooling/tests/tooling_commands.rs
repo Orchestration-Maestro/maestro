@@ -3764,6 +3764,39 @@ fn cache_normalization_reads_the_pinned_cargo_builds() {
     );
 }
 
+/// Rebuilding an exact linked library keeps its existing consumers stale.
+#[test]
+fn cache_normalization_keeps_consumers_of_newer_linked_builds_stale() {
+    use std::time::{Duration, UNIX_EPOCH};
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path();
+    cache_fixture(root);
+    let profile = root.join("target/debug");
+    age_cache_outputs(&profile);
+    let source = root.join("leaf/src/lib.rs");
+    fs::write(&source, fs::read(&source).unwrap()).unwrap();
+    cache_cargo(root, &["build", "--offline", "--locked", "-p", "leaf"]);
+
+    let result = Command::new(env!("CARGO_BIN_EXE_development"))
+        .args(["nextest-setup", "normalize-component-cache"])
+        .arg(&profile)
+        .env_remove("TEST_ARCHIVE")
+        .output()
+        .unwrap();
+
+    assert_eq!(
+        result.status.code(),
+        Some(3),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    let consumer = profile.join(format!("app{}", std::env::consts::EXE_SUFFIX));
+    assert_eq!(
+        fs::metadata(consumer).unwrap().modified().unwrap(),
+        UNIX_EPOCH + Duration::from_secs(100)
+    );
+}
+
 /// Cleaning libraries before another feature build leaves their older consumers stale.
 #[test]
 fn cache_normalization_keeps_consumers_of_replaced_builds_stale() {
