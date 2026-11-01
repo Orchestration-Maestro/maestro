@@ -1,27 +1,36 @@
 //! Shipped stdout routing with a real terminal input and an unread output pipe.
 use crate::support::{ChildGuard, Root};
 use maestro_test_process::{HARNESS_START, TestProcess, child};
+use rustix::process::{Pid, Signal, WaitOptions, kill_process, waitpid};
 use serde_json::json;
 use std::{
     fs::File,
     io::{BufReader, Read, Write},
-    os::unix::net::{UnixListener, UnixStream},
+    os::unix::{
+        net::{UnixListener, UnixStream},
+        process::CommandExt,
+    },
     process::{ChildStdout, Command, Stdio},
 };
 
 /// Initialization output deliberately contains escape and non-text bytes.
 const INIT: &[u8] = b"INIT\0\xff\x1b[0m";
+/// Bytes captured only from the native execution's standard output.
+const EXEC_STDOUT: &[u8] = b"native-out\0\x1b[32m";
+/// Bytes captured only from the native execution's standard error.
+const EXEC_STDERR: &[u8] = b"native-error\0\x1b[31m";
 /// The complete-host-frame opening marker.
 const FRAME_START: &[u8] = b"\x1b[?2026h";
 /// The complete-host-frame closing marker.
 const FRAME_END: &[u8] = b"\x1b[?2026l";
 
-/// Runs both standard output generations through actual executable startup and reload.
+/// Runs both output generations through executable startup, suspension and reload.
 pub(super) fn run() {
     for generation in ["p2", "p3"] {
         let root = Root::new();
         root.models("http://127.0.0.1:1/v1");
         let helper = TestProcess::child(acknowledge).unwrap().command().unwrap();
+        let execution = TestProcess::child(native_exec).unwrap().command().unwrap();
         let component = std::env::var("MAESTRO_WASI_COMPONENT").unwrap();
         let mut command = root.command(&["--offline", "--extension", &component]);
         command
@@ -31,6 +40,7 @@ pub(super) fn run() {
                 json!({
                     "command":helper.get_program().to_str().unwrap(),
                     "args":helper.get_args().map(|arg| arg.to_str().unwrap()).collect::<Vec<_>>(),
+                    "exec_args":execution.get_args().map(|arg| arg.to_str().unwrap()).collect::<Vec<_>>(),
                     "prologue":HARNESS_START,
                 })
                 .to_string(),
@@ -76,7 +86,9 @@ fn interactive(root: &Root, command: &mut Command, generation: &str) {
     let (master, slave) = super::terminal_support::pty();
     let mut input = File::from(master);
     let listener = UnixListener::bind(root.path("ack")).unwrap();
+    // A separate group in our session lets the kernel honor its terminal stop signal.
     let mut process = command
+        .process_group(0)
         .stdin(Stdio::from(slave))
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -89,6 +101,7 @@ fn interactive(root: &Root, command: &mut Command, generation: &str) {
     through(&mut output, &mut wire, b"ROOT-STDOUT-READY\x07");
     through(&mut output, &mut wire, FRAME_END);
     assert!(wire.windows(INIT.len()).any(|bytes| bytes == INIT));
+    suspend(Pid::from_child(guard.0), &mut input, &mut output, &mut wire);
     probe(&mut input, &listener, &mut output, &mut wire, generation);
     input.write_all(b"/quit\r").unwrap();
     output.read_to_end(&mut wire).unwrap();
@@ -101,6 +114,18 @@ fn interactive(root: &Root, command: &mut Command, generation: &str) {
             .any(|bytes| bytes == b"\x1b[?2004l")
     );
     without_host_frames(&wire);
+}
+
+/// Observes the real group stop before continuing the executable and waiting for its redraw.
+fn suspend(pid: Pid, input: &mut File, output: &mut BufReader<ChildStdout>, wire: &mut Vec<u8>) {
+    input.write_all(b"\x1a").unwrap();
+    let (stopped, status) = waitpid(Some(pid), WaitOptions::UNTRACED).unwrap().unwrap();
+    assert_eq!(stopped, pid);
+    assert_eq!(status.stopping_signal(), Some(Signal::TSTP.as_raw()));
+    through(output, wire, b"\x1b[?2004l");
+    kill_process(pid, Signal::CONT).unwrap();
+    through(output, wire, b"\x1b[?2004h");
+    through(output, wire, FRAME_END);
 }
 
 /// Repeats the guest's exact-byte write on both sides of a real extension reload.
@@ -127,7 +152,15 @@ fn probe(
         peer.read_to_end(&mut reply).unwrap();
         assert_eq!(
             serde_json::from_slice::<serde_json::Value>(&reply).unwrap(),
-            json!({"terminal":false})
+            json!({
+                "output":{"terminal":false},
+                "exec":{
+                    "stdout":String::from_utf8([HARNESS_START, EXEC_STDOUT].concat()).unwrap(),
+                    "stderr":String::from_utf8(EXEC_STDERR.to_vec()).unwrap(),
+                    "code":0,
+                    "killed":false,
+                },
+            })
         );
         through(output, wire, b"ROOT-STDOUT-DONE\x07");
         let guest = without_host_frames(wire);
@@ -209,6 +242,15 @@ fn without_host_frames(wire: &[u8]) -> Vec<u8> {
         }
     }
     guest
+}
+
+/// A real native execution produces distinct streams without the terminal's stdout route.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+fn native_exec() {
+    std::io::stdout().write_all(EXEC_STDOUT).unwrap();
+    std::io::stderr().write_all(EXEC_STDERR).unwrap();
+    child::leave(0);
 }
 
 /// A real native child sends the guest's result only after its stdout attempt completed.

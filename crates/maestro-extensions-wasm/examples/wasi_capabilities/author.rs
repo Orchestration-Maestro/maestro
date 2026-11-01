@@ -146,14 +146,14 @@ fn root_output(api: &ExtensionAPI, endpoint: String) -> Result<(), String> {
             })
         }),
     )?;
-    let native = api.native_io();
+    let executor = api.clone();
     api.register_command(
         "stdout-probe",
         CommandOptions {
             description: None,
             get_argument_completions: None,
             handler: Rc::new(move |generation, context| {
-                let (native, endpoint) = (native.clone(), endpoint.clone());
+                let (api, endpoint) = (executor.clone(), endpoint.clone());
                 Box::pin(async move {
                     if generation == "reload" {
                         return context.reload().await;
@@ -164,7 +164,7 @@ fn root_output(api: &ExtensionAPI, endpoint: String) -> Result<(), String> {
                     let result =
                         stdio::output(&json!({"generation":generation,"bytes":bytes})).await;
                     let reply = result.unwrap_or_else(|error| json!({"error":error}));
-                    acknowledge(&*native, endpoint, reply).await?;
+                    acknowledge(&api, endpoint, reply).await?;
                     context.ui()?.set_title("ROOT-STDOUT-DONE")
                 })
             }),
@@ -173,14 +173,14 @@ fn root_output(api: &ExtensionAPI, endpoint: String) -> Result<(), String> {
 }
 
 /// Executes the supplied checked Rust child through the real native capability.
-async fn acknowledge(
-    native: &dyn maestro_extensions_wasm::io::NativeIo,
-    endpoint: String,
-    reply: Value,
-) -> Result<(), String> {
+async fn acknowledge(api: &ExtensionAPI, endpoint: String, reply: Value) -> Result<(), String> {
     use maestro_extensions_wasm::child_process::{SpawnOptions, Stdio};
     let command = std::env::var("MAESTRO_WASI_ROOT_COMMAND").map_err(|error| error.to_string())?;
     let command: Value = serde_json::from_str(&command).map_err(|error| error.to_string())?;
+    let execution = execute(api, &command)
+        .await
+        .unwrap_or_else(|error| json!({"error":error}));
+    let reply = json!({"output":reply,"exec":execution});
     let program = command["command"]
         .as_str()
         .ok_or("missing native program")?;
@@ -188,7 +188,8 @@ async fn acknowledge(
         serde_json::from_value(command["args"].clone()).map_err(|error| error.to_string())?;
     let prologue: Vec<u8> =
         serde_json::from_value(command["prologue"].clone()).map_err(|error| error.to_string())?;
-    let child = native
+    let child = api
+        .native_io()
         .spawn(
             program.into(),
             args,
@@ -211,4 +212,21 @@ async fn acknowledge(
         return Err("native acknowledgement failed".into());
     }
     Ok(())
+}
+
+/// Captures the literal native program's streams through the application execution path.
+///
+/// # Errors
+/// Returns missing-command, argument-decoding and native execution failures.
+async fn execute(api: &ExtensionAPI, command: &Value) -> Result<Value, String> {
+    let program = command["command"]
+        .as_str()
+        .ok_or("missing native program")?;
+    let args: Vec<String> =
+        serde_json::from_value(command["exec_args"].clone()).map_err(|error| error.to_string())?;
+    let result = api.exec(program, &args, None).await?;
+    Ok(json!({
+        "stdout":result.stdout,"stderr":result.stderr,
+        "code":result.code,"killed":result.killed,
+    }))
 }
