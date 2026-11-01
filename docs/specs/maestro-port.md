@@ -456,8 +456,8 @@ option record `MessageRenderOptions`, `CustomMessageInput<T>`, `MessageDelivery`
 serialization, plus the resolved request-auth record, default zero usage, flat-rate
 `calculate_cost` arithmetic over supplied model/usage records and the shared
 optional-field helper; `Presence<T>` stays single-source here. Its `oauth` module owns
-`OAuthCredentials`, `OAuthPrompt`, `OAuthAuthInfo`, `OAuthSelectOption` and
-`OAuthSelectPrompt`, re-exported by models and the guest. Its `auth_storage`
+`OAuthCredentials`, `OAuthPrompt`, `OAuthAuthInfo`, `OAuthSelectOption`,
+`OAuthSelectPrompt` and `Pkce`, re-exported by models and the guest. Its `auth_storage`
 module owns `ApiKeyCredential`,
 `AuthCredential`, `AuthStorageData`, `AuthSource` and `AuthStatus` with their
 serialization; models and credentials re-export them, and parsing, stored-record
