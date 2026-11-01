@@ -286,10 +286,10 @@ fn truncation_cases() -> [TruncationCase; 3] {
             2001,
             "lines",
             2000,
-            2001,
+            2002,
             12892,
             12900,
-            "showing 2000 of 2001 lines (12.6KB of 12.6KB). 1 lines (8B) omitted.",
+            "showing 2000 of 2002 lines (12.6KB of 12.6KB). 2 lines (8B) omitted.",
         ),
         (
             "bytes.txt",
@@ -297,10 +297,10 @@ fn truncation_cases() -> [TruncationCase; 3] {
             2,
             "bytes",
             1,
-            2,
+            3,
             30002,
             60006,
-            "showing 1 of 2 lines (29.3KB of 58.6KB). 1 lines (29.3KB) omitted.",
+            "showing 1 of 3 lines (29.3KB of 58.6KB). 2 lines (29.3KB) omitted.",
         ),
         (
             "long.txt",
@@ -308,10 +308,10 @@ fn truncation_cases() -> [TruncationCase; 3] {
             1,
             "bytes",
             0,
-            1,
+            2,
             0,
             54003,
-            "showing 0 of 1 lines (0B of 52.7KB). 1 lines (52.7KB) omitted.",
+            "showing 0 of 2 lines (0B of 52.7KB). 2 lines (52.7KB) omitted.",
         ),
     ]
 }

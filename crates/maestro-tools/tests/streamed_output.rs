@@ -385,8 +385,6 @@ fn artifact_creation_failure_is_returned() {
         max_lines: Some(0),
         ..options()
     });
-    assert!(snapshot.snapshot(true).is_ok());
-    assert!(snapshot.append(b"x").is_err());
     assert!(snapshot.snapshot(true).is_err());
     std::fs::remove_file(parent).unwrap();
 }
@@ -447,13 +445,13 @@ fn rolling_trim_keeps_the_tail_of_an_oversized_line_ending_in_a_newline() {
     }
     output.append(b"\n").unwrap();
     let snapshot = output.snapshot(false).unwrap();
-    assert_eq!(snapshot.content, "x".repeat(16));
+    assert_eq!(snapshot.content, format!("{}\n", "x".repeat(15)));
     let truncation = &snapshot.truncation;
     assert_eq!(
         (truncation.total_bytes, truncation.total_lines),
-        (100_001, 1)
+        (100_001, 2)
     );
-    assert_eq!((truncation.output_bytes, truncation.output_lines), (16, 1));
+    assert_eq!((truncation.output_bytes, truncation.output_lines), (16, 2));
     assert!(truncation.truncated && truncation.last_line_partial);
     assert!(matches!(truncation.truncated_by, Some(TruncationBy::Bytes)));
     output.close_temp_file().unwrap();

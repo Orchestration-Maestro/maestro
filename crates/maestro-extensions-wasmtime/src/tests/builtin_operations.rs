@@ -830,15 +830,13 @@ async fn observe_write(
         }
     }
     let mut expected = json!({"calls":calls});
-    if let Some(stage) = request["fail"].as_str().filter(|_| mode != "preabort") {
-        expected["error"] = json!(format!("refused {stage} 雪"));
-    } else if mode.ends_with("abort") {
+    if mode.ends_with("abort") {
         expected["error"] = json!("Operation aborted");
+        expected["notified"] = json!(u32::from(mode == "pending-abort"));
+    } else if let Some(stage) = request["fail"].as_str() {
+        expected["error"] = json!(format!("refused {stage} 雪"));
     } else {
         expected["result"] = native_write_result(request["content"].as_str().unwrap()).await;
-    }
-    if mode.ends_with("abort") {
-        expected["notified"] = json!(u32::from(mode == "pending-abort"));
     }
     assert_eq!(observed, expected, "{mode}: {request}");
 }
@@ -2681,13 +2679,13 @@ fn assert_progress_artifact(observed: &serde_json::Value, bytes: &[u8]) {
     assert_eq!(
         text,
         format!(
-            "{}\n\n[Showing lines 1001-3000 of 3000. Full output: {path}]",
-            "é😀\n".repeat(1999) + "é😀"
+            "{}\n\n[Showing lines 1002-3001 of 3001. Full output: {path}]",
+            "é😀\n".repeat(1999)
         )
     );
     assert_eq!(
         updates.last().unwrap()["content"][0]["text"],
-        "é😀\n".repeat(1999) + "é😀"
+        "é😀\n".repeat(1999)
     );
     std::fs::remove_file(path).unwrap();
 }

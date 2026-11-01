@@ -34,7 +34,7 @@ const GROUPS: [&str; 26] = [
     "edit_execution_binds_expanded_paths_before_polling",
     "edit_operation_failures_stop_later_stages",
     "edit_native_failures_do_not_create_targets",
-    "edit_abort_keeps_each_pending_stage_and_queue",
+    "edit_abort_drops_each_pending_stage_and_releases_queue",
     "edit_synchronous_abort_wins_over_stage_result",
     "edit_preaborted_call_starts_no_operations",
     "edit_parallel_calls_preserve_both_changes",
@@ -87,7 +87,7 @@ use std::sync::{Arc, Mutex};
 pub type Tool = ToolDefinition<(), EditToolInput, EditToolDetails, maestro_tools::EditRenderState>;
 /// File stages for a supplied edit adapter.
 pub struct Operations {
-    /// Shared scripted behavior, including gates for in-flight operations.
+    /// Shared scripted behavior, including pending-future drop witnesses.
     pub script: ScriptedWrite,
     /// Actual start and successful settlement events.
     pub events: Journal,

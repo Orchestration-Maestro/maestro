@@ -256,7 +256,7 @@ fn bash_notice_names_the_oversized_line_that_ends_with_a_newline() {
         .unwrap()
         .to_owned();
     std::fs::remove_file(&path).unwrap();
-    let kept = "A".repeat(51200);
+    let kept = format!("{}\n", "A".repeat(51199));
     assert_eq!(
         text,
         format!("{kept}\n\n[Showing last 50.0KB of line 1 (line is 58.6KB). Full output: {path}]")

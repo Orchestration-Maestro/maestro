@@ -2,7 +2,7 @@
 
 use super::{ReadContext, ReadOperations, ReadToolDetails, ReadToolInput, text::read_text};
 use crate::utils::{
-    diagnostics::{blocking, check_aborted, guarded},
+    diagnostics::{aborted, blocking, guarded},
     image_resize::{ImageResizeOptions, format_dimension_note, resize_image},
 };
 use base64::{Engine as _, engine::general_purpose::STANDARD};
@@ -69,7 +69,7 @@ pub(super) struct Reader {
 }
 
 impl Reader {
-    /// Read `absolute_path`, watching `signal` during I/O and blocking image processing.
+    /// Read `absolute_path`, honouring `signal` before every operation.
     pub(super) async fn read<C: ReadContext>(
         &self,
         absolute_path: String,
@@ -88,15 +88,15 @@ impl Reader {
         let result = match mime.filter(|mime| !mime.is_empty()) {
             Some(mime) => {
                 let auto_resize = self.auto_resize;
-                guarded(signal, || {
-                    blocking(move || Ok(image_result(&bytes, mime, auto_resize, model.as_deref())))
-                })
-                .await
+                blocking(move || Ok(image_result(&bytes, mime, auto_resize, model.as_deref())))
+                    .await
             }
             None => read_text(&bytes, &input.path, input.offset, input.limit)
                 .map(|(text, details)| AgentToolResult::text_result(text, details)),
         };
-        check_aborted(signal)?;
+        if signal.is_some_and(Cancellation::is_aborted) {
+            return Err(aborted());
+        }
         result
     }
 }

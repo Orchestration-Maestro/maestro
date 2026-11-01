@@ -1723,7 +1723,7 @@
         ]
       }
     ],
-    "write_abort_keeps_queue_until_pending_operation_settles": [
+    "write_abort_releases_queue_and_drops_pending_operation": [
       {
         "input": {},
         "expected": [

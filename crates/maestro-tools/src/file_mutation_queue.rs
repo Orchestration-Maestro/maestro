@@ -45,18 +45,11 @@ pub(crate) fn running_admission() -> Option<Arc<Admission>> {
 }
 
 /// The file's identity: its canonical path, or its lexical absolute path when the file or a
-/// parent directory does not exist or a parent is not a directory. Other failures are returned.
+/// parent directory does not exist yet. Any other canonicalization failure is returned.
 fn queue_key(file_path: &str) -> io::Result<PathBuf> {
     let resolved = PathBuf::from(resolve_path(&[file_path])?);
     match std::fs::canonicalize(&resolved) {
-        Err(error)
-            if matches!(
-                error.kind(),
-                io::ErrorKind::NotFound | io::ErrorKind::NotADirectory
-            ) =>
-        {
-            Ok(resolved)
-        }
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(resolved),
         canonical => canonical,
     }
 }
@@ -125,7 +118,7 @@ impl Drop for Admission {
 /// first.
 ///
 /// # Errors
-/// A canonicalization failure other than a missing or non-directory path settles before `operation`
+/// A canonicalization failure other than a missing path settles the call before `operation`
 /// runs.
 pub fn with_file_mutation_queue<T, F>(
     file_path: &str,

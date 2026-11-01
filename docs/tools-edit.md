@@ -60,13 +60,13 @@ resolved path before `write_file`.
 ### Cancellation
 
 A call that is already cancelled when it reaches the front of its file's queue
-settles as `Operation aborted` without calling any operation. During directory
-creation or writing, the call waits for the in-flight operation to settle, including
-supplied operations. A failed operation reports its own error; a successful one is
-followed by a signal check that reports `Operation aborted`. No later stage starts,
-and the file's queue stays held until the operation has settled. Cancellation does
-not undo an effect that already happened. Edits follow the same policy for access,
-read and write.
+settles as `Operation aborted` without calling any operation. Directory creation and
+the write are each cancellable: when the signal fires first, or fires while an
+operation runs, the call settles as `Operation aborted`, drops the operation's
+pending future, never starts the next stage and lets the next queued call for the
+file proceed. Cancellation does not undo an effect that already happened. A native
+filesystem write that has already been handed to the runtime can still finish, and the
+file's queue stays held until it does, so the next call never overlaps it.
 A call that waits behind another call for the same file observes its signal only
 after that call has finished.
 
@@ -216,10 +216,9 @@ runs an operation after every earlier call for the same file has finished.
 - A call takes its place when `with_file_mutation_queue` is called, not when the
   returned future is first polled, so calls run in the order they were made.
 - A file is identified by its canonical path; when the file or one of its parent
-  directories does not exist yet or a parent is a regular file, by its lexical absolute
-  path. The operation then reports its own access or write failure. Any other
-  canonicalization failure, such as a symlink loop or denied permission, settles the
-  call before its operation runs. Symlink aliases that canonicalize share a queue, hard links
+  directories does not exist yet, by its lexical absolute path. Any other
+  canonicalization failure, such as a parent that is a regular file, settles the call
+  with that error before its operation runs. Symlink aliases that canonicalize share a queue, hard links
   with different names do not, and different files never wait for each other. The
   path is used as written: `@`, `~` and Unicode spaces are not expanded.
 - An operation that fails does not block the calls behind it.
