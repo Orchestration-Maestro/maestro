@@ -1127,15 +1127,12 @@ additions, because nothing local can add one. `guards` is not a lock name.
    Every session append and rewrite waits for the same canonical target's
    exclusive lock through the lock component's waiting acquisition, using
    `std::fs::File::lock` (dependency authorization: [#2906](https://github.com/Orchestration-Maestro/maestro/issues/2906)).
-   The lock owner hashes the canonical target with SHA-256; a missing file uses
-   its canonical parent plus its leaf. Bounded names under
-   `~/.maestro/state/file-locks` do not depend on the session leaf length or the
-   configuration root. Symbolic-link aliases share exclusion without changing
-   authored manager paths. Processes must share the same account home directory;
-   overriding that home selects another lock namespace. Different hard-link names
-   are separate identities, so concurrent writes through them are outside this
-   contract.
-   Settings keep their bounded acquisition. The operating system releases the
+   The lock is `<session file>.lock` beside the canonical target; it needs no
+   home directory and is removed on release. Symbolic-link aliases share exclusion
+   without changing authored manager paths. Different hard-link names are separate
+   locks, so concurrent writes through them are outside this contract. Where the
+   session directory is missing or refuses the lock file, reads and appends run
+   without the lock; rewrites still require it. Settings keep bounded acquisition. The operating system releases the
    lock when its holder exits; no separate stale-lock recovery is needed. Each
    holder keeps the lock for one write only. Ordinary writers hold it only while
    opening, writing and closing the file. If a
@@ -1147,10 +1144,10 @@ additions, because nothing local can add one. `guards` is not a lock name.
    reads and checks again. This hash check covers the window from the first read
    to taking the lock. An append attempted after the final comparison waits until
    publication finishes, then appends to the published file. Before truncation,
-   the writer publishes the intended bytes as a private recovery copy in the lock
-   root, syncing its file and directory. It syncs the target before removing the
-   copy. Every holder replays a pending copy before its own append or rewrite,
-   refusing a copy whose target identity does not match. Native file identity,
+   the writer publishes the intended bytes as the private record
+   `<session file>.recovery` beside the target, syncing the record and its
+   directory. It syncs the target before removing the record. Every holder replays
+   a pending record before its own append or rewrite. Native file identity,
    ownership and access controls remain intact. The sweep record in
    the configuration root's state, next to the persisted base layers, keeps the
    digest of the rules last applied and, for each session file, the hash of its
@@ -1533,8 +1530,9 @@ when they differ. This also corrects internal mode.
 A session file rewrite wrote the file in place, so a crash during the write left
 a partial session file. Session writers also ran without file-write exclusion,
 so a rewrite could lose a concurrent append. The session owner's single rewrite
-now writes in place with durable roll-forward recovery, and every append and rewrite coordinates
-through the same file-write exclusion. This also corrects internal mode.
+now writes in place with durable roll-forward recovery. Every rewrite, and every
+append where the session directory takes the lock file, coordinates through the
+same file-write exclusion. This also corrects internal mode.
 
 ## Runtime mechanics not copied
 
