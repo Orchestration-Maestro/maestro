@@ -840,12 +840,15 @@ fn compaction_end_view(
 
 /// The recorded form of a stored compaction result.
 fn compaction_result_view(result: &CompactionResult) -> Value {
-    json!({
+    let mut view = json!({
         "summary": result.summary,
         "firstKeptEntryId": result.first_kept_entry_id,
         "tokensBefore": recorded_number(result.tokens_before),
-        "details": result.details,
-    })
+    });
+    if !result.details.is_missing() {
+        view["details"] = serde_json::to_value(&result.details).unwrap();
+    }
+    view
 }
 
 /// What started a compaction, as the recorded cases spell it.
