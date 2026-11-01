@@ -788,10 +788,12 @@ fn capture_overflow_drops_inherited_stdin() {
         // The orphan holds stdin without reading it; its readiness follows parent exit.
         let input = vec![b'x'; 4_194_304];
         let timeout = Duration::from_secs(5);
+        // Parent and orphan each write the start prologue; past both, only the released orphan's
+        // finished write trips the limit, so the capture never closes a pipe the orphan writes.
         let mut run = Box::pin(capture(
             &mut command,
             SpawnSyncOptions::Capture {
-                max_buffer_bytes: Some(HARNESS_START.len()),
+                max_buffer_bytes: Some(2 * HARNESS_START.len()),
                 stdout: OutputMode::Capture,
                 input: Some(&input),
                 timeout: Some(timeout),
@@ -802,6 +804,11 @@ fn capture_overflow_drops_inherited_stdin() {
         let (mut socket, _) = listener.accept().unwrap();
         let mut pid = String::new();
         std::io::BufRead::read_line(&mut std::io::BufReader::new(&socket), &mut pid).unwrap();
+        tokio::task::yield_now().await;
+        assert!(
+            is_pending(&mut run).await,
+            "both start prologues stay within the limit"
+        );
         socket.write_all(b"!").unwrap();
         let result = run.await;
         socket.write_all(b"!").unwrap();

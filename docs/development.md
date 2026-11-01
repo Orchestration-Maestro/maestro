@@ -973,6 +973,11 @@ or misspelled name therefore fails instead of passing with zero tests. A checked
 outcome proves the test started, not that it passed: keep exit, signal and product
 assertions in the test.
 
+Every re-run writes the prologue, including a descendant that a child starts the
+same way. When several of them share one captured output, a byte count or capture
+limit allows one prologue per process. A limit sized for one prologue trips on the
+second, before the scenario's own output.
+
 Choose the route by stream use. `output` captures both streams and returns them
 unchanged. `spawn` reads only the prologue from a piped standard output and replays
 it, preserving ready lines and acknowledgements. A test that depends on closing
