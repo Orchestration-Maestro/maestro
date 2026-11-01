@@ -1,4 +1,4 @@
-/// Scoped crate names and their permitted direct dependencies.
+/// Crate dependency table.
 #[path = "policy/table.rs"]
 mod table;
 
@@ -11,6 +11,7 @@ pub(crate) struct Rule {
     /// Names of permitted direct internal dependencies.
     pub(crate) dependencies: &'static [&'static str],
 }
+
 /// Internal development edges permitted beyond the production table on any target.
 pub(crate) const DEVELOPMENT: &[(&str, &str)] = &[
     ("maestro-tui-crossterm", "maestro-brand"),
