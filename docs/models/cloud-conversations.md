@@ -197,11 +197,13 @@ Fallback happens only before application bytes are sent. A connected proxy's
 CONNECT refusal is returned with its status, headers and body, without replay.
 
 Scripts have the standard host, DNS, network, local-address, time, weekday and
-calendar helpers. Local-address discovery first probes `8.8.8.8:53`, closes that
-socket, and falls back to native interfaces on failure. It selects the first
-non-loopback IPv4 on the first eligible interface, preserving interface and
-per-interface address order. An authored `alert` emits its exact message through
-tracing rather than printing.
+calendar helpers. `myIpAddress()` discovers the local IPv4 through a UDP route
+lookup for `8.8.8.8:53`. It sends no packet and needs no answering endpoint or
+time limit. The socket closes before returning the address. On any socket error,
+it falls back to native interfaces, selecting the first non-loopback IPv4 on the
+first eligible interface and preserving interface and per-interface address
+order. An authored `alert` emits its exact message through tracing rather than
+printing.
 
 Each bridge retains separate script globals for each destination protocol and
 source URL, independently of its connection timeout settings. Compilation resolves
