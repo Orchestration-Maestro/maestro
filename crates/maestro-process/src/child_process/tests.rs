@@ -6,7 +6,7 @@ use super::{
 use super::{OutputMode, SpawnSyncOptions};
 use children::async_command;
 use maestro_test_process::HARNESS_START;
-use maestro_test_process::child::harness;
+use maestro_test_process::child::{collect_output, harness};
 use std::io::Read;
 use std::{
     cell::Cell,
@@ -709,6 +709,35 @@ fn capture_timeout_closes_inherited_stdout_after_direct_child_exit() {
         assert_eq!(report, b"closedclosed");
         assert_eq!(started.elapsed(), timeout);
     });
+}
+
+#[test]
+fn linked_descendant_keeps_its_link_until_the_parent_ends() {
+    use std::io::{BufRead, BufReader, Write};
+    let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+    let port = listener.local_addr().unwrap().port().to_string();
+    let mut command = children::command(children::link_holder, &[("CHILD_PORT", &port)]);
+    command
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped());
+    let collected = collect_output(command.spawn().unwrap(), &listener).unwrap();
+
+    let (holder, _) = listener.accept().unwrap();
+    let (mut probe, _) = listener.accept().unwrap();
+    let mut holder = BufReader::new(holder);
+    let mut line = String::new();
+    holder.read_line(&mut line).unwrap();
+    assert_eq!(line, "linked\n");
+    probe.write_all(b"p").unwrap();
+    let mut state = [0];
+    probe.read_exact(&mut state).unwrap();
+    // Release before assertions so a wrong result cannot strand the holder.
+    holder.get_mut().write_all(b"!").unwrap();
+    let output = collected.join().unwrap().unwrap();
+
+    assert_eq!(&state, b"H");
+    assert!(output.status.success());
 }
 
 #[test]

@@ -5,7 +5,7 @@
 //! output. The harness writes the start bytes to standard output before the program runs.
 use maestro_test_process::TestProcess;
 use maestro_test_process::child::{
-    connect, leave, port, read_input, receive, variable, write_stderr, write_stdout,
+    announce, connect, leave, port, read_input, receive, variable, write_stderr, write_stdout,
 };
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
@@ -48,9 +48,14 @@ fn spawn_linked(program: impl Fn(), variables: &[(&str, &str)]) -> TcpStream {
     listener.accept().unwrap().0
 }
 
+/// The link to the process that started this descendant.
+fn parent_link() -> TcpStream {
+    connect_to("CHILD_LINK_PORT")
+}
+
 /// Waits until the process that started this descendant ended.
 fn await_parent_exit() {
-    receive(&mut connect_to("CHILD_LINK_PORT")).unwrap();
+    receive(&mut parent_link()).unwrap();
 }
 
 /// An operation that writes bytes to one output stream.
@@ -205,5 +210,36 @@ pub(in crate::child_process) fn prefix_and_sibling() {
     write_stdout(b"prefix").unwrap();
     std::io::stderr().write_all(b"sibling").unwrap();
     std::io::stdin().read_exact(&mut [0]).unwrap();
+    leave(0)
+}
+
+/// Starts [`link_probe`] as a linked descendant, tells the parent test, and ends once the
+/// parent test releases it.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub(in crate::child_process) fn link_holder() {
+    let mut control = connect_to("CHILD_PORT");
+    let port = variable("CHILD_PORT").unwrap();
+    spawn_linked(link_probe, &[("CHILD_PORT", &port)]);
+    announce(&mut control, "linked").unwrap();
+    receive(&mut control).unwrap();
+    leave(0)
+}
+
+/// The descendant of [`link_holder`]: once the parent test says so it reports `H` when its
+/// link to the parent is still open and `D` when the link already ended.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub(in crate::child_process) fn link_probe() {
+    let link = parent_link();
+    let mut control = connect_to("CHILD_PORT");
+    assert_eq!(receive(&mut control).unwrap(), Some(b'p'));
+    link.set_nonblocking(true).unwrap();
+    let state = match (&link).read(&mut [0]) {
+        Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => b'H',
+        Ok(0) => b'D',
+        other => panic!("unexpected link read: {other:?}"),
+    };
+    control.write_all(&[state]).unwrap();
     leave(0)
 }
