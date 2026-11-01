@@ -222,3 +222,7 @@ mod cloud_content_invocation;
 
 #[path = "support/content_credentials.rs"]
 mod content_credentials;
+
+mod message_beta_headers;
+
+mod simple_missing_auth;
