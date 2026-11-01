@@ -227,6 +227,8 @@ mod support {
     pub mod spreadsheet_native;
 }
 mod theme_selection;
+mod tools_read_checks;
+mod tools_write_checks;
 mod tree_cancel_compacting_checks;
 mod tree_interface;
 mod tree_traversal_checks;
