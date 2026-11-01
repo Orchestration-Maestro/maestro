@@ -35,6 +35,7 @@ fn expected(case: Home) -> Option<PathBuf> {
     }
 }
 
+/// Home, Follow, Path and title labels use the written HOME without account fallback.
 #[test]
 fn daemon_home_uses_only_the_environment() {
     let cases = [Home::Unset, Home::Empty, Home::Set];

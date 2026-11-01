@@ -3,7 +3,7 @@
 use maestro_detection::agents::{Agent, agent_label};
 use std::path::PathBuf;
 
-/// The home directory the daemon observes.
+/// The workspace home directory the daemon observes.
 ///
 /// On Unix this is `HOME` as set, including an empty value, without an account fallback.
 /// On Windows, tries usable `USERPROFILE`, rooted `HOMEDRIVE` plus `HOMEPATH`, then `HOME`.
