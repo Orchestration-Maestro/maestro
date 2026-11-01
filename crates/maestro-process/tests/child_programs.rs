@@ -83,6 +83,12 @@ fn closed_streams() -> Vec<Stream> {
 /// Raises `signal` on this process and waits for it to take effect.
 fn kill_self(signal: rustix::process::Signal) -> ! {
     rustix::process::kill_process(rustix::process::getpid(), signal).unwrap();
+    wait_for_signal()
+}
+
+/// Waits for a signal to end this process, which never ends on its own: a signal that
+/// arrives while a process exits cuts the coverage profile it is writing.
+fn wait_for_signal() -> ! {
     loop {
         std::thread::park();
     }
@@ -343,13 +349,17 @@ pub fn raw_stream_writer() {
     leave(0)
 }
 
-/// Writes the combined bytes `CHILD_OUT` and `CHILD_ERR` name.
+/// Writes the combined bytes `CHILD_OUT` and `CHILD_ERR` name and ends; with
+/// `CHILD_STOPPED` set it then waits for the signal that stops it instead.
 #[test]
 #[ignore = "runs only inside a controlled child"]
 pub fn sized_writer() {
     let size = |name| variable(name).unwrap().parse::<usize>().unwrap();
     write_stdout(&vec![b'x'; size("CHILD_OUT")]).unwrap();
     write_stderr(&vec![b'y'; size("CHILD_ERR")]).unwrap();
+    if std::env::var_os("CHILD_STOPPED").is_some() {
+        wait_for_signal()
+    }
     leave(0)
 }
 
@@ -420,9 +430,7 @@ pub fn sync_session_ids() {
 #[ignore = "runs only inside a controlled child"]
 pub fn prefix_then_wait() {
     write_stdout(b"before-kill").unwrap();
-    loop {
-        std::thread::park();
-    }
+    wait_for_signal()
 }
 
 /// Writes each `(descriptor, bytes)` pair of `CHILD_WRITES` once the parent saw the
