@@ -10,8 +10,8 @@ uses the existing [message formatting](../sessions/messages.md) owner.
 | uuid | `=1.27.0`, defaults off; `std`, `v4`, `v7`; browser additionally `js` | Generated session and entry identities |
 | ryu-js | workspace `=1.0.3` | Compact JSONL and exit-status number spelling; Apache-2.0 license option |
 | maestro-path | workspace utility, no dependencies | Lexical session filenames, directory joins and the single native home reader |
-| maestro-lock | workspace owner | Canonical write exclusion and durable roll-forward publication |
-| sha2 | `=0.11.0`, defaults off; MIT OR Apache-2.0 | Existing SHA-256 for session comparisons and lock-owned canonical target identity |
+| maestro-lock | workspace owner | Write locks beside canonical targets, recoverable in-place publication and atomic publication |
+| sha2 | `=0.11.0`, defaults off; MIT OR Apache-2.0 | Existing SHA-256 for session comparisons and shortened lock and record names |
 | serde_json | workspace `=1.0.151`; `preserve_order`, `float_roundtrip` | Ordered raw entries and open custom payload |
 | serde | workspace `=1.0.229`; `derive` | Explicit record views and test case decoding |
 | tokio | native `=1.53.3`, defaults off; `fs`, `rt` | Asynchronous directory, read and stat calls for session listing; tests also build the caller's runtime |

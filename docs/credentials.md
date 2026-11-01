@@ -82,7 +82,8 @@ an empty fallback key, while request lookup preserves `Some("")`.
 ### Refresh and login
 
 An expired token is refreshed through the backend's `with_lock_async` (the file adapter
-holds its sidecar lock meanwhile; the memory adapter holds nothing, see below). The stored
+holds the write lock beside the canonical file meanwhile; the memory adapter
+holds nothing, see below). The stored
 text is reread and accepted, publishing it and clearing a recorded load failure.
 A record that is then absent, no longer `oauth` or no longer complete gives an empty
 result, and the lookup continues with the environment and the fallback resolver as
@@ -115,17 +116,20 @@ interface.
 `FileAuthStorageBackend` (native builds) keeps credentials at a caller-supplied
 path, relative paths resolving against the working directory. Missing parent
 directories are created with mode 0700 and a missing file is created, only while
-the sidecar `<path>.lock` is held, containing `{}` with mode 0600 on Unix. A write
-goes through `write_auth_file`, the one writer of the credential file: it narrows an
-existing file to mode 0600, then publishes the text through
-[the shared recoverable byte publication](locking.md#recoverable-byte-publication) at
-mode 0600, following a symbolic link at the path. The text is written in place, so a hard
+shared write lock `<target>.lock` beside the canonical target is held, containing
+`{}` with mode 0600 on Unix. Synchronous and asynchronous transactions follow
+symbolic links before choosing the lock path and hold that one lock across read,
+update and replace. A write narrows an existing file to mode 0600, then publishes
+through the held lock's
+[recoverable byte publication](locking.md#recoverable-byte-publication) at mode
+0600. The text is written in place, so a hard
 link to the file sees the new bytes. A file its owner made read-only is refused and left
 unchanged. A write cut short is completed, not rolled back, by the next coordinated writer.
-The startup conversion of legacy credentials and the standalone account file call the same
-writer. Synchronous acquisition
-delegates to [the shared file-lock operation](locking.md),
-and the lock is released after every outcome. File bytes are read as
+The startup conversion of legacy credentials and the standalone account file use
+`write_auth_file`, which shares the same permission narrowing and publication.
+Synchronous acquisition delegates to
+[the shared bounded file-lock operation](locking.md). The lock file is removed
+after every outcome, including when a pending asynchronous operation is dropped. File bytes are read as
 lossy UTF-8. The asynchronous operation `with_lock_async` instead tries the lock
 immediately and after waits of 100, 200, 400, 800, 1600, 3200, 6400 and then three of
 10000 ms (11 attempts, 42,700 ms), returning the lock-held error when the last attempt

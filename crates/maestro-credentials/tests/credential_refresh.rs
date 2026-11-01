@@ -518,7 +518,6 @@ mod tests {
         std::fs::write(&path, serde_json::to_string_pretty(document).unwrap()).unwrap();
         let storage = AuthStorage::from_storage(FileAuthStorageBackend::new(&path));
         let sidecar = format!("{path}.lock");
-        std::fs::remove_file(&sidecar).unwrap();
         std::fs::create_dir(&sidecar).unwrap();
         (sidecar, storage)
     }

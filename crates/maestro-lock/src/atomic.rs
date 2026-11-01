@@ -140,8 +140,7 @@ pub(crate) fn temporary_path(target: &Path, temporary: Temporary<'_>) -> PathBuf
                 .duration_since(UNIX_EPOCH)
                 .unwrap_or_default()
                 .as_nanos();
-            let name = target.file_name().unwrap_or_default().to_string_lossy();
-            target.with_file_name(format!(".{name}.{}.{nanos}.tmp", std::process::id()))
+            crate::names::beside(target, ".", &format!(".{}.{nanos}.tmp", std::process::id()))
         }
     }
 }
