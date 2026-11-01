@@ -3941,7 +3941,7 @@
         {
           "width": 8,
           "lines": [
-            "<fallback>[Image: [image/png] 300x200]</fallback>"
+            "<fall\u001b[0m...\u001b[0m"
           ],
           "imageId": {
             "undefined": true
@@ -3981,7 +3981,7 @@
         {
           "width": 8,
           "lines": [
-            "<fallback>[Image: unknown.png [image/png] 800x600]</fallback>"
+            "<fall\u001b[0m...\u001b[0m"
           ],
           "imageId": {
             "undefined": true
@@ -4227,14 +4227,14 @@
         {
           "width": 8,
           "lines": [
-            "<fallback>[Image: [image/png] 20x20]</fallback>"
+            "<fall\u001b[0m...\u001b[0m"
           ],
           "imageId": 42
         },
         {
           "width": 8,
           "lines": [
-            "<fallback>[Image: [image/png] 20x20]</fallback>"
+            "<fall\u001b[0m...\u001b[0m"
           ],
           "imageId": 42
         }
@@ -4271,7 +4271,7 @@
         {
           "width": 0,
           "lines": [
-            "<fallback>[Image: [image/png] 20x20]</fallback>"
+            ""
           ],
           "imageId": {
             "undefined": true
@@ -4280,7 +4280,7 @@
         {
           "width": 1,
           "lines": [
-            "<fallback>[Image: [image/png] 20x20]</fallback>"
+            "\u001b[0m.\u001b[0m"
           ],
           "imageId": {
             "undefined": true
@@ -4289,7 +4289,7 @@
         {
           "width": 2,
           "lines": [
-            "<fallback>[Image: [image/png] 20x20]</fallback>"
+            "\u001b[0m..\u001b[0m"
           ],
           "imageId": {
             "undefined": true
@@ -4332,7 +4332,7 @@
         {
           "width": 0,
           "lines": [
-            "<fallback>[Image: [image/png] 20x20]</fallback>"
+            ""
           ],
           "imageId": {
             "undefined": true
@@ -4341,7 +4341,7 @@
         {
           "width": 1,
           "lines": [
-            "<fallback>[Image: [image/png] 20x20]</fallback>"
+            "\u001b[0m.\u001b[0m"
           ],
           "imageId": {
             "undefined": true
@@ -4350,7 +4350,7 @@
         {
           "width": 2,
           "lines": [
-            "<fallback>[Image: [image/png] 20x20]</fallback>"
+            "\u001b[0m..\u001b[0m"
           ],
           "imageId": {
             "undefined": true
@@ -4393,7 +4393,7 @@
         {
           "width": 0,
           "lines": [
-            "<fallback>[Image: [image/png] 20x20]</fallback>"
+            ""
           ],
           "imageId": {
             "undefined": true
@@ -4402,7 +4402,7 @@
         {
           "width": 1,
           "lines": [
-            "<fallback>[Image: [image/png] 20x20]</fallback>"
+            "\u001b[0m.\u001b[0m"
           ],
           "imageId": {
             "undefined": true
@@ -4411,7 +4411,7 @@
         {
           "width": 2,
           "lines": [
-            "<fallback>[Image: [image/png] 20x20]</fallback>"
+            "\u001b[0m..\u001b[0m"
           ],
           "imageId": {
             "undefined": true
@@ -4673,7 +4673,7 @@
     "case": "edge-287",
     "expected": {
       "lines": [
-        "styled:[Image: [image/png] 20x20]"
+        "style\u001b[0m...\u001b[0m"
       ],
       "cells": {
         "widthPx": 11,
@@ -4904,7 +4904,7 @@
         {
           "width": 8,
           "lines": [
-            "<fallback>[Image: [image/png] 20x20]</fallback>"
+            "<fall\u001b[0m...\u001b[0m"
           ],
           "imageId": {
             "undefined": true

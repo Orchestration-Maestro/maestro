@@ -41,6 +41,7 @@ fn component_case(case: &serde_json::Value) -> Result<(), Box<dyn std::error::Er
         },
         ImageOptions {
             max_width_cells: image_support::number(&options["maxWidthCells"]),
+            max_height_cells: image_support::number(&options["maxHeightCells"]),
             filename: options["filename"].as_str().map(str::to_owned),
             image_id: image_support::number(&options["imageId"]),
             dimensions: args["dimensions"]
@@ -303,7 +304,7 @@ fn zero_geometry_falls_back_without_allocating() {
             terminal.clone(),
         );
         assert_eq!(
-            image.render(8),
+            image.render(80),
             [format!(
                 "styled:[Image: [image/png] {}x{}]",
                 dims.width_px, dims.height_px
@@ -377,11 +378,16 @@ fn apply_image_action(image: &mut Image, terminal: &TerminalImage, action: Optio
     }
 }
 
-/// A Kitty terminal with `cells`, a home of `/srv/u` and the hyperlink capability `links`.
-fn fitted_terminal(cells: CellDimensions, images: bool, links: bool) -> TerminalImage {
+/// A terminal with `cells`, the image protocol `images`, a home of `/srv/u` and the hyperlink
+/// capability `links`.
+fn fitted_terminal(
+    cells: CellDimensions,
+    images: Option<ImageProtocol>,
+    links: bool,
+) -> TerminalImage {
     let terminal = TerminalImage::new(|key| (key == "HOME").then(|| "/srv/u".to_owned()), || 7);
     terminal.set_capabilities(TerminalCapabilities {
-        images: images.then_some(ImageProtocol::Kitty),
+        images,
         true_color: true,
         hyperlinks: links,
     });
@@ -418,7 +424,7 @@ fn portrait_images_fit_a_square_pixel_box() {
         width_px: 10,
         height_px: 20,
     };
-    let terminal = fitted_terminal(cells, true, false);
+    let terminal = fitted_terminal(cells, Some(ImageProtocol::Kitty), false);
     let narrow = ImageOptions {
         max_width_cells: Some(10),
         ..ImageOptions::default()
@@ -438,7 +444,7 @@ fn portrait_images_fit_a_square_pixel_box() {
 #[test]
 fn image_fallback_is_one_line_bounded_by_the_render_width() {
     let cells = CellDimensions::default();
-    let terminal = fitted_terminal(cells, false, false);
+    let terminal = fitted_terminal(cells, None, false);
     let image = fitted_image(&terminal, (8, 6), ImageOptions::default());
     let lines = image.render(10);
     assert_eq!(lines.len(), 1);
@@ -464,7 +470,7 @@ fn image_fallback_shortens_home_and_links_absolute_names() {
             .trim_end()
             .to_owned()
     };
-    let plain = fitted_terminal(cells, false, false);
+    let plain = fitted_terminal(cells, None, false);
     assert_eq!(
         named(&plain, "/srv/u/shot.png", (1280, 720)),
         "[Image: ~/shot.png [image/png] 1280x720]"
@@ -473,7 +479,7 @@ fn image_fallback_shortens_home_and_links_absolute_names() {
         named(&plain, "/srv/u2/x.png", (1, 1)),
         "[Image: /srv/u2/x.png [image/png] 1x1]"
     );
-    let linked = fitted_terminal(cells, false, true);
+    let linked = fitted_terminal(cells, None, true);
     assert_eq!(
         named(&linked, "/srv/u/shot.png", (1280, 720)),
         format!(
