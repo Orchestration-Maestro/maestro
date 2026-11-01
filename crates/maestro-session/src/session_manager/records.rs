@@ -11,7 +11,8 @@ use std::{
 pub(super) enum Admission {
     /// Keep every JSON value for whole-text parsing.
     All,
-    /// Skip null, false, zero and empty strings in stored histories.
+    /// Skip null, false, zero and empty strings in native stored histories.
+    #[cfg(not(target_arch = "wasm32"))]
     Nonempty,
 }
 
@@ -87,8 +88,14 @@ fn parse_line(
     let Ok(entry) = serde_json::from_str(line) else {
         return ControlFlow::Continue(());
     };
-    if matches!(admission, Admission::Nonempty) && !maestro_json::is_truthy(&entry) {
-        return ControlFlow::Continue(());
+    let admitted = match admission {
+        Admission::All => true,
+        #[cfg(not(target_arch = "wasm32"))]
+        Admission::Nonempty => maestro_json::is_truthy(&entry),
+    };
+    if admitted {
+        on_entry(entry)
+    } else {
+        ControlFlow::Continue(())
     }
-    on_entry(entry)
 }
