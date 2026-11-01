@@ -149,6 +149,28 @@ pub(super) fn apply_thinking_level_metadata(model: &mut Model) {
         google_levels(model);
     }
     provider_levels(model);
+    if model.api == "anthropic-messages"
+        && [
+            "opus-4-6",
+            "opus-4.6",
+            "opus-4-7",
+            "opus-4.7",
+            "opus-4-8",
+            "opus-4.8",
+            "sonnet-4-6",
+            "sonnet-4.6",
+            "sonnet-5",
+            "sonnet.5",
+        ]
+        .iter()
+        .any(|part| model.id.contains(part))
+    {
+        model
+            .compat
+            .get_or_insert_default()
+            .0
+            .insert("forceAdaptiveThinking".into(), true.into());
+    }
 }
 /// Apply the three case-insensitive Google-family rules in order.
 fn google_levels(model: &mut Model) {
