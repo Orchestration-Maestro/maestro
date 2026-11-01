@@ -51,8 +51,10 @@ is not failed; those lines are skipped by the shared parser.
 - `name` is the newest `session_info` name, trimmed; an absent, null or blank name
   clears it, and the whole file is scanned forward, so a wrong-typed earlier name
   fails the file.
-- `cwd` is the header string or empty; `created` is the header time (`NaN` when it
-  is absent or not a date, zero for null).
+- `cwd` is the header string or empty; `created` reads the header time with the
+  same scalar date conversion as record activity: strings parse, numbers are
+  epoch milliseconds, `true` is 1, and `false` and `null` are 0. Missing values,
+  arrays, objects and numbers outside ±8.64e15 milliseconds give `NaN`.
 - `modified` is the greatest activity time of eligible messages when positive,
   independently of whether their text is empty. A
   numeric message `timestamp` is that message's activity (even zero or

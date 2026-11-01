@@ -7,7 +7,7 @@ use std::{
 };
 
 /// Which parsed JSON values a reader admits as records.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub(super) enum Admission {
     /// Keep every JSON value for whole-text parsing.
     All,

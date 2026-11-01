@@ -20,7 +20,7 @@ use std::{
 /// The most session files whose metadata loads at the same time.
 const MAX_CONCURRENT_LOADS: usize = 10;
 
-/// Largest absolute epoch millisecond value accepted as a record date.
+/// Largest absolute epoch millisecond value accepted as a header or record date.
 const MAX_DATE_MILLIS: f64 = 8.64e15;
 
 /// Progress callback receiving completed and total candidate counts; an error stops the listing.
@@ -223,11 +223,7 @@ fn scan_message(entry: &Value, scan: &mut Scan) -> Result<(), serde_json::Error>
         if let Some(Value::Number(time)) = message.and_then(|message| message.get("timestamp")) {
             time.as_f64()
         } else {
-            let time = match entry.get("timestamp") {
-                Some(Value::Bool(value)) => f64::from(u8::from(*value)),
-                timestamp => created_millis(timestamp),
-            };
-            (time.abs() <= MAX_DATE_MILLIS).then_some(time.trunc())
+            Some(created_millis(entry.get("timestamp"))).filter(|time| !time.is_nan())
         };
     scan.activity = scan.activity.max(activity.unwrap_or(0.0));
     let text = message_text(content)?;
@@ -262,13 +258,19 @@ fn message_text(content: &Value) -> Result<String, serde_json::Error> {
     }
 }
 
-/// Header creation time: strings parse, numbers truncate, null is the epoch, the rest is invalid.
+/// Scalar date in bounded epoch milliseconds; missing values and nonscalars are invalid.
 fn created_millis(timestamp: Option<&Value>) -> f64 {
-    match timestamp {
+    let time = match timestamp {
         Some(Value::String(text)) => timestamp_millis(text),
-        Some(Value::Number(number)) => number.as_f64().map_or(f64::NAN, f64::trunc),
+        Some(Value::Number(number)) => number.as_f64().unwrap_or(f64::NAN),
+        Some(Value::Bool(value)) => f64::from(u8::from(*value)),
         Some(Value::Null) => 0.0,
         _ => f64::NAN,
+    };
+    if time.abs() <= MAX_DATE_MILLIS {
+        time.trunc()
+    } else {
+        f64::NAN
     }
 }
 
