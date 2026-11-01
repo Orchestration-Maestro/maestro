@@ -20,7 +20,7 @@ impl WarningSettingsSubmenu {
     /// Commits warning state before notifying the caller.
     pub(super) fn new(
         initial: WarningSettings,
-        change: Rc<dyn Fn(WarningSettings)>,
+        change: Rc<dyn Fn(WarningSettings) -> bool>,
         cancel: Rc<dyn Fn()>,
         theme: LiveTheme,
     ) -> Self {
@@ -46,12 +46,14 @@ impl WarningSettingsSubmenu {
             maestro_theme::get_settings_list_theme(theme),
             (
                 Rc::new(move |_, value| {
-                    let snapshot = {
-                        let mut state = state.borrow_mut();
-                        state.set_anthropic_extra_usage(Some(value == "true"));
-                        state.clone()
-                    };
-                    change(snapshot);
+                    let mut snapshot = state.borrow().clone();
+                    snapshot.set_anthropic_extra_usage(Some(value == "true"));
+                    let previous = state.replace(snapshot.clone());
+                    if change(snapshot) {
+                        return true;
+                    }
+                    state.replace(previous);
+                    false
                 }),
                 cancel,
             ),
