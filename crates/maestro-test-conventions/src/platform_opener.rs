@@ -1,8 +1,11 @@
 //! Platform viewer executables belong to the application opener.
 
+use std::collections::BTreeSet;
+use std::ops::Range;
+
 use proc_macro2::{TokenStream, TokenTree};
 
-use crate::source::{Member, test_scope};
+use crate::source::{Member, test_scope, test_spans};
 
 /// Application source that owns native viewer selection.
 const OWNER: &str = "src/utils/platform_opener.rs";
@@ -24,7 +27,12 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
                 continue;
             };
             let mut literals = Vec::new();
-            strings(tokens, &mut literals);
+            strings(
+                tokens,
+                &BTreeSet::new(),
+                &test_spans(source.syntax.as_ref()),
+                &mut literals,
+            );
             let shell_start = ["cmd", "/c", "start"]
                 .iter()
                 .all(|expected| literals.iter().any(|(text, _)| text == expected));
@@ -51,34 +59,88 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     }
 }
 
-/// Collect decoded literals through every group, recognizing `open` only as a command operand.
-fn strings(tokens: TokenStream, found: &mut Vec<(String, usize)>) {
+/// Collect production literals, tracking local `open` bindings through nested groups.
+fn strings(
+    tokens: TokenStream,
+    inherited: &BTreeSet<String>,
+    testing: &[Range<(usize, usize)>],
+    found: &mut Vec<(String, usize)>,
+) {
+    let tokens: Vec<_> = tokens
+        .into_iter()
+        .filter(|token| {
+            let start = token.span().start();
+            !testing
+                .iter()
+                .any(|span| span.contains(&(start.line, start.column)))
+        })
+        .collect();
+    let mut bindings = inherited.clone();
     let mut command = false;
-    for token in tokens {
+    for (index, token) in tokens.iter().enumerate() {
         match token {
             TokenTree::Ident(name) => {
+                if name == "let" {
+                    local_binding(&tokens[index + 1..], &mut bindings);
+                }
                 command = name == "Command" || name == "command" || (command && name == "new");
             }
             TokenTree::Punct(punct) => command &= punct.as_char() == ':',
-            TokenTree::Literal(literal) => {
-                if let Ok(text) = syn::parse_str::<syn::LitStr>(&literal.to_string())
-                    && text.value() != "open"
+            TokenTree::Literal(_) => {
+                if let Some(text) = literal_text(token)
+                    && text != "open"
                 {
-                    found.push((text.value(), literal.span().start().line));
+                    found.push((text, token.span().start().line));
                 }
                 command = false;
             }
             TokenTree::Group(group) => {
-                if command
-                    && let Some(TokenTree::Literal(literal)) = group.stream().into_iter().next()
-                    && let Ok(text) = syn::parse_str::<syn::LitStr>(&literal.to_string())
-                    && text.value() == "open"
-                {
-                    found.push((text.value(), literal.span().start().line));
+                if command && let Some(line) = open_operand(group.stream(), &bindings) {
+                    found.push(("open".into(), line));
                 }
-                strings(group.stream(), found);
+                strings(group.stream(), &bindings, testing, found);
                 command = false;
             }
         }
     }
+}
+
+/// Decode a string token without treating other literal kinds as executable names.
+fn literal_text(token: &TokenTree) -> Option<String> {
+    let TokenTree::Literal(literal) = token else {
+        return None;
+    };
+    syn::parse_str::<syn::LitStr>(&literal.to_string())
+        .ok()
+        .map(|text| text.value())
+}
+
+/// Track a simple local literal initializer, replacing a shadowed binding in this group.
+fn local_binding(tokens: &[TokenTree], bindings: &mut BTreeSet<String>) {
+    let mut tokens = tokens.iter();
+    let name = tokens.next();
+    let name = match name {
+        Some(TokenTree::Ident(name)) if name == "mut" => tokens.next(),
+        name => name,
+    };
+    let Some(TokenTree::Ident(name)) = name else {
+        return;
+    };
+    let name = name.to_string();
+    bindings.remove(&name);
+    let initializer = tokens
+        .take_while(|token| !matches!(token, TokenTree::Punct(punct) if punct.as_char() == ';'))
+        .skip_while(|token| !matches!(token, TokenTree::Punct(punct) if punct.as_char() == '='))
+        .nth(1);
+    if initializer.and_then(literal_text).as_deref() == Some("open") {
+        bindings.insert(name);
+    }
+}
+
+/// Recognize a literal or locally bound macOS executable passed to command construction.
+fn open_operand(tokens: TokenStream, bindings: &BTreeSet<String>) -> Option<usize> {
+    let operand = tokens.into_iter().next()?;
+    let bound = matches!(&operand, TokenTree::Ident(name) if bindings.contains(&name.to_string()));
+    (bound || literal_text(&operand).as_deref() == Some("open"))
+        .then(|| operand.span().start().line)
 }

@@ -37,6 +37,67 @@ fn platform_viewers_reject_bypasses_in_fragments_and_nested_groups() {
 }
 
 #[test]
+fn platform_viewers_accept_test_gated_items_without_hiding_production() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-chat"]);
+    let cases = [
+        "#[cfg(test)] mod tests { #[test] fn viewer_name() { assert_eq!(\"xdg-open\", \"xdg-open\"); } }",
+        "mod nested { #[cfg(test)] mod tests { fn launch() { Command::new(\"open\"); } } }",
+        "#[cfg(test)] fn launch() { Command::new(\"explorer.exe\"); }",
+        "impl Host { #[cfg(test)] fn launch(&self) { Command::new(\"xdg-open\"); } }",
+    ];
+    for contents in cases {
+        let path = source(&workspace, "maestro-chat", "src/viewer.rs", contents);
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()), "{contents}");
+
+        std::fs::write(
+            &path,
+            format!("{contents}\nfn launch() {{ Command::new(\"xdg-open\"); }}"),
+        )
+        .unwrap();
+        let error = check_workspace(workspace.root.path()).unwrap_err();
+        assert!(error.contains("viewer.rs:2: platform viewer"), "{error}");
+        std::fs::remove_file(path).unwrap();
+    }
+}
+
+#[test]
+fn platform_viewers_reject_bound_macos_executables() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-chat"]);
+    let copies = [
+        "let program = \"open\"; Command::new(program).arg(target).spawn();",
+        "fn launch() { let program = \"open\"; Command::new(program).arg(target).spawn(); }",
+        "fn launch() { capture! { let program = \"open\"; Command::new(program); } }",
+        "fn launch() { let run = || { let program: &str = r#\"open\"#; maestro_process::command(program); }; }",
+        "impl Host { fn launch(&self) { let mut program = \"open\"; Command::new(program); } }",
+        "fn launch() { let program = \"open\"; let run = || capture!(Command::new(program)); }",
+    ];
+    let mut accepted = Vec::new();
+    for contents in copies {
+        let path = source(&workspace, "maestro-chat", "src/viewer.rs", contents);
+        match check_workspace(workspace.root.path()) {
+            Ok(()) => accepted.push(contents),
+            Err(error) => {
+                assert!(error.contains("utils::platform_opener"), "{error}");
+                assert!(error.contains(&path.display().to_string()), "{error}");
+            }
+        }
+        std::fs::remove_file(path).unwrap();
+    }
+    for contents in [
+        "fn label() { let program = \"open\"; Widget::new(program); Command::new(editor); }",
+        "fn launch() { let program = \"open\"; { let program = \"editor\"; Command::new(program); } }",
+        "fn label() { let program = \"open\"; } fn launch() { Command::new(program); }",
+    ] {
+        let path = source(&workspace, "maestro-chat", "src/viewer.rs", contents);
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()), "{contents}");
+        std::fs::remove_file(path).unwrap();
+    }
+    assert!(accepted.is_empty(), "accepted bound viewers: {accepted:?}");
+}
+
+#[test]
 fn platform_viewers_accept_owner_calls_and_distinct_process_policies() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-app"]);
