@@ -358,7 +358,7 @@ development-only edge from `maestro-extensions-wasm` to `maestro-listing`.
 | `maestro-test-conventions` | verify workspace structure | `maestro-markdown` | 0 |
 | `maestro-test-directory` | own disposable native test directories | — | 0 |
 | `maestro-test-fixtures` | share cross-package test fixture operations | — | 0 |
-| `maestro-test-process` | run one named test in a checked child process | — | 0 |
+| `maestro-test-process` | run controlled native test children | — | 0 |
 | `maestro-test-tracing` | run a test action under a subscriber that sees every callsite | — | 0 |
 | `maestro-tooling` | automate repository development | — | 0 |
 | `maestro-tui` | render terminal components | `maestro-cancellation`, `maestro-text`, `maestro-process`, `maestro-markdown`, `maestro-listing`, `maestro-resources`, `maestro-listeners` | 0 |
@@ -741,10 +741,20 @@ that calls this same entry. The test-process leaf does not depend on process.
 ### Test process owner
 
 `maestro-test-process` is a dedicated, unpublished, native test-support leaf
-that starts one named libtest child and proves the child started exactly that
-test. On Unix it runs caller-supplied setup text in the interpreter the caller
-names by absolute path, so it carries no shell lookup, and it uses no external
-crate. It has no workspace dependencies except the native feature unifier and
+that starts checked named libtest children and direct native fixtures. Checked
+reruns prove the child started exactly the selected test. One harness-free
+`native_fixture` example receives literal native operands and raw byte streams;
+`install_executable(artifact, destination)` installs aliases through that artifact's
+private copy operation, without retaining a writable executable in the runner.
+Repository tooling builds the host artifact once per input set, records its emitted
+path, source freshness and digest, and exports an explicit absolute path for local,
+filtered and archive-remapped runs. Tests never compile or discover a fallback.
+See [Rust test children](test-processes.md) for the complete contract.
+
+On Unix the owner currently runs caller-supplied setup text in the interpreter the
+caller names by absolute path. Typed isolated native setup is planned; shell setup
+remains until all its callers move together. The owner uses the approved `rustix`
+stdio operations for descriptor replacement. It has no workspace dependencies except the native feature unifier and
 one native development edge to the disposable directory owner for its own child
 fixtures, and it is excluded from the foundation utility permission. Its only
 incoming edges are
