@@ -109,8 +109,8 @@ pub struct AnthropicOptions<E: ProviderExecution = Threaded> {
     pub effort: Option<AnthropicEffort>,
     /// Enabled thinking defaults to summarized display.
     pub thinking_display: Option<AnthropicThinkingDisplay>,
-    /// Whether the interleaved-reasoning beta may be requested; absent means it may. It is never
-    /// requested for models whose reasoning is adaptive.
+    /// Whether explicitly enabled, non-adaptive reasoning may request the interleaved beta.
+    /// Absence permits it; disabled or unset thinking never requests it.
     pub interleaved_thinking: Option<bool>,
     /// Whether the model may call tools, must call one, or must call a named one.
     pub tool_choice: Option<ToolChoice>,

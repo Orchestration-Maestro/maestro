@@ -70,7 +70,7 @@ Thinking, cache markers, hooks and the other answer reduction rules still apply.
 The endpoint is the model's base URL with `/v1/messages` appended (the base `https://api.anthropic.com`
 when the model's is empty); a trailing slash on the base is not doubled.
 
-Headers are layered case-insensitively: protocol defaults and selected credentials/betas,
+Headers are layered case-insensitively: protocol defaults and selected credentials,
 model headers, account dynamic headers when applicable, then caller headers. The shared HTTP layer keeps each normalized name's first
 insertion position and last value. The body encoding
 sets `content-type: application/json` last. For nongateway requests, a nonempty `x-api-key` or
@@ -78,13 +78,25 @@ sets `content-type: application/json` last. For nongateway requests, a nonempty 
 sending. Gateway requests retain this exemption only while at least one default authentication
 omission survives: when model/caller headers supply both fields, the same nonempty check applies.
 
-Subscription defaults prepend `claude-code-20250219,oauth-2025-04-20` to the optional betas;
-model/caller headers can replace `anthropic-beta`. Before these overrides, `anthropic-beta` names
-`interleaved-thinking-2025-05-14` unless the caller sets
-`interleaved_thinking` to `false` or the model ID contains `opus-4-6`, `opus-4.6`, `opus-4-7`,
-`opus-4.7`, `sonnet-4-6` or `sonnet-4.6`, and `fine-grained-tool-streaming-2025-05-14` when
-tools are declared and the model's compatibility turns eager input streaming off. With eager
-input streaming (the default) each tool carries `eager_input_streaming: true` instead.
+Beta features travel in the payload's optional `betas` array, visible to `on_payload`
+and injected clients. The default HTTP transport removes that field from the body and
+joins its entries with commas into `anthropic-beta`, replacing the layered header.
+Without `betas`, the layered header is unchanged apart from HTTP edge trimming.
+
+A configured `anthropic-beta` in model or caller headers replaces all defaults.
+Names match case-insensitively; the last match wins, with caller headers read last.
+Its comma-separated entries are trimmed, empty entries dropped and duplicates removed
+in first-seen order. An empty list leaves `betas` absent and sends the configured
+header as written, subject to HTTP edge trimming.
+
+Without a configured header, subscription tokens select `claude-code-20250219` and
+`oauth-2025-04-20` first. Injected clients never select that pair. Next comes
+`fine-grained-tool-streaming-2025-05-14` when tools are declared and the model's
+compatibility turns eager input streaming off. With eager input streaming (the default),
+each tool carries `eager_input_streaming: true` instead. Last comes
+`interleaved-thinking-2025-05-14`, only for a reasoning-capable model with thinking
+explicitly enabled, interleaved thinking not disabled and no adaptive thinking.
+Unset or disabled thinking selects no interleaved beta.
 
 The model's compatibility record also shapes the request. `sendSessionAffinityHeaders`
 (off by default) sends a nonempty session ID as `x-session-affinity`, below the model and
@@ -93,7 +105,7 @@ subscription token. `supportsCacheControlOnTools`, when `false`, leaves the last
 without a cache marker. `allowEmptySignature` (off by default) replays unsigned reasoning
 as a thinking block with an empty signature instead of plain text.
 
-The payload holds `model`, `messages`, `max_tokens`, `stream`, then `system`, `temperature`,
+The payload holds `model`, `messages`, `max_tokens`, `stream`, optional `betas`, then `system`, `temperature`,
 `tools`, `thinking`, `output_config`, `metadata` and `tool_choice` where they apply.
 `max_tokens` is the caller's value
 unless it is zero or not a number, otherwise the model's output cap. An
