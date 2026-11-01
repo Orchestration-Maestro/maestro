@@ -49,12 +49,14 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ("maestro-json", &[]),
     ("maestro-entry", &["maestro-request"]),
     ("maestro-tool", &["maestro-request"]),
+    ("maestro-package", &[]),
     ("maestro-brand", &["maestro-text", "maestro-json"]),
     ("maestro-pattern", &["maestro-text"]),
     ("maestro-markdown", &["maestro-text"]),
     (
         "maestro-extensions-wasm",
         &[
+            "maestro-package",
             "maestro-request",
             "maestro-entry",
             "maestro-tool",
@@ -127,6 +129,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     (
         "maestro-packages",
         &[
+            "maestro-package",
             "maestro-settings",
             "maestro-resources",
             "maestro-pattern",

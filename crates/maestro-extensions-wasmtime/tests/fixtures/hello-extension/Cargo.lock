@@ -818,6 +818,7 @@ dependencies = [
  "maestro-dependencies",
  "maestro-entry",
  "maestro-json",
+ "maestro-package",
  "maestro-request",
  "maestro-tool",
  "serde",
@@ -833,6 +834,14 @@ dependencies = [
  "ryu-js",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "maestro-package"
+version = "0.1.0"
+dependencies = [
+ "maestro-dependencies",
+ "serde",
 ]
 
 [[package]]

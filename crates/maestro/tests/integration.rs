@@ -3,6 +3,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 mod component_stdout;
 mod entry_routes;
+mod host_operations;
 mod model_streams;
 mod native_io;
 mod provider_payload_example;

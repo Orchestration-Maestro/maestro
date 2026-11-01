@@ -16,6 +16,7 @@ pub(crate) mod credential_scope;
 mod dialogs;
 pub(crate) mod effects;
 mod footer;
+pub(crate) mod host_operations;
 pub(crate) mod http;
 pub(crate) mod local_bash;
 pub(crate) mod model_streams;
@@ -93,6 +94,8 @@ pub(crate) enum Message {
         tokio::sync::oneshot::Sender<Result<String, String>>,
         Admission,
     ),
+    /// Calls the original factory-time settings and package owner.
+    HostOperation(host_operations::Call),
     /// Waits through the native owner without blocking other requests.
     Sleep(
         native_io::Wait,
@@ -236,11 +239,8 @@ impl Lease {
         request: impl FnOnce(u64, tokio::sync::oneshot::Sender<Result<T, String>>, Admission) -> Message,
     ) -> Result<T, String> {
         let (reply, response) = tokio::sync::oneshot::channel();
-        let admission = Admission {
-            _requests: self.requests.clone(),
-        };
         self.requests
-            .send(request(self.id, reply, admission))
+            .send(request(self.id, reply, self.admission()))
             .map_err(|_| "extension resource owner ended".to_owned())?;
         response
             .await

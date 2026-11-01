@@ -167,8 +167,7 @@ pub(crate) const UNIFIER: &str = "maestro-dependencies";
 
 /// Report whether a crate may declare the foundation utility as a production dependency.
 pub(crate) fn uses_utility(name: &str) -> bool {
-    name != UTILITY
-        && name != UNIFIER
+    !matches!(name, UTILITY | UNIFIER)
         && test_support_callers(name).is_none()
         && !matches!(
             name,
@@ -185,23 +184,18 @@ pub(crate) fn uses_utility(name: &str) -> bool {
                 | "maestro-json"
                 | "maestro-entry"
                 | "maestro-tool"
+                | "maestro-package"
                 | "maestro-brand"
         )
 }
 
 /// Look up a scoped crate's classification and permitted dependencies.
 pub(crate) fn rule(name: &str) -> Option<Rule> {
-    if name == UNIFIER {
-        return Some(Rule {
-            class: "dedicated",
-            dependencies: &[],
-        });
-    }
-    let dependencies = POLICY.iter().find(|row| row.0 == name)?.1;
     Some(Rule {
         class: if matches!(
             name,
-            "maestro"
+            UNIFIER
+                | "maestro"
                 | "maestro-test-conventions"
                 | "maestro-test-process"
                 | "maestro-test-directory"
@@ -214,7 +208,11 @@ pub(crate) fn rule(name: &str) -> Option<Rule> {
         } else {
             "core"
         },
-        dependencies,
+        dependencies: if name == UNIFIER {
+            &[]
+        } else {
+            POLICY.iter().find(|row| row.0 == name)?.1
+        },
     })
 }
 

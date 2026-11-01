@@ -164,6 +164,9 @@ mod model_protocol_routes;
 #[cfg(target_arch = "wasm32")]
 fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
+        if std::env::var_os("MAESTRO_HOST_OPERATIONS_REQUEST").is_some() {
+            return host_operations::observe(&api).await;
+        }
         check_start(&api)?;
         load_time::publish(&api)?;
         providers::factory(&api)?;
@@ -533,3 +536,7 @@ fn check_start(api: &ExtensionAPI) -> Result<(), String> {
     }
     Ok(())
 }
+
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/host_operations.rs"]
+mod host_operations;

@@ -39,7 +39,9 @@ No reverse dependency is permitted.
 
 The [specification](specs/maestro-port.md#crates-and-delivery-order) declares five more
 owners, all now present: `maestro-text` and `maestro-json` are leaves, `maestro-entry` and `maestro-tool` depend
-only on `maestro-request`, and `maestro-brand` depends on text and JSON. Pattern depends
+only on `maestro-request`, and `maestro-brand` depends on text and JSON.
+The `maestro-package` leaf owns portable package interchange records; native
+packages and guest authoring specialize its resolved-package scope. Pattern depends
 only on text, so it is no longer a leaf. The [Markdown parser](markdown.md)
 also depends only on text; the toolkit consumes its owned source records and
 application re-exports them as `markdown`. The dedicated conventions checker may

@@ -644,6 +644,7 @@ fn assert_async_imports(contract: &Contract) {
             "[method]writable.end",
             "[method]writable.write",
             "call",
+            "call-host-operation",
             "event-emit",
             "fetch",
             "get-all-tools",
@@ -1236,3 +1237,5 @@ mod native_helpers;
 mod custom_ticks;
 
 mod snake_frames;
+
+mod package_boundary;
