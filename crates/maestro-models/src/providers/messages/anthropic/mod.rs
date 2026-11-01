@@ -416,7 +416,7 @@ async fn invoke<E: ProviderExecution>(
         let response = client(payload, settings).await.map_err(callback_failure)?;
         (response, Reading::Injected)
     } else {
-        let request = invocation.request(&payload)?;
+        let request = invocation.request(payload)?;
         let response = send_with_status_error(request, &options.common, envelope_failure).await?;
         (response, Reading::Transport)
     };

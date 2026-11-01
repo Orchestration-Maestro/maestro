@@ -530,13 +530,12 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
     /// # Errors
     /// Fails when the endpoint is not a URL, headers neither authenticate nor retain a gateway
     /// omission, or the payload cannot be written as JSON.
-    pub(super) fn request(&self, payload: &Value) -> Result<HttpRequest, RequestFailure> {
+    pub(super) fn request(&self, mut payload: Value) -> Result<HttpRequest, RequestFailure> {
         let base = match self.base_url.as_ref() {
             "" => DEFAULT_BASE_URL,
             supplied => supplied,
         };
         let mut headers = self.headers()?;
-        let mut payload = payload.clone();
         if let Some(betas) = payload
             .as_object_mut()
             .and_then(|body| body.shift_remove("betas"))
@@ -560,24 +559,11 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
     }
 }
 
-/// Report whether compatibility metadata or a recognized identifier selects adaptive thinking.
+/// Report whether compatibility metadata explicitly selects adaptive thinking.
 pub(super) fn supports_adaptive_thinking(model: &Model) -> bool {
-    if model
+    model
         .compat
         .as_ref()
         .and_then(|compat| compat.0.get("forceAdaptiveThinking"))
         == Some(&Value::Bool(true))
-    {
-        return true;
-    }
-    [
-        "opus-4-6",
-        "opus-4.6",
-        "opus-4-7",
-        "opus-4.7",
-        "sonnet-4-6",
-        "sonnet-4.6",
-    ]
-    .iter()
-    .any(|marker| model.id.contains(marker))
 }

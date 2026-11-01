@@ -71,7 +71,7 @@ impl ModelRegistry {
             model,
         )?;
         let headers = self.resolve_headers(model, config.as_deref(), api_key.as_deref())?;
-        let descriptor = model.read().unwrap_or_else(PoisonError::into_inner);
+        let descriptor = model.read().unwrap_or_else(PoisonError::into_inner).clone();
         let base_url = self
             .auth_storage
             .cloudflare_base_url(&descriptor)

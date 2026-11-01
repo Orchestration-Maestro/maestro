@@ -1,6 +1,5 @@
 //! Independent local capability ownership through the single request pump.
 use crate::read_imports::ReadEndpoint;
-mod model_decode;
 mod synchronous;
 mod worker;
 use super::Pump;
