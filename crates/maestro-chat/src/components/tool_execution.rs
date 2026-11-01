@@ -91,6 +91,8 @@ struct Row {
     container: Container,
     /// Chosen inner shell, even after removal from outer children.
     shell: Shell,
+    /// The blank row added before the shell, which an empty self-rendered shell omits.
+    spacer: ComponentHandle,
     /// Stable constructor inputs; mutable arguments live separately.
     params: ToolExecutionParams,
     /// Raw arguments retained without read-only value copies.
@@ -145,12 +147,14 @@ impl ToolExecutionComponent {
         } else {
             Shell::Default(Rc::new(Frame::new(1, 1, None)))
         };
+        let spacer: ComponentHandle = Rc::new(Spacer::new(1));
         let row = Rc::new_cyclic(|weak: &std::rc::Weak<Row>| {
             let weak = weak.clone();
             let invalidate: Rc<dyn Fn()> = Rc::new(move || Row::request(&weak));
             Row {
                 container: Container::new(),
                 shell,
+                spacer: Rc::clone(&spacer),
                 args: RefCell::new(args),
                 result: RefCell::default(),
                 phase: Cell::new(ToolRenderPhase {
@@ -171,7 +175,7 @@ impl ToolExecutionComponent {
                 params,
             }
         });
-        row.container.add_child(Rc::new(Spacer::new(1)));
+        row.container.add_child(spacer);
         let child: ComponentHandle = match &row.shell {
             Shell::Default(c) => c.clone(),
             Shell::SelfRendered(c) => c.clone(),
@@ -456,8 +460,9 @@ impl Row {
         drop(old);
         Ok(())
     }
-    /// Renders the children in order. A self-rendered shell whose content draws nothing
-    /// drops the blank row before it, so with no images the row takes no space.
+    /// Renders the children in order, walking them as `Container` does. A self-rendered
+    /// shell whose content draws nothing omits the row's own blank row, so with no images
+    /// the row takes no space.
     fn rows<E>(
         &self,
         width: usize,
@@ -466,18 +471,22 @@ impl Row {
         let Shell::SelfRendered(content) = &self.shell else {
             return render(&self.container, width);
         };
-        let children: Vec<ComponentHandle> = self.container.walk().collect();
-        let mut rendered = Vec::with_capacity(children.len());
-        for child in &children {
-            rendered.push(render(child.as_ref(), width)?);
+        let content: ComponentHandle = content.clone();
+        let mut rendered = Vec::new();
+        let mut empty = false;
+        for child in self.container.walk() {
+            let lines = render(child.as_ref(), width)?;
+            if std::ptr::addr_eq(Rc::as_ptr(&child), Rc::as_ptr(&content)) {
+                empty = lines.is_empty();
+            }
+            let spacer = std::ptr::addr_eq(Rc::as_ptr(&child), Rc::as_ptr(&self.spacer));
+            rendered.push((spacer, lines));
         }
-        let at = children
-            .iter()
-            .position(|child| std::ptr::addr_eq(Rc::as_ptr(child), Rc::as_ptr(content)));
-        if let Some(at) = at.filter(|&at| at > 0 && rendered[at].is_empty()) {
-            rendered[at - 1].clear();
-        }
-        Ok(rendered.concat())
+        Ok(rendered
+            .into_iter()
+            .filter(|(spacer, _)| !(empty && *spacer))
+            .flat_map(|(_, lines)| lines)
+            .collect())
     }
     /// Invalidates before rebuilding, retaining failures for fallible rendering.
     fn invalidate(&self) {

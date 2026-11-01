@@ -1,5 +1,6 @@
 //! Keybinding hints for the current registry, styled with the published theme.
 
+use maestro_models::DiagnosticErrorInfo;
 use maestro_theme::{LiveTheme, Theme, ThemeColor, ThemeError};
 use maestro_tui::get_keybindings;
 
@@ -59,7 +60,6 @@ pub fn key_display_text(keybinding: &str) -> String {
 }
 
 /// The keybinding that expands a collapsed tool row.
-#[cfg(not(target_arch = "wasm32"))]
 pub(crate) const EXPAND: &str = "app.tools.expand";
 
 /// The keys bound to `keybinding`, joined with `/` in registry order; empty when unbound.
@@ -111,4 +111,40 @@ fn format_key_hint(
         }
         None => Ok(format!("{key}{description}")),
     }
+}
+
+/// The muted `counts` of rows left out of a preview, followed by the expand key hint.
+///
+/// # Errors
+/// Returns the published theme's failure.
+pub fn expand_hint(
+    counts: &str,
+    theme: &Theme,
+    live_theme: &LiveTheme,
+) -> Result<String, DiagnosticErrorInfo> {
+    format_expand_hint(counts, Some((theme, live_theme)))
+        .map_err(|error| DiagnosticErrorInfo::error(error.to_string()))
+}
+
+/// Unstyled fallback using the same hint framing and current keybindings.
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) fn plain_expand_hint(counts: &str) -> String {
+    format_expand_hint(counts, None).unwrap_or_default()
+}
+
+/// One template for fallible styled hints and their deferred plain fallback.
+fn format_expand_hint(
+    counts: &str,
+    themes: Option<(&Theme, &LiveTheme)>,
+) -> Result<String, ThemeError> {
+    let prefix = format!("\n... ({counts},");
+    let (more, hint, close) = match themes {
+        Some((theme, live)) => (
+            theme.fg(&ThemeColor::Muted, &prefix)?,
+            key_hint(EXPAND, "to expand", live)?,
+            theme.fg(&ThemeColor::Muted, ")")?,
+        ),
+        None => (prefix, plain_key_hint(EXPAND, "to expand"), ")".to_owned()),
+    };
+    Ok(format!("{more} {hint}{close}"))
 }

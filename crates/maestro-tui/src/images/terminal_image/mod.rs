@@ -89,10 +89,10 @@ impl Default for CellDimensions {
 }
 impl TerminalImage {
     /// The home directory: a present Unix `HOME` from the terminal environment, even when
-    /// empty, otherwise the account's.
+    /// empty, otherwise the native home directory.
     pub(crate) fn home(&self) -> Option<String> {
         maestro_path::homedir((self.environment)("HOME").filter(|_| cfg!(unix)), || {
-            std::env::home_dir().map(|home| home.to_string_lossy().into_owned())
+            maestro_path::native_homedir().map(|home| home.to_string_lossy().into_owned())
         })
     }
 }

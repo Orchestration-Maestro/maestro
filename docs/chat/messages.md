@@ -175,9 +175,10 @@ PNG converter; successful cache entries match both payload and MIME, and replace
 results discard stale entries. Image conversion schedules no deferred work.
 Native edit previews retain their existing runtime and read-only preflight.
 
-A self-rendered row whose callbacks draw nothing takes no leading blank row; with
-no images it renders no rows at all, before and after its result. Each image keeps
-its own blank row above it.
+A self-rendered row whose callbacks draw nothing omits its own leading blank row;
+with no images it renders no rows at all, before and after its result. Each image
+keeps its own blank row above it, and children a caller adds or puts in place of the
+blank row still render. The row walks its children as `Container` does.
 
 When the result slot has no callback, or its callback fails, the row shows the
 result text split on newlines in the `toolOutput` colour: every line when
