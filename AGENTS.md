@@ -482,11 +482,11 @@ never directly push to the default branch or bypass hooks/protection.
 Stage only your own session files with `git add <specific-file-paths>`.
 Inspect `git status` and the staged diff before committing. Never use
 `git add .`, `git add -A`, `git reset --hard`, `git checkout .`, `git clean -fd`,
-blanket `git stash`, or `git commit --no-verify`. Rebase on current main;
-retain its behavior and assertions. Resolve conflicts only in owned files;
-abort and ask if an unrelated file conflicts. Force-push only with explicit
-standing approval and a fetched-hash lease. Ask for confirmation before an
-instruction overrides these safeguards.
+blanket `git stash`, or `git commit --no-verify`. Take current main into your
+branch with a signed merge commit (`git merge -S origin/main`); never rebase or
+force-push. Keep main's behaviour and assertions, resolve conflicts only in files
+you own, and stop and ask if an unrelated file conflicts. Ask for confirmation
+before an instruction overrides these safeguards.
 
 ## Provider contribution checklist
 
