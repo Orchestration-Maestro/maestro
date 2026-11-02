@@ -38,7 +38,7 @@ use maestro_tools::BashError;
 use maestro_tools::utils::shell::{ShellEnv, get_shell_config};
 use read_support::{Fixture, Scratch};
 use serde_json::json;
-use std::{ffi::OsString, future::Future};
+use std::{ffi::OsString, future::Future, io::Write, net::TcpListener};
 
 #[test]
 fn shell_native_probes_validate_filesystem_boundaries() {
@@ -255,9 +255,10 @@ fn local_bash_spawns_before_honoring_preabort() {
             .unwrap_err();
         assert!(matches!(error, BashError::Other(_)), "spawn error must win");
         let valid = create_local_bash_operations("/tools".into(), Some("/bin/bash".into()));
+        let blocked = read_support::payload(dir.path(), "blocked", &json!({"scenario": "blocked"}));
         let error = valid
             .exec(
-                "exec /bin/sleep 60",
+                &format!("exec {}", read_support::shell_operand(&blocked)),
                 &dir.text(),
                 BashExecOptions {
                     on_data: &mut sink,
@@ -398,25 +399,23 @@ fn local_bash_has_its_own_session_and_process_group() {
 fn local_bash_streams_raw_bytes_before_completion() {
     run(async {
         let dir = Scratch::new().unwrap();
-        let gate = dir.path().join("release");
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let payload = read_support::payload(
+            dir.path(),
+            "raw",
+            &json!({"scenario": "raw", "port": listener.local_addr().unwrap().port()}),
+        );
         let operations = create_local_bash_operations("/tools".into(), Some("/bin/bash".into()));
         let mut bytes = Vec::new();
         let mut released = false;
         let mut sink = |data: &[u8]| {
             bytes.extend_from_slice(data);
             if !released {
-                std::fs::OpenOptions::new()
-                    .write(true)
-                    .create_new(true)
-                    .open(&gate)
-                    .unwrap();
+                listener.accept().unwrap().0.write_all(b"x").unwrap();
                 released = true;
             }
         };
-        let command = format!(
-            "printf 'raw\\000\\033[31m\\r\\n\\377'; while [ ! -f '{}' ]; do :; done; printf 'stderr' >&2",
-            gate.display()
-        );
+        let command = format!("exec {}", read_support::shell_operand(&payload));
         let result = operations
             .exec(
                 &command,
@@ -533,25 +532,26 @@ fn native_shell_environment_reads_each_process_inheritance() {
 fn local_bash_keeps_interleaved_split_unicode_and_large_output_raw() {
     run(async {
         let dir = Scratch::new().unwrap();
-        let gates = [dir.path().join("first"), dir.path().join("second")];
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let payload = read_support::payload(
+            dir.path(),
+            "interleaved",
+            &json!({"scenario": "interleaved", "port": listener.local_addr().unwrap().port()}),
+        );
+        let mut connection = None;
         let mut bytes = Vec::new();
         let mut released = 0;
         let mut sink = |data: &[u8]| {
             bytes.extend_from_slice(data);
             if released < 2 && bytes.len() >= [2, 5][released] {
-                std::fs::OpenOptions::new()
-                    .write(true)
-                    .create_new(true)
-                    .open(&gates[released])
+                connection
+                    .get_or_insert_with(|| listener.accept().unwrap().0)
+                    .write_all(b"x")
                     .unwrap();
                 released += 1;
             }
         };
-        let command = format!(
-            "printf '\\360\\237'; while [ ! -f '{}' ]; do :; done; printf err >&2; while [ ! -f '{}' ]; do :; done; printf '\\230\\200'; /usr/bin/head -c 262144 /dev/zero",
-            gates[0].display(),
-            gates[1].display()
-        );
+        let command = format!("exec {}", read_support::shell_operand(&payload));
         let operations = create_local_bash_operations("/tools".into(), Some("/bin/bash".into()));
         let result = operations
             .exec(

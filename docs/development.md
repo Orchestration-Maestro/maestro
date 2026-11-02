@@ -1315,6 +1315,9 @@ fn main() -> std::io::Result<()> {
 | `descendant` | Writes `early` and `diag`, starts a linked descendant as `MTP_ROLE=descendant`, then exits. The descendant answers each `p` with `E`, writes `late` on any other byte, and is a real child of this process. |
 | `yielding` | On `port`, announces `READY` under the default TERM action and answers each `p` with `E` until another byte or EOF. |
 | `exchange` | On `port`, requires one `x` byte, writes `one` to standard output, requires a second `x`, then writes `two` to standard error. |
+| `raw` | Connects to `port`, writes `raw`, NUL, a colour escape, CRLF and byte FF to standard output, waits for one release byte, then writes `stderr` to standard error. |
+| `interleaved` | Connects to `port`, writes bytes F0 9F, waits for one release byte, writes `err` to standard error, waits for another byte, then writes bytes 98 80 and 262144 zero bytes to standard output. |
+| `termination` | Connects to `port` and writes its PID followed by a newline. After one release byte, writes `alive` and a newline; after a second byte, writes `survived` to the file of that name in its working directory. Closing the channel before either byte fails without writing the marker. |
 | `identity` | Writes this process's session and process group, one per line. |
 | `tree-root` | On `port`, writes `READY`, starts a linked descendant as `MTP_ROLE=tree-leaf`, and waits for it. |
 | `tree-leaf` | On `port`, writes `READY` and holds the channel until the tree is killed. |
@@ -1324,7 +1327,10 @@ fn main() -> std::io::Result<()> {
 The `MTP_ROLE` variable selects a linked-descendant role for the same record; no
 other selection uses it. Shell parsing stays on the real shell: select the
 shell itself when the command grammar, session identity or process group is the
-observation, and use a payload only for what runs inside it.
+observation, and use a payload only for what runs inside it. Use `exec <alias>`
+when the payload must keep the shell's PID, process group and open descriptors.
+Streaming cases release each next write only after the sink has received the
+preceding bytes; no file gate or busy loop paces the child.
 
 #### Credential processes
 

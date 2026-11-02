@@ -13,6 +13,9 @@ use maestro_test_process::child::{
 /// The large stream each of the two independent outputs carries.
 const STREAM_LENGTH: usize = 300_000;
 
+/// The zero-filled tail after the interleaved scalar and diagnostic bytes.
+const RAW_LENGTH: usize = 262_144;
+
 /// One four-byte scalar, written in two parts to both outputs.
 const SCALAR: &str = "\u{10348}";
 
@@ -141,6 +144,35 @@ pub(super) fn exchange(port: u16) -> io::Result<()> {
         return Err(io::Error::other("missing second release"));
     }
     write_stderr(b"two")
+}
+
+/// Write raw output before release and diagnostic bytes only after release.
+pub(super) fn raw(port: u16) -> io::Result<()> {
+    let mut socket = connect(port)?;
+    write_stdout(b"raw\0\x1b[31m\r\n\xff")?;
+    socket.read_exact(&mut [0])?;
+    write_stderr(b"stderr")
+}
+
+/// Keep a scalar split around a diagnostic write, releasing each part independently.
+pub(super) fn interleaved(port: u16) -> io::Result<()> {
+    let mut socket = connect(port)?;
+    write_stdout(b"\xf0\x9f")?;
+    socket.read_exact(&mut [0])?;
+    write_stderr(b"err")?;
+    socket.read_exact(&mut [0])?;
+    write_stdout(b"\x98\x80")?;
+    write_stdout(&vec![0; RAW_LENGTH])
+}
+
+/// Report the native PID, acknowledge the first release, then mark survival after the second.
+pub(super) fn termination(port: u16) -> io::Result<()> {
+    let mut socket = connect(port)?;
+    write_stdout(format!("{}\n", std::process::id()).as_bytes())?;
+    socket.read_exact(&mut [0])?;
+    write_stdout(b"alive\n")?;
+    socket.read_exact(&mut [0])?;
+    std::fs::write("survived", b"survived")
 }
 
 /// Report the session and process group this process leads or belongs to.

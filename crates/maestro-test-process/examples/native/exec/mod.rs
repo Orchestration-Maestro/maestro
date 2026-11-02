@@ -45,6 +45,21 @@ pub(super) enum Record {
         /// Parent-owned release channel.
         port: u16,
     },
+    /// Write raw bytes before release, then standard error after release.
+    Raw {
+        /// Parent-owned release channel.
+        port: u16,
+    },
+    /// Interleave a split scalar and standard error before a large raw output.
+    Interleaved {
+        /// Parent-owned release channel.
+        port: u16,
+    },
+    /// Report this process's PID, then acknowledge two releases before writing a marker.
+    Termination {
+        /// Parent-owned release channel.
+        port: u16,
+    },
     /// Report this process's session and process group.
     Identity {},
     /// Answer each question under the default termination action.
@@ -157,6 +172,9 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
         Record::Stubborn { port } => payloads::stubborn(*port),
         Record::Descendant { .. } => payloads::descendant(),
         Record::Exchange { port } => payloads::exchange(*port),
+        Record::Raw { port } => payloads::raw(*port),
+        Record::Interleaved { port } => payloads::interleaved(*port),
+        Record::Termination { port } => payloads::termination(*port),
         Record::Identity {} => payloads::identity(),
         Record::Yielding { port } => payloads::yielding(*port),
         Record::TreeRoot { port } => payloads::tree_root(*port),
