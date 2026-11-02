@@ -42335,6 +42335,710 @@
           }
         }
       }
+    },
+    {
+      "id": "unknown_user_block",
+      "test": "history_skips_unknown_roles_and_blocks",
+      "change": {
+        "options": {
+          "cacheRetention": "none"
+        },
+        "context": {
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "hello"
+                },
+                {
+                  "type": "unknown",
+                  "x": 1
+                }
+              ],
+              "timestamp": 1
+            }
+          ]
+        }
+      },
+      "expected": {
+        "sequence": [
+          "hook",
+          "transport",
+          "response"
+        ],
+        "hook": {
+          "modelId": "anthropic.claude-sonnet-4-5",
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "text": "hello"
+                }
+              ]
+            }
+          ],
+          "inferenceConfig": {
+            "maxTokens": 32768
+          }
+        },
+        "body": {
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "text": "hello"
+                }
+              ]
+            }
+          ],
+          "inferenceConfig": {
+            "maxTokens": 32768
+          }
+        }
+      }
+    },
+    {
+      "id": "unknown_user_blocks_only",
+      "test": "history_skips_unknown_roles_and_blocks",
+      "change": {
+        "options": {
+          "cacheRetention": "none"
+        },
+        "context": {
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "unknown",
+                  "x": 1
+                }
+              ],
+              "timestamp": 1
+            }
+          ]
+        }
+      },
+      "expected": {
+        "sequence": [
+          "hook",
+          "transport",
+          "response"
+        ],
+        "hook": {
+          "modelId": "anthropic.claude-sonnet-4-5",
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "text": "<empty>"
+                }
+              ]
+            }
+          ],
+          "inferenceConfig": {
+            "maxTokens": 32768
+          }
+        },
+        "body": {
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "text": "<empty>"
+                }
+              ]
+            }
+          ],
+          "inferenceConfig": {
+            "maxTokens": 32768
+          }
+        }
+      }
+    },
+    {
+      "id": "unknown_assistant_block",
+      "test": "history_skips_unknown_roles_and_blocks",
+      "change": {
+        "options": {
+          "cacheRetention": "none"
+        },
+        "context": {
+          "messages": [
+            {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "hello"
+                },
+                {
+                  "type": "unknown",
+                  "x": 1
+                }
+              ],
+              "api": "bedrock-converse-stream",
+              "provider": "amazon-bedrock",
+              "model": "anthropic.claude-sonnet-4-5",
+              "usage": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "stop",
+              "timestamp": 2
+            }
+          ]
+        }
+      },
+      "expected": {
+        "sequence": [
+          "hook",
+          "transport",
+          "response"
+        ],
+        "hook": {
+          "modelId": "anthropic.claude-sonnet-4-5",
+          "messages": [
+            {
+              "role": "assistant",
+              "content": [
+                {
+                  "text": "hello"
+                }
+              ]
+            }
+          ],
+          "inferenceConfig": {
+            "maxTokens": 32768
+          }
+        },
+        "body": {
+          "messages": [
+            {
+              "role": "assistant",
+              "content": [
+                {
+                  "text": "hello"
+                }
+              ]
+            }
+          ],
+          "inferenceConfig": {
+            "maxTokens": 32768
+          }
+        }
+      }
+    },
+    {
+      "id": "unknown_assistant_blocks_only",
+      "test": "history_skips_unknown_roles_and_blocks",
+      "change": {
+        "options": {
+          "cacheRetention": "none"
+        },
+        "context": {
+          "messages": [
+            {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "unknown"
+                }
+              ],
+              "api": "bedrock-converse-stream",
+              "provider": "amazon-bedrock",
+              "model": "anthropic.claude-sonnet-4-5",
+              "usage": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "stop",
+              "timestamp": 2
+            },
+            {
+              "role": "user",
+              "content": "after",
+              "timestamp": 1
+            }
+          ]
+        }
+      },
+      "expected": {
+        "sequence": [
+          "hook",
+          "transport",
+          "response"
+        ],
+        "hook": {
+          "modelId": "anthropic.claude-sonnet-4-5",
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "text": "after"
+                }
+              ]
+            }
+          ],
+          "inferenceConfig": {
+            "maxTokens": 32768
+          }
+        },
+        "body": {
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "text": "after"
+                }
+              ]
+            }
+          ],
+          "inferenceConfig": {
+            "maxTokens": 32768
+          }
+        }
+      }
+    },
+    {
+      "id": "unknown_role_message",
+      "test": "history_skips_unknown_roles_and_blocks",
+      "change": {
+        "options": {
+          "cacheRetention": "none"
+        },
+        "context": {
+          "messages": [
+            {
+              "role": "other",
+              "content": "hidden",
+              "timestamp": 1
+            },
+            {
+              "role": "user",
+              "content": "shown",
+              "timestamp": 1
+            }
+          ]
+        }
+      },
+      "expected": {
+        "sequence": [
+          "hook",
+          "transport",
+          "response"
+        ],
+        "hook": {
+          "modelId": "anthropic.claude-sonnet-4-5",
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "text": "shown"
+                }
+              ]
+            }
+          ],
+          "inferenceConfig": {
+            "maxTokens": 32768
+          }
+        },
+        "body": {
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "text": "shown"
+                }
+              ]
+            }
+          ],
+          "inferenceConfig": {
+            "maxTokens": 32768
+          }
+        }
+      }
+    },
+    {
+      "id": "unknown_role_message_simple",
+      "test": "history_skips_unknown_roles_and_blocks",
+      "change": {
+        "entry": "simple",
+        "context": {
+          "messages": [
+            {
+              "role": "other",
+              "content": "hidden",
+              "timestamp": 1
+            },
+            {
+              "role": "user",
+              "content": "shown",
+              "timestamp": 1
+            }
+          ]
+        }
+      },
+      "expected": {
+        "sequence": [
+          "hook",
+          "transport",
+          "response"
+        ],
+        "hook": {
+          "modelId": "anthropic.claude-sonnet-4-5",
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "text": "shown"
+                },
+                {
+                  "cachePoint": {
+                    "type": "default"
+                  }
+                }
+              ]
+            }
+          ],
+          "inferenceConfig": {
+            "maxTokens": 32768
+          }
+        },
+        "body": {
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "text": "shown"
+                },
+                {
+                  "cachePoint": {
+                    "type": "default"
+                  }
+                }
+              ]
+            }
+          ],
+          "inferenceConfig": {
+            "maxTokens": 32768
+          }
+        }
+      }
+    },
+    {
+      "id": "unknown_message_between_tool_results",
+      "test": "history_skips_unknown_roles_and_blocks",
+      "change": {
+        "options": {
+          "cacheRetention": "none"
+        },
+        "context": {
+          "messages": [
+            {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "toolCall",
+                  "id": "a",
+                  "name": "inspect",
+                  "arguments": {
+                    "n": 1
+                  }
+                },
+                {
+                  "type": "toolCall",
+                  "id": "b",
+                  "name": "inspect",
+                  "arguments": {
+                    "n": 1
+                  }
+                }
+              ],
+              "api": "bedrock-converse-stream",
+              "provider": "amazon-bedrock",
+              "model": "anthropic.claude-sonnet-4-5",
+              "usage": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "stop",
+              "timestamp": 2
+            },
+            {
+              "role": "toolResult",
+              "toolCallId": "a",
+              "toolName": "inspect",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ok"
+                }
+              ],
+              "isError": false,
+              "timestamp": 3
+            },
+            {
+              "role": "other",
+              "content": "hidden",
+              "timestamp": 3
+            },
+            {
+              "role": "toolResult",
+              "toolCallId": "b",
+              "toolName": "inspect",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ok"
+                }
+              ],
+              "isError": false,
+              "timestamp": 3
+            }
+          ]
+        }
+      },
+      "expected": {
+        "sequence": [
+          "hook",
+          "transport",
+          "response"
+        ],
+        "hook": {
+          "modelId": "anthropic.claude-sonnet-4-5",
+          "messages": [
+            {
+              "role": "assistant",
+              "content": [
+                {
+                  "toolUse": {
+                    "toolUseId": "a",
+                    "name": "inspect",
+                    "input": {
+                      "n": 1
+                    }
+                  }
+                },
+                {
+                  "toolUse": {
+                    "toolUseId": "b",
+                    "name": "inspect",
+                    "input": {
+                      "n": 1
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "role": "user",
+              "content": [
+                {
+                  "toolResult": {
+                    "toolUseId": "a",
+                    "content": [
+                      {
+                        "text": "ok"
+                      }
+                    ],
+                    "status": "success"
+                  }
+                },
+                {
+                  "toolResult": {
+                    "toolUseId": "b",
+                    "content": [
+                      {
+                        "text": "ok"
+                      }
+                    ],
+                    "status": "success"
+                  }
+                }
+              ]
+            }
+          ],
+          "inferenceConfig": {
+            "maxTokens": 32768
+          }
+        },
+        "body": {
+          "messages": [
+            {
+              "role": "assistant",
+              "content": [
+                {
+                  "toolUse": {
+                    "toolUseId": "a",
+                    "name": "inspect",
+                    "input": {
+                      "n": 1
+                    }
+                  }
+                },
+                {
+                  "toolUse": {
+                    "toolUseId": "b",
+                    "name": "inspect",
+                    "input": {
+                      "n": 1
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "role": "user",
+              "content": [
+                {
+                  "toolResult": {
+                    "toolUseId": "a",
+                    "content": [
+                      {
+                        "text": "ok"
+                      }
+                    ],
+                    "status": "success"
+                  }
+                },
+                {
+                  "toolResult": {
+                    "toolUseId": "b",
+                    "content": [
+                      {
+                        "text": "ok"
+                      }
+                    ],
+                    "status": "success"
+                  }
+                }
+              ]
+            }
+          ],
+          "inferenceConfig": {
+            "maxTokens": 32768
+          }
+        }
+      }
+    },
+    {
+      "id": "unknown_block_between_images",
+      "test": "history_skips_unknown_roles_and_blocks",
+      "change": {
+        "model": {
+          "input": [
+            "text"
+          ]
+        },
+        "options": {
+          "cacheRetention": "none"
+        },
+        "context": {
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "image",
+                  "mimeType": "image/png",
+                  "data": "AQID"
+                },
+                {
+                  "type": "unknown",
+                  "x": 1
+                },
+                {
+                  "type": "image",
+                  "mimeType": "image/png",
+                  "data": "AQID"
+                }
+              ],
+              "timestamp": 1
+            }
+          ]
+        }
+      },
+      "expected": {
+        "sequence": [
+          "hook",
+          "transport",
+          "response"
+        ],
+        "hook": {
+          "modelId": "anthropic.claude-sonnet-4-5",
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "text": "(image omitted: model does not support images)"
+                }
+              ]
+            }
+          ],
+          "inferenceConfig": {
+            "maxTokens": 32768
+          }
+        },
+        "body": {
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "text": "(image omitted: model does not support images)"
+                }
+              ]
+            }
+          ],
+          "inferenceConfig": {
+            "maxTokens": 32768
+          }
+        }
+      }
     }
   ]
 }

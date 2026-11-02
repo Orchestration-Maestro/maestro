@@ -8,8 +8,9 @@
 use std::fmt;
 use std::marker::PhantomData;
 
-use serde::de::value::MapAccessDeserializer;
-use serde::de::{Deserialize, Deserializer, MapAccess, Visitor};
+use serde::Deserialize;
+use serde::de::value::{MapAccessDeserializer, MapDeserializer};
+use serde::de::{self, DeserializeOwned, Deserializer, MapAccess, Visitor};
 
 /// The expectation reported for a value that is not an object.
 const EXPECTING: &str = "a JSON object";
@@ -105,4 +106,49 @@ pub fn optional_list<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
     Option::<Vec<Object<T>>>::deserialize(deserializer).map(|records| {
         records.map(|records| records.into_iter().map(|Object(record)| record).collect())
     })
+}
+
+/// Whether the family `T`, tagged by the member `member`, names the tag value `kind`.
+///
+/// The family's own decoder answers: a tag it does not name gives `false`, and a tag it names
+/// gives `true` even where the rest of the record is missing or malformed. A `member` the
+/// family is not tagged by gives `true`, so a caller that names the wrong member keeps every
+/// entry for the family's own decoder to refuse.
+#[must_use]
+pub fn names<T: DeserializeOwned>(member: &str, kind: &str) -> bool {
+    let tag = MapDeserializer::<_, NameProbe>::new(std::iter::once((member, kind)));
+    !matches!(T::deserialize(tag), Err(NameProbe::UnknownVariant))
+}
+
+/// The outcome of decoding a lone tag: unknown, or any other failure.
+#[derive(Debug)]
+enum NameProbe {
+    /// The decoder reported the tag as an unknown variant.
+    UnknownVariant,
+    /// Any other failure, such as a missing member of a named variant.
+    Other,
+}
+
+impl fmt::Display for NameProbe {
+    /// Report the outcome for a decoder that only displays it.
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str(match self {
+            Self::UnknownVariant => "unknown variant",
+            Self::Other => "other failure",
+        })
+    }
+}
+
+impl std::error::Error for NameProbe {}
+
+impl de::Error for NameProbe {
+    /// Every other failure keeps its own outcome.
+    fn custom<T: fmt::Display>(_message: T) -> Self {
+        Self::Other
+    }
+
+    /// Record only the unknown-variant outcome as such.
+    fn unknown_variant(_variant: &str, _expected: &'static [&'static str]) -> Self {
+        Self::UnknownVariant
+    }
 }

@@ -16,15 +16,21 @@ API; request processing and payload hooks still receive the original descriptor.
 
 ## Conversation input
 
-Message roles and content kinds are closed typed records. JSON model invocations
-reject an unknown role or content block during decoding, before provider conversion.
+Message roles and content kinds are closed typed records. Decoding leaves out a
+model-request message whose role names no known role, and a user or assistant block whose
+type names no known kind, so a conversation that holds one still continues. User blocks are
+`text` and `image`; assistant blocks are `text`, `thinking` and `toolCall`. Tool-result blocks
+must be known. A user turn left without blocks holds `<empty>`, and an assistant turn
+left without content is not sent. Anything else malformed still fails to decode.
 
 History first passes through the [shared projection](../conversation-projection.md). User content keeps
 its text and block order. Blank user and tool-result text is dropped, and a turn or result left
 without content holds the placeholder `<empty>`. Blank assistant text and thinking are skipped;
 retained text is not trimmed. Claude thinking without a nonblank signature becomes plain text; other models send
 reasoning text without a signature. Consecutive tool results become one user turn, preserving
-result order and error or success status.
+result order and error or success status. Unknown entries are left out before this projection,
+so tool results separated only by an unknown message still become one turn, and images
+separated only by unknown blocks become one placeholder for a model without image input.
 
 Images remaining after [shared projection](../conversation-projection.md) accept `image/jpeg`,
 `image/jpg`, `image/png`, `image/gif` and `image/webp`. The payload hook sees decoded byte arrays;

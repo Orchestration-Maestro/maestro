@@ -382,3 +382,57 @@ fn pointer_tokens_keep_escape_order() {
     assert_eq!(maestro_json::escape_pointer_token("plain"), "plain");
     assert_eq!(maestro_json::escape_pointer_token(""), "");
 }
+
+/// A tagged family the probe asks about, standing in for the wire records that use one.
+#[derive(Debug, PartialEq, Deserialize)]
+#[serde(tag = "type", rename_all = "camelCase")]
+enum Tagged {
+    /// A named member the probe must keep.
+    Text {
+        /// A member the family requires.
+        text: String,
+    },
+    /// A second named member.
+    ToolCall {
+        /// A member the family requires.
+        id: String,
+    },
+}
+
+/// A family tagged by another member, for the member parameter.
+#[derive(Debug, PartialEq, Deserialize)]
+#[serde(tag = "role", rename_all = "camelCase")]
+enum Roled {
+    /// A named member.
+    User {
+        /// A member the family requires.
+        content: String,
+    },
+}
+
+#[test]
+fn names_asks_the_family_decoder_about_one_tag_value() {
+    use maestro_json::object::names;
+
+    assert!(names::<Tagged>("type", "text"));
+    assert!(names::<Tagged>("type", "toolCall"));
+    assert!(!names::<Tagged>("type", "image"));
+    assert!(!names::<Tagged>("type", ""));
+    assert!(names::<Roled>("role", "user"));
+    assert!(!names::<Roled>("role", "other"));
+    // The wrong member leaves the family unable to read a tag, so the entry stays and its own
+    // decoder decides.
+    assert!(names::<Roled>("type", "other"));
+    assert_eq!(
+        serde_json::from_value::<Tagged>(json!({"type": "text", "text": "kept"})).unwrap(),
+        Tagged::Text {
+            text: "kept".into()
+        }
+    );
+    assert_eq!(
+        serde_json::from_value::<Roled>(json!({"role": "user", "content": "kept"})).unwrap(),
+        Roled::User {
+            content: "kept".into()
+        }
+    );
+}

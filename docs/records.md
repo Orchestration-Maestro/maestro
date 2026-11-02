@@ -296,7 +296,9 @@ current epoch milliseconds and append without removing prior entries.
 ## Wire records and helpers
 
 Messages and content serialize with their fixed role/type tags, even when used
-alone. Tagged unions decode by their role/type. Optional absent fields are omitted;
+alone. Tagged unions decode by their role/type; an unknown block type in user or assistant
+content, and an unknown role among a model request's messages, is left out, while anything
+else malformed still fails. Optional absent fields are omitted;
 explicit null is retained for supported thinking/routing fields and open tool
 details. Signature
 strings remain opaque; the separate signature metadata record accepts version 1.

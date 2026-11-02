@@ -460,3 +460,114 @@ fn user_block_text_output_keeps_empty_repeated_and_literal_text() {
         assert_eq!(UserBlock::text_output(&blocks), expected);
     }
 }
+
+use serde_json::json;
+
+/// A saved assistant turn holding `blocks` as its content.
+fn assistant_with(blocks: serde_json::Value) -> serde_json::Value {
+    let mut message = saved_assistant_without_total();
+    message["content"] = blocks;
+    message
+}
+
+/// A messages list holding one user turn with the supplied content.
+fn user_turn(content: &serde_json::Value) -> serde_json::Value {
+    serde_json::json!([{"role": "user", "content": content, "timestamp": 1}])
+}
+
+#[test]
+fn model_request_leaves_out_unknown_roles_and_blocks() {
+    use maestro_request::types::{Context, Message, UserBlock, UserContent};
+
+    let kept = assistant_with(json!([{"type": "text", "text": "answer"}]));
+    let mut annotated = kept.clone();
+    annotated["content"] = json!([
+        {"type": "text", "text": "answer"},
+        {"type": "unknown", "text": "unknown"}
+    ]);
+    let request = json!({"messages": [
+        {"role": "other", "content": "unknown role", "timestamp": 1},
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "hello"},
+                {"type": "unknown", "text": "unknown"}
+            ],
+            "timestamp": 1
+        },
+        annotated
+    ]});
+    let expected = json!({"messages": [
+        {"role": "user", "content": [{"type": "text", "text": "hello"}], "timestamp": 1},
+        kept
+    ]});
+    let context: Context = serde_json::from_value(request).unwrap();
+    assert_eq!(
+        context,
+        serde_json::from_value::<Context>(expected).unwrap()
+    );
+    match &context.messages[0] {
+        Message::User(user) => {
+            assert_eq!(
+                user.content,
+                UserContent::Blocks(vec![UserBlock::Text(
+                    maestro_request::types::TextContent::new("hello".into())
+                )])
+            );
+        }
+        other => panic!("expected a user turn, got {other:?}"),
+    }
+}
+
+#[test]
+fn all_unknown_blocks_decode_empty() {
+    use maestro_request::types::{Context, Message, UserContent};
+
+    let request = json!({"messages": [
+        {"role": "user", "content": [{"type": "unknown"}], "timestamp": 1},
+        assistant_with(json!([{"type": "unknown"}]))
+    ]});
+    let context: Context = serde_json::from_value(request).unwrap();
+    assert!(matches!(
+        &context.messages[0],
+        Message::User(user) if user.content == UserContent::Blocks(Vec::new())
+    ));
+    assert!(matches!(
+        &context.messages[1],
+        Message::Assistant(message) if message.content.is_empty()
+    ));
+}
+
+#[test]
+fn malformed_tags_and_bodies_still_fail() {
+    use maestro_request::types::Context;
+
+    let rows = [
+        (
+            "tool result",
+            json!([{"role": "toolResult", "toolCallId": "c", "toolName": "t", "content": [{"type": "unknown"}], "isError": false, "timestamp": 1}]),
+        ),
+        (
+            "known block without its body",
+            user_turn(&json!([{"type": "text"}])),
+        ),
+        (
+            "tag that is not a string",
+            user_turn(&json!([{"type": 5, "text": "hello"}])),
+        ),
+        (
+            "block without a tag",
+            user_turn(&json!([{"text": "hello"}])),
+        ),
+        (
+            "message without a role",
+            json!([{"content": "hello", "timestamp": 1}]),
+        ),
+    ];
+    for (row, messages) in rows {
+        assert!(
+            serde_json::from_value::<Context>(json!({"messages": messages})).is_err(),
+            "{row} decoded"
+        );
+    }
+}

@@ -2,7 +2,9 @@
 use super::{Api, Provider};
 use crate::diagnostics::AssistantMessageDiagnostic;
 use crate::presence::Presence;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
+use serde::de::DeserializeOwned;
 /// Represent version-one text signature metadata and its optional phase.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -153,8 +155,8 @@ pub enum StopReason {
 pub enum UserContent {
     /// Text.
     Text(String),
-    /// Blocks.
-    Blocks(Vec<UserBlock>),
+    /// Blocks, without the ones whose type names no block kind.
+    Blocks(#[serde(deserialize_with = "user_blocks")] Vec<UserBlock>),
 }
 /// Represent user plain text or ordered text/image blocks.
 #[derive(Clone, Debug, PartialEq, Deserialize)]
@@ -209,7 +211,8 @@ pub struct UserMessage {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "role", rename = "assistant")]
 pub struct AssistantMessage {
-    /// Content.
+    /// Content, without the blocks whose type names no block kind.
+    #[serde(deserialize_with = "assistant_blocks")]
     pub content: Vec<AssistantContent>,
     /// Api.
     pub api: Api,
@@ -317,7 +320,8 @@ pub struct Context {
     /// System prompt.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub system_prompt: Option<String>,
-    /// Messages.
+    /// Messages, without the ones whose role names no message role.
+    #[serde(deserialize_with = "model_messages")]
     pub messages: Vec<Message>,
     /// Tools.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -374,4 +378,43 @@ impl Serialize for Message {
             Self::ToolResult(value) => value.serialize(serializer),
         }
     }
+}
+
+/// Reads a list of records, leaving out each entry whose string tag `member` the family `T`
+/// does not name and decoding every other entry with `T`'s own decoder.
+fn tagged_records<'de, D: serde::Deserializer<'de>, T: DeserializeOwned>(
+    deserializer: D,
+    member: &str,
+) -> Result<Vec<T>, D::Error> {
+    Vec::<serde_json::Value>::deserialize(deserializer)?
+        .into_iter()
+        .filter_map(|entry| {
+            let kept = match entry.get(member).and_then(serde_json::Value::as_str) {
+                Some(kind) => maestro_json::object::names::<T>(member, kind),
+                None => true,
+            };
+            kept.then(|| serde_json::from_value(entry).map_err(serde::de::Error::custom))
+        })
+        .collect()
+}
+
+/// Reads model-request messages, leaving out a role the message family does not name.
+fn model_messages<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Vec<Message>, D::Error> {
+    tagged_records(deserializer, "role")
+}
+
+/// Reads user blocks, leaving out a type the block family does not name.
+fn user_blocks<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Vec<UserBlock>, D::Error> {
+    tagged_records(deserializer, "type")
+}
+
+/// Reads assistant content, leaving out a type the content family does not name.
+fn assistant_blocks<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Vec<AssistantContent>, D::Error> {
+    tagged_records(deserializer, "type")
 }

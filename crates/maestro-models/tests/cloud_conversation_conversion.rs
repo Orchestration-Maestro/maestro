@@ -50,6 +50,12 @@ fn history_groups_only_consecutive_tool_results() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
+fn history_skips_unknown_roles_and_blocks() -> TestResult {
+    check_rows("history_skips_unknown_roles_and_blocks")
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
 fn images_decode_supported_mime_types() -> TestResult {
     check_rows("images_decode_supported_mime_types")
 }
