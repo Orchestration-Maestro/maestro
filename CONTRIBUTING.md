@@ -32,6 +32,7 @@ If you send a large volume of issues through automation, your GitHub account wil
 
 ## Before Submitting a PR
 
+Install MinGW-w64 as described in [development setup](docs/development.md#setup-and-build).
 Before submitting a PR:
 
 ```bash

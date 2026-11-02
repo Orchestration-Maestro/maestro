@@ -40,7 +40,7 @@ the browser entry is present, guarding targets outside native Clippy.
 
 For changed crates, run `just _check -p <package>` with repeated `-p` arguments
 for multiple crates. `_check` verifies feature unification, runs native Clippy
-followed by Windows-GNU Clippy, builds strict native documentation and checks
+followed by Windows-GNU Clippy, builds strict public documentation and checks
 workspace conventions. Both Clippy passes use the same package selection with
 `--all-targets --locked -- -D warnings`; they add no reverse dependents.
 CI checks dependents and workspace-wide inputs. `just check` explicitly selects
@@ -54,7 +54,6 @@ checkout. Install MinGW-w64 too: on Ubuntu use
 `brew install mingw-w64`; on Windows use a MinGW-w64 development shell with its
 compiler on `PATH`. Cross-builds need `x86_64-w64-mingw32-gcc` on `PATH`, or Cargo's
 C dependencies need `CC_x86_64_pc_windows_gnu` set to that host's MinGW-w64 compiler.
-The saved build-box setup already installs the compiler and standard library.
 Missing prerequisites fail the check; there is no native-only fallback.
 Windows-GNU checks `cfg(windows)` and `cfg(unix)` boundaries, not MSVC-specific
 code or ABI behavior. Required native Windows-MSVC CI and native runtime
@@ -63,7 +62,8 @@ qualification remain in place.
 `setup` installs the commit, merge-commit and commit-message hooks. `build`
 generates the native catalog once, then compiles the delivered workspace through
 Cargo's dependency graph. See [catalog generation](models/generation.md). `check`
-formats hand-written Rust, verifies feature unification, runs Clippy, builds strict public documentation and verifies workspace
+formats hand-written Rust, verifies feature unification, runs native and
+Windows-GNU Clippy, builds strict public documentation and verifies workspace
 conventions. `ci` runs `check`, then `test`. `prepublish` runs `clean`, `build`
 and `check`; it never publishes. `clean` removes Cargo outputs, not source files.
 
