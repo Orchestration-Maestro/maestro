@@ -335,7 +335,10 @@ pub fn settings_case(case: Case) {
         input.max_visible.unwrap_or(3),
         theme,
         (
-            Rc::new(move |id, value| change.borrow_mut().push(json!(["change", id, value]))),
+            Rc::new(move |id, value| {
+                change.borrow_mut().push(json!(["change", id, value]));
+                true
+            }),
             Rc::new(move || cancel.borrow_mut().push(json!(["cancel"]))),
         ),
         SettingsListOptions {
