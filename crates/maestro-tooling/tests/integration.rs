@@ -8,6 +8,7 @@ mod build_recipes;
 mod cargo_fixtures;
 mod component_preparation;
 mod fixture_sources_setup;
+mod native_setup;
 mod nextest_priorities;
 mod prepared_setup_packages;
 mod setup_docs;

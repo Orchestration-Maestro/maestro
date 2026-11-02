@@ -13,6 +13,7 @@
 //! and installs the browser graph.
 
 use std::collections::BTreeMap;
+use std::env::consts::EXE_EXTENSION;
 use std::ffi::OsString;
 use std::fmt::Write as _;
 use std::io::{self, Write as _};
@@ -144,7 +145,8 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
     remove(&environment_file(target))?;
     remove_directory(&cache_home(target))?;
     build_example(cargo, checkout, target, "dev")?;
-    let example = target.join("debug/examples").join(EXAMPLE);
+    let name = executable(EXAMPLE, EXE_EXTENSION);
+    let example = target.join("debug/examples").join(&name);
     let (supplied, seeded) = match &base {
         Some(base) => (
             base.supplied(checkout)?,
@@ -179,7 +181,7 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
         &output.join(COMPILED),
         seeded.as_deref(),
     )?;
-    let staged = output.join(EXAMPLE);
+    let staged = output.join(name);
     copy(&example, &staged)?;
     stage_tool(output)?;
     let manifest = Manifest {
@@ -252,7 +254,10 @@ fn stage_browser_graph(cargo: &Path, checkout: &Path, output: &Path) -> io::Resu
 
 /// Copy this command into `output`, where the nextest setup entries run it.
 fn stage_tool(output: &Path) -> io::Result<()> {
-    copy(&std::env::current_exe()?, &output.join(EXPORTER))
+    copy(
+        &std::env::current_exe()?,
+        &output.join(executable(EXPORTER, EXE_EXTENSION)),
+    )
 }
 
 /// Build the setup example in `target` with the Cargo `profile`.
@@ -361,13 +366,14 @@ fn export(
         verify(&path, &expected.file)?;
         lines.push(format!("{variable}={}\n", path.display()));
     }
-    let staged = output.join(EXAMPLE);
+    let name = executable(EXAMPLE, EXE_EXTENSION);
+    let staged = output.join(&name);
     verify(&staged, &manifest.example)?;
     let compiled = output.join(COMPILED);
     if let Some(code) = &manifest.compiled {
         code.verify(&compiled)?;
     }
-    let installed = directory.join("examples").join(EXAMPLE);
+    let installed = directory.join("examples").join(name);
     std::fs::create_dir_all(directory.join("examples"))?;
     copy(&staged, &installed)?;
     if let (Some(code), Some(user_cache)) = (&manifest.compiled, user_cache) {
@@ -417,6 +423,11 @@ pub(crate) fn hex(bytes: &[u8]) -> String {
         let _ = write!(text, "{byte:02x}");
         text
     })
+}
+
+/// The native file name of a Cargo executable, keeping the target name separate.
+pub(crate) fn executable(name: &str, extension: &str) -> PathBuf {
+    Path::new(name).with_extension(extension)
 }
 
 /// Copy a file, naming it when the copy fails.
