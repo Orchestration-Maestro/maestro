@@ -14,11 +14,9 @@ use std::rc::Rc;
 const CHATTER: &str = "changed 1 package in 471ms\nfound 0 vulnerabilities\n";
 
 /// Install the prepared native fixture as the configured package command.
-fn package_command(directory: &Path) -> PathBuf {
-    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
-        .expect("run just prepare-tests, then run these tests with cargo nextest");
+fn package_command(directory: &Path, artifact: &Path) -> PathBuf {
     let path = directory.join("controlled-npm");
-    maestro_test_process::install_executable(Path::new(&artifact), &path).expect("install starts");
+    maestro_test_process::install_executable(artifact, &path).expect("install starts");
     let mut record = path.as_os_str().to_owned();
     record.push(".fixture");
     let scenario = json!({
@@ -47,11 +45,13 @@ impl Write for Routed {
 
 /// Run `args` over a configured, not yet installed package and check both process streams.
 fn protocol_help(name: &str, args: &'static [&'static str]) {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .expect("run just prepare-tests, then run these tests with cargo nextest");
     if selection().is_child() {
         let local = Rc::new(tokio::task::LocalSet::new());
         let runtime = crate::support::startup::runtime();
         let directory = maestro_test_directory::Scratch::new().unwrap();
-        let npm = package_command(directory.path());
+        let npm = package_command(directory.path(), Path::new(&artifact));
         runtime.block_on(local.run_until(async {
             let mut e = Entry::new();
             e.out = Rc::new(RefCell::new(Routed));
@@ -71,8 +71,6 @@ fn protocol_help(name: &str, args: &'static [&'static str]) {
         return;
     }
     let root = maestro_test_directory::Scratch::new().unwrap();
-    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
-        .expect("run just prepare-tests, then run these tests with cargo nextest");
     let output = crate::support::missing_cwd::command(name, "protocol", root.path())
         .env("MAESTRO_NATIVE_FIXTURE", artifact)
         .quiet()

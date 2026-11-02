@@ -1181,9 +1181,9 @@ is [Rust test children](specs/test-processes.md).
 Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` for the
 currently served packages: `maestro-test-process`, `maestro-tooling`,
 `maestro-tools`, `maestro-process`, `maestro-models`, the toolkit's
-attachment-completion tests, `maestro-app` and `maestro-cli`. Local setup builds
-the example with the locked host `dev` profile and reads Cargo's emitted executable
-path. It records source inputs, content digest and host in
+attachment-completion tests, `maestro-app` and the command-line startup tests.
+Local setup builds the example with the locked host `dev` profile and reads Cargo's
+emitted executable path. It records source inputs, content digest and host in
 `target/test-setup/native-fixture.json`; unchanged inputs reuse that artifact.
 Prepared archive runs validate the staged copy and export its remapped absolute
 path without building. A missing or stale archive artifact fails setup. Re-run
@@ -1312,7 +1312,7 @@ test observes.
 | `crates/maestro-credentials/tests/credential_key_selection.rs:153-163` | `!printf` payloads, one piped through `tr`, resolved by that shell. | Every payload is authored shell text, and the assertions are on the resolver's result. |
 | `crates/maestro-credentials/tests/credential_key_selection.rs:391-396` | `!exit 1`, a missing helper, empty output and whitespace. | The same resolver, and the assertions are on its result domain. |
 | `crates/maestro-credentials/tests/config_values.rs:407-554` | Real `!printf`, `sed`, `cat` and `exec` payloads through the resolver. | The resolver's shell is the subject: pipes, multiline output, invalid UTF-8, inherited environment, cwd and the deadline all come from a real child. |
-| `crates/maestro-extensions/tests/support/action_checks.rs:1069`, `:1074` | `/bin/sh -c` as the program handed to the extension `exec` operation. | `exec` is the subject: its captured streams, exit code and abort must come from a real child. |
+| `crates/maestro-extensions/tests/support/action_checks.rs:1069`, `:1073-1074` | `/bin/sh -c` as the program handed to the extension `exec` operation. | `exec` is the subject: its captured streams, exit code and abort must come from a real child. |
 | `crates/maestro-rpc/tests/daemon_socket.rs:745-750` | The daemon's startup pane running the configured `/bin/sh`. | The pane terminal is the subject: one case writes to the live shell and reads its answer back through the protocol. |
 | `crates/maestro-rpc/tests/support/mod.rs:266` | The native `kill` program signalling a live protocol child. | Real signal delivery to the observed child is what the case qualifies. |
 | `crates/maestro-rpc/tests/transports.rs:330` | The native `kill` program signalling the test process itself. | Real handler registration and ordering are the subject. |
