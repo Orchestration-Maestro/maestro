@@ -314,7 +314,7 @@ Deliver current offline API/usage/model/session/settings/tools/extensions/packag
 
 Give every contribution guide, issue template, automation workflow, prompt, ignore file, package manifest, lockfile, compiler/lint/test/build configuration, profiling/analysis tool and packaging script a named Rust-setup counterpart. Use mise to pin just and prek, just recipes as the commands, and prek for the mandatory commit hook: these are the Rust counterparts of npm scripts and the husky hook. Remove unused jaq from mise.toml and mise.lock in the foundation tooling change. Keep YAML issue templates, workflows and prek configuration, including its YAML, TOML and merge-conflict checks. Keep shared CI, not a second build/quality system. Respect dependency-free leaf crates, declared normal/optional/target/build edges, isolated test helpers, frontend independence and wiring-only executable roots through metadata-based convention tests. Shared workflow changes require a separate issue/clone in their repository; the application ticket cannot silently edit that repository.
 
-Default tests run on Linux with deterministic fake providers/clock/terminal/browser/storage adapters and controlled process adapters; required search integration tests also run real rg/fd on temporary fixtures. Restore macOS and Windows qualification before the first release. Every public item has rustdoc; CI/hook documentation builds deny warnings and missing docs. Run `just check`, `just test` and shared `just ci`; do not introduce mutation testing. Hooks format and re-stage only staged files, then check the staged crates and their reverse dependents, falling back to the full workspace check for a workspace-wide input; `just check` and shared CI stay full. Pin Rust via rustup and existing `rust-toolchain.toml`; pin developer tools in mise. Review all direct and transitive distribution licenses. Release notes come from conventional commits; implementation PRs do not edit CHANGELOG.
+Default tests run on Linux with deterministic fake providers/clock/terminal/browser/storage adapters and controlled process adapters; required search integration tests also run real rg/fd on temporary fixtures. Restore macOS and Windows qualification before the first release. Every public item has rustdoc; documentation builds deny warnings and missing docs. Run `just check`, `just test` and shared `just ci`; do not introduce mutation testing. Hooks run formatting and Clippy only on the crates holding staged files, re-staging the captured files after formatting. They add no dependents or workspace-wide fallback. The full conventions suite guards edits to its own crate, and browser smoke guards staged browser-owning crates when the browser entry is present; `just check` and shared CI stay full. Pin Rust via rustup and existing `rust-toolchain.toml`; pin developer tools in mise. Review all direct and transitive distribution licenses. Release notes come from conventional commits; implementation PRs do not edit CHANGELOG.
 
 
 CI must be equal or stronger step by step. Install rg and fd and require real-binary search tests, not just fakes. As #109 specifies, `just test` remains unwrapped; the separate ported non-LLM test script removes the specified provider credentials and sets the agent's auth file aside, restoring it on exit. Keep strict Clippy, public rustdoc, conventions, full action-SHA pins and merge-queue validation. The full suite includes terminal tests.
@@ -358,7 +358,7 @@ development-only edge from `maestro-extensions-wasm` to `maestro-listing`.
 | `maestro-test-conventions` | verify workspace structure | `maestro-markdown` | 0 |
 | `maestro-test-directory` | own disposable native test directories | — | 0 |
 | `maestro-test-fixtures` | share cross-package test fixture operations | — | 0 |
-| `maestro-test-process` | run one named test in a checked child process | — | 0 |
+| `maestro-test-process` | run controlled native test children | — | 0 |
 | `maestro-test-tracing` | run a test action under a subscriber that sees every callsite | — | 0 |
 | `maestro-tooling` | automate repository development | — | 0 |
 | `maestro-tui` | render terminal components | `maestro-cancellation`, `maestro-text`, `maestro-process`, `maestro-markdown`, `maestro-listing`, `maestro-resources`, `maestro-listeners` | 0 |
@@ -742,14 +742,25 @@ that calls this same entry. The test-process leaf does not depend on process.
 ### Test process owner
 
 `maestro-test-process` is a dedicated, unpublished, native test-support leaf
-that starts one named libtest child and proves the child started exactly that
-test. On Unix it runs caller-supplied setup text in the interpreter the caller
-names by absolute path, so it carries no shell lookup, and it uses no external
-crate. Its native helpers also provide loopback servers, completed child probes,
-executable installation and child-build toolchain selection. It has no workspace
-dependencies except the native feature unifier and one native development edge to
-the disposable directory owner for its own child fixtures, and it is excluded
-from the foundation utility permission. Its only incoming edges are
+that starts checked named libtest children and direct native fixtures. Checked
+reruns prove the child started exactly the selected test. One harness-free
+`native_fixture` example receives literal native operands and raw byte streams;
+`install_executable(artifact, destination)` installs aliases through that artifact's
+private copy operation, without retaining a writable executable in the runner.
+Repository tooling builds the host artifact once per input set, records its emitted
+path, source freshness and digest, and exports an explicit absolute path for local,
+filtered and archive-remapped runs. Tests never compile or discover a fallback.
+See [Rust test children](test-processes.md) for the complete contract.
+Its native helpers also provide loopback servers, completed child probes,
+executable installation and child-build toolchain selection.
+
+On Unix the owner currently runs caller-supplied setup text in the interpreter the
+caller names by absolute path. Typed isolated native setup is planned; shell setup
+remains until all its callers move together. The owner uses the approved `rustix`
+stdio operations for descriptor replacement. It has no workspace dependencies except the native feature unifier and
+one native development edge to the disposable directory owner for its own child
+fixtures, and it is excluded from the foundation utility permission. Its only
+incoming edges are
 non-optional development dependencies under `cfg(not(target_arch = "wasm32"))`
 from `maestro`, `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-chat`,
 `maestro-cli`, `maestro-credentials`, `maestro-daemon`, `maestro-detection`, `maestro-extensions`, `maestro-extensions-wasmtime`, `maestro-ipc`, `maestro-lock`, `maestro-models`, `maestro-packages`, `maestro-process`,

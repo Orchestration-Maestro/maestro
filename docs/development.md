@@ -23,14 +23,24 @@ x64 hosts, independently of the compilation target. A successful `mise lock` can
 still skip unresolved hosts; check its platform inventory. Follow the
 [repository setup guidance](../AGENTS.md#checks) when installing pinned tools.
 
-The commit hook formats and re-stages the staged files, announces `Selected
-crates: ...`, then verifies the staged crates and every workspace crate that
-depends on them. A staged workspace-wide input runs the full workspace check
-instead: a manifest, the lockfile, `.cargo/`, the toolchain, the justfile, Clippy
-or mise settings, the hook configuration, the workspace inventory, CI files, root
-documentation or assets, or the conventions crate. `_check` is the private recipe
-that receives either `--workspace` or repeated `-p <package>` arguments, so the
-hook and `check` share one command list; `check` passes `--workspace`.
+The commit hook selects only the crates holding staged files, including member
+manifests. It runs `cargo fmt -p <package>` for those crates, re-stages the captured
+files that remain on disk, announces `Selected crates: ...`, then runs
+`cargo clippy -p <package> --all-targets --locked -- -D warnings`. Multiple crates
+use repeated `-p` arguments. Formatting failures and Clippy warnings block the
+commit. Files changed by formatting but absent from the captured index stay
+unstaged.
+
+Root inputs such as `Cargo.lock`, the workspace manifest and documentation select
+no crates. They never widen a mixed change's selection. With no staged crate, the
+hook skips formatting and Clippy. The full conventions suite runs only for staged
+paths under `crates/maestro-test-conventions/`, guarding the checker itself.
+Browser smoke runs only for staged paths in `maestro-models` or `maestro-web` when
+the browser entry is present, guarding targets outside native Clippy.
+
+CI checks dependents and workspace-wide inputs. `just check` keeps the full
+workspace gate: its private `_check` recipe verifies feature unification, runs
+Clippy, builds strict public documentation and checks workspace conventions.
 
 `setup` installs the commit, merge-commit and commit-message hooks. `build`
 generates the native catalog once, then compiles the delivered workspace through
@@ -531,6 +541,25 @@ An unmatched ordinary-test filter fails rather than passing an empty selection.
 Use direct `cargo test --doc` for doctest-only runs and direct `cargo nextest run`
 for runner-only flags or target selection. `tui-test-ansi` runs only nextest.
 
+### Shared test support
+
+Keep one owner for a reusable fixture inside its crate. When unit and integration
+tests need the same fixture, put it in `tests/support/` and include that file from
+both test programs. A test-only self alias lets the file name its owning crate
+consistently in either program; it adds no production export.
+
+For example, the models tests include
+[`oauth_admission.rs`](../crates/maestro-models/tests/support/oauth_admission.rs)
+from `src/tests.rs` and `tests/integration.rs`. Each program keeps its own registry
+admission lock and resets its registry on entry and drop. The same layout owns
+native peer reads, process readiness polling and image-enabled terminal fixtures.
+Helpers used only by sibling unit modules stay beside those tests, as the daemon's
+terminal fixture does. Chat callback recorders and web pointer events likewise
+stay in their existing integration-test support modules.
+
+Use the shared fixture without changing the caller's assertions or adding a
+production feature for test access.
+
 ### FTP peer support
 
 The models tests share the scripted peer in
@@ -784,14 +813,15 @@ digest, so a change to the tooling or the application leaves the components vali
 names in the bundle follow component discovery's own rule and fixed author and context pair.
 
 `TEST_PREPARE_BASE` names the directories of earlier bundles in the platform's path-list
-syntax (`:` on Unix, `;` on Windows). The preparation reads them in order and uses the first
-one it accepts; a single directory is a list of one. A base prepared from the same shared
-digest, so the same toolchain, supplies every component whose example files are unchanged: the
-preparation hands those to the setup example through the component variables, and the example
-builds only the others in its one Cargo call. The base's compiled code seeds the build's cache,
-and is dropped again when the example writes another engine's namespace. A base that is missing,
-unreadable or prepared from other shared inputs is skipped, and when none is accepted everything
-is built; the base directory may be the output directory.
+syntax (`:` on Unix, `;` on Windows). The preparation ignores empty entries, reads the
+remaining directories in order and uses the first one it accepts; a single directory is a list
+of one. A base prepared from the same shared digest, so the same toolchain, supplies every
+component whose example files are unchanged: the preparation hands those to the setup example
+through the component variables, and the example builds only the others in its one Cargo call.
+The base's compiled code seeds the build's cache, and is dropped again when the example writes
+another engine's namespace. A base that is missing, unreadable or prepared from other shared
+inputs is skipped, and when none is accepted everything is built; the base directory may be the
+output directory.
 After a successful preparation, the command reports how many components came from the base
 and how many it built, for example:
 
@@ -822,7 +852,10 @@ nextest prints the missing path `target/test-setup/development`; run `just prepa
 once and start nextest again. Run it again after a change to `maestro-tooling`, as nextest
 runs a staged copy that is outdated without a word. The tooling entries run
 `debug/development` from the target directory, which every `maestro-tooling` test build
-produces.
+produces. On Windows the staged tool is `development.exe`; the configured command
+resolves that native executable. Preparation also copies, hashes and restores the setup
+example as `prepare_author_component.exe`. Linux and macOS keep extensionless executable
+names. Cargo's `--example prepare_author_component` target name stays the same on all hosts.
 
 With `TEST_ARCHIVE` unset and no prepared bundle, local runs build the example
 automatically. Before guest-authoring tests, the `author-component` setup locates the active
@@ -1006,6 +1039,57 @@ workspace, a browser resolution and a consumer workspace in a child whose shared
 still reaches the shared home fails at once instead of waiting for another test.
 
 ### Child-process tests
+
+Stage the setup tool before a filtered native-fixture run:
+
+```sh
+just prepare-tests
+cargo nextest run --locked -p maestro-test-process
+```
+
+Use checked reruns when the test owns the invocation and harness framing. Use the
+prepared `native_fixture` example when a backend launches a program by name with
+literal operands, or when its protocol requires raw bytes. The complete contract
+is [Rust test children](specs/test-processes.md).
+
+#### Direct native fixtures
+
+Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` for the
+currently served packages, `maestro-test-process` and `maestro-tooling`. Local
+setup builds the example with the locked host `dev` profile and reads Cargo's
+emitted executable path. It records source inputs, content digest and host in
+`target/test-setup/native-fixture.json`; unchanged inputs reuse that artifact.
+Prepared archive runs validate the staged copy and export its remapped absolute
+path without building. A missing or stale archive artifact fails setup. Re-run
+preparation instead of adding a target-directory search or a runtime compiler.
+
+Call `install_executable(artifact, destination)` with that explicit path. The
+caller's disposable directory owns the alias. Installation runs inside the same
+artifact and waits for the copy's writer to close; the test runner never opens a
+writable executable that a sibling child could inherit. Copies have independent
+modification times. Windows aliases use the native `.exe` suffix.
+
+The observation scenario reads `<alias>.fixture`, including the `.exe` suffix
+when present. The record has exactly three lines: `observe`, the parent's
+nonzero TCP port and an exit status from 0 to 255. It reports its actual PID, cwd,
+`MTP_VALUE` and each unmodified operand on that socket as length-prefixed native
+strings (eight-byte little-endian byte length). It closes the socket, writes
+`err` followed by NUL, byte FE and `!` on stderr, echoes stdin unchanged to stdout
+and exits with the supplied status. Neither output stream carries harness text.
+An unknown or malformed record fails before connecting or writing the optional
+`MTP_EFFECT` sentinel. Direct invocation uses `--maestro-observe <record> <operands>`;
+installed aliases leave all operands untouched. Add cohesive finite Rust fixture
+families to this one target, never a script evaluator or another launcher.
+
+The preparation tests also use a `tooling-cargo` record with the real Cargo path
+and an existing setup-example template path. That scenario forwards metadata,
+accepts the existing Clippy probe and stages the two preparation examples. On Unix,
+metadata replaces the fixture process, keeping its native PID and signal delivery. The
+remaining setup-example templates still use their existing shell fixtures until
+their owning conversion lands. Typed isolated native setup is planned; current
+Unix `shell_setup` remains available during that conversion.
+
+#### Checked reruns
 
 A test that re-runs one test in a fresh process starts it through
 `maestro-test-process`, a native dev-dependency, instead of building a `Command`

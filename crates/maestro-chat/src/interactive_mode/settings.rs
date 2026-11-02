@@ -18,8 +18,8 @@ impl InteractiveMode {
     /// Shows the settings panel in place of the editor over the current session.
     ///
     /// # Errors
-    /// Returns the failure of reading the theme inventory, which leaves the editor and
-    /// focus untouched.
+    /// Returns an invalid HTTP idle setting or a theme inventory failure, leaving the
+    /// editor and focus untouched.
     pub(super) fn show_settings_selector(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
         self.show_selector(|done| {
             let selector = Rc::new(SettingsSelectorComponent::new(
@@ -47,7 +47,7 @@ impl InteractiveMode {
                 hide_thinking_block: self.hide_thinking_block.get(),
                 collapse_changelog: settings.get_collapse_changelog(),
                 enable_install_telemetry: settings.get_enable_install_telemetry(),
-                http_idle_timeout_ms: settings.get_http_idle_timeout_ms(),
+                http_idle_timeout_ms: settings.get_http_idle_timeout_ms()?,
             },
             terminal: TerminalDisplaySettings {
                 show_hardware_cursor: settings.get_show_hardware_cursor(),
@@ -300,16 +300,17 @@ impl InteractiveMode {
             .map_err(|error| -> Box<dyn Error> { error })
     }
 
-    /// Saves the idle limit for HTTP waits and names it in the transcript.
+    /// Saves and applies the HTTP idle limit, then names it in the transcript.
     fn settings_http_idle_timeout(&self, milliseconds: f64) -> Result<(), Box<dyn Error>> {
         let value = SettingsManager::prepare_http_idle_timeout_ms(milliseconds)
-            .ok_or_else(|| SettingsRefusal("invalid HTTP idle timeout".into()))?;
+            .map_err(|error| SettingsRefusal(error.to_string()))?;
         let edit = self.admit_setting(value)?;
         self.runtime_host
             .session()
             .settings_manager()
             .borrow_mut()
             .apply_prepared_edit(edit);
+        maestro_app::configure_http_dispatcher(milliseconds)?;
         self.show_status(&format!(
             "HTTP idle timeout: {}",
             http_idle_timeout_label(milliseconds)

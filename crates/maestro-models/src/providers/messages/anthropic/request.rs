@@ -246,12 +246,11 @@ impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
         }
     }
 
-    /// The output limit: the caller's unless it is zero or not a number, otherwise the model's.
+    /// The caller's output limit, or the model's cap when none is supplied.
     fn max_tokens(&self) -> f64 {
         self.options
             .common
             .max_tokens
-            .filter(|tokens| *tokens != 0.0 && !tokens.is_nan())
             .unwrap_or(self.model.max_tokens)
     }
 

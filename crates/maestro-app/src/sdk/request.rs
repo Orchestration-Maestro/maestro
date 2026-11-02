@@ -101,7 +101,8 @@ fn stream_fn(services: &Services, spawn: &AgentSpawner<Local>) -> maestro_agent:
                 let settings = settings.borrow();
                 (
                     settings.get_provider_retry_settings(),
-                    request_timeout(&settings),
+                    request_timeout(&settings)
+                        .map_err(|error| DiagnosticErrorInfo::error(error.to_string()))?,
                     get_attribution_headers(
                         &model,
                         &settings,
@@ -128,13 +129,15 @@ fn stream_fn(services: &Services, spawn: &AgentSpawner<Local>) -> maestro_agent:
 /// The request timeout the HTTP idle timeout setting supplies, in milliseconds. The setting's
 /// zero disables the limit, which a provider timeout of zero would instead make immediate, so
 /// it asks for the largest timeout the request carries, `i32::MAX` milliseconds.
-fn request_timeout(settings: &SettingsManager) -> f64 {
-    let idle = settings.get_http_idle_timeout_ms();
-    if idle > 0.0 {
+fn request_timeout(
+    settings: &SettingsManager,
+) -> Result<f64, maestro_settings::InvalidHttpIdleTimeout> {
+    let idle = settings.get_http_idle_timeout_ms()?;
+    Ok(if idle > 0.0 {
         idle
     } else {
         f64::from(i32::MAX)
-    }
+    })
 }
 
 /// The headers of each present map, later ones replacing earlier values; absent when none

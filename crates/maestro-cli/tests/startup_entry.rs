@@ -702,6 +702,25 @@ mod entry {
     use std::sync::Arc;
 
     #[test]
+    fn invalid_http_idle_timeout_stops_startup_before_help_or_prompt() {
+        run(
+            "entry::invalid_http_idle_timeout_stops_startup_before_help_or_prompt",
+            |local| async move {
+                let e = Entry::new();
+                e.commands
+                    .write_settings(Some(json!({"httpIdleTimeoutMs": -5})), None);
+                let result = e.run(&local, &["--help"], MainOptions::default()).await;
+                assert_eq!(
+                    result.unwrap_err().to_string(),
+                    "Invalid httpIdleTimeoutMs setting: -5"
+                );
+                assert!(e.stdout().is_empty());
+                assert!(e.recorder.runtime.borrow().is_none());
+            },
+        );
+    }
+
+    #[test]
     fn help_and_model_listing_follow_extension_registration() {
         run(
             "entry::help_and_model_listing_follow_extension_registration",

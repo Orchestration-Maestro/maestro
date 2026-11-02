@@ -31,6 +31,12 @@ impl InteractiveMode {
         let result: Result<(), Box<dyn Error>> = async {
             self.ui.render_pending_frame()?;
             session.reload().await?;
+            maestro_app::configure_http_dispatcher(
+                session
+                    .settings_manager()
+                    .borrow()
+                    .get_http_idle_timeout_ms()?,
+            )?;
             self.refresh_reloaded_resources()?;
             self.show_panel(self.current_editor(), self.current_editor());
             self.show_loaded_resources(ShowLoadedResourcesOptions {

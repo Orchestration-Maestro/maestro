@@ -32,15 +32,7 @@ pub(crate) fn member_roots(members: &[&Package]) -> HashMap<PathBuf, usize> {
         .collect()
 }
 
-/// For each member, the members it declares a path dependency on, of any kind.
-pub(crate) fn dependency_edges(
-    members: &[&Package],
-    roots: &HashMap<PathBuf, usize>,
-) -> Vec<Vec<usize>> {
-    dependency_edges_where(members, roots, |_| true)
-}
-
-/// Like `dependency_edges`, keeping only the dependencies `keep` accepts.
+/// For each member, the path dependencies that `keep` accepts.
 pub(crate) fn dependency_edges_where(
     members: &[&Package],
     roots: &HashMap<PathBuf, usize>,
@@ -58,17 +50,6 @@ pub(crate) fn dependency_edges_where(
                 .collect()
         })
         .collect()
-}
-
-/// For each member, the members that declare a path dependency on it.
-pub(crate) fn reverse_edges(edges: &[Vec<usize>]) -> Vec<Vec<usize>> {
-    let mut reverse = vec![Vec::new(); edges.len()];
-    for (caller, targets) in edges.iter().enumerate() {
-        for &target in targets {
-            reverse[target].push(caller);
-        }
-    }
-    reverse
 }
 
 /// Walk the edges once, visiting each reached member once.

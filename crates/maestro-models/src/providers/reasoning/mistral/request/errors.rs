@@ -36,7 +36,7 @@ pub(in crate::providers::reasoning::mistral) fn format_error(
 pub(super) fn setup_failure(error: FetchError) -> RequestFailure {
     RequestFailure::new(match error {
         FetchError::Connection(cause) => format!("Unable to make request: {}", cause.message),
-        FetchError::Timeout => "Request timed out: Request timed out.".into(),
+        FetchError::Timeout => "Request timed out.".into(),
         FetchError::Aborted => "Request aborted by client: Request was aborted.".into(),
     })
 }

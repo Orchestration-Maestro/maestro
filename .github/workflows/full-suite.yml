@@ -10,4 +10,4 @@ permissions:
 
 jobs:
   suite:
-    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/ci.yml@6417a302327e7219dfd6b70ccef2143a560c515a # v0.19.5
+    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/ci.yml@0cb7b6cbfddb47ef4ef6f09350d006c4546e671a # v0.19.7

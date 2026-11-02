@@ -1236,6 +1236,23 @@ authorization of the copyright holder.
 SPDX-License-Identifier: Unicode-3.0
 ```
 
+## Local date-time data
+
+The locale recipes and recorded inputs in `crates/maestro-text/data/date-time/`
+derive from Unicode CLDR JSON 48.2.0. The Persian calendar conversion in
+`crates/maestro-text/src/date_time_calendar.rs` derives from Unicode ICU.
+Their copyright notices are:
+
+```text
+Copyright © 2004-2026 Unicode, Inc.
+© 2016 and later: Unicode, Inc. and others;
+Copyright (C) 2003–2013, International Business Machines Corporation and others.
+All Rights Reserved.
+```
+
+The [Unicode-3.0 licence](crates/maestro-text/data/date-time/LICENSE) applies to
+the data and translated calendar code.
+
 ## Development skill content
 
 Copyright and permission notices for adapted skill text are in the
