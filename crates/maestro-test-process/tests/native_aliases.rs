@@ -1,6 +1,8 @@
 //! Native aliases receive backend operands without harness parsing or output.
 
 use std::ffi::OsString;
+#[cfg(unix)]
+use std::io::{BufRead, BufReader};
 use std::io::{Read, Write};
 use std::net::TcpListener;
 use std::path::{Path, PathBuf};
@@ -268,6 +270,56 @@ fn malformed_search_records_have_no_partial_effects() {
     }
 }
 
+/// Malformed command records fail before operand logs or appends are written.
+#[cfg(unix)]
+#[test]
+fn malformed_command_records_have_no_partial_effects() {
+    use serde_json::json;
+    let root = Scratch::new().unwrap();
+    let sentinel = root.path().join("effect");
+    let output = json!({
+        "scenario": "output",
+        "stdout": [],
+        "stderr": [],
+        "code": 0,
+        "append": {"path": sentinel, "cwd": false, "bytes": []}
+    });
+    let mut invalid = vec![
+        json!({"scenario": "unknown"}),
+        json!({"scenario": "package", "unknown": true}),
+        json!({"scenario": "labelled", "unknown": true}),
+    ];
+    for (field, value) in [
+        ("code", json!(256)),
+        ("signal", json!("SIGKILL")),
+        ("stdout", json!([256])),
+    ] {
+        let mut record = output.clone();
+        record[field] = value;
+        invalid.push(record);
+    }
+    let mut unknown = output;
+    unknown["unknown"] = json!(true);
+    invalid.push(unknown);
+    for record in invalid {
+        let path = root.path().join("record");
+        std::fs::write(&path, format!("command\n{record}")).unwrap();
+        // The operands and both variables admit an unmodified run, so only a
+        // rejected record keeps the append, the package log and both streams empty.
+        let run = Command::new(artifact())
+            .arg("--maestro-observe")
+            .arg(path)
+            .args(["--quiet", "root"])
+            .env("MAESTRO_COMMAND_LOG", &sentinel)
+            .env("MAESTRO_NPM_ROOT", root.path())
+            .output()
+            .unwrap();
+        assert!(!run.status.success(), "accepted {record}");
+        assert!(run.stdout.is_empty());
+        assert!(!sentinel.exists(), "partial effects for {record}");
+    }
+}
+
 /// Concurrent installations leave launchable copies with independently mutable ages.
 #[test]
 fn parallel_installs_launch_independent_copies_while_siblings_are_live() {
@@ -472,6 +524,102 @@ fn rpc_idle_peer_observes_term_and_eof_independently() {
         assert_eq!(report.read_line(&mut line).unwrap(), 0);
         assert!(child.wait_with_output().unwrap().status.success());
         assert_eq!(marker.exists(), terminate);
+    }
+}
+
+/// A Git stand-in reports the operands, directory and status the product supplied.
+#[cfg(unix)]
+#[test]
+fn git_stand_in_reports_operands_directory_and_status() {
+    let root = Scratch::new().unwrap();
+    let directory = root.path().join("repo");
+    std::fs::create_dir(&directory).unwrap();
+    let alias = root.path().join("git");
+    maestro_test_process::git_command::install(
+        &alias,
+        maestro_test_process::git_command::Scenario::Reported,
+    )
+    .unwrap();
+    let output = Command::new(&alias)
+        .args([
+            "--no-optional-locks",
+            "symbolic-ref",
+            "--quiet",
+            "--short",
+            "HEAD",
+        ])
+        .current_dir(&directory)
+        .env("GIT_EXIT", "1")
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(1));
+    let reported = String::from_utf8(output.stdout).unwrap();
+    let mut lines = reported.lines();
+    assert_eq!(
+        lines.next(),
+        Some("--no-optional-locks symbolic-ref --quiet --short HEAD")
+    );
+    assert_eq!(
+        Path::new(lines.next().unwrap()).canonicalize().unwrap(),
+        directory.canonicalize().unwrap()
+    );
+    assert_eq!(lines.next(), None);
+}
+
+/// The retaining descendant announces the direct child's identifier, not its own.
+#[cfg(unix)]
+#[test]
+fn git_stand_in_reports_the_direct_child_identifier() {
+    let root = Scratch::new().unwrap();
+    let alias = root.path().join("git");
+    let holder = root.path().join("git-holder");
+    maestro_test_process::git_command::install(
+        &alias,
+        maestro_test_process::git_command::Scenario::Exiting,
+    )
+    .unwrap();
+    maestro_test_process::git_command::install(
+        &holder,
+        maestro_test_process::git_command::Scenario::Retaining,
+    )
+    .unwrap();
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    std::fs::write(
+        root.path().join("holder-port"),
+        listener.local_addr().unwrap().port().to_string(),
+    )
+    .unwrap();
+    let mut child = Command::new(&alias)
+        .current_dir(root.path())
+        .env("GIT_HOLDER", &holder)
+        .stdout(Stdio::null())
+        .spawn()
+        .unwrap();
+    let direct = child.id().to_string();
+    let mut control = listener.accept().unwrap().0;
+    let mut announced = String::new();
+    BufReader::new(&control).read_line(&mut announced).unwrap();
+    control.write_all(b"!").unwrap();
+    assert!(child.wait().unwrap().success());
+    assert_eq!(announced.trim(), direct);
+}
+
+/// Git stand-in records fail before the alias writes output or reads its inputs.
+#[cfg(unix)]
+#[test]
+fn git_stand_in_refuses_incomplete_records_before_output() {
+    let root = Scratch::new().unwrap();
+    let record = root.path().join("record");
+    for text in ["git\n", "git\nObserved\n", "git\nRetaining\nextra\n"] {
+        std::fs::write(&record, text).unwrap();
+        let output = Command::new(artifact())
+            .arg("--maestro-observe")
+            .arg(&record)
+            .env_remove("GIT_LOG")
+            .output()
+            .unwrap();
+        assert!(!output.status.success(), "accepted {text:?}");
+        assert!(output.stdout.is_empty(), "wrote output for {text:?}");
     }
 }
 

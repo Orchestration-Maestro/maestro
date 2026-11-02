@@ -44,6 +44,14 @@ pub fn with_environment_without(
         if cfg!(windows) {
             environment.insert("USERPROFILE".to_owned(), home);
         }
+        // The prepared native fixture stays reachable from a cleared child, so a case can
+        // install controlled programs without repeating the artifact path.
+        if let Some(artifact) = std::env::var_os("MAESTRO_NATIVE_FIXTURE") {
+            environment.insert(
+                "MAESTRO_NATIVE_FIXTURE".to_owned(),
+                artifact.to_string_lossy().into_owned(),
+            );
+        }
         for (key, value) in variables {
             environment.insert((*key).to_owned(), value.replace("$BASE", &base));
         }

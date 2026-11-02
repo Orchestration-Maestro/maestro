@@ -189,10 +189,16 @@ fn configured_shell_path_runs_the_command() {
         let scratch = maestro_test_directory::Scratch::new().unwrap();
         let project = scratch.path().join("project");
         std::fs::create_dir_all(&project).unwrap();
-        let source = scratch.path().join("marker-source.sh");
-        std::fs::write(&source, "#!/bin/sh\necho marker-shell\n").unwrap();
-        let shell = project.join("marker.sh");
-        crate::native::install_executable(&source, &shell).expect("install starts");
+        let shell = crate::native::command(
+            &project,
+            "marker.sh",
+            &serde_json::json!({
+                "scenario": "output",
+                "stdout": b"marker-shell\n",
+                "stderr": [],
+                "code": 0
+            }),
+        );
         let (h, t) = transcribed(HarnessOptions {
             settings: json!({"shellPath": shell.display().to_string()}),
             scratch: Some(scratch),

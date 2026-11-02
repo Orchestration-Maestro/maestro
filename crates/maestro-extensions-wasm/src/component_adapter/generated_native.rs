@@ -20,6 +20,15 @@ impl crate::component_adapter::native_imports::NativeImports for Generated {
         Box::pin(host::sleep(duration, signal))
     }
 
+    fn call_host_operation(
+        &self,
+        operation: host::HostOperation,
+    ) -> ExtensionFuture<'_, serde_json::Value> {
+        Box::pin(async move {
+            let value = host::call_host_operation(operation).await?;
+            serde_json::from_str(&value).map_err(|error| error.to_string())
+        })
+    }
     type Response = host::Response;
     fn response_json<'a>(
         &'a self,

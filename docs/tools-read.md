@@ -283,10 +283,15 @@ aborted` immediately, and a later operation does not start. A started
 operating-system call or blocking-pool resize is not interrupted; it finishes in
 the background.
 
-Text is decoded lossily as UTF-8, split on LF with trailing empty entries kept,
-and selected with `offset` (one-based) and `limit`, both finite numbers handled
-like JavaScript slice bounds: fractions truncate toward zero and a negative end
-counts from the end. The caller limit applies first, then
+Text is decoded lossily as UTF-8 and split on LF. A terminating newline ends the
+last line instead of starting an empty one, so a file of three newline-terminated
+lines holds three lines. Empty lines elsewhere and a final line without a newline
+each count once; empty text is one empty line. An offset past the end, a
+continuation notice and its next offset all count those lines. Lines are selected
+with `offset` (one-based) and `limit`, both finite numbers handled like JavaScript
+slice bounds: fractions truncate toward zero and a negative end counts from the
+end. A selection that reaches the end of the file keeps the final newline. The
+caller limit applies first, then
 [`truncate_head`](../crates/maestro-tools/src/output/truncate.rs) with the default
 2000 lines and 50 KB. The result is plain text with a continuation notice when
 lines remain, `details` holds the truncation record only when the default limits

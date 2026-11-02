@@ -160,7 +160,7 @@ fn minimal_mode_preserves_cancellation_and_native_read_limits() {
             result["content"][0]["text"]
                 .as_str()
                 .unwrap()
-                .ends_with("[Showing lines 1-2000 of 2101. Use offset=2001 to continue.]")
+                .ends_with("[Showing lines 1-2000 of 2100. Use offset=2001 to continue.]")
         );
         let registered = runner
             .get_all_registered_tools()

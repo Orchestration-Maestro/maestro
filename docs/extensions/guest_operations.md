@@ -387,6 +387,8 @@ An omitted method selects GET. Request bodies retain absence, present-empty byte
 and arbitrary binary bytes. Header normalization, status text and response headers
 come from the shared native HTTP client. `ok()` means status 200 through 299;
 other statuses are responses, not fetch errors. Fetch adds no retry or timeout.
+Dropping a pending fetch future cancels that native attempt without aborting the
+caller's signal. It does not undo effects the server has already performed.
 
 Headers arrive before the body completes. A 204 response has no body; an empty 200
 response has a body that returns EOF. Getting `body()` again aliases the same
@@ -431,6 +433,34 @@ handle stop delivery and release its callback. A callback may close its own watc
 its active invocation finishes before its final captures are released. A creation
 failure returns the native error without retaining the callback or stopping a
 sibling watch.
+
+## Settings and packages while loading
+
+`SettingsManager::new(api)` and `DefaultPackageManager::new(api)` call the host's
+own settings and package owners. They work from the factory onwards, before any
+session exists, and again on every reload. The component reads no settings file
+and runs no Git or npm command itself.
+
+- `get_global_settings` and `get_project_settings` return the raw user and project
+  documents. Unknown keys and wrongly typed values stay as written, and the two
+  documents are not merged.
+- `resolve` lists the configured packages; when both scopes name one identity, the
+  project's entry wins. `resolve_extension_sources(sources, scope)` resolves sources
+  the extension chose itself, in one scope, and never writes them to settings. Each
+  typed `ResolvedPackage` descriptor holds `source`, `identity`, `scope` and
+  `installed_path`. A package without resources is listed too.
+- `install(source, scope)` acquires a source at its pin without editing settings.
+- `verify_pin(source, scope)` returns a typed `GitPinStatus` with
+  `expected_commit`, `head_commit`, `changed_paths` and `is_clean()` for a pinned
+  Git checkout and changes nothing.
+  `restore_pin(source, scope)` returns the checkout to its pinned commit and removes
+  changed and untracked files.
+
+`OperationScope` is `User` or `Project`. Offline mode, progress and the configured
+Git and npm commands belong to the package owner. A failure returns the host's
+message, for example `Integrity requires a pinned Git source` for a local source.
+Native factories make the same calls with `ExtensionAPI::host_operation` and a
+`HostOperation` request.
 
 ## Executable example
 

@@ -218,6 +218,7 @@ fn send_messages(endpoint: &crate::api_reads::Endpoint) {
 }
 
 mod actions;
+mod unknown_entries;
 
 /// Construction retains the application's owners and rejects an absent or stale facade.
 #[test]

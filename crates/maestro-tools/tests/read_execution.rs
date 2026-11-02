@@ -180,15 +180,49 @@ fn read_numeric_slices_match_finite_number_rules() {
             "case {index}"
         );
     }
+    assert_eq!(read_text(b"a\nb", None, Some(2.0)).unwrap(), "a\nb");
+}
+
+#[test]
+fn read_does_not_count_a_terminating_newline_as_a_line() {
+    let file = b"one\ntwo\nthree\n";
+
+    assert_eq!(
+        read_text(file, None, Some(3.0)).unwrap(),
+        "one\ntwo\nthree\n"
+    );
+    assert_eq!(
+        read_text(file, None, Some(2.0)).unwrap(),
+        "one\ntwo\n\n[1 more lines in file. Use offset=3 to continue.]"
+    );
+    assert_eq!(read_text(file, None, None).unwrap(), "one\ntwo\nthree\n");
+    assert_eq!(
+        read_text(file, Some(4.0), None).unwrap_err(),
+        "Offset 4 is beyond end of file (3 lines total)"
+    );
+}
+
+#[test]
+fn read_keeps_real_trailing_empty_lines() {
+    let file = b"a\n\n";
+
+    assert_eq!(read_text(file, None, None).unwrap(), "a\n\n");
+    assert_eq!(
+        read_text(file, None, Some(1.0)).unwrap(),
+        "a\n\n[1 more lines in file. Use offset=2 to continue.]"
+    );
+    assert_eq!(
+        read_text(file, Some(3.0), None).unwrap_err(),
+        "Offset 3 is beyond end of file (2 lines total)"
+    );
 }
 
 #[test]
 fn read_keeps_empty_lines_bom_and_lossy_utf8() {
     assert_eq!(read_text(b"", None, None).unwrap(), "");
-    assert_eq!(read_text(b"a\nb\n", Some(3.0), None).unwrap(), "");
     assert_eq!(
-        read_text(b"a\nb\n", Some(4.0), None).unwrap_err(),
-        "Offset 4 is beyond end of file (3 lines total)"
+        read_text(b"a\nb\n", Some(3.0), None).unwrap_err(),
+        "Offset 3 is beyond end of file (2 lines total)"
     );
     assert_eq!(read_text(b"a\r\nb\r\n", None, None).unwrap(), "a\r\nb\r\n");
     assert_eq!(

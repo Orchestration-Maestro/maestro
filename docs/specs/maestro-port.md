@@ -43,7 +43,7 @@ Provide raw loop and continuation entry points, the stateful owner and the proxy
 
 ## R03 — Credentials, settings and local catalog
 
-Credentials maintain a tolerant accepted snapshot until explicit reload, ordered provider metadata and drainable errors. Authentication availability is distinct from stored/login presentation. Mutations update accepted memory even if persistence fails. Preserve current stored token forms, branch-specific expiry/fallback and refresh locking. Thrown refresh reloads and blocks ambient fallback unless a newly valid stored token exists; a nonthrowing empty refresh can continue normal fallback. Cached secret commands use the whole command string and inherited cwd; per-request configured keys/headers execute fresh and can throw. Listing metadata executes neither.
+Credentials maintain a tolerant accepted snapshot, ordered provider metadata and drainable errors. Every read rereads the stored document and adopts it when it parses. A document that cannot be read, locked or parsed keeps the snapshot and records nothing. A reread never clears a recorded load failure; only reload and the locked refresh do. Rereads and locked refreshes use one scheduled acquisition: up to ten waits, each 100 ms times 2^n for n from 0 to 9, lengthened by a random factor from 1 up to 2, then rounded to milliseconds and limited to 10 s. Writes and reload keep the bounded acquisition. Authentication availability is distinct from stored/login presentation. Mutations update accepted memory even if persistence fails, until the next successful read. Preserve current stored token forms, branch-specific expiry/fallback and refresh locking. Thrown refresh reloads and blocks ambient fallback unless a newly valid stored token exists; a nonthrowing empty refresh can continue normal fallback. Cached secret commands use the whole command string and inherited cwd; per-request configured keys/headers execute fresh and can throw. Listing metadata executes neither.
 
 Settings retain user/project scopes, runtime overrides, established names/defaults, a top-level merge with one nested object spread, immediate cache publication, queued writes, flush and error drain. Reload accepts each healthy scope independently, retains a failed scope and rebuilds effective values without preserving runtime overrides. Use Rust `std::fs::File` locking as-is for native storage mutual exclusion. Keep application read/callback/write ordering, explicit application retry loops, permissions, memory publication and failure handling. Do not reproduce lock-directory leases, heartbeats, mtime probing or library retry internals.
 
@@ -362,6 +362,7 @@ development-only edge from `maestro-extensions-wasm` to `maestro-listing`.
 | `maestro-request` | define shared message and model-request records | `maestro-json` | below 0 |
 | `maestro-entry` | define session interchange records | `maestro-request` | below 0 |
 | `maestro-tool` | define tool interchange records | `maestro-request` | below 0 |
+| `maestro-package` | define package interchange records | — | below 0 |
 | `maestro-brand` | project a brand pack | `maestro-text`, `maestro-json` | below 0 |
 | `maestro-watch` | supply filesystem notification effects | — | below 0 |
 | `maestro-lock` | guard file writes | `maestro-path` | below 0 |
@@ -372,7 +373,7 @@ development-only edge from `maestro-extensions-wasm` to `maestro-listing`.
 | `maestro-protocol` | define the shared RPC protocol | — | below 0 |
 | `maestro-ipc` | connect local sockets | — | below 0 |
 | `maestro-markdown` | parse Markdown source | `maestro-text` | below 0 |
-| `maestro-extensions-wasm` | provide guest authoring | `maestro-request`, `maestro-entry`, `maestro-tool`, `maestro-json`, `maestro-text` | 0 |
+| `maestro-extensions-wasm` | provide guest authoring | `maestro-package`, `maestro-request`, `maestro-entry`, `maestro-tool`, `maestro-json`, `maestro-text` | 0 |
 | `maestro-models` | supply model invocations | `maestro-cancellation`, `maestro-request`, `maestro-text`, `maestro-json`, `maestro-brand`, `maestro-listeners` | 0 |
 | `maestro-resources` | discover resources | `maestro-request`, `maestro-pattern`, `maestro-text`, `maestro-json`, `maestro-listing` | 0 |
 | `maestro-settings` | own accepted preferences | `maestro-lock`, `maestro-json`, `maestro-resources` | 0 |
@@ -388,7 +389,7 @@ development-only edge from `maestro-extensions-wasm` to `maestro-listing`.
 | `maestro-detection` | recognize agents in terminals | `maestro-protocol`, `maestro-text`, `maestro-process`, `maestro-lock` | 0 |
 | `maestro-agent` | run an agent | `maestro-models`, `maestro-text`, `maestro-tool`, `maestro-listeners`, `maestro-json` | 1 |
 | `maestro-credentials` | own accepted credentials | `maestro-models`, `maestro-request`, `maestro-lock`, `maestro-text`, `maestro-process` | 1 |
-| `maestro-packages` | manage package sources | `maestro-settings`, `maestro-resources`, `maestro-pattern`, `maestro-text`, `maestro-json`, `maestro-process` | 1 |
+| `maestro-packages` | manage package sources | `maestro-package`, `maestro-settings`, `maestro-resources`, `maestro-pattern`, `maestro-text`, `maestro-json`, `maestro-process` | 1 |
 | `maestro-test-terminal` | exercise terminal scenarios | `maestro-tui` | 1 |
 | `maestro-theme` | resolve presentation styles | `maestro-tui`, `maestro-request`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-brand`, `maestro-listing` | 1 |
 | `maestro-tui-crossterm` | connect a real terminal | `maestro-tui`, `maestro-text`, `maestro-process`, `maestro-listeners` | 1 |
@@ -688,7 +689,8 @@ dev-dependency checks, still applies. The guest authoring crate
 request owner (`maestro-request`), watch leaf (`maestro-watch`), process leaf (`maestro-process`), listing leaf (`maestro-listing`), file-pattern owner (`maestro-pattern`),
 Markdown parser (`maestro-markdown`), text leaf (`maestro-text`),
 JSON leaf (`maestro-json`), entry and tool record contracts (`maestro-entry`,
-`maestro-tool`) and brand projection (`maestro-brand`) are excluded from this
+`maestro-tool`), package records (`maestro-package`) and brand projection
+(`maestro-brand`) are excluded from this
 permission, so being a text consumer does not authorize the utility. Shared path helpers
 take supplied directory observations, except `native_homedir` reads the native
 home environment and account entry. They add no filesystem service,
@@ -1137,6 +1139,13 @@ as `schema_transport`. Guest registration and enumeration use that same codec;
 ordinary provider and persisted JSON omit the carried schema kinds. This adds no
 crate dependency: both extension adapters already reach the request owner through
 their declared edges.
+
+Package interchange records have one owner, `maestro-package`, a portable core leaf.
+It owns `ResolvedPackage<S>` and `GitPinStatus`; the native package manager
+specializes the former with resource scope, and guest authoring with operation
+scope. Runtime resolution, acquisition and Git effects remain in `maestro-packages`.
+Only packages and guest authoring may depend on this leaf, apart from the native
+feature unifier exception. It has no foundation path utility permission.
 
 ### Opt-in test helpers
 
