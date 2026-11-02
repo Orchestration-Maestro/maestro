@@ -149,9 +149,7 @@ it contacts no service.
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 use base64::Engine as _;
 use maestro_models::{Context, HttpResponse, Model, StreamOptions, StopReason, Transport};
-use maestro_models::providers::response_sessions::codex::{
-    OpenAICodexResponsesOptions, stream_openai_codex_responses,
-};
+use maestro_models::providers::response_sessions::codex::{OpenAICodexResponsesOptions, stream_openai_codex_responses, };
 use std::sync::Arc;
 
 let model: Model = serde_json::from_value(serde_json::json!({

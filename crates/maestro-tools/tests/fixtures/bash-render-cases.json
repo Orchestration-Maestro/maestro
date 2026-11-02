@@ -1336,7 +1336,7 @@
       },
       "expected": [
         "",
-        "\u001b[38;5;4m... (1 earlier lines,\u001b[39m \u001b[38;5;6m\u001b[39m\u001b[38;5;4m to expand\u001b[39m)",
+        "\u001b[38;5;4m... (1 earlier lines,\u001b[39m \u001b[38;5;6m\u001b[39m\u001b[38;5;4m to expand\u001b[39m\u001b[38;5;4m)\u001b[39m",
         "\u001b[38;5;2m2\u001b[39m                                                                               ",
         "\u001b[38;5;2m3\u001b[39m                                                                               ",
         "\u001b[38;5;2m4\u001b[39m                                                                               ",
@@ -1417,7 +1417,7 @@
       },
       "expected": [
         "",
-        "\u001b[38;5;4m... (1 earlier lines,\u001b[39m \u001b[38;5;6malt+x\u001b[39m\u001b[38;5;4m to expand\u001b[39m)",
+        "\u001b[38;5;4m... (1 earlier lines,\u001b[39m \u001b[38;5;6malt+x\u001b[39m\u001b[38;5;4m to expand\u001b[39m\u001b[38;5;4m)\u001b[39m",
         "\u001b[38;5;2m2\u001b[39m                                                                               ",
         "\u001b[38;5;2m3\u001b[39m                                                                               ",
         "\u001b[38;5;2m4\u001b[39m                                                                               ",
@@ -1501,7 +1501,7 @@
       },
       "expected": [
         "",
-        "\u001b[38;5;4m... (1 earlier lines,\u001b[39m \u001b[38;5;6malt+x/ctrl+o\u001b[39m\u001b[38;5;4m to expand\u001b[39m)",
+        "\u001b[38;5;4m... (1 earlier lines,\u001b[39m \u001b[38;5;6malt+x/ctrl+o\u001b[39m\u001b[38;5;4m to expand\u001b[39m\u001b[38;5;4m)\u001b[39m",
         "\u001b[38;5;2m2\u001b[39m                                                                               ",
         "\u001b[38;5;2m3\u001b[39m                                                                               ",
         "\u001b[38;5;2m4\u001b[39m                                                                               ",
@@ -2298,7 +2298,7 @@
       },
       "expected": [
         "",
-        "\u001b[38;5;4m... (1 earlier lines,\u001b[39m \u001b[38;5;6mctrl+o\u001b[39m\u001b[38;5;4m to expand\u001b[39m)",
+        "\u001b[38;5;4m... (1 earlier lines,\u001b[39m \u001b[38;5;6mctrl+o\u001b[39m\u001b[38;5;4m to expand\u001b[39m\u001b[38;5;4m)\u001b[39m",
         "\u001b[38;5;2m2\u001b[39m                                                                               ",
         "\u001b[38;5;2m3\u001b[39m                                                                               ",
         "\u001b[38;5;2m4\u001b[39m                                                                               ",
@@ -2354,7 +2354,7 @@
       "expected": {
         "before": [
           "",
-          "\u001b[38;5;4m... (1 earlier lines,\u001b[39m \u001b[38;5;6mctrl+o\u001b[39m\u001b[38;5;4m to expand\u001b[39m)",
+          "\u001b[38;5;4m... (1 earlier lines,\u001b[39m \u001b[38;5;6mctrl+o\u001b[39m\u001b[38;5;4m to expand\u001b[39m\u001b[38;5;4m)\u001b[39m",
           "\u001b[38;5;2m2\u001b[39m                                                                               ",
           "\u001b[38;5;2m3\u001b[39m                                                                               ",
           "\u001b[38;5;2m4\u001b[39m                                                                               ",
@@ -2363,7 +2363,7 @@
         ],
         "after": [
           "",
-          "\u001b[38;5;4m... (1 earlier lines,\u001b[39m \u001b[38;5;6malt+x\u001b[39m\u001b[38;5;4m to expand\u001b[39m)",
+          "\u001b[38;5;4m... (1 earlier lines,\u001b[39m \u001b[38;5;6malt+x\u001b[39m\u001b[38;5;4m to expand\u001b[39m\u001b[38;5;4m)\u001b[39m",
           "\u001b[38;5;2m2\u001b[39m                                                                               ",
           "\u001b[38;5;2m3\u001b[39m                                                                               ",
           "\u001b[38;5;2m4\u001b[39m                                                                               ",
@@ -2372,7 +2372,7 @@
         ],
         "afterTheme": [
           "",
-          "\u001b[38;5;24m... (1 earlier lines,\u001b[39m \u001b[38;5;26malt+x\u001b[39m\u001b[38;5;24m to expand\u001b[39m)",
+          "\u001b[38;5;24m... (1 earlier lines,\u001b[39m \u001b[38;5;26malt+x\u001b[39m\u001b[38;5;24m to expand\u001b[39m\u001b[38;5;24m)\u001b[39m",
           "\u001b[38;5;2m2\u001b[39m                                                                               ",
           "\u001b[38;5;2m3\u001b[39m                                                                               ",
           "\u001b[38;5;2m4\u001b[39m                                                                               ",
@@ -2402,7 +2402,7 @@
         ],
         "body": [
           "",
-          "\u001b[38;2;217;160;102m... (1 earlier lines,\u001b[39m \u001b[38;2;217;160;102mctrl+o\u001b[39m\u001b[38;2;217;160;102m to expand\u001b[39m)",
+          "\u001b[38;2;217;160;102m... (1 earlier lines,\u001b[39m \u001b[38;2;217;160;102mctrl+o\u001b[39m\u001b[38;2;217;160;102m to expand\u001b[39m\u001b[38;2;217;160;102m)\u001b[39m",
           "\u001b[38;2;217;160;102m2\u001b[39m                                                                               ",
           "\u001b[38;2;217;160;102m3\u001b[39m                                                                               ",
           "\u001b[38;2;217;160;102m4\u001b[39m                                                                               ",
@@ -2436,7 +2436,7 @@
         ],
         "body": [
           "",
-          "\u001b[38;2;42;31;26m... (1 earlier lines,\u001b[39m \u001b[38;2;42;31;26mctrl+o\u001b[39m\u001b[38;2;42;31;26m to expand\u001b[39m)",
+          "\u001b[38;2;42;31;26m... (1 earlier lines,\u001b[39m \u001b[38;2;42;31;26mctrl+o\u001b[39m\u001b[38;2;42;31;26m to expand\u001b[39m\u001b[38;2;42;31;26m)\u001b[39m",
           "\u001b[38;2;42;31;26m2\u001b[39m                                                                               ",
           "\u001b[38;2;42;31;26m3\u001b[39m                                                                               ",
           "\u001b[38;2;42;31;26m4\u001b[39m                                                                               ",

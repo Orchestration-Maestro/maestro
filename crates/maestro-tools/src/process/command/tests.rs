@@ -20,7 +20,7 @@ fn windows_environment_keeps_first_sorted_case_identity() {
         }
         let env: ShellEnv = entries
             .into_iter()
-            .map(|(key, value)| (OsString::from(key), OsString::from(value)))
+            .map(|(key, value)| (OsString::from(key), Some(OsString::from(value))))
             .collect();
         let selected = command_env(&env, true);
         assert_eq!(
@@ -46,7 +46,12 @@ fn windows_environment_keeps_first_sorted_case_identity() {
                 .1,
             Some(std::ffi::OsStr::new("winner"))
         );
-        assert_eq!(command_env(&env, false), env.iter().collect::<Vec<_>>());
+        assert_eq!(
+            command_env(&env, false),
+            env.iter()
+                .map(|(key, value)| (key, value.as_ref().unwrap()))
+                .collect::<Vec<_>>()
+        );
         assert_eq!(env.len(), 6);
     }
 }
@@ -58,17 +63,44 @@ fn environment_selection_preserves_non_unicode_identity() {
     let first = OsString::from_vec(vec![0xff]);
     let second = OsString::from_vec(vec![0xfe]);
     let env: ShellEnv = [
-        (first.clone(), "first".into()),
-        (second.clone(), "second".into()),
-        ("PATH".into(), "unicode".into()),
+        (first.clone(), Some("first".into())),
+        (second.clone(), Some("second".into())),
+        ("PATH".into(), Some("unicode".into())),
     ]
     .into();
     assert_eq!(
         command_env(&env, true),
         vec![
-            env.get_key_value(std::ffi::OsStr::new("PATH")).unwrap(),
-            (&second, &env[&second]),
-            (&first, &env[&first])
+            (
+                &OsString::from("PATH"),
+                env[std::ffi::OsStr::new("PATH")].as_ref().unwrap()
+            ),
+            (&second, env[&second].as_ref().unwrap()),
+            (&first, env[&first].as_ref().unwrap())
         ]
     );
+}
+
+#[test]
+fn unset_environment_entries_remain_visible_until_native_spawn() {
+    let env: ShellEnv = [
+        (OsString::from("UNSET_BY_HOOK"), None),
+        (OsString::from("SET_BY_HOOK"), Some(OsString::from("value"))),
+        (OsString::from("PATH"), None),
+        (OsString::from("Path"), Some(OsString::from("decoy"))),
+    ]
+    .into();
+    assert_eq!(env.get(std::ffi::OsStr::new("UNSET_BY_HOOK")), Some(&None));
+    assert_eq!(
+        command_env(&env, false),
+        vec![
+            (&OsString::from("SET_BY_HOOK"), &OsString::from("value")),
+            (&OsString::from("Path"), &OsString::from("decoy")),
+        ]
+    );
+    assert_eq!(
+        command_env(&env, true),
+        vec![(&OsString::from("SET_BY_HOOK"), &OsString::from("value")),]
+    );
+    assert_eq!(env.len(), 4);
 }

@@ -12,10 +12,10 @@ pub use credentials::configuration::{
     resolve_config_value_or_throw, resolve_config_value_uncached, resolve_headers,
     resolve_headers_or_throw,
 };
-#[cfg(not(target_arch = "wasm32"))]
-pub use credentials::vault::FileAuthStorageBackend;
 pub use credentials::vault::{
     ApiKeyCredential, AsyncLockUpdate, AuthCredential, AuthSource, AuthStatus, AuthStorage,
     AuthStorageBackend, AuthStorageData, AuthStorageError, AuthStorageFuture,
     InMemoryAuthStorageBackend, LockUpdate, OAuthCredential,
 };
+#[cfg(not(target_arch = "wasm32"))]
+pub use credentials::vault::{FileAuthStorageBackend, write_auth_file};

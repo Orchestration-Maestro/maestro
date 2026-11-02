@@ -1,5 +1,6 @@
 //! Conversion of the members no declared entry covers.
 
+use crate::DiagnosticErrorInfo;
 use serde_json::Map;
 
 use super::from_type::from_type;
@@ -16,7 +17,7 @@ pub(crate) fn from_additional<'a>(
     object: &mut Map<String, serde_json::Value>,
     entries: &[(&str, regress::Regex)],
     additional: &Node<'a>,
-) {
+) -> Result<(), DiagnosticErrorInfo> {
     for (name, member) in object.iter_mut() {
         if entries
             .iter()
@@ -24,8 +25,9 @@ pub(crate) fn from_additional<'a>(
         {
             continue;
         }
-        if let Some(replacement) = from_type(converter, additional, member) {
+        if let Some(replacement) = from_type(converter, additional, member)? {
             *member = replacement;
         }
     }
+    Ok(())
 }

@@ -4,7 +4,7 @@ use maestro_models::{
     ApiProvider, AssistantMessage, AssistantMessageEventStream, Context, DiagnosticErrorInfo,
     Model, SimpleStreamOptions,
 };
-use maestro_session::{GenerateBranchSummaryOptions, generate_branch_summary};
+use maestro_session::{BranchSummaryResult, GenerateBranchSummaryOptions, generate_branch_summary};
 use std::sync::{Arc, Mutex, RwLock};
 /// Isolated registration, removed before scenario data is released.
 struct Adapter {
@@ -76,6 +76,7 @@ fn options(args: &Value, api: &str) -> GenerateBranchSummaryOptions {
         custom_instructions: args.get("focus").and_then(Value::as_str).map(str::to_owned),
         replace_instructions: args["replace"].as_bool().unwrap_or(false),
         reserve_tokens: args.get("reserve").and_then(Value::as_f64),
+        stream_fn: None,
     }
 }
 /// Execute and compare the complete generated object and eager requests.
@@ -186,6 +187,43 @@ pub(super) fn lifetime() {
     let weak = Arc::downgrade(&state);
     drop(state);
     assert!(weak.upgrade().is_none());
+}
+
+/// A supplied stream function receives the request and its options in place of the
+/// registered completion, whose adapter is never called.
+pub(super) fn stream_function() {
+    let state = adapter(
+        json!({"content":[{"type":"text","text":"from the registered completion"}],"stopReason":"stop"}),
+    );
+    let mut options = options(&json!({}), &state.api);
+    let seen = Arc::new(Mutex::new(Vec::<(Option<String>, Option<f64>)>::new()));
+    let record = Arc::clone(&seen);
+    options.stream_fn = Some(Arc::new(move |_, _, simple, _| {
+        record
+            .lock()
+            .unwrap()
+            .push((simple.common.api_key.clone(), simple.common.max_tokens));
+        Box::pin(async {
+            let stream = AssistantMessageEventStream::new();
+            stream.end(Some(Arc::new(RwLock::new(response(&json!({"role":"assistant","content":[{"type":"text","text":"from the stream function"}],"stopReason":"stop"}))))));
+            Ok(stream)
+        })
+    }));
+    let entries = vec![json!({"type":"message","message":{"role":"user","content":"owned"}})];
+    let result = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(generate_branch_summary(&entries, &options))
+        .unwrap();
+    let BranchSummaryResult::Summary { summary, .. } = result else {
+        panic!("expected a summary, got {result:?}");
+    };
+    assert!(summary.contains("from the stream function"), "{summary}");
+    assert_eq!(
+        *seen.lock().unwrap(),
+        [(Some("controlled-key".to_owned()), Some(2048.0))]
+    );
+    assert!(state.calls.lock().unwrap().is_empty());
 }
 
 /// Install a producer that settles only when its retained stream is explicitly ended.

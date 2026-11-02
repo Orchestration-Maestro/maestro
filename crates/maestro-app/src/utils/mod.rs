@@ -11,5 +11,9 @@ pub mod release_notes;
 pub(crate) mod lock;
 pub(crate) mod numbers;
 #[cfg(not(target_arch = "wasm32"))]
-pub(crate) mod task;
+mod platform_opener;
+#[cfg(not(target_arch = "wasm32"))]
+pub use platform_opener::platform_opener;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod scheduling;
 pub(crate) mod uri;

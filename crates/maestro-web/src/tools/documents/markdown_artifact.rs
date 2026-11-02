@@ -20,6 +20,9 @@ pub struct MarkdownArtifact {
     visible: bool,
     /// Containing modal identity.
     modal: Option<egui::Id>,
+    /// Native body most recently mounted or updated.
+    #[cfg(target_arch = "wasm32")]
+    body: super::artifact_element::preview::LastBody,
 }
 impl MarkdownArtifact {
     /// Start with empty fields and preview selected using the supplied host.
@@ -31,6 +34,8 @@ impl MarkdownArtifact {
             toggle: PreviewCodeToggle::new(),
             visible: true,
             modal: None,
+            #[cfg(target_arch = "wasm32")]
+            body: Rc::default(),
         }
     }
     /// Route the selected branch through its existing retained owner.
@@ -45,6 +50,20 @@ impl MarkdownArtifact {
                 self.modal,
             )
             .map_err(ArtifactUiError::Host)
+    }
+}
+impl Default for MarkdownArtifact {
+    /// Empty host-free Markdown, initially showing its preview.
+    fn default() -> Self {
+        Self {
+            source: TextArtifact::page_profile(SourceProfile::Markdown),
+            preview: MarkdownBlock::default(),
+            toggle: PreviewCodeToggle::new(),
+            visible: true,
+            modal: None,
+            #[cfg(target_arch = "wasm32")]
+            body: Rc::default(),
+        }
     }
 }
 impl ArtifactElement for MarkdownArtifact {
@@ -91,3 +110,6 @@ impl ArtifactElement for MarkdownArtifact {
         Ok(())
     }
 }
+
+#[cfg(target_arch = "wasm32")]
+mod dom;

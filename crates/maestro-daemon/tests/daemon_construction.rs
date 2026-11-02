@@ -2,8 +2,7 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-#[path = "support/launch.rs"]
-mod launch;
+use crate::support::launch;
 
 use maestro_daemon::{
     api::event_hub::EventHub,
@@ -17,7 +16,7 @@ fn app(config: &Config) -> App<fn() -> u128> {
     let manifests = Arc::new(RwLock::new(
         maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
-    let (launch, receiver) = launch::launch_inputs(&[], manifests);
+    let (launch, receiver) = launch::inputs(&[], manifests);
     App::new(
         config,
         (|| 0) as fn() -> u128,
@@ -241,7 +240,7 @@ fn construction_shares_supplied_host_observations_with_later_launches() {
     let manifests = Arc::new(RwLock::new(
         maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
-    let (mut launch, receiver) = launch::launch_inputs(&[], manifests);
+    let (mut launch, receiver) = launch::inputs(&[], manifests);
     launch.appearance = Some(HostAppearance::Light);
     launch.theme = launch.theme.with_color(
         DefaultColorKind::Background,

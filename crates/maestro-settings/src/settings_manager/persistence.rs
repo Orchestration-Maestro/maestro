@@ -7,10 +7,13 @@ use std::io;
 use serde_json::{Map, Value};
 use tokio::sync::oneshot;
 
+use super::BaseSettingsLayer;
 use super::change::Edit;
 use super::conversion::parse_document;
 use super::preferences::SettingsStorageHandle;
-use super::preferences::{SettingsError, SettingsScope, SettingsStorage, SettingsStorageError};
+use super::preferences::{
+    SettingsError, SettingsErrorKind, SettingsScope, SettingsStorage, SettingsStorageError,
+};
 use maestro_json::pretty_object;
 
 /// Shared state handle: atomically counted and locked on native targets.
@@ -89,6 +92,13 @@ enum Job {
         /// The edits and revisions captured when the save was enqueued.
         edits: Vec<Captured>,
     },
+    /// Persists a published layer without touching preference edits.
+    BaseLayer {
+        /// The publication's scope.
+        scope: SettingsScope,
+        /// The accepted record, or absence to clear it.
+        layer: Option<BaseSettingsLayer>,
+    },
     /// Completes once every earlier job has run.
     Barrier(oneshot::Sender<()>),
 }
@@ -126,8 +136,18 @@ impl Queue {
 
     /// Records a failure for later draining.
     pub(super) fn record_error(&self, scope: SettingsScope, error: SettingsStorageError) {
+        self.record(scope, SettingsErrorKind::Failure, error);
+    }
+
+    /// Records a failure or a resolved stored conflict on the same error channel.
+    pub(super) fn record(
+        &self,
+        scope: SettingsScope,
+        kind: SettingsErrorKind,
+        error: SettingsStorageError,
+    ) {
         self.context
-            .with(|shared| shared.errors.push(SettingsError { scope, error }));
+            .with(|shared| shared.errors.push(SettingsError { kind, scope, error }));
     }
 
     /// Takes every recorded failure.
@@ -146,12 +166,29 @@ impl Queue {
             snapshot,
             edits,
         };
+        self.send(scope, job);
+    }
+
+    /// Queues a replacement or removal of a base record on the same worker.
+    pub(super) fn save_base_layer(
+        &mut self,
+        scope: SettingsScope,
+        layer: Option<BaseSettingsLayer>,
+    ) {
+        self.send(scope, Job::BaseLayer { scope, layer });
+    }
+
+    /// Dispatches one job, recording any worker-start failure.
+    fn send(&mut self, scope: SettingsScope, job: Job) {
         #[cfg(not(target_arch = "wasm32"))]
         if let Err(error) = self.dispatcher.send(&self.context, job) {
             self.record_error(scope, Box::new(error));
         }
         #[cfg(target_arch = "wasm32")]
-        self.dispatcher.send(&self.context, job);
+        {
+            let _ = scope;
+            self.dispatcher.send(&self.context, job);
+        }
     }
 
     /// Returns a future that completes once the work queued so far has run.
@@ -173,6 +210,17 @@ fn execute(job: Job, context: &Context) {
         Job::Barrier(done) => {
             let _ = done.send(());
         }
+        Job::BaseLayer { scope, layer } => {
+            if let Err(error) = context.storage.write_base_layer(scope, layer.as_ref()) {
+                context.with(|shared| {
+                    shared.errors.push(SettingsError {
+                        kind: SettingsErrorKind::Failure,
+                        scope,
+                        error,
+                    });
+                });
+            }
+        }
         Job::Save {
             scope,
             snapshot,
@@ -180,7 +228,11 @@ fn execute(job: Job, context: &Context) {
         } => match persist(&*context.storage, scope, &snapshot, &edits) {
             Ok(()) => context.with(|shared| shared.acknowledge(scope, &edits)),
             Err(error) => context.with(|shared| {
-                shared.errors.push(SettingsError { scope, error });
+                shared.errors.push(SettingsError {
+                    kind: SettingsErrorKind::Failure,
+                    scope,
+                    error,
+                });
             }),
         },
     }
@@ -224,8 +276,11 @@ impl Dispatcher {
         if self.sender.is_none() {
             self.sender = Some(Self::start(context)?);
         }
-        let sent = self.sender.as_ref().map(|sender| sender.send(job));
-        if matches!(sent, Some(Err(_))) {
+        let failed = self
+            .sender
+            .as_ref()
+            .is_some_and(|sender| sender.send(job).is_err());
+        if failed {
             self.sender = None;
             return Err(io::Error::other("the settings queue worker stopped"));
         }

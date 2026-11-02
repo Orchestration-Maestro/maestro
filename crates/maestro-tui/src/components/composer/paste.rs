@@ -52,7 +52,7 @@ impl Owner {
         self.cancel_autocomplete();
         {
             let mut state = self.state.borrow_mut();
-            state.history_index = None;
+            state.exit_history();
             state.reset_action();
             state.snapshot();
             let cursor = state.current.cursor;

@@ -45,6 +45,8 @@ mod tests {
         in_lock: Hook,
         /// Run when a replacement is about to be stored.
         before_write: Hook,
+        /// Run once after the next synchronous read that succeeded.
+        after_read: Mutex<Option<Box<dyn FnOnce() + Send>>>,
         /// Asynchronous operations started.
         async_calls: AtomicUsize,
         /// Replacement texts stored.
@@ -104,7 +106,12 @@ mod tests {
             }
             probe
                 .inner
-                .with_lock(&mut |current| probe.checked(update(current)?))
+                .with_lock(&mut |current| probe.checked(update(current)?))?;
+            let action = probe.after_read.lock().unwrap().take();
+            if let Some(action) = action {
+                action();
+            }
+            Ok(())
         }
 
         fn with_lock_async<'a>(
@@ -144,6 +151,17 @@ mod tests {
             })
             .unwrap();
         text
+    }
+
+    /// Have another writer replace the stored text with `document` right after the storage's next
+    /// synchronous read, so the storage decides on the text it read before.
+    fn replace_after_next_read(probe: &Arc<Probe>, document: Value) {
+        let target = Arc::downgrade(probe);
+        *probe.after_read.lock().unwrap() = Some(Box::new(move || {
+            if let Some(probe) = target.upgrade() {
+                replace_text(&probe, &document);
+            }
+        }));
     }
 
     /// Stored OAuth record with access token `access`.
@@ -233,7 +251,7 @@ mod tests {
                 probe.sync_fails.store(true, Ordering::SeqCst);
                 storage.reload();
                 probe.sync_fails.store(false, Ordering::SeqCst);
-                replace_text(&probe, &document);
+                replace_after_next_read(&probe, document.clone());
                 *probe.in_lock.lock().unwrap() = Some(on_storage(&storage, replace_fallback));
                 let key = request(&storage, "r2").await.unwrap();
                 assert_eq!(key.as_deref(), Some(expected));
@@ -254,9 +272,9 @@ mod tests {
             let provider = ControlledProvider::new("r2-extract").register();
             let _cleanup = Unregister("r2-extract".into());
             let (probe, storage) = setup(&json!({"r2-extract": record("old", 1000.0)}));
-            replace_text(
+            replace_after_next_read(
                 &probe,
-                &json!({"r2-extract": record("extract-fails", FUTURE)}),
+                json!({"r2-extract": record("extract-fails", FUTURE)}),
             );
             let outcome = request(&storage, "r2-extract").await;
             assert_eq!(outcome.unwrap_err().to_string(), "extract failed");
@@ -310,6 +328,35 @@ mod tests {
                 Some("")
             );
             assert_eq!(empty.refreshes.load(Ordering::SeqCst), 1);
+        });
+    }
+
+    #[test]
+    fn credential_refresh_preserves_untyped_sibling_values() {
+        block_on(async {
+            let _provider = ControlledProvider::new("r16").register();
+            let _cleanup = Unregister("r16".into());
+            let mut document = json!({
+                "null": null, "text": "x", "r16": record("old", 1000.0), "number": 0.25,
+                "bool": false, "object": {"b": 1, "a": []}, "array": [2, 2, 1],
+            });
+            let (probe, storage) = setup(&document);
+            assert_eq!(
+                request(&storage, "r16").await.unwrap().as_deref(),
+                Some("new")
+            );
+            document["r16"] = json!({
+                "type": "oauth", "refresh": "refresh-new", "access": "new",
+                "expires": 4_102_444_800_000_i64, "extra": ["x", "x", "y"],
+            });
+            assert_eq!(
+                stored_text(&probe),
+                serde_json::to_string_pretty(&document).unwrap()
+            );
+            assert_eq!(
+                storage.list(),
+                ["null", "text", "r16", "number", "bool", "object", "array"]
+            );
         });
     }
 
@@ -471,7 +518,6 @@ mod tests {
         std::fs::write(&path, serde_json::to_string_pretty(document).unwrap()).unwrap();
         let storage = AuthStorage::from_storage(FileAuthStorageBackend::new(&path));
         let sidecar = format!("{path}.lock");
-        std::fs::remove_file(&sidecar).unwrap();
         std::fs::create_dir(&sidecar).unwrap();
         (sidecar, storage)
     }
@@ -488,9 +534,17 @@ mod tests {
             assert_eq!(request(&storage, "r7").await.unwrap(), None);
             let errors = storage.drain_errors();
             assert!(!errors.is_empty());
+            // The host's own refusal: Unix reports a directory, Windows denies access.
+            let refused = std::fs::OpenOptions::new()
+                .create(true)
+                .write(true)
+                .truncate(false)
+                .open(&sidecar)
+                .unwrap_err()
+                .kind();
             for error in &errors {
                 let io = error.downcast_ref::<std::io::Error>().unwrap();
-                assert_eq!(io.kind(), std::io::ErrorKind::IsADirectory);
+                assert_eq!(io.kind(), refused);
             }
             assert_eq!(provider.refreshes.load(Ordering::SeqCst), 0);
             assert!(
@@ -636,6 +690,9 @@ mod tests {
     }
 
     impl OAuthLoginCallbacks for Recording {
+        fn callback_presence(&self) -> (bool, bool, bool) {
+            (true, false, false)
+        }
         fn on_auth(&self, _info: OAuthAuthInfo) -> Result<(), OAuthError> {
             Ok(())
         }

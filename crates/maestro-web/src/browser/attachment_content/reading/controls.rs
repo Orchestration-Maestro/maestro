@@ -34,28 +34,3 @@ pub(crate) fn pointer_actions<A: Copy + PartialEq>(
     }
     actions
 }
-
-/// Paint the focused control's border and reveal newly reached keyboard focus.
-pub(crate) fn focus_border(
-    ui: &egui::Ui,
-    response: &egui::Response,
-    presentation: &maestro_theme::BrandPresentation<'_>,
-) -> Result<(), crate::tools::types::ToolUiError> {
-    use crate::{browser::attachment_content, tools::types::ToolUiError};
-    if response.gained_focus() {
-        response.scroll_to_me(None);
-    }
-    if response.has_focus() {
-        ui.painter().rect_stroke(
-            response.rect,
-            0.,
-            egui::Stroke::new(
-                1.,
-                attachment_content::color(presentation, "accent")
-                    .map_err(|error| ToolUiError::Presentation(error.to_string()))?,
-            ),
-            egui::StrokeKind::Inside,
-        );
-    }
-    Ok(())
-}

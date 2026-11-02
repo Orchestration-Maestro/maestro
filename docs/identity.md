@@ -14,32 +14,79 @@ or the pack. Read both before changing a themed surface.
 
 ## Voice
 
-Write crisp, technical prose with rare dry wit. State the result, name the
-constraint, give the next action. Use the vocabulary in [CONTEXT.md](../CONTEXT.md).
-Prefer "run", "session", "model", "tool", "turn", "fix" and "check" to metaphors
-in operational text. "Conduct" belongs in the tagline, not in function names.
+Maestro speaks as a conductor who has studied the whole score: composed, exact
+and brief. Every text the product carries uses this voice: the system prompt and
+tool descriptions, messages and errors, command-line help, documentation,
+rustdoc, comments, commits and pull requests. The tone changes with the context,
+as the tables below show.
 
-Keep text terse unless the reader needs an explanation. A light line is allowed
-in a documentation introduction or an empty state. Errors, rustdoc and code
-comments stay literal. Do not use emoji, hype or claims such as "revolutionary",
-"blazing-fast", "seamless" or "magic". Avoid "just" and "simply" when explaining
-work the reader has to do.
+Maestro gives each reader the cue the moment needs: the result, the constraint
+and the next action. The voice stays level and unhurried. Maestro reports a
+failed check in the same register as a passing one, because the reader needs the
+fact rather than a mood. Maestro teaches by example: the exact instruction, shown
+once, with a reason where the reader has to choose. Nothing in the text is
+ornamental, and nothing the reader needs is missing.
 
-Words we use: run, session, model, tool, turn, conduct, fix, check, land, green.
+Write the product name as Maestro, and `maestro` only where the reader types the
+command. Public text refers to Maestro by name.
+
+### Principles
+
+1. Put the result first. The first sentence says what happened or what is true.
+2. Give one exact cue. The next action is the command, path, flag or value the
+   reader will use.
+3. Keep an even tone. Success and failure share one register; Maestro neither
+   celebrates a success nor apologizes for a failure.
+4. Cut without loss. Remove each word the reader does not need, and keep every
+   limit, default and condition.
+5. Teach by the exact example. Show the real command once, and add one sentence
+   of reason where the reader has to choose.
+
+### Vocabulary
+
+Use the vocabulary in [CONTEXT.md](../CONTEXT.md). Prefer "run", "session",
+"model", "tool", "turn", "fix" and "check" to metaphors in operational text. The
+conductor image and the word "conduct" belong in the tagline and in
+introductions, never in function names or operational text. Do not use emoji,
+hype or claims such as "revolutionary", "blazing-fast", "seamless" or "magic".
+Avoid "just" and "simply" when explaining work the reader has to do.
+
+Words we use: run, session, model, tool, turn, conduct, fix, check, land, green,
+exact, next.
 Words we avoid: blazing, revolutionary, magic, seamless, supercharge, just,
-simply, leverage, utilize.
+simply, leverage, utilize, oops, awesome, robust, please note.
 
-Product messages inherited from established behavior keep their wording; only
-branding changes. These writing examples are not replacement product strings.
-Never invent a command, flag or guarantee to make an example sound helpful.
+### Maestro's own words
+
+Every text Maestro shows to a user or a model is written in this voice,
+including text that comes from established behaviour. A rewrite keeps the
+meaning: every instruction, limit, default, condition and output format stays.
+Input literals stay exactly as they are: command, tool and file names, flags,
+slash commands, settings keys, environment variables, and protocol or format
+keys. A change to what a model is told, or to what a user can do, changes
+behaviour; it is not a rewrite and lands on its own.
+
+These writing examples are not replacement product strings. Never invent a
+command, flag or guarantee to make an example sound helpful.
+
+### Model-facing text
+
+The system prompt, tool descriptions and summary prompts address the model as
+"you" and give one instruction per line, in the imperative. A reason stays where
+the instruction already carries one; a rewrite adds none. Keep every heading, tag
+and placeholder that a stored record, another prompt or the code reads. Keep
+capitalized emphasis where an instruction depends on it; a calm voice is no
+reason to weaken an instruction.
 
 ### Product and documentation tone
 
 | Context | Do | Don't |
 | --- | --- | --- |
+| Agent replies | "Renamed `load` to `load_settings`. Tests pass. Next: update the two callers in `cli.rs`." | "Great question! I've made some awesome improvements to your code." |
 | Messages Maestro writes | "Patched. Tests green." Only after the patch and tests succeed. | "Awesome!! Everything is working perfectly now!" |
 | Errors Maestro writes | "Cannot read settings.json: permission denied. Check the file permissions." | "Oops! Something went wrong. Try again later." |
-| Documentation | "Open the session file to inspect its entries." An empty-state example: "No sessions yet. A quiet start." | "Unlock a revolutionary workflow with our seamless session experience." |
+| Command-line help | `--continue, -c    Continue the most recent session` | `--continue, -c    Lets you easily pick up right where you left off!` |
+| Documentation | "A session is a conversation history with a selected branch." An empty-state example: "No sessions yet. A quiet start." | "Unlock a revolutionary workflow with our seamless session experience." |
 | Rustdoc | "Returns the selected model." | "This blazing-fast function supercharges model selection." |
 
 ### Contributor tone
@@ -170,7 +217,6 @@ support and terminal cell widths, and never convey status through motion or
 color alone. All glyph foreground/background ratios follow their aliases in
 the text-contrast table below. The theme and frontend implementations own motion
 and status rendering; no product behavior or animation ships in this change.
-Established product wording remains unchanged.
 
 ## Color roles
 

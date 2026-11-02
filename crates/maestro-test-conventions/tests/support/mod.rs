@@ -119,6 +119,16 @@ pub fn class(name: &str) -> &'static str {
     policy::rule(name).unwrap().class
 }
 
+/// Convert an authored slash-delimited relative path to native components.
+pub fn native_path(relative: &str) -> PathBuf {
+    relative.split('/').collect()
+}
+
+/// Spell an authored relative path with native separators for a diagnostic assertion.
+pub fn native_path_text(relative: &str) -> String {
+    native_path(relative).display().to_string()
+}
+
 /// Write one authored source under a member's directory, creating its parents, and return
 /// its path.
 ///
@@ -130,7 +140,7 @@ pub fn source(workspace: &Workspace, member: &str, relative: &str, contents: &st
         .path()
         .join("crates")
         .join(member)
-        .join(relative.split('/').collect::<PathBuf>());
+        .join(native_path(relative));
     fs::create_dir_all(path.parent().unwrap()).unwrap();
     fs::write(&path, contents).unwrap();
     path

@@ -3,7 +3,7 @@ use super::super::{
     commands::{PaneShellConfig, ShellLaunchTarget, pane_shell_command_builder_for_target},
     monitoring::{DetectionControl, DetectionTaskConfig, SpawnedDetection, spawn_detection_task},
 };
-use super::{PaneRuntime, PaneRuntimeConfig, reader, shutdown as lifecycle};
+use super::{PaneRuntime, PaneRuntimeConfig, reader, shutdown};
 use crate::panes::{display::PaneTerminal, launch::PaneLaunchEnv};
 use maestro_detection::agents::Agent;
 use maestro_process::terminal::PtyCommand;
@@ -155,13 +155,13 @@ impl PaneRuntime {
         ) {
             Ok(runtime) => runtime,
             Err(error) => {
-                lifecycle::shutdown_processes(pid, None);
+                shutdown::shutdown_processes(pid, None);
                 let _ = child.wait();
                 return Err(error);
             }
         };
         let completed = Arc::new(AtomicBool::new(false));
-        runtime.watcher = Some(lifecycle::watch_child(
+        runtime.watcher = Some(shutdown::watch_child(
             child,
             Arc::clone(&completed),
             &runtime.shared,

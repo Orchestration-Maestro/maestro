@@ -3,7 +3,6 @@
 use super::connection::{Connection, write_to};
 use super::{RpcConnectionOutcome, RpcModeOptions, RpcOutput, RpcRecord};
 use crate::agent_session::ExtensionBindings;
-use crate::runtime::session_engine::AgentSessionRuntime;
 use maestro_extensions::EventError;
 use maestro_extensions::types::ExtensionUIContext;
 use maestro_models::DiagnosticErrorInfo;
@@ -48,21 +47,21 @@ pub(super) struct Lifecycle {
 }
 
 impl Connection {
-    /// A connection serving `runtime`: the runtime rebinds through it, and the initial
-    /// binding runs on its own task while the connection reads.
-    pub(super) fn start(
-        runtime: Rc<AgentSessionRuntime>,
-        output: RpcOutput,
-        options: RpcModeOptions,
-    ) -> (Rc<Self>, Finish) {
+    /// Starts reading immediately; a supplied session binds on its own local task.
+    pub(super) fn start(output: RpcOutput, options: RpcModeOptions) -> (Rc<Self>, Finish) {
         let (finish, finished) = oneshot::channel();
         let lifecycle = Lifecycle {
             finish: Some(finish),
             ..Lifecycle::default()
         };
-        let connection = Self::new(runtime, output, options, lifecycle);
+        let connection = Self::new(output, options, lifecycle);
+        let Some(session) = &connection.session else {
+            connection.early.borrow_mut().take();
+            return (connection, finished);
+        };
         let weak = Rc::downgrade(&connection);
-        connection
+        session
+            .options
             .runtime
             .set_rebind_session(Some(Rc::new(move |_session| {
                 let connection = weak.upgrade();
@@ -105,7 +104,9 @@ impl Connection {
         let bound = self.bound.notified();
         if self.early.borrow().is_some() {
             self.lifecycle.borrow_mut().end_input();
-            self.ui.cancel_pending();
+            if let Some(session) = &self.session {
+                session.ui.cancel_pending();
+            }
             bound.await;
         }
     }
@@ -127,8 +128,11 @@ impl Connection {
     /// Binds the current session's extensions to the protocol, then replaces the event
     /// subscription with one on that session.
     async fn bind_current(self: &Rc<Self>) -> Result<(), DiagnosticErrorInfo> {
-        let session = self.session();
-        session.bind_extensions(self.bindings()).await?;
+        let Some(owner) = &self.session else {
+            return Ok(());
+        };
+        let session = owner.session();
+        session.bind_extensions(self.bindings(owner)).await?;
         let previous = self.lifecycle.borrow_mut().unsubscribe.take();
         if let Some(unsubscribe) = previous {
             unsubscribe();
@@ -145,14 +149,18 @@ impl Connection {
 
     /// The protocol's extension interface, command operations, shutdown request and
     /// failure report.
-    fn bindings(self: &Rc<Self>) -> ExtensionBindings {
+    fn bindings(
+        self: &Rc<Self>,
+        session: &super::connection::SessionConnection,
+    ) -> ExtensionBindings {
         let (weak, writer) = (Rc::downgrade(self), Rc::downgrade(self));
         ExtensionBindings {
-            ui_context: Some(ExtensionUIContext::new(Rc::clone(&self.ui) as Rc<_>)),
-            command_context_actions: Some(self.runtime.command_context_actions()),
+            ui_context: Some(ExtensionUIContext::new(Rc::clone(&session.ui) as Rc<_>).into()),
+            command_context_actions: Some(session.options.runtime.command_context_actions()),
+            abort_handler: None,
             shutdown_handler: Some(Rc::new(move || {
                 if let Some(connection) = weak.upgrade() {
-                    connection.lifecycle.borrow_mut().shutdown_requested = true;
+                    connection.request_shutdown();
                 }
                 Ok(())
             })),
@@ -165,28 +173,55 @@ impl Connection {
     /// Delivers termination signals: tracked children are killed, then the connection
     /// shuts down.
     fn register_signals(self: &Rc<Self>) -> io::Result<()> {
+        let Some(session) = &self.session else {
+            return Ok(());
+        };
         let weak = Rc::downgrade(self);
-        let cleanup =
-            self.options
-                .process
-                .register_signals(Rc::new(move |signal: TerminationSignal| {
-                    let Some(connection) = weak.upgrade() else {
-                        return;
-                    };
-                    maestro_tools::utils::environment::kill_tracked_detached_children();
-                    drop(tokio::task::spawn_local(async move {
-                        connection
-                            .shutdown(RpcConnectionOutcome::Signal(signal))
-                            .await;
-                    }));
-                }))?;
+        let cleanup = session.options.process.register_signals(Rc::new(
+            move |signal: TerminationSignal| {
+                let Some(connection) = weak.upgrade() else {
+                    return;
+                };
+                maestro_tools::utils::environment::kill_tracked_detached_children();
+                drop(tokio::task::spawn_local(async move {
+                    connection
+                        .shutdown(RpcConnectionOutcome::Signal(signal))
+                        .await;
+                }));
+            },
+        ))?;
         self.lifecycle.borrow_mut().signal_cleanup = Some(cleanup);
         Ok(())
     }
 
-    /// Shuts down after a command when an extension requested it.
+    /// Records an extension shutdown and checks it again when an active run settles.
+    fn request_shutdown(self: &Rc<Self>) {
+        self.lifecycle.borrow_mut().shutdown_requested = true;
+        let Some(owner) = &self.session else {
+            return;
+        };
+        let session = owner.session();
+        if session.is_idle() {
+            return;
+        }
+        let weak = Rc::downgrade(self);
+        drop(tokio::task::spawn_local(async move {
+            session.wait_for_idle().await;
+            if let Some(connection) = weak.upgrade() {
+                connection.check_shutdown_requested().await;
+            }
+        }));
+    }
+
+    /// Starts a requested shutdown after a command or run settlement, only while idle.
     pub(super) async fn check_shutdown_requested(self: &Rc<Self>) {
-        if self.lifecycle.borrow().shutdown_requested {
+        if self.lifecycle.borrow().shutdown_requested
+            && !self.shutting_down()
+            && self
+                .session
+                .as_ref()
+                .is_some_and(|owner| owner.session().is_idle())
+        {
             self.shutdown(RpcConnectionOutcome::Requested).await;
         }
     }
@@ -240,7 +275,10 @@ impl Connection {
         if let Some(unsubscribe) = unsubscribe {
             unsubscribe();
         }
-        let disposed = self.runtime.dispose().await;
+        let disposed = match &self.session {
+            Some(session) => session.options.runtime.dispose().await,
+            None => Ok(()),
+        };
         self.finish(disposed.map(|()| outcome).map_err(io::Error::other));
     }
 
@@ -259,6 +297,11 @@ impl Connection {
 }
 
 impl Lifecycle {
+    /// The failure that arrived after the connection reported how it ended.
+    pub(super) fn take_failure(&mut self) -> Option<io::Error> {
+        self.failure.take()
+    }
+
     /// Records that the input can no longer answer the initial binding.
     fn end_input(&mut self) {
         if self.phase == Phase::Serving {

@@ -6,7 +6,7 @@ use super::{
 use serde_json::{Value, json};
 
 /// A complete message whose fields differ from defaults.
-fn message() -> String {
+pub(super) fn message() -> String {
     json!({"role":"custom", "customType":"雪", "content":[{"type":"text", "text":"z", "textSignature":"署名"},{"type":"image", "data":"literal", "mimeType":"image/custom"},{"type":"text", "text":"z"}], "display":true, "details":"{\"n\":7}", "timestamp":1.25}).to_string()
 }
 /// Registers selected authored behavior through the shared capture command.
@@ -180,13 +180,8 @@ fn maestro_renderer_callbacks_emit_and_recover() -> Result<(), String> {
     on_both_adapters!(emissions)
 }
 
-/// Encodes semantic source details once using the existing host's opaque-text convention.
+/// Normalizes only the shared floating-point timestamp representation.
 fn wire_message(mut message: Value) -> Value {
-    if let Some(details) = message.get_mut("details")
-        && !details.is_null()
-    {
-        *details = json!(details.to_string());
-    }
     if let Some(timestamp) = message.get_mut("timestamp") {
         *timestamp = json!(timestamp.as_f64().unwrap());
     }

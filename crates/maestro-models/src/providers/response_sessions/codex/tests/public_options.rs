@@ -596,8 +596,10 @@ fn assert_base(
     options: &OpenAICodexResponsesOptions,
     expected: Value,
 ) {
+    let context = serde_json::from_value(json!({"messages": []})).unwrap();
     let base = crate::build_base_options(
         model,
+        &context,
         Some(simple_options),
         options.common.api_key.as_deref(),
     );

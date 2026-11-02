@@ -24,7 +24,7 @@ use maestro_detection::{
     agents::{Agent, AgentState, AgentVisibility},
     definitions::{DetectionInput, ManifestCache},
 };
-use maestro_process::terminal::jobs::{self as foreground, ProcessDetectionMode};
+use maestro_process::terminal::jobs::{self, ProcessDetectionMode};
 use maestro_workspace::tiling::PaneId;
 use std::{
     sync::{
@@ -188,7 +188,7 @@ fn restore_theme(config: &DetectionTaskConfig, effects: &SpawnedDetection) {
     if pid == 0 || !config.terminal.should_probe_host_terminal_theme_restore() {
         return;
     }
-    let job = foreground::foreground_job(pid, config.process_detection_mode);
+    let job = jobs::foreground_job(pid, config.process_detection_mode);
     if config
         .terminal
         .maybe_restore_host_terminal_theme(pid, job.as_ref())
@@ -288,7 +288,7 @@ impl Detector {
         self.release_was_active = suppressed.is_some();
         let pid = config.child_pid.load(Ordering::Acquire);
         let foreground_group = (pid > 0)
-            .then(|| foreground::foreground_process_group_id(pid))
+            .then(|| jobs::foreground_process_group_id(pid))
             .flatten();
         let input = self.probe_input(suppressed, foreground_group, now);
         let lifecycle_authority = config

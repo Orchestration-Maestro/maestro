@@ -1,13 +1,11 @@
 //! Native repository identity, labels and Git fallback observations.
 #![cfg(test)]
-#[path = "repository_support/mod.rs"]
-mod support;
+use crate::repository_support::{init_repo_with_commit, run_git};
 use maestro_daemon::git::discovery::{
     automatic_workspace_label, derive_label_from_cwd, git_branch, git_repo_root,
     git_rev_parse_verify, git_space_metadata, git_worktree_info,
 };
 use std::path::{Path, PathBuf};
-use support::run_git;
 
 #[test]
 fn repository_branch_reads_head_from_standard_repo() {
@@ -271,7 +269,7 @@ fn create_bare_repo_with_linked_worktree() -> (maestro_test_directory::Scratch, 
     let seed = scratch.join("seed");
     let bare = scratch.join(".bare");
     let checkout = scratch.join("feature");
-    support::init_repo_with_commit(&seed);
+    init_repo_with_commit(&seed);
     run_git(
         &scratch,
         &[

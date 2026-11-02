@@ -6,7 +6,7 @@ use std::sync::{Arc, RwLock};
 
 /// Arguments of the calculator tool.
 #[derive(Deserialize)]
-pub struct Parameters {
+pub struct Params {
     /// Text of the form `<integer> <+ or *> <integer>`.
     pub expression: String,
 }
@@ -53,7 +53,7 @@ pub fn tool() -> SharedAgentTool {
             "required": ["expression"]
         }).into(),
     };
-    let execute = Arc::new(|_, params: Parameters, _, _| {
+    let execute = Arc::new(|_, params: Params, _, _| {
         let result = calculate(&params.expression).map_err(DiagnosticErrorInfo::error);
         Box::pin(std::future::ready(result)) as maestro_models::BoxFuture<_>
     });

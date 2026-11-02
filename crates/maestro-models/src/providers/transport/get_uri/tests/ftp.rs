@@ -916,6 +916,11 @@ fn ftp_epsv_only_server_transfers() {
 
 #[test]
 fn ftp_advertised_data_host_is_kept() {
+    // The data listener answers on a second loopback address, which not every host has.
+    if std::net::TcpListener::bind("127.0.0.2:0").is_err() {
+        eprintln!("the advertised data host needs a host that binds 127.0.0.2");
+        return;
+    }
     crate::tests::runtime::run(async {
         // The server offers no extended passive mode and advertises a data host of its own, which
         // is the only address its data listener answers on.

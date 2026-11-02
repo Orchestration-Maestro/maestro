@@ -10,7 +10,7 @@ use std::{ffi::OsString, sync::Arc};
 use tokio::sync::{Notify, mpsc};
 
 /// Supplies the same existing pane runtime boundary used by native launches.
-pub fn launch_inputs(
+pub fn inputs(
     args: &[String],
     manifests: Arc<std::sync::RwLock<maestro_detection::definitions::ManifestCache>>,
 ) -> (PaneLaunchInputs, mpsc::Receiver<AppEvent>) {

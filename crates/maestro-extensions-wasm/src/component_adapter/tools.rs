@@ -1,60 +1,42 @@
 //! Preparation and asynchronous execution through host imports.
 use super::exports::encode_value;
-use super::{Exports, Imports, callbacks, contexts};
+use super::{Exports, Imports, callbacks, contexts, signals};
 use crate::bindings::exports::maestro::extension::guest::ToolInvocation;
-use crate::{
-    AgentToolUpdateCallback, ExtensionResult, ParameterSchema, PrepareArguments, ToolExecute,
-};
+use crate::{AgentToolUpdateCallback, ExtensionResult, PrepareArguments, ToolExecute};
 use std::rc::Rc;
 
-/// Member carrying the declared schema kinds beside the plain payload.
-const SCHEMA_KINDS: &str = "schemaKinds";
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod edit;
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod find;
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod grep;
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod ls;
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod read;
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod write;
+/// Per-tool executable annotations returned beside the metadata document.
+pub type ToolListing<C> = (
+    String,
+    Vec<(
+        u32,
+        String,
+        C,
+        crate::bindings::maestro::extension::host::SchemaShape,
+        bool,
+    )>,
+);
 
-/// Encode registration metadata for the host, with the kinds its author declared.
-pub(super) fn encode_metadata(metadata: &crate::ToolMetadata) -> ExtensionResult<String> {
-    let mut value = serde_json::to_value(metadata).map_err(|error| error.to_string())?;
-    let kinds = serde_json::to_value(metadata.parameters.conversions())
-        .map_err(|error| error.to_string())?;
-    match value.as_object_mut() {
-        Some(object) => {
-            object.insert(SCHEMA_KINDS.to_owned(), kinds);
-        }
-        None => return Err("tool metadata is not an object".into()),
-    }
-    encode_value(&value)
-}
-
-/// The declared schema kinds one transport record carries.
-///
-/// Every other member is skipped without building a value, so a deep or repeated record the
-/// host selected keeps its own decoding outcome.
-#[derive(Default, serde::Deserialize)]
-struct CarriedKinds {
-    /// Authored kinds by JSON pointer.
-    #[serde(rename = "schemaKinds", default)]
-    schema_kinds: std::collections::HashMap<String, crate::SchemaKind>,
-}
-
-/// Decode enumerated tools, restoring the schema kinds the transport carries.
-///
-/// Kinds travel only in the object form this adapter encodes; a record the host supplies in
-/// another admitted shape carries none and stays plain.
+/// Restore the shared schema owner with the guest callback representation.
 pub(super) fn decode_tools(text: &str) -> ExtensionResult<Vec<crate::ToolInfo>> {
-    let tools: Vec<crate::ToolInfo> =
-        serde_json::from_str(text).map_err(|error| error.to_string())?;
-    let carried = serde_json::from_str::<Vec<CarriedKinds>>(text).unwrap_or_default();
-    if carried.len() != tools.len() {
-        return Ok(tools);
-    }
-    Ok(tools
-        .into_iter()
-        .zip(carried)
-        .map(|(mut tool, carried)| {
-            tool.parameters =
-                ParameterSchema::authored(tool.parameters.into_json(), carried.schema_kinds);
-            tool
-        })
-        .collect())
+    maestro_request::parameter_schema::transport::decode_tools(text)
+}
+
+/// Encode authored metadata through the shared parameter-schema transport.
+pub(super) fn encode_metadata(metadata: &crate::ToolMetadata) -> ExtensionResult<String> {
+    maestro_request::parameter_schema::transport::encode_metadata(metadata, &metadata.parameters)
 }
 
 /// Owned resources delivered to one tool invocation.
@@ -73,14 +55,21 @@ impl<I: Imports> Exports<I> {
         handler: u32,
         args: &str,
         emitter: &I::Emitter,
-    ) -> ExtensionResult<String> {
+    ) -> ExtensionResult<crate::bindings::maestro::extension::host::PreparedArguments> {
         let prepare = callbacks::find::<PrepareArguments>(handler)?;
-        let args = serde_json::from_str(args).map_err(|error| error.to_string())?;
+        let mut args = serde_json::from_str(args).map_err(|error| error.to_string())?;
         let port = super::event_bus::Emitter {
             imports: &self.imports,
             handle: emitter,
         };
-        encode_value(&prepare(args, crate::CallbackEmitter::new(&port))?)
+        let prepared = prepare(&mut args, crate::CallbackEmitter::new(&port))
+            .and_then(|value| encode_value(&value));
+        Ok(
+            crate::bindings::maestro::extension::host::PreparedArguments {
+                retained: encode_value(&args)?,
+                prepared,
+            },
+        )
     }
     /// Awaits the registered execution with owned resource facades.
     pub(crate) async fn invoke_tool(
@@ -93,7 +82,7 @@ impl<I: Imports> Exports<I> {
         let params = serde_json::from_str(&invocation.params).map_err(|error| error.to_string())?;
         let signal = resources
             .signal
-            .map(|signal| contexts::signal(&self.imports, signal));
+            .map(|signal| signals::signal(&self.imports, signal));
         let update = resources.update.map(|update| {
             let imports = self.imports.clone();
             Rc::new(move |partial| imports.tool_update(&update, &encode_value(&partial)?))
@@ -108,5 +97,39 @@ impl<I: Imports> Exports<I> {
         )
         .await?;
         encode_value(&result)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    /// Empty inventories and native trailing-input rejection keep their outcomes.
+    #[test]
+    fn metadata_enumeration_preserves_native_admission() {
+        assert!(super::decode_tools("[]").unwrap().is_empty());
+        assert!(super::decode_tools("[] \n\t").unwrap().is_empty());
+        assert_eq!(
+            super::decode_tools("[] {}").unwrap_err(),
+            "trailing characters at line 1 column 4"
+        );
+    }
+
+    /// Complete metadata retains the supplied schema and all of its declared kinds.
+    #[test]
+    fn metadata_enumeration_admits_nested_parameters() {
+        for depth in [16, 32, 62, 63, 64] {
+            let parameters = crate::tests::author::nested_schema_fixture::parameters(&format!(
+                "authored-{depth}"
+            ))
+            .unwrap();
+            let text = serde_json::json!([{
+                "name": "nested", "description": "", "parameters": parameters,
+                "sourceInfo": {"path":"/author","source":"custom","scope":"temporary","origin":"top-level"},
+                "schemaKinds": parameters.conversions(),
+            }]).to_string();
+            let listed =
+                super::decode_tools(&text).unwrap_or_else(|error| panic!("depth {depth}: {error}"));
+            assert_eq!(listed.len(), 1);
+            assert_eq!(listed[0].parameters.data(), parameters);
+        }
     }
 }

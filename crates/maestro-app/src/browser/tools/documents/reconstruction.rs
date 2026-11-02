@@ -112,7 +112,7 @@ fn artifact_calls<C: CustomMessage>(
 /// The arguments the live tool received, prepared by the shared argument checker.
 fn prepared(declaration: &Tool, call: &ToolCall) -> Option<ArtifactsParams> {
     let arguments = validate_tool_arguments(declaration, call).ok()?;
-    ArtifactsParams::deserialize(serde_json::Value::Object(arguments)).ok()
+    ArtifactsParams::deserialize(arguments).ok()
 }
 /// Apply a recorded entry: create and update set nonempty content, delete removes.
 fn apply_record(files: &mut IndexMap<String, String>, record: &ArtifactMessage) {

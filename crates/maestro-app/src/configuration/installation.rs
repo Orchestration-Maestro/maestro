@@ -33,7 +33,8 @@ pub fn report_install_telemetry(
     fetch: Option<Fetch>,
     offline: Option<bool>,
 ) -> BoxFuture<()> {
-    if offline.unwrap_or_else(|| super::flag_is_set("MAESTRO_OFFLINE"))
+    if offline
+        .unwrap_or_else(|| super::flag_is_set(std::env::var("MAESTRO_OFFLINE").ok().as_deref()))
         || !is_install_telemetry_enabled(
             settings_manager,
             std::env::var("MAESTRO_TELEMETRY").ok().as_deref(),

@@ -64,9 +64,7 @@ cycles when callbacks capture their own component.
 
 ```rust
 use std::rc::Rc;
-use maestro_tui::components::markup::{
-    DefaultTextStyle, Markdown, MarkdownOptions, MarkdownTheme, TextDecoration,
-};
+use maestro_tui::components::markup::{DefaultTextStyle, Markdown, MarkdownOptions, MarkdownTheme, TextDecoration, };
 use maestro_tui::{Component, TerminalImage};
 
 let theme = Rc::new(MarkdownTheme {

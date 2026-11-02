@@ -287,11 +287,10 @@ fn echo_tool() -> maestro_agent::SharedAgentTool {
 /// An assistant turn calling `echo` twice with the legacy `message` field.
 fn two_echo_calls() -> FauxResponseStep {
     let call = |id: &str, text: &str| {
-        let arguments = json!({"message": text}).as_object().unwrap().clone();
         let options = maestro_models::FauxToolCallOptions {
             id: Some(id.into()),
         };
-        let call = maestro_models::faux_tool_call("echo", arguments, options);
+        let call = maestro_models::faux_tool_call("echo", json!({"message": text}), options);
         maestro_models::AssistantContent::ToolCall(call)
     };
     let options = FauxAssistantMessageOptions {
@@ -448,7 +447,6 @@ async fn guide_tool_failures_become_error_results_case() {
     let mut registered = Registered::default();
     let faux = registered.add(RegisterFauxProviderOptions::default());
     let call = |id: &str, arguments: serde_json::Value| {
-        let arguments = arguments.as_object().unwrap().clone();
         let options = maestro_models::FauxToolCallOptions {
             id: Some(id.into()),
         };

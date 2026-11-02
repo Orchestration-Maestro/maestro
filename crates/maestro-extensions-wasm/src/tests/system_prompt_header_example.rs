@@ -12,6 +12,7 @@ use super::controlled::Controlled;
 use super::documents::{Answer, Ended};
 use super::example_support::{release_all, start};
 use super::host::Harness;
+use super::observed::Observed;
 use super::ui_host::receipts;
 use crate::component_adapter::{Capabilities, Exports};
 use crate::{Extension, ExtensionAPI, ExtensionFuture};
@@ -105,8 +106,8 @@ fn assert_requests(lines: &[String], step: &Step, case: &str) {
         assert_eq!(receipt.method, "setStatus", "{case} {}", step.event);
     }
     let operands: Vec<Value> = recorded
-        .iter()
-        .map(|receipt| receipt.operands.clone())
+        .into_iter()
+        .map(|receipt| receipt.operands)
         .collect();
     assert_eq!(
         json!(operands),
@@ -116,20 +117,13 @@ fn assert_requests(lines: &[String], step: &Step, case: &str) {
     );
 }
 
-/// Applies the host state one recorded step requires before its invocation.
-fn supply(host: &Controlled, step: &Step) {
+/// Applies the host state one recorded step requires before its invocation, in process or
+/// on the built component's host.
+fn supply(observed: &mut Observed, step: &Step) {
     let state = json!({"state": {"prompt": step.prompt, "error": step.get_error}});
-    host.observe().catalog.control(&state.to_string());
+    observed.catalog.control(&state.to_string());
     let rejection = json!({"error": step.set_error});
-    host.observe().ui.control(&rejection.to_string());
-}
-
-/// Applies the host state one recorded step requires to the built component's host.
-fn supply_component(harness: &mut Harness, step: &Step) {
-    let state = json!({"state": {"prompt": step.prompt, "error": step.get_error}});
-    harness.observed().catalog.control(&state.to_string());
-    let rejection = json!({"error": step.set_error});
-    harness.observed().ui.control(&rejection.to_string());
+    observed.ui.control(&rejection.to_string());
 }
 
 /// Invokes one recorded step through the in-process adapter and asserts its answer.
@@ -168,7 +162,7 @@ async fn run_case(case: &Case) -> Result<(), String> {
     let (host, exports) = start::<SystemPromptHeader>().await?;
     let keys = registered(&host)?;
     for step in &case.steps {
-        supply(&host, step);
+        supply(&mut host.observe(), step);
         run_step(
             &host,
             &exports,
@@ -266,6 +260,20 @@ fn system_prompt_status_component_matches_lifecycle() -> Result<(), String> {
     let (engine, component) = super::build::compile(&path).map_err(|error| error.to_string())?;
     let mut harness = super::block_on(super::host::Harness::from_compiled(&engine, &component))
         .map_err(|error| error.to_string())?;
+    let registrations: Vec<&str> = harness
+        .observed()
+        .transcript
+        .iter()
+        .filter_map(|line| line.strip_prefix("register "))
+        .collect();
+    assert_eq!(
+        registrations, REGISTRATIONS,
+        "the registrations in the order the host received them"
+    );
+    assert!(
+        receipts(&harness.observed().transcript).is_empty(),
+        "loading requests no status"
+    );
     let keys = [
         harness
             .callback(REGISTRATIONS[0])
@@ -276,7 +284,7 @@ fn system_prompt_status_component_matches_lifecycle() -> Result<(), String> {
     ];
     for case in corpus() {
         for step in &case.steps {
-            supply_component(&mut harness, step);
+            supply(harness.observed(), step);
             component_step(&mut harness, key_for(keys, &step.event)?, step, &case.name)?;
         }
     }

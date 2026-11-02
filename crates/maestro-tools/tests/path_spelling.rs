@@ -3,6 +3,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use crate::edit_support;
+use crate::ls_support::posix_spelling;
 use crate::read_support::{
     Fixture, Scratch, call, content_json, input, isolated, only_text, text_json,
 };
@@ -180,8 +181,8 @@ fn path_resolution_keeps_every_existing_directory_spelling() {
         ),
     ] {
         assert_eq!(
-            resolve_existing_path(&ask, &cwd).unwrap(),
-            expected,
+            posix_spelling(&resolve_existing_path(&ask, &cwd).unwrap()),
+            posix_spelling(&expected),
             "{ask:?}"
         );
     }
@@ -351,14 +352,14 @@ fn path_resolution_normalizes_only_the_part_without_a_counterpart() {
         ("d/x y.txt", "d/x y.txt"),
     ] {
         assert_eq!(
-            resolve_existing_path(ask, &cwd).unwrap(),
-            format!("{cwd}/{expected}"),
+            posix_spelling(&resolve_existing_path(ask, &cwd).unwrap()),
+            posix_spelling(&format!("{cwd}/{expected}")),
             "{ask:?}"
         );
     }
     assert_eq!(
-        resolve_existing_path("a\u{a0}b/c\u{a0}d/new.txt", &cwd).unwrap(),
-        format!("{cwd}/a\u{a0}b/c d/new.txt")
+        posix_spelling(&resolve_existing_path("a\u{a0}b/c\u{a0}d/new.txt", &cwd).unwrap()),
+        posix_spelling(&format!("{cwd}/a\u{a0}b/c d/new.txt"))
     );
     #[cfg(unix)]
     if isolated(test, "no-existing-directory", &[]) {

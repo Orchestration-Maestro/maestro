@@ -348,7 +348,7 @@ async fn replacement_flow(operation: &'static str) {
                 assert_eq!(path, "/s.jsonl");
                 switch(None, options.unwrap().with_session)
             }),
-            ..context_actions::silent_command_operations()
+            ..context_actions::silent_operations()
         },
     )));
     let ctx = old.create_command_context();
@@ -744,7 +744,7 @@ fn reload_keeps_the_old_command_frame_running_with_a_stale_context() {
                     weak.upgrade().unwrap().invalidate(None);
                     Box::pin(async { Ok(()) })
                 }),
-                ..context_actions::silent_command_operations()
+                ..context_actions::silent_operations()
             },
         )));
         owner

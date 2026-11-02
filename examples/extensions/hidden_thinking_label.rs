@@ -1,4 +1,5 @@
 //! An extension that sets the label shown when thinking blocks are hidden.
+// maestro-component: MAESTRO_HIDDEN_THINKING_LABEL_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
@@ -10,7 +11,8 @@ use std::rc::Rc;
 
 use maestro_extensions_wasm::{CommandOptions, ExtensionAPI, ExtensionFuture, ExtensionHandler};
 
-/// The label the host shows when the session has no custom one.
+/// The label this example starts with and returns to on reset. A reset clears the host's
+/// label, and the next session start applies this one again.
 const DEFAULT_LABEL: &str = "Pondering...";
 
 /// Applies the label the factory currently retains at every session start.

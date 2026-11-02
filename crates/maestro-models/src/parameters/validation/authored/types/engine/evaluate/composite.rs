@@ -94,7 +94,8 @@ pub(crate) mod tests {
             let document = crate::parameters::validation::authored::schema_view::Document::new(
                 &schema, &kinds,
             );
-            let converter = Context::new(&document);
+            let code = crate::parameters::validation::check::Code::default();
+            let converter = Context::new(&document, &code);
             let left = instantiate(&converter, converter.document.view(&schema[0]));
             let right = instantiate(&converter, converter.document.view(&schema[1]));
             MEMBER_LOOKUPS.with(|count| count.set(0));

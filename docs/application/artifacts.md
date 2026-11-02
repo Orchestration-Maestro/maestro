@@ -118,9 +118,10 @@ and tool cards by [#820](https://github.com/Orchestration-Maestro/maestro/issues
 Sandbox corrections remain in [#104](https://github.com/Orchestration-Maestro/maestro/issues/104)
 and [#105](https://github.com/Orchestration-Maestro/maestro/issues/105).
 
-The [generic-file and PDF views](../browser/artifacts.md) are embeddable
-independently of the panel shell and accept the existing replaceable native host. The
-[browser panel](../browser/artifacts.md#retained-panel) accepts this caller during
-connection and drawing, and sends tab activation through its shared selection
-operation. An embedding presentation can retain the browser panel and delegate
-upsert/show/removal to it; the panel does not retain the application caller.
+The [native browser panel](../browser/artifacts.md#native-panel) owns a local
+presentation adapter over these commands and exposes it through `application`.
+Its native element lookup returns the live format owner for independent headers.
+Standalone artifact bodies and headers mount independently through `DomContent`.
+The [retained interface](../browser/artifacts.md#retained-panel) still accepts a
+caller-supplied presentation for connection and drawing; tab activation uses the
+same application selection operation.

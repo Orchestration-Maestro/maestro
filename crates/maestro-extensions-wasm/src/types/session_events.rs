@@ -16,10 +16,10 @@ pub type SessionTreeEvent =
     maestro_request::extension_events::session_events::SessionTreeEvent<crate::BranchSummaryEntry>;
 /// Shared schema specialized for the guest operands.
 pub type SessionBeforeTreeSummary =
-    maestro_request::extension_events::session_events::SessionBeforeTreeSummary<String>;
+    maestro_request::extension_events::session_events::SessionBeforeTreeSummary<crate::JsonText>;
 /// Shared schema specialized for the guest operands.
 pub type SessionBeforeTreeResult =
-    maestro_request::extension_events::session_events::SessionBeforeTreeResult<String>;
+    maestro_request::extension_events::session_events::SessionBeforeTreeResult<crate::JsonText>;
 /// Shared schema specialized for the guest operands.
 pub type SessionBeforeTreeEvent =
     maestro_request::extension_events::session_events::SessionBeforeTreeEvent<

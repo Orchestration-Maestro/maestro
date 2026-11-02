@@ -78,18 +78,24 @@ impl Harness {
 
     /// The supplied host over this harness and the given exit effect.
     pub fn host(&self, exit: Rc<dyn Fn(i32)>) -> SelectorHost {
-        let (terminal, runtime) = (self.terminal.clone(), self.runtime.clone());
+        let create_ui = self.create_ui();
         SelectorHost {
-            create_ui: Rc::new(move || {
-                Ok(TUI::new(
-                    terminal.handle(),
-                    runtime.handle(),
-                    TerminalImage::default(),
-                    Some(false),
-                ))
-            }),
+            create_ui: Rc::new(move || create_ui(false)),
             exit,
         }
+    }
+
+    /// A frame writer factory over this harness, taking the hardware-cursor choice.
+    pub fn create_ui(&self) -> Rc<dyn Fn(bool) -> io::Result<TUI>> {
+        let (terminal, runtime) = (self.terminal.clone(), self.runtime.clone());
+        Rc::new(move |cursor| {
+            Ok(TUI::new(
+                terminal.handle(),
+                runtime.handle(),
+                TerminalImage::default(),
+                Some(cursor),
+            ))
+        })
     }
 
     /// Run every frame the writer scheduled.

@@ -118,22 +118,28 @@ impl TUI {
         drop(expired);
     }
 
-    /// Claims the pending request for a frame that starts now; false when none is pending.
+    /// Claims the pending request for a frame that starts now; false when none is pending or
+    /// the terminal's output is backed up.
     fn claim_frame(&self) -> bool {
-        {
-            let schedule = self.shared.schedule.borrow();
-            if schedule.stopped || !schedule.render_requested {
-                return false;
-            }
-        }
-        if self.defer_for_output_backlog() {
+        if !self.frame_requested() || self.defer_for_output_backlog() {
             return false;
         }
+        self.consume_frame_request();
+        true
+    }
+
+    /// Whether a requested frame is still waiting to be drawn.
+    fn frame_requested(&self) -> bool {
+        let schedule = self.shared.schedule.borrow();
+        !schedule.stopped && schedule.render_requested
+    }
+
+    /// Consumes the pending request and records where the frame starts.
+    fn consume_frame_request(&self) {
         let now = self.shared.runtime.now();
         let mut schedule = self.shared.schedule.borrow_mut();
         schedule.render_requested = false;
         schedule.last_render_at = now;
-        true
     }
 
     /// Keeps render intent and cadence untouched while output remains backed up.
@@ -155,6 +161,21 @@ impl TUI {
             drop(expired);
         }
         true
+    }
+
+    /// Draws the frame a pending request asked for and consumes that request without
+    /// queueing another, so a caller that stops the writer next still shows the change.
+    /// Backed-up output does not defer it: the stop that follows drains what it writes.
+    ///
+    /// # Errors
+    ///
+    /// Returns the terminal's error unchanged.
+    pub fn render_pending_frame(&self) -> io::Result<()> {
+        if !self.frame_requested() {
+            return Ok(());
+        }
+        self.consume_frame_request();
+        self.do_render()
     }
 
     /// Runs the frame a delayed request was waiting for, then queues another when a

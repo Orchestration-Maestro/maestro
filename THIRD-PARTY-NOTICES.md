@@ -87,7 +87,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ## Browser icon geometry
 
-The 27 glyph datasets in `crates/maestro-web/assets/icons.json` derive from
+The 35 glyph datasets in `crates/maestro-web/assets/icons.json` derive from
 Lucide 0.544.0.
 
 ```text
@@ -747,6 +747,12 @@ Terminal construction, state reads, palette updates and effective-colour rules i
 under Apache-2.0. The implementation uses owned Rust screen storage instead of
 foreign-library handles.
 
+The application keybinding backup/reset operation in
+`crates/maestro-app/src/presentation_data/bindings/reset.rs` derives from the
+configuration reset command under the same license. It validates the JSON
+object, preserves non-multiplexer actions and uses the shared atomic publisher
+instead of rewriting the source file in place.
+
 The daemon protocol records, schema and tests in `crates/maestro-protocol/` and
 `docs/daemon-protocol.schema.json`, the socket transport and path selection in
 `crates/maestro-ipc/`, and the topology in `crates/maestro-workspace/` derive from
@@ -771,6 +777,17 @@ metadata expiry, configuration reload and session scheduling in
 `crates/maestro-daemon/src/app/` derive from the application modules under the
 same license. Workspace attention ordering derives from the workspace aggregate
 module. The daemon's repository queries reuse workspace-owned discovery.
+The branch-tracking reader in `crates/maestro-workspace/src/spaces/repository/tracking.rs`
+and its submodules derives from the repository configuration module under the same
+license. Changes include one include walk in place of three, wildcard matching with path
+rules in bounded time, and supplied user files and home directory.
+The status snapshots, fingerprints and cache keys in
+`crates/maestro-daemon/src/git/status.rs` and the refresh scheduling in
+`crates/maestro-daemon/src/app/git_refresh.rs` derive from the repository status and
+refresh modules under the same license. Changes include a tracking-configuration read kept
+while its files are unchanged in place of cached repository context, a packed-reference
+search that skips an unreadable line, supplied user files and home directory, and a refresh
+that publishes its result when its task panics.
 
 The resume records and argument plans, retained pane state, presentation metadata,
 terminal title normalization and host theme in `crates/maestro-daemon/` derive from
@@ -779,7 +796,7 @@ theme modules under the same license. Retained provenance uses Maestro's
 canonical source spelling; state arbitration retains the source's session and
 process-generation ownership rules.
 The pane terminal policy in `crates/maestro-daemon/src/panes/display/` and
-`pane/terminal.rs`, the OSC, cursor, input and capability-query modules under
+`panes/display/mod.rs`, the OSC, cursor, input and capability-query modules under
 `pane/`, `selection.rs`, `render_prof.rs` and their tests derive from the pane
 terminal, OSC, cursor, input, XTGETTCAP, selection and render profiler sources
 under the same license. Changes include one locked concrete terminal, reuse of
@@ -793,7 +810,7 @@ Render request coalescing in `crates/maestro-daemon/src/render_signal.rs` and it
 tests derives from the render signal module under the same license.
 The pane runtime, launch environment, shell selection, foreground probing and
 agent detection under `crates/maestro-daemon/src/panes/`, `events.rs`,
-`handoff_runtime.rs` and `terminal/runtime_registry.rs` derive from the pane,
+`transfer.rs` and `terminal/owners.rs` derive from the pane,
 event, handoff-runtime and terminal-runtime-registry modules under the same
 license. The native child setup entry in `crates/maestro-process/src/terminal/` uses
 safe re-execution in place of the source's post-fork setup.
@@ -824,6 +841,13 @@ and `instances.rs` derive from the session, persistence I/O, detection catalog,
 action paths, announcement and remote path sources. The action component encoder
 and its hash and reserved-stem helpers derive from the action paths and API
 schema helpers under the same license. Their tests retain the source cases.
+The retained-endpoint client in `crates/maestro-daemon/src/api/transport.rs`,
+the live status in `api/status.rs`, the graceful stop in `instances/stop.rs` and
+their tests derive from the API client, API status and session sources under the
+same license. They reuse the shared JSONL framing and caller-supplied daemon
+selection. The status read also treats a Unix receive timeout as no status.
+The detached-daemon check in `crates/maestro-process/src/jobs.rs` derives
+from the platform module and uses safe process-id calls.
 
 The environment vocabulary, structured events, synchronized rotating file writer
 and daemon snapshot wrappers in `crates/maestro-daemon/src/` derive from the pane,
@@ -837,7 +861,7 @@ and PTY backend, descriptor and actor modules.
 
 The pane launch environment, shell, foreground probe, screen detection policy and
 async detector in
-`crates/maestro-daemon/src/panes/{launch_env,shell,probe,agent_detection,detection_task}.rs`,
+`crates/maestro-daemon/src/panes/{launch,commands,inspection,agent_detection,monitoring}.rs`,
 their submodules and their tests derive from the pane, platform and integration
 environment sources under the same license. Background pane records and delivery
 in `crates/maestro-daemon/src/events.rs` derive from the event and pane sources. Native login argument zero follows the terminal command builder

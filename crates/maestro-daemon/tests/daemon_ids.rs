@@ -3,8 +3,7 @@
 #![cfg(target_os = "linux")]
 
 #[cfg(unix)]
-#[path = "support/launch.rs"]
-mod launch;
+use crate::support::launch;
 
 use maestro_daemon::{app::model::DaemonState, settings::model::Config};
 #[cfg(unix)]
@@ -131,7 +130,7 @@ fn target_app() -> (TargetApp, PaneId, TerminalId) {
     let manifests = Arc::new(RwLock::new(
         maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
-    let (launch, receiver) = launch::launch_inputs(&[], manifests);
+    let (launch, receiver) = launch::inputs(&[], manifests);
     let mut app = App::new(
         &Config::default(),
         (|| 0) as fn() -> u128,

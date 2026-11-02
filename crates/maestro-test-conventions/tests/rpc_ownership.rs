@@ -67,7 +67,7 @@ const INLINE_POLLS: &[(&str, &str)] = &[
 fn inline_polls_delegate_to_start_now() {
     let owner = "//! Tasks.\n/// Starts.\npub fn start_now() {\n    drop(Context::from_waker(Waker::noop()));\n}\n";
     let control = workspace();
-    source(&control, "maestro-app", "src/utils/task.rs", owner);
+    source(&control, "maestro-app", "src/utils/scheduling.rs", owner);
     source(&control, "maestro-app", "src/tests.rs", owner);
     assert_eq!(check_workspace(control.root.path()), Ok(()));
     for (file, contents) in INLINE_POLLS {
@@ -75,7 +75,7 @@ fn inline_polls_delegate_to_start_now() {
         source(&workspace, "maestro-app", file, contents);
         let error = check_workspace(workspace.root.path()).expect_err(file);
         assert!(
-            error.contains("inline poll outside utils::task::start_now"),
+            error.contains("inline poll outside utils::scheduling::start_now"),
             "{file}: {error}"
         );
     }

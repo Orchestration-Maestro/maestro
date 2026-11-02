@@ -1,0 +1,5922 @@
+{
+  "rows": [
+    {
+      "name": "accepted-\"echo\"",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "echo"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "echo",
+                "label": "Echo echo",
+                "description": "Echo a message with prefix: [echo] ",
+                "promptSnippet": "Echo back user-provided text with [echo] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: echo",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "echo"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "accepted-\"_\"",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "_"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "_",
+                "label": "Echo _",
+                "description": "Echo a message with prefix: [_] ",
+                "promptSnippet": "Echo back user-provided text with [_] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: _",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "_"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "accepted-\"9\"",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "9"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "9",
+                "label": "Echo 9",
+                "description": "Echo a message with prefix: [9] ",
+                "promptSnippet": "Echo back user-provided text with [9] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: 9",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "9"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "accepted-\"ABC_09\"",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "ABC_09"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "abc_09",
+                "label": "Echo abc_09",
+                "description": "Echo a message with prefix: [abc_09] ",
+                "promptSnippet": "Echo back user-provided text with [abc_09] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: abc_09",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "abc_09"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "accepted-\"  MiXeD_9 \\t\"",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "  MiXeD_9 \t"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "mixed_9",
+                "label": "Echo mixed_9",
+                "description": "Echo a message with prefix: [mixed_9] ",
+                "promptSnippet": "Echo back user-provided text with [mixed_9] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: mixed_9",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "mixed_9"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "accepted-\"K\"",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "K"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "k",
+                "label": "Echo k",
+                "description": "Echo a message with prefix: [k] ",
+                "promptSnippet": "Echo back user-provided text with [k] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: k",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "k"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "accepted-\"0\"",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "0"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "0",
+                "label": "Echo 0",
+                "description": "Echo a message with prefix: [0] ",
+                "promptSnippet": "Echo back user-provided text with [0] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: 0",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "0"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "accepted-\"__proto__\"",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "__proto__"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "__proto__",
+                "label": "Echo __proto__",
+                "description": "Echo a message with prefix: [__proto__] ",
+                "promptSnippet": "Echo back user-provided text with [__proto__] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: __proto__",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "__proto__"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "accepted-\"constructor\"",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "constructor"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "constructor",
+                "label": "Echo constructor",
+                "description": "Echo a message with prefix: [constructor] ",
+                "promptSnippet": "Echo back user-provided text with [constructor] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: constructor",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "constructor"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "accepted-\"toString\"",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "toString"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "tostring",
+                "label": "Echo tostring",
+                "description": "Echo a message with prefix: [tostring] ",
+                "promptSnippet": "Echo back user-provided text with [tostring] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: tostring",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "tostring"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "refused-\"\"",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": ""
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "notify": {
+                "message": "Usage: /add-echo-tool <tool_name> (lowercase, numbers, underscores)",
+                "kind": "warning"
+              }
+            }
+          ],
+          "visible": [],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "refused-\" \\r\\t\\n \"",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": " \r\t\n "
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "notify": {
+                "message": "Usage: /add-echo-tool <tool_name> (lowercase, numbers, underscores)",
+                "kind": "warning"
+              }
+            }
+          ],
+          "visible": [],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "refused-\"echo-tool\"",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "echo-tool"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "notify": {
+                "message": "Usage: /add-echo-tool <tool_name> (lowercase, numbers, underscores)",
+                "kind": "warning"
+              }
+            }
+          ],
+          "visible": [],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "refused-\"echo.tool\"",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "echo.tool"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "notify": {
+                "message": "Usage: /add-echo-tool <tool_name> (lowercase, numbers, underscores)",
+                "kind": "warning"
+              }
+            }
+          ],
+          "visible": [],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "refused-\"x/y\"",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "x/y"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "notify": {
+                "message": "Usage: /add-echo-tool <tool_name> (lowercase, numbers, underscores)",
+                "kind": "warning"
+              }
+            }
+          ],
+          "visible": [],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "refused-\"a b\"",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "a b"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "notify": {
+                "message": "Usage: /add-echo-tool <tool_name> (lowercase, numbers, underscores)",
+                "kind": "warning"
+              }
+            }
+          ],
+          "visible": [],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "refused-\"a\\nb\"",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "a\nb"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "notify": {
+                "message": "Usage: /add-echo-tool <tool_name> (lowercase, numbers, underscores)",
+                "kind": "warning"
+              }
+            }
+          ],
+          "visible": [],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "refused-\"a\\tb\"",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "a\tb"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "notify": {
+                "message": "Usage: /add-echo-tool <tool_name> (lowercase, numbers, underscores)",
+                "kind": "warning"
+              }
+            }
+          ],
+          "visible": [],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "refused-\"a\\u0000b\"",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "a\u0000b"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "notify": {
+                "message": "Usage: /add-echo-tool <tool_name> (lowercase, numbers, underscores)",
+                "kind": "warning"
+              }
+            }
+          ],
+          "visible": [],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "refused-\"Ä\"",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "Ä"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "notify": {
+                "message": "Usage: /add-echo-tool <tool_name> (lowercase, numbers, underscores)",
+                "kind": "warning"
+              }
+            }
+          ],
+          "visible": [],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "refused-\"ß\"",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "ß"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "notify": {
+                "message": "Usage: /add-echo-tool <tool_name> (lowercase, numbers, underscores)",
+                "kind": "warning"
+              }
+            }
+          ],
+          "visible": [],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "refused-\"ſ\"",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "ſ"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "notify": {
+                "message": "Usage: /add-echo-tool <tool_name> (lowercase, numbers, underscores)",
+                "kind": "warning"
+              }
+            }
+          ],
+          "visible": [],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "refused-\"Σ\"",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "Σ"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "notify": {
+                "message": "Usage: /add-echo-tool <tool_name> (lowercase, numbers, underscores)",
+                "kind": "warning"
+              }
+            }
+          ],
+          "visible": [],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "refused-\"İ\"",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "İ"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "notify": {
+                "message": "Usage: /add-echo-tool <tool_name> (lowercase, numbers, underscores)",
+                "kind": "warning"
+              }
+            }
+          ],
+          "visible": [],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "refused-\"🙂\"",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "🙂"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "notify": {
+                "message": "Usage: /add-echo-tool <tool_name> (lowercase, numbers, underscores)",
+                "kind": "warning"
+              }
+            }
+          ],
+          "visible": [],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "refused-\"ẋ\"",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "ẋ"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "notify": {
+                "message": "Usage: /add-echo-tool <tool_name> (lowercase, numbers, underscores)",
+                "kind": "warning"
+              }
+            }
+          ],
+          "visible": [],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "refused-\"᠎A᠎\"",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "᠎A᠎"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "notify": {
+                "message": "Usage: /add-echo-tool <tool_name> (lowercase, numbers, underscores)",
+                "kind": "warning"
+              }
+            }
+          ],
+          "visible": [],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "refused-\"​A​\"",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "​A​"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "notify": {
+                "message": "Usage: /add-echo-tool <tool_name> (lowercase, numbers, underscores)",
+                "kind": "warning"
+              }
+            }
+          ],
+          "visible": [],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "surrounding-U+0009",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "\tA_9\t"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "a_9",
+                "label": "Echo a_9",
+                "description": "Echo a message with prefix: [a_9] ",
+                "promptSnippet": "Echo back user-provided text with [a_9] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: a_9",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "a_9"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "surrounding-U+000A",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "\nA_9\n"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "a_9",
+                "label": "Echo a_9",
+                "description": "Echo a message with prefix: [a_9] ",
+                "promptSnippet": "Echo back user-provided text with [a_9] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: a_9",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "a_9"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "surrounding-U+000B",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "\u000bA_9\u000b"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "a_9",
+                "label": "Echo a_9",
+                "description": "Echo a message with prefix: [a_9] ",
+                "promptSnippet": "Echo back user-provided text with [a_9] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: a_9",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "a_9"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "surrounding-U+000C",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "\fA_9\f"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "a_9",
+                "label": "Echo a_9",
+                "description": "Echo a message with prefix: [a_9] ",
+                "promptSnippet": "Echo back user-provided text with [a_9] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: a_9",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "a_9"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "surrounding-U+000D",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "\rA_9\r"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "a_9",
+                "label": "Echo a_9",
+                "description": "Echo a message with prefix: [a_9] ",
+                "promptSnippet": "Echo back user-provided text with [a_9] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: a_9",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "a_9"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "surrounding-U+0020",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": " A_9 "
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "a_9",
+                "label": "Echo a_9",
+                "description": "Echo a message with prefix: [a_9] ",
+                "promptSnippet": "Echo back user-provided text with [a_9] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: a_9",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "a_9"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "surrounding-U+00A0",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": " A_9 "
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "a_9",
+                "label": "Echo a_9",
+                "description": "Echo a message with prefix: [a_9] ",
+                "promptSnippet": "Echo back user-provided text with [a_9] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: a_9",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "a_9"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "surrounding-U+1680",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": " A_9 "
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "a_9",
+                "label": "Echo a_9",
+                "description": "Echo a message with prefix: [a_9] ",
+                "promptSnippet": "Echo back user-provided text with [a_9] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: a_9",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "a_9"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "surrounding-U+2000",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": " A_9 "
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "a_9",
+                "label": "Echo a_9",
+                "description": "Echo a message with prefix: [a_9] ",
+                "promptSnippet": "Echo back user-provided text with [a_9] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: a_9",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "a_9"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "surrounding-U+2001",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": " A_9 "
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "a_9",
+                "label": "Echo a_9",
+                "description": "Echo a message with prefix: [a_9] ",
+                "promptSnippet": "Echo back user-provided text with [a_9] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: a_9",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "a_9"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "surrounding-U+2002",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": " A_9 "
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "a_9",
+                "label": "Echo a_9",
+                "description": "Echo a message with prefix: [a_9] ",
+                "promptSnippet": "Echo back user-provided text with [a_9] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: a_9",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "a_9"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "surrounding-U+2003",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": " A_9 "
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "a_9",
+                "label": "Echo a_9",
+                "description": "Echo a message with prefix: [a_9] ",
+                "promptSnippet": "Echo back user-provided text with [a_9] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: a_9",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "a_9"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "surrounding-U+2004",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": " A_9 "
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "a_9",
+                "label": "Echo a_9",
+                "description": "Echo a message with prefix: [a_9] ",
+                "promptSnippet": "Echo back user-provided text with [a_9] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: a_9",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "a_9"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "surrounding-U+2005",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": " A_9 "
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "a_9",
+                "label": "Echo a_9",
+                "description": "Echo a message with prefix: [a_9] ",
+                "promptSnippet": "Echo back user-provided text with [a_9] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: a_9",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "a_9"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "surrounding-U+2006",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": " A_9 "
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "a_9",
+                "label": "Echo a_9",
+                "description": "Echo a message with prefix: [a_9] ",
+                "promptSnippet": "Echo back user-provided text with [a_9] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: a_9",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "a_9"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "surrounding-U+2007",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": " A_9 "
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "a_9",
+                "label": "Echo a_9",
+                "description": "Echo a message with prefix: [a_9] ",
+                "promptSnippet": "Echo back user-provided text with [a_9] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: a_9",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "a_9"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "surrounding-U+2008",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": " A_9 "
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "a_9",
+                "label": "Echo a_9",
+                "description": "Echo a message with prefix: [a_9] ",
+                "promptSnippet": "Echo back user-provided text with [a_9] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: a_9",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "a_9"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "surrounding-U+2009",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": " A_9 "
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "a_9",
+                "label": "Echo a_9",
+                "description": "Echo a message with prefix: [a_9] ",
+                "promptSnippet": "Echo back user-provided text with [a_9] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: a_9",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "a_9"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "surrounding-U+200A",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": " A_9 "
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "a_9",
+                "label": "Echo a_9",
+                "description": "Echo a message with prefix: [a_9] ",
+                "promptSnippet": "Echo back user-provided text with [a_9] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: a_9",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "a_9"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "surrounding-U+2028",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": " A_9 "
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "a_9",
+                "label": "Echo a_9",
+                "description": "Echo a message with prefix: [a_9] ",
+                "promptSnippet": "Echo back user-provided text with [a_9] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: a_9",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "a_9"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "surrounding-U+2029",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": " A_9 "
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "a_9",
+                "label": "Echo a_9",
+                "description": "Echo a message with prefix: [a_9] ",
+                "promptSnippet": "Echo back user-provided text with [a_9] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: a_9",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "a_9"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "surrounding-U+202F",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": " A_9 "
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "a_9",
+                "label": "Echo a_9",
+                "description": "Echo a message with prefix: [a_9] ",
+                "promptSnippet": "Echo back user-provided text with [a_9] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: a_9",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "a_9"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "surrounding-U+205F",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": " A_9 "
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "a_9",
+                "label": "Echo a_9",
+                "description": "Echo a message with prefix: [a_9] ",
+                "promptSnippet": "Echo back user-provided text with [a_9] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: a_9",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "a_9"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "surrounding-U+3000",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "　A_9　"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "a_9",
+                "label": "Echo a_9",
+                "description": "Echo a message with prefix: [a_9] ",
+                "promptSnippet": "Echo back user-provided text with [a_9] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: a_9",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "a_9"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "surrounding-U+FEFF",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "﻿A_9﻿"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "notify": {
+                "message": "Usage: /add-echo-tool <tool_name> (lowercase, numbers, underscores)",
+                "kind": "warning"
+              }
+            }
+          ],
+          "visible": [],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "surrounding-U+0085",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "A_9"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "a_9",
+                "label": "Echo a_9",
+                "description": "Echo a message with prefix: [a_9] ",
+                "promptSnippet": "Echo back user-provided text with [a_9] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: a_9",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "a_9"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "only-bom",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": "﻿"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "notify": {
+                "message": "Usage: /add-echo-tool <tool_name> (lowercase, numbers, underscores)",
+                "kind": "warning"
+              }
+            }
+          ],
+          "visible": [],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "only-next-line",
+      "group": "names",
+      "steps": [
+        {
+          "op": "command",
+          "args": ""
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "notify": {
+                "message": "Usage: /add-echo-tool <tool_name> (lowercase, numbers, underscores)",
+                "kind": "warning"
+              }
+            }
+          ],
+          "visible": [],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "session-start-and-repeat",
+      "group": "lifecycle",
+      "steps": [
+        {
+          "op": "session_start",
+          "hasUI": false
+        },
+        {
+          "op": "session_start",
+          "hasUI": true
+        },
+        {
+          "op": "execute",
+          "tool": "echo_session",
+          "params": {
+            "message": "hello"
+          }
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "echo_session",
+                "label": "Echo Session",
+                "description": "Echo a message with prefix: [session] ",
+                "promptSnippet": "Echo back user-provided text with [session] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: echo_session",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "echo_session"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [
+            {
+              "notify": {
+                "message": "Registered dynamic tool: echo_session",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "echo_session"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [],
+          "visible": [
+            "echo_session"
+          ],
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "[session] hello"
+              }
+            ],
+            "details": {
+              "tool": "echo_session",
+              "prefix": "[session] "
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "post-init-command-and-execution",
+      "group": "lifecycle",
+      "steps": [
+        {
+          "op": "session_start"
+        },
+        {
+          "op": "command",
+          "args": " New_9 "
+        },
+        {
+          "op": "execute",
+          "tool": "new_9",
+          "params": {
+            "message": "runtime"
+          }
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "echo_session",
+                "label": "Echo Session",
+                "description": "Echo a message with prefix: [session] ",
+                "promptSnippet": "Echo back user-provided text with [session] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: echo_session",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "echo_session"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "new_9",
+                "label": "Echo new_9",
+                "description": "Echo a message with prefix: [new_9] ",
+                "promptSnippet": "Echo back user-provided text with [new_9] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: new_9",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "echo_session",
+            "new_9"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [],
+          "visible": [
+            "echo_session",
+            "new_9"
+          ],
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "[new_9] runtime"
+              }
+            ],
+            "details": {
+              "tool": "new_9",
+              "prefix": "[new_9] "
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "command-before-start-keeps-first-definition",
+      "group": "lifecycle",
+      "steps": [
+        {
+          "op": "command",
+          "args": "ECHO_SESSION"
+        },
+        {
+          "op": "session_start"
+        },
+        {
+          "op": "execute",
+          "tool": "echo_session",
+          "params": {
+            "message": "first"
+          }
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "echo_session",
+                "label": "Echo echo_session",
+                "description": "Echo a message with prefix: [echo_session] ",
+                "promptSnippet": "Echo back user-provided text with [echo_session] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: echo_session",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "echo_session"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [
+            {
+              "notify": {
+                "message": "Registered dynamic tool: echo_session",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "echo_session"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [],
+          "visible": [
+            "echo_session"
+          ],
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "[echo_session] first"
+              }
+            ],
+            "details": {
+              "tool": "echo_session",
+              "prefix": "[echo_session] "
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "normalized-duplicates",
+      "group": "state",
+      "steps": [
+        {
+          "op": "command",
+          "args": " Shared_9 "
+        },
+        {
+          "op": "command",
+          "args": "SHARED_9"
+        },
+        {
+          "op": "command",
+          "args": "shared_9"
+        },
+        {
+          "op": "execute",
+          "tool": "shared_9",
+          "params": {
+            "message": "same"
+          }
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "shared_9",
+                "label": "Echo shared_9",
+                "description": "Echo a message with prefix: [shared_9] ",
+                "promptSnippet": "Echo back user-provided text with [shared_9] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: shared_9",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "shared_9"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [
+            {
+              "notify": {
+                "message": "Tool already registered: shared_9",
+                "kind": "warning"
+              }
+            }
+          ],
+          "visible": [
+            "shared_9"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [
+            {
+              "notify": {
+                "message": "Tool already registered: shared_9",
+                "kind": "warning"
+              }
+            }
+          ],
+          "visible": [
+            "shared_9"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [],
+          "visible": [
+            "shared_9"
+          ],
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "[shared_9] same"
+              }
+            ],
+            "details": {
+              "tool": "shared_9",
+              "prefix": "[shared_9] "
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "factory-instances-apart",
+      "group": "state",
+      "steps": [
+        {
+          "op": "command",
+          "args": "shared"
+        },
+        {
+          "op": "command",
+          "args": "shared",
+          "instance": 1
+        },
+        {
+          "op": "session_start"
+        },
+        {
+          "op": "session_start",
+          "instance": 1
+        },
+        {
+          "op": "execute",
+          "tool": "shared",
+          "params": {
+            "message": "A"
+          }
+        },
+        {
+          "op": "execute",
+          "tool": "shared",
+          "params": {
+            "message": "B"
+          },
+          "instance": 1
+        }
+      ],
+      "instances": 2,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ],
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "shared",
+                "label": "Echo shared",
+                "description": "Echo a message with prefix: [shared] ",
+                "promptSnippet": "Echo back user-provided text with [shared] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: shared",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "shared"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "shared",
+                "label": "Echo shared",
+                "description": "Echo a message with prefix: [shared] ",
+                "promptSnippet": "Echo back user-provided text with [shared] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: shared",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "shared"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "echo_session",
+                "label": "Echo Session",
+                "description": "Echo a message with prefix: [session] ",
+                "promptSnippet": "Echo back user-provided text with [session] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: echo_session",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "shared",
+            "echo_session"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "echo_session",
+                "label": "Echo Session",
+                "description": "Echo a message with prefix: [session] ",
+                "promptSnippet": "Echo back user-provided text with [session] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: echo_session",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "shared",
+            "echo_session"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [],
+          "visible": [
+            "shared",
+            "echo_session"
+          ],
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "[shared] A"
+              }
+            ],
+            "details": {
+              "tool": "shared",
+              "prefix": "[shared] "
+            }
+          },
+          "error": null
+        },
+        {
+          "effects": [],
+          "visible": [
+            "shared",
+            "echo_session"
+          ],
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "[shared] B"
+              }
+            ],
+            "details": {
+              "tool": "shared",
+              "prefix": "[shared] "
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "message-\"\"",
+      "group": "echo",
+      "steps": [
+        {
+          "op": "session_start"
+        },
+        {
+          "op": "execute",
+          "tool": "echo_session",
+          "params": {
+            "message": ""
+          }
+        },
+        {
+          "op": "command",
+          "args": "custom"
+        },
+        {
+          "op": "execute",
+          "tool": "custom",
+          "params": {
+            "message": ""
+          }
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "echo_session",
+                "label": "Echo Session",
+                "description": "Echo a message with prefix: [session] ",
+                "promptSnippet": "Echo back user-provided text with [session] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: echo_session",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "echo_session"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [],
+          "visible": [
+            "echo_session"
+          ],
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "[session] "
+              }
+            ],
+            "details": {
+              "tool": "echo_session",
+              "prefix": "[session] "
+            }
+          },
+          "error": null
+        },
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "custom",
+                "label": "Echo custom",
+                "description": "Echo a message with prefix: [custom] ",
+                "promptSnippet": "Echo back user-provided text with [custom] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: custom",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "echo_session",
+            "custom"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [],
+          "visible": [
+            "echo_session",
+            "custom"
+          ],
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "[custom] "
+              }
+            ],
+            "details": {
+              "tool": "custom",
+              "prefix": "[custom] "
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "message-\"  text \\t\"",
+      "group": "echo",
+      "steps": [
+        {
+          "op": "session_start"
+        },
+        {
+          "op": "execute",
+          "tool": "echo_session",
+          "params": {
+            "message": "  text \t"
+          }
+        },
+        {
+          "op": "command",
+          "args": "custom"
+        },
+        {
+          "op": "execute",
+          "tool": "custom",
+          "params": {
+            "message": "  text \t"
+          }
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "echo_session",
+                "label": "Echo Session",
+                "description": "Echo a message with prefix: [session] ",
+                "promptSnippet": "Echo back user-provided text with [session] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: echo_session",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "echo_session"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [],
+          "visible": [
+            "echo_session"
+          ],
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "[session]   text \t"
+              }
+            ],
+            "details": {
+              "tool": "echo_session",
+              "prefix": "[session] "
+            }
+          },
+          "error": null
+        },
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "custom",
+                "label": "Echo custom",
+                "description": "Echo a message with prefix: [custom] ",
+                "promptSnippet": "Echo back user-provided text with [custom] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: custom",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "echo_session",
+            "custom"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [],
+          "visible": [
+            "echo_session",
+            "custom"
+          ],
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "[custom]   text \t"
+              }
+            ],
+            "details": {
+              "tool": "custom",
+              "prefix": "[custom] "
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "message-\"snow 雪🙂\"",
+      "group": "echo",
+      "steps": [
+        {
+          "op": "session_start"
+        },
+        {
+          "op": "execute",
+          "tool": "echo_session",
+          "params": {
+            "message": "snow 雪🙂"
+          }
+        },
+        {
+          "op": "command",
+          "args": "custom"
+        },
+        {
+          "op": "execute",
+          "tool": "custom",
+          "params": {
+            "message": "snow 雪🙂"
+          }
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "echo_session",
+                "label": "Echo Session",
+                "description": "Echo a message with prefix: [session] ",
+                "promptSnippet": "Echo back user-provided text with [session] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: echo_session",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "echo_session"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [],
+          "visible": [
+            "echo_session"
+          ],
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "[session] snow 雪🙂"
+              }
+            ],
+            "details": {
+              "tool": "echo_session",
+              "prefix": "[session] "
+            }
+          },
+          "error": null
+        },
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "custom",
+                "label": "Echo custom",
+                "description": "Echo a message with prefix: [custom] ",
+                "promptSnippet": "Echo back user-provided text with [custom] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: custom",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "echo_session",
+            "custom"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [],
+          "visible": [
+            "echo_session",
+            "custom"
+          ],
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "[custom] snow 雪🙂"
+              }
+            ],
+            "details": {
+              "tool": "custom",
+              "prefix": "[custom] "
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "message-\"line\\nnext\\r\\n\"",
+      "group": "echo",
+      "steps": [
+        {
+          "op": "session_start"
+        },
+        {
+          "op": "execute",
+          "tool": "echo_session",
+          "params": {
+            "message": "line\nnext\r\n"
+          }
+        },
+        {
+          "op": "command",
+          "args": "custom"
+        },
+        {
+          "op": "execute",
+          "tool": "custom",
+          "params": {
+            "message": "line\nnext\r\n"
+          }
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "echo_session",
+                "label": "Echo Session",
+                "description": "Echo a message with prefix: [session] ",
+                "promptSnippet": "Echo back user-provided text with [session] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: echo_session",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "echo_session"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [],
+          "visible": [
+            "echo_session"
+          ],
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "[session] line\nnext\r\n"
+              }
+            ],
+            "details": {
+              "tool": "echo_session",
+              "prefix": "[session] "
+            }
+          },
+          "error": null
+        },
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "custom",
+                "label": "Echo custom",
+                "description": "Echo a message with prefix: [custom] ",
+                "promptSnippet": "Echo back user-provided text with [custom] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: custom",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "echo_session",
+            "custom"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [],
+          "visible": [
+            "echo_session",
+            "custom"
+          ],
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "[custom] line\nnext\r\n"
+              }
+            ],
+            "details": {
+              "tool": "custom",
+              "prefix": "[custom] "
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "message-\"{\\\"key\\\":true}\"",
+      "group": "echo",
+      "steps": [
+        {
+          "op": "session_start"
+        },
+        {
+          "op": "execute",
+          "tool": "echo_session",
+          "params": {
+            "message": "{\"key\":true}"
+          }
+        },
+        {
+          "op": "command",
+          "args": "custom"
+        },
+        {
+          "op": "execute",
+          "tool": "custom",
+          "params": {
+            "message": "{\"key\":true}"
+          }
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "echo_session",
+                "label": "Echo Session",
+                "description": "Echo a message with prefix: [session] ",
+                "promptSnippet": "Echo back user-provided text with [session] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: echo_session",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "echo_session"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [],
+          "visible": [
+            "echo_session"
+          ],
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "[session] {\"key\":true}"
+              }
+            ],
+            "details": {
+              "tool": "echo_session",
+              "prefix": "[session] "
+            }
+          },
+          "error": null
+        },
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "custom",
+                "label": "Echo custom",
+                "description": "Echo a message with prefix: [custom] ",
+                "promptSnippet": "Echo back user-provided text with [custom] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: custom",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "echo_session",
+            "custom"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [],
+          "visible": [
+            "echo_session",
+            "custom"
+          ],
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "[custom] {\"key\":true}"
+              }
+            ],
+            "details": {
+              "tool": "custom",
+              "prefix": "[custom] "
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "message-\"\\u0000\"",
+      "group": "echo",
+      "steps": [
+        {
+          "op": "session_start"
+        },
+        {
+          "op": "execute",
+          "tool": "echo_session",
+          "params": {
+            "message": "\u0000"
+          }
+        },
+        {
+          "op": "command",
+          "args": "custom"
+        },
+        {
+          "op": "execute",
+          "tool": "custom",
+          "params": {
+            "message": "\u0000"
+          }
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "echo_session",
+                "label": "Echo Session",
+                "description": "Echo a message with prefix: [session] ",
+                "promptSnippet": "Echo back user-provided text with [session] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: echo_session",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "echo_session"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [],
+          "visible": [
+            "echo_session"
+          ],
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "[session] \u0000"
+              }
+            ],
+            "details": {
+              "tool": "echo_session",
+              "prefix": "[session] "
+            }
+          },
+          "error": null
+        },
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "custom",
+                "label": "Echo custom",
+                "description": "Echo a message with prefix: [custom] ",
+                "promptSnippet": "Echo back user-provided text with [custom] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: custom",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "echo_session",
+            "custom"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [],
+          "visible": [
+            "echo_session",
+            "custom"
+          ],
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "[custom] \u0000"
+              }
+            ],
+            "details": {
+              "tool": "custom",
+              "prefix": "[custom] "
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "message-\"literal ${not_substituted}\"",
+      "group": "echo",
+      "steps": [
+        {
+          "op": "session_start"
+        },
+        {
+          "op": "execute",
+          "tool": "echo_session",
+          "params": {
+            "message": "literal ${not_substituted}"
+          }
+        },
+        {
+          "op": "command",
+          "args": "custom"
+        },
+        {
+          "op": "execute",
+          "tool": "custom",
+          "params": {
+            "message": "literal ${not_substituted}"
+          }
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "echo_session",
+                "label": "Echo Session",
+                "description": "Echo a message with prefix: [session] ",
+                "promptSnippet": "Echo back user-provided text with [session] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: echo_session",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "echo_session"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [],
+          "visible": [
+            "echo_session"
+          ],
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "[session] literal ${not_substituted}"
+              }
+            ],
+            "details": {
+              "tool": "echo_session",
+              "prefix": "[session] "
+            }
+          },
+          "error": null
+        },
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "custom",
+                "label": "Echo custom",
+                "description": "Echo a message with prefix: [custom] ",
+                "promptSnippet": "Echo back user-provided text with [custom] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: custom",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "echo_session",
+            "custom"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [],
+          "visible": [
+            "echo_session",
+            "custom"
+          ],
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "[custom] literal ${not_substituted}"
+              }
+            ],
+            "details": {
+              "tool": "custom",
+              "prefix": "[custom] "
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "extra-argument-is-unread",
+      "group": "echo",
+      "steps": [
+        {
+          "op": "session_start"
+        },
+        {
+          "op": "execute",
+          "tool": "echo_session",
+          "params": {
+            "message": "kept",
+            "unused": {
+              "nested": [
+                null,
+                true,
+                1
+              ]
+            }
+          }
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "echo_session",
+                "label": "Echo Session",
+                "description": "Echo a message with prefix: [session] ",
+                "promptSnippet": "Echo back user-provided text with [session] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: echo_session",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "echo_session"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [],
+          "visible": [
+            "echo_session"
+          ],
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "[session] kept"
+              }
+            ],
+            "details": {
+              "tool": "echo_session",
+              "prefix": "[session] "
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "unused-cancellation-and-progress",
+      "group": "echo",
+      "steps": [
+        {
+          "op": "session_start"
+        },
+        {
+          "op": "execute",
+          "tool": "echo_session",
+          "params": {
+            "message": "still echoed"
+          },
+          "aborted": true,
+          "progress": true
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "echo_session",
+                "label": "Echo Session",
+                "description": "Echo a message with prefix: [session] ",
+                "promptSnippet": "Echo back user-provided text with [session] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: echo_session",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "echo_session"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [],
+          "visible": [
+            "echo_session"
+          ],
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "[session] still echoed"
+              }
+            ],
+            "details": {
+              "tool": "echo_session",
+              "prefix": "[session] "
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "tool-rejection-retains-name",
+      "group": "errors",
+      "steps": [
+        {
+          "op": "command",
+          "args": "failed",
+          "reject": "registerTool"
+        },
+        {
+          "op": "command",
+          "args": "failed"
+        },
+        {
+          "op": "command",
+          "args": "next"
+        },
+        {
+          "op": "execute",
+          "tool": "next",
+          "params": {
+            "message": "ok"
+          }
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "failed",
+                "label": "Echo failed",
+                "description": "Echo a message with prefix: [failed] ",
+                "promptSnippet": "Echo back user-provided text with [failed] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "visible": [],
+          "result": null,
+          "error": "host refused Ω\ncontrolled"
+        },
+        {
+          "effects": [
+            {
+              "notify": {
+                "message": "Tool already registered: failed",
+                "kind": "warning"
+              }
+            }
+          ],
+          "visible": [],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "next",
+                "label": "Echo next",
+                "description": "Echo a message with prefix: [next] ",
+                "promptSnippet": "Echo back user-provided text with [next] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: next",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "next"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [],
+          "visible": [
+            "next"
+          ],
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "[next] ok"
+              }
+            ],
+            "details": {
+              "tool": "next",
+              "prefix": "[next] "
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "session-tool-rejection-retains-name",
+      "group": "errors",
+      "steps": [
+        {
+          "op": "session_start",
+          "reject": "registerTool"
+        },
+        {
+          "op": "session_start"
+        },
+        {
+          "op": "command",
+          "args": "echo_session"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "echo_session",
+                "label": "Echo Session",
+                "description": "Echo a message with prefix: [session] ",
+                "promptSnippet": "Echo back user-provided text with [session] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "visible": [],
+          "result": null,
+          "error": "host refused Ω\ncontrolled"
+        },
+        {
+          "effects": [
+            {
+              "notify": {
+                "message": "Registered dynamic tool: echo_session",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [
+            {
+              "notify": {
+                "message": "Tool already registered: echo_session",
+                "kind": "warning"
+              }
+            }
+          ],
+          "visible": [],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "command-notify-rejection-keeps-tool",
+      "group": "errors",
+      "steps": [
+        {
+          "op": "command",
+          "args": "kept",
+          "reject": "notify"
+        },
+        {
+          "op": "command",
+          "args": "kept"
+        },
+        {
+          "op": "execute",
+          "tool": "kept",
+          "params": {
+            "message": "retained"
+          }
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "kept",
+                "label": "Echo kept",
+                "description": "Echo a message with prefix: [kept] ",
+                "promptSnippet": "Echo back user-provided text with [kept] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: kept",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "kept"
+          ],
+          "result": null,
+          "error": "host refused Ω\ncontrolled"
+        },
+        {
+          "effects": [
+            {
+              "notify": {
+                "message": "Tool already registered: kept",
+                "kind": "warning"
+              }
+            }
+          ],
+          "visible": [
+            "kept"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [],
+          "visible": [
+            "kept"
+          ],
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "[kept] retained"
+              }
+            ],
+            "details": {
+              "tool": "kept",
+              "prefix": "[kept] "
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "session-notify-rejection-keeps-tool",
+      "group": "errors",
+      "steps": [
+        {
+          "op": "session_start",
+          "reject": "notify"
+        },
+        {
+          "op": "session_start"
+        },
+        {
+          "op": "execute",
+          "tool": "echo_session",
+          "params": {
+            "message": "retained"
+          }
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "echo_session",
+                "label": "Echo Session",
+                "description": "Echo a message with prefix: [session] ",
+                "promptSnippet": "Echo back user-provided text with [session] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: echo_session",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "echo_session"
+          ],
+          "result": null,
+          "error": "host refused Ω\ncontrolled"
+        },
+        {
+          "effects": [
+            {
+              "notify": {
+                "message": "Registered dynamic tool: echo_session",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "echo_session"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [],
+          "visible": [
+            "echo_session"
+          ],
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "[session] retained"
+              }
+            ],
+            "details": {
+              "tool": "echo_session",
+              "prefix": "[session] "
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "invalid-notify-rejection-does-not-add-name",
+      "group": "errors",
+      "steps": [
+        {
+          "op": "command",
+          "args": "bad-name",
+          "reject": "notify"
+        },
+        {
+          "op": "command",
+          "args": "valid"
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "notify": {
+                "message": "Usage: /add-echo-tool <tool_name> (lowercase, numbers, underscores)",
+                "kind": "warning"
+              }
+            }
+          ],
+          "visible": [],
+          "result": null,
+          "error": "host refused Ω\ncontrolled"
+        },
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "valid",
+                "label": "Echo valid",
+                "description": "Echo a message with prefix: [valid] ",
+                "promptSnippet": "Echo back user-provided text with [valid] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: valid",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "valid"
+          ],
+          "result": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "duplicate-notify-rejection-keeps-tool",
+      "group": "errors",
+      "steps": [
+        {
+          "op": "command",
+          "args": "dupe"
+        },
+        {
+          "op": "command",
+          "args": "DUPE",
+          "reject": "notify"
+        },
+        {
+          "op": "execute",
+          "tool": "dupe",
+          "params": {
+            "message": "retained"
+          }
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "dupe",
+                "label": "Echo dupe",
+                "description": "Echo a message with prefix: [dupe] ",
+                "promptSnippet": "Echo back user-provided text with [dupe] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "notify": {
+                "message": "Registered dynamic tool: dupe",
+                "kind": "info"
+              }
+            }
+          ],
+          "visible": [
+            "dupe"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [
+            {
+              "notify": {
+                "message": "Tool already registered: dupe",
+                "kind": "warning"
+              }
+            }
+          ],
+          "visible": [
+            "dupe"
+          ],
+          "result": null,
+          "error": "host refused Ω\ncontrolled"
+        },
+        {
+          "effects": [],
+          "visible": [
+            "dupe"
+          ],
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "[dupe] retained"
+              }
+            ],
+            "details": {
+              "tool": "dupe",
+              "prefix": "[dupe] "
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "ui-acquisition-rejection-keeps-registration",
+      "group": "errors",
+      "steps": [
+        {
+          "op": "command",
+          "args": "kept",
+          "reject": "ui"
+        },
+        {
+          "op": "command",
+          "args": "kept"
+        },
+        {
+          "op": "execute",
+          "tool": "kept",
+          "params": {
+            "message": "retained"
+          }
+        }
+      ],
+      "instances": 1,
+      "registrations": [
+        [
+          {
+            "event": "session_start"
+          },
+          {
+            "command": {
+              "name": "add-echo-tool",
+              "description": "Register a new echo tool dynamically: /add-echo-tool <tool_name>",
+              "completions": false
+            }
+          }
+        ]
+      ],
+      "observations": [
+        {
+          "effects": [
+            {
+              "registerTool": {
+                "name": "kept",
+                "label": "Echo kept",
+                "description": "Echo a message with prefix: [kept] ",
+                "promptSnippet": "Echo back user-provided text with [kept] prefix",
+                "promptGuidelines": [
+                  "Use echo_session when the user asks for exact echo output."
+                ],
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Message to echo"
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "visible": [
+            "kept"
+          ],
+          "result": null,
+          "error": "host refused Ω\ncontrolled"
+        },
+        {
+          "effects": [
+            {
+              "notify": {
+                "message": "Tool already registered: kept",
+                "kind": "warning"
+              }
+            }
+          ],
+          "visible": [
+            "kept"
+          ],
+          "result": null,
+          "error": null
+        },
+        {
+          "effects": [],
+          "visible": [
+            "kept"
+          ],
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "[kept] retained"
+              }
+            ],
+            "details": {
+              "tool": "kept",
+              "prefix": "[kept] "
+            }
+          },
+          "error": null
+        }
+      ]
+    }
+  ]
+}

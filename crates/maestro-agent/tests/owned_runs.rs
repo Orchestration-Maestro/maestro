@@ -561,7 +561,7 @@ fn pending_call_sets_preserve_old_snapshots() {
                 maestro_models::AssistantContent::ToolCall(maestro_models::ToolCall {
                     id: id.into(),
                     name: "echo".into(),
-                    arguments: maestro_models::JsonObject::new(),
+                    arguments: maestro_models::JsonObject::new().into(),
                     thought_signature: None,
                 })
             })
@@ -737,7 +737,10 @@ fn assert_failed_state(agent: &Agent) {
     assert_eq!(last.stop_reason, StopReason::Error);
     assert_eq!(last.error_message.as_deref(), Some("original"));
     assert_eq!(last.model, "unknown");
-    assert_eq!(last.usage.total_tokens.to_bits(), 0.0_f64.to_bits());
+    assert_eq!(
+        last.usage.total_tokens.present().unwrap().to_bits(),
+        0.0_f64.to_bits()
+    );
     assert!(state.streaming_message().is_none());
     assert!(state.pending_tool_calls().is_empty());
 }
@@ -968,4 +971,92 @@ impl<E: maestro_models::ProviderExecution, O>
     fn invoke(&self, _call: maestro_models::ProviderCall<E, O>) -> Self::Return {
         panic!("raw dispatch selected")
     }
+}
+
+/// A stream that fails before any response gives listeners the failure as an ended assistant
+/// message and a ended turn before the run ends, and stores it once.
+#[test]
+fn synthetic_failure_publishes_message_and_turn_events_before_agent_end() {
+    support::run(async {
+        let (agent, tasks) = agent();
+        *agent.stream_fn.write().unwrap() = Some(Arc::new(|_, _, _, _| {
+            support::ready(Err(failure("provider unreachable")))
+        }));
+        let kinds = Arc::new(Mutex::new(Vec::new()));
+        let recorded = kinds.clone();
+        let observed_state = agent.state().clone();
+        agent.subscribe(Arc::new(move |event, _| {
+            let kind = match &*event.read().unwrap() {
+                AgentEvent::MessageStart {
+                    message: AgentMessage::Assistant(_),
+                } => "assistant_start",
+                AgentEvent::MessageEnd {
+                    message: AgentMessage::Assistant(_),
+                } => "assistant_end",
+                AgentEvent::TurnEnd { tool_results, .. } if tool_results.is_empty() => "turn_end",
+                AgentEvent::AgentEnd { .. } => "agent_end",
+                _ => return support::ready(Ok(())),
+            };
+            recorded.lock().unwrap().push((
+                kind,
+                observed_state
+                    .read()
+                    .unwrap()
+                    .error_message()
+                    .map(str::to_owned),
+            ));
+            support::ready(Ok(()))
+        }));
+        let run = agent.prompt(input("hello"));
+        tasks.take().await;
+        run.await.unwrap();
+        assert_eq!(
+            *kinds.lock().unwrap(),
+            [
+                ("assistant_start", None),
+                ("assistant_end", None),
+                ("turn_end", Some("provider unreachable".into())),
+                ("agent_end", Some("provider unreachable".into())),
+            ]
+        );
+        let state = agent.state().read().unwrap();
+        let stored = state.messages().read().unwrap();
+        let failures = stored
+            .iter()
+            .filter(|message| {
+                matches!(message, AgentMessage::Assistant(reply)
+                    if reply.read().unwrap().stop_reason == StopReason::Error)
+            })
+            .count();
+        assert_eq!(failures, 1, "the failure is stored once");
+    });
+}
+
+/// Next-turn preparation receives the live cancellation of its owning run.
+#[test]
+fn next_turn_hook_receives_live_run_signal() {
+    support::run(async {
+        let (agent, tasks) = agent();
+        let observed = Arc::new(Mutex::new(None));
+        let recorded = Arc::clone(&observed);
+        *agent.prepare_next_turn.write().unwrap() = Some(Arc::new(move |_, signal| {
+            *recorded.lock().unwrap() = signal;
+            support::ready(Ok(None))
+        }));
+        agent.subscribe(Arc::new(move |event, signal| {
+            if matches!(*event.read().unwrap(), AgentEvent::TurnEnd { .. }) {
+                signal.abort();
+            }
+            support::ready(Ok(()))
+        }));
+        let run = agent.prompt(input("hello"));
+        tasks.take().await;
+        run.await.unwrap();
+        let signal = observed.lock().unwrap();
+        assert!(
+            signal
+                .as_ref()
+                .is_some_and(maestro_models::Cancellation::is_aborted)
+        );
+    });
 }

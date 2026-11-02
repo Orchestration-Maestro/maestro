@@ -315,9 +315,9 @@ fn model_without_credentials_is_refused() {
 #[test]
 fn queue_modes_are_saved() {
     selection_case("steering and follow-up modes are saved", async |h| {
-        h.session.set_steering_mode(QueueMode::All);
+        h.session.set_steering_mode(QueueMode::All).unwrap();
         let steering = step("setSteeringMode all", Ok(UNDEFINED(())));
-        h.session.set_follow_up_mode(QueueMode::All);
+        h.session.set_follow_up_mode(QueueMode::All).unwrap();
         let follow_up = step("setFollowUpMode all", Ok(UNDEFINED(())));
         let settings = h.session.settings_manager().borrow();
         let modes = json!({

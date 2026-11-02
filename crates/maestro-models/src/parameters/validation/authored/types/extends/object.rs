@@ -7,7 +7,8 @@ use super::extends_right::extends_right;
 use crate::SchemaKind;
 use crate::parameters::validation::authored::schema_view::{Members, Node};
 
-/// An object extends an object whose every member it declares and extends.
+/// An object extends an object whose every member it declares and extends; it may leave out
+/// a member the other object marks optional.
 pub(crate) fn extends_object<'a>(left: &Rc<Node<'a>>, right: &Rc<Node<'a>>) -> bool {
     if right.kind() != Some(SchemaKind::Object) {
         return extends_right(left, right);
@@ -42,7 +43,8 @@ mod tests {
             let document = crate::parameters::validation::authored::schema_view::Document::new(
                 &schema, &kinds,
             );
-            let converter = Context::new(&document);
+            let code = crate::parameters::validation::check::Code::default();
+            let converter = Context::new(&document, &code);
             let left = instantiate(&converter, converter.document.view(&schema[0]));
             MEMBER_LOOKUPS.with(|count| count.set(0));
             assert!(extends_object(&left, &left));

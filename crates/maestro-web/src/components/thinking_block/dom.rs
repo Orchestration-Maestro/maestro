@@ -246,7 +246,6 @@ impl ThinkingElement {
         let block = ThinkingBlock {
             content: element.get_attribute("content").unwrap_or_default(),
             is_streaming: element.has_attribute("is-streaming"),
-            ..ThinkingBlock::default()
         };
         if let Some(root) = &self.shown {
             return block.update(root, &self.view);

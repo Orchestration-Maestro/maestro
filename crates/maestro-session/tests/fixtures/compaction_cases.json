@@ -473,7 +473,7 @@
         "tokens": 0,
         "usageTokens": 0,
         "trailingTokens": 0,
-        "lastUsageIndex": 0
+        "lastUsageIndex": null
       }
     }
   },
@@ -812,7 +812,7 @@
     ],
     "output": {
       "kind": "value",
-      "value": 2
+      "value": 1202
     }
   },
   {
@@ -831,7 +831,7 @@
     ],
     "output": {
       "kind": "value",
-      "value": 0
+      "value": 1200
     }
   },
   {
@@ -2253,8 +2253,8 @@
       "kind": "value",
       "value": {
         "firstKeptEntryIndex": 0,
-        "turnStartIndex": 0,
-        "isSplitTurn": true
+        "turnStartIndex": -1,
+        "isSplitTurn": false
       }
     }
   },
@@ -2289,7 +2289,8 @@
     "args": [
       [
         {
-          "type": "custom_message"
+          "type": "custom_message",
+          "content": "x"
         },
         {
           "type": "message",
@@ -2312,8 +2313,8 @@
       "kind": "value",
       "value": {
         "firstKeptEntryIndex": 0,
-        "turnStartIndex": 0,
-        "isSplitTurn": true
+        "turnStartIndex": -1,
+        "isSplitTurn": false
       }
     }
   },
@@ -2324,7 +2325,8 @@
     "args": [
       [
         {
-          "type": "branch_summary"
+          "type": "branch_summary",
+          "summary": "s"
         },
         {
           "type": "message",
@@ -2348,7 +2350,8 @@
     "args": [
       [
         {
-          "type": "branch_summary"
+          "type": "branch_summary",
+          "summary": "s"
         },
         {
           "type": "message",
@@ -2371,8 +2374,8 @@
       "kind": "value",
       "value": {
         "firstKeptEntryIndex": 0,
-        "turnStartIndex": 0,
-        "isSplitTurn": true
+        "turnStartIndex": -1,
+        "isSplitTurn": false
       }
     }
   },
@@ -2400,7 +2403,7 @@
     ],
     "output": {
       "kind": "value",
-      "value": -1
+      "value": 0
     }
   },
   {
@@ -2466,7 +2469,7 @@
     ],
     "output": {
       "kind": "value",
-      "value": -1
+      "value": 0
     }
   },
   {
@@ -3316,7 +3319,7 @@
             "api": "anthropic-messages",
             "provider": "anthropic",
             "model": "controlled",
-            "timestamp": 0
+            "timestamp": 1767225601000
           }
         }
       ],
@@ -3495,7 +3498,7 @@
             "api": "anthropic-messages",
             "provider": "anthropic",
             "model": "controlled",
-            "timestamp": 0
+            "timestamp": 1767225601000
           }
         }
       ],
@@ -3635,7 +3638,7 @@
             "api": "anthropic-messages",
             "provider": "anthropic",
             "model": "controlled",
-            "timestamp": 0
+            "timestamp": 1767225601000
           }
         }
       ],
@@ -3737,14 +3740,7 @@
       "kind": "value",
       "value": {
         "firstKeptEntryId": "e2",
-        "messagesToSummarize": [
-          {
-            "role": "branchSummary",
-            "summary": "",
-            "fromId": "origin",
-            "timestamp": 1767225600000
-          }
-        ],
+        "messagesToSummarize": [],
         "turnPrefixMessages": [
           {
             "role": "user",
@@ -3835,7 +3831,7 @@
             "api": "anthropic-messages",
             "provider": "anthropic",
             "model": "controlled",
-            "timestamp": 0
+            "timestamp": 1767225601000
           }
         }
       ],
@@ -3917,7 +3913,7 @@
         "firstKeptEntryId": "e0",
         "messagesToSummarize": [],
         "turnPrefixMessages": [],
-        "isSplitTurn": true,
+        "isSplitTurn": false,
         "tokensBefore": 2,
         "fileOps": {
           "read": [],
@@ -5418,7 +5414,7 @@
     ],
     "output": {
       "kind": "value",
-      "value": "[User]: ab\n\n[Assistant thinking]: think1\nthink2\n\n[Assistant]: text1\ntext2\n\n[Assistant tool calls]: read(path=\"a\"); write(path=\"b\")\n\n[Tool result]: out1out2"
+      "value": "[User]: ab\n\n[Assistant]: text1\ntext2\n\n[Assistant tool calls]: read(path=\"a\"); write(path=\"b\")\n\n[Tool result]: out1out2"
     }
   },
   {
@@ -5524,7 +5520,7 @@
     ],
     "output": {
       "kind": "value",
-      "value": "[Assistant thinking]: \n\n[Assistant]: "
+      "value": "[Assistant]: "
     }
   },
   {
@@ -6544,8 +6540,8 @@
       "kind": "value",
       "value": {
         "firstKeptEntryIndex": 2,
-        "turnStartIndex": 2,
-        "isSplitTurn": true
+        "turnStartIndex": -1,
+        "isSplitTurn": false
       }
     }
   },
@@ -6575,7 +6571,8 @@
           }
         },
         {
-          "type": "custom_message"
+          "type": "custom_message",
+          "content": "x"
         }
       ],
       0,
@@ -6586,8 +6583,8 @@
       "kind": "value",
       "value": {
         "firstKeptEntryIndex": 2,
-        "turnStartIndex": 2,
-        "isSplitTurn": true
+        "turnStartIndex": -1,
+        "isSplitTurn": false
       }
     }
   },
@@ -6617,7 +6614,8 @@
           }
         },
         {
-          "type": "branch_summary"
+          "type": "branch_summary",
+          "summary": "s"
         }
       ],
       0,
@@ -6628,8 +6626,8 @@
       "kind": "value",
       "value": {
         "firstKeptEntryIndex": 2,
-        "turnStartIndex": 2,
-        "isSplitTurn": true
+        "turnStartIndex": -1,
+        "isSplitTurn": false
       }
     }
   },
@@ -6674,8 +6672,8 @@
       "kind": "value",
       "value": {
         "firstKeptEntryIndex": 2,
-        "turnStartIndex": 0,
-        "isSplitTurn": true
+        "turnStartIndex": -1,
+        "isSplitTurn": false
       }
     }
   },
@@ -6720,8 +6718,8 @@
       "kind": "value",
       "value": {
         "firstKeptEntryIndex": 2,
-        "turnStartIndex": 0,
-        "isSplitTurn": true
+        "turnStartIndex": -1,
+        "isSplitTurn": false
       }
     }
   },
@@ -6766,8 +6764,8 @@
       "kind": "value",
       "value": {
         "firstKeptEntryIndex": 2,
-        "turnStartIndex": 0,
-        "isSplitTurn": true
+        "turnStartIndex": -1,
+        "isSplitTurn": false
       }
     }
   },
@@ -6904,7 +6902,7 @@
             "api": "anthropic-messages",
             "provider": "anthropic",
             "model": "controlled",
-            "timestamp": 0
+            "timestamp": 1767225601000
           }
         }
       ],
@@ -7443,7 +7441,7 @@
     ],
     "output": {
       "kind": "value",
-      "value": "[User]: ﻿ \n\t\n\n[Assistant thinking]:      \n\n[Assistant]: ﻿\n\n[Tool result]:  \n"
+      "value": "[User]: ﻿ \n\t\n\n[Assistant]: ﻿\n\n[Tool result]:  \n"
     }
   },
   {
@@ -7675,6 +7673,70 @@
         "turnStartIndex": -1,
         "isSplitTurn": false
       }
+    }
+  },
+  {
+    "group": "serialization_format",
+    "id": "array-and-string-roots",
+    "operation": "serializeConversation",
+    "args": [
+      [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "a",
+              "name": "echo",
+              "arguments": [
+                1,
+                2
+              ]
+            },
+            {
+              "type": "toolCall",
+              "id": "b",
+              "name": "letters",
+              "arguments": "ab"
+            },
+            {
+              "type": "toolCall",
+              "id": "c",
+              "name": "flag",
+              "arguments": false
+            },
+            {
+              "type": "toolCall",
+              "id": "d",
+              "name": "count",
+              "arguments": 3
+            }
+          ],
+          "usage": {
+            "input": 7,
+            "output": 3,
+            "cacheRead": 2,
+            "cacheWrite": 1,
+            "totalTokens": 13,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "api": "anthropic-messages",
+          "provider": "anthropic",
+          "model": "controlled",
+          "timestamp": 0
+        }
+      ]
+    ],
+    "output": {
+      "kind": "value",
+      "value": "[Assistant tool calls]: echo(0=1, 1=2); letters(0=\"a\", 1=\"b\"); flag(); count()"
     }
   }
 ]

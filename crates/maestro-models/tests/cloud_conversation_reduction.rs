@@ -210,10 +210,10 @@ fn canonical_argument_keys() -> TestResult {
         r#"{"9":9,"z":1,"2":2,"a":2"#,
     ] {
         let arguments = maestro_models::parsed_arguments(input);
-        assert_eq!(
-            arguments.keys().map(String::as_str).collect::<Vec<_>>(),
-            ["2", "9", "z", "a"]
-        );
+        let keys = arguments
+            .as_object()
+            .map(|members| members.keys().map(String::as_str).collect::<Vec<_>>());
+        assert_eq!(keys, Some(vec!["2", "9", "z", "a"]));
     }
     for input in [
         r#"{"outer":{"9":9,"z":1,"2":2,"a":2}}"#,
@@ -227,4 +227,34 @@ fn canonical_argument_keys() -> TestResult {
         );
     }
     Ok(())
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn cloud_arguments_retain_roots_until_stop() -> TestResult {
+    use futures_util::StreamExt as _;
+    crate::runtime::run(async {
+        for row in crate::root_routes::recorded()?.cloud {
+            let mut frames = row
+                .frames
+                .iter()
+                .map(|frame| bedrock::event(&frame.kind, &frame.body))
+                .collect::<TestResult<Vec<_>>>()?;
+            frames.push(bedrock::event(
+                "messageStop",
+                &serde_json::json!({"stopReason":"tool_use"}),
+            )?);
+            let (feed, body) = crate::messages::feed();
+            let mut options = bedrock::options(&bedrock::serve(vec![]));
+            // Event framing may poll the exhausted body again.
+            options.common.fetch = Some(crate::root_routes::body_fetch(Box::pin(body.fuse())));
+            let stream = maestro_models::providers::cloud::amazon_bedrock::stream_bedrock(
+                bedrock::model("https://bedrock-runtime.us-east-1.amazonaws.com")?,
+                bedrock::context("Hello")?,
+                Some(options),
+            );
+            crate::root_routes::gated(&stream, feed, frames, row.expected).await?;
+        }
+        Ok(())
+    })
 }

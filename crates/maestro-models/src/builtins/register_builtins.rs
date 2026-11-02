@@ -70,14 +70,11 @@ macro_rules! provider {
         impl<E: ProviderExecution> Invoke<E, ProviderCall<E, SimpleStreamOptions<E>>> for $owner {
             type Return = Result<AssistantMessageEventStream, DiagnosticErrorInfo>;
             fn invoke(&self, call: ProviderCall<E, SimpleStreamOptions<E>>) -> Self::Return {
-                Ok(settle_simple(
-                    |model, context, options| {
-                        ($simple)(model, context, E::submission(options, call.submit))
-                    },
+                ($simple)(
                     call.model,
                     call.context,
-                    call.options,
-                ))
+                    E::submission(call.options, call.submit),
+                )
             }
         }
     };

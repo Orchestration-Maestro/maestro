@@ -4,7 +4,7 @@ use crate::{events::AppEvent, panes::display::PaneTerminal, render_signal::Rende
 use maestro_process::terminal::{channels::PtyIoActorHandle, jobs::ProcessDetectionMode};
 use maestro_process::terminal::{
     channels::{PtyIoActor, PtyIoActorConfig, PtyReadResult},
-    jobs as foreground,
+    jobs,
 };
 use maestro_workspace::tiling::PaneId;
 use std::os::fd::OwnedFd;
@@ -82,7 +82,7 @@ impl ReadState {
         let result = self
             .terminal
             .process_pty_bytes(self.pane_id, pid, bytes, || {
-                foreground::foreground_job(pid, self.process_detection_mode)
+                jobs::foreground_job(pid, self.process_detection_mode)
             });
         self.content_seq.fetch_add(1, Ordering::Release);
         super::super::agent_detection::observe_detection_content_change(

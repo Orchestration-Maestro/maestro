@@ -1,7 +1,8 @@
 //! The RPC client's commands on the wire, the answers they return and the records that
 //! reach its event callbacks.
 #![cfg(unix)]
-use crate::rpc_peer::{Peer, SERVE, events, next_of, poll_once};
+use crate::rpc_peer::{Peer, SERVE, events, next_of};
+use crate::support::rpc_connection::poll_once;
 use crate::support::session_harness::on_task_set;
 use maestro_app::{Presence, RpcClient, RpcClientError};
 use serde::Serialize;

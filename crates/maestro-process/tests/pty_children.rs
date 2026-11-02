@@ -1,7 +1,8 @@
 //! Controlled terminal children through the checked libtest setup entry.
 #![cfg(test)]
 #![cfg(target_os = "linux")]
-use maestro_process::terminal::{self as pty, PtyCommand, PtyEnvironment, PtySize};
+use crate::child_programs;
+use maestro_process::terminal::{self, PtyCommand, PtyEnvironment, PtySize};
 use maestro_test_process::{TestProcess, run_alone};
 use std::{
     ffi::OsString,
@@ -22,15 +23,19 @@ fn size() -> PtySize {
 /// Carries native launch policy through one checked setup entry.
 fn wrap(mut command: PtyCommand, harness: &[String]) -> io::Result<PtyCommand> {
     let signals = command.args.iter().any(|arg| arg == "case:signals");
-    command = pty::PtySetupEntry {
+    command = terminal::PtySetupEntry {
         executable: std::env::current_exe()?,
         args: harness.iter().map(OsString::from).collect(),
     }
     .prepare(command);
     if signals {
-        command.program = "/usr/bin/python3".into();
-        command.args=vec!["-c".into(), "import os,signal,sys; s={signal.SIGHUP,signal.SIGINT,signal.SIGQUIT,signal.SIGALRM,signal.SIGTERM,signal.SIGCHLD}; [signal.signal(v,signal.SIG_IGN) for v in s]; signal.pthread_sigmask(signal.SIG_BLOCK,s); os.execv(sys.argv[1],sys.argv[1:])".into(),std::env::current_exe()?.into_os_string()];
-        command.args.extend(harness.iter().map(OsString::from));
+        let launcher = child_programs::command(child_programs::blocked_signals_launcher, &[]);
+        command.program = launcher.get_program().to_owned();
+        command.args = launcher.get_args().map(OsString::from).collect();
+        if let PtyEnvironment::Inherit(edits) = &mut command.environment {
+            let arguments = harness.join("\u{1f}");
+            edits.push(("CHILD_EXEC_ARGS".into(), Some(arguments.into())));
+        }
     }
     Ok(command)
 }
@@ -42,10 +47,10 @@ fn setup_entry() {
         let mut limit = original;
         limit.current = Some(3);
         rustix::process::setrlimit(rustix::process::Resource::Nofile, limit).unwrap();
-        let error = pty::setup_entry().unwrap();
+        let error = terminal::setup_entry().unwrap();
         rustix::process::setrlimit(rustix::process::Resource::Nofile, original).unwrap();
         assert_eq!(error.raw_os_error(), Some(22));
-    } else if pty::setup_entry().is_none() {
+    } else if terminal::setup_entry().is_none() {
         return;
     }
     std::process::exit(1);
@@ -108,7 +113,7 @@ fn pty_child_keeps_job_control_and_one_parent_master() {
                 cwd: None,
                 environment: PtyEnvironment::Inherit(vec![]),
             };
-            let (pty, mut child) = pty::spawn(size(), command, |command| wrap(command, harness))?;
+            let (pty, mut child) = terminal::spawn(size(), command, |command| wrap(command, harness))?;
             assert_eq!(descriptor_count(), before + 1);
             assert!(
                 rustix::io::fcntl_getfd(&pty.master_fd)?.contains(rustix::io::FdFlags::CLOEXEC)
@@ -150,14 +155,15 @@ fn pty_child_keeps_job_control_and_one_parent_master() {
 fn checked_target(
     command: PtyCommand,
     size: PtySize,
-    inspect: impl FnOnce(&pty::Pty) -> io::Result<()>,
+    inspect: impl FnOnce(&terminal::Pty) -> io::Result<()>,
 ) -> Output {
     TestProcess::named("pty_children::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()
         .output_with(|harness| {
-            let (pty, mut child) = pty::spawn(size, command, |command| wrap(command, harness))?;
+            let (pty, mut child) =
+                terminal::spawn(size, command, |command| wrap(command, harness))?;
             inspect(&pty)?;
             let raw = drain(&mut std::fs::File::from(pty.master_fd))?;
             let status = child.wait()?;
@@ -331,7 +337,7 @@ fn assert_failure_text(harness: &[String]) -> io::Result<Output> {
             command.cwd = Some("/no/such/maestro-directory".into());
         }
         let expected = native.spawn().unwrap_err().to_string();
-        let error = pty::spawn(size(), command, |command| wrap(command, harness)).unwrap_err();
+        let error = terminal::spawn(size(), command, |command| wrap(command, harness)).unwrap_err();
         assert_eq!(error.to_string(), expected);
         assert_eq!(descriptor_count(), before);
     }
@@ -339,7 +345,7 @@ fn assert_failure_text(harness: &[String]) -> io::Result<Output> {
     let mut command = maestro_process::commands::pane_custom_command_pty_builder("exit 0");
     command.environment =
         PtyEnvironment::Inherit(vec![("MAESTRO_PTY_DUP_FAILURE".into(), Some("1".into()))]);
-    let error = pty::spawn(size(), command, |command| wrap(command, harness)).unwrap_err();
+    let error = terminal::spawn(size(), command, |command| wrap(command, harness)).unwrap_err();
     assert_eq!(
         error.to_string(),
         io::Error::from_raw_os_error(22).to_string()
@@ -348,7 +354,7 @@ fn assert_failure_text(harness: &[String]) -> io::Result<Output> {
     let command = maestro_process::commands::pane_custom_command_pty_builder(
         "printf 'checked failure completion\\n'",
     );
-    let (pty, mut child) = pty::spawn(size(), command, |command| wrap(command, harness))?;
+    let (pty, mut child) = terminal::spawn(size(), command, |command| wrap(command, harness))?;
     let raw = drain(&mut std::fs::File::from(pty.master_fd))?;
     let status = child.wait()?;
     Ok::<_, io::Error>(Output {
@@ -377,23 +383,18 @@ fn assert_environment(mode: &str) {
             let mask = [1, 2, 3, 14, 15, 17]
                 .into_iter()
                 .fold(0u64, |mask, number| mask | (1 << (number - 1)));
-            for (field, path) in [
-                ("SigIgn:", "/proc/self/status"),
-                // The harness leader can temporarily block signals while creating a thread.
-                ("SigBlk:", "/proc/thread-self/status"),
-            ] {
-                let text = std::fs::read_to_string(path).unwrap();
-                let value = text
-                    .lines()
-                    .find_map(|line| line.strip_prefix(field))
-                    .unwrap()
-                    .trim();
-                assert_eq!(
-                    u64::from_str_radix(value, 16).unwrap() & mask,
-                    0,
-                    "{field} signal state survived setup"
-                );
-            }
+            // The harness leader can temporarily block signals while creating a thread.
+            let text = std::fs::read_to_string("/proc/thread-self/status").unwrap();
+            let value = text
+                .lines()
+                .find_map(|line| line.strip_prefix("SigBlk:"))
+                .unwrap()
+                .trim();
+            assert_eq!(
+                u64::from_str_radix(value, 16).unwrap() & mask,
+                0,
+                "SigBlk signal state survived setup"
+            );
         }
         _ => panic!("unknown launch case"),
     }

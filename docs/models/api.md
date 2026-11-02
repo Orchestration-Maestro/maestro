@@ -246,7 +246,9 @@ interchangeable with absence. Provider-specific extras and nullable fields are
 listed in [module linkage](module-linkage.md#raw-extras).
 
 Reported `Usage` keeps input, output, cache-read, cache-write and total tokens;
-`UsageCost` has each category and total. `calculate_cost` uses the supplied
+`UsageCost` has each category and total. The total keeps the presence of the saved
+count: a report that omits it leaves it absent rather than zero, and a supplied
+number, zero included, is kept as supplied. `calculate_cost` uses the supplied
 model's USD-per-million rates; it estimates, rather than certifies, billing.
 Do not double-count cached categories or reinterpret an adapter's reported
 total. See [accounting](accounting.md) and its controlled usage/abort tests.

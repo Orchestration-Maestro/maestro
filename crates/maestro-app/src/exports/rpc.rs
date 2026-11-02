@@ -4,7 +4,9 @@ pub use crate::rpc_transport::{
     ModelInfo, RpcClient, RpcClientError, RpcClientOptions, RpcEventListener,
 };
 
-pub use crate::connection_runner::{RpcConnectionOutcome, RpcModeOptions, run_rpc_connection};
+pub use crate::connection_runner::{
+    RpcConnectionOutcome, RpcModeOptions, RpcSessionOptions, run_rpc_connection,
+};
 pub use crate::rpc_types::{
     RpcCommand, RpcExtensionUIRequest, RpcExtensionUIResponse, RpcResponse, RpcSessionState,
 };

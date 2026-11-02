@@ -1,4 +1,5 @@
 //! A command that reloads runtime resources and a tool that queues that command.
+// maestro-component: MAESTRO_RELOAD_RUNTIME_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
@@ -16,6 +17,8 @@ use maestro_extensions_wasm::{
 /// A tool that requests the command through follow-up delivery.
 fn reload_runtime_tool(api: ExtensionAPI) -> ToolDefinition {
     ToolDefinition {
+        render_call: None,
+        render_result: None,
         metadata: ToolMetadata {
             name: "reload_runtime".into(),
             label: "Reload Runtime".into(),
@@ -40,7 +43,7 @@ fn reload_runtime_tool(api: ExtensionAPI) -> ToolDefinition {
                     content: vec![UserBlock::Text(TextContent::new(
                         "Queued /reload-runtime as a follow-up command.".into(),
                     ))],
-                    details: Presence::Present("{}".into()),
+                    details: Presence::Present(String::from("{}").into()),
                     terminate: Presence::Missing,
                 })
             })

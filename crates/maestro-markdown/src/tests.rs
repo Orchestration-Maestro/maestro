@@ -48,6 +48,14 @@ pub(crate) fn on_stack<T: Send + 'static>(
         .expect("worker panicked")
 }
 
+/// Reply source the terminal renderer normalizes before parsing: tab expansion and
+/// one replacement scalar per binary byte leave a three-byte scalar in a re-entered
+/// quote body, between an inner quote marker and the rest of its line.
+pub(crate) const MULTIBYTE_REENTRY_SOURCE: &str = " \n> -   \u{fffd}\u{1}\u{fffd}\u{fffd}\u{fffd},\u{fffd}\u{fffd}m\n <!-\u{1}\u{fffd}\u{fffd}\u{fffd}\u{fffd}\u{fffd}\u{fffd}\u{8}   \u{fffd}\u{fffd}\u{fffd}\u{fffd} \u{fffd}\n>>\u{fffd}\u{fffd}\u{fffd}\u{fffd} \u{fffd}\n>>\u{fffd}\u{fffd}\u{fffd}\u{fffd}\u{fffd}\u{fffd}\u{fffd}\u{fffd}temH\u{1}<\n\u{fffd}\u{fffd}\u{fffd}\u{fffd}\u{fffd}\u{fffd}\u{14}\u{fffd}      ";
+
+/// That re-entered quote's semantic body, with one quoting level removed per line.
+pub(crate) const MULTIBYTE_REENTRY_BODY: &str = "\u{fffd}\u{fffd}\u{fffd}\u{fffd} \u{fffd}\n\u{fffd}\u{fffd}\u{fffd}\u{fffd}\u{fffd}\u{fffd}\u{fffd}\u{fffd}temH\u{1}<\n\u{fffd}\u{fffd}\u{fffd}\u{fffd}\u{fffd}\u{fffd}\u{14}\u{fffd}";
+
 /// Every caller selection of the configured parser.
 pub(crate) const SELECTIONS: [MarkedOptions; 5] = [
     MarkedOptions::Terminal,

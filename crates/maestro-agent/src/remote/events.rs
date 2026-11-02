@@ -395,7 +395,7 @@ fn tool_start(
     let block = AssistantContent::ToolCall(ToolCall {
         id,
         name,
-        arguments: JsonObject::new(),
+        arguments: JsonObject::new().into(),
         thought_signature: None,
     });
     replace(message, content_index, block)?;
@@ -415,7 +415,13 @@ fn tool_delta(
     let Some(AssistantContent::ToolCall(block)) = message.content.get_mut(content_index) else {
         return Err("Received toolcall_delta for non-toolCall content".into());
     };
-    block.arguments = parsed_arguments(arguments);
+    // A falsy reconstructed root falls back to an empty object.
+    let parsed = parsed_arguments(arguments);
+    block.arguments = if maestro_json::is_truthy(&parsed) {
+        parsed
+    } else {
+        JsonObject::new().into()
+    };
     Ok(Event::ToolcallDelta {
         content_index,
         delta,

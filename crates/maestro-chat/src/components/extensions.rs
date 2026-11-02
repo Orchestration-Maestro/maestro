@@ -15,6 +15,8 @@ pub struct ExtensionSelectorOptions {
     pub runtime: Rc<dyn TuiRuntime>,
     /// Live presentation slot.
     pub theme: LiveTheme,
+    /// Flips tool-output expansion on the tool-expand key; without it the key does nothing.
+    pub on_toggle_tools_expanded: Option<Rc<dyn Fn()>>,
 }
 /// A selection dialog whose navigation clamps without scrolling.
 pub struct ExtensionSelectorComponent {
@@ -34,6 +36,8 @@ pub struct ExtensionSelectorComponent {
     theme: LiveTheme,
     /// Owned countdown, if admitted.
     countdown: Option<CountdownTimer>,
+    /// Flips tool-output expansion without moving focus or the selection.
+    on_toggle_tools_expanded: Option<Rc<dyn Fn()>>,
 }
 impl ExtensionSelectorComponent {
     /// Composes a dialog retaining supplied option order and duplicate values.
@@ -52,6 +56,7 @@ impl ExtensionSelectorComponent {
             timeout,
             runtime,
             theme,
+            on_toggle_tools_expanded,
         } = opts;
         let list = Rc::new(Container::new());
         let hint = maestro_app::raw_key_hint("↑↓", "navigate", &theme)?
@@ -70,6 +75,7 @@ impl ExtensionSelectorComponent {
             on_cancel,
             theme,
             countdown,
+            on_toggle_tools_expanded,
         };
         result.update_list();
         Ok(result)
@@ -99,7 +105,11 @@ component_children!(ExtensionSelectorComponent, Container, container);
 impl InputHandler for ExtensionSelectorComponent {
     fn handle_input(&self, data: &str) {
         let bindings = get_keybindings();
-        if bindings.matches(data, "tui.select.up") || data == "k" {
+        if bindings.matches(data, "app.tools.expand") {
+            if let Some(toggle) = &self.on_toggle_tools_expanded {
+                toggle();
+            }
+        } else if bindings.matches(data, "tui.select.up") || data == "k" {
             self.selected.set(self.selected.get().saturating_sub(1));
             self.update_list();
         } else if bindings.matches(data, "tui.select.down") || data == "j" {

@@ -129,7 +129,10 @@ pub(super) fn render_result(
         context.show_images,
         &context.environment.terminal_image,
     )?;
-    let output = output.trim_matches(maestro_text::is_whitespace_scalar);
+    let mut output = output.trim_matches(maestro_text::is_whitespace_scalar);
+    if !options.is_partial {
+        output = without_footer(output, result.details);
+    }
     if !output.is_empty() {
         let styled = output
             .split('\n')
@@ -227,6 +230,34 @@ impl Component for VisualTail {
     }
     fn invalidate(&self) {
         self.cache.take();
+    }
+}
+
+/// `output` without the truncation footer the tool appended, when the details report a
+/// truncation and a full-output path that the footer names; the notice row repeats it.
+///
+/// The footer starts at the last blank line before `[`, or at the very start when the kept
+/// tail held only whitespace.
+fn without_footer<'a>(output: &'a str, details: Option<&Value>) -> &'a str {
+    let Some(details) = details else {
+        return output;
+    };
+    let truncated = TruncationView::selected(Some(details)).is_some();
+    let path = details
+        .get("fullOutputPath")
+        .and_then(Value::as_str)
+        .filter(|path| !path.is_empty());
+    let Some(path) = path.filter(|_| truncated && output.ends_with(']')) else {
+        return output;
+    };
+    let start = output
+        .rfind("\n\n[")
+        .or_else(|| output.starts_with('[').then_some(0));
+    match start {
+        Some(start) if output[start..].contains(path) => {
+            output[..start].trim_end_matches(maestro_text::is_whitespace_scalar)
+        }
+        _ => output,
     }
 }
 

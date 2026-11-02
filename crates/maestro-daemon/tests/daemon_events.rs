@@ -2,10 +2,7 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-#[path = "support/launch.rs"]
-mod launch;
-mod support;
-use launch::launch_inputs;
+use crate::support::{self, launch::inputs};
 
 use maestro_daemon::{
     app::App,
@@ -38,7 +35,7 @@ fn with_live_root(name: &str, delayed: bool) {
     if run_alone(name).unwrap() {
         return;
     }
-    TestProcess::named("setup_entry")
+    TestProcess::named("daemon_events::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()
@@ -64,7 +61,7 @@ async fn check_live_context(args: &[String], delayed: bool) {
         .terminal_id(pane)
         .unwrap()
         .clone();
-    let (launch, event_rx) = launch_inputs(args, Arc::clone(&app.state.manifests));
+    let (launch, event_rx) = inputs(args, Arc::clone(&app.state.manifests));
     app.launch = launch;
     app.event_rx = event_rx;
     let mut config = app.launch.runtime_config(&app.config, pane, (24, 80));
@@ -148,7 +145,7 @@ fn context_directories() -> maestro_test_directory::Scratch {
 /// Builds the background workspace without admitting the process's new directory.
 fn context_app(directory: std::path::PathBuf, delayed: bool) -> TestApp {
     let config = Config::default();
-    let (launch, event_rx) = launch_inputs(&[], support::manifest_cache());
+    let (launch, event_rx) = inputs(&[], support::manifest_cache());
     let mut app = App::new(
         &config,
         (|| 0) as fn() -> u128,
@@ -420,7 +417,7 @@ fn daemon_pane_died_respawns_shell_and_clears_restored_agent_session() {
     if run_alone("daemon_pane_died_respawns_shell_and_clears_restored_agent_session").unwrap() {
         return;
     }
-    TestProcess::named("setup_entry")
+    TestProcess::named("daemon_events::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()
@@ -438,7 +435,7 @@ fn daemon_pane_died_respawns_shell_and_clears_restored_agent_session() {
 /// A launch-command exit keeps its pane but replaces its process and clears agent ownership.
 async fn check_respawn(args: &[String]) {
     let mut app = context_app(temporary_root(), false);
-    let (launch, event_rx) = launch_inputs(args, Arc::clone(&app.state.manifests));
+    let (launch, event_rx) = inputs(args, Arc::clone(&app.state.manifests));
     app.launch = launch;
     app.event_rx = event_rx;
     app.config.terminal.default_shell = "/bin/sh".into();
@@ -706,7 +703,7 @@ fn native_workspace_creation_retains_one_runtime_and_rolls_back_spawn_failure() 
     {
         return;
     }
-    TestProcess::named("setup_entry")
+    TestProcess::named("daemon_events::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()
@@ -728,7 +725,7 @@ async fn check_workspace_creation(args: &[String]) {
     config.terminal.new_cwd = maestro_daemon::settings::model::NewTerminalCwdConfig::Path(
         temporary_root().display().to_string(),
     );
-    let (launch, receiver) = launch_inputs(args, support::manifest_cache());
+    let (launch, receiver) = inputs(args, support::manifest_cache());
     let mut app = App::new(
         &config,
         (|| 0) as fn() -> u128,

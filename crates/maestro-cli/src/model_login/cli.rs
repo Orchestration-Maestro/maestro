@@ -220,6 +220,9 @@ struct Callbacks {
 }
 
 impl OAuthLoginCallbacks for Callbacks {
+    fn callback_presence(&self) -> (bool, bool, bool) {
+        (true, false, false)
+    }
     fn on_auth(&self, info: OAuthAuthInfo) -> Result<(), OAuthError> {
         self.console.write(
             &format!("\nOpen this URL in your browser:\n{}\n", info.url),

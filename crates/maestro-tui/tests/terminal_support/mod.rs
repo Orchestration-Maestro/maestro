@@ -40,6 +40,7 @@ pub fn kitty_options(value: &Value) -> maestro_tui::images::terminal_image::Kitt
 pub fn render_options(value: &Value) -> maestro_tui::images::terminal_image::ImageRenderOptions {
     maestro_tui::images::terminal_image::ImageRenderOptions {
         max_width_cells: number(&value["maxWidthCells"]),
+        max_height_cells: number(&value["maxHeightCells"]),
         image_id: number(&value["imageId"]),
         move_cursor: enabled(&value["moveCursor"]),
         preserve_aspect_ratio: enabled(&value["preserveAspectRatio"]),

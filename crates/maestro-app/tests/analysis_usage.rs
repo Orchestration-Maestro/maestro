@@ -1,7 +1,7 @@
 //! Recorded-usage report behaviour.
 #![cfg(all(test, not(target_arch = "wasm32")))]
 
-use crate::analysis_fixtures::{ZONE, expected, home, run_usage, sessions};
+use crate::analysis_fixtures::{ZONE, expected, home, resolved, run_usage, sessions};
 use crate::isolated_home::with_environment;
 
 const HELP: &str = "Usage: scripts/stats.ts [options]
@@ -48,13 +48,78 @@ fn report(base: &str, extra: &[&str]) -> std::io::Result<crate::analysis_fixture
     run_usage(&args)
 }
 
+/// An assistant entry reporting 7/3/2/1 at cost 1 with `member` as the raw total member.
+fn raw_usage_entry(member: &str) -> String {
+    format!(
+        "{{\"type\":\"message\",\"timestamp\":\"2026-03-09T12:00:00Z\",\"message\":{{\"role\":\"assistant\",\"provider\":\"one\",\"usage\":{{\"input\":7,\"output\":3,\"cacheRead\":2,\"cacheWrite\":1{member},\"cost\":{{\"total\":1}}}}}}}}\n"
+    )
+}
+
+/// One report totals row for a single assistant reporting 7/3/2/1 at cost 1.
+fn totals_row(label: &str, total: &str) -> String {
+    format!(
+        "{label:<16} messages: {:>5}  sessions: {:>3}  input: {:>12}  output: {:>10}  \
+         cache read: {:>13}  cache write: {:>10}  total: {:>13}  cost: {:>10}",
+        "1", "1", "7", "3", "2", "1", total, "$1.0000"
+    )
+}
+
+/// Run the report for `cwd`, whose sessions sit beneath `base`'s home.
+///
+/// # Errors
+/// Returns the report's own rejection.
+fn report_for(base: &str, cwd: &str) -> std::io::Result<crate::analysis_fixtures::Run> {
+    let sessions_base = format!("{base}/home/.maestro/agent/sessions");
+    run_usage(&["--cwd", cwd, "--sessions-base", &sessions_base])
+}
+
+#[test]
+fn usage_report_leaves_missing_total_at_zero() {
+    with_environment(
+        "usage_report_leaves_missing_total_at_zero",
+        &[("TZ", ZONE)],
+        |base| {
+            for (index, (member, shown)) in [
+                ("", "0"),
+                (",\"totalTokens\":null", "0"),
+                (",\"totalTokens\":0", "0"),
+                (",\"totalTokens\":-0.0", "0"),
+                (",\"totalTokens\":97", "97"),
+                (",\"totalTokens\":1.5", "2"),
+                (",\"totalTokens\":-2", "-2"),
+            ]
+            .into_iter()
+            .enumerate()
+            {
+                let cwd = format!("/project{index}");
+                let journal = raw_usage_entry(member);
+                sessions(
+                    base,
+                    &resolved(&cwd),
+                    &[("2026-03-09T12-00-00-000Z_a.jsonl", &journal)],
+                );
+                let run = report_for(base, &cwd).expect("the report runs");
+                assert!(run.succeeded(), "{}", run.stderr);
+                for label in ["2026-03-09", "  one", "TOTAL"] {
+                    let row = totals_row(label, shown);
+                    assert!(
+                        run.stdout.contains(&row),
+                        "{member:?} reports no {row:?} in:\n{}",
+                        run.stdout
+                    );
+                }
+            }
+        },
+    );
+}
+
 #[test]
 fn usage_arguments_keep_defaults_aliases_and_decimal_prefixes() {
     with_environment(
         "usage_arguments_keep_defaults_aliases_and_decimal_prefixes",
         &[("TZ", ZONE)],
         |base| {
-            sessions(base, "/project", &[]);
+            sessions(base, &resolved("/project"), &[]);
             for days in ["0", "-1", "bad", "0x10"] {
                 let error =
                     report(base, &["--days", days]).expect_err("an invalid day count is rejected");
@@ -84,7 +149,8 @@ fn usage_arguments_keep_defaults_aliases_and_decimal_prefixes() {
             for alias in ["--cwd", "--dir", "-d"] {
                 let run = report(base, &[alias, "/project"]).expect("the report runs");
                 assert!(run.succeeded(), "{alias}");
-                assert!(run.stdout.starts_with("Usage for /project\n"), "{alias}");
+                let heading = format!("Usage for {}\n", resolved("/project"));
+                assert!(run.stdout.starts_with(&heading), "{alias}");
             }
             let run = run_usage(&["--help"]).expect("help runs");
             assert_eq!(run.stdout, HELP);
@@ -102,6 +168,9 @@ fn usage_counts_local_calendar_days_across_dst() {
         "usage_counts_local_calendar_days_across_dst",
         &[("TZ", ZONE)],
         |base| {
+            if !maestro_test_process::local_zone_follows_tz() {
+                return;
+            }
             let noon = Totals {
                 input: 1.0,
                 output: 0.0,
@@ -118,7 +187,7 @@ fn usage_counts_local_calendar_days_across_dst() {
             );
             sessions(
                 base,
-                "/project",
+                &resolved("/project"),
                 &[("2026-03-09T12-00-00-000Z_a.jsonl", &journal)],
             );
             let run = report(base, &["--days", "7"]).expect("the report runs");
@@ -162,7 +231,7 @@ fn usage_timestamp_presence_precedes_entry_timestamp() {
             let journal = "{\"type\":\"message\",\"timestamp\":\"2026-03-09T12:00:00Z\",\"message\":{\"role\":\"assistant\",\"provider\":\"nulled\",\"timestamp\":null,\"usage\":{\"input\":1}}}\n{\"type\":\"message\",\"timestamp\":\"2026-03-09T12:00:00Z\",\"message\":{\"role\":\"assistant\",\"provider\":\"inherited\",\"usage\":{\"input\":2}}}\n";
             sessions(
                 base,
-                "/project",
+                &resolved("/project"),
                 &[("2026-03-09T12-00-00-000Z_a.jsonl", journal)],
             );
             let run = report(base, &[]).expect("the report runs");
@@ -200,7 +269,7 @@ fn usage_aggregates_reported_totals_and_distinct_sessions() {
             let other = usage_entry("2026-03-09T12:00:00Z", "two", totals);
             let directory = sessions(
                 base,
-                "/project",
+                &resolved("/project"),
                 &[
                     ("2026-03-09T12-00-00-000Z_a.jsonl", &journal),
                     ("2026-03-09T12-00-00-000Z_b.jsonl", &other),
@@ -230,7 +299,7 @@ fn usage_ignores_nonassistant_and_missing_usage() {
             let journal = "malformed\n\n{\"type\":\"message\",\"timestamp\":\"2026-03-09T12:00:00Z\",\"message\":{\"role\":\"user\",\"provider\":\"user\",\"usage\":{\"input\":5}}}\n{\"type\":\"message\",\"timestamp\":\"2026-03-09T12:00:00Z\",\"message\":{\"role\":\"assistant\",\"provider\":\"absent\"}}\n{\"type\":\"message\",\"timestamp\":\"2026-03-09T12:00:00Z\",\"message\":{\"role\":\"assistant\",\"provider\":\"empty\",\"usage\":{}}}\n";
             sessions(
                 base,
-                "/project",
+                &resolved("/project"),
                 &[("2026-03-09T12-00-00-000Z_a.jsonl", journal)],
             );
             let run = report(base, &[]).expect("the report runs");
@@ -265,7 +334,7 @@ fn usage_formats_grouped_signed_counts_and_costs() {
             let other = usage_entry("2026-03-09T12:00:00Z", "\u{1f600}", rounded);
             sessions(
                 base,
-                "/project",
+                &resolved("/project"),
                 &[
                     ("2026-03-09T12-00-00-000Z_a.jsonl", &journal),
                     ("2026-03-09T12-00-00-000Z_b.jsonl", &other),
@@ -300,7 +369,7 @@ fn usage_empty_and_missing_directories() {
         "usage_empty_and_missing_directories",
         &[("TZ", ZONE)],
         |base| {
-            sessions(base, "/project", &[]);
+            sessions(base, &resolved("/project"), &[]);
             let run = report(base, &[]).expect("the report runs");
             assert!(run.succeeded(), "{}", run.stderr);
             assert!(
@@ -309,13 +378,13 @@ fn usage_empty_and_missing_directories() {
                 run.stdout
             );
             let sessions_base = home(base, "sessions");
-            let absent = format!("{sessions_base}/--absent--");
+            let absent = maestro_session::sessions_dir(&sessions_base, &resolved("/absent"));
             let run = run_usage(&["--cwd", "/absent", "--sessions-base", &sessions_base])
                 .expect("the report runs");
             assert!(run.failed());
             assert_eq!(
                 run.stderr,
-                format!("Sessions directory not found: {absent}\n")
+                format!("Sessions directory not found: {}\n", absent.as_str())
             );
         },
     );
@@ -329,9 +398,11 @@ fn usage_directory_lookup_matches_session_writer() {
         |base| {
             let agent = format!("{base}/home/.maestro/agent");
             for cwd in ["/project/work", "/project/work:two", "/project/work\\two"] {
-                let directory =
-                    maestro_session::session_manager::get_default_session_dir(cwd, &agent)
-                        .expect("the session writer creates its directory");
+                let directory = maestro_session::session_manager::get_default_session_dir(
+                    &resolved(cwd),
+                    &agent,
+                )
+                .expect("the session writer creates its directory");
                 assert!(std::path::Path::new(&directory).is_dir(), "{directory}");
                 std::fs::write(
                     std::path::Path::new(&directory).join("2026-03-09T12-00-00-000Z_a.jsonl"),

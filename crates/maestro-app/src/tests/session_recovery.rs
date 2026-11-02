@@ -2,11 +2,11 @@
 //! recovery cases: the announced events, the rebuilt history and the stored entries.
 #![cfg(not(target_arch = "wasm32"))]
 use super::session_harness::{
-    Auth, Harness, HarnessOptions, agent_ended, answer, assistant, case, harness, load_history,
-    message_text, on_paused_task_set, recorded_number, script_responses, start_and_abandon, usage,
-    user,
+    Auth, Harness, HarnessOptions, answer, as_recorded, assistant, case, harness, load_history,
+    message_text, on_paused_task_set, recorded_number, script_responses, start_and_abandon,
+    summary_provider, summary_result, usage, user,
 };
-use maestro_agent::{AgentEvent, AgentMessage, PromptInput};
+use maestro_agent::AgentMessage;
 use maestro_app::agent_session::CompactionReason;
 use maestro_app::{AgentSession, AgentSessionEvent};
 use maestro_extensions::{
@@ -42,10 +42,19 @@ fn keep_recent(settings: Value) -> Value {
 
 /// A session over the scripted provider, holding the recorded starting conversation.
 async fn seeded(settings: Value, factories: Vec<ExtensionFactory<Local>>) -> Harness {
+    seeded_window(WINDOW, settings, factories).await
+}
+
+/// A seeded session whose model reports the supplied context window.
+async fn seeded_window(
+    window: f64,
+    settings: Value,
+    factories: Vec<ExtensionFactory<Local>>,
+) -> Harness {
     let h = harness(HarnessOptions {
         settings: keep_recent(settings),
         factories,
-        context_window: Some(WINDOW),
+        context_window: Some(window),
         ..HarnessOptions::default()
     })
     .await;
@@ -351,24 +360,11 @@ async fn pass(gate: Option<Gate>) {
 
 /// The handler the recorded cases install to supply the preparation's summary.
 fn supplied_summary() -> Handler {
-    Rc::new(|event| {
-        let data = &event.data;
-        Some(SessionBeforeCompactResult {
-            cancel: Presence::Missing,
-            compaction: Presence::Present(CompactionResult {
-                summary: "auto compacted".to_owned(),
-                first_kept_entry_id: data.preparation.first_kept_entry_id.clone(),
-                tokens_before: data.preparation.tokens_before,
-                details: Presence::Present(json!({})),
-            }),
-        })
-    })
+    Rc::new(|event| Some(summary_result(event, AUTO_SUMMARY)))
 }
 
-/// The extension the recorded cases install to supply the preparation's summary.
-fn summary_provider() -> ExtensionFactory<Local> {
-    handled(supplied_summary())
-}
+/// The summary text every recorded case supplies.
+const AUTO_SUMMARY: &str = "auto compacted";
 
 /// The extension the recorded cases install to refuse a compaction.
 fn veto() -> ExtensionFactory<Local> {
@@ -553,19 +549,6 @@ fn compaction_ended(h: &Harness) -> Rc<Notify> {
     })
 }
 
-/// The paused-clock instant each agent run starts, newest last.
-fn agent_starts(h: &Harness) -> Rc<RefCell<Vec<tokio::time::Instant>>> {
-    let starts = Rc::new(RefCell::new(Vec::new()));
-    let record = Rc::clone(&starts);
-    drop(h.session.agent().subscribe(Rc::new(move |event, _| {
-        if matches!(*event.read().unwrap(), AgentEvent::AgentStart) {
-            record.borrow_mut().push(tokio::time::Instant::now());
-        }
-        Box::pin(std::future::ready(Ok(())))
-    })));
-    starts
-}
-
 // -------------------------------------------------------------- classification
 
 #[test]
@@ -598,13 +581,57 @@ fn retry_classification_follows_the_reference_table() {
 
 // -------------------------------------------------------------- checks
 
+/// A summary provider that counts the compactions that reached it.
+fn counted_summary(calls: Rc<Cell<usize>>) -> ExtensionFactory<Local> {
+    handled(Rc::new(move |event| {
+        calls.set(calls.get() + 1);
+        Some(summary_result(event, AUTO_SUMMARY))
+    }))
+}
+
+/// Checks one finished response reporting `tokens` and `total`, and reports how many
+/// compactions started over a 100-token window.
+async fn started_compactions(settings: Value, tokens: [u64; 4], total: Option<u64>) -> usize {
+    let calls = Rc::new(Cell::new(0));
+    let h = seeded_window(100.0, settings, vec![counted_summary(Rc::clone(&calls))]).await;
+    let message = response(
+        400,
+        &json!({
+            "stopReason": StopReason::Stop,
+            "usage": usage(tokens, 0.0, total),
+        }),
+    );
+    h.session.check_compaction(&message, true).await.unwrap();
+    calls.get()
+}
+
+#[test]
+fn missing_total_compaction_thresholds_use_components() {
+    on_paused_task_set(|_| async {
+        let threshold = json!({"compaction": {"reserveTokens": 87}});
+        for (sum, expected) in [(12_u64, 0), (13, 0), (14, 1)] {
+            let starts = started_compactions(threshold.clone(), [sum, 0, 0, 0], None).await;
+            assert_eq!(starts, expected, "categories summing to {sum}");
+        }
+        let supplied = started_compactions(threshold, [14, 0, 0, 0], Some(1)).await;
+        assert_eq!(supplied, 0, "a supplied total replaces the categories");
+        let disabled = started_compactions(
+            json!({"compaction": {"enabled": false}}),
+            [14, 0, 0, 0],
+            None,
+        )
+        .await;
+        assert_eq!(disabled, 0, "disabled compaction");
+    });
+}
+
 #[test]
 fn disabled_compaction_emits_nothing() {
     let expected = case("compaction_checks", "disabled_setting_does_nothing");
     on_paused_task_set(|_| async {
         let h = seeded(
             json!({"compaction": {"enabled": false}}),
-            vec![summary_provider()],
+            vec![summary_provider(AUTO_SUMMARY)],
         )
         .await;
         let message = response(400, &answer_extra(&StopReason::Stop, None, 199_999));
@@ -620,7 +647,7 @@ fn aborted_messages_are_skipped_unless_included() {
         "aborted_message_skipped_unless_included",
     );
     on_paused_task_set(|_| async {
-        let h = seeded(json!({}), vec![summary_provider()]).await;
+        let h = seeded(json!({}), vec![summary_provider(AUTO_SUMMARY)]).await;
         let aborted = response(
             400,
             &answer_extra(&StopReason::Aborted, Some("aborted"), 199_999),
@@ -641,7 +668,7 @@ fn aborted_messages_are_skipped_unless_included() {
 fn overflow_recovery_is_attempted_once_then_reported() {
     let expected = case("compaction_checks", "overflow_recovery_is_attempted_once");
     on_paused_task_set(|_| async {
-        let h = seeded(json!({}), vec![summary_provider()]).await;
+        let h = seeded(json!({}), vec![summary_provider(AUTO_SUMMARY)]).await;
         let overflow = overflow_response();
         set_agent_messages(
             &h,
@@ -665,13 +692,37 @@ fn overflow_recovery_is_attempted_once_then_reported() {
 }
 
 #[test]
-fn overflow_recovery_continues_after_one_hundred_milliseconds() {
+fn together_and_litellm_overflow_errors_start_compaction_recovery() {
+    on_paused_task_set(|_| async {
+        for text in [
+            "The input (140000 tokens) is longer than the model's context length (131072 tokens).",
+            "Requested token count exceeds the model's maximum context length of 131072 tokens",
+        ] {
+            let calls = Rc::new(Cell::new(0));
+            let h = seeded(json!({}), vec![counted_summary(Rc::clone(&calls))]).await;
+            let overflow = current_response(&StopReason::Error, text);
+            set_agent_messages(
+                &h,
+                &[
+                    user(&json!([{"type": "text", "text": "one"}]), 100),
+                    assistant("", 200, &answer_extra(&StopReason::Stop, None, 10)),
+                    serde_json::to_value(&overflow).unwrap(),
+                ],
+            );
+            h.session.check_compaction(&overflow, true).await.unwrap();
+            assert_eq!(calls.get(), 1, "{text}");
+        }
+    });
+}
+
+#[test]
+fn overflow_recovery_asks_the_run_to_continue() {
     let expected = case(
         "compaction_checks",
         "overflow_recovery_continues_after_100ms",
     );
     on_paused_task_set(|_| async {
-        let h = seeded(json!({}), vec![summary_provider()]).await;
+        let h = seeded(json!({}), vec![summary_provider(AUTO_SUMMARY)]).await;
         let overflow = overflow_response();
         set_agent_messages(
             &h,
@@ -681,21 +732,9 @@ fn overflow_recovery_continues_after_one_hundred_milliseconds() {
                 serde_json::to_value(&overflow).unwrap(),
             ],
         );
-        let (ended, starts) = (agent_ended(&h), agent_starts(&h));
-        h.session.check_compaction(&overflow, true).await.unwrap();
-        let compacted = tokio::time::Instant::now();
+        let continues = h.session.check_compaction(&overflow, true).await.unwrap();
+        assert!(continues, "the run retries the turn after the recovery");
         assert_observation(&h, &expected["before"]);
-        tokio::time::advance(std::time::Duration::from_millis(99)).await;
-        assert_eq!(messages_view(&h), expected["before"]["messages"]);
-        drop(script_responses(
-            &h,
-            vec![answer("after recovery", None, None)],
-        ));
-        tokio::time::advance(std::time::Duration::from_millis(1)).await;
-        ended.notified().await;
-        assert_eq!(messages_view(&h), expected["after"]["messages"]);
-        let continued = compacted + std::time::Duration::from_millis(100);
-        assert_eq!(*starts.borrow(), [continued]);
     });
 }
 
@@ -703,7 +742,7 @@ fn overflow_recovery_continues_after_one_hundred_milliseconds() {
 fn usage_before_the_compaction_boundary_is_ignored() {
     let expected = case("compaction_checks", "stale_usage_is_ignored");
     on_paused_task_set(|_| async {
-        let h = seeded(json!({}), vec![summary_provider()]).await;
+        let h = seeded(json!({}), vec![summary_provider(AUTO_SUMMARY)]).await;
         let stale = response(250, &answer_extra(&StopReason::Stop, None, 199_999));
         let first_kept = append_boundary(&h, &stale, 199_999.0);
         append_user(&h, "after", 900);
@@ -717,7 +756,7 @@ fn usage_before_the_compaction_boundary_is_ignored() {
 fn threshold_compaction_ends_without_retry() {
     let expected = case("compaction_checks", "threshold_compacts_without_retry");
     on_paused_task_set(|_| async {
-        let h = seeded(json!({}), vec![summary_provider()]).await;
+        let h = seeded(json!({}), vec![summary_provider(AUTO_SUMMARY)]).await;
         let message = response(400, &answer_extra(&StopReason::Stop, None, 199_999));
         h.session.check_compaction(&message, true).await.unwrap();
         assert_observation(&h, &expected);
@@ -731,7 +770,7 @@ fn below_threshold_usage_emits_nothing() {
     on_paused_task_set(|_| async {
         let h = seeded(
             json!({"compaction": {"reserveTokens": 1000}}),
-            vec![summary_provider()],
+            vec![summary_provider(AUTO_SUMMARY)],
         )
         .await;
         let message = response(400, &answer_extra(&StopReason::Stop, None, 198_000));
@@ -747,7 +786,7 @@ fn error_messages_use_the_last_successful_usage() {
         "error_message_uses_last_successful_usage",
     );
     on_paused_task_set(|_| async {
-        let h = seeded(json!({}), vec![summary_provider()]).await;
+        let h = seeded(json!({}), vec![summary_provider(AUTO_SUMMARY)]).await;
         let error = response(
             400,
             &answer_extra(&StopReason::Error, Some("529 overloaded"), 0),
@@ -768,10 +807,38 @@ fn error_messages_use_the_last_successful_usage() {
 }
 
 #[test]
+fn zero_usage_responses_use_the_last_real_usage() {
+    on_paused_task_set(|_| async {
+        for (prior, expected) in [(Some(14), 1), (None, 0)] {
+            let calls = Rc::new(Cell::new(0));
+            let h = seeded_window(
+                100.0,
+                json!({"compaction": {"reserveTokens": 87}}),
+                vec![counted_summary(Rc::clone(&calls))],
+            )
+            .await;
+            let zero = response(400, &answer_extra(&StopReason::Stop, None, 0));
+            let mut records = vec![user(&json!([{"type": "text", "text": "hello"}]), 100)];
+            if let Some(total) = prior {
+                records.push(assistant(
+                    "",
+                    200,
+                    &answer_extra(&StopReason::Stop, None, total),
+                ));
+            }
+            records.push(serde_json::to_value(&zero).unwrap());
+            set_agent_messages(&h, &records);
+            h.session.check_compaction(&zero, true).await.unwrap();
+            assert_eq!(calls.get(), expected, "prior usage {prior:?}");
+        }
+    });
+}
+
+#[test]
 fn errors_without_usage_emit_nothing() {
     let expected = case("compaction_checks", "error_without_usage_does_nothing");
     on_paused_task_set(|_| async {
-        let h = seeded(json!({}), vec![summary_provider()]).await;
+        let h = seeded(json!({}), vec![summary_provider(AUTO_SUMMARY)]).await;
         let error = response(
             400,
             &answer_extra(&StopReason::Error, Some("529 overloaded"), 0),
@@ -795,7 +862,7 @@ fn kept_pre_compaction_usage_does_not_trigger_compaction() {
         "post_compaction_error_ignores_kept_usage",
     );
     on_paused_task_set(|_| async {
-        let h = seeded(json!({}), vec![summary_provider()]).await;
+        let h = seeded(json!({}), vec![summary_provider(AUTO_SUMMARY)]).await;
         let kept = response(250, &answer_extra(&StopReason::Stop, None, 190_000));
         let first_kept = append_boundary(&h, &kept, 190_000.0);
         let error = response(
@@ -826,7 +893,7 @@ fn another_models_overflow_is_not_recovered() {
     on_paused_task_set(|_| async {
         let h = seeded(
             json!({"compaction": {"reserveTokens": 1000}}),
-            vec![summary_provider()],
+            vec![summary_provider(AUTO_SUMMARY)],
         )
         .await;
         let mut record = assistant(
@@ -842,13 +909,13 @@ fn another_models_overflow_is_not_recovered() {
 }
 
 #[test]
-fn queued_messages_resume_after_the_compaction() {
+fn queued_messages_ask_the_run_to_continue_after_the_compaction() {
     let expected = case(
         "compaction_checks",
         "queue_only_compaction_resumes_at_100ms",
     );
     on_paused_task_set(|_| async {
-        let h = seeded(json!({}), vec![summary_provider()]).await;
+        let h = seeded(json!({}), vec![summary_provider(AUTO_SUMMARY)]).await;
         let queued: CustomAgentMessages = serde_json::from_value(json!({
             "role": "custom",
             "customType": "test",
@@ -860,22 +927,10 @@ fn queued_messages_resume_after_the_compaction() {
         h.session
             .agent()
             .follow_up(AgentMessage::Custom(Arc::new(RwLock::new(queued))));
-        let (ended, starts) = (agent_ended(&h), agent_starts(&h));
         let message = response(400, &answer_extra(&StopReason::Stop, None, 199_999));
-        h.session.check_compaction(&message, true).await.unwrap();
-        let compacted = tokio::time::Instant::now();
+        let continues = h.session.check_compaction(&message, true).await.unwrap();
+        assert!(continues, "the run delivers the queued message");
         assert_observation(&h, &expected["before"]);
-        tokio::time::advance(std::time::Duration::from_millis(99)).await;
-        assert_eq!(messages_view(&h), expected["before"]["messages"]);
-        drop(script_responses(
-            &h,
-            vec![answer("queued answer", None, None)],
-        ));
-        tokio::time::advance(std::time::Duration::from_millis(1)).await;
-        ended.notified().await;
-        assert_eq!(messages_view(&h), expected["after"]["messages"]);
-        let continued = compacted + std::time::Duration::from_millis(100);
-        assert_eq!(*starts.borrow(), [continued]);
     });
 }
 
@@ -886,7 +941,7 @@ fn automatic_compaction_without_credentials_ends_silently() {
         "auto_compaction_without_auth_ends_silently",
     );
     on_paused_task_set(|_| async {
-        let h = unauthenticated(vec![summary_provider()]).await;
+        let h = unauthenticated(vec![summary_provider(AUTO_SUMMARY)]).await;
         seed_history(&h);
         let message = response(400, &answer_extra(&StopReason::Stop, None, 199_999));
         h.session.check_compaction(&message, true).await.unwrap();
@@ -918,7 +973,7 @@ fn automatic_compaction_over_empty_history_ends_silently() {
     on_paused_task_set(|_| async {
         let h = harness(HarnessOptions {
             settings: keep_recent(json!({})),
-            factories: vec![summary_provider()],
+            factories: vec![summary_provider(AUTO_SUMMARY)],
             context_window: Some(WINDOW),
             ..HarnessOptions::default()
         })
@@ -953,7 +1008,7 @@ fn automatic_start_event_precedes_the_abort_controller() {
         "auto_start_event_precedes_the_abort_controller",
     );
     on_paused_task_set(|_| async {
-        let h = seeded(json!({}), vec![summary_provider()]).await;
+        let h = seeded(json!({}), vec![summary_provider(AUTO_SUMMARY)]).await;
         let session = Rc::downgrade(&h.session);
         let stopped = Rc::new(Cell::new(false));
         let flag = Rc::clone(&stopped);
@@ -1076,7 +1131,7 @@ fn manual_compaction_uses_the_extension_summary() {
         "manual_compaction_uses_extension_summary",
     );
     on_paused_task_set(|_| async {
-        let h = seeded(json!({}), vec![summary_provider()]).await;
+        let h = seeded(json!({}), vec![summary_provider(AUTO_SUMMARY)]).await;
         let result = h.session.compact(None).await.unwrap();
         assert_eq!(
             result.summary,
@@ -1131,7 +1186,7 @@ fn compacting_twice_reports_already_compacted() {
         "manual_compaction_twice_reports_already_compacted",
     );
     on_paused_task_set(|_| async {
-        let h = seeded(json!({}), vec![summary_provider()]).await;
+        let h = seeded(json!({}), vec![summary_provider(AUTO_SUMMARY)]).await;
         drop(h.session.compact(None).await.unwrap());
         h.events.borrow_mut().clear();
         let refused = h.session.compact(None).await;
@@ -1149,7 +1204,7 @@ fn compacting_empty_history_reports_nothing_to_compact() {
     on_paused_task_set(|_| async {
         let h = harness(HarnessOptions {
             settings: keep_recent(json!({})),
-            factories: vec![summary_provider()],
+            factories: vec![summary_provider(AUTO_SUMMARY)],
             context_window: Some(WINDOW),
             ..HarnessOptions::default()
         })
@@ -1173,18 +1228,13 @@ fn manual_compaction_without_credentials_reports_the_key_message() {
         let docs = maestro_app::configuration::config::get_docs_path().unwrap();
         match refused {
             Ok(_) => panic!("the compaction was expected to be refused"),
-            Err(error) => {
-                let expected = expected["refused"]["error"]
-                    .as_str()
-                    .unwrap()
-                    .replace("$DOCS", &docs);
-                assert_eq!(error.message, expected);
-            }
+            Err(error) => assert_eq!(
+                as_recorded(json!(error.message), &[(&docs, "$DOCS")]),
+                expected["refused"]["error"]
+            ),
         }
-        let docs = maestro_app::configuration::config::get_docs_path().unwrap();
-        let observed = events_view(&h).to_string().replace(&docs, "$DOCS");
         assert_eq!(
-            serde_json::from_str::<Value>(&observed).unwrap(),
+            as_recorded(events_view(&h), &[(&docs, "$DOCS")]),
             without_kept_identity(&expected["events"])
         );
         assert_eq!(messages_view(&h), expected["messages"]);
@@ -1247,7 +1297,7 @@ fn manual_start_event_precedes_the_abort_controller() {
         "manual_start_event_precedes_the_abort_controller",
     );
     on_paused_task_set(|_| async {
-        let h = seeded(json!({}), vec![summary_provider()]).await;
+        let h = seeded(json!({}), vec![summary_provider(AUTO_SUMMARY)]).await;
         let session = Rc::downgrade(&h.session);
         let stopped = Rc::new(Cell::new(false));
         let flag = Rc::clone(&stopped);
@@ -1287,16 +1337,16 @@ fn retries_exhaust_their_attempts_with_doubling_delays() {
             &answer_extra(&StopReason::Error, Some("overloaded_error"), 0),
         );
         assert_eq!(
-            h.session.handle_retryable_error(&failing).await.unwrap(),
+            h.session.handle_retryable_error(&failing).await,
             expected["afterFirst"]["returned"].as_bool().unwrap()
         );
         assert_observation(&h, &expected["afterFirst"]);
         assert_eq!(
-            h.session.handle_retryable_error(&failing).await.unwrap(),
+            h.session.handle_retryable_error(&failing).await,
             expected["second"].as_bool().unwrap()
         );
         assert_eq!(
-            h.session.handle_retryable_error(&failing).await.unwrap(),
+            h.session.handle_retryable_error(&failing).await,
             expected["third"].as_bool().unwrap()
         );
         assert_observation(&h, &expected);
@@ -1322,7 +1372,7 @@ fn disabled_retries_do_nothing() {
             &answer_extra(&StopReason::Error, Some("overloaded_error"), 0),
         );
         assert_eq!(
-            h.session.handle_retryable_error(&failing).await.unwrap(),
+            h.session.handle_retryable_error(&failing).await,
             expected["returned"].as_bool().unwrap()
         );
         assert_observation(&h, &expected);
@@ -1351,10 +1401,7 @@ fn aborting_during_backoff_ends_the_retry() {
             tokio::task::spawn_local(async move { session.handle_retryable_error(&failing).await });
         started.notified().await;
         h.session.abort_retry();
-        assert_eq!(
-            task.await.unwrap().unwrap(),
-            expected["returned"].as_bool().unwrap()
-        );
+        assert_eq!(task.await.unwrap(), expected["returned"].as_bool().unwrap());
         assert_observation(&h, &expected);
         assert_eq!(
             h.session.retry_attempt(),
@@ -1365,7 +1412,7 @@ fn aborting_during_backoff_ends_the_retry() {
 }
 
 #[test]
-fn a_retry_continues_immediately_after_the_backoff() {
+fn a_retry_returns_once_the_backoff_ends() {
     let expected = case("retry_behaviour", "retry_schedules_continuation");
     on_paused_task_set(|_| async {
         let h = harness(HarnessOptions {
@@ -1377,32 +1424,14 @@ fn a_retry_continues_immediately_after_the_backoff() {
             400,
             &answer_extra(&StopReason::Error, Some("connection lost"), 0),
         );
-        set_agent_messages(
-            &h,
-            &[
-                user(&json!([{"type": "text", "text": "hello"}]), 100),
-                serde_json::to_value(&failing).unwrap(),
-            ],
-        );
-        let (ended, starts) = (agent_ended(&h), agent_starts(&h));
-        let failed = tokio::time::Instant::now();
         let mut work = Box::pin(h.session.handle_retryable_error(&failing));
         let mut context = std::task::Context::from_waker(std::task::Waker::noop());
         assert!(std::future::Future::poll(work.as_mut(), &mut context).is_pending());
         tokio::time::advance(std::time::Duration::from_millis(1_999)).await;
         assert!(std::future::Future::poll(work.as_mut(), &mut context).is_pending());
-        drop(script_responses(
-            &h,
-            vec![answer("retried answer", None, None)],
-        ));
         tokio::time::advance(std::time::Duration::from_millis(1)).await;
-        let returned = work.await;
-        assert_eq!(returned.unwrap(), expected["returned"].as_bool().unwrap());
+        assert_eq!(work.await, expected["returned"].as_bool().unwrap());
         assert_eq!(events_view(&h), expected["events"]);
-        ended.notified().await;
-        assert_eq!(messages_view(&h), expected["messages"]);
-        let continued = failed + std::time::Duration::from_millis(2_000);
-        assert_eq!(*starts.borrow(), [continued]);
     });
 }
 
@@ -1418,7 +1447,7 @@ fn fractional_attempt_limits_compare_as_numbers() {
         let failing = response(400, &answer_extra(&StopReason::Error, Some("503"), 0));
         let mut outcomes = Vec::new();
         for _ in 0..5 {
-            outcomes.push(h.session.handle_retryable_error(&failing).await.unwrap());
+            outcomes.push(h.session.handle_retryable_error(&failing).await);
         }
         assert_eq!(json!(outcomes), expected["outcomes"]);
         assert_observation(&h, &expected);
@@ -1436,7 +1465,7 @@ fn zero_base_delay_retries_without_waiting() {
         .await;
         let failing = response(400, &answer_extra(&StopReason::Error, Some("502"), 0));
         assert_eq!(
-            h.session.handle_retryable_error(&failing).await.unwrap(),
+            h.session.handle_retryable_error(&failing).await,
             expected["returned"].as_bool().unwrap()
         );
         assert_observation(&h, &expected);
@@ -1454,39 +1483,10 @@ fn negative_base_delays_fire_immediately() {
         .await;
         let failing = response(400, &answer_extra(&StopReason::Error, Some("503"), 0));
         assert_eq!(
-            h.session.handle_retryable_error(&failing).await.unwrap(),
+            h.session.handle_retryable_error(&failing).await,
             expected["returned"].as_bool().unwrap()
         );
         assert_observation(&h, &expected);
-    });
-}
-
-#[test]
-fn waiting_for_a_retry_releases_on_abort() {
-    let expected = case("retry_behaviour", "wait_for_retry_releases_on_abort");
-    on_paused_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            settings: json!({"retry": {"enabled": true, "maxRetries": 2, "baseDelayMs": 2000}}),
-            ..HarnessOptions::default()
-        })
-        .await;
-        let failing = response(
-            400,
-            &answer_extra(&StopReason::Error, Some("overloaded_error"), 0),
-        );
-        let started = retry_started(&h);
-        let session = Rc::clone(&h.session);
-        let retry =
-            tokio::task::spawn_local(async move { session.handle_retryable_error(&failing).await });
-        started.notified().await;
-        let mut waiting = Box::pin(h.session.wait_for_retry());
-        let mut context = std::task::Context::from_waker(std::task::Waker::noop());
-        let before = std::future::Future::poll(waiting.as_mut(), &mut context).is_ready();
-        assert_eq!(before, expected["beforeRelease"].as_bool().unwrap());
-        h.session.abort_retry();
-        let after = std::future::Future::poll(waiting.as_mut(), &mut context).is_ready();
-        assert_eq!(after, expected["after"].as_bool().unwrap());
-        drop(retry.await);
     });
 }
 
@@ -1495,8 +1495,8 @@ fn toggles_persist_to_the_settings() {
     let expected = case("retry_behaviour", "toggles_write_settings");
     on_paused_task_set(|_| async {
         let h = harness(HarnessOptions::default()).await;
-        h.session.set_auto_retry_enabled(false);
-        h.session.set_auto_compaction_enabled(false);
+        h.session.set_auto_retry_enabled(false).unwrap();
+        h.session.set_auto_compaction_enabled(false).unwrap();
         let settings = h.session.settings_manager();
         let settings = settings.borrow();
         assert_eq!(
@@ -1541,10 +1541,7 @@ fn aborting_cancels_a_retry_in_flight() {
             tokio::task::spawn_local(async move { session.handle_retryable_error(&failing).await });
         started.notified().await;
         h.session.abort().await;
-        assert_eq!(
-            task.await.unwrap().unwrap(),
-            expected["returned"].as_bool().unwrap()
-        );
+        assert_eq!(task.await.unwrap(), expected["returned"].as_bool().unwrap());
         assert_observation(&h, &expected);
         assert_eq!(h.session.is_retrying(), expected["isRetryingAfter"] == true);
     });
@@ -1570,7 +1567,7 @@ fn automatic_storage_failures_end_the_compaction() {
             SessionManager::create(&format!("{root}/project"), Some(&sessions), &root).unwrap();
         let h = harness(HarnessOptions {
             settings: keep_recent(json!({})),
-            factories: vec![summary_provider()],
+            factories: vec![summary_provider(AUTO_SUMMARY)],
             context_window: Some(WINDOW),
             session_manager: Some(manager),
             ..HarnessOptions::default()
@@ -1600,7 +1597,7 @@ fn automatic_storage_failures_end_the_compaction() {
 #[test]
 fn end_listeners_see_the_compaction_running() {
     on_paused_task_set(|_| async {
-        let h = seeded(json!({}), vec![summary_provider()]).await;
+        let h = seeded(json!({}), vec![summary_provider(AUTO_SUMMARY)]).await;
         let session = Rc::downgrade(&h.session);
         let running = Rc::new(RefCell::new(Vec::new()));
         let seen = Rc::clone(&running);
@@ -1628,7 +1625,7 @@ fn end_listeners_see_the_compaction_running() {
 #[test]
 fn overflow_recovery_keeps_a_successful_stored_tail() {
     on_paused_task_set(|_| async {
-        let h = seeded(json!({}), vec![summary_provider()]).await;
+        let h = seeded(json!({}), vec![summary_provider(AUTO_SUMMARY)]).await;
         let kept = assistant(
             "kept answer",
             350,
@@ -1716,28 +1713,12 @@ fn automatic_compaction_uses_the_preferences_from_before_its_start() {
 }
 
 #[test]
-fn waiting_without_a_retry_returns_while_the_agent_runs() {
-    on_paused_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
-        drop(script_responses(&h, vec![answer("busy", None, None)]));
-        let run = h.session.agent().prompt(PromptInput::Text {
-            text: "hello".to_owned(),
-            images: Vec::new(),
-        });
-        let mut waiting = Box::pin(h.session.wait_for_retry());
-        let mut context = std::task::Context::from_waker(std::task::Waker::noop());
-        assert!(std::future::Future::poll(waiting.as_mut(), &mut context).is_ready());
-        run.await.unwrap();
-    });
-}
-
-#[test]
 fn repeated_summaries_announce_the_newest_entry() {
     on_paused_task_set(|_| async {
         let ids = Rc::new(RefCell::new(Vec::new()));
         let h = seeded(
             json!({}),
-            vec![summary_provider(), announced(Rc::clone(&ids))],
+            vec![summary_provider(AUTO_SUMMARY), announced(Rc::clone(&ids))],
         )
         .await;
         drop(h.session.compact(None).await.unwrap());
@@ -1768,44 +1749,6 @@ fn repeated_summaries_announce_the_newest_entry() {
 }
 
 #[test]
-fn a_retry_left_unobserved_still_continues() {
-    let expected = case("retry_behaviour", "retry_schedules_continuation");
-    on_paused_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            settings: json!({"retry": {"enabled": true, "maxRetries": 3, "baseDelayMs": 2000}}),
-            ..HarnessOptions::default()
-        })
-        .await;
-        let failing = response(
-            400,
-            &answer_extra(&StopReason::Error, Some("connection lost"), 0),
-        );
-        set_agent_messages(
-            &h,
-            &[
-                user(&json!([{"type": "text", "text": "hello"}]), 100),
-                serde_json::to_value(&failing).unwrap(),
-            ],
-        );
-        let ended = agent_ended(&h);
-        drop(script_responses(
-            &h,
-            vec![answer("retried answer", None, None)],
-        ));
-        start_and_abandon(h.session.handle_retryable_error(&failing));
-        assert!(h.session.is_retrying(), "the retry still waits");
-        tokio::time::advance(std::time::Duration::from_millis(2_000)).await;
-        ended.notified().await;
-        // The recording ends when the wait returns; the continuation's successful answer
-        // then ends the retry.
-        let mut events = expected["events"].as_array().unwrap().clone();
-        events.push(json!({"type": "auto_retry_end", "attempt": 1, "success": true}));
-        assert_eq!(events_view(&h), json!(events));
-        assert_eq!(messages_view(&h), expected["messages"]);
-    });
-}
-
-#[test]
 fn a_manual_compaction_left_unobserved_still_completes() {
     let expected = case(
         "manual_compaction",
@@ -1816,9 +1759,9 @@ fn a_manual_compaction_left_unobserved_still_completes() {
         let provider = gated(supplied_summary(), Some(gate.clone()));
         let h = seeded(json!({}), vec![provider]).await;
         let ended = compaction_ended(&h);
-        start_and_abandon(h.session.compact(None));
-        gate.0.notified().await;
+        drop(h.session.compact(None));
         assert!(h.session.is_compacting(), "the compaction still runs");
+        gate.0.notified().await;
         gate.1.notify_one();
         ended.notified().await;
         assert_observation(&h, &expected);
@@ -1848,6 +1791,30 @@ fn an_automatic_compaction_left_unobserved_still_completes() {
 }
 
 #[test]
+fn navigation_handler_and_abort_precede_observation() {
+    on_paused_task_set(|_| async {
+        let reached = Rc::new(Notify::new());
+        let h = seeded(json!({}), vec![waiting_tree_extension(Rc::clone(&reached))]).await;
+        let manager = h.session.session_manager();
+        let old_leaf = manager.borrow().get_leaf_id().map(str::to_owned);
+        let target = manager.borrow().get_entries()[1]["id"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        let observer = h.session.navigate_tree(&target, navigate_options());
+        let mut entered = std::pin::pin!(reached.notified());
+        let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+        let entered_at_call = std::future::Future::poll(entered.as_mut(), &mut context).is_ready();
+        assert_eq!((entered_at_call, h.session.is_compacting()), (true, true));
+        h.session.abort_branch_summary();
+        let outcome = observer.await.unwrap();
+        assert!(outcome.cancelled);
+        assert_eq!(manager.borrow().get_leaf_id(), old_leaf.as_deref());
+        assert!(!h.session.is_compacting());
+    });
+}
+
+#[test]
 fn a_tree_navigation_left_unobserved_still_moves() {
     on_paused_task_set(|_| async {
         let gate: Gate = (Rc::new(Notify::new()), Rc::new(Notify::new()));
@@ -1860,9 +1827,9 @@ fn a_tree_navigation_left_unobserved_still_moves() {
             .as_str()
             .unwrap()
             .to_owned();
-        start_and_abandon(h.session.navigate_tree(&target, navigate_options()));
-        gate.0.notified().await;
+        drop(h.session.navigate_tree(&target, navigate_options()));
         assert!(h.session.is_compacting(), "the navigation still runs");
+        gate.0.notified().await;
         gate.1.notify_one();
         announced.notified().await;
         assert_eq!(moves.get(), 1);

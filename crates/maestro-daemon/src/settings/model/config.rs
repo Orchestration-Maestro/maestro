@@ -90,7 +90,7 @@ impl Config {
 }
 
 /// Decoded preferences with warnings and rejected semantic areas.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LoadedConfig {
     /// Accepted values, with defaults for invalid areas.
     pub config: Config,
@@ -98,6 +98,8 @@ pub struct LoadedConfig {
     pub diagnostics: Vec<String>,
     /// Semantic areas whose typed decoding failed.
     pub invalid_sections: Vec<String>,
+    /// Last successfully decoded plain document for each independent area.
+    pub accepted_areas: crate::settings::io::AcceptedAreas,
 }
 
 /// Result of applying a live preference reload.

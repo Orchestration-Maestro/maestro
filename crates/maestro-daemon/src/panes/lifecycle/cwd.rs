@@ -1,11 +1,11 @@
 //! Directory observations preserve their native spelling and binding time.
 use super::PaneRuntime;
-use maestro_process::terminal::jobs as foreground;
+use maestro_process::terminal::jobs;
 use std::{path::PathBuf, sync::atomic::Ordering};
 
 /// Reads an absolute native process directory without a filesystem traversal check.
 fn absolute_process_cwd(pid: u32) -> Option<PathBuf> {
-    foreground::process_cwd(pid).filter(|cwd| cwd.is_absolute())
+    jobs::process_cwd(pid).filter(|cwd| cwd.is_absolute())
 }
 
 impl PaneRuntime {
@@ -24,7 +24,7 @@ impl PaneRuntime {
             .lock()
             .ok()
             .and_then(|cwd| cwd.clone())
-            .or_else(|| self.child_pid().and_then(foreground::process_cwd))
+            .or_else(|| self.child_pid().and_then(jobs::process_cwd))
     }
 
     /// Uses a traversable foreground leader directory, falling back to the pane cwd.
@@ -45,10 +45,10 @@ impl PaneRuntime {
             .io
             .foreground_process_group_id()
             .await
-            .or_else(|| foreground::foreground_process_group_id(pid))
+            .or_else(|| jobs::foreground_process_group_id(pid))
             .and_then(absolute_process_cwd);
         let member = || {
-            foreground::foreground_job(pid, self.shared.process_detection_mode)?
+            jobs::foreground_job(pid, self.shared.process_detection_mode)?
                 .processes
                 .into_iter()
                 .filter(|process| process.pid != pid)

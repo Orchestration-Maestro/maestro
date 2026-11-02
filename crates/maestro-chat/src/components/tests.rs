@@ -47,20 +47,19 @@ fn shared_list_window_matches_all_existing_capacities() {
     }
 }
 #[test]
-fn shared_home_prefix_matches_existing_source_expression() {
+fn shared_home_prefix_stops_at_path_component_boundaries() {
     for case in cases()
         .into_iter()
         .filter(|c| c.test == "existing_home_prefix_regression")
     {
         assert_eq!(
-            super::shorten_home_path(
+            maestro_path::shorten_home(
                 case.input.path.as_deref().unwrap(),
-                case.input.home.as_deref()
+                case.input.home.as_deref().unwrap_or_default()
             ),
             case.expected.path.unwrap()
         );
     }
-    assert_eq!(super::shorten_home_path("relative", None), "relative");
 }
 
 #[test]

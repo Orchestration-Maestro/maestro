@@ -67,7 +67,7 @@ pub(super) async fn run(
     stdout: &mut dyn Write,
     stderr: &mut dyn Write,
 ) -> io::Result<bool> {
-    let mut command = tokio::process::Command::new(PROGRAM);
+    let mut command = maestro_process::command(PROGRAM);
     command
         .args(["--mode", "json", "--tools", "read,write", "-p", prompt])
         .current_dir(directory);

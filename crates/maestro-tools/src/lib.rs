@@ -76,7 +76,9 @@ pub use editing::{
     EditOperations, EditRenderState, EditToolDetails, EditToolInput, EditToolOptions,
     create_edit_tool, create_edit_tool_definition,
 };
-pub use keybinding_hints::{key_hint, key_text, raw_key_hint};
+pub use keybinding_hints::{
+    expand_hint, format_key_text, key_display_text, key_hint, key_text, raw_key_hint,
+};
 #[cfg(not(target_arch = "wasm32"))]
 pub use mutations::with_file_mutation_queue;
 pub use output::limits::{

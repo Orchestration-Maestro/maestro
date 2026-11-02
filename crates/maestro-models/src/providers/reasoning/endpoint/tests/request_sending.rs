@@ -29,6 +29,7 @@ pub(super) async fn check(input: &Value, expected: &Value) {
     if input["simple"].as_bool() == Some(true) {
         options = request::simple_options(
             &model,
+            &serde_json::from_value(serde_json::json!({"messages":[]})).unwrap(),
             &crate::SimpleStreamOptions {
                 common: options.common,
                 ..Default::default()
@@ -242,4 +243,108 @@ fn configuration(input: &Value) -> (crate::Model, crate::MistralOptions) {
     }
 
     (model, options)
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// Replayed arguments reach the sent body under the source's truthy default.
+#[test]
+fn replayed_argument_defaults_reach_the_transport() {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(argument_defaults());
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// One sent call per root, compared with the argument text the source states.
+async fn argument_defaults() {
+    let model = super::request_corpus::model(&serde_json::json!({}));
+    for (authored, sent) in [
+        (Value::Null, "{}"),
+        (serde_json::json!([]), "[]"),
+        (serde_json::json!(false), "{}"),
+    ] {
+        assert_eq!(
+            sent_argument_text(&model, &authored).await,
+            sent,
+            "{authored}"
+        );
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// The encoded argument text of one replayed call, read from the sent body.
+async fn sent_argument_text(model: &crate::Model, authored: &Value) -> String {
+    let requests = Arc::new(Mutex::new(Vec::new()));
+    let captured = Arc::clone(&requests);
+    let fetch: crate::Fetch = Arc::new(move |request| {
+        captured
+            .lock()
+            .unwrap()
+            .push(String::from_utf8(request.body).unwrap());
+        Box::pin(async {
+            Ok(crate::HttpResponse {
+                status: 200,
+                status_text: String::new(),
+                headers: std::collections::BTreeMap::from([(
+                    "content-type".into(),
+                    "text/event-stream".into(),
+                )]),
+                body: Box::pin(futures_util::stream::empty()),
+            })
+        })
+    });
+    let options: crate::MistralOptions = crate::MistralOptions {
+        common: crate::StreamOptions {
+            api_key: Some("synthetic".into()),
+            fetch: Some(fetch),
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+    let context = replay_context(model, authored);
+    let outcome = match request::prepare(Arc::new(model.clone()), &context, &options, None).await {
+        Ok(prepared) => request::send(prepared).await.map(|_| ()),
+        Err(error) => Err(error),
+    };
+    assert!(outcome.is_ok(), "{outcome:?}");
+    let requests = requests.lock().unwrap();
+    let body: Value = serde_json::from_str(&requests[0]).unwrap();
+    body["messages"][0]["tool_calls"][0]["function"]["arguments"]
+        .as_str()
+        .unwrap()
+        .to_owned()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// History holding one answered call with the supplied argument root.
+fn replay_context(model: &crate::Model, authored: &Value) -> crate::Context {
+    serde_json::from_value(serde_json::json!({
+        "messages": [
+            {
+                "role": "assistant",
+                "content": [
+                    {"type": "toolCall", "id": "call-a", "name": "inspect", "arguments": authored}
+                ],
+                "api": model.api,
+                "provider": model.provider,
+                "model": model.id,
+                "usage": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0,
+                    "totalTokens": 0,
+                    "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "total": 0}},
+                "stopReason": "toolUse",
+                "timestamp": 2
+            },
+            {
+                "role": "toolResult",
+                "toolCallId": "call-a",
+                "toolName": "inspect",
+                "content": [{"type": "text", "text": "ok"}],
+                "isError": false,
+                "timestamp": 3
+            }
+        ]
+    }))
+    .unwrap()
 }

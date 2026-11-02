@@ -10,6 +10,9 @@ use super::super::certificate_subject_token_supplier::CertificateSubjectTokenSup
 const CLIENT: &[u8] =
     include_bytes!("../../../../../../tests/fixtures/cloud-authentication/client.pem");
 const CA: &[u8] = include_bytes!("../../../../../../tests/fixtures/cloud-authentication/ca.pem");
+/// The authority of the controlled server's certificate, separate from the client authority.
+const SERVER_AUTHORITY: &[u8] =
+    include_bytes!("../../../../../../tests/fixtures/cloud-authentication/server-ca.pem");
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -70,11 +73,11 @@ fn certificate_chain_prepends_or_retains_the_leaf() {
     }
 }
 
-/// Identity-bearing real client with only the controlled authority added to trust.
+/// Identity-bearing real client with only the controlled server authority added to trust.
 fn trusted_client(
     identity: reqwest::Identity,
 ) -> Result<crate::Fetch, google_cloud_auth::errors::CredentialsError> {
-    let root = reqwest::Certificate::from_pem(CA)
+    let root = reqwest::Certificate::from_pem(SERVER_AUTHORITY)
         .map_err(|_| super::super::base_external_client::invalid_token())?;
     let client = super::super::base_external_client::identity_client(identity)
         .add_root_certificate(root)
@@ -296,7 +299,7 @@ fn check_configuration_precedence(test: &str) {
         .unwrap()
         .to_owned();
     let (_, sdk_config) = default_layout(&files, &location, "sdk");
-    let (home, _) = default_layout(&files, &location, "home");
+    let (home_name, home) = super::home_variable(&default_layout(&files, &location, "home").0);
     let explicit = serde_json::json!({"certificate_config_location":location}).to_string();
     let default = serde_json::json!({"use_default_certificate_config":true}).to_string();
     let missing = format!("{sdk_config}/missing.json");
@@ -325,14 +328,14 @@ fn check_configuration_precedence(test: &str) {
                 ("HOME", "/nonexistent"),
             ],
         ),
-        ("ok", &default, vec![("HOME", home.as_str())]),
+        ("ok", &default, vec![(home_name, home.as_str())]),
         (
             "err",
             &default,
             vec![
                 ("GOOGLE_API_CERTIFICATE_CONFIG", missing.as_str()),
                 ("CLOUDSDK_CONFIG", sdk_config.as_str()),
-                ("HOME", home.as_str()),
+                (home_name, home.as_str()),
             ],
         ),
         ("err", &default, vec![("HOME", "/nonexistent")]),

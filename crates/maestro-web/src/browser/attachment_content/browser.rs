@@ -2,12 +2,10 @@
 use super::{
     AttachmentContent, AttachmentHost, AttachmentHostError, AttachmentSurface, ImageFit, TextView,
 };
-use crate::Attachment;
 use maestro_theme::BrandPresentation;
 use std::collections::HashMap;
 use std::{cell::RefCell, rc::Rc};
 use web_sys::{Document, Element, HtmlCanvasElement};
-mod dialog;
 mod reading;
 /// Browser objects scoped to the supplied canvas's document.
 pub struct BrowserAttachmentHost {
@@ -21,8 +19,6 @@ pub struct BrowserAttachmentHost {
     scopes: Rc<RefCell<Vec<egui::Id>>>,
     /// Open modal identities in mounting order.
     overlays: RefCell<Vec<egui::Id>>,
-    /// Escape pending from native field focus.
-    escape: Rc<std::cell::Cell<bool>>,
 }
 /// One retained content element with its unclipped layout.
 struct DomSurface {
@@ -34,8 +30,6 @@ struct DomSurface {
     tag: &'static str,
     /// Complete layout excluding modal visibility.
     style: String,
-    /// Native field callbacks and reference assignment.
-    input: Option<super::input::DomInput>,
     /// Native reading lifetime and current measurement operands.
     reading: Option<reading::NativeReading>,
     /// Detached replacement retained until successful publication.
@@ -61,7 +55,6 @@ impl DomSurface {
 }
 impl Drop for DomSurface {
     fn drop(&mut self) {
-        drop(self.input.take());
         drop(self.reading.take());
         self.wrapper.remove();
     }
@@ -108,7 +101,6 @@ impl BrowserAttachmentHost {
             surfaces: RefCell::new(HashMap::new()),
             scopes: Rc::default(),
             overlays: RefCell::new(Vec::new()),
-            escape: Rc::new(std::cell::Cell::new(false)),
         })
     }
     /// Create a detached element owner, publishing it only after setup.
@@ -129,7 +121,6 @@ impl BrowserAttachmentHost {
             child,
             tag,
             style: String::new(),
-            input: None,
             reading: None,
             pending: None,
             modal: None,
@@ -190,7 +181,6 @@ impl BrowserAttachmentHost {
     }
     /// Update copied DOM properties while retaining unchanged native content.
     fn content(
-        &self,
         surface: &mut DomSurface,
         content: &AttachmentContent<'_>,
     ) -> Result<(), AttachmentHostError> {
@@ -198,13 +188,6 @@ impl BrowserAttachmentHost {
         let element = &surface.child;
         let css=match content {
             AttachmentContent::Reading(_) => return Ok(()),
-            AttachmentContent::Input { props, modal, .. } => {
-                if surface.input.is_none() { surface.input = Some(super::input::DomInput::new(element)?); }
-                if let Some(input) = surface.input.as_mut() { input.update(content, Rc::clone(&self.escape))?; }
-                surface.wrapper.set_attribute("class", &props.class_name).map_err(|e|host_error(&e))?;
-                surface.modal = *modal;
-                return Ok(());
-            },
             AttachmentContent::Image{source,alt,fit}=>{
                 if element.get_attribute("src").as_deref()!=Some(*source){element.set_attribute("src",source).map_err(|error|host_error(&error))?;}
                 element.set_attribute("alt",alt).map_err(|error|host_error(&error))?;element.set_attribute("title",alt).map_err(|error|host_error(&error))?;
@@ -245,7 +228,6 @@ impl BrowserAttachmentHost {
                 .map_err(|e| host_error(&e))?;
         }
         if surface.tag != tag || was_reading {
-            drop(surface.input.take());
             let child = self
                 .document
                 .create_element(tag)
@@ -271,13 +253,12 @@ impl BrowserAttachmentHost {
                 ..
             }
         );
-        self.content(surface, &s.content)
-            .map_err(|error| match error {
-                AttachmentHostError::Host(message) if presentation => {
-                    AttachmentHostError::Presentation(message)
-                }
-                other => other,
-            })?;
+        Self::content(surface, &s.content).map_err(|error| match error {
+            AttachmentHostError::Host(message) if presentation => {
+                AttachmentHostError::Presentation(message)
+            }
+            other => other,
+        })?;
         let body = self
             .document
             .body()
@@ -317,37 +298,6 @@ impl AttachmentHost for BrowserAttachmentHost {
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = bool>>> {
         crate::utils::clipboard::copy_to_clipboard(&self.document, text, mode)
     }
-    fn capture_focus(&self) -> Result<Option<Rc<super::FocusTarget>>, AttachmentHostError> {
-        self.capture_native_focus()
-    }
-    fn restore_focus(
-        &self,
-        target: Rc<super::FocusTarget>,
-    ) -> Result<crate::browser::timer::Timer, AttachmentHostError> {
-        let window = self
-            .document
-            .default_view()
-            .ok_or_else(|| AttachmentHostError::Host("Document has no window".into()))?;
-        crate::browser::timer::frame(
-            window,
-            Rc::new(move || {
-                if let Err(error) = target() {
-                    wasm_bindgen::throw_str(&error.to_string());
-                }
-            }),
-        )
-        .map_err(|e| host_error(&e))
-    }
-    fn dialog_bounds(
-        &self,
-        id: egui::Id,
-        dimensions: [&str; 2],
-    ) -> Result<egui::Rect, AttachmentHostError> {
-        self.measure_dialog(id, dimensions)
-    }
-    fn native_key(&self, event: &web_sys::KeyboardEvent, context: &egui::Context) {
-        super::input::admit_escape(event, &self.escape, context);
-    }
 
     fn reading_layout(&self, id: egui::Id) -> Result<super::ReadingLayout, AttachmentHostError> {
         self.measure_reading(id)
@@ -359,7 +309,6 @@ impl AttachmentHost for BrowserAttachmentHost {
     ) -> Result<(), AttachmentHostError> {
         let tag = match &s.content {
             AttachmentContent::Reading(_) => return self.present_reading(&s, p),
-            AttachmentContent::Input { .. } => "input",
             AttachmentContent::Image { .. } => "img",
             AttachmentContent::Text { .. } => "pre",
             AttachmentContent::Preview { .. } => "div",
@@ -424,9 +373,6 @@ impl AttachmentHost for BrowserAttachmentHost {
         let removed = self.surfaces.borrow_mut().remove(&id);
         drop(removed);
     }
-    fn take_escape(&self) -> bool {
-        self.escape.replace(false)
-    }
     fn timer(
         &self,
         delay_ms: i32,
@@ -451,7 +397,7 @@ impl AttachmentHost for BrowserAttachmentHost {
     ) -> Result<(), AttachmentHostError> {
         crate::utils::download::download_bytes(&self.document, bytes, name, mime)
     }
-    fn download(&self, attachment: Rc<RefCell<Attachment>>) -> Result<(), AttachmentHostError> {
+    fn download(&self, attachment: crate::SharedAttachment) -> Result<(), AttachmentHostError> {
         crate::utils::download::download(&self.document, &attachment)
     }
 }

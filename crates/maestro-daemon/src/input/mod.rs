@@ -3,7 +3,7 @@
 /// Supplied host byte decoding for the multiplexer input loop.
 pub mod framing;
 mod model;
-mod parse;
+pub(crate) mod parse;
 
 pub use framing::parse_raw_input_bytes_sync;
 pub use parse::parse_terminal_key_sequence;

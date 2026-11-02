@@ -52,14 +52,31 @@ fn check(name: &str) {
     );
 }
 
+/// Whether this host keeps the candidate spellings `AGENTS.md` and `AGENTS.MD` apart. The
+/// recorded cases that author an upper-case candidate assume it does; a case-folding host
+/// finds the first candidate under either spelling, so those cases state their premise.
+fn candidates_kept_apart(test: &str) -> bool {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let names = ["AGENTS.md", "AGENTS.MD"].map(std::ffi::OsStr::new);
+    let kept = scratch.keeps_distinct(&names).unwrap();
+    if !kept {
+        eprintln!("{test} needs a host that keeps {names:?} apart");
+    }
+    kept
+}
+
 #[test]
 fn context_files_run_from_global_through_root_to_cwd() {
-    check("global_then_root_to_cwd");
+    if candidates_kept_apart("context_files_run_from_global_through_root_to_cwd") {
+        check("global_then_root_to_cwd");
+    }
 }
 
 #[test]
 fn first_context_candidate_wins_in_each_directory() {
-    check("first_candidate_wins_per_directory");
+    if candidates_kept_apart("first_context_candidate_wins_in_each_directory") {
+        check("first_candidate_wins_per_directory");
+    }
 }
 
 #[test]
@@ -82,6 +99,9 @@ fn read_warning(prefix: &str, path: &str) -> String {
 
 #[test]
 fn unreadable_context_candidate_warns_and_falls_through() {
+    if !candidates_kept_apart("unreadable_context_candidate_warns_and_falls_through") {
+        return;
+    }
     let case = context_case("unreadable_candidate_falls_through");
     let Some((base, stderr)) = child_stderr(
         "unreadable_context_candidate_warns_and_falls_through",

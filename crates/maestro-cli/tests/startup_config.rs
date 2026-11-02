@@ -189,6 +189,54 @@ fn config_command_reports_loaded_warnings_with_its_own_context() {
 }
 
 #[test]
+fn config_command_propagates_agent_directory_and_manager_failures() {
+    let writer = Presenters::new();
+    let scratch = Scratch::new().unwrap();
+    for (reason, seam) in [
+        ("agent directory refused", "agent"),
+        ("manager construction refused", "manager"),
+    ] {
+        let harness = Harness::new(None, None);
+        if seam == "agent" {
+            harness.fail_agent_dir(reason);
+        } else {
+            harness.fail_manager(reason);
+        }
+        let recording = Recording::new(&harness);
+        let presentation = recording.presentation(theme(scratch.path()), &writer);
+        assert_eq!(
+            harness
+                .try_run_config(&["config"], presentation)
+                .expect_err("the failure is required")
+                .to_string(),
+            reason,
+            "{seam}"
+        );
+        assert!(
+            recording.received.borrow().is_none(),
+            "{seam}: no presentation"
+        );
+        assert!(
+            recording.exits.borrow().is_empty(),
+            "{seam}: no exit effect"
+        );
+        assert!(
+            harness.stderr.text().is_empty(),
+            "{seam}: no package command catch"
+        );
+        assert_eq!(
+            steps(&harness),
+            if seam == "agent" {
+                vec!["cwd", "agent"]
+            } else {
+                vec!["cwd", "agent", "settings"]
+            },
+            "{seam}: the sequence stops at the failing seam"
+        );
+    }
+}
+
+#[test]
 fn config_command_propagates_failures_without_exit_or_catch() {
     let writer = Presenters::new();
     let refused = Harness::new(None, None);

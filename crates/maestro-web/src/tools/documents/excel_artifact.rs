@@ -14,13 +14,16 @@ pub struct ExcelArtifact {
     /// Complete original encoded content.
     content: String,
     /// Caller platform effects.
-    host: Rc<dyn AttachmentHost>,
+    host: Option<Rc<dyn AttachmentHost>>,
     /// Stable native surface identity.
     id: egui::Id,
     /// Owned prepared tables.
     excel: excel::Excel,
     /// Body preparation awaits changed original content.
     changed: bool,
+    /// Distinguishes explicit retries from unrelated native body updates.
+    #[cfg(target_arch = "wasm32")]
+    assignment: Rc<()>,
     /// Latched artifact load diagnostic.
     failure: Option<String>,
     /// Native error presentation, not error policy.
@@ -34,6 +37,10 @@ impl ExcelArtifact {
     /// Start with empty fields using the supplied native host.
     #[must_use]
     pub fn new(host: Rc<dyn AttachmentHost>) -> Self {
+        Self::with_host(Some(host))
+    }
+    /// Create workbook storage independently of retained effects.
+    fn with_host(host: Option<Rc<dyn AttachmentHost>>) -> Self {
         Self {
             filename: String::new(),
             content: String::new(),
@@ -41,10 +48,20 @@ impl ExcelArtifact {
             id: attachment_content::identity(),
             excel: excel::Excel::default(),
             changed: false,
+            #[cfg(target_arch = "wasm32")]
+            assignment: Rc::new(()),
             failure: None,
             error: error::Error::default(),
             context: None,
             visible: true,
+        }
+    }
+    /// Media type selected from the literal last filename segment.
+    fn mime(&self) -> &'static str {
+        if super::extension(&self.filename) == "xls" {
+            "application/vnd.ms-excel"
+        } else {
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         }
     }
     /// Wake the last header or body context after an owned edit.
@@ -72,16 +89,14 @@ impl ExcelArtifact {
         }
     }
 }
-impl ArtifactElement for ExcelArtifact {
-    fn set_visibility(
-        &mut self,
-        visible: bool,
-        modal: Option<egui::Id>,
-    ) -> Result<(), ArtifactUiError> {
-        self.host.set_retained_visibility(self.id, visible, modal)?;
-        self.visible = visible;
-        Ok(())
+impl Default for ExcelArtifact {
+    /// Empty host-free workbook content.
+    fn default() -> Self {
+        Self::with_host(None)
     }
+}
+impl ArtifactElement for ExcelArtifact {
+    super::retained::artifact_visibility!(visible);
     fn filename(&self) -> &str {
         &self.filename
     }
@@ -93,6 +108,10 @@ impl ArtifactElement for ExcelArtifact {
         &self.content
     }
     fn set_content(&mut self, content: String) {
+        #[cfg(target_arch = "wasm32")]
+        {
+            self.assignment = Rc::new(());
+        }
         if self.content == content && self.failure.is_none() {
             return;
         }
@@ -114,16 +133,9 @@ impl ArtifactElement for ExcelArtifact {
         download_button::draw(
             ui,
             view,
-            self.host.as_ref(),
+            super::retained::host(self.host.as_ref())?.as_ref(),
             &self.filename,
-            (
-                if super::extension(&self.filename) == "xls" {
-                    "application/vnd.ms-excel"
-                } else {
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                },
-                &bytes,
-            ),
+            (self.mime(), &bytes),
         )
     }
     fn render(&mut self, ui: &mut egui::Ui, view: ArtifactView<'_>) -> Result<(), ArtifactUiError> {
@@ -134,7 +146,7 @@ impl ArtifactElement for ExcelArtifact {
         self.prepare();
         if let Some(message) = &self.failure {
             self.error.present(
-                self.host.as_ref(),
+                super::retained::host(self.host.as_ref())?.as_ref(),
                 ui,
                 (self.id, None, true),
                 (
@@ -150,7 +162,7 @@ impl ArtifactElement for ExcelArtifact {
                 .allocate_space(ui.available_size().max(egui::Vec2::ZERO))
                 .1;
             self.excel.present(
-                self.host.as_ref(),
+                super::retained::host(self.host.as_ref())?.as_ref(),
                 ui,
                 (self.id, rect, None, true),
                 (
@@ -164,6 +176,11 @@ impl ArtifactElement for ExcelArtifact {
 }
 impl Drop for ExcelArtifact {
     fn drop(&mut self) {
-        self.host.remove(self.id);
+        if let Some(host) = &self.host {
+            host.remove(self.id);
+        }
     }
 }
+
+#[cfg(target_arch = "wasm32")]
+mod dom;

@@ -235,7 +235,9 @@
           ]
         }
       ],
-      "inferenceConfig": {}
+      "inferenceConfig": {
+        "maxTokens": 32768
+      }
     }
   },
   {

@@ -11105,5 +11105,311 @@
         }
       ]
     }
+  },
+  {
+    "test": "history_arguments_keep_nullish_defaults",
+    "operation": "convertMessages",
+    "input": {
+      "model": {
+        "id": "gemini-3-pro-preview",
+        "name": "controlled model",
+        "api": "google-generative-ai",
+        "provider": "google",
+        "baseUrl": "https://controlled.invalid",
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 1,
+          "output": 2,
+          "cacheRead": 3,
+          "cacheWrite": 4
+        },
+        "contextWindow": 128000,
+        "maxTokens": 8192
+      },
+      "context": {
+        "messages": [
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "call-a",
+                "name": "inspect",
+                "arguments": null
+              }
+            ],
+            "api": "google-generative-ai",
+            "provider": "google",
+            "model": "gemini-3-pro-preview",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 2
+          },
+          {
+            "role": "toolResult",
+            "toolCallId": "call-a",
+            "toolName": "inspect",
+            "content": [
+              {
+                "type": "text",
+                "text": "ok"
+              }
+            ],
+            "isError": false,
+            "timestamp": 3
+          }
+        ]
+      }
+    },
+    "id": "C201",
+    "expected": {
+      "value": [
+        {
+          "role": "model",
+          "parts": [
+            {
+              "functionCall": {
+                "name": "inspect",
+                "args": {}
+              }
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "parts": [
+            {
+              "functionResponse": {
+                "name": "inspect",
+                "response": {
+                  "output": "ok"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "history_arguments_keep_nullish_defaults",
+    "operation": "convertMessages",
+    "input": {
+      "model": {
+        "id": "gemini-3-pro-preview",
+        "name": "controlled model",
+        "api": "google-generative-ai",
+        "provider": "google",
+        "baseUrl": "https://controlled.invalid",
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 1,
+          "output": 2,
+          "cacheRead": 3,
+          "cacheWrite": 4
+        },
+        "contextWindow": 128000,
+        "maxTokens": 8192
+      },
+      "context": {
+        "messages": [
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "call-a",
+                "name": "inspect",
+                "arguments": []
+              }
+            ],
+            "api": "google-generative-ai",
+            "provider": "google",
+            "model": "gemini-3-pro-preview",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 2
+          },
+          {
+            "role": "toolResult",
+            "toolCallId": "call-a",
+            "toolName": "inspect",
+            "content": [
+              {
+                "type": "text",
+                "text": "ok"
+              }
+            ],
+            "isError": false,
+            "timestamp": 3
+          }
+        ]
+      }
+    },
+    "id": "C202",
+    "expected": {
+      "value": [
+        {
+          "role": "model",
+          "parts": [
+            {
+              "functionCall": {
+                "name": "inspect",
+                "args": []
+              }
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "parts": [
+            {
+              "functionResponse": {
+                "name": "inspect",
+                "response": {
+                  "output": "ok"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "history_arguments_keep_nullish_defaults",
+    "operation": "convertMessages",
+    "input": {
+      "model": {
+        "id": "gemini-3-pro-preview",
+        "name": "controlled model",
+        "api": "google-generative-ai",
+        "provider": "google",
+        "baseUrl": "https://controlled.invalid",
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 1,
+          "output": 2,
+          "cacheRead": 3,
+          "cacheWrite": 4
+        },
+        "contextWindow": 128000,
+        "maxTokens": 8192
+      },
+      "context": {
+        "messages": [
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "call-a",
+                "name": "inspect",
+                "arguments": false
+              }
+            ],
+            "api": "google-generative-ai",
+            "provider": "google",
+            "model": "gemini-3-pro-preview",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 2
+          },
+          {
+            "role": "toolResult",
+            "toolCallId": "call-a",
+            "toolName": "inspect",
+            "content": [
+              {
+                "type": "text",
+                "text": "ok"
+              }
+            ],
+            "isError": false,
+            "timestamp": 3
+          }
+        ]
+      }
+    },
+    "id": "C203",
+    "expected": {
+      "value": [
+        {
+          "role": "model",
+          "parts": [
+            {
+              "functionCall": {
+                "name": "inspect",
+                "args": false
+              }
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "parts": [
+            {
+              "functionResponse": {
+                "name": "inspect",
+                "response": {
+                  "output": "ok"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
   }
 ]

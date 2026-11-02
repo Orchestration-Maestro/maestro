@@ -1,19 +1,19 @@
-//! Structural packaging of integration tests in migrated members.
+//! Structural packaging of integration tests in every member.
 
 use std::path::Path;
 
 use crate::source::{Member, read_manifest};
 
-/// Check every member whose manifest opts into one integration-test program.
+/// Check every member with top-level integration-test sources, reporting each failing member.
 pub(super) fn check(members: &[Member]) -> Result<(), String> {
-    for member in members {
-        let manifest_path = member.directory.join("Cargo.toml");
-        let manifest = read_manifest(&manifest_path)?;
-        if autotests_disabled(&manifest) || declares_integration_target(&manifest) {
-            check_member(member, &manifest_path, &manifest)?;
-        }
+    let diagnostics: Vec<_> = members
+        .iter()
+        .filter_map(|member| check_member(member).err())
+        .collect();
+    if diagnostics.is_empty() {
+        return Ok(());
     }
-    Ok(())
+    Err(diagnostics.join("\n"))
 }
 
 /// Whether the package turns off automatic integration-test discovery.
@@ -23,18 +23,6 @@ fn autotests_disabled(manifest: &toml::Table) -> bool {
         .and_then(|package| package.get("autotests"))
         .and_then(toml::Value::as_bool)
         == Some(false)
-}
-
-/// Whether any explicit test target is named `integration`.
-fn declares_integration_target(manifest: &toml::Table) -> bool {
-    manifest
-        .get("test")
-        .and_then(toml::Value::as_array)
-        .is_some_and(|targets| {
-            targets.iter().any(|target| {
-                target.get("name").and_then(toml::Value::as_str) == Some("integration")
-            })
-        })
 }
 
 /// Check the explicit Cargo target and automatic discovery policy.
@@ -65,11 +53,7 @@ fn check_manifest(manifest_path: &Path, manifest: &toml::Table) -> Result<(), St
 }
 
 /// With top-level integration sources, require one runnable target and one declaration per source.
-fn check_member(
-    member: &Member,
-    manifest_path: &Path,
-    manifest: &toml::Table,
-) -> Result<(), String> {
+fn check_member(member: &Member) -> Result<(), String> {
     let tests = member.directory.join("tests");
     let files: Vec<_> = member
         .sources
@@ -79,7 +63,8 @@ fn check_member(
     if files.is_empty() {
         return Ok(());
     }
-    check_manifest(manifest_path, manifest)?;
+    let manifest_path = member.directory.join("Cargo.toml");
+    check_manifest(&manifest_path, &read_manifest(&manifest_path)?)?;
     let root_path = tests.join("integration.rs");
     let root = files
         .iter()

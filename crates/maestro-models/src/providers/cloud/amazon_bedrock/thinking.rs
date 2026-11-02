@@ -60,9 +60,9 @@ pub(super) fn is_anthropic_claude_model(model: &Model) -> bool {
         || model.name.to_lowercase().contains("claude")
 }
 
-/// Whether the model thinks adaptively (Opus 4.6 and 4.7, Sonnet 4.6).
+/// Whether the model thinks adaptively (Opus 4.6 to 4.8, Sonnet 4.6 and Sonnet 5).
 pub(super) fn supports_adaptive_thinking(model: &Model) -> bool {
-    ["opus-4-6", "opus-4-7", "sonnet-4-6"]
+    ["opus-4-6", "opus-4-7", "opus-4-8", "sonnet-4-6", "sonnet-5"]
         .iter()
         .any(|version| mentions(model, version))
 }

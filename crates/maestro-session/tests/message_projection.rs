@@ -93,6 +93,9 @@ fn in_timezone(name: &str, timezone: &str) -> bool {
     {
         return true;
     }
+    if !maestro_test_process::local_zone_follows_tz() {
+        return false;
+    }
     let output = maestro_test_process::TestProcess::current(name)
         .unwrap()
         .nocapture()
@@ -410,6 +413,9 @@ fn parse_timestamp_millis_preserves_native_date_forms() {
         millis: Option<i64>,
     }
     if !maestro_test_process::selection().is_child() {
+        if !maestro_test_process::local_zone_follows_tz() {
+            return;
+        }
         for tz in ["UTC", "America/New_York", "Asia/Kathmandu"] {
             crate::subprocess::run_child(
                 maestro_test_process::TestProcess::current(
@@ -459,6 +465,9 @@ struct LocalCase {
 #[test]
 fn local_timestamps_keep_gap_overlap_and_calendar_boundaries() {
     if !maestro_test_process::selection().is_child() {
+        if !maestro_test_process::local_zone_follows_tz() {
+            return;
+        }
         for tz in [
             "America/New_York",
             "America/Santiago",

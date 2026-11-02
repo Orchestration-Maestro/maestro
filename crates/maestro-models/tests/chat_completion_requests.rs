@@ -536,11 +536,22 @@ async fn observed_compat(model: &Value) -> TestResult<Value> {
     let format = if body.get("chat_template_kwargs").is_some() {
         "qwen-chat-template"
     } else if body.get("thinking").is_some() {
-        "deepseek"
+        // Both thinking-object formats send the object; only the first adds the effort field
+        // once the model accepts one.
+        let mut accepting = model.clone();
+        let target = accepting.as_object_mut().ok_or("model overrides")?;
+        let compat = target.entry("compat").or_insert_with(|| json!({}));
+        compat["supportsReasoningEffort"] = json!(true);
+        let forced = run_case(&probe_case(&accepting, None)?).await?;
+        let sends_effort = forced
+            .requests
+            .first()
+            .is_some_and(|r| r["body"].get("reasoning_effort").is_some());
+        if sends_effort { "deepseek" } else { "zai" }
     } else if body.get("reasoning").is_some() {
         "openrouter"
     } else if body.get("enable_thinking").is_some() {
-        "zai"
+        "qwen"
     } else {
         "openai"
     };

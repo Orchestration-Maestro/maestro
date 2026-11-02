@@ -15,6 +15,10 @@ Only synchronous helper writers have a five-second limit. The Wayland probe and
 background writer have no deadline; the writer returns after acknowledged
 startup, without waiting for exit.
 
+On Unix the background writer runs in its own session, outside the application's
+process group. Suspending the application therefore does not stop a clipboard helper
+that keeps owning the selection after the copy.
+
 Remote sessions identified by nonempty `SSH_CONNECTION`, `SSH_CLIENT` or
 `MOSH_CONNECTION` also receive an OSC 52 terminal sequence. Local copying uses
 that sequence only when native and helper routes fail. The padded base64 payload
@@ -27,7 +31,7 @@ The routing, exact bytes, bounds and errors are exercised by
 
 ## Reading images
 
-Use [`utils::clipboard_image::read_clipboard_image`](../../crates/maestro-app/src/utils/image_clipboard/reader.rs)
+Use [`utils::image_clipboard::read_clipboard_image`](../../crates/maestro-app/src/utils/image_clipboard/reader.rs)
 for host defaults, or `read_clipboard_image_with` with a
 `ClipboardImageOperations` adapter. The returned `ClipboardImage` owns its bytes.
 An absent environment or platform option independently uses the process

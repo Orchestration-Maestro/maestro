@@ -203,7 +203,7 @@ fn aborted_and_failed_answers_after_compaction_are_skipped() {
 }
 
 #[test]
-fn zero_usage_newest_answer_after_compaction_leaves_usage_unknown() {
+fn zero_usage_newest_answer_after_compaction_uses_the_answer_before_it() {
     let compaction: Compaction = |manager, ids| {
         compact_after(manager, ids, 1);
         let old = assistant(
@@ -216,7 +216,7 @@ fn zero_usage_newest_answer_after_compaction_leaves_usage_unknown() {
         manager.append_message(zero).unwrap();
     };
     stats_case(
-        "a zero-usage newest answer after a compaction leaves usage unknown",
+        "a zero-usage newest answer after a compaction uses the answer before it",
         &stat_messages()[..2],
         None,
         Some(compaction),
@@ -369,7 +369,9 @@ fn owner_view(h: &Harness) -> Value {
         "model": model_view(&h.session.model()),
         "thinkingLevel": h.session.thinking_level(),
         "streaming": h.session.is_streaming(),
-        "systemPrompt": h.session.system_prompt().ends_with(&format!("directory: {}", h.cwd)),
+        // The prompt spells the working directory with `/` separators on every host.
+        "systemPrompt": h.session.system_prompt()
+            .ends_with(&format!("directory: {}", h.cwd.replace('\\', "/"))),
         "liveHistory": live_history,
         "sessionId": h.session.session_id() == h.session.session_manager().borrow().get_session_id(),
         "templates": h.session.prompt_templates().prompts.len(),

@@ -104,6 +104,11 @@ routing, render scheduling and cursor placement.
 Showing appends the entry and performs any applicable focus change before hiding
 the cursor. Removing an attached entry performs any applicable focus restoration
 before hiding the cursor if the stack is empty.
-These operations return a terminal error unchanged and do not request a frame
-when cursor hiding fails; completed state changes remain in place. Empty-stack
-removal has no terminal effect.
+If showing fails, the writer removes that exact entry and restores applicable
+focus before returning the original terminal error. Overlays created by a
+visibility callback remain installed. A cleanup error does not replace the
+original error.
+
+If removal fails while hiding the cursor, the entry is already removed and focus
+is already restored; no frame is requested. Empty-stack removal has no terminal
+effect.

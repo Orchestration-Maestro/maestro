@@ -2,11 +2,7 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-#[path = "support/launch.rs"]
-mod launch;
-#[path = "support/runtime.rs"]
-mod runtime;
-use runtime::block_on;
+use crate::support::{launch, runtime::block_on};
 
 use maestro_daemon::{
     api::event_hub::EventHub, app::App, locations::DaemonPaths, settings::model::Config,
@@ -21,7 +17,7 @@ fn app() -> App<fn() -> u128> {
     let manifests = Arc::new(RwLock::new(
         maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
-    let (launch, receiver) = launch::launch_inputs(&[], manifests);
+    let (launch, receiver) = launch::inputs(&[], manifests);
     App::new(
         &Config::default(),
         (|| 0) as fn() -> u128,
@@ -237,6 +233,8 @@ fn scheduled_metadata_expiry_publishes_presentation_and_token_changes() {
     use maestro_daemon::terminal::model::AgentMetadataReport;
     let (_directory, paths) = paths();
     let mut app = app();
+    // No sidebar row asks for repository status, so no refresh deadline joins the metadata ones.
+    app.config.ui.sidebar.spaces.rows = Vec::new();
     let (pane, ()) = app
         .state
         .topology

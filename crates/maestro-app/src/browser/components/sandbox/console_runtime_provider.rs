@@ -1,14 +1,11 @@
 //! Captured console values and live execution settlement.
 //!
 //! ```
-//! use maestro_app::browser::components::sandbox::{
-//!     console_runtime_provider::ConsoleRuntimeProvider,
-//!     providers::SandboxRuntimeProvider,
-//! };
+//! use maestro_app::browser::components::sandbox::{console_runtime_provider::ConsoleRuntimeProvider, providers::SandboxRuntimeProvider, };
 //!
 //! let console = ConsoleRuntimeProvider::<serde_json::Value>::new();
 //! let earlier_logs = console.get_logs();
-//! console.reset();
+//!console.reset();
 //! assert!(!std::sync::Arc::ptr_eq(&earlier_logs, &console.get_logs()));
 //! assert!(console.get_data()?.is_empty());
 //! # Ok::<(), maestro_models::DiagnosticErrorInfo>(())

@@ -1,5 +1,6 @@
 //! Conversion through the definitions a cyclic node makes visible.
 
+use crate::DiagnosticErrorInfo;
 use serde_json::Value;
 
 use super::from_type::from_type;
@@ -11,10 +12,14 @@ pub(crate) fn from_cyclic<'a>(
     converter: &mut Context<'a>,
     view: View<'a>,
     value: &mut Value,
-) -> Option<Value> {
-    let name = view.raw.get("$ref").and_then(Value::as_str)?;
+) -> Result<Option<Value>, DiagnosticErrorInfo> {
+    let Some(name) = view.raw.get("$ref").and_then(Value::as_str) else {
+        return Ok(None);
+    };
     converter.within(view, |converter| {
-        let target = converter.definition(name)?;
+        let Some(target) = converter.definition(name) else {
+            return Ok(None);
+        };
         from_type(converter, &Node::Leaf(target), value)
     })
 }

@@ -9,7 +9,7 @@ use crate::browser::tools::documents::{
 use crate::browser::tools::prompts::{
     ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO, ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RW,
 };
-use crate::browser::utils::attachments::Attachment;
+use crate::browser::utils::attachments::SharedAttachment;
 use crate::utils::lock::{read, write};
 use indexmap::IndexMap;
 use maestro_agent::runtime::Native;
@@ -22,7 +22,7 @@ use std::sync::{Arc, RwLock};
 /// The conversation an artifact runtime reads attachments from and records writes in.
 pub trait AgentLike: Native {
     /// Attachments of every current user message that carries them, in conversation order.
-    fn attachments(&self) -> Vec<Attachment>;
+    fn attachments(&self) -> Vec<SharedAttachment>;
     /// Append one artifact history entry to the current conversation.
     fn push_artifact(&self, message: ArtifactMessage);
 }
@@ -32,7 +32,7 @@ where
     E: AgentExecution,
     Self: Native,
 {
-    fn attachments(&self) -> Vec<Attachment> {
+    fn attachments(&self) -> Vec<SharedAttachment> {
         let messages = Arc::clone(read(self).messages());
         let messages = read(&messages);
         messages

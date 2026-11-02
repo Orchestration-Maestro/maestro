@@ -2,7 +2,7 @@
 use super::{
     renderer_registry::get_text_output,
     renderers::{
-        card_content::{Caption, field},
+        card_content::{Caption, CardOutput, field},
         collapsible_card::{Body, CollapsibleCard, Download, Phase},
         default_renderer::status,
     },
@@ -31,13 +31,13 @@ thread_local! {
 pub struct JavaScriptReplRenderer;
 /// Shared JavaScript execution renderer value.
 pub const JAVASCRIPT_REPL_RENDERER: JavaScriptReplRenderer = JavaScriptReplRenderer;
-impl ToolRenderer<JsonObject, Value> for JavaScriptReplRenderer {
+impl<C: CardOutput> ToolRenderer<JsonObject, Value, C> for JavaScriptReplRenderer {
     fn render(
         &self,
         params: Option<&JsonObject>,
         result: Option<ToolResultMessageView<'_, Value>>,
         is_streaming: bool,
-    ) -> Result<ToolRenderResult, ToolUiError> {
+    ) -> Result<ToolRenderResult<C>, ToolUiError> {
         let fields = params
             .map(|_| {
                 Ok::<_, ToolUiError>((
@@ -54,13 +54,15 @@ impl ToolRenderer<JsonObject, Value> for JavaScriptReplRenderer {
         Ok(prepare(fields, result.as_ref(), is_streaming, files))
     }
 }
-impl ToolRenderer<JavaScriptReplParams, JavaScriptReplToolResult> for JavaScriptReplRenderer {
+impl<C: CardOutput> ToolRenderer<JavaScriptReplParams, JavaScriptReplToolResult, C>
+    for JavaScriptReplRenderer
+{
     fn render(
         &self,
         params: Option<&JavaScriptReplParams>,
         result: Option<ToolResultMessageView<'_, JavaScriptReplToolResult>>,
         is_streaming: bool,
-    ) -> Result<ToolRenderResult, ToolUiError> {
+    ) -> Result<ToolRenderResult<C>, ToolUiError> {
         let fields = params.map(|p| {
             (
                 Some(p.title.clone()).filter(|s| !s.is_empty()),
@@ -83,13 +85,13 @@ impl ToolRenderer<JavaScriptReplParams, JavaScriptReplToolResult> for JavaScript
         Ok(prepare(fields, result.as_ref(), is_streaming, files))
     }
 }
-/// Select code and console branches without retaining input borrows.
-fn prepare<D>(
+/// Select code and console branches for any representation without retaining input borrows.
+fn prepare<D, C: CardOutput>(
     fields: Option<(Option<String>, Option<String>)>,
     result: Option<&ToolResultMessageView<'_, D>>,
     streaming: bool,
     attachments: Vec<Download>,
-) -> ToolRenderResult {
+) -> ToolRenderResult<C> {
     let state = status(result, streaming);
     let (caption, body) = fields.map_or_else(
         || {

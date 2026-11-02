@@ -9,7 +9,7 @@ impl Owner {
         {
             let mut state = self.state.borrow_mut();
             state.reset_action();
-            state.history_index = None;
+            state.exit_history();
             if state.current.lines.join("\n") != text {
                 state.snapshot();
             }
@@ -35,7 +35,7 @@ impl Owner {
             let mut state = self.state.borrow_mut();
             state.snapshot();
             state.reset_action();
-            state.history_index = None;
+            state.exit_history();
             state.splice(&normalize(text));
         }
         self.notify();
@@ -48,7 +48,7 @@ impl Owner {
                 state.snapshot();
             }
             state.action = LastAction::TypeWord;
-            state.history_index = None;
+            state.exit_history();
             state.revision = state.revision.wrapping_add(1);
             let cursor = state.current.cursor;
             state.current.lines[cursor.line].insert_str(cursor.col, text);
@@ -62,7 +62,7 @@ impl Owner {
 impl Editing {
     /// Restores a snapshot, leaving empty undo silent.
     pub(super) fn undo(&mut self) -> bool {
-        self.history_index = None;
+        self.exit_history();
         let Some(snapshot) = self.undo.pop() else {
             return false;
         };
@@ -82,7 +82,7 @@ impl Editing {
     }
     /// Deletes the cursor-local edit unit (a grapheme or an owned marker) or joins the preceding logical line.
     pub(super) fn backspace(&mut self) {
-        self.history_index = None;
+        self.exit_history();
         self.reset_action();
         let cursor = self.current.cursor;
         if cursor.col > 0 {
@@ -105,7 +105,7 @@ impl Editing {
     }
     /// Deletes the following edit unit (a grapheme or an owned marker) or joins the following logical line.
     pub(super) fn delete(&mut self) {
-        self.history_index = None;
+        self.exit_history();
         self.reset_action();
         let cursor = self.current.cursor;
         let line = &self.current.lines[cursor.line];

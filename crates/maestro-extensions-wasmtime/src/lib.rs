@@ -1,0 +1,116 @@
+//! Native component execution through the local extension registration facade.
+mod api_imports;
+mod api_reads;
+mod builtin_imports;
+mod builtin_reads;
+/// Native named factory selection on the canonical callback transport.
+mod builtin_selection_imports;
+mod builtin_tools;
+mod callback_imports;
+mod catalog_imports;
+mod catalog_reads;
+mod command_imports;
+mod command_reads;
+mod compact_calls;
+mod completion_imports;
+mod construction;
+mod context_imports;
+mod context_reads;
+mod credential_imports;
+mod credential_reads;
+mod custom_imports;
+mod custom_reads;
+mod effect_imports;
+mod engine;
+pub use engine::component_engine;
+mod event_imports;
+mod event_reads;
+mod event_registration;
+mod exec;
+mod exec_imports;
+mod factory;
+mod footer_data;
+mod foreign_editor_imports;
+mod frame_writer;
+mod frame_writer_imports;
+pub use factory::{
+    Installation, artifact_factory, artifact_factory_with_io, artifact_factory_with_stdout,
+};
+mod guest_calls;
+mod guest_component;
+mod guest_editor;
+mod guest_exports;
+mod guest_provider;
+mod helper_imports;
+mod history_imports;
+mod history_reads;
+mod http_imports;
+mod import_route;
+mod imported_assistant;
+mod keys_imports;
+mod keys_reads;
+mod lifecycle;
+mod local_bash_imports;
+mod local_resources;
+mod native_imports;
+mod watch_imports;
+/// Native capability contract accepted by the artifact factory.
+pub use maestro_extensions::native_io;
+mod model_calls;
+mod model_imports;
+mod mutation_imports;
+mod native_render_imports;
+mod native_renders;
+mod overlay_imports;
+mod overlay_layout;
+mod overlay_reads;
+mod provider_calls;
+mod provider_imports;
+mod provider_registration;
+mod read_imports;
+mod registration_imports;
+mod registration_reads;
+mod replaced_imports;
+mod replaced_reads;
+mod schema_imports;
+mod schema_node;
+mod schema_reads;
+mod schema_registration;
+mod schema_wire;
+mod session_calls;
+mod session_imports;
+mod signal_imports;
+mod stream_calls;
+mod stream_imports;
+mod theme_imports;
+mod theme_reads;
+mod tool_registration;
+mod tree_imports;
+mod tree_reads;
+mod ui_imports;
+mod ui_reads;
+mod ui_themes;
+mod wasi;
+mod widget_editor_imports;
+mod widget_editors;
+mod widget_foreign;
+mod widget_imports;
+mod widget_list_imports;
+mod widget_lists;
+mod widget_markdown;
+mod widget_nested;
+mod widget_reads;
+mod writer_imports;
+mod writer_reads;
+
+#[cfg(test)]
+mod tests;
+
+#[cfg(test)]
+use tests::context_actions;
+
+mod oauth_callbacks;
+mod oauth_imports;
+mod oauth_interaction;
+mod oauth_reads;
+mod oauth_registration;

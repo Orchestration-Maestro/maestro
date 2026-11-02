@@ -93,7 +93,7 @@ fn maestro_catalog_retains_every_descriptor() {
             counts[3] += usize::from(model.headers.is_some());
         }
     }
-    assert_eq!(counts, [970, 157, 71, 28]);
+    assert_eq!(counts, [978, 158, 133, 28]);
     assert_eq!(
         protocols,
         [
@@ -201,6 +201,7 @@ fn assert_cost_case(
     expected: [f64; 4],
 ) {
     use maestro_models::{ModelCost, Usage, UsageCost, calculate_cost};
+    use maestro_request::presence::Presence;
     model.cost = ModelCost {
         input: rates[0],
         output: rates[1],
@@ -212,7 +213,7 @@ fn assert_cost_case(
         output: counts[1],
         cache_read: counts[2],
         cache_write: counts[3],
-        total_tokens: -123.5,
+        total_tokens: Presence::Present(-123.5),
         cost: UsageCost {
             input: 99.0,
             output: 99.0,
@@ -249,7 +250,7 @@ fn assert_cost_case(
         .map(f64::to_bits),
         counts.map(f64::to_bits)
     );
-    assert_float(usage.total_tokens, -123.5);
+    assert_eq!(usage.total_tokens, Presence::Present(-123.5));
 }
 
 fn assert_cost_sum_order(model: &mut maestro_models::Model) {
@@ -287,4 +288,33 @@ fn maestro_model_equality_uses_provider_and_id() {
     custom.provider.clone_from(&original.provider);
     custom.id = "different".into();
     assert!(!models_are_equal(Some(&original), Some(&custom)));
+}
+
+/// Committed Xiaomi descriptors select the completion route and supported model set.
+#[test]
+fn xiaomi_catalog_uses_completion_routes_and_supported_models() {
+    for (provider, host) in [
+        ("xiaomi", "api"),
+        ("xiaomi-token-plan-cn", "token-plan-cn"),
+        ("xiaomi-token-plan-ams", "token-plan-ams"),
+        ("xiaomi-token-plan-sgp", "token-plan-sgp"),
+    ] {
+        let models = get_models(provider);
+
+        assert!(!models.is_empty(), "{provider}");
+        for model in models {
+            assert_eq!(model.api, "openai-completions", "{provider}/{}", model.id);
+            assert_eq!(model.base_url, format!("https://{host}.xiaomimimo.com/v1"));
+            let compat = model.compat.as_ref().expect("completion compatibility");
+            assert_eq!(
+                compat.0["requiresReasoningContentOnAssistantMessages"],
+                true
+            );
+            assert_eq!(compat.0["thinkingFormat"], "deepseek");
+            assert_eq!(get_model(provider, &model.id), Some(model));
+        }
+        if provider != "xiaomi" {
+            assert!(get_model(provider, "mimo-v2-flash").is_none());
+        }
+    }
 }

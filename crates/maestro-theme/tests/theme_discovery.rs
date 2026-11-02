@@ -145,8 +145,8 @@ fn theme_registration_replaces_without_reordering() {
         Rc::clone(&replacement),
     ]);
     let listed = state.get_available_themes_with_paths().unwrap();
-    let dark = format!("{SHIPPED}/dark.json");
-    let light = format!("{SHIPPED}/light.json");
+    let dark = maestro_path::join(&[SHIPPED, "dark.json"]);
+    let light = maestro_path::join(&[SHIPPED, "light.json"]);
     assert_eq!(
         names(&listed),
         [
@@ -348,13 +348,13 @@ fn theme_path_inventory_keeps_first_owner_and_sorted_names() {
     ]);
     let listed = native.get_available_themes_with_paths().unwrap();
     let (dark, light) = (
-        format!("{SHIPPED}/dark.json"),
-        format!("{SHIPPED}/light.json"),
+        maestro_path::join(&[SHIPPED, "dark.json"]),
+        maestro_path::join(&[SHIPPED, "light.json"]),
     );
-    let a = format!("{custom}/a.json");
+    let a = maestro_path::join(&[&custom, "a.json"]);
     let (only, z) = (
-        format!("{custom}/custom-only.json"),
-        format!("{custom}/z.json"),
+        maestro_path::join(&[&custom, "custom-only.json"]),
+        maestro_path::join(&[&custom, "z.json"]),
     );
     assert_eq!(
         names(&listed),
@@ -394,10 +394,10 @@ fn theme_path_inventory_orders_canonically_equal_names_by_directory_byte_order()
         .into_iter()
         .filter(|(name, _)| ["A", "a", "\u{e9}", "e\u{301}"].contains(name))
         .collect();
-    let upper = format!("{custom}/A.json");
-    let lower = format!("{custom}/a.json");
-    let composed = format!("{custom}/\u{e9}.json");
-    let decomposed = format!("{custom}/e\u{301}.json");
+    let upper = maestro_path::join(&[&custom, "A.json"]);
+    let lower = maestro_path::join(&[&custom, "a.json"]);
+    let composed = maestro_path::join(&[&custom, "\u{e9}.json"]);
+    let decomposed = maestro_path::join(&[&custom, "e\u{301}.json"]);
     // The collator orders the case pair; only the canonically equal pair falls back to the
     // order the directory reports.
     assert_eq!(
@@ -432,10 +432,13 @@ fn theme_path_inventory_sorts_with_the_supplied_operation() {
     ]);
     let listed = state.get_available_themes_with_paths().unwrap();
     let (dark, light) = (
-        format!("{SHIPPED}/dark.json"),
-        format!("{SHIPPED}/light.json"),
+        maestro_path::join(&[SHIPPED, "dark.json"]),
+        maestro_path::join(&[SHIPPED, "light.json"]),
     );
-    let (b, o) = (format!("{custom}/B.json"), format!("{custom}/\u{f6}.json"));
+    let (b, o) = (
+        maestro_path::join(&[&custom, "B.json"]),
+        maestro_path::join(&[&custom, "\u{f6}.json"]),
+    );
     assert_eq!(
         names(&listed),
         [
@@ -460,8 +463,8 @@ fn theme_inventory_handles_absent_custom_directory() {
     );
     let listed = state.get_available_themes_with_paths().unwrap();
     let (dark, light) = (
-        format!("{SHIPPED}/dark.json"),
-        format!("{SHIPPED}/light.json"),
+        maestro_path::join(&[SHIPPED, "dark.json"]),
+        maestro_path::join(&[SHIPPED, "light.json"]),
     );
     assert_eq!(
         names(&listed),

@@ -7,6 +7,8 @@ use std::path::{Path, PathBuf};
 use cargo_metadata::{Metadata, Package};
 use maestro_path::normalize_native;
 
+use crate::member_graph::{closure, dependency_edges, member_roots, members, reverse_edges};
+
 #[cfg(test)]
 mod tests;
 
@@ -44,7 +46,7 @@ pub(super) fn select(metadata: &Metadata, paths: &[OsString]) -> Scope {
     let Some(changed) = changed_owners(&roots, metadata.workspace_root.as_std_path(), paths) else {
         return Scope::Workspace(names(&members));
     };
-    let selected = closure(&reverse_edges(&members, &roots), changed);
+    let selected = closure(&reverse_edges(&dependency_edges(&members, &roots)), changed);
     Scope::Packages(
         members
             .iter()
@@ -55,37 +57,11 @@ pub(super) fn select(metadata: &Metadata, paths: &[OsString]) -> Scope {
     )
 }
 
-/// Workspace members in metadata package order.
-fn members(metadata: &Metadata) -> Vec<&Package> {
-    let workspace: HashSet<&str> = metadata
-        .workspace_members
-        .iter()
-        .map(|id| id.repr.as_str())
-        .collect();
-    metadata
-        .packages
-        .iter()
-        .filter(|package| workspace.contains(package.id.repr.as_str()))
-        .collect()
-}
-
 /// Names of every workspace member in metadata order.
 fn names(members: &[&Package]) -> Vec<String> {
     members
         .iter()
         .map(|package| package.name.to_string())
-        .collect()
-}
-
-/// Index each member by its manifest directory.
-fn member_roots(members: &[&Package]) -> HashMap<PathBuf, usize> {
-    members
-        .iter()
-        .enumerate()
-        .filter_map(|(member, package)| {
-            let root = package.manifest_path.parent()?;
-            Some((normalize_native(root.as_std_path()), member))
-        })
         .collect()
 }
 
@@ -112,34 +88,4 @@ fn owner(roots: &HashMap<PathBuf, usize>, workspace_root: &Path, path: &Path) ->
     normalize_native(&workspace_root.join(path))
         .ancestors()
         .find_map(|ancestor| roots.get(ancestor).copied())
-}
-
-/// Index every member that declares a path dependency on another member.
-fn reverse_edges(members: &[&Package], roots: &HashMap<PathBuf, usize>) -> Vec<Vec<usize>> {
-    let mut reverse = vec![Vec::new(); members.len()];
-    for (caller, package) in members.iter().enumerate() {
-        for dependency in &package.dependencies {
-            let Some(path) = dependency.path.as_deref() else {
-                continue;
-            };
-            if let Some(&target) = roots.get(&normalize_native(path.as_std_path())) {
-                reverse[target].push(caller);
-            }
-        }
-    }
-    reverse
-}
-
-/// Walk the reverse edges once, visiting each reached member once.
-fn closure(reverse: &[Vec<usize>], changed: HashSet<usize>) -> HashSet<usize> {
-    let mut selected = changed;
-    let mut pending: Vec<usize> = selected.iter().copied().collect();
-    while let Some(owner) = pending.pop() {
-        for &caller in &reverse[owner] {
-            if selected.insert(caller) {
-                pending.push(caller);
-            }
-        }
-    }
-    selected
 }

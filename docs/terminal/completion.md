@@ -7,10 +7,7 @@ Callers await the suggestion future; the provider does not schedule editor updat
 
 ```rust
 use maestro_cancellation::Cancellation;
-use maestro_tui::candidates::{
-    Command, CompletionError, CompletionOptions, CursorPosition,
-    NativeAutocompleteOperations,
-};
+use maestro_tui::candidates::{Command, CompletionError, CompletionOptions, CursorPosition, NativeAutocompleteOperations, };
 use maestro_tui::{AutocompleteProvider, CombinedAutocompleteProvider, SlashCommand};
 
 async fn complete() -> Result<(), CompletionError> {

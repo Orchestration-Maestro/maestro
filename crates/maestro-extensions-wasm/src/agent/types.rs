@@ -76,6 +76,35 @@ use crate::Presence;
 pub use maestro_tool::types::ToolExecutionMode;
 use std::rc::Rc;
 /// Supplied tool output with guest field presence.
-pub type AgentToolResult = maestro_tool::types::AgentToolResult<Presence<String>, Presence<bool>>;
+pub type AgentToolResult =
+    maestro_tool::types::AgentToolResult<Presence<crate::JsonText>, Presence<bool>>;
 /// Synchronous delivery of a partial result.
 pub type AgentToolUpdateCallback = Rc<dyn Fn(AgentToolResult) -> ExtensionResult<()>>;
+
+/// Executes a tool without an extension context.
+pub type AgentToolExecute = Rc<
+    dyn Fn(
+        String,
+        serde_json::Value,
+        Option<crate::AbortSignal>,
+        Option<AgentToolUpdateCallback>,
+    ) -> crate::ExtensionFuture<'static, AgentToolResult>,
+>;
+
+/// An executable tool without definition-only prompt or rendering callbacks.
+pub struct Tool {
+    /// Model-facing identity.
+    pub name: String,
+    /// Display label.
+    pub label: String,
+    /// Model-facing description.
+    pub description: String,
+    /// Original schema with its declared kinds and executable callbacks.
+    pub parameters: crate::ParameterSchema<crate::schema_code::SchemaCode>,
+    /// Optional synchronous argument preparation.
+    pub prepare_arguments: Option<crate::PrepareArguments>,
+    /// Optional scheduling preference.
+    pub execution_mode: Presence<ToolExecutionMode>,
+    /// Four-argument execution independent of an extension context.
+    pub execute: AgentToolExecute,
+}

@@ -74,20 +74,37 @@ assert_eq!((found.code, found.length), ("\x1b[1;4m", 6));
 
 - Lines break at ASCII spaces and fill greedily. A word wider than `width` breaks
   between whole graphemes, and a non-whitespace grapheme wider than `width` is kept
-  whole.
+  whole. Han, Hiragana, Katakana, Hangul and Bopomofo graphemes are words of their
+  own, so a line breaks between them even when no space separates them from the text
+  around them.
+- Escapes stay where they were written. Inside a word wider than `width`, an escape
+  written before the grapheme that starts a new row ends the row it follows, so a
+  reset or a marker before that cut stays on the earlier row. An escape written
+  before a whole word that moves to the next row starts that row.
+- At a break, a run of plain spaces is dropped instead of starting the next row, and
+  so is a run of blanks carrying escapes when none of them is painted. The metadata
+  escapes of a dropped run end the earlier row; its style escapes carry over.
 - Text is split at literal newlines before escapes are read, so no escape reaches
   across a line feed. Empty text, and an empty literal line, return an empty line.
 - A literal line that measures at most `width` is neither broken nor trimmed. A
-  wider one is broken, every line it breaks into loses its trailing whitespace, and
-  a line left empty by that is dropped.
-- A literal line left with no graphemes returns one line holding only its metadata
-  escapes; style escapes alone give an empty line.
-- A line that has text starts with the style in effect at its first grapheme, also
-  after a literal newline.
-- A line that has text closes the hyperlink still open at its end, with the
+  wider one loses the whitespace at the end of each row, up to the row's last
+  escape.
+- A row of a wider line that shows nothing is dropped. A row shows something when it
+  has a non-whitespace grapheme, a blank painted by inverse, underline or a
+  background colour, or an inverse or background style left open that paints the
+  cells after it. The metadata escapes of a dropped row move to the next row kept,
+  after its inherited style, or to the end of the last row kept, followed by the
+  escapes after the line's last grapheme that the dropped rows held. Every metadata
+  escape is written once.
+- Every authored line keeps at least one output row. If all its rows are dropped,
+  that row holds only its metadata escapes; style escapes alone give an empty line.
+- A row starts only when a grapheme or an escape is written to it, so no row holds
+  only the style it inherits. It starts with the style in effect where it starts,
+  also after a literal newline.
+- A row that has text closes the hyperlink still open at its end, with the
   terminator its opener used. It closes underline only when underline is active and
-  another line of the same literal line follows. It closes no other attribute or
-  colour.
+  the row ends at a break of a wider line, also when nothing after the break is
+  kept. It closes no other attribute or colour.
 
 ```rust
 use maestro_tui::wrap_text_with_ansi;
@@ -97,6 +114,9 @@ assert_eq!(lines, ["This is a long line", "that needs wrapping"]);
 
 let red = wrap_text_with_ansi("\x1b[31mhello world\x1b[0m", 7);
 assert_eq!(red, ["\x1b[31mhello", "\x1b[31mworld\x1b[0m"]);
+
+let inverse = wrap_text_with_ansi("ab \x1b[7m \x1b[27m cd", 3);
+assert_eq!(inverse, ["ab", " \x1b[7m \x1b[27m", "cd"]);
 
 let link = wrap_text_with_ansi("\x1b]8;;https://example.com\x07click here\x1b]8;;\x07", 6);
 assert_eq!(
@@ -155,7 +175,8 @@ start in the columns `start_col..start_col + length` and the cells they occupy;
 `start_col` is left out, and one that crosses the right edge is kept, or left out
 when `strict` is set. A non-empty selection starts with the escapes written before
 its first grapheme, in their original order, and closes a hyperlink still open at
-its end. A tab takes no columns here, unlike in `visible_width`. A length of zero,
+its end. A tab takes three columns, as in `visible_width`, so a slice and an overlay
+composited at a column line up with the measured line. A length of zero,
 or a range that starts beyond the end of the line, selects nothing.
 
 `extract_segments(line, before_end, after_start, after_len, strict_after)` returns

@@ -85,10 +85,7 @@ The projection trait stays with the application contracts.
 This example is also checked in the console provider's public rustdoc:
 
 ```rust
-use maestro_app::browser::components::sandbox::{
-    console_runtime_provider::ConsoleRuntimeProvider,
-    providers::SandboxRuntimeProvider,
-};
+use maestro_app::browser::components::sandbox::{console_runtime_provider::ConsoleRuntimeProvider, providers::SandboxRuntimeProvider, };
 
 let console = ConsoleRuntimeProvider::<serde_json::Value>::new();
 let earlier_logs = console.get_logs();

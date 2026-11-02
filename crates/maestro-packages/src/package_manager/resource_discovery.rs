@@ -44,7 +44,7 @@ pub(super) fn collect_resource_files(dir: &str, kind: ResourceType) -> io::Resul
         return Ok(Vec::new());
     }
     if matches!(kind, ResourceType::Extensions)
-        && let Some(entries) = resolve_extension_entries(dir)?
+        && let Some(entries) = resolve_extension_entries(dir, true)?
     {
         return Ok(entries);
     }
@@ -163,7 +163,7 @@ fn collect_child(
     rules: &mut ScopedIgnoreRules,
 ) -> io::Result<Vec<String>> {
     if matches!(mode.kind(), ResourceType::Extensions) {
-        resolve_extension_entries(dir).map(Option::unwrap_or_default)
+        resolve_extension_entries(dir, true).map(Option::unwrap_or_default)
     } else {
         Ok(collect_files(dir, root, mode, rules))
     }

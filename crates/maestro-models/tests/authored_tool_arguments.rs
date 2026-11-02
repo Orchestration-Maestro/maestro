@@ -8,6 +8,7 @@
 use std::collections::BTreeMap;
 use std::collections::HashSet;
 
+use crate::json_equivalence::equivalent;
 use maestro_models::{
     ParameterSchema, SchemaKind, Tool, ToolCall, validate_tool_arguments, validate_tool_call,
 };
@@ -27,7 +28,7 @@ struct Case {
     /// Declared node kinds by JSON pointer.
     kinds: BTreeMap<String, SchemaKind>,
     /// Original arguments.
-    arguments: Map<String, Value>,
+    arguments: Value,
     /// Prepared arguments or the exact diagnostic text.
     expected: Expected,
 }
@@ -36,7 +37,7 @@ struct Case {
 #[derive(Debug, serde::Deserialize, PartialEq)]
 enum Expected {
     /// Prepared arguments.
-    Ok(Map<String, Value>),
+    Ok(Value),
     /// Exact diagnostic text.
     Err(String),
 }
@@ -255,7 +256,8 @@ fn selected(test: &str) -> Vec<Case> {
 /// Assert one recorded case: preserved inputs and the exact prepared outcome.
 #[track_caller]
 fn assert_case(case: &Case) {
-    let schema = ParameterSchema::authored(case.schema.clone(), case.kinds.clone());
+    let schema: ParameterSchema =
+        ParameterSchema::authored(case.schema.clone(), case.kinds.clone());
     let tool = Tool {
         name: "echo".to_owned(),
         description: "Recorded case".to_owned(),
@@ -295,32 +297,8 @@ fn assert_case(case: &Case) {
 fn same_outcome(actual: &Expected, expected: &Expected) -> bool {
     match (actual, expected) {
         (Expected::Err(actual), Expected::Err(expected)) => actual == expected,
-        (Expected::Ok(actual), Expected::Ok(expected)) => same_value(
-            &Value::Object(actual.clone()),
-            &Value::Object(expected.clone()),
-        ),
+        (Expected::Ok(actual), Expected::Ok(expected)) => equivalent(actual, expected),
         _ => false,
-    }
-}
-
-/// Compare JSON values, treating numbers by their binary64 value.
-fn same_value(left: &Value, right: &Value) -> bool {
-    match (left, right) {
-        (Value::Number(left), Value::Number(right)) => left.as_f64() == right.as_f64(),
-        (Value::Array(left), Value::Array(right)) => {
-            left.len() == right.len()
-                && left
-                    .iter()
-                    .zip(right)
-                    .all(|(left, right)| same_value(left, right))
-        }
-        (Value::Object(left), Value::Object(right)) => {
-            left.len() == right.len()
-                && left
-                    .iter()
-                    .all(|(key, left)| right.get(key).is_some_and(|right| same_value(left, right)))
-        }
-        _ => left == right,
     }
 }
 
@@ -625,8 +603,8 @@ fn assert_members_are_not_rescanned(size: usize) {
         kinds,
     );
     assert_eq!(
-        prepared(schema, arguments),
-        expected,
+        prepared(schema, Value::Object(arguments)),
+        Value::Object(expected),
         "{size} declared members convert once"
     );
 }
@@ -658,8 +636,8 @@ fn assert_declared_members(size: usize) {
         }),
         kinds,
     );
-    let prepared = prepared(schema, arguments);
-    assert_eq!(prepared, expected, "{size} declared members");
+    let prepared = prepared(schema, Value::Object(arguments));
+    assert_eq!(prepared, Value::Object(expected), "{size} declared members");
 }
 
 /// Assert a wide record converts the members its pattern covers and leaves the others.
@@ -696,25 +674,22 @@ fn assert_record_members(size: usize) {
     let mut expected = Map::new();
     expected.insert("value".to_owned(), Value::Object(record_expected));
     assert_eq!(
-        prepared(record, arguments),
-        expected,
+        prepared(record, Value::Object(arguments)),
+        Value::Object(expected),
         "{size} record members"
     );
 }
 
 /// Prepare one tool call, failing the calling test with its diagnostic.
 #[track_caller]
-fn prepared(parameters: ParameterSchema, arguments: Map<String, Value>) -> Map<String, Value> {
+fn prepared(parameters: ParameterSchema, arguments: Value) -> Value {
     let outcome = prepare(parameters, arguments);
     assert!(outcome.is_ok(), "prepared arguments");
     outcome.unwrap_or_default()
 }
 
 /// Prepare one tool call through the public validator.
-fn prepare(
-    parameters: ParameterSchema,
-    arguments: Map<String, Value>,
-) -> Result<Map<String, Value>, String> {
+fn prepare(parameters: ParameterSchema, arguments: Value) -> Result<Value, String> {
     let tool = Tool {
         name: "echo".to_owned(),
         description: "Recorded case".to_owned(),
@@ -758,10 +733,10 @@ fn assert_prepared(
     let arguments: Value = arguments.into();
     let outcome = prepare(
         ParameterSchema::authored(schema, declared(entries)),
-        arguments.as_object().cloned().unwrap_or_default(),
+        arguments,
     );
     assert!(outcome.is_ok(), "prepared arguments: {:?}", outcome.err());
-    assert_eq!(Value::Object(outcome.unwrap_or_default()), expected.into());
+    assert_eq!(outcome.unwrap_or_default(), expected.into());
 }
 
 /// Assert the diagnostic one authored schema rejects its arguments with.
@@ -775,7 +750,7 @@ fn assert_rejected(
     let arguments: Value = arguments.into();
     let outcome = prepare(
         ParameterSchema::authored(schema, declared(entries)),
-        arguments.as_object().cloned().unwrap_or_default(),
+        arguments,
     );
     assert_eq!(outcome.err().as_deref(), Some(expected));
 }
@@ -784,11 +759,8 @@ fn assert_rejected(
 #[track_caller]
 fn assert_plain_prepared(schema: Value, arguments: impl Into<Value>, expected: impl Into<Value>) {
     let arguments: Value = arguments.into();
-    let prepared = prepared(
-        ParameterSchema::from(schema),
-        arguments.as_object().cloned().unwrap_or_default(),
-    );
-    assert_eq!(Value::Object(prepared), expected.into());
+    let prepared = prepared(ParameterSchema::from(schema), arguments);
+    assert_eq!(prepared, expected.into());
 }
 
 /// An intersection keeps every operand's own member identity.
@@ -1080,4 +1052,48 @@ fn sibling_definitions_keep_the_enclosing_scope() {
 #[test]
 fn composed_candidates_keep_declared_constraints() {
     run_scope("composed candidates", 6);
+}
+
+#[path = "../../maestro-extensions-wasm/src/tests/nested_schema_fixture.rs"]
+mod nested_schema_fixture;
+
+/// Nested declarations keep conversion provenance without changing the invocation.
+#[test]
+fn nested_declarations_keep_authored_and_plain_preparation() {
+    #[derive(serde::Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Invocation {
+        /// Declaration identity.
+        id: String,
+        /// Supplied invocation text.
+        arguments_json: String,
+        /// Complete prepared result.
+        expected_json: String,
+    }
+    let cases: Vec<Invocation> = serde_json::from_str(include_str!(
+        "../../maestro-extensions-wasm/src/tests/nested_schema_invocations.json"
+    ))
+    .unwrap();
+    for case in cases {
+        let tool = Tool {
+            name: "nested".into(),
+            description: String::new(),
+            parameters: nested_schema_fixture::parameters(&case.id).unwrap(),
+        };
+        let args: Value = serde_json::from_str(&case.arguments_json).unwrap();
+        let call = ToolCall {
+            id: "call".into(),
+            name: "nested".into(),
+            arguments: args.clone(),
+            thought_signature: None,
+        };
+        let expected: Value = serde_json::from_str(&case.expected_json).unwrap();
+        assert_eq!(
+            validate_tool_arguments(&tool, &call),
+            Ok(expected),
+            "{}",
+            case.id
+        );
+        assert_eq!(call.arguments, args, "{} invocation unchanged", case.id);
+    }
 }

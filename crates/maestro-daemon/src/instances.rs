@@ -222,7 +222,7 @@ pub fn session_info(paths: &DaemonPaths) -> SessionInfo {
     SessionInfo {
         name: paths.name().unwrap_or(DEFAULT_SESSION_NAME).to_owned(),
         default: paths.name().is_none(),
-        running: is_running_at(&socket_path),
+        running: is_running_at(std::path::Path::new(&socket_path)),
         socket_path,
         session_dir: paths.data_dir(),
     }
@@ -284,10 +284,16 @@ pub fn delete_session(agent_dir: &str, name: &str) -> Result<SessionInfo, String
     }
 }
 
+/// A graceful stop through the selected API socket.
+#[cfg(unix)]
+mod stop;
+
+#[cfg(unix)]
+pub use stop::stop_session;
+
 /// Probe the existing local socket owner without a second transport or stop protocol.
 #[cfg(unix)]
-fn is_running_at(socket: &str) -> bool {
-    let path = std::path::Path::new(socket);
+fn is_running_at(path: &std::path::Path) -> bool {
     path.exists() && maestro_ipc::local_socket::connect_local_stream(path).is_ok()
 }
 

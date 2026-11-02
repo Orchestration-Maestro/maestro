@@ -1,0 +1,348 @@
+[
+  {
+    "input": {
+      "role": "user",
+      "content": "",
+      "timestamp": 0
+    },
+    "text": "",
+    "attachments": []
+  },
+  {
+    "input": {
+      "role": "user-with-attachments",
+      "content": "",
+      "timestamp": 0,
+      "attachments": []
+    },
+    "text": "",
+    "attachments": []
+  },
+  {
+    "input": {
+      "role": "user-with-attachments",
+      "content": "",
+      "timestamp": 0,
+      "attachments": [
+        {
+          "id": "a",
+          "type": "document",
+          "fileName": "notes.txt",
+          "content": "",
+          "mimeType": "text/plain",
+          "size": 0
+        }
+      ]
+    },
+    "text": "",
+    "attachments": [
+      "notes.txt"
+    ]
+  },
+  {
+    "input": {
+      "role": "user",
+      "content": "first",
+      "timestamp": 0
+    },
+    "text": "first",
+    "attachments": []
+  },
+  {
+    "input": {
+      "role": "user-with-attachments",
+      "content": "first",
+      "timestamp": 0,
+      "attachments": []
+    },
+    "text": "first",
+    "attachments": []
+  },
+  {
+    "input": {
+      "role": "user-with-attachments",
+      "content": "first",
+      "timestamp": 0,
+      "attachments": [
+        {
+          "id": "a",
+          "type": "document",
+          "fileName": "notes.txt",
+          "content": "",
+          "mimeType": "text/plain",
+          "size": 0
+        }
+      ]
+    },
+    "text": "first",
+    "attachments": [
+      "notes.txt"
+    ]
+  },
+  {
+    "input": {
+      "role": "user",
+      "content": [],
+      "timestamp": 0
+    },
+    "text": "",
+    "attachments": []
+  },
+  {
+    "input": {
+      "role": "user-with-attachments",
+      "content": [],
+      "timestamp": 0,
+      "attachments": []
+    },
+    "text": "",
+    "attachments": []
+  },
+  {
+    "input": {
+      "role": "user-with-attachments",
+      "content": [],
+      "timestamp": 0,
+      "attachments": [
+        {
+          "id": "a",
+          "type": "document",
+          "fileName": "notes.txt",
+          "content": "",
+          "mimeType": "text/plain",
+          "size": 0
+        }
+      ]
+    },
+    "text": "",
+    "attachments": [
+      "notes.txt"
+    ]
+  },
+  {
+    "input": {
+      "role": "user",
+      "content": [
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "timestamp": 0
+    },
+    "text": "",
+    "attachments": []
+  },
+  {
+    "input": {
+      "role": "user-with-attachments",
+      "content": [
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "timestamp": 0,
+      "attachments": []
+    },
+    "text": "",
+    "attachments": []
+  },
+  {
+    "input": {
+      "role": "user-with-attachments",
+      "content": [
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "timestamp": 0,
+      "attachments": [
+        {
+          "id": "a",
+          "type": "document",
+          "fileName": "notes.txt",
+          "content": "",
+          "mimeType": "text/plain",
+          "size": 0
+        }
+      ]
+    },
+    "text": "",
+    "attachments": [
+      "notes.txt"
+    ]
+  },
+  {
+    "input": {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": ""
+        },
+        {
+          "type": "text",
+          "text": "later"
+        }
+      ],
+      "timestamp": 0
+    },
+    "text": "",
+    "attachments": []
+  },
+  {
+    "input": {
+      "role": "user-with-attachments",
+      "content": [
+        {
+          "type": "text",
+          "text": ""
+        },
+        {
+          "type": "text",
+          "text": "later"
+        }
+      ],
+      "timestamp": 0,
+      "attachments": []
+    },
+    "text": "",
+    "attachments": []
+  },
+  {
+    "input": {
+      "role": "user-with-attachments",
+      "content": [
+        {
+          "type": "text",
+          "text": ""
+        },
+        {
+          "type": "text",
+          "text": "later"
+        }
+      ],
+      "timestamp": 0,
+      "attachments": [
+        {
+          "id": "a",
+          "type": "document",
+          "fileName": "notes.txt",
+          "content": "",
+          "mimeType": "text/plain",
+          "size": 0
+        }
+      ]
+    },
+    "text": "",
+    "attachments": [
+      "notes.txt"
+    ]
+  },
+  {
+    "input": {
+      "role": "user",
+      "content": [
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "first"
+        },
+        {
+          "type": "text",
+          "text": "second"
+        }
+      ],
+      "timestamp": 0
+    },
+    "text": "first",
+    "attachments": []
+  },
+  {
+    "input": {
+      "role": "user-with-attachments",
+      "content": [
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "first"
+        },
+        {
+          "type": "text",
+          "text": "second"
+        }
+      ],
+      "timestamp": 0,
+      "attachments": []
+    },
+    "text": "first",
+    "attachments": []
+  },
+  {
+    "input": {
+      "role": "user-with-attachments",
+      "content": [
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "first"
+        },
+        {
+          "type": "text",
+          "text": "second"
+        }
+      ],
+      "timestamp": 0,
+      "attachments": [
+        {
+          "id": "a",
+          "type": "document",
+          "fileName": "notes.txt",
+          "content": "",
+          "mimeType": "text/plain",
+          "size": 0
+        }
+      ]
+    },
+    "text": "first",
+    "attachments": [
+      "notes.txt"
+    ]
+  },
+  {
+    "input": {
+      "role": "user",
+      "content": "text",
+      "timestamp": 0,
+      "attachments": [
+        {
+          "id": "extra",
+          "type": "document",
+          "fileName": "not-a-tile.txt",
+          "content": "",
+          "mimeType": "text/plain",
+          "size": 0
+        }
+      ]
+    },
+    "text": "text",
+    "attachments": []
+  }
+]

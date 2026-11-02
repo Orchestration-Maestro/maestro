@@ -84,7 +84,7 @@ fn responses(agent: &Agent, requests: &Arc<Mutex<Vec<Vec<maestro_models::Message
                     AssistantContent::ToolCall(ToolCall {
                         id: id.into(),
                         name: "echo".into(),
-                        arguments: JsonObject::new(),
+                        arguments: JsonObject::new().into(),
                         thought_signature: None,
                     })
                 })

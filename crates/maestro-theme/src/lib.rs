@@ -17,7 +17,7 @@ pub use palette::{
     LiveTheme, ThemeChangeResult, ThemeExportColors, ansi256_to_hex, is_light_theme,
 };
 pub use palette::{SyntaxHighlighter, SyntaxSpan, SyntectHighlighter, get_language_from_path};
-pub use palette::{ThemeDirectories, ThemeInfo, ThemeState, load_theme_from_path};
+pub use palette::{ThemeDirectories, ThemeInfo, ThemeState, load_theme_from_path, supports_color};
 pub use palette::{ThemeReloadTimer, ThemeWatchOperations, ThemeWatcher, close_watcher};
 pub use palette::{get_editor_theme, get_markdown_theme, get_select_list_theme};
 

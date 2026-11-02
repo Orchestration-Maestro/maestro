@@ -2,6 +2,10 @@
 
 pub use maestro_tools::changes::text::{Change, diff_lines};
 
+/// The two search programs the terminal frontend prepares before its first completion.
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_tools::{SearchTool, ToolsManagerOutput};
+
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_tools::{
     BashError, BashExecOptions, BashExecResult, BashOperations, BashRenderState, BashSpawnContext,
@@ -30,7 +34,10 @@ pub use maestro_tools::{
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_tools::process::commands::{ExecOptions, ExecResult, exec_command};
 
-pub use maestro_tools::{RenderDiffOptions, key_hint, key_text, raw_key_hint, render_diff};
+pub use maestro_tools::{
+    RenderDiffOptions, expand_hint, format_key_text, key_display_text, key_hint, key_text,
+    raw_key_hint, render_diff,
+};
 
 /// Shared with the terminal frontend.
 pub use maestro_tools::output::render_utils::format_read_line_range;
@@ -69,8 +76,16 @@ pub use maestro_tools::{
     create_read_tool_definition, create_write_tool_definition,
 };
 
-/// Caller-local tool definitions for local rendering consumers.
-pub use maestro_tools::types::local;
+/// Caller-local tool definitions and native shell execution.
+pub mod local {
+    #[cfg(not(target_arch = "wasm32"))]
+    pub use maestro_tools::process::command::local::create_local_bash_operations;
+    #[cfg(not(target_arch = "wasm32"))]
+    pub use maestro_tools::process::executor::local::{
+        BashExecutorOptions, execute_bash_with_operations,
+    };
+    pub use maestro_tools::types::local::*;
+}
 
 pub use maestro_tools::define_tool;
 

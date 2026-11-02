@@ -147,7 +147,7 @@ where
         )?;
         #[cfg(not(windows))]
         let executable = &self.executable;
-        let mut command = std::process::Command::new(executable);
+        let mut command = crate::command(executable).into_std();
         if self.clear_environment {
             command.env_clear();
         }
@@ -387,7 +387,7 @@ pub fn is_pane_shell_process_name(name: &str) -> bool {
 
 /// Builds a command without opening a Windows console.
 pub fn command(program: impl AsRef<std::ffi::OsStr>) -> std::process::Command {
-    let mut command = std::process::Command::new(program);
+    let mut command = crate::command(program).into_std();
     configure_background_command(&mut command);
     command
 }

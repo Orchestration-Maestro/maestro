@@ -1,5 +1,5 @@
 //! Transcript Markdown with highlighted code blocks, copy controls and math.
-use super::source::{self as code_block, CodeBlockView, Prepared as Code};
+use super::source::{self, CodeBlockView, Prepared as Code};
 use crate::components::source::ReadingUiError;
 use crate::{
     browser::attachment_content::{
@@ -53,8 +53,6 @@ enum DocumentLayout {
     Flow,
     /// Fill an artifact viewport with document padding.
     Padded,
-    /// Fit user content within the supplied bubble width.
-    Intrinsic,
 }
 
 /// Markdown content rendered as selectable native text with copy controls.
@@ -104,12 +102,6 @@ impl MarkdownBlock {
         self.host
             .as_ref()
             .ok_or_else(|| AttachmentHostError::Host("Missing platform host".into()))
-    }
-    /// Keep user text intrinsic within its containing bubble.
-    pub(crate) fn for_user(host: Rc<dyn AttachmentHost>) -> Self {
-        let mut block = Self::new(host);
-        block.layout = DocumentLayout::Intrinsic;
-        block
     }
     /// Retain artifact padding inside the shared scrollable document.
     pub(crate) fn for_artifact(host: Rc<dyn AttachmentHost>) -> Self {
@@ -200,7 +192,7 @@ impl MarkdownBlock {
             )
         });
         let layout = ControlledReading {
-            intrinsic_width: matches!(self.layout, DocumentLayout::Intrinsic),
+            intrinsic_width: false,
             height: ReadingHeight::Flow,
             host: host.as_ref(),
             id: self.id,
@@ -219,7 +211,7 @@ impl MarkdownBlock {
             self.published = candidate;
         }
         if let Some(published) = self.published.as_mut() {
-            let responses = code_block::controls(
+            let responses = source::controls(
                 ui,
                 &layout,
                 published.buttons.iter_mut(),

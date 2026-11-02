@@ -215,7 +215,15 @@ fn ls_native_non_utf8_names_follow_stat_filtering() {
     let invalid = root.path().join("invalid");
     std::fs::create_dir(&invalid).unwrap();
     std::fs::write(invalid.join("ok"), b"").unwrap();
-    std::fs::write(invalid.join(std::ffi::OsStr::from_bytes(b"bad-\xff")), b"").unwrap();
+    let bad = std::ffi::OsStr::from_bytes(b"bad-\xff");
+    if !root.keeps_distinct(&[bad]).unwrap() {
+        eprintln!(
+            "the listing needs a host that stores the name bytes {:?}",
+            bad.as_bytes()
+        );
+        return;
+    }
+    std::fs::write(invalid.join(bad), b"").unwrap();
     for case in cases("ls_native_non_utf8_names_follow_stat_filtering") {
         check_native(&case, &root.text());
     }

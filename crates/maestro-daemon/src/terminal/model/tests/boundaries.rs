@@ -1,9 +1,7 @@
 //! Construction and retained-source boundary behavior.
 
 use super::*;
-use crate::resume::{
-    self as agent_resume, AgentResumePlan, AgentSessionRef, PersistedAgentSession,
-};
+use crate::resume::{self, AgentResumePlan, AgentSessionRef, PersistedAgentSession};
 
 #[test]
 fn terminal_title_updates_distinguish_raw_and_presented_changes() {
@@ -196,7 +194,7 @@ fn assert_canonical_hook_clear_and_release(
     let (source, alias) = sources;
     let authority = terminal.hook_authority.as_ref().unwrap();
     assert_eq!(authority.source, "maestro:pi");
-    let plan = agent_resume::plan(&authority.source, "pi", &session_ref).unwrap();
+    let plan = resume::plan(&authority.source, "pi", &session_ref).unwrap();
     assert_eq!(plan.argv, ["pi", "--session", "new"]);
     assert_eq!(plan.dedupe_key, "maestro:pi\0pi\0Id\0new");
     assert!(

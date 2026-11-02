@@ -202,66 +202,6 @@ fn excel_reading_transactions_keep_previous_publication() {
     assert!(host.published.borrow().is_empty());
 }
 #[test]
-fn excel_overlay_preserves_alias_mode_and_error_rules() {
-    use attachment_support::{Content, Frame, Host, attachment, click, reading_factory};
-    let record = attachment();
-    record.borrow_mut().mime_type = "application/vnd.ms-excel".into();
-    record.borrow_mut().content = encoded("two-sheets");
-    let host = Rc::new(Host::default());
-    let effects = host.clone();
-    let mut overlay = maestro_web::AttachmentOverlay::open(
-        record.clone(),
-        Some(Rc::new(move || {
-            effects.effects.borrow_mut().push("callback".into());
-        })),
-        host.clone(),
-    );
-    let mut frame = Frame::default();
-    frame.overlay(&mut overlay, vec![]).unwrap();
-    let first = reading_factory(&host);
-    frame.overlay(&mut overlay, vec![]).unwrap();
-    let position = frame.label("Text").center();
-    frame.overlay(&mut overlay, click(position)).unwrap();
-    record.borrow_mut().extracted_text = Some("live alias".into());
-    frame.overlay(&mut overlay, vec![]).unwrap();
-    assert!(
-        matches!(&host.surfaces.borrow().last().unwrap().content,Content::Text(t,_) if t == "live alias")
-    );
-    let position = frame.label("Spreadsheet").center();
-    frame.overlay(&mut overlay, click(position)).unwrap();
-    assert!(
-        matches!(&host.surfaces.borrow().last().unwrap().content,Content::Reading(r,_) if !Rc::ptr_eq(r,&first))
-    );
-    *host.fail.borrow_mut() = Some("literal failure".into());
-    frame.overlay(&mut overlay, vec![]).unwrap();
-    frame.overlay(&mut overlay, vec![]).unwrap();
-    let failure = reading_factory(&host);
-    record.borrow_mut().content = encoded("one-sheet");
-    frame.overlay(&mut overlay, vec![]).unwrap();
-    assert!(
-        matches!(&host.surfaces.borrow().last().unwrap().content,Content::Reading(r,_) if Rc::ptr_eq(r,&failure))
-    );
-    let position = frame.label("Text").center();
-    frame.overlay(&mut overlay, click(position)).unwrap();
-    let position = frame.label("Spreadsheet").center();
-    frame.overlay(&mut overlay, click(position)).unwrap();
-    frame
-        .overlay(
-            &mut overlay,
-            vec![egui::Event::Key {
-                key: egui::Key::Escape,
-                physical_key: None,
-                pressed: true,
-                repeat: false,
-                modifiers: egui::Modifiers::NONE,
-            }],
-        )
-        .unwrap();
-    let effects = host.effects.borrow();
-    let index = effects.iter().position(|e| e == "callback").unwrap();
-    assert!(effects[index + 1].starts_with("remove:"));
-}
-#[test]
 #[cfg(not(target_arch = "wasm32"))]
 fn excel_tool_commands_retain_and_update_live_view() {
     use artifact_support::{

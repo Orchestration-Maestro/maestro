@@ -191,7 +191,7 @@ fn simple<E: Producer>(
     .ok_or_else(|| {
         DiagnosticErrorInfo::error(format!("No API key for provider: {}", model.provider))
     })?;
-    let common = build_base_options_for(&model, options.as_ref(), Some(&api_key));
+    let common = build_base_options_for(&model, &context, options.as_ref(), Some(&api_key));
     let reasoning_effort = options
         .as_ref()
         .and_then(|options| options.reasoning)

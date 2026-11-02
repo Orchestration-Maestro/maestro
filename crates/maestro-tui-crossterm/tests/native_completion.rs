@@ -21,6 +21,7 @@ use maestro_tui::candidates::{
 use maestro_tui::interface::{
     LocalFuture, LogContext, RenderCallback, RenderTimer, TerminalHandle, TuiRuntime,
 };
+use maestro_tui::terminal::OutputErrorHandler;
 use maestro_tui::{
     AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, Component, Editor,
     EditorOptions, EditorTheme, KeybindingsManager, SelectListTheme, TUI, TUI_KEYBINDINGS,
@@ -138,7 +139,7 @@ impl Terminal for Sink {
         &mut self,
         _: Option<Duration>,
         _: Option<Duration>,
-    ) -> Pin<Box<dyn Future<Output = io::Result<()>> + '_>> {
+    ) -> Pin<Box<dyn Future<Output = io::Result<()>> + 'static>> {
         Box::pin(async { Ok(()) })
     }
 
@@ -313,6 +314,10 @@ impl TuiRuntime for Watched {
 
     fn write_log(&self, path: &Path, contents: &str) -> io::Result<()> {
         self.host.write_log(path, contents)
+    }
+
+    fn on_output_error(&self, handler: OutputErrorHandler) -> Box<dyn Fn()> {
+        self.host.on_output_error(handler)
     }
 }
 

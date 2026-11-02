@@ -3,6 +3,8 @@
 pub mod discovery;
 /// Native repository paths and metadata text.
 pub mod native;
+/// Branch tracking read from user, repository, included and worktree configuration.
+pub mod tracking;
 pub use discovery::{automatic_workspace_label, fallback_label_from_cwd};
 
 mod status;

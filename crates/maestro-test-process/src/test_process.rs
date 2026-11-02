@@ -10,13 +10,14 @@ use std::process::{Command, ExitStatus, Output, Stdio};
 use crate::proof::{check_file, check_output};
 use crate::{CheckedChild, TestProcessError, selection};
 
-/// Variable the coverage runtime reads; kept when the environment is cleared.
-const PROFILE: &str = "LLVM_PROFILE_FILE";
+/// Variables a cleared environment keeps: the coverage runtime's profile path and the
+/// Windows system root, without which a Windows child cannot load its socket library.
+const KEPT: [&str; 2] = ["LLVM_PROFILE_FILE", "SYSTEMROOT"];
 
 /// One ordered environment edit.
 #[derive(Debug)]
 enum EnvEdit {
-    /// Drop the inherited environment, keeping the coverage profile path.
+    /// Drop the inherited environment, keeping the [`KEPT`] variables.
     Clear,
     /// Set a variable.
     Set(OsString, OsString),
@@ -30,9 +31,10 @@ impl EnvEdit {
         match self {
             Self::Clear => {
                 command.env_clear();
-                if let Some(profile) = std::env::var_os(PROFILE) {
-                    command.env(PROFILE, profile);
-                }
+                let kept = KEPT
+                    .iter()
+                    .filter_map(|name| Some((name, std::env::var_os(name)?)));
+                command.envs(kept);
             }
             Self::Set(key, value) => {
                 command.env(key, value);
@@ -93,8 +95,9 @@ pub struct TestProcess {
     flags: BTreeSet<Flag>,
     /// Literal `--skip` operands in call order.
     skips: Vec<String>,
-    /// Shell text run before the test executable replaces the shell.
-    shell: Option<String>,
+    /// Caller-supplied setup interpreter and the shell text it runs before the test
+    /// executable replaces it.
+    shell: Option<(PathBuf, String)>,
 }
 
 impl TestProcess {
@@ -111,6 +114,17 @@ impl TestProcess {
     /// Fails when the thread is unnamed or `test` is not the running test.
     pub fn current(test: &str) -> Result<Self, TestProcessError> {
         Self::named(selection::current_name(test)?)
+    }
+
+    /// Select an ignored child test by its function item, printing its own output.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the item has no module-qualified path.
+    pub fn child<F: Fn()>(test: F) -> Result<Self, TestProcessError> {
+        Ok(Self::named(selection::test_name(test)?)?
+            .ignored()
+            .nocapture())
     }
 
     /// Select a test by its complete libtest identity, such as a sibling's.
@@ -171,7 +185,8 @@ impl TestProcess {
         self
     }
 
-    /// Drop the inherited environment, keeping the coverage profile path.
+    /// Drop the inherited environment, keeping the coverage profile path and the
+    /// Windows system root.
     #[must_use]
     pub fn env_clear(mut self) -> Self {
         self.envs.push(EnvEdit::Clear);
@@ -251,14 +266,16 @@ impl TestProcess {
         self
     }
 
-    /// Run `setup` in `bash` before the test executable replaces the shell.
+    /// Run `setup` in `program` before the test executable replaces the shell.
     ///
-    /// The executable and arguments are passed as shell positional parameters, never
-    /// interpolated into the shell text.
+    /// `program` names the setup interpreter, so the caller decides which shell runs; an
+    /// absolute path is required and the process `PATH` is never searched. The executable
+    /// and arguments are passed as shell positional parameters, never interpolated into
+    /// the shell text.
     #[cfg(unix)]
     #[must_use]
-    pub fn shell_setup(mut self, setup: impl Into<String>) -> Self {
-        self.shell = Some(setup.into());
+    pub fn shell_setup(mut self, program: impl AsRef<Path>, setup: impl Into<String>) -> Self {
+        self.shell = Some((program.as_ref().to_path_buf(), setup.into()));
         self
     }
 
@@ -355,6 +372,20 @@ impl TestProcess {
         CheckedChild::start(&self.name, child)
     }
 
+    /// Hand the configured command to a caller that starts the child itself.
+    ///
+    /// The command re-runs the selected test with this builder's environment, directory,
+    /// descriptors and harness flags, for production code that spawns its own children. This
+    /// checks selection, not startup: the child's standard output begins with
+    /// [`crate::HARNESS_START`], which the caller can look for before claiming the test ran.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the test is not eligible.
+    pub fn command(mut self) -> Result<Command, TestProcessError> {
+        self.prepare()
+    }
+
     /// Run through the caller's own invoker and prove the returned output started the test.
     ///
     /// `invoke` receives the final ordered harness arguments and runs the test executable
@@ -442,15 +473,7 @@ impl TestProcess {
     /// Build the configured command once the test is known to be eligible.
     fn prepare(&mut self) -> Result<Command, TestProcessError> {
         let executable = self.eligible()?;
-        let mut command = match self.shell.take() {
-            Some(setup) => {
-                let mut shell = Command::new("bash");
-                shell.args(["-c", &format!("{setup}; exec \"$@\""), "startup"]);
-                shell.arg(executable);
-                shell
-            }
-            None => Command::new(executable),
-        };
+        let mut command = self.base_command(executable)?;
         command.args(self.arguments());
         self.envs.iter().for_each(|edit| edit.apply(&mut command));
         if let Some(dir) = &self.dir {
@@ -474,5 +497,24 @@ impl TestProcess {
             self.failure("cannot run the selected test")
                 .caused_by(error)
         })
+    }
+
+    /// The command that runs the selected test, through the supplied setup interpreter
+    /// when one is set.
+    ///
+    /// The interpreter path the caller supplied is used as it stands, so neither this
+    /// process's `PATH` nor the child's decides which shell runs. A path that cannot run
+    /// fails at launch with the operating system's error.
+    fn base_command(&mut self, executable: PathBuf) -> Result<Command, TestProcessError> {
+        if let Some((program, setup)) = self.shell.take() {
+            if !program.is_absolute() {
+                return Err(self.failure("the setup interpreter path is not absolute"));
+            }
+            let mut shell = Command::new(program);
+            shell.args(["-c", &format!("{setup}; exec \"$@\""), "startup"]);
+            shell.arg(executable);
+            return Ok(shell);
+        }
+        Ok(Command::new(executable))
     }
 }

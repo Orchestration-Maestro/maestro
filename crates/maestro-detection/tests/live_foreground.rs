@@ -3,9 +3,7 @@
 #![cfg(target_os = "linux")]
 
 use maestro_detection::agents::{Agent, identify_agent_in_job};
-use maestro_process::terminal::{
-    self as pty, PtyCommand, PtyEnvironment, PtySize, jobs::ForegroundJob,
-};
+use maestro_process::terminal::{self, PtyCommand, PtyEnvironment, PtySize, jobs::ForegroundJob};
 use maestro_test_process::{TestProcess, run_alone};
 use std::{
     io::{self, Read, Write},
@@ -22,14 +20,14 @@ fn setup_entry() {
         .arg("-c")
         .arg(script)
         .env_remove("MAESTRO_DETECTION_SCRIPT");
-    let _ = pty::setup_and_exec(command);
+    let _ = terminal::setup_and_exec(command);
     std::process::exit(1);
 }
 
 /// Observes exec completion through process facts, then reaps the controlled terminal.
 fn capture_job(script: &str, input: &[u8], release: &[u8], argv0: &str) -> ForegroundJob {
     let mut observed = None;
-    TestProcess::named("setup_entry")
+    TestProcess::named("live_foreground::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()
@@ -44,7 +42,7 @@ fn capture_job(script: &str, input: &[u8], release: &[u8], argv0: &str) -> Foreg
                     Some(script.into()),
                 )]),
             };
-            let (pty, mut child) = pty::spawn(
+            let (pty, mut child) = terminal::spawn(
                 PtySize {
                     rows: 24,
                     cols: 80,
@@ -67,7 +65,7 @@ fn capture_job(script: &str, input: &[u8], release: &[u8], argv0: &str) -> Foreg
 fn observe_sleep(child: &mut std::process::Child, argv0: &str) -> io::Result<ForegroundJob> {
     loop {
         if let Some(job) =
-            pty::jobs::foreground_job(child.id(), pty::jobs::ProcessDetectionMode::Native)
+            terminal::jobs::foreground_job(child.id(), terminal::jobs::ProcessDetectionMode::Native)
             && sleep_exec_observed(&job, argv0)
         {
             return Ok(job);
@@ -95,7 +93,7 @@ fn sleep_exec_observed(job: &ForegroundJob, argv0: &str) -> bool {
 fn exec_observation_rejects_absent_and_stale_arguments() {
     let mut job = ForegroundJob {
         process_group_id: 1,
-        processes: vec![pty::jobs::ForegroundProcess {
+        processes: vec![terminal::jobs::ForegroundProcess {
             pid: 1,
             name: "sleep".into(),
             argv0: None,

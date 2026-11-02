@@ -21,7 +21,8 @@ pub use catalog::{
 };
 pub use maestro_request::slash_commands::{SlashCommandInfo, SlashCommandSource};
 pub use metadata::{
-    FrontmatterError, FrontmatterValue, ParsedFrontmatter, parse_frontmatter, strip_frontmatter,
+    FrontmatterError, FrontmatterValue, ParsedFrontmatter, parse_frontmatter, parse_yaml,
+    strip_frontmatter,
 };
 pub use paths::{canonicalize_path, is_local_path};
 pub use provenance::{

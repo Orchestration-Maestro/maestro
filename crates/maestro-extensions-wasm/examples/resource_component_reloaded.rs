@@ -1,0 +1,18 @@
+//! An alternate resource collection installed at the same component path.
+// maestro-component: MAESTRO_RESOURCE_RELOADED_COMPONENT
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
+#[path = "resource_component/factory.rs"]
+mod resource;
+/// Register the second resource collection.
+#[must_use]
+pub fn factory(
+    api: maestro_extensions_wasm::ExtensionAPI,
+) -> maestro_extensions_wasm::ExtensionFuture<'static, ()> {
+    resource::factory(api, "two")
+}
+#[cfg(target_arch = "wasm32")]
+maestro_extensions_wasm::export_extension!(factory);

@@ -61,7 +61,7 @@ pub struct ButtonProps<'a> {
 }
 impl ButtonProps<'_> {
     /// Space-separated classes for the selected variant and size, then the caller's.
-    fn classes(&self) -> String {
+    pub(crate) fn classes(&self) -> String {
         let variant = match self.variant {
             ButtonVariant::Default => "default",
             ButtonVariant::Destructive => "destructive",

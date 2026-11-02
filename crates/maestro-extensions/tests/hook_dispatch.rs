@@ -653,3 +653,38 @@ fn register_context_rebinding(
         )
         .unwrap();
 }
+
+#[test]
+fn error_listener_removers_follow_listener_identity() {
+    support::local(async {
+        let bus = support::LocalBus::new();
+        let loaded = support::loaded("identity", bus.controller.for_extension());
+        let runner = support::runner(&loaded.owners);
+        let calls = Rc::new(std::cell::Cell::new(0));
+        let seen = Rc::clone(&calls);
+        let listener: ExtensionErrorListener = Rc::new(move |_| {
+            seen.set(seen.get() + 1);
+            Ok(())
+        });
+        let error = ExtensionError {
+            extension_path: "identity".into(),
+            event: "agent_start".into(),
+            error: "failure".into(),
+            stack: None,
+        };
+        let first = runner.on_error(Rc::clone(&listener));
+        let second = runner.on_error(Rc::clone(&listener));
+        second();
+        runner.emit_error(&error).unwrap();
+        assert_eq!(calls.get(), 0, "the later remover deletes the listener");
+        let _again = runner.on_error(Rc::clone(&listener));
+        first();
+        runner.emit_error(&error).unwrap();
+        assert_eq!(
+            calls.get(),
+            0,
+            "an earlier remover deletes the re-registration"
+        );
+        bus.settle().await;
+    });
+}

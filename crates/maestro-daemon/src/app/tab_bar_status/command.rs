@@ -129,7 +129,7 @@ async fn run_status_command(
     if control.terminated.load(Ordering::Acquire) || Instant::now() >= deadline {
         return Err(timeout_error());
     }
-    let mut command = tokio::process::Command::new("/bin/sh");
+    let mut command = maestro_process::command("/bin/sh");
     command
         .args(["-lc", &request.command])
         .envs(request.environment.iter().map(|(key, value)| (key, value)))

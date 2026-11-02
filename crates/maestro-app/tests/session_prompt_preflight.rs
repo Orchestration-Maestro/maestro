@@ -3,8 +3,8 @@
 //! with the recorded prompt cases.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Auth, Harness, HarnessOptions, Transcript, agent_ended, answer, assert_transcript, assistant,
-    case, command_extension, entries_view, harness, history_view, hold_first_answer,
+    Auth, Harness, HarnessOptions, Transcript, agent_ended, answer, as_recorded, assert_transcript,
+    assistant, case, command_extension, entries_view, harness, history_view, hold_first_answer,
     input_extension, labelled, load_history, messages_view, observed_preflight, of_kinds,
     on_task_set, outcome, queue_view, recorded_skills, script_responses, shell_entries,
     start_and_abandon, start_prompt, supplied_failure, template, transcribed, usage, user,
@@ -360,7 +360,7 @@ fn hook_prompt_override_resets_on_the_next_prompt() {
 #[test]
 fn prompt_without_credentials_is_refused() {
     on_task_set(|_| async {
-        let mut expected = expected("a prompt without credentials is refused");
+        let expected = expected("a prompt without credentials is refused");
         let (h, t) = transcribed(HarnessOptions {
             auth: Auth::None,
             ..HarnessOptions::default()
@@ -369,13 +369,11 @@ fn prompt_without_credentials_is_refused() {
         let (accepted, options) = observed_preflight();
         let result = h.session.prompt("hi", options).await;
         let docs = maestro_app::configuration::config::get_docs_path().unwrap();
-        let message = expected["results"][0]["error"]
-            .as_str()
-            .unwrap()
-            .replace("$DOCS", &docs);
-        expected["results"][0]["error"] = json!(message);
         let results = json!([outcome(result), labelled("preflight", &*accepted.borrow())]);
-        assert_eq!(results, expected["results"]);
+        assert_eq!(
+            as_recorded(results, &[(&docs, "$DOCS")]),
+            expected["results"]
+        );
         assert_prompt_case(&h, &t, &expected);
     });
 }
@@ -431,7 +429,7 @@ fn deferred_shell_result_flushes_before_the_next_prompt() {
             crate::support::session_harness::ScriptedShell::output("waiting", Some(0.0));
         let options = maestro_app::agent_session::BashRunOptions {
             exclude_from_context: None,
-            operations: Some(std::sync::Arc::new(operations)),
+            operations: Some(Rc::new(operations)),
         };
         let shell = h.session.execute_bash("echo waiting", None, options).await;
         let pending = h.session.has_pending_bash_messages();

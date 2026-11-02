@@ -55,7 +55,7 @@ fn config(
         config: SharedHandle::downgrade(&config),
         released: released.clone(),
     });
-    config.write().unwrap().stream_simple = Some(owner.clone());
+    config.write().unwrap().callbacks.stream_simple = Some(owner.clone());
     (config, owner)
 }
 /// Run and join every admitted producer before releasing callback ownership.
@@ -90,7 +90,7 @@ fn catalog_registration_keeps_original_option_families() {
     let retained = get_api_provider("catalog-affinity").unwrap();
     exercise(&retained, &model, &owner);
     registry.unregister_provider("p").unwrap();
-    config.write().unwrap().stream_simple = None;
+    config.write().unwrap().callbacks.stream_simple = None;
     drop(owner);
     assert_eq!(released.load(Ordering::SeqCst), 0);
     drop(retained);
@@ -129,8 +129,8 @@ fn catalog_replacement_keeps_callback_and_source_ownership() {
     // Earlier retained providers work even after the public source has disappeared.
     exercise(&old, &old_model, &first);
     exercise(&replayed, &old_model, &replacement);
-    first_config.write().unwrap().stream_simple = None;
-    replacement_config.write().unwrap().stream_simple = None;
+    first_config.write().unwrap().callbacks.stream_simple = None;
+    replacement_config.write().unwrap().callbacks.stream_simple = None;
     drop(first);
     drop(replacement);
     drop(old);

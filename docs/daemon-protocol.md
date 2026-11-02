@@ -30,7 +30,7 @@ application re-exports.
 `RpcResponse` carries the original `command` and optional correlation `id`,
 `type: "response"`, and a boolean `success`. A successful workspace operation
 has typed `data`. A workspace failure has a string `error` and an open string
-`code`, preserving machine-readable failure kinds without parsing prose. Session
+`code`, so a client reads the failure kind without parsing prose. Session
 failures keep their established shape without a workspace `code` field.
 Old `method`/`params` requests and result/error-object envelopes are not supported.
 Unknown command types and malformed known parameters fail deserialization;
@@ -67,7 +67,7 @@ handoff use this one protocol version; `frames` re-exports the same constant.
 The generated schema's `schema_version: 1` is its document format, not another
 negotiated protocol. Product versions remain separate strings. Existing JSONL
 clients need no header, handshake, version field or unsolicited startup record.
-JSONL framing belongs to `maestro-json::lines`, not a second codec here.
+JSONL framing belongs to `maestro-json::jsonl`, not a second codec here.
 
 ## Binary screen channel
 

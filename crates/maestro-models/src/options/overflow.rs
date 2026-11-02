@@ -24,6 +24,8 @@ static OVERFLOW_PATTERNS: LazyLock<Result<RegexSet, regex::Error>> = LazyLock::n
             r"maximum prompt length is [0-9]+",
             "reduce the length of the messages",
             r"maximum context length is [0-9]+ tokens",
+            r"exceeds (?:the )?(?:model'?s )?maximum context length(?: of [0-9,]+ tokens?|[\s]*\([0-9,]+\))",
+            r"input \([0-9]+ tokens\) is longer than the model'?s context length \([0-9]+ tokens\)",
             r"exceeds the limit of [0-9]+",
             "exceeds the available context size",
             "greater than the context length",

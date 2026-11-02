@@ -1,10 +1,8 @@
 //! Repository identity admission stays distinct from live terminal observations.
 #![cfg(test)]
 #![cfg(target_os = "linux")]
-#[path = "support/launch.rs"]
-mod launch;
-#[path = "repository_support/mod.rs"]
-mod support;
+use crate::repository_support::{init_repo_with_commit, run_git};
+use crate::support::launch;
 use maestro_daemon::{
     app::App,
     settings::model::Config,
@@ -29,7 +27,7 @@ fn daemon_new_workspace_retains_discovered_git_metadata() {
     if run_alone("daemon_new_workspace_retains_discovered_git_metadata").unwrap() {
         return;
     }
-    TestProcess::named("setup_entry")
+    TestProcess::named("repository_identity::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()
@@ -52,7 +50,7 @@ async fn check_admitted_repository(args: &[String]) {
     let manifests = std::sync::Arc::new(std::sync::RwLock::new(
         maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
-    let (launch, receiver) = launch::launch_inputs(args, manifests);
+    let (launch, receiver) = launch::inputs(args, manifests);
     let mut config = Config::default();
     config.terminal.default_shell = "/bin/sh".into();
     let mut app = App::new(
@@ -83,8 +81,8 @@ fn daemon_linked_worktree_auto_label_uses_checkout_name_not_repo_name() {
     let scratch = directory.path().to_path_buf();
     let repo = scratch.join("maestro");
     let checkout = scratch.join("testr56");
-    support::init_repo_with_commit(&repo);
-    support::run_git(
+    init_repo_with_commit(&repo);
+    run_git(
         &repo,
         &[
             "worktree",

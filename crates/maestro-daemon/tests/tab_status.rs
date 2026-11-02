@@ -2,9 +2,7 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-#[path = "support/launch.rs"]
-mod launch;
-mod support;
+use crate::support::{self, launch};
 
 use maestro_daemon::{
     api::event_hub::EventHub,
@@ -21,7 +19,7 @@ type TestApp = App<fn() -> u128>;
 
 /// Supplies a daemon without launching any pane process.
 fn test_app() -> TestApp {
-    let (launch, receiver) = launch::launch_inputs(&[], support::manifest_cache());
+    let (launch, receiver) = launch::inputs(&[], support::manifest_cache());
     let mut app = App::new(
         &Config::default(),
         (|| 0) as fn() -> u128,

@@ -2,22 +2,32 @@
 use super::{ModelRegistry, read_provider};
 use crate::CatalogError;
 use maestro_credentials::{AuthSource, AuthStatus};
-use maestro_models::{Model, SharedHandle};
+use maestro_models::{Model, SharedHandle, providers::chat::cloudflare::is_cloudflare_provider};
 use std::sync::{Arc, PoisonError, RwLock};
 impl ModelRegistry {
     /// Check credential presence, then freshly read the configured provider identity.
+    /// Cloudflare API-key sources also require account values, without executing key helpers.
     ///
     /// # Errors
     /// Returns the original credential lookup failure.
     pub fn has_configured_auth(&self, model: &Arc<RwLock<Model>>) -> Result<bool, CatalogError> {
         let provider = read_provider(model);
-        if self.auth_storage.has_auth(&provider)? {
+        if self.is_using_oauth(model) && maestro_models::get_oauth_provider(&provider).is_some() {
             return Ok(true);
         }
-        let provider = read_provider(model);
-        Ok(self
-            .request_config(&provider)
-            .is_some_and(|c| c.api_key.is_some()))
+        if !self.auth_storage.has_auth(&provider)? {
+            let provider = read_provider(model);
+            let configured = self.request_config(&provider).is_some_and(|c| {
+                c.api_key
+                    .as_ref()
+                    .is_some_and(|key| !key.is_empty() || !is_cloudflare_provider(&provider))
+            });
+            if !configured {
+                return Ok(false);
+            }
+        }
+        let descriptor = model.read().unwrap_or_else(PoisonError::into_inner).clone();
+        Ok(self.auth_storage.cloudflare_base_url(&descriptor).is_ok())
     }
     /// Filter current slots up to the captured list length, retaining shared descriptors.
     ///
@@ -83,7 +93,7 @@ impl ModelRegistry {
             .map(|(_, c)| SharedHandle::clone(c));
         let registered = retained.map(|config| {
             let config = config.read().unwrap_or_else(PoisonError::into_inner);
-            (config.name.clone(), config.oauth.clone())
+            (config.name.clone(), config.callbacks.oauth.clone())
         });
         if let Some((name, oauth)) = registered {
             if let Some(name) = name {

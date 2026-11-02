@@ -141,6 +141,15 @@ impl Segmented {
         self.projection.native(range, native)
     }
 
+    /// Whether the logical bytes end with the supplied authored value.
+    pub(crate) fn ends_with(&self, body: &MappedText) -> bool {
+        let Some(start) = self.len().checked_sub(body.len()) else {
+            return false;
+        };
+        let tail = self.chunks().flat_map(str::as_bytes).skip(start);
+        tail.eq(body.chunks().flat_map(str::as_bytes))
+    }
+
     /// Find a native range in the logical value without materializing its text.
     pub(crate) fn local(&self, range: &Range<usize>) -> Option<Range<usize>> {
         self.projection.local(range, local)

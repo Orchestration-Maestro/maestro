@@ -73,10 +73,12 @@ impl AutocompleteOperations for Files {
         self.trace
             .borrow_mut()
             .push(vec!["is_directory".into(), path.into()]);
+        // The stat answers are keyed by the recorded spelling, as the trace is compared.
+        let recorded = &recorded_trace(&[vec![path.to_owned()]])[0][0];
         match self
             .stat
             .iter()
-            .find(|(name, _)| *name == path)
+            .find(|(name, _)| name == recorded)
             .map(|(_, kind)| *kind)
         {
             Some("directory") => Ok(true),
@@ -223,6 +225,10 @@ pub fn run_suggestions(cases: &[SuggestionCase]) {
         AutocompleteProvider, AutocompleteSuggestions, CombinedAutocompleteProvider,
     };
     for case in cases {
+        if cfg!(windows) && case.lines.iter().any(|line| line.contains('\\')) {
+            // A recorded `\` is literal text on POSIX hosts and a separator on Windows.
+            continue;
+        }
         let files = Files {
             entries: case.files.entries.to_vec(),
             stat: case.files.stat.to_vec(),
@@ -268,13 +274,29 @@ pub fn run_suggestions(cases: &[SuggestionCase]) {
             "{}",
             case.id
         );
-        let expected: Vec<Vec<String>> = case
-            .calls
-            .iter()
-            .map(|call| call.iter().map(|s| (*s).into()).collect())
-            .collect();
-        assert_eq!(*trace.borrow(), expected, "{}", case.id);
+        let observed = recorded_trace(&trace.borrow());
+        assert_eq!(observed, recorded_calls(case), "{}", case.id);
     }
+}
+
+/// The calls a case records, as owned strings.
+fn recorded_calls(case: &SuggestionCase) -> Vec<Vec<String>> {
+    case.calls
+        .iter()
+        .map(|call| call.iter().map(|s| (*s).into()).collect())
+        .collect()
+}
+
+/// The trace as the recording spells it: Windows joins the recorded POSIX base natively,
+/// as `\\work`, where the recording writes `/`.
+fn recorded_trace(trace: &[Vec<String>]) -> Vec<Vec<String>> {
+    if !cfg!(windows) {
+        return trace.to_vec();
+    }
+    trace
+        .iter()
+        .map(|call| call.iter().map(|part| part.replace('\\', "/")).collect())
+        .collect()
 }
 
 /// Command collections used by the source queries.

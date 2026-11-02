@@ -1,0 +1,11 @@
+{
+  "name": "maestro-subagents",
+  "version": "0.1.0",
+  "description": "Delegate tasks to authored agents in isolated Maestro children",
+  "license": "MIT",
+  "files": ["dist", "agents", "prompts", "README.md", "LICENSE"],
+  "maestro": {
+    "extensions": ["dist/component.wasm"],
+    "prompts": ["prompts/implement-and-review.md", "prompts/implement.md", "prompts/scout-and-plan.md"]
+  }
+}

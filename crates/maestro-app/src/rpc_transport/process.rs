@@ -28,7 +28,7 @@ pub(super) fn command_for(options: &RpcClientOptions) -> io::Result<Command> {
     let default = format!("dist/maestro{}", std::env::consts::EXE_SUFFIX);
     let entry = options.cli_path.as_deref().unwrap_or(&default);
     let base = Path::new(options.cwd.as_deref().unwrap_or_default());
-    let mut command = Command::new(std::path::absolute(base.join(entry))?);
+    let mut command = maestro_process::command(std::path::absolute(base.join(entry))?);
     command.args(["--mode", "rpc"]);
     for (flag, value) in [
         ("--provider", &options.provider),

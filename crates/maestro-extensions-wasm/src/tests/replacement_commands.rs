@@ -44,6 +44,53 @@ fn one(lines: &[String], prefix: &str) -> Value {
     assert_eq!(values.len(), 1, "observation {prefix}");
     values.into_iter().next().unwrap()
 }
+/// Absent and present-empty options must remain distinguishable at the host import.
+async fn option_presence(driver: &mut impl Driver) -> Result<(), String> {
+    driver
+        .run_plain_command("capture", "replacement-register")
+        .await?;
+    driver
+        .run_plain_command("capture", "setup-register")
+        .await?;
+    driver
+        .run_plain_command(
+            "setup",
+            &json!({"drop":true,"control":{"record_options":true}}).to_string(),
+        )
+        .await?;
+    let mut observations = Vec::new();
+    for option in [json!({"present":false}), json!({"present":true,"value":{}})] {
+        let lines = ask(
+            driver,
+            json!({"group":"newSession","input":{"args":[option]}}),
+            false,
+        )
+        .await?;
+        observations.push(one(&lines, "setup-options "));
+    }
+    assert_ne!(
+        observations[0], observations[1],
+        "new-session import erased absent versus present-empty options"
+    );
+    observations.clear();
+    for option in [json!({"present":false}), json!({"present":true,"value":{}})] {
+        let lines = ask(driver, json!({"group":"switchSession","input":{"args":[{"present":true,"value":"/session"},option]}}), false).await?;
+        observations.push(one(&lines, "replacement-call "));
+    }
+    assert_ne!(
+        observations[0], observations[1],
+        "switch-session import erased absent versus present-empty options"
+    );
+    driver.release_all().await;
+    assert_eq!(driver.live(), 0);
+    Ok(())
+}
+
+#[test]
+fn command_session_options_preserve_presence() -> Result<(), String> {
+    on_both_adapters!(option_presence)
+}
+
 /// Source corpus owns command operands; explicit outcome cases own errors and pending results.
 async fn forwarding(driver: &mut impl Driver) -> Result<(), String> {
     driver
@@ -98,9 +145,6 @@ fn assert_command(lines: &[String], group: &str, expected: &Value) {
     if let Some(object) = data.get_mut("value").and_then(Value::as_object_mut) {
         object.shift_remove("withSession");
     }
-    if group == "switchSession" {
-        data = json!({"present":false});
-    }
     assert_eq!(
         one(lines, "replacement-call "),
         json!({"group":group,"id":args.get(0).and_then(expected_value).and_then(Value::as_str).unwrap_or(""),"data":data,"callback":callback})
@@ -118,7 +162,7 @@ fn assert_new(lines: &[String], expected: &Value) {
     let record = one(lines, "setup-options ");
     assert_eq!(
         record,
-        json!({"parent":options["parentSession"],"setup":options.get("setup").is_some(),"continuation":options.get("withSession").is_some()})
+        json!({"present":expected["args"][0]["present"],"parent":options["parentSession"],"setup":options.get("setup").is_some(),"continuation":options.get("withSession").is_some()})
     );
 }
 /// Recorded awaited results and stale host rejection are observed through the command facade.

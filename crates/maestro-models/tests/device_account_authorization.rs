@@ -248,6 +248,9 @@ struct Interaction {
 }
 #[cfg(not(target_arch = "wasm32"))]
 impl OAuthLoginCallbacks for Interaction {
+    fn callback_presence(&self) -> (bool, bool, bool) {
+        (true, false, false)
+    }
     fn on_prompt(&self, prompt: OAuthPrompt) -> BoxFuture<Result<String, OAuthError>> {
         self.events.lock().unwrap().push(format!(
             "prompt:{}:{}:{:?}",
@@ -445,7 +448,7 @@ fn device_provider_exposes_shared_contract() {
         extra: maestro_models::JsonObject::new(),
     };
     assert!(std::ptr::eq(
-        provider.get_api_key(&credentials).unwrap(),
+        provider.get_api_key(&credentials).unwrap().as_ref(),
         credentials.access.as_str()
     ));
     assert!(std::ptr::eq(

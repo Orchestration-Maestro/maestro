@@ -12,7 +12,8 @@ const GROUP: &str = "MAESTRO_TEST_GROUP";
 ///
 /// `environment` gives the variables a case runs with. Cases with equal variables share
 /// one child, which inherits nothing else from this process except the coverage profile
-/// path and the temporary directory, which a case's own variables may replace. Returns
+/// path, the Windows system root and the temporary directory, which a case's own
+/// variables may replace. Returns
 /// `Ok(None)` in the calling process once every child passed; the test then returns.
 /// Returns `Ok(Some(cases))` in a child: the cases of its environment in their original
 /// order, which the test body runs. Cases that need a fresh process for state
@@ -115,6 +116,18 @@ impl CaseSelection {
             SelectionKind::Group(name) => crate::selection::matches_name(name, test),
         }
     }
+}
+
+/// Whether a child's local time zone follows its `TZ` variable, the premise of a test
+/// that selects a zone that way. Unix hosts read `TZ`; Windows reads its system zone, so
+/// there this reports the unmet premise on standard error and returns `false`.
+#[must_use]
+pub fn local_zone_follows_tz() -> bool {
+    if cfg!(unix) {
+        return true;
+    }
+    eprintln!("premise not met: this host takes the local time zone from its settings, not TZ");
+    false
 }
 
 /// Return this process's typed case or environment-group selection.

@@ -1,13 +1,20 @@
 //! Extension UI and renderer records through the application root.
 use maestro_app::presentation_data::status_line::{ExtensionStatusIter, ExtensionStatuses};
 use maestro_app::{
-    AutocompleteProviderFactory, Cancellation, Extension, ExtensionAPI, ExtensionUIContext,
-    ExtensionUIDialogOptions, ExtensionWidgetOptions, Local, MessageRenderOptions, MessageRenderer,
-    ReadonlyFooterDataProvider, SharedHandle, SourceInfo, SourceOrigin, SourceScope,
-    TerminalInputHandler, Threaded, UIHostCall, WidgetPlacement, WorkingIndicatorOptions,
+    AutocompleteProviderFactory, Cancellation, ExtensionUIContext, ExtensionUIDialogOptions,
+    ExtensionWidgetOptions, MessageRenderOptions, MessageRenderer, ReadonlyFooterDataProvider,
+    SharedHandle, WidgetPlacement, WorkingIndicatorOptions,
 };
+#[cfg(not(target_arch = "wasm32"))]
+use maestro_app::{
+    Extension, ExtensionAPI, Local, SourceInfo, SourceOrigin, SourceScope, TerminalInputHandler,
+    Threaded, UIHostCall,
+};
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_tui::interface::InputListenerResult;
-use std::{rc::Rc, sync::Arc, sync::RwLock};
+use std::rc::Rc;
+#[cfg(not(target_arch = "wasm32"))]
+use std::sync::{Arc, RwLock};
 
 /// Returns its operand as the extension owner's declaration.
 fn native_ui(ui: ExtensionUIContext) -> maestro_extensions::ExtensionUIContext {
@@ -36,6 +43,7 @@ fn native_wrapper(
 }
 
 /// Provenance for a facade the application constructs itself.
+#[cfg(not(target_arch = "wasm32"))]
 fn source() -> Arc<RwLock<SourceInfo>> {
     Arc::new(RwLock::new(SourceInfo {
         path: "app".into(),
@@ -48,6 +56,11 @@ fn source() -> Arc<RwLock<SourceInfo>> {
 
 #[test]
 fn native_ui_exports_share_the_existing_records() {
+    let remove: maestro_app::UIUnsubscribe = Rc::new(|| Ok(()));
+    let owner: maestro_extensions::types::UIUnsubscribe = remove;
+    let mut listeners = maestro_app::Listeners::default();
+    listeners.add(owner);
+    listeners.snapshot()[0]().unwrap();
     let options = MessageRenderOptions { expanded: true };
     let session: maestro_session::message_records::MessageRenderOptions = options;
     let _: maestro_extensions::MessageRenderOptions = session;
@@ -79,6 +92,8 @@ fn native_ui_exports_share_the_existing_records() {
     );
 }
 
+// The browser build has no source scopes, and its thread-safe family shares through `Rc`.
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn bound_ui_calls_cross_application_exports_in_both_families() {
     let threaded_events =

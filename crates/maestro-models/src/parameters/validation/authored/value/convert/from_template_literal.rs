@@ -1,5 +1,6 @@
 //! Conversion through the literals a template pattern names.
 
+use crate::DiagnosticErrorInfo;
 use serde_json::Value;
 
 use super::from_string::from_string;
@@ -16,10 +17,12 @@ pub(crate) fn from_template_literal<'a>(
     converter: &mut Context<'a>,
     view: View<'a>,
     value: &mut Value,
-) -> Option<Value> {
-    let pattern = view.raw.get("pattern").and_then(Value::as_str)?;
+) -> Result<Option<Value>, DiagnosticErrorInfo> {
+    let Some(pattern) = view.raw.get("pattern").and_then(Value::as_str) else {
+        return Ok(None);
+    };
     match decode(pattern) {
         Some(decoded) => from_type(converter, &decoded, value),
-        None => from_string(value),
+        None => Ok(from_string(value)),
     }
 }

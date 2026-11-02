@@ -33,12 +33,16 @@ pub struct Bank {
     pub renderer_emissions: Vec<(usize, String, Value)>,
     /// Registered channel and callback pairs.
     pub listeners: Vec<(String, u32)>,
+    /// Emit-time callback identities retained for the generated local walk.
+    pub snapshots: Vec<Option<Vec<u32>>>,
     /// Announced independent tails.
     pub tails: Vec<u32>,
     /// Announced tails not yet handed to teardown.
     pub unreleased: Vec<u32>,
     /// Registration rejection.
     pub registration_error: Option<String>,
+    /// Holds asynchronous emissions before their listeners run.
+    pub emission_holds: std::collections::VecDeque<super::observed::Hold>,
     /// Emission rejection.
     pub emission_error: Option<String>,
     /// Removal rejection.

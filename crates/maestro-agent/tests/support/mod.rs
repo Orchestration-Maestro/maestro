@@ -9,7 +9,7 @@ use std::sync::{Arc, RwLock};
 
 /// Plain user entries, history conversion and queued responses shared with other crates.
 mod controlled_loop;
-pub use controlled_loop::{responses, user};
+pub use controlled_loop::{responses, typed_user, user};
 
 /// Supply retained history and instructions.
 #[must_use]
@@ -106,7 +106,7 @@ pub fn tool_call() -> SharedAssistantMessage {
         maestro_models::ToolCall {
             id: "id".into(),
             name: "echo".into(),
-            arguments: maestro_models::JsonObject::new(),
+            arguments: maestro_models::JsonObject::new().into(),
             thought_signature: None,
         },
     )];

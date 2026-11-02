@@ -1,6 +1,6 @@
 # Conversation message projection
 
-`maestro-session::message_records` formats recorded shell executions, constructs
+`maestro-session::messages` formats recorded shell executions, constructs
 application messages and projects them into model-request messages.
 `maestro-session::convert_to_llm` is also available at the crate root.
 

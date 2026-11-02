@@ -23,8 +23,9 @@ mod catalog;
 pub mod catalog_generation;
 mod options;
 pub use options::{
-    AdjustedMaxTokens, adjust_max_tokens_for_thinking, build_base_options, build_base_options_for,
-    clamp_reasoning, is_context_overflow, reasoning_from_thinking_level,
+    AdjustedMaxTokens, ESTIMATED_IMAGE_CHARS, adjust_max_tokens_for_thinking, build_base_options,
+    build_base_options_for, clamp_reasoning, is_context_overflow, reasoning_from_thinking_level,
+    tokens_for_chars, utf16_units,
 };
 /// Conversation adaptation for the destination model.
 mod projection;
@@ -58,7 +59,7 @@ pub use providers::responses_api::openai::{
     OpenAIResponsesOptions, stream_openai_responses, stream_openai_responses_for,
 };
 pub use providers::transport::{
-    Fetch, FetchError, HttpBody, HttpRequest, HttpResponse, default_fetch,
+    Fetch, FetchError, HttpBody, HttpRequest, HttpResponse, default_fetch, fetch_optional_body,
 };
 pub use records::api_registry::{
     ApiProvider, ApiStreamFunction, ApiStreamSimpleFunction, clear_api_providers, get_api_provider,
@@ -70,8 +71,8 @@ pub use records::diagnostics::{
     extract_diagnostic_error, format_thrown_value, timestamp_now,
 };
 pub use records::digest::short_hash;
-pub use records::events::EventStream;
 pub use records::events::create_assistant_message_event_stream;
+pub use records::events::{AssistantMessageEventStreamPort, EventStream};
 pub use records::header_values::headers_to_record;
 pub use records::invocation::{
     complete, complete_for, complete_simple, complete_simple_for, stream, stream_for,
@@ -132,8 +133,13 @@ pub use providers::content::managed::{
     stream_simple_google_vertex, stream_simple_google_vertex_for,
 };
 
+/// Shared extension event inventory for concrete native adapters.
+pub use maestro_request::extension_event_table;
 /// Shared extension events and assembled prompt records.
 pub use maestro_request::{extension_events, system_prompt};
 
 /// Shared parameter-schema records and their declared node kinds.
-pub use maestro_request::parameter_schema::{ParameterSchema, SchemaKind};
+pub use maestro_request::parameter_schema::{
+    Base, ParameterSchema, Refinement, SchemaCallback, SchemaCode, SchemaCodeSource, SchemaKind,
+    SchemaNode, transport as schema_transport,
+};

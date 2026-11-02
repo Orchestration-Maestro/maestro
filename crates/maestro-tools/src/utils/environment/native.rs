@@ -9,8 +9,8 @@ use std::{
     time::Duration,
 };
 
-/// Native environment entries in observation order.
-pub type ShellEnv = IndexMap<OsString, OsString>;
+/// Native environment entries in observation order, including explicitly unset values.
+pub type ShellEnv = IndexMap<OsString, Option<OsString>>;
 
 /// The selected shell executable and command arguments.
 #[derive(Debug, PartialEq, Eq)]
@@ -37,7 +37,7 @@ pub fn get_shell_config(custom_shell_path: Option<&str>) -> io::Result<ShellConf
 
 /// Runs the platform's discovery command through synchronous capture.
 pub(super) fn probe(program: &str, operand: &str, deadline: Duration) -> Option<String> {
-    let mut command = tokio::process::Command::new(program);
+    let mut command = maestro_process::command(program);
     command.arg(operand);
     let output = spawn_sync(
         &mut command,
@@ -128,7 +128,13 @@ fn select_windows(
 /// Reads a fresh native environment and inserts `bin_dir` in its first PATH entry.
 #[must_use]
 pub fn get_shell_env(bin_dir: &str) -> ShellEnv {
-    shell_env(std::env::vars_os().collect(), bin_dir, cfg!(windows))
+    shell_env(
+        maestro_process::environment()
+            .map(|(key, value)| (key, Some(value)))
+            .collect(),
+        bin_dir,
+        cfg!(windows),
+    )
 }
 
 /// Prepends only when exact nonempty delimiter-separated membership is absent.
@@ -138,7 +144,7 @@ pub(super) fn shell_env(mut env: ShellEnv, bin_dir: &str, windows: bool) -> Shel
         .find(|key| key.eq_ignore_ascii_case("path"))
         .cloned()
         .unwrap_or_else(|| OsString::from("PATH"));
-    let current = env.get(&key).cloned().unwrap_or_default();
+    let current = env.get(&key).cloned().flatten().unwrap_or_default();
     let delimiter = if windows { b';' } else { b':' };
     let present = current
         .as_encoded_bytes()
@@ -154,7 +160,7 @@ pub(super) fn shell_env(mut env: ShellEnv, bin_dir: &str, windows: bool) -> Shel
         }
         updated.push(current);
     }
-    env.insert(key, updated);
+    env.insert(key, Some(updated));
     env
 }
 
