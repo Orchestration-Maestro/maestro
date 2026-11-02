@@ -55,10 +55,15 @@ pub fn registry(
     (scratch, state)
 }
 impl Events {
+    /// Callback recording each value under `name`.
+    pub fn record<T: Into<Value> + 'static>(&self, name: &'static str) -> Rc<dyn Fn(T)> {
+        let events = self.clone();
+        Rc::new(move |value: T| events.push(name, Some(value.into())))
+    }
     /// Name confirmation.
     pub fn select(&self) -> Rc<dyn Fn(&str)> {
-        let events = self.clone();
-        Rc::new(move |value| events.push("select", Some(Value::from(value))))
+        let record = self.record::<String>("select");
+        Rc::new(move |value| record(value.to_owned()))
     }
     /// Theme preview.
     pub fn preview(&self) -> Rc<dyn Fn(&str)> {
@@ -302,7 +307,7 @@ pub fn picker(
         ),
         Kind::Images => Picker::Images(maestro_chat::ShowImagesSelectorComponent::new(
             true,
-            events.images(),
+            events.record("select"),
             events.cancel(),
             state.theme(),
         )),
