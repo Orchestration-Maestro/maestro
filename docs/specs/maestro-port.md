@@ -329,6 +329,17 @@ Default tests run on Linux with deterministic fake providers/clock/terminal/brow
 
 CI must be equal or stronger step by step. Install rg and fd and require real-binary search tests, not just fakes. As #109 specifies, `just test` remains unwrapped; the separate ported non-LLM test script removes the specified provider credentials and sets the agent's auth file aside, restoring it on exit. Keep strict Clippy, public rustdoc, conventions, full action-SHA pins and merge-queue validation. The full suite includes terminal tests.
 
+The private `_check` recipe runs native Clippy followed by Clippy for
+`x86_64-pc-windows-gnu`, forwarding the same explicit Cargo package selection to
+both passes with `--all-targets --locked -- -D warnings`. It adds no reverse
+dependents or workspace fallback. `just check` explicitly selects the workspace
+for both passes on every development host. The pinned toolchain target list
+includes the Windows-GNU standard library; hosts also need a working MinGW-w64
+C toolchain. Missing prerequisites fail the check, without a native-only fallback.
+The staged-crate commit hook remains native-only. Windows-GNU checks platform
+configuration boundaries, not MSVC-specific code or ABI behavior; required native
+Windows-MSVC CI and native runtime qualification remain unchanged.
+
 Define the caller-driven wasm32-unknown-unknown build gate in foundation tooling and activate it for the model library at its first re-port; every later browser-used crate opts in when created. The first real web application slice builds its actual wasm application and a working embedding example immediately. Full browser application/example builds remain required thereafter; cargo check, native-only compilation and empty examples do not qualify. Release builds cover darwin arm64/x64, linux x64/arm64 and windows x64, with matching notes/assets.
 
 Shared-workflow changes require one separate issue and clone in maestro-rust-workflows. As #109 specifies, `just test` remains unwrapped; the separate ported non-LLM test script removes the specified provider credentials and sets the agent's auth file aside, restoring it on exit. Its initial real-tool and wasm-job release plus caller/ruleset re-pin precede foundation/models acceptance; the caller later supplies its real browser build and its own tag-triggered release workflow; the shared companion supplies only generic configurable checks. Keep the application lane out of that repository. Every mapped CI step needs observed evidence before final qualification; a plan or skipped job is not proof of delivered parity.
