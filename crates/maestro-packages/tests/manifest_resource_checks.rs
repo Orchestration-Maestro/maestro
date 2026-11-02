@@ -358,9 +358,11 @@ fn malformed_resource_lists_are_ignored_while_valid_lists_load() {
                 prompts,
                 [scratch
                     .path()
-                    .join("pkg")
-                    .join("prompts")
-                    .join("a.md")
+                    .join(
+                        ["pkg", "prompts", "a.md"]
+                            .iter()
+                            .collect::<std::path::PathBuf>()
+                    )
                     .to_str()
                     .unwrap()],
                 "filtered: {filtered}"
