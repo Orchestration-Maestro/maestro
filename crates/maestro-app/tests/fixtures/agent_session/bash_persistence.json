@@ -1,0 +1,209 @@
+[
+  {
+    "name": "idle_shell_records_persist_without_message_events",
+    "expected": {
+      "pending": false,
+      "roles": [
+        "bashExecution"
+      ],
+      "entries": [
+        "message"
+      ],
+      "shell": [
+        {
+          "role": "bashExecution",
+          "command": "echo hi",
+          "output": "hi",
+          "exitCode": 0,
+          "cancelled": false,
+          "truncated": false
+        }
+      ],
+      "messageEndRoles": []
+    }
+  },
+  {
+    "name": "streaming_shell_records_flush_before_next_user_prompt",
+    "expected": {
+      "views": [
+        {
+          "phase": "streaming",
+          "pending": true,
+          "roles": [
+            "user",
+            "assistant"
+          ],
+          "entries": [
+            "message",
+            "message"
+          ]
+        },
+        {
+          "phase": "idle-before-next-prompt",
+          "pending": false,
+          "roles": [
+            "user",
+            "assistant",
+            "toolResult",
+            "assistant",
+            "bashExecution"
+          ],
+          "entries": [
+            "message",
+            "message",
+            "message",
+            "message",
+            "message"
+          ]
+        },
+        {
+          "phase": "after-next-prompt",
+          "pending": false,
+          "roles": [
+            "user",
+            "assistant",
+            "toolResult",
+            "assistant",
+            "bashExecution",
+            "bashExecution",
+            "user",
+            "assistant"
+          ],
+          "entries": [
+            "message",
+            "message",
+            "message",
+            "message",
+            "message",
+            "message",
+            "message",
+            "message"
+          ]
+        }
+      ],
+      "shell": [
+        {
+          "role": "bashExecution",
+          "command": "echo hi",
+          "output": "hi",
+          "exitCode": 0,
+          "cancelled": false,
+          "truncated": false
+        },
+        {
+          "role": "bashExecution",
+          "command": "echo later",
+          "output": "later",
+          "exitCode": 0,
+          "cancelled": false,
+          "truncated": false
+        }
+      ],
+      "storedShellCommands": ["echo hi", "echo later"]
+    }
+  },
+  {
+    "name": "direct_shell_runs_and_records_native_output",
+    "expected": {
+      "result": {
+        "output": "hello",
+        "exitCode": 0,
+        "cancelled": false,
+        "truncated": false
+      },
+      "roles": [
+        "bashExecution"
+      ],
+      "entries": [
+        "message"
+      ],
+      "shell": [
+        {
+          "role": "bashExecution",
+          "command": "printf 'hello'",
+          "output": "hello",
+          "exitCode": 0,
+          "cancelled": false,
+          "truncated": false
+        }
+      ]
+    }
+  },
+  {
+    "name": "abort_shell_clears_running_state_and_persists_cancellation",
+    "expected": {
+      "before": true,
+      "result": {
+        "output": "",
+        "cancelled": true,
+        "truncated": false
+      },
+      "after": false,
+      "roles": [
+        "bashExecution"
+      ],
+      "entries": [
+        "message"
+      ],
+      "shell": [
+        {
+          "role": "bashExecution",
+          "command": "sleep",
+          "output": "",
+          "cancelled": true,
+          "truncated": false
+        }
+      ]
+    }
+  },
+  {
+    "name": "custom_user_assistant_and_tool_messages_keep_record_order",
+    "expected": {
+      "entries": [
+        "custom_message",
+        "message",
+        "message",
+        "message",
+        "message"
+      ],
+      "roles": [
+        "custom",
+        "user",
+        "assistant",
+        "toolResult",
+        "assistant"
+      ],
+      "toolResults": [
+        {
+          "content": [
+            {
+              "type": "text",
+              "text": "echo:hello"
+            }
+          ],
+          "details": {
+            "text": "hello"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "interrupted_assistant_is_kept_in_session_entries",
+    "expected": {
+      "entries": [
+        "message",
+        "message"
+      ],
+      "roles": [
+        "user",
+        "assistant"
+      ],
+      "last": {
+        "type": "message",
+        "role": "assistant",
+        "stopReason": "aborted"
+      }
+    }
+  }
+]

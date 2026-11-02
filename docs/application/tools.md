@@ -46,8 +46,9 @@ execution settles.
 
 `record_bash_result` records an externally obtained result without launching a
 command. An idle session appends it to live history and stored entries at once.
-While a response streams, the session keeps it pending. Finishing that response
-does not flush it: the next prompt appends it before the next user message.
+While a run streams, the session keeps it pending. When that run settles, the
+session appends pending results after its tool calls and results, even if no later
+prompt follows. A later idle shell result follows those earlier results.
 Shell history records emit no `message_end` event.
 
 ## Customizing qualification
