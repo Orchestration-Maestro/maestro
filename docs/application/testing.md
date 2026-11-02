@@ -104,6 +104,7 @@ the harness unregisters the scripted provider and removes the disposable root.
 Run executable file and controlled-shell checks:
 
 ```sh
+just prepare-tests
 cargo nextest run -p maestro-app --locked --test integration \
   -E 'test(/^tools_(read|write|edit|bash|search)_checks::/)'
 ```
@@ -111,6 +112,7 @@ cargo nextest run -p maestro-app --locked --test integration \
 Run direct-shell persistence checks:
 
 ```sh
+just prepare-tests
 cargo nextest run -p maestro-app --locked --test integration \
   -E 'test(/^agent_session_bash_persistence_checks::/)'
 ```
