@@ -4,8 +4,9 @@ use super::super::continuation::Request;
 use super::super::debug::{
     OpenAICodexWebSocketDebugStats as Stats, count_request,
     get_openai_codex_web_socket_debug_stats as stats_of,
-    is_web_socket_sse_fallback_active as active, record_web_socket_failure,
-    record_web_socket_sse_fallback, reset_openai_codex_web_socket_debug_stats as reset,
+    is_web_socket_sse_fallback_active as active, record_web_socket_completion,
+    record_web_socket_failure, record_web_socket_sse_fallback,
+    reset_openai_codex_web_socket_debug_stats as reset,
 };
 use super::super::sessions::{cached_entry, close_openai_codex_web_socket_sessions as close};
 use super::loopback::{Conversation, answer, read_request, respond};
@@ -351,6 +352,36 @@ fn maestro_response_sessions_snapshot_socket_debug_state() {
         repeated.websocket_failures, 3,
         "a snapshot survives the reset"
     );
+}
+
+#[test]
+fn maestro_response_sessions_reset_clears_socket_completion() {
+    let _isolated = super::exclusive();
+    reset(None);
+    let [one, all] = ["completion-one", "completion-all"];
+
+    record_web_socket_completion(Some(one));
+    record_web_socket_failure(Some(one), DiagnosticInput::Text("transient"));
+    assert!(
+        !active(Some(one)),
+        "a completed socket falls back for one request only"
+    );
+
+    reset(Some(one));
+    record_web_socket_failure(
+        Some(one),
+        DiagnosticInput::Text("after a per-session reset"),
+    );
+    assert!(
+        active(Some(one)),
+        "a per-session reset forgets the completion"
+    );
+
+    record_web_socket_completion(Some(all));
+    reset(None);
+    record_web_socket_failure(Some(all), DiagnosticInput::Text("after a full reset"));
+    assert!(active(Some(all)), "a full reset forgets the completion");
+    reset(None);
 }
 
 /// Complete one request of the conversation and return the peer's socket.

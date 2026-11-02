@@ -3,6 +3,8 @@
 use super::super::*;
 use crate::{Context, Model, StopReason, Transport};
 use futures_util::{StreamExt, future::join};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use tokio::net::TcpListener;
 use tokio_tungstenite::{WebSocketStream, accept_async};
 
@@ -42,6 +44,61 @@ async fn retained(session: &str) -> Retained {
         model,
         context,
         options,
+    }
+}
+
+/// A session whose socket dials a loopback listener and whose HTTP-stream fallback counts its
+/// requests.
+struct Fallback {
+    /// Caller descriptor.
+    model: Model,
+    /// Caller history.
+    context: Context,
+    /// Caller options.
+    options: OpenAICodexResponsesOptions,
+    /// HTTP-stream requests served so far.
+    http_calls: Arc<AtomicUsize>,
+}
+
+impl Fallback {
+    /// Bind the session's listener and count its HTTP-stream fallback requests.
+    async fn session(session: &str) -> (TcpListener, Self) {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let (model, context, mut options) = super::invocation();
+        let mut model = (*model).clone();
+        model.base_url = format!("http://{}", listener.local_addr().unwrap());
+        options.common.session_id = Some(session.into());
+        options.common.transport = Some(Transport::Auto);
+        let http_calls = Arc::new(AtomicUsize::new(0));
+        let count = Arc::clone(&http_calls);
+        options.common.fetch = Some(Arc::new(move |_| {
+            count.fetch_add(1, Ordering::SeqCst);
+            Box::pin(async { Ok(super::public_streams::response()) })
+        }));
+        (
+            listener,
+            Self {
+                model,
+                context,
+                options,
+                http_calls,
+            },
+        )
+    }
+
+    /// Run one request and report how it ended.
+    async fn run(&self) -> StopReason {
+        let stream = stream_openai_codex_responses(
+            self.model.clone(),
+            self.context.clone(),
+            Some(self.options.clone()),
+        );
+        stream.result().await.read().unwrap().stop_reason.clone()
+    }
+
+    /// HTTP-stream requests served so far.
+    fn http_calls(&self) -> usize {
+        self.http_calls.load(Ordering::SeqCst)
     }
 }
 
@@ -121,23 +178,7 @@ fn maestro_response_sessions_failure_creates_sticky_fallback() {
     let _guard = super::exclusive();
     crate::tests::runtime::run(async {
         reset_openai_codex_web_socket_debug_stats(None);
-        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let (model, context, mut options) = super::invocation();
-        let mut model = (*model).clone();
-        model.base_url = format!("http://{}", listener.local_addr().unwrap());
-        options.common.session_id = Some("sticky-real".into());
-        options.common.transport = Some(Transport::Auto);
-        let http_calls = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
-        let count = std::sync::Arc::clone(&http_calls);
-        options.common.fetch = Some(std::sync::Arc::new(move |_| {
-            count.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            Box::pin(async { Ok(super::public_streams::response()) })
-        }));
-        let run = || async {
-            stream_openai_codex_responses(model.clone(), context.clone(), Some(options.clone()))
-                .result()
-                .await
-        };
+        let (listener, session) = Fallback::session("sticky-real").await;
         let peer = tokio::spawn(async move {
             let mut peer = accept_async(listener.accept().await.unwrap().0)
                 .await
@@ -152,16 +193,16 @@ fn maestro_response_sessions_failure_creates_sticky_fallback() {
             while peer.next().await.is_some() {}
         });
         let stats = || get_openai_codex_web_socket_debug_stats("sticky-real").unwrap();
-        assert_eq!(run().await.read().unwrap().stop_reason, StopReason::Stop);
+        assert_eq!(session.run().await, StopReason::Stop);
         let first = stats();
         assert_eq!((first.websocket_failures, first.sse_fallbacks), (1, 1));
-        assert_eq!(run().await.read().unwrap().stop_reason, StopReason::Stop);
+        assert_eq!(session.run().await, StopReason::Stop);
         let second = stats();
         assert_eq!((second.websocket_failures, second.sse_fallbacks), (1, 2));
-        assert_eq!(http_calls.load(std::sync::atomic::Ordering::SeqCst), 2);
+        assert_eq!(session.http_calls(), 2);
         reset_openai_codex_web_socket_debug_stats(Some("sticky-real"));
-        assert_eq!(run().await.read().unwrap().stop_reason, StopReason::Stop);
-        assert_eq!(http_calls.load(std::sync::atomic::Ordering::SeqCst), 2);
+        assert_eq!(session.run().await, StopReason::Stop);
+        assert_eq!(session.http_calls(), 2);
         close_openai_codex_web_socket_sessions(Some("sticky-real"));
         peer.await.unwrap();
     });
@@ -186,23 +227,7 @@ async fn maestro_response_sessions_scope_fallback_by_socket_history_scenario() {
 
 /// One completed response, one socket drop before the first event, then a socket again.
 async fn transient_failure() {
-    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-    let (model, context, mut options) = super::invocation();
-    let mut model = (*model).clone();
-    model.base_url = format!("http://{}", listener.local_addr().unwrap());
-    options.common.session_id = Some("transient".into());
-    options.common.transport = Some(Transport::Auto);
-    let http_calls = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
-    let count = std::sync::Arc::clone(&http_calls);
-    options.common.fetch = Some(std::sync::Arc::new(move |_| {
-        count.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-        Box::pin(async { Ok(super::public_streams::response()) })
-    }));
-    let run = || async {
-        stream_openai_codex_responses(model.clone(), context.clone(), Some(options.clone()))
-            .result()
-            .await
-    };
+    let (listener, session) = Fallback::session("transient").await;
     let peer = tokio::spawn(async move {
         let mut peer = accept_async(listener.accept().await.unwrap().0)
             .await
@@ -218,9 +243,9 @@ async fn transient_failure() {
         while peer.next().await.is_some() {}
     });
     let stats = || get_openai_codex_web_socket_debug_stats("transient").unwrap();
-    assert_eq!(run().await.read().unwrap().stop_reason, StopReason::Stop);
-    assert_eq!(http_calls.load(std::sync::atomic::Ordering::SeqCst), 0);
-    assert_eq!(run().await.read().unwrap().stop_reason, StopReason::Stop);
+    assert_eq!(session.run().await, StopReason::Stop);
+    assert_eq!(session.http_calls(), 0);
+    assert_eq!(session.run().await, StopReason::Stop);
     let fallen_back = stats();
     assert_eq!(
         (
@@ -230,10 +255,10 @@ async fn transient_failure() {
         ),
         (1, 1, Some(false))
     );
-    assert_eq!(http_calls.load(std::sync::atomic::Ordering::SeqCst), 1);
-    assert_eq!(run().await.read().unwrap().stop_reason, StopReason::Stop);
+    assert_eq!(session.http_calls(), 1);
+    assert_eq!(session.run().await, StopReason::Stop);
     assert_eq!(
-        http_calls.load(std::sync::atomic::Ordering::SeqCst),
+        session.http_calls(),
         1,
         "the next request tries the socket again"
     );
@@ -243,30 +268,14 @@ async fn transient_failure() {
 
 /// A socket that never completes an upgrade keeps the HTTP stream for every request.
 async fn unserved_socket() {
-    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-    let (model, context, mut options) = super::invocation();
-    let mut model = (*model).clone();
-    model.base_url = format!("http://{}", listener.local_addr().unwrap());
-    options.common.session_id = Some("unserved".into());
-    options.common.transport = Some(Transport::Auto);
-    let http_calls = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
-    let count = std::sync::Arc::clone(&http_calls);
-    options.common.fetch = Some(std::sync::Arc::new(move |_| {
-        count.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-        Box::pin(async { Ok(super::public_streams::response()) })
-    }));
-    let run = || async {
-        stream_openai_codex_responses(model.clone(), context.clone(), Some(options.clone()))
-            .result()
-            .await
-    };
+    let (listener, session) = Fallback::session("unserved").await;
     let peer = tokio::spawn(async move {
         let (stream, _) = listener.accept().await.unwrap();
         drop(stream);
         drop(listener);
     });
     for _ in 0..2 {
-        assert_eq!(run().await.read().unwrap().stop_reason, StopReason::Stop);
+        assert_eq!(session.run().await, StopReason::Stop);
     }
     let stats = get_openai_codex_web_socket_debug_stats("unserved").unwrap();
     assert_eq!(
@@ -277,7 +286,7 @@ async fn unserved_socket() {
         ),
         (1, 2, Some(true))
     );
-    assert_eq!(http_calls.load(std::sync::atomic::Ordering::SeqCst), 2);
+    assert_eq!(session.http_calls(), 2);
     close_openai_codex_web_socket_sessions(Some("unserved"));
     peer.await.unwrap();
 }
@@ -340,7 +349,7 @@ async fn sticky_mode(mode: Option<Transport>) {
     let (model, context, mut options) = super::invocation();
     options.common.session_id = Some("sticky-public".into());
     options.common.transport = mode.clone();
-    options.common.fetch = Some(std::sync::Arc::new(|_| {
+    options.common.fetch = Some(Arc::new(|_| {
         Box::pin(async { Ok(super::public_streams::response()) })
     }));
     let output = stream_openai_codex_responses((*model).clone(), context, Some(options))
