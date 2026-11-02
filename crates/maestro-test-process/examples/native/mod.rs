@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 
 mod author;
 mod cargo;
+mod credentials;
 #[cfg(unix)]
 mod git;
 mod observe;
@@ -27,6 +28,8 @@ enum Request {
     Git(git::Record),
     /// Run a copied preparation example against its checkout-local declaration.
     Author(author::Record, Vec<OsString>),
+    /// Answer as an AWS credential process or a Google executable source.
+    Credentials(credentials::Record, Vec<OsString>),
     /// Exchange raw application RPC records.
     #[cfg(unix)]
     Rpc(rpc::Record),
@@ -77,6 +80,10 @@ impl Request {
             #[cfg(unix)]
             Some("git") => Ok(Self::Git(git::Record::parse(&text)?)),
             Some("tooling-author") => Ok(Self::Author(author::Record::parse(&text)?, operands)),
+            Some("credentials") => Ok(Self::Credentials(
+                credentials::Record::parse(&text)?,
+                operands,
+            )),
             #[cfg(unix)]
             Some("rpc-peer") => Ok(Self::Rpc(rpc::Record::parse(&text)?)),
             #[cfg(unix)]
@@ -95,6 +102,7 @@ pub(super) fn run() -> io::Result<()> {
         #[cfg(unix)]
         Request::Git(record) => git::run(&record),
         Request::Author(record, operands) => author::run(&record, &operands),
+        Request::Credentials(record, operands) => credentials::run(&record, &operands),
         #[cfg(unix)]
         Request::Rpc(record) => rpc::run(&record),
         #[cfg(unix)]

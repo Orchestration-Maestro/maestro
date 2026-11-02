@@ -21,6 +21,7 @@ mod cache;
 pub mod child;
 #[cfg(windows)]
 mod console;
+pub mod credentials;
 mod environment;
 mod error;
 mod executable;
