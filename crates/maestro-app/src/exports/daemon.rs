@@ -9,7 +9,7 @@ pub mod daemon {
     pub use maestro_daemon::api::RuntimeStatus;
     #[cfg(unix)]
     #[doc(inline)]
-    pub use maestro_daemon::api::client::{ConnectionTarget, DaemonClient};
+    pub use maestro_daemon::api::client::{ApiClientError, ConnectionTarget, DaemonClient};
     #[doc(inline)]
     pub use maestro_daemon::api::event_hub::EventHub;
     #[cfg(unix)]

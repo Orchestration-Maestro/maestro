@@ -2,6 +2,22 @@
 
 use std::{collections::HashMap, time::Duration};
 
+/// Trims a reporter's agent label and gives a recognized agent its catalogue spelling.
+///
+/// Returns `None` for a blank label; any other label stays as a custom identity.
+pub(super) fn normalize_reported_agent_label(agent: &str) -> Option<String> {
+    let trimmed = agent.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    Some(
+        maestro_detection::agents::parse_agent_label(trimmed).map_or_else(
+            || trimmed.to_owned(),
+            |known| maestro_detection::agents::agent_label(known).to_owned(),
+        ),
+    )
+}
+
 /// Longest accepted metadata source, in Unicode scalars.
 const METADATA_SOURCE_MAX_CHARS: usize = 80;
 /// Shortest accepted token lifetime, in milliseconds.
@@ -38,6 +54,19 @@ pub(super) fn normalize_metadata_source(value: &str) -> Result<String, &'static 
         );
     }
     Ok(value.to_owned())
+}
+
+/// Trims reporter text, drops control characters, keeps at most `max_chars` scalars and trims
+/// again; blank text is absent.
+pub(super) fn clean_metadata_text(value: &str, max_chars: usize) -> Option<String> {
+    let kept: String = value
+        .trim()
+        .chars()
+        .filter(|ch| !ch.is_control())
+        .take(max_chars)
+        .collect();
+    let kept = kept.trim();
+    (!kept.is_empty()).then(|| kept.to_owned())
 }
 
 /// Converts an optional token lifetime, checking it lies between 1 ms and one day.
@@ -86,16 +115,8 @@ pub(super) fn normalize_metadata_tokens(
             {
                 return Err(format!("invalid metadata token key: {key}"));
             }
-            let value = value.and_then(|value| {
-                let normalized = value
-                    .trim()
-                    .chars()
-                    .filter(|ch| !ch.is_control())
-                    .take(MAX_METADATA_TOKEN_VALUE_LEN)
-                    .collect::<String>();
-                let normalized = normalized.trim();
-                (!normalized.is_empty()).then(|| normalized.to_owned())
-            });
+            let value =
+                value.and_then(|value| clean_metadata_text(&value, MAX_METADATA_TOKEN_VALUE_LEN));
             Ok((key, value))
         })
         .collect()

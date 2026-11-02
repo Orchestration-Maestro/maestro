@@ -32,3 +32,8 @@ pub(super) fn pane_not_found(pane_id: &str) -> ErrorBody {
 pub(super) fn pane_unresolved() -> ErrorBody {
     api_error("pane_not_found", "pane not found")
 }
+
+/// The failure for a reported agent label that is blank once trimmed.
+pub(super) fn invalid_agent() -> ErrorBody {
+    api_error("invalid_agent", "agent label must not be empty")
+}

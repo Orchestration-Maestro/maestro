@@ -789,11 +789,13 @@ while its files are unchanged in place of cached repository context, a packed-re
 search that skips an unreadable line, supplied user files and home directory, and a refresh
 that publishes its result when its task panics.
 
-The pane geometry with chrome, layout snapshots, pane topology handlers and pane
-mutation handlers (split, resize, swap, zoom, move and close) in `app/layout.rs`,
-`app/api/panes.rs` and `app/api/panes/`, and the zoom, close and move-recovery state
-operations in `app/actions/`, derive from the application API and interface modules,
-with one view-area owner instead of a view field.
+The pane geometry with chrome, layout snapshots, pane topology handlers, pane
+mutation handlers (split, resize, swap, zoom, move and close) and pane input, rename,
+read and agent report handlers in `app/layout.rs`, `app/api/panes.rs`,
+`app/api/panes/` and `app/api/reads.rs`, and the zoom, close and move-recovery state
+operations and report events in `app/actions/` and `events.rs`, derive from the
+application API and interface modules, with one view-area owner instead of a view field
+and one read service instead of a copy for each reader.
 
 The resume records and argument plans, retained pane state, presentation metadata,
 terminal title normalization and host theme in `crates/maestro-daemon/` derive from
