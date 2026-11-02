@@ -291,7 +291,7 @@ pub fn get(port: u16, path: &str) -> (String, Vec<u8>) {
 pub fn native_tool(browser: &Browser, command: &mut Command, name: &str) -> PathBuf {
     let tool = Command::new("which").arg(name).output().unwrap();
     assert!(tool.status.success());
-    super::recipe_support::stand_in(&browser.path("native-bin"), name, "forward");
+    super::recipe_support::forwarder(&browser.path("native-bin"), name);
     let log = browser.path("native-log");
     command
         .env(

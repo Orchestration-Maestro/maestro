@@ -109,6 +109,51 @@ fn recipe_stand_ins_answer_their_recipe_command() {
     assert_eq!(fs::read_to_string(log).unwrap(), "prek x\n");
 }
 
+/// A recipe command with no operands succeeds when no failure is requested.
+#[test]
+fn recipe_stand_ins_accept_no_operands_without_a_requested_failure() {
+    let workspace = Workspace::new();
+    let output = Command::new(workspace.path().join("bin/prek"))
+        .env("MAESTRO_LOG", workspace.path().join("empty.log"))
+        .env_remove("MAESTRO_FAIL")
+        .env_remove("MAESTRO_FAIL_ARG")
+        .env_remove("MAESTRO_REAL_CARGO")
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{}", output.status);
+}
+
+/// Recording a wrapper invocation preserves the environment seen by the next wrapper.
+#[cfg(unix)]
+#[test]
+fn recording_wrapper_preserves_cargo_home_for_its_child() {
+    let tools = Scratch::new().unwrap();
+    let recorder = recipe_support::wrapper(tools.path(), "recorder");
+    let observer = recipe_support::wrapper(tools.path(), "observer");
+    let compiler = recipe_support::stand_in(tools.path(), "compiler");
+    let home = tools.path().join("cargo-home");
+    let output = Command::new(recorder)
+        .arg(observer)
+        .arg(compiler)
+        .arg("check")
+        .env("CARGO_HOME", &home)
+        .env("MAESTRO_LOG", tools.path().join("compiler.log"))
+        .env_remove("MAESTRO_REAL_CARGO")
+        .env_remove("MAESTRO_FAIL")
+        .env_remove("MAESTRO_FAIL_ARG")
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(
+        fs::read_to_string(tools.path().join("observer.log")).unwrap(),
+        format!("{}\n", home.display())
+    );
+}
+
 /// The compiler wrapper behind a fixture command never sees the private Cargo home, so the
 /// compiler cache keys of the fixture's dependencies do not depend on the fixture that builds them.
 #[cfg(unix)]
@@ -141,7 +186,7 @@ fn fixture_command_hides_cargo_home_from_the_compiler_wrapper() {
     )
     .unwrap();
     let tools = Scratch::new().unwrap();
-    let recorder = recipe_support::wrapper(tools.path(), "recorder", "recording");
+    let recorder = recipe_support::wrapper(tools.path(), "recorder");
     let output = TestProcess::current("fixture_command_hides_cargo_home_from_the_compiler_wrapper")
         .unwrap()
         .nocapture()
@@ -169,7 +214,7 @@ fn fixture_command_hides_cargo_home_from_the_compiler_wrapper() {
 
 /// The wrapper is replaced only when the command ends up with a non-empty one: an empty
 /// inherited wrapper and a wrapper the command removes stay unwrapped, and a wrapper the command
-/// sets is the one the script runs.
+/// sets is the one the wrapper runs.
 #[cfg(unix)]
 #[test]
 fn fixture_command_wraps_only_a_wrapper_the_command_keeps() {

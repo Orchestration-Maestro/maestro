@@ -20,9 +20,7 @@ pub fn write_input(root: &Path, name: &str, bytes: &str) {
     fs::write(path, bytes).unwrap();
 }
 
-/// Copies an executable through a child process, so this process never holds a writable
-/// descriptor to a file it later runs (a concurrent fork would otherwise make `exec` fail with
-/// "Text file busy").
+/// Copies an executable through a child process on Unix to avoid writable descriptors across forks.
 pub fn install_executable(source: &Path, target: &Path) {
     #[cfg(unix)]
     maestro_test_process::native::install_executable(source, target).unwrap();
@@ -31,21 +29,37 @@ pub fn install_executable(source: &Path, target: &Path) {
     fs::copy(source, target).unwrap();
 }
 
-/// Install the prepared native fixture as `name` in `directory`, selecting `scenario` from the
-/// `tooling-command` family.
-pub fn stand_in(directory: &Path, name: &str, scenario: &str) -> PathBuf {
-    installed(directory, name, "tooling-command", scenario)
+/// Install a recipe command stand-in as `name` in `directory`.
+pub fn stand_in(directory: &Path, name: &str) -> PathBuf {
+    installed(
+        directory,
+        name,
+        "tooling-command\n{\"scenario\":\"stand-in\"}\n",
+    )
 }
 
-/// Install the prepared native fixture as `name` in `directory`, selecting `scenario` from the
-/// `tooling-wrapper` family.
+/// Install a recording forwarder as `name` in `directory`.
 #[cfg(unix)]
-pub fn wrapper(directory: &Path, name: &str, scenario: &str) -> PathBuf {
-    installed(directory, name, "tooling-wrapper", scenario)
+pub fn forwarder(directory: &Path, name: &str) -> PathBuf {
+    installed(
+        directory,
+        name,
+        "tooling-command\n{\"scenario\":\"forward\"}\n",
+    )
 }
 
-/// Install the prepared artifact as one alias with its fixture family and scenario record.
-fn installed(directory: &Path, name: &str, family: &str, scenario: &str) -> PathBuf {
+/// Install a recording compiler wrapper as `name` in `directory`.
+#[cfg(unix)]
+pub fn wrapper(directory: &Path, name: &str) -> PathBuf {
+    installed(
+        directory,
+        name,
+        "tooling-wrapper\n{\"scenario\":\"recording\"}\n",
+    )
+}
+
+/// Install the prepared artifact as one alias with its complete fixture record.
+fn installed(directory: &Path, name: &str, contents: &str) -> PathBuf {
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
         .expect("run just prepare-tests, then run these tests with cargo nextest");
     fs::create_dir_all(directory).unwrap();
@@ -53,11 +67,7 @@ fn installed(directory: &Path, name: &str, family: &str, scenario: &str) -> Path
     maestro_test_process::install_executable(Path::new(&artifact), &path).unwrap();
     let mut record = path.as_os_str().to_owned();
     record.push(".fixture");
-    fs::write(
-        record,
-        format!("{family}\n{{\"scenario\":\"{scenario}\"}}\n"),
-    )
-    .unwrap();
+    fs::write(record, contents).unwrap();
     path
 }
 
@@ -158,7 +168,7 @@ impl Workspace {
         )
         .unwrap();
         for name in ["cargo", "mise", "prek", "watchexec", "trunk", "miniserve"] {
-            stand_in(&root.join("bin"), name, "stand-in");
+            stand_in(&root.join("bin"), name);
         }
         workspace
     }

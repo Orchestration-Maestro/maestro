@@ -33,7 +33,11 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
         Record::HideHome => {
             let wrapper = std::env::var_os("MAESTRO_FIXTURE_RUSTC_WRAPPER")
                 .ok_or_else(|| io::Error::other("the replaced wrapper is unset"))?;
-            forward(Command::new(wrapper).args(operands))
+            forward(
+                Command::new(wrapper)
+                    .args(operands)
+                    .env_remove("CARGO_HOME"),
+            )
         }
         Record::Recording => {
             let mut log = std::env::current_exe()?.into_os_string();
@@ -55,9 +59,8 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
     }
 }
 
-/// Run the compiler without the fixture's Cargo home and take its status.
+/// Run the selected compiler or wrapper and take its status.
 fn forward(command: &mut Command) -> io::Result<()> {
-    command.env_remove("CARGO_HOME");
     let status = command.status()?;
     leave(status.code().unwrap_or(1))
 }

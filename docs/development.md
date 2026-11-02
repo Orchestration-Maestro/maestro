@@ -1276,7 +1276,9 @@ recipe:
 fn main() -> std::io::Result<()> {
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
         .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
-    let bin = maestro_test_directory::Scratch::new()?.path().join("bin");
+    let directory = maestro_test_directory::Scratch::new()?;
+    let bin = directory.path().join("bin");
+    std::fs::create_dir_all(&bin)?;
     for name in ["cargo", "mise", "prek", "watchexec", "trunk", "miniserve"] {
         let alias = bin.join(name);
         maestro_test_process::install_executable(std::path::Path::new(&artifact), &alias)?;
@@ -1289,7 +1291,7 @@ fn main() -> std::io::Result<()> {
 ```
 
 The record's first line selects the family and its `scenario` selects one finite
-behaviour; an unknown family, scenario or field fails before any effect.
+behavior; an unknown family, scenario or field fails before any effect.
 
 | Scenario | Behavior |
 | --- | --- |

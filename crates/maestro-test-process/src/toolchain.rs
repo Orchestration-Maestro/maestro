@@ -84,7 +84,7 @@ pub fn fixture_command(
     Ok(command)
 }
 
-/// The variable through which the wrapper script receives the wrapper it replaced.
+/// The variable through which the wrapper receives the wrapper it replaced.
 #[cfg(unix)]
 const ORIGINAL_RUSTC_WRAPPER: &str = "MAESTRO_FIXTURE_RUSTC_WRAPPER";
 

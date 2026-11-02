@@ -70,8 +70,8 @@ fn stand_in(operands: &[OsString]) -> io::Result<()> {
     if let (Some(binary), Some(arguments)) = (&development, started) {
         return run_development(binary, arguments);
     }
-    if std::env::var("MAESTRO_FAIL").ok().as_deref()
-        == operands.first().and_then(|operand| operand.to_str())
+    if let (Ok(requested), Some(first)) = (std::env::var("MAESTRO_FAIL"), operands.first())
+        && first == OsStr::new(&requested)
     {
         leave(17);
     }
