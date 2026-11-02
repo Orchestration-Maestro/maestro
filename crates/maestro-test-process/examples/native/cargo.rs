@@ -146,6 +146,8 @@ fn executable(path: &Path) -> io::Result<()> {
         use std::os::unix::fs::PermissionsExt;
         std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o755))?;
     }
-    std::fs::File::open(path)?
+    std::fs::File::options()
+        .write(true)
+        .open(path)?
         .set_modified(std::time::UNIX_EPOCH + std::time::Duration::from_hours(438_288))
 }

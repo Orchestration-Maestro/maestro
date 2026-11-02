@@ -199,7 +199,9 @@ fn parallel_installs_launch_independent_copies_while_siblings_are_live() {
                     std::fs::read(artifact()).unwrap()
                 );
                 let old = std::time::UNIX_EPOCH + std::time::Duration::from_secs(1);
-                std::fs::File::open(&second)
+                std::fs::File::options()
+                    .write(true)
+                    .open(&second)
                     .unwrap()
                     .set_modified(old)
                     .unwrap();
