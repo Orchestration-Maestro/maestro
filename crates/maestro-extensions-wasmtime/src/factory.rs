@@ -13,6 +13,18 @@ use wasmtime::{
     component::{Component, Linker},
 };
 
+/// Records the current native execution boundary for a scratch diagnostic run.
+#[track_caller]
+pub(crate) fn boundary(stage: &str) {
+    eprintln!(
+        "BOUNDARY {:?} pid={} thread={:?} {} {stage}",
+        std::time::SystemTime::now(),
+        std::process::id(),
+        std::thread::current().id(),
+        std::panic::Location::caller(),
+    );
+}
+
 /// Application-supplied facts shared by the components it loads.
 #[derive(Debug, Clone)]
 pub struct Installation {
@@ -93,6 +105,7 @@ fn factory(
         let io = io.clone();
         let installation = installation.clone();
         Box::pin(async move {
+            boundary(&format!("factory enter {path}"));
             let (pump, admission) = Pump::new(widgets);
             pump.registry().resources.borrow_mut().native_io = io;
             let endpoint = pump.registry().api(api)?;
@@ -112,9 +125,13 @@ fn factory(
                     worker(&path, state, &mut incoming, weak, &replies);
                 })
                 .map_err(|error| error.to_string())?;
+            boundary("worker spawned");
             pump.own_worker(worker, retirement);
             tokio::task::spawn_local(pump.serve());
-            startup.submit(Call::Start).await.map_err(Into::into)
+            boundary("startup submit waiting");
+            let result = startup.submit(Call::Start).await.map_err(Into::into);
+            boundary("startup submit returned");
+            result
         })
     })
 }
@@ -127,6 +144,7 @@ fn worker(
     calls: mpsc::WeakUnboundedSender<Call>,
     replies: &Replies,
 ) {
+    boundary(&format!("worker enter {path}"));
     // Standard I/O uses this Store thread's existing reactor and timer.
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_io()
@@ -154,18 +172,26 @@ async fn execute(
     replies: &Replies,
 ) -> wasmtime::Result<()> {
     // The user cache is optional; unavailable storage must not prevent loading.
+    boundary("engine create begin");
     let engine = component_engine(Cache::from_file(None).ok())?;
+    boundary("component from file begin");
     let component = Component::from_file(&engine, path)?;
+    boundary("component from file returned");
     let mut linker = Linker::new(&engine);
     lifecycle::link(&mut linker)?;
     let mut store = Store::new(&engine, state);
+    boundary("instantiate waiting");
     let instance = linker.instantiate_async(&mut store, &component).await?;
+    boundary("instantiate returned");
     let exports = Arc::new(crate::guest_exports::Exports::new(&mut store, &instance)?);
     store.data_mut().exports = Some(exports.clone());
+    boundary("lifecycle drive waiting");
     if let Err(error) = lifecycle::drive(&mut store, exports, incoming, calls).await {
         replies.fault(format!("component fault {path}: {error:#}"));
+        boundary("faulted drain waiting");
         lifecycle::faulted(incoming).await;
     }
+    boundary("lifecycle drive returned");
     Ok(())
 }
 

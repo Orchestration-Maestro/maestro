@@ -81,6 +81,7 @@ impl Harness {
         );
         let path =
             std::env::var("MAESTRO_GIT_CHECKPOINT_COMPONENT").expect("nextest component setup");
+        boundary!("checkpoint component load waiting {path}");
         let owner = load_extension_from_factory(
             crate::artifact(path.clone()),
             cwd.into(),
@@ -90,6 +91,7 @@ impl Harness {
         )
         .await
         .unwrap();
+        boundary!("checkpoint component load returned");
         let (session, history) = super::session::runner_session(cwd);
         let runner = ExtensionRunner::<Local>::new(
             Rc::new(RwLock::new(vec![owner])),
@@ -124,17 +126,20 @@ impl Harness {
 
     /// Saves a session entry, then lets the registered tool-result hook track it.
     async fn track(&self) -> String {
+        boundary!("checkpoint track begin");
         let id = self
             .history
             .borrow_mut()
             .append_custom_entry("checkpoint-test", maestro_session::Presence::Missing)
             .unwrap();
         self.tool_result().await;
+        boundary!("checkpoint track returned");
         id
     }
 
     /// Delivers an ordinary result through the owning runner interface.
     async fn tool_result(&self) {
+        boundary!("checkpoint tool result waiting");
         let event = serde_json::from_value(json!({"toolCallId":"call", "toolName":"read", "input":{}, "content":[], "isError":false})).unwrap();
         assert!(
             self.runner
@@ -143,19 +148,23 @@ impl Harness {
                 .unwrap()
                 .is_none()
         );
+        boundary!("checkpoint tool result returned");
     }
 
     /// Captures a checkpoint through the registered turn-start hook.
     async fn turn(&self) {
+        boundary!("checkpoint turn waiting");
         let mut event = serde_json::from_value::<maestro_extensions::types::TurnStartEvent>(
             json!({"turnIndex":0,"timestamp":0}),
         )
         .unwrap();
         assert!(self.runner.emit(&mut event).await.unwrap().is_none());
+        boundary!("checkpoint turn returned");
     }
 
     /// Requests a fork with a caller-selected answer and returns only its new UI effects.
     async fn fork(&self, id: &str, choice: Option<&str>) -> Vec<Value> {
+        boundary!("checkpoint fork waiting choice={choice:?}");
         *self.ui.choice.borrow_mut() = choice.map(str::to_owned);
         self.ui.calls.borrow_mut().clear();
         let mut event =
@@ -164,6 +173,7 @@ impl Harness {
             )
             .unwrap();
         assert!(self.runner.emit(&mut event).await.unwrap().is_none());
+        boundary!("checkpoint fork returned");
         self.ui.calls.borrow().clone()
     }
 }

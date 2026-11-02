@@ -47,6 +47,7 @@ struct Worker {
 
 impl Drop for Worker {
     fn drop(&mut self) {
+        crate::factory::boundary("worker retirement notifying shutdown");
         if let Some(shutdown) = self.shutdown.upgrade() {
             shutdown.notify_one();
         }
@@ -66,7 +67,9 @@ struct JoinGuard(Option<std::thread::JoinHandle<()>>);
 impl Drop for JoinGuard {
     fn drop(&mut self) {
         if let Some(thread) = self.0.take() {
+            crate::factory::boundary("worker join waiting");
             let _ = thread.join();
+            crate::factory::boundary("worker join returned");
         }
     }
 }
@@ -123,7 +126,9 @@ impl Pump {
 
     /// Ends when all startup, callback and resource admissions close.
     pub(crate) async fn serve(mut self) {
+        crate::factory::boundary("pump serve waiting");
         while self.answer_next().await {}
+        crate::factory::boundary("pump serve returned");
     }
 }
 

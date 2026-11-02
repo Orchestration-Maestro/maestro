@@ -10,7 +10,9 @@ use tokio::sync::{mpsc, oneshot};
 
 #[test]
 fn registered_guest_streams_invoke_native_hook_handles() {
+    boundary!("registered stream native oracle begin");
     native_pending_read_oracle();
+    boundary!("registered stream native oracle returned, cases begin");
     cases(&[
         "keep",
         "null",
@@ -29,9 +31,13 @@ fn registered_guest_streams_invoke_native_hook_handles() {
         "payload-failure",
         "response-failure",
     ]);
+    boundary!("registered stream cases returned, fault orders begin");
     fault_orders();
+    boundary!("registered stream fault orders returned, affinity begin");
     affinity::run();
+    boundary!("registered stream affinity returned, retention begin");
     retention::run();
+    boundary!("registered stream retention returned");
 }
 
 /// Each case reaches the actual provider installed through the public guest registration facade.
@@ -55,12 +61,20 @@ async fn route_cases(
     route: &str,
     actions: &[&str],
 ) {
+    boundary!("registered stream registration waiting route={route}");
     register(runner, route).await;
+    boundary!("registered stream registration returned");
     for simple in [false, true] {
         for action in actions {
+            boundary!(
+                "registered stream case waiting route={route} simple={simple} action={action}"
+            );
             exercise(runner, simple, action).await;
+            boundary!("registered stream case returned");
         }
+        boundary!("registered stream native admission waiting");
         native_admission(runner, simple).await;
+        boundary!("registered stream native admission returned");
     }
 }
 /// Register through the compiled guest's public facade, never a test-only callback route.
@@ -107,18 +121,24 @@ async fn produced(
         runner.create_command_context(),
     );
     let control = async {
+        boundary!("registered stream payload recv waiting");
         let (phase, resume) = incoming.recv().await.unwrap();
+        boundary!("registered stream payload recv returned");
         assert_eq!(phase, "payload");
         pending(&stream);
         resume.send(()).unwrap();
         if !matches!(action, "abort" | "payload-failure") {
+            boundary!("registered stream response recv waiting");
             let (phase, resume) = incoming.recv().await.unwrap();
+            boundary!("registered stream response recv returned");
             assert_eq!(phase, "response");
             pending(&stream);
             resume.send(()).unwrap();
         }
     };
+    boundary!("registered stream producer/control join waiting");
     let (outcome, ()) = futures_util::future::join(producer, control).await;
+    boundary!("registered stream producer/control join returned");
     assert_eq!(outcome.unwrap_err().to_string(), "produced");
     stream
 }
@@ -215,7 +235,9 @@ async fn gate(
 ) {
     let (resume, done) = oneshot::channel();
     entered.send((phase, resume)).unwrap();
+    boundary!("registered stream gate resume waiting phase={phase}");
     done.await.unwrap();
+    boundary!("registered stream gate resume returned phase={phase}");
 }
 /// Native event and result observations remain independent and pending at either original hook.
 pub(super) fn pending(stream: &AssistantMessageEventStream) {
@@ -239,13 +261,17 @@ pub(super) fn pending(stream: &AssistantMessageEventStream) {
 }
 /// Native final ownership is shared by repeated result observations and its terminal event.
 async fn check(stream: &AssistantMessageEventStream, action: &str) {
+    boundary!("registered stream result waiting action={action}");
     let message = stream.result().await;
+    boundary!("registered stream result returned");
     assert!(Arc::ptr_eq(&message, &stream.result().await));
     let value = serde_json::to_value(&*message.read().unwrap()).unwrap();
     let mut events = Vec::new();
+    boundary!("registered stream event drain waiting");
     while let Some(event) = stream.next().await {
         events.push(event);
     }
+    boundary!("registered stream event drain returned");
     let terminal = events.last().expect("imported stream must retain events after the same dropped-pending-read pattern as the native oracle");
     assert!(Arc::ptr_eq(terminal.message(), &message));
     check_outcome(&events, action, &value);

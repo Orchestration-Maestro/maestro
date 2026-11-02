@@ -12,7 +12,9 @@ pub fn local(test: impl Future<Output = ()>) {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .build()
         .unwrap();
+    boundary!("local executor begin");
     tokio::task::LocalSet::new().block_on(&runtime, test);
+    boundary!("local executor returned, runtime shutdown next");
 }
 
 /// Copies the component the setup variable `component` names to `artifact`.
@@ -83,7 +85,10 @@ pub async fn hooks(
         let command = owner.commands["hooks"].read().unwrap();
         command.handler.clone()
     };
-    handler(request.to_string(), runner.create_command_context())
+    boundary!("hooks command waiting {request}");
+    let result = handler(request.to_string(), runner.create_command_context())
         .await
-        .map_err(|error| error.to_string())
+        .map_err(|error| error.to_string());
+    boundary!("hooks command returned");
+    result
 }

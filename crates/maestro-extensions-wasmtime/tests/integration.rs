@@ -1,6 +1,13 @@
 //! Native component execution and retained context integration tests.
 #![cfg(all(test, not(target_arch = "wasm32")))]
 
+/// Marks a native test boundary without changing its synchronization.
+macro_rules! boundary {
+    ($($message:tt)*) => {
+        eprintln!("BOUNDARY {:?} pid={} {}:{} {}", std::time::SystemTime::now(), std::process::id(), file!(), line!(), format_args!($($message)*));
+    };
+}
+
 mod abort_observers;
 mod asynchronous_reentry;
 mod auto_commit_on_exit_example;

@@ -105,9 +105,32 @@ fn cargo_program() -> std::ffi::OsString {
 
 /// Runs the one Cargo build and returns its JSON messages.
 fn run(mut command: Command) -> Result<String, String> {
-    let output = command
-        .output()
+    eprintln!(
+        "BOUNDARY {:?} pid={} component Cargo spawn {command:?}",
+        std::time::SystemTime::now(),
+        std::process::id()
+    );
+    let child = command
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
         .map_err(|error| format!("cannot run cargo: {error}"))?;
+    eprintln!(
+        "BOUNDARY {:?} pid={} component Cargo wait child={}",
+        std::time::SystemTime::now(),
+        std::process::id(),
+        child.id()
+    );
+    let output = child
+        .wait_with_output()
+        .map_err(|error| error.to_string())?;
+    eprintln!(
+        "BOUNDARY {:?} pid={} component Cargo returned {}",
+        std::time::SystemTime::now(),
+        std::process::id(),
+        output.status
+    );
+    eprintln!("{}", String::from_utf8_lossy(&output.stderr));
     if !output.status.success() {
         return Err(format!(
             "building the author component failed (is the wasm32-wasip2 target installed? run \

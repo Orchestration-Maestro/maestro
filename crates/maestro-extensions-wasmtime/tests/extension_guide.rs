@@ -54,7 +54,9 @@ fn project() -> (Scratch, PathBuf) {
         root.join("rust-toolchain.toml"),
     )
     .unwrap();
+    boundary!("standalone project Cargo waiting {}", root.display());
     let component = cargo::component(root, &["--lib"], "hello_extension").unwrap();
+    boundary!("standalone project Cargo returned");
     (scratch, component)
 }
 
@@ -69,6 +71,7 @@ fn extension_guide_builds_and_loads_from_a_clean_folder() {
     std::fs::copy(component, extension.join("index.wasm")).unwrap();
     super::components::local(async {
         let bus = super::components::TracedBus::new();
+        boundary!("standalone project discovery/load waiting");
         let loaded = discover_and_load_extensions(
             &[],
             root.to_str().unwrap(),
@@ -78,6 +81,7 @@ fn extension_guide_builds_and_loads_from_a_clean_folder() {
         )
         .await
         .unwrap();
+        boundary!("standalone project discovery/load returned");
         assert!(loaded.errors.is_empty(), "{:?}", loaded.errors);
         assert_eq!(loaded.extensions.len(), 1);
         let runner = Rc::new(ExtensionRunner::<Local>::new(
@@ -91,9 +95,11 @@ fn extension_guide_builds_and_loads_from_a_clean_folder() {
         assert_eq!(tools.len(), 1);
         assert_eq!(tools[0].definition.metadata().definition.name, "hello");
         let tool = maestro_extensions::wrap_registered_tool(&tools[0], runner);
+        boundary!("standalone greeting waiting");
         let result = (tool.execute)("greeting".into(), json!({"name":"Ada"}), None, None)
             .await
             .unwrap();
+        boundary!("standalone greeting returned");
         assert_eq!(
             serde_json::to_value(result.content).unwrap(),
             json!([{"type":"text","text":"Hello, Ada!"}])

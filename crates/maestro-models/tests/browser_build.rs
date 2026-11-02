@@ -29,7 +29,12 @@ fn wasm_build_command() -> Command {
 
 #[test]
 fn maestro_browser_environment_has_no_key() {
-    let output = wasm_build_command()
+    eprintln!(
+        "BOUNDARY {:?} pid={} browser Cargo spawn begin",
+        std::time::SystemTime::now(),
+        std::process::id()
+    );
+    let child = wasm_build_command()
         .args([
             "build",
             "--locked",
@@ -42,8 +47,24 @@ fn maestro_browser_environment_has_no_key() {
             "--message-format=json",
         ])
         .current_dir(env!("CARGO_MANIFEST_DIR"))
-        .output()
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
         .unwrap();
+    eprintln!(
+        "BOUNDARY {:?} pid={} browser Cargo wait child={}",
+        std::time::SystemTime::now(),
+        std::process::id(),
+        child.id()
+    );
+    let output = child.wait_with_output().unwrap();
+    eprintln!(
+        "BOUNDARY {:?} pid={} browser Cargo returned {}",
+        std::time::SystemTime::now(),
+        std::process::id(),
+        output.status
+    );
+    eprintln!("{}", String::from_utf8_lossy(&output.stderr));
     assert!(
         output.status.success(),
         "{}\n{}",

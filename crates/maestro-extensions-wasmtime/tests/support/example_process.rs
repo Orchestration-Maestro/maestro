@@ -6,11 +6,13 @@ use std::{path::Path, process::Command};
 /// Runs Git only inside an exclusively owned disposable repository, with the environment
 /// the example's own Git commands inherit.
 pub fn git(path: &Path, args: &[&str]) -> String {
+    boundary!("git waiting {args:?}");
     let output = Command::new("git")
         .current_dir(path)
         .args(args)
         .output()
         .unwrap();
+    boundary!("git returned {args:?}: {}", output.status);
     assert!(
         output.status.success(),
         "{args:?}: {}",
@@ -23,8 +25,10 @@ pub fn git(path: &Path, args: &[&str]) -> String {
 /// system or global configuration; returns `true` in the parent once that child passed.
 pub fn isolated(test: &str) -> bool {
     if maestro_test_process::selection().is_child() {
+        boundary!("isolated child entered {test}");
         return false;
     }
+    boundary!("isolated child status waiting {test}");
     let status = maestro_test_process::TestProcess::current(test)
         .unwrap()
         .case("*")
@@ -33,6 +37,7 @@ pub fn isolated(test: &str) -> bool {
         .nocapture()
         .status()
         .unwrap();
+    boundary!("isolated child returned {test}: {status}");
     assert!(status.success(), "{test}: {status}");
     true
 }
@@ -43,5 +48,7 @@ pub fn run(action: impl Future<Output = ()>) {
         .enable_all()
         .build()
         .unwrap();
+    boundary!("example executor begin");
     tokio::task::LocalSet::new().block_on(&runtime, action);
+    boundary!("example executor returned, runtime shutdown next");
 }

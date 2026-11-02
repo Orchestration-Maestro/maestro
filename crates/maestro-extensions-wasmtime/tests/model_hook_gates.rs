@@ -45,11 +45,14 @@ pub(super) fn run_cases(actions: &[&str]) {
             }
         }
     });
+    boundary!("model hook forward cases done, reverse begin");
     reverse::run(actions);
+    boundary!("model hook reverse done, runtime shutdown next");
 }
 
 /// The guest waits inside both original hook exports while native observations stay pending.
 async fn exercise(simple: bool, action: &str) {
+    boundary!("model hook case begin simple={simple} action={action}");
     let probe = Arc::new(http::Probe::default());
     let server = (!matches!(action, "abort" | "payload-failure")).then(http::Server::new);
     let base_url = server
@@ -68,7 +71,9 @@ async fn exercise(simple: bool, action: &str) {
         Rc::new(|_| panic!("no tails")),
         Rc::new(|_| panic!("no errors")),
     );
+    boundary!("model hook component load waiting");
     let (_owner, runner, _) = super::retained_components::loaded_on(bus.for_extension()).await;
+    boundary!("model hook component load returned");
     let signal = Cancellation::new();
     let (entered, incoming) = mpsc::unbounded_channel();
     bind(&runner, signal.clone(), entered);
@@ -81,6 +86,7 @@ async fn exercise(simple: bool, action: &str) {
         "model-hook-gates {}",
         json!({"simple":simple,"action":action,"baseUrl":base_url})
     );
+    boundary!("model hook command/control join waiting");
     let ((), ()) = futures_util::future::join(
         async {
             let output = command(request, runner.create_command_context())
@@ -94,6 +100,7 @@ async fn exercise(simple: bool, action: &str) {
         drive(incoming, &probe, action, None),
     )
     .await;
+    boundary!("model hook command/control join returned");
     assert_eq!(signal.is_aborted(), action == "abort");
     check_consumption(server, &probe, action);
     bus.clear();
@@ -103,7 +110,9 @@ async fn exercise(simple: bool, action: &str) {
 /// The response body is never polled after a rejected hook and is released exactly once.
 fn check_consumption(server: Option<http::Server>, probe: &http::Probe, action: &str) {
     if let Some(server) = server {
+        boundary!("model hook HTTP server finish waiting");
         let request = server.finish();
+        boundary!("model hook HTTP server finish returned");
         check_request(&request, action);
         if action == "response-failure" {
             assert_eq!(probe.body_polls(), 0);
@@ -141,7 +150,9 @@ fn bind(
                 let (resume, done) = oneshot::channel();
                 entered.send(resume).unwrap();
                 Box::pin(async move {
+                    boundary!("model hook native callback resume waiting");
                     done.await?;
+                    boundary!("model hook native callback resume returned");
                     Ok(())
                 })
             }),
@@ -161,14 +172,18 @@ async fn drive(
     action: &str,
     imported: Option<&maestro_models::AssistantMessageEventStream>,
 ) {
+    boundary!("model hook payload entered recv waiting action={action}");
     let payload = incoming.recv().await.unwrap();
+    boundary!("model hook payload entered recv returned");
     assert_eq!(probe.dispatches(), 0);
     assert_eq!(probe.body_polls(), 0);
     assert_pending(probe, imported);
     probe.allow_payload();
     payload.send(()).unwrap();
     if !matches!(action, "abort" | "payload-failure") {
+        boundary!("model hook response entered recv waiting");
         let response = incoming.recv().await.unwrap();
+        boundary!("model hook response entered recv returned");
         assert_eq!(probe.dispatches(), 1);
         assert_eq!(probe.body_polls(), 0);
         assert_pending(probe, imported);
