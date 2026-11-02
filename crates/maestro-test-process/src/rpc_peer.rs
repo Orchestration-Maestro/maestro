@@ -1,7 +1,25 @@
 //! Finite application RPC peer scenarios served by the prepared native fixture.
 
 use std::io;
+use std::path::Path;
 use std::str::FromStr;
+
+/// Install a peer selected by `scenario` from the prepared `MAESTRO_NATIVE_FIXTURE` artifact.
+///
+/// The caller owns `entry` and its sibling `.fixture` record. The parent directory must exist.
+///
+/// # Errors
+///
+/// Returns an error when preparation is missing, executable installation fails or the record
+/// cannot be written.
+pub fn install(entry: &Path, scenario: Scenario) -> io::Result<()> {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .ok_or_else(|| io::Error::other("run just prepare-tests, then cargo nextest"))?;
+    crate::install_executable(Path::new(&artifact), entry)?;
+    let mut record = entry.as_os_str().to_owned();
+    record.push(".fixture");
+    std::fs::write(record, format!("rpc-peer\n{}\n", scenario.name()))
+}
 
 /// A native peer's protocol or lifecycle behavior.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -32,7 +50,7 @@ pub enum Scenario {
     SplitStderr,
     /// Emit ticks on acknowledged input.
     Tick,
-    /// Report termination but remain alive until killed.
+    /// Report termination without exiting until input closes or the process is killed.
     Resist,
     /// Capture commands while withholding state replies.
     Restart,

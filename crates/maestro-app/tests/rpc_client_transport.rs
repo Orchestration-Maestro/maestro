@@ -206,9 +206,8 @@ fn client_methods_match_the_command_corpus() {
 #[test]
 fn no_data_commands_reject_correlated_failure() {
     let peer = Peer::new();
-    let refusing = Scenario::Refuse;
     on_task_set(|_| async {
-        let client = started(&peer, refusing, &json!({})).await;
+        let client = started(&peer, Scenario::Refuse, &json!({})).await;
         for method in NO_DATA
             .into_iter()
             .chain(["get_state", "cycle_model", "clone"])
@@ -258,10 +257,9 @@ fn returned_records_keep_their_complete_fields() {
         .iter()
         .map(|case| serde_json::from_str(case["raw"].as_str().unwrap()).unwrap())
         .collect();
-    let replay = Scenario::Replay;
     let peer = Peer::new();
     on_task_set(|_| async {
-        let mut options = peer.options(replay);
+        let mut options = peer.options(Scenario::Replay);
         options
             .env
             .insert("PEER_REPLIES".into(), json!(answers).to_string());
@@ -420,9 +418,8 @@ fn clone_round_trip_uses_the_active_branch_command() {
 #[test]
 fn responses_correlate_out_of_order() {
     let peer = Peer::new();
-    let reversed = Scenario::Reversed;
     on_task_set(|_| async {
-        let client = started(&peer, reversed, &json!({})).await;
+        let client = started(&peer, Scenario::Reversed, &json!({})).await;
         let mut events = events(&client);
         let (cloned, exported) = tokio::join!(client.clone(), client.export_html(None));
         assert!(cloned.unwrap().cancelled);
@@ -440,9 +437,8 @@ fn responses_correlate_out_of_order() {
 #[test]
 fn pending_calls_ignore_null_and_malformed_lines_before_a_matching_reply() {
     let peer = Peer::new();
-    let delayed = Scenario::Malformed;
     on_task_set(|_| async {
-        let client = started(&peer, delayed, &json!({})).await;
+        let client = started(&peer, Scenario::Malformed, &json!({})).await;
         let mut events = events(&client);
         let mut state = pin!(client.get_state());
         assert!(poll_once(state.as_mut()).is_pending());
@@ -470,9 +466,8 @@ fn unmatched_and_nonresponse_values_reach_listeners() {
         json!({"type": "message_update", "nested": {"deep": [1, {"x": null}]}}),
         json!({"type": "done"}),
     ];
-    let scenario = Scenario::Records;
     on_task_set(|_| async {
-        let mut options = peer.options(scenario);
+        let mut options = peer.options(Scenario::Records);
         options
             .env
             .insert("PEER_RECORDS".into(), json!(records).to_string());
@@ -489,9 +484,8 @@ fn unmatched_and_nonresponse_values_reach_listeners() {
 #[test]
 fn fragmented_utf8_and_jsonl_tails_keep_records() {
     let peer = Peer::new();
-    let fragments = Scenario::Fragments;
     on_task_set(|_| async {
-        let client = RpcClient::new(peer.options(fragments));
+        let client = RpcClient::new(peer.options(Scenario::Fragments));
         let mut events = events(&client);
         client.start().await.unwrap();
         let control = peer.control();

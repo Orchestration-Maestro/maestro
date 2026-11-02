@@ -1086,11 +1086,12 @@ cargo nextest run --locked -p maestro-app -E 'test(/rpc_client/)'
 ```
 
 On Unix, `maestro_test_process::rpc_peer::Scenario` selects a compiled peer
-behavior. Write `rpc-peer` and `scenario.name()` on separate lines in
-`<alias>.fixture`, then launch that alias through the existing `RpcClient`.
-For example, `rpc-peer\nServe\n` captures each raw request line before answering
-it. `PEER_ANSWERS` supplies an object keyed by command type. A missing key omits
-response data; a JSON null stays null. The application tests' `Peer::options`
+behavior. Call `maestro_test_process::rpc_peer::install(entry, scenario)` to copy
+the prepared artifact and write its sibling `<alias>.fixture` record, then launch
+the alias through the existing `RpcClient`. The record contains `rpc-peer` and
+`scenario.name()` on separate lines. For example, `rpc-peer\nServe\n` captures
+each raw request line before answering it. `PEER_ANSWERS` supplies an object keyed
+by command type. A missing key omits response data; a JSON null stays null. The application tests' `Peer::options`
 writes this record and passes the release socket and descendant alias paths.
 
 `PEER_RECORDS` supplies arrays for event bursts or unmatched JSON values;

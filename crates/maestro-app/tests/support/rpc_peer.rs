@@ -27,9 +27,7 @@ impl Peer {
     pub fn new() -> Self {
         let scratch = Scratch::new();
         let entry = scratch.join("peer");
-        let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
-            .expect("run just prepare-tests, then cargo nextest");
-        maestro_test_process::install_executable(Path::new(&artifact), Path::new(&entry)).unwrap();
+        maestro_test_process::rpc_peer::install(Path::new(&entry), Scenario::Serve).unwrap();
         Self {
             scratch,
             entry,
@@ -40,11 +38,11 @@ impl Peer {
     /// Options that launch one compiled scenario on the actual client transport.
     pub fn options(&self, scenario: Scenario) -> RpcClientOptions {
         if scenario == Scenario::Descendant {
-            let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE").unwrap();
-            let holder = self.scratch.join("holder");
-            maestro_test_process::install_executable(Path::new(&artifact), Path::new(&holder))
-                .unwrap();
-            std::fs::write(format!("{holder}.fixture"), "rpc-peer\nPipeHolder\n").unwrap();
+            maestro_test_process::rpc_peer::install(
+                Path::new(&self.scratch.join("holder")),
+                Scenario::PipeHolder,
+            )
+            .unwrap();
         }
         std::fs::write(
             format!("{}.fixture", self.entry),
@@ -66,6 +64,9 @@ impl Peer {
     }
 
     /// Accept a native peer's release connection, without a timed receive or polling.
+    ///
+    /// This blocks the calling thread; a peer that exits before connecting leaves the test
+    /// waiting for the test runner's hang limit.
     pub fn control(&self) -> TcpStream {
         self.control.accept().unwrap().0
     }

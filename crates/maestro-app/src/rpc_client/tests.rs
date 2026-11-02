@@ -42,14 +42,9 @@ fn failed_prompt_releases_its_collection_registration() {
 fn failed_launch_publishes_nothing_and_leaves_no_child() {
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let entry = scratch.path().join("peer");
-    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE").unwrap();
-    maestro_test_process::install_executable(std::path::Path::new(&artifact), &entry).unwrap();
-    std::fs::write(
-        format!("{}.fixture", entry.display()),
-        format!(
-            "rpc-peer\n{}\n",
-            maestro_test_process::rpc_peer::Scenario::Launch.name()
-        ),
+    maestro_test_process::rpc_peer::install(
+        &entry,
+        maestro_test_process::rpc_peer::Scenario::Launch,
     )
     .unwrap();
     let mut options = RpcClientOptions {

@@ -150,9 +150,8 @@ fn listener_removal_keeps_the_next_registration() {
 #[test]
 fn request_deadline_keeps_exact_boundary_and_stderr() {
     let peer = Peer::new();
-    let scenario = Scenario::LateState;
     on_paused_task_set(|_| async {
-        let client = RpcClient::new(peer.options(scenario));
+        let client = RpcClient::new(peer.options(Scenario::LateState));
         let mut events = events(&client);
         client.start().await.unwrap();
         next_of(&mut events, "peer_ready").await;
@@ -194,9 +193,8 @@ fn request_deadline_keeps_exact_boundary_and_stderr() {
 #[test]
 fn request_deadlines_hold_through_a_delayed_first_poll() {
     let peer = Peer::new();
-    let scenario = Scenario::Withhold;
     on_paused_task_set(|_| async {
-        let client = RpcClient::new(peer.options(scenario));
+        let client = RpcClient::new(peer.options(Scenario::Withhold));
         let mut events = events(&client);
         client.start().await.unwrap();
         next_of(&mut events, "peer_ready").await;
@@ -288,9 +286,8 @@ fn waits_hold_their_deadlines_through_a_delayed_first_poll() {
 #[test]
 fn waits_ignore_events_after_their_deadline() {
     let peer = Peer::new();
-    let scenario = Scenario::LateEnd;
     on_paused_task_set(|_| async {
-        let client = RpcClient::new(peer.options(scenario));
+        let client = RpcClient::new(peer.options(Scenario::LateEnd));
         let mut events = events(&client);
         client.start().await.unwrap();
         next_of(&mut events, "peer_ready").await;
@@ -327,9 +324,8 @@ fn waits_ignore_events_after_their_deadline() {
 #[test]
 fn answers_after_their_deadline_reach_listeners() {
     let peer = Peer::new();
-    let scenario = Scenario::LateAnswers;
     on_paused_task_set(|_| async {
-        let client = RpcClient::new(peer.options(scenario));
+        let client = RpcClient::new(peer.options(Scenario::LateAnswers));
         let mut events = events(&client);
         client.start().await.unwrap();
         next_of(&mut events, "peer_ready").await;
@@ -356,9 +352,8 @@ const DEADLINE: Duration = Duration::from_secs(30);
 #[test]
 fn work_expired_before_the_child_ends_keeps_its_timeout() {
     let peer = Peer::new();
-    let scenario = Scenario::LateExit;
     on_paused_task_set(|_| async {
-        let client = RpcClient::new(peer.options(scenario));
+        let client = RpcClient::new(peer.options(Scenario::LateExit));
         let mut events = events(&client);
         client.start().await.unwrap();
         next_of(&mut events, "peer_ready").await;
@@ -398,9 +393,8 @@ fn work_expired_before_the_child_ends_keeps_its_timeout() {
 #[test]
 fn answers_before_the_deadline_count_when_consumed_after_it() {
     let peer = Peer::new();
-    let scenario = Scenario::Answered;
     on_paused_task_set(|_| async {
-        let client = RpcClient::new(peer.options(scenario));
+        let client = RpcClient::new(peer.options(Scenario::Answered));
         let mut events = events(&client);
         client.start().await.unwrap();
         next_of(&mut events, "peer_ready").await;
@@ -421,9 +415,8 @@ fn answers_before_the_deadline_count_when_consumed_after_it() {
 #[test]
 fn stops_before_the_deadline_count_when_consumed_after_it() {
     let peer = Peer::new();
-    let scenario = Scenario::Received;
     on_paused_task_set(|_| async {
-        let client = RpcClient::new(peer.options(scenario));
+        let client = RpcClient::new(peer.options(Scenario::Received));
         let mut events = events(&client);
         client.start().await.unwrap();
         next_of(&mut events, "peer_ready").await;
@@ -444,9 +437,8 @@ fn stops_before_the_deadline_count_when_consumed_after_it() {
 #[test]
 fn collections_include_the_future_terminal_event() {
     let peer = Peer::new();
-    let scenario = Scenario::Collections;
     on_task_set(|_| async {
-        let client = RpcClient::new(peer.options(scenario));
+        let client = RpcClient::new(peer.options(Scenario::Collections));
         let mut events = events(&client);
         client.start().await.unwrap();
         next_of(&mut events, "agent_end").await;
@@ -470,9 +462,8 @@ fn collections_include_the_future_terminal_event() {
 #[test]
 fn prompt_collection_is_subscribed_before_the_prompt() {
     let peer = Peer::new();
-    let scenario = Scenario::Prompt;
     on_task_set(|_| async {
-        let client = RpcClient::new(peer.options(scenario));
+        let client = RpcClient::new(peer.options(Scenario::Prompt));
         client.start().await.unwrap();
         let events = client.prompt_and_wait("hello", None, None).await.unwrap();
         assert_eq!(
@@ -494,8 +485,6 @@ fn prompt_collection_is_subscribed_before_the_prompt() {
 #[test]
 fn prompt_failure_releases_its_prepared_collector() {
     let peer = Peer::new();
-    let refusing = Scenario::RejectPrompt;
-    let closed = Scenario::ClosedInput;
     on_paused_task_set(|_| async {
         let started = tokio::time::Instant::now();
         let unstarted = RpcClient::new(peer.options(Scenario::Serve));
@@ -512,8 +501,8 @@ fn prompt_failure_releases_its_prepared_collector() {
     });
     on_task_set(|_| async {
         for (scenario, expected) in [
-            (refusing, "Rejected prompt"),
-            (closed, "Broken pipe (os error 32)"),
+            (Scenario::RejectPrompt, "Rejected prompt"),
+            (Scenario::ClosedInput, "Broken pipe (os error 32)"),
         ] {
             let client = RpcClient::new(peer.options(scenario));
             let mut events = events(&client);
@@ -537,9 +526,8 @@ fn prompt_failure_releases_its_prepared_collector() {
 #[test]
 fn stop_and_exit_settle_only_owned_calls_and_waits() {
     let peer = Peer::new();
-    let scenario = Scenario::Settle;
     on_task_set(|_| async {
-        let client = RpcClient::new(peer.options(scenario));
+        let client = RpcClient::new(peer.options(Scenario::Settle));
         let mut events = events(&client);
         for ending in ["stop", "exit"] {
             client.start().await.unwrap();
@@ -586,9 +574,8 @@ fn stopped<T>(
 #[test]
 fn child_exit_settles_work_while_a_descendant_keeps_the_output_open() {
     let peer = Peer::new();
-    let scenario = Scenario::Descendant;
     on_paused_task_set(|_| async {
-        let client = RpcClient::new(peer.options(scenario));
+        let client = RpcClient::new(peer.options(Scenario::Descendant));
         let mut events = events(&client);
         client.start().await.unwrap();
         let ready = next_of(&mut events, "peer_ready").await;
@@ -620,9 +607,8 @@ fn child_exit_settles_work_while_a_descendant_keeps_the_output_open() {
 #[test]
 fn work_registered_during_termination_settles_when_it_ends() {
     let peer = Peer::new();
-    let scenario = Scenario::Resist;
     on_paused_task_set(|_| async {
-        let client = RpcClient::new(peer.options(scenario));
+        let client = RpcClient::new(peer.options(Scenario::Resist));
         let mut events = events(&client);
         client.start().await.unwrap();
         next_of(&mut events, "peer_ready").await;
@@ -653,10 +639,9 @@ fn work_registered_during_termination_settles_when_it_ends() {
 #[test]
 fn cancelled_and_failed_operations_release_only_their_own_resources() {
     let peer = Peer::new();
-    let scenario = Scenario::Cancelled;
     let token = Rc::new(());
     on_task_set(|_| async {
-        let client = RpcClient::new(peer.options(scenario));
+        let client = RpcClient::new(peer.options(Scenario::Cancelled));
         let kept = Rc::clone(&token);
         let mut events = events(&client);
         let _keep = client.on_event(Rc::new(move |_: &Value| {
@@ -690,9 +675,8 @@ fn cancelled_and_failed_operations_release_only_their_own_resources() {
 #[test]
 fn dispatch_and_framing_work_stays_linear() {
     let peer = Peer::new();
-    let scenario = Scenario::Linear;
     on_task_set(|_| async {
-        let client = RpcClient::new(peer.options(scenario));
+        let client = RpcClient::new(peer.options(Scenario::Linear));
         let visits = Rc::new(RefCell::new(0_usize));
         let removers: Vec<_> = (0..4)
             .map(|_| {

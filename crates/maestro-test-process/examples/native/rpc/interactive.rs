@@ -65,7 +65,6 @@ pub(super) fn session(state: &Value) -> io::Result<()> {
 pub(super) fn idle(state: &Value, marker: &str, port: u16) -> io::Result<()> {
     let terminated = Arc::new(AtomicBool::new(false));
     signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(&terminated))?;
-    let mut signals = super::lifecycle::termination_pipe()?;
     let mut control = connect(port)?;
     let mut commands = Commands::new();
     while let Some((_, command)) = commands.next()? {
@@ -73,7 +72,6 @@ pub(super) fn idle(state: &Value, marker: &str, port: u16) -> io::Result<()> {
     }
     // This sole thread handles pending TERM before read returns EOF; the flag carries no payload.
     if terminated.load(Ordering::Relaxed) {
-        signals.read_exact(&mut [0])?;
         std::fs::write(marker, "terminated")?;
         announce(&mut control, "terminated")?;
     }

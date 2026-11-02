@@ -78,7 +78,8 @@ removed by the raw-fixture preparation.
 The native fixture's Unix development dependencies inherit the existing
 `signal-hook =0.3.18` pin with default features disabled, plus rustix's existing
 `process` feature. A retained `UnixStream` queues TERM notifications before the
-peer reports readiness; rustix delivers the native kill signal used by startup
+peer reports readiness; the idle peer uses a signal-hook flag to observe TERM
+before input closes. Rustix delivers the native kill signal used by startup
 checks. Typed peer inputs reuse the workspace `serde` pin. The offline fixture
-source manifest includes signal-hook's locked closure. No library version or
-feature is added.
+source manifest includes signal-hook's locked closure. The locked library closure
+is unchanged.
