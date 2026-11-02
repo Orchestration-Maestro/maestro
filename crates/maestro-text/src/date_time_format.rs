@@ -1,5 +1,5 @@
 //! Prepared locale-sensitive numeric date-plus-time presentation.
-use crate::date_time_calendar;
+use crate::date_time_calendar::{self, Calendar};
 use fixed_decimal::Decimal;
 use icu_decimal::{
     DecimalFormatter,
@@ -15,7 +15,7 @@ use std::{collections::BTreeMap, io};
 /// local wall fields and uses committed recipes for the user's default calendar,
 /// hour cycle, digits, punctuation and day periods. It retains no environment reader.
 pub struct LocaleDateTimeFormat {
-    /// Validated pattern and calendar preferences.
+    /// Parsed segments and calendar preferences.
     recipe: Recipe,
     /// Native digits, with grouping disabled.
     decimal: DecimalFormatter,
@@ -51,54 +51,85 @@ impl LocaleDateTimeFormat {
             return Err(io::Error::other("invalid local wall time"));
         }
         let date = date_time_calendar::convert(date, self.recipe.calendar)?;
-        let mut segments = self.recipe.pattern.split('%');
-        let mut output = segments.next().unwrap_or_default().to_owned();
-        for segment in segments {
-            let (code, width, literal) = token(segment)?;
-            match code {
-                'p' => output.push_str(self.recipe.periods[usize::from(time[0] >= 12)]),
-                'e' => output.push_str(self.recipe.era),
-                _ => {
-                    let value = self.field(code, date, time)?;
-                    let mut decimal = Decimal::from(value);
+        let mut output = String::new();
+        for &segment in &self.recipe.segments {
+            match segment {
+                Segment::Period => output.push_str(self.recipe.periods[usize::from(time[0] >= 12)]),
+                Segment::Era => output.push_str(self.recipe.era),
+                Segment::Literal(text) => output.push_str(text),
+                Segment::Field { code, width } => {
+                    let mut decimal = Decimal::from(self.field(code, date, time));
                     decimal.pad_start(width);
                     output.push_str(&self.decimal.format_to_string(&decimal));
                 }
             }
-            output.push_str(literal);
         }
         Ok(output)
     }
 
-    /// Retrieves a validated recipe's numeric field.
-    fn field(&self, code: char, date: [i64; 3], time: [u8; 3]) -> io::Result<i64> {
+    /// Retrieves a parsed recipe's numeric field.
+    fn field(&self, code: Field, date: [i64; 3], time: [u8; 3]) -> i64 {
         let hour = if self.recipe.twelve_hour {
             (time[0] + 11) % 12 + 1
         } else {
             time[0]
         };
         match code {
-            'y' => Ok(date[0]),
-            'M' => Ok(date[1]),
-            'd' => Ok(date[2]),
-            'H' => Ok(i64::from(hour)),
-            'm' => Ok(i64::from(time[1])),
-            's' => Ok(i64::from(time[2])),
-            _ => Err(io::Error::other("invalid date-time numeric token")),
+            Field::Year => date[0],
+            Field::Month => date[1],
+            Field::Day => date[2],
+            Field::Hour => i64::from(hour),
+            Field::Minute => i64::from(time[1]),
+            Field::Second => i64::from(time[2]),
         }
     }
 }
 
-/// A validated recipe whose fields borrow committed data.
+/// A numeric wall-date or clock field.
+#[derive(Clone, Copy)]
+enum Field {
+    /// Calendar year.
+    Year,
+    /// Calendar month.
+    Month,
+    /// Day of the month.
+    Day,
+    /// Hour in the selected cycle.
+    Hour,
+    /// Minute of the hour.
+    Minute,
+    /// Second of the minute.
+    Second,
+}
+
+/// One parsed recipe operation.
+#[derive(Clone, Copy)]
+enum Segment {
+    /// A numeric field with its minimum decimal width.
+    Field {
+        /// Wall-date or clock component.
+        code: Field,
+        /// Minimum number of displayed digits.
+        width: i16,
+    },
+    /// The morning or afternoon label.
+    Period,
+    /// The calendar era label.
+    Era,
+    /// Committed punctuation or text, retained byte for byte.
+    Literal(&'static str),
+}
+
+/// A parsed recipe whose text borrows committed data.
 struct Recipe {
-    /// Default calendar identifier.
-    calendar: &'static str,
+    /// Default calendar.
+    calendar: Calendar,
     /// Decimal numbering system identifier.
     numbers: &'static str,
     /// Whether the recipe uses a twelve-hour clock.
     twelve_hour: bool,
-    /// Percent-token field order and literal text.
-    pattern: &'static str,
+    /// Field order and literal text, parsed once during preparation.
+    segments: Vec<Segment>,
     /// Morning and afternoon labels.
     periods: [&'static str; 2],
     /// Calendar era label, when present in the recipe.
@@ -110,40 +141,50 @@ fn invalid() -> io::Error {
     io::Error::other("invalid committed date-time data")
 }
 
-/// Reads a numeric token and its optional two-digit width.
-fn token(segment: &str) -> io::Result<(char, i16, &str)> {
+/// Parses one field, period or era token with its trailing literal text.
+fn token(segment: &'static str) -> io::Result<(char, Segment, &'static str)> {
     let (width, rest) = segment.strip_prefix('2').map_or((1, segment), |s| (2, s));
     let mut chars = rest.chars();
     let code = chars.next().ok_or_else(invalid)?;
-    if !"yMdHmspe".contains(code) || (width == 2 && "pe".contains(code)) {
-        return Err(invalid());
-    }
-    Ok((code, width, chars.as_str()))
+    let field = match code {
+        'y' => Field::Year,
+        'M' => Field::Month,
+        'd' => Field::Day,
+        'H' => Field::Hour,
+        'm' => Field::Minute,
+        's' => Field::Second,
+        'p' if width == 1 => return Ok((code, Segment::Period, chars.as_str())),
+        'e' if width == 1 => return Ok((code, Segment::Era, chars.as_str())),
+        _ => return Err(invalid()),
+    };
+    Ok((code, Segment::Field { code: field, width }, chars.as_str()))
 }
 
-/// Validates one complete recipe and all of its format tokens.
+/// Parses one complete recipe and all of its format tokens.
 fn recipe(line: &'static str) -> io::Result<Recipe> {
     let fields: Vec<_> = line.split('\t').collect();
     let [calendar, numbers, cycle, pattern, am, pm, era] = fields.as_slice() else {
         return Err(invalid());
     };
-    if !["gregory", "persian", "buddhist"].contains(calendar)
-        || ![
-            "latn", "arab", "arabext", "beng", "deva", "cakm", "olck", "tibt", "adlm", "mymr",
-            "nkoo",
-        ]
-        .contains(numbers)
+    let calendar = calendar.parse()?;
+    if ![
+        "latn", "arab", "arabext", "beng", "deva", "cakm", "olck", "tibt", "adlm", "mymr", "nkoo",
+    ]
+    .contains(numbers)
         || !["h12", "h23"].contains(cycle)
     {
         return Err(invalid());
     }
+    let mut parts = pattern.split('%');
+    let mut segments = vec![Segment::Literal(parts.next().unwrap_or_default())];
     let mut seen = String::new();
-    for segment in pattern.split('%').skip(1) {
-        let (code, _, _) = token(segment)?;
+    for part in parts {
+        let (code, segment, literal) = token(part)?;
         if seen.contains(code) {
             return Err(invalid());
         }
         seen.push(code);
+        segments.extend([segment, Segment::Literal(literal)]);
     }
     if !"yMdHms".chars().all(|c| seen.contains(c))
         || (seen.contains('p') && (am.is_empty() || pm.is_empty()))
@@ -155,7 +196,7 @@ fn recipe(line: &'static str) -> io::Result<Recipe> {
         calendar,
         numbers,
         twelve_hour: *cycle == "h12",
-        pattern,
+        segments,
         periods: [am, pm],
         era,
     })
@@ -252,9 +293,6 @@ fn select_recipe(locale: &Locale) -> io::Result<Recipe> {
         parents.step();
     }
     let id = found.ok_or_else(invalid)?;
-    if id >= recipes.len() {
-        return Err(invalid());
-    }
     Ok(recipes.swap_remove(id))
 }
 

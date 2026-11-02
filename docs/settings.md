@@ -318,22 +318,23 @@ agent directory, and the working directory with the configuration directory, wit
 `settings.json` through the shared `maestro-path` functions, giving the runtime's
 join results, then works in place. Its legacy `with_lock` operation behaves as follows:
 
-1. For an existing file it locks the stable `settings.json.lock` sidecar before
-   reading, keeps the lock through the callback and the write, and releases it on
-   every outcome. The sidecar is never removed.
+1. For an existing file it locks `settings.json.lock` beside the canonical target
+   before reading, keeps that lock through the callback and the write, and removes
+   it on every outcome. A symbolic link is followed before choosing the lock path.
 2. For a missing file it runs the callback first without creating anything. Only a
    replacement creates the directory, takes the lock and writes, without reading again.
-3. Synchronous acquisition delegates to [the shared file-lock operation](locking.md).
+3. Synchronous acquisition delegates to [the shared file-lock operation](locking.md):
+   up to ten attempts, with 20 ms only between contended attempts.
 
 Manager saves use `with_write_lock`. The native adapter creates the parent as
-needed and takes the same stable sidecar lock before reading, including when the
+needed and takes the same write lock before reading, including when the
 settings file is absent. It holds exclusion through the single callback and
 optional write. Independent manager edits survive concurrent first writes and
 existing-file saves when the holder finishes within the writer's attempts; a
 writer that runs out reports the contention and writes nothing. Acquire/read
 failures skip the callback; callback and write failures release exclusion.
 `Ok(None)` and callback errors leave settings bytes untouched, but may leave a
-new parent and sidecar. Locking alone never creates a settings file.
+new parent. Locking alone never creates a settings file.
 
 Raw callers that merge concurrent first writes must choose write intent too:
 

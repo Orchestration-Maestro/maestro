@@ -382,7 +382,7 @@ impl ForkRig {
         super::SessionManager::fork_with(&self.source, "/t", Some(dir), "", write)
     }
 
-    /// The single session file created beside its persistent lock sidecar.
+    /// The single session history file created in the supplied directory.
     fn only_file(dir: &str) -> String {
         let files: Vec<_> = std::fs::read_dir(dir)
             .unwrap()

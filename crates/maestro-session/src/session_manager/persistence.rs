@@ -253,12 +253,13 @@ impl SessionManager {
 
 /// Append bytes to a native file, creating it when absent.
 pub(super) fn append(path: &str, bytes: &[u8]) -> io::Result<()> {
-    super::storage::with_write_lock(path, |target| {
-        fs::OpenOptions::new()
+    super::storage::with_write_lock(path, |holder| match holder {
+        Some(holder) => holder.append(bytes),
+        None => fs::OpenOptions::new()
             .create(true)
             .append(true)
-            .open(target)?
-            .write_all(bytes)
+            .open(path)?
+            .write_all(bytes),
     })
 }
 

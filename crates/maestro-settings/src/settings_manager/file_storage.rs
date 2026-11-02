@@ -1,7 +1,7 @@
 //! Native file storage with sidecar file locks.
 
 use std::collections::BTreeMap;
-use std::fs::{self, File, OpenOptions};
+use std::fs;
 use std::path::Path;
 
 use maestro_path::join;
@@ -37,30 +37,6 @@ impl FileSettingsStorage {
     }
 }
 
-/// An exclusive lock on a sidecar file, released when dropped.
-struct Lock(File);
-
-impl Lock {
-    /// Locks the sidecar next to `path`, retrying only while another holder has it.
-    fn acquire(path: &Path) -> Result<Self, SettingsStorageError> {
-        let mut sidecar = path.as_os_str().to_owned();
-        sidecar.push(".lock");
-        let file = OpenOptions::new()
-            .create(true)
-            .write(true)
-            .truncate(false)
-            .open(sidecar)?;
-        Ok(Self(maestro_lock::acquire(file)?))
-    }
-}
-
-impl Drop for Lock {
-    fn drop(&mut self) {
-        // Closing the handle releases the lock even when this unlock fails.
-        let _ = self.0.unlock();
-    }
-}
-
 impl FileSettingsStorage {
     /// Runs the shared raw-text operation with the requested write intent.
     fn transact(
@@ -71,8 +47,8 @@ impl FileSettingsStorage {
         if write {
             create_parent(path)?;
         }
-        let mut lock = (write || path.try_exists()?)
-            .then(|| Lock::acquire(path))
+        let lock = (write || path.try_exists()?)
+            .then(|| maestro_lock::acquire_write_bounded(path, true))
             .transpose()?;
         let current = if lock.is_some() {
             match fs::read_to_string(path) {
@@ -87,15 +63,11 @@ impl FileSettingsStorage {
             return Ok(());
         };
         create_parent(path)?;
-        if lock.is_none() {
-            lock = Some(Lock::acquire(path)?);
-        }
-        let replacement = maestro_lock::Replace {
-            through_symlinks: true,
-            creation_mode: None,
+        let holder = match lock {
+            Some(holder) => holder,
+            None => maestro_lock::acquire_write_bounded(path, true)?,
         };
-        maestro_lock::replace(path, next.as_bytes(), replacement)?;
-        drop(lock);
+        holder.replace(next.as_bytes(), None)?;
         Ok(())
     }
 }

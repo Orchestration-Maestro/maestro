@@ -2,6 +2,9 @@
 use super::*;
 use std::{cell::RefCell, path::PathBuf};
 
+/// Controlled native-acquisition observation.
+type Acquisition = Box<dyn FnMut(&str)>;
+
 /// Per-test-thread observations; no global subscriber or process mutation.
 #[derive(Default)]
 struct Effects {
@@ -11,22 +14,21 @@ struct Effects {
     before_sync: Option<Box<dyn FnOnce()>>,
     before_write: Option<Box<dyn FnOnce()>>,
     temporary_path: Option<PathBuf>,
-    directories: Vec<PathBuf>,
+    acquisition: Option<Acquisition>,
     #[cfg(unix)]
     temporary_mode: Option<u32>,
 }
 thread_local! {
     static EFFECTS: RefCell<Effects> = RefCell::default();
-    static ANCESTRY_SYNCED: RefCell<bool> = const { RefCell::new(false) };
-    static ROOT: maestro_test_directory::Scratch = maestro_test_directory::Scratch::new().unwrap();
 }
 
-/// Keeps each unit-test process's recovery namespace inside a disposable root.
-pub(crate) fn root() -> PathBuf {
-    std::env::var_os("MAESTRO_TEST_LOCK_ROOT").map_or_else(
-        || ROOT.with(|root| root.path().join("home/.maestro/state/file-locks")),
-        PathBuf::from,
-    )
+/// Runs an acquisition interleaving outside the borrowed effect state.
+pub(crate) fn acquisition(phase: &str) {
+    let callback = EFFECTS.with_borrow_mut(|effects| effects.acquisition.take());
+    if let Some(mut callback) = callback {
+        callback(phase);
+        EFFECTS.with_borrow_mut(|effects| effects.acquisition = Some(callback));
+    }
 }
 
 /// Records an imminent operation and optionally refuses it with a native error.
@@ -87,7 +89,6 @@ fn run_with_collision(
     fault: Option<(&'static str, io::ErrorKind)>,
     collision: bool,
 ) -> Observation {
-    let _ = root();
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let dir = scratch.path();
     let target = dir.join("snapshot");
@@ -154,13 +155,7 @@ fn replacement_syncs_before_and_after_commit() {
     ];
     assert_eq!(
         observed.events,
-        [
-            &["ancestry_sync", "recovery_sync"][..],
-            &committed[..],
-            sync_phases(),
-            &["recovery_sync"]
-        ]
-        .concat()
+        [&committed[..], sync_phases(), &["recovery_sync"]].concat()
     );
     assert_eq!(observed.bytes, b"new");
     assert_eq!(observed.entries, 1);
@@ -198,16 +193,16 @@ fn replacement_errors_before_commit_keep_old_bytes() {
         io::ErrorKind::AlreadyExists
     );
     assert_eq!(observed.bytes, b"old");
-    assert_eq!(observed.entries, 1);
+    assert_eq!(observed.entries, 2);
     assert_eq!(observed.temporary_bytes, [b"competitor".to_vec()]);
-    let dir = std::env::temp_dir().join(format!("maestro-rename-directory-{}", std::process::id()));
-    fs::create_dir(&dir).unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let dir = scratch.path();
     let target = dir.join("existing");
     fs::create_dir(&target).unwrap();
     fs::write(target.join("retained"), b"old").unwrap();
     assert!(replace(&target, b"new", Replace::default()).is_err());
     assert_eq!(fs::read(target.join("retained")).unwrap(), b"old");
-    assert_eq!(fs::read_dir(&dir).unwrap().count(), 1);
+    assert_eq!(fs::read_dir(dir).unwrap().count(), 1);
     fs::remove_dir_all(dir).unwrap();
 }
 
@@ -231,7 +226,7 @@ fn committed_directory_sync_failure_is_reported_as_success() {
         );
         assert_eq!(observed.events.last(), Some(&phase));
         assert_eq!(observed.bytes, b"new");
-        assert_eq!(observed.entries, 1);
+        assert_eq!(observed.entries, 2);
     }
 }
 
@@ -251,7 +246,10 @@ fn unsupported_directory_sync_is_tolerated() {
                 (kind == io::ErrorKind::Other).then_some(kind)
             );
             assert_eq!(observed.bytes, b"new");
-            assert_eq!(observed.entries, 1);
+            assert_eq!(
+                observed.entries,
+                if kind == io::ErrorKind::Other { 2 } else { 1 }
+            );
         }
     }
 }
@@ -259,8 +257,8 @@ fn unsupported_directory_sync_is_tolerated() {
 #[cfg(unix)]
 #[test]
 fn root_link_resolution_reaches_final_target() {
-    let dir = std::env::temp_dir().join(format!("maestro-resolver-{}", std::process::id()));
-    fs::create_dir(&dir).unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let dir = scratch.path();
     for i in 0..17 {
         let next = if i == 16 {
             "target".into()
@@ -460,7 +458,7 @@ fn interrupted_publication_is_replayed_before_the_next_write() {
 }
 
 #[test]
-fn recovery_refuses_a_record_for_another_target() {
+fn recovery_refuses_a_record_with_an_unknown_mode_flag() {
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let target = scratch.path().join("session");
     fs::write(&target, b"before").unwrap();
@@ -470,15 +468,8 @@ fn recovery_refuses_a_record_for_another_target() {
     });
     assert!(replace(&target, b"intended", Replace::default()).is_err());
     EFFECTS.take();
-    let recovery = fs::read_dir(root())
-        .unwrap()
-        .map(|entry| entry.unwrap().path())
-        .find(|path| {
-            path.extension()
-                .is_some_and(|extension| extension == "recovery")
-        })
-        .unwrap();
-    fs::write(&recovery, [0; 37]).unwrap();
+    let recovery = scratch.path().join("session.recovery");
+    fs::write(&recovery, [2, 0, 0, 0, 0]).unwrap();
     assert_eq!(
         crate::acquire_write(&target, true).unwrap_err().kind(),
         io::ErrorKind::InvalidData
@@ -523,13 +514,7 @@ fn target_parent_sync_failure_keeps_the_recovery_copy() {
             .is_some()
     );
     EFFECTS.take();
-    assert!(fs::read_dir(root()).unwrap().any(|entry| {
-        entry
-            .unwrap()
-            .path()
-            .extension()
-            .is_some_and(|extension| extension == "recovery")
-    }));
+    assert!(scratch.path().join("session.recovery").is_file());
     fs::write(&target, b"partial").unwrap();
     drop(crate::acquire_write(&target, true).unwrap());
     assert_eq!(fs::read(&target).unwrap(), b"intended");
@@ -596,41 +581,28 @@ fn new_target_mode(mode: Option<u32>, interrupted: bool) {
 }
 
 #[test]
-fn acquisition_syncs_recovery_absence_before_admitting_a_writer() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
-    let target = scratch.path().join("session");
-    fs::write(&target, b"before").unwrap();
-    EFFECTS.set(Effects {
-        fault: Some(("recovery_sync", io::ErrorKind::Other)),
-        ..Effects::default()
-    });
-    assert_eq!(
-        crate::acquire_write(&target, true).unwrap_err().kind(),
-        io::ErrorKind::Other
-    );
-    EFFECTS.take();
-    assert_eq!(fs::read(&target).unwrap(), b"before");
-}
-
-#[test]
-fn first_use_persists_directory_ancestry_before_target_write() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
-    let target = scratch.path().join("session");
-    fs::write(&target, b"before").unwrap();
-    EFFECTS.set(Effects {
-        fault: Some(("ancestry_sync", io::ErrorKind::Other)),
-        ..Effects::default()
-    });
-    assert!(replace(&target, b"intended", Replace::default()).is_err());
-    let events = EFFECTS.take().events;
-    assert_eq!(events, ["ancestry_sync"]);
-    assert_eq!(fs::read(&target).unwrap(), b"before");
-    replace(&target, b"intended", Replace::default()).unwrap();
-    let events = EFFECTS.take().events;
-    assert!(
-        events.iter().position(|p| *p == "ancestry_sync").unwrap()
-            < events.iter().position(|p| *p == "target_write").unwrap()
-    );
+fn writes_sync_recovery_before_touching_the_target() {
+    for append in [false, true] {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let target = scratch.path().join("session");
+        fs::write(&target, b"before").unwrap();
+        let holder = crate::acquire_write(&target, true).unwrap();
+        EFFECTS.set(Effects {
+            fault: Some(("recovery_sync", io::ErrorKind::Other)),
+            ..Effects::default()
+        });
+        let result = if append {
+            holder.append(b"after")
+        } else {
+            holder.replace(b"after", None).map(|_| ())
+        };
+        assert_eq!(result.unwrap_err().kind(), io::ErrorKind::Other);
+        let events = EFFECTS.take().events;
+        assert!(events.contains(&"recovery_sync"));
+        assert!(!events.contains(&"target_write"));
+        assert!(!events.contains(&"target_append"));
+        assert_eq!(fs::read(&target).unwrap(), b"before");
+    }
 }
 
 #[cfg(unix)]
@@ -669,13 +641,7 @@ fn completed_readonly_creation_recovers_after_parent_sync_failure() {
         fs::metadata(&target).unwrap().permissions().mode() & 0o777,
         0o400
     );
-    assert!(!fs::read_dir(root()).unwrap().any(|entry| {
-        entry
-            .unwrap()
-            .path()
-            .extension()
-            .is_some_and(|ext| ext == "recovery")
-    }));
+    assert!(!scratch.path().join("session.recovery").exists());
     if let Some(_restore) = maestro_test_directory::deny(&target, 0o400).unwrap() {
         assert!(replace(&target, b"different", Replace::default()).is_err());
     }
@@ -693,12 +659,7 @@ fn append_waits_at_target_sync_until_publication_finishes() {
             TcpStream::connect(std::env::var("MAESTRO_SYNC_ADDRESS").unwrap()).unwrap();
         stream.write_all(&std::process::id().to_be_bytes()).unwrap();
         let holder = crate::acquire_write(Path::new(&path), true).unwrap();
-        fs::OpenOptions::new()
-            .append(true)
-            .open(holder.path())
-            .unwrap()
-            .write_all(b"after")
-            .unwrap();
+        holder.append(b"after").unwrap();
         stream.write_all(b"done").unwrap();
         return;
     }
@@ -711,7 +672,6 @@ fn append_waits_at_target_sync_until_publication_finishes() {
     )
     .unwrap()
     .env("MAESTRO_SYNC_APPEND", &target)
-    .env("MAESTRO_TEST_LOCK_ROOT", root())
     .env(
         "MAESTRO_SYNC_ADDRESS",
         listener.local_addr().unwrap().to_string(),
@@ -813,13 +773,7 @@ fn readonly_replay_syncs_mode_before_removing_recovery() {
     });
     assert!(crate::acquire_write(&target, true).is_err());
     assert!(fs::metadata(&target).unwrap().permissions().readonly());
-    assert!(fs::read_dir(root()).unwrap().any(|entry| {
-        entry
-            .unwrap()
-            .path()
-            .extension()
-            .is_some_and(|ext| ext == "recovery")
-    }));
+    assert!(scratch.path().join("session.recovery").is_file());
     EFFECTS.take();
     drop(crate::acquire_write(&target, true).unwrap());
     assert_eq!(fs::read(&target).unwrap(), b"intended");
@@ -835,75 +789,6 @@ fn readonly_replay_syncs_mode_before_removing_recovery() {
         fs::set_permissions(&target, permissions).unwrap();
     }
     fs::remove_file(&target).unwrap();
-}
-
-#[cfg(unix)]
-#[test]
-fn existing_lock_root_needs_only_search_access_to_ancestors() {
-    let root = root();
-    fs::create_dir_all(&root).unwrap();
-    let ancestor = root.ancestors().nth(4).unwrap();
-    let Some(_restore) = maestro_test_directory::deny(ancestor, 0o311).unwrap() else {
-        return;
-    };
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
-    drop(crate::acquire_write(&scratch.path().join("session"), true).unwrap());
-}
-
-/// Records only directory handles actually passed to ancestry synchronization.
-pub(crate) fn ancestry_directory(path: &Path) {
-    EFFECTS.with_borrow_mut(|effects| effects.directories.push(path.to_path_buf()));
-}
-
-#[test]
-fn interrupted_ancestry_is_synced_by_the_next_process_once() {
-    if std::env::var_os("MAESTRO_ANCESTRY_CHILD").is_some() {
-        let root = root();
-        let home = root.ancestors().nth(3).unwrap();
-        let target = home.join("session");
-        replace(&target, b"first", Replace::default()).unwrap();
-        let directories = EFFECTS.take().directories;
-        assert_eq!(
-            directories,
-            root.ancestors()
-                .take(4)
-                .map(Path::to_path_buf)
-                .collect::<Vec<_>>()
-        );
-        replace(&target, b"second", Replace::default()).unwrap();
-        assert!(EFFECTS.take().directories.is_empty());
-        return;
-    }
-    EFFECTS.set(Effects {
-        fault: Some(("ancestry_sync", io::ErrorKind::Other)),
-        ..Effects::default()
-    });
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
-    assert!(
-        replace(
-            &scratch.path().join("session"),
-            b"first",
-            Replace::default()
-        )
-        .is_err()
-    );
-    EFFECTS.take();
-    let output = maestro_test_process::TestProcess::current(
-        "interrupted_ancestry_is_synced_by_the_next_process_once",
-    )
-    .unwrap()
-    .env("MAESTRO_ANCESTRY_CHILD", "1")
-    .env("MAESTRO_TEST_LOCK_ROOT", root())
-    .output()
-    .unwrap();
-    assert!(output.status.success(), "{output:?}");
-}
-
-/// Gives each disposable thread-local namespace its own first-acquisition state.
-pub(crate) fn with_ancestry_sync(
-    action: impl FnOnce(&mut bool) -> io::Result<()>,
-) -> io::Result<()> {
-    ANCESTRY_SYNCED.with_borrow_mut(action)
 }
 
 #[test]
@@ -1032,7 +917,6 @@ fn atomic_fixed_writers_wait_before_opening_temporary() {
     let child = maestro_test_process::TestProcess::current(test)
         .unwrap()
         .env("MAESTRO_ATOMIC_TARGET", &target)
-        .env("MAESTRO_TEST_LOCK_ROOT", root())
         .env(
             "MAESTRO_SYNC_ADDRESS",
             listener.local_addr().unwrap().to_string(),
@@ -1107,4 +991,194 @@ fn atomic_temporary_cannot_name_the_target() {
     assert_eq!(result.unwrap_err().kind(), io::ErrorKind::InvalidInput);
     EFFECTS.take();
     assert_eq!(fs::read(&target).unwrap(), b"previous");
+}
+
+#[test]
+fn long_leaf_rewrite_and_replay_use_shortened_names() {
+    #[cfg(windows)]
+    let unicode = "𝄞".repeat(127) + "x";
+    #[cfg(not(windows))]
+    let unicode = "é".repeat(127) + "x";
+    for leaf in ["x".repeat(255), unicode] {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let target = scratch.path().join(&leaf);
+        fs::write(&target, b"before").unwrap();
+        let holder = crate::acquire_write(&target, true).unwrap();
+        assert_eq!(fs::read_dir(scratch.path()).unwrap().count(), 2);
+        if leaf.is_ascii() {
+            assert!(
+                scratch
+                    .path()
+                    .join(format!("{}-d22609da3ae3956c.lock", "x".repeat(233)))
+                    .is_file()
+            );
+        }
+        holder.replace(b"first", None).unwrap();
+        EFFECTS.set(Effects {
+            fault: Some(("target_write", io::ErrorKind::Interrupted)),
+            ..Effects::default()
+        });
+        assert!(replace(&target, b"replayed", Replace::default()).is_err());
+        EFFECTS.take();
+        for entry in fs::read_dir(scratch.path()).unwrap() {
+            assert!(entry.unwrap().file_name().to_str().is_some());
+        }
+        drop(crate::acquire_write(&target, true).unwrap());
+        assert_eq!(fs::read(&target).unwrap(), b"replayed");
+        assert_eq!(fs::read_dir(scratch.path()).unwrap().count(), 1);
+    }
+}
+
+#[test]
+fn recovery_record_moved_with_its_directory_is_replayed() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let old = scratch.path().join("old");
+    let moved = scratch.path().join("moved");
+    fs::create_dir(&old).unwrap();
+    let target = old.join("session");
+    fs::write(&target, b"before").unwrap();
+    EFFECTS.set(Effects {
+        fault: Some(("target_write", io::ErrorKind::Interrupted)),
+        ..Effects::default()
+    });
+    assert!(replace(&target, b"replayed", Replace::default()).is_err());
+    EFFECTS.take();
+    fs::rename(old, &moved).unwrap();
+    drop(crate::acquire_write(&moved.join("session"), true).unwrap());
+    assert_eq!(fs::read(moved.join("session")).unwrap(), b"replayed");
+    assert_eq!(fs::read_dir(moved).unwrap().count(), 1);
+}
+
+#[test]
+fn released_lock_file_is_never_locked_twice() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let target = scratch.path().join("session");
+    let first = crate::acquire_write(&target, true).unwrap();
+    let (opened, observed) = std::sync::mpsc::channel();
+    let (resume, proceed) = std::sync::mpsc::channel();
+    let (admitted, acquired) = std::sync::mpsc::channel();
+    let (release, done) = std::sync::mpsc::channel();
+    let path = target.clone();
+    let waiter = std::thread::spawn(move || {
+        let mut opened = Some(opened);
+        EFFECTS.set(Effects {
+            acquisition: Some(Box::new(move |phase| {
+                if phase == "opened"
+                    && let Some(opened) = opened.take()
+                {
+                    opened.send(()).unwrap();
+                    proceed.recv().unwrap();
+                }
+            })),
+            ..Effects::default()
+        });
+        let holder = crate::acquire_write(&path, true).unwrap();
+        admitted.send(()).unwrap();
+        done.recv().unwrap();
+        drop(holder);
+    });
+    observed.recv().unwrap();
+    drop(first);
+    resume.send(()).unwrap();
+    acquired.recv().unwrap();
+    let live_name = fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(scratch.path().join("session.lock"));
+    let contended = crate::try_acquire_write(&target, true);
+    let exclusive = matches!(contended, Err(std::fs::TryLockError::WouldBlock));
+    drop(contended);
+    let named = live_name.is_ok();
+    drop(live_name);
+    release.send(()).unwrap();
+    waiter.join().unwrap();
+    assert!(named, "the holder locked a retired lock file");
+    assert!(
+        exclusive,
+        "another holder acquired a new lock while the old inode was held"
+    );
+    assert!(!scratch.path().join("session.lock").exists());
+}
+
+#[test]
+fn waiting_writer_outlasts_a_long_holder() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let target = scratch.path().join("session");
+    let first = crate::acquire_write(&target, true).unwrap();
+    let (opened, observed) = std::sync::mpsc::channel();
+    let path = target.clone();
+    let waiter = std::thread::spawn(move || {
+        let mut opened = Some(opened);
+        EFFECTS.set(Effects {
+            acquisition: Some(Box::new(move |phase| {
+                if phase == "opened"
+                    && let Some(opened) = opened.take()
+                {
+                    opened.send(()).unwrap();
+                }
+            })),
+            ..Effects::default()
+        });
+        let holder = crate::acquire_write(&path, true).unwrap();
+        assert!(
+            fs::OpenOptions::new()
+                .write(true)
+                .open(path.with_file_name("session.lock"))
+                .is_ok(),
+            "waiting writer retained a retired lock file"
+        );
+        holder.replace(b"after", None).unwrap();
+    });
+    observed.recv().unwrap();
+    assert!(matches!(
+        crate::acquire_write_bounded(&target, true),
+        Err(std::fs::TryLockError::WouldBlock)
+    ));
+    drop(first);
+    waiter.join().unwrap();
+    assert_eq!(fs::read(&target).unwrap(), b"after");
+    assert_eq!(fs::read_dir(scratch.path()).unwrap().count(), 1);
+}
+
+#[test]
+fn recovery_refuses_an_incomplete_header() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let target = scratch.path().join("session");
+    fs::write(&target, b"before").unwrap();
+    for length in 0..5 {
+        fs::write(scratch.path().join("session.recovery"), vec![0; length]).unwrap();
+        assert_eq!(
+            crate::acquire_write(&target, true).unwrap_err().kind(),
+            io::ErrorKind::InvalidData
+        );
+        assert_eq!(fs::read(&target).unwrap(), b"before");
+    }
+}
+
+#[test]
+fn read_only_guard_does_not_sync_recovery_absence() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let target = scratch.path().join("session");
+    fs::write(&target, b"before").unwrap();
+    EFFECTS.set(Effects {
+        fault: Some(("recovery_sync", io::ErrorKind::Other)),
+        ..Effects::default()
+    });
+    let holder = crate::acquire_write(&target, true).unwrap();
+    assert_eq!(fs::read(holder.path()).unwrap(), b"before");
+    drop(holder);
+    assert!(!EFFECTS.take().events.contains(&"recovery_sync"));
+}
+
+#[test]
+fn append_syncs_recovery_absence_once_before_writing() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let target = scratch.path().join("session");
+    fs::write(&target, b"before").unwrap();
+    let holder = crate::acquire_write(&target, true).unwrap();
+    assert!(EFFECTS.take().events.is_empty());
+    holder.append(b"after").unwrap();
+    assert_eq!(EFFECTS.take().events, ["recovery_sync", "target_append"]);
+    assert_eq!(fs::read(target).unwrap(), b"beforeafter");
+    assert_eq!(fs::read_dir(scratch.path()).unwrap().count(), 1);
 }

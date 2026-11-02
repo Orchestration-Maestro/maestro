@@ -1,5 +1,29 @@
 //! Gregorian wall-date validation and default-calendar conversion.
-use std::io;
+use std::{io, str::FromStr};
+
+/// A supported default calendar selected when a recipe is parsed.
+#[derive(Clone, Copy)]
+pub(super) enum Calendar {
+    /// Gregorian civil dates.
+    Gregorian,
+    /// Gregorian month and day with the Buddhist year offset.
+    Buddhist,
+    /// Persian solar dates.
+    Persian,
+}
+
+impl FromStr for Calendar {
+    type Err = io::Error;
+
+    fn from_str(value: &str) -> io::Result<Self> {
+        match value {
+            "gregory" => Ok(Self::Gregorian),
+            "buddhist" => Ok(Self::Buddhist),
+            "persian" => Ok(Self::Persian),
+            _ => Err(io::Error::other("unsupported date-time calendar")),
+        }
+    }
+}
 
 /// Persian leap corrections from ICU persncal.cpp, SHA-256
 /// 31e7e93bb7dc1e4436c58ffd44fd1ed2686ceb79228b8d989f6573ec15ed5f45.
@@ -48,13 +72,13 @@ fn persian_start(year: i64) -> i64 {
 }
 
 /// Converts validated Gregorian fields to the recipe's default calendar.
-pub(super) fn convert(date: [i32; 3], calendar: &str) -> io::Result<[i64; 3]> {
+pub(super) fn convert(date: [i32; 3], calendar: Calendar) -> io::Result<[i64; 3]> {
     let julian = julian_day(date)?;
     let [year, month, day] = date.map(i64::from);
     match calendar {
-        "gregory" => Ok([if year <= 0 { 1 - year } else { year }, month, day]),
-        "buddhist" => Ok([year + 543, month, day]),
-        "persian" => {
+        Calendar::Gregorian => Ok([if year <= 0 { 1 - year } else { year }, month, day]),
+        Calendar::Buddhist => Ok([year + 543, month, day]),
+        Calendar::Persian => {
             let days = julian - 1_948_320;
             let mut year = (33 * days + 3).div_euclid(12_053) + 1;
             let mut ordinal = days - persian_start(year);
@@ -74,6 +98,5 @@ pub(super) fn convert(date: [i32; 3], calendar: &str) -> io::Result<[i64; 3]> {
             };
             Ok([year, month + 1, ordinal - start + 1])
         }
-        _ => Err(io::Error::other("unsupported date-time calendar")),
     }
 }
