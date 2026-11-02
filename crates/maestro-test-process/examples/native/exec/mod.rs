@@ -63,7 +63,10 @@ pub(super) enum Record {
         port: u16,
     },
     /// Finish after one termination signal, without polling or a deadline.
-    Blocked {},
+    Blocked {
+        /// Exit code to report once the termination signal was handled.
+        code: Option<i32>,
+    },
     /// Write grace bytes into another process's output descriptor.
     Grace {
         /// Process whose standard output the caller observes.
@@ -156,7 +159,7 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
         Record::Yielding { port } => payloads::yielding(*port),
         Record::TreeRoot { port } => payloads::tree_root(*port),
         Record::TreeLeaf { port } => payloads::tree_leaf(*port),
-        Record::Blocked {} => payloads::blocked(),
+        Record::Blocked { code } => payloads::blocked(*code),
         Record::Grace { pid } => payloads::grace(*pid),
     }
 }

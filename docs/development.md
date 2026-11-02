@@ -1287,7 +1287,7 @@ fn main() -> std::io::Result<()> {
 | `identity` | Writes this process's session and process group, one per line. |
 | `tree-root` | On `port`, writes `READY`, starts a linked descendant as `MTP_ROLE=tree-leaf`, and waits for it. |
 | `tree-leaf` | On `port`, writes `READY` and holds the channel until the tree is killed. |
-| `blocked` | Waits for a termination signal on a native notification channel and finishes after the first, without a deadline or a poll. |
+| `blocked` | Waits for a termination signal on a native notification channel and finishes after the first, without a deadline or a poll. An optional `code` exits with that code once the signal was handled, so a caller sees that the request ended the child. |
 | `grace` | On Linux, writes `held`, then writes `grace` into standard output `pid` names after one input line, and finishes when input closes. |
 
 The `MTP_ROLE` variable selects a linked-descendant role for the same record; no
