@@ -79,7 +79,7 @@ fn idle_shell_records_persist_without_message_events() {
 }
 
 #[test]
-fn streaming_shell_records_flush_before_next_user_prompt() {
+fn streaming_shell_records_flush_when_run_settles() {
     on_task_set(|_| async {
         let started = Rc::new(tokio::sync::Notify::new());
         let release = Rc::new(tokio::sync::Notify::new());
@@ -130,7 +130,7 @@ fn streaming_shell_records_flush_before_next_user_prompt() {
             observed,
             case(
                 "bash_persistence",
-                "streaming_shell_records_flush_before_next_user_prompt"
+                "streaming_shell_records_flush_when_run_settles"
             )["expected"]
         );
     });

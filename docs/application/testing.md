@@ -43,6 +43,17 @@ configuration directories through the checked Rust child owner. Native shell
 checks use the real shell; search checks require installed programs and refuse
 downloads.
 
+File checks call the application factories and compare complete results, diffs
+and written bytes with recorded fixtures. Controlled shell operations supply raw
+byte chunks and settlement outcomes; the real tools own decoding, progress
+coalescing, truncation and artifact closure. Search checks require installed
+`rg` and `fd` or `fdfind`.
+
+Persistence checks retain the same session across an acknowledged waiting tool,
+shell recording and the following prompt. They compare pending state, live
+message order and stored entry order at each boundary. Separate checks retain
+cancelled shell results and interrupted assistant messages.
+
 ## Waiting without clocks
 
 Tests never sleep or poll. They wait on signals the session or the scripted
@@ -89,6 +100,20 @@ directory is also disposable. Tests never write into committed fixtures.
 the harness unregisters the scripted provider and removes the disposable root.
 
 ## Running the session tests
+
+Run executable file and controlled-shell checks:
+
+```sh
+cargo nextest run -p maestro-app --locked --test integration \
+  -E 'test(/^tools_(read|write|edit|bash|search)_checks::/)'
+```
+
+Run direct-shell persistence checks:
+
+```sh
+cargo nextest run -p maestro-app --locked --test integration \
+  -E 'test(/^agent_session_bash_persistence_checks::/)'
+```
 
 Run one group of checks through the shared integration-test program:
 

@@ -23,7 +23,7 @@
     }
   },
   {
-    "name": "streaming_shell_records_flush_before_next_user_prompt",
+    "name": "streaming_shell_records_flush_when_run_settles",
     "expected": {
       "views": [
         {

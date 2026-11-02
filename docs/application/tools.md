@@ -51,34 +51,17 @@ session appends pending results after its tool calls and results, even if no lat
 prompt follows. A later idle shell result follows those earlier results.
 Shell history records emit no `message_end` event.
 
-## Customizing qualification
+## Customizing operations
 
-The [application test harness](testing.md) supplies complete sessions with a
-scripted provider and disposable files. File tests call the root factories and
-compare complete results, diffs and written bytes with recorded fixtures.
-Controlled shell operations supply raw byte chunks and settlement outcomes;
-the real tools own decoding, progress coalescing, truncation and artifact closure.
-Native checks run in checked Rust children with disposable temporary, home and
-configuration directories. Shell checks run the real local shell. Search checks
-require installed `rg` and `fd` or `fdfind`; acquisition attempts fail the test.
-
-The persistence checks retain the same session across an acknowledged waiting
-tool, shell recording and the following prompt. They compare pending state,
-live message order and stored entry order at each boundary. Separate checks
-retain cancelled shell results and interrupted assistant messages.
+Supply the tool's operations interface through its options to replace file or
+process effects. Keep the tool factory: it retains argument handling and output
+formatting around those operations. For example, `ReadToolOptions::operations`
+accepts `ReadOperations`, and `BashToolOptions::operations` accepts
+`BashOperations`. See [native factories](../tools.md) for the interfaces and
+[application testing](testing.md) for controlled operation adapters.
 
 ## Examples
 
-Run the executable file and controlled-shell checks:
-
-```sh
-cargo nextest run -p maestro-app --locked --test integration \
-  -E 'test(/^tools_(read|write|edit|bash|search)_checks::/)'
-```
-
-Run direct-shell persistence checks:
-
-```sh
-cargo nextest run -p maestro-app --locked --test integration \
-  -E 'test(/^agent_session_bash_persistence_checks::/)'
-```
+Use an offset and limit to [read part of a file](../tools-read.md), or supply
+multiple replacements to [edit a file atomically](../tools-edit.md). For an
+embedded session, [select tools before prompting](sdk.md#limit-tools-before-prompting).

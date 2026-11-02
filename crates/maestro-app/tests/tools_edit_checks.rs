@@ -10,15 +10,20 @@ use maestro_models::{BoxFuture, DiagnosticErrorInfo};
 use serde_json::{Value, json};
 use std::{fmt::Write as _, sync::Arc};
 
+/// Creates the native edit tool for a disposable root.
+fn edit_tool(root: &maestro_test_directory::Scratch) -> maestro_agent::AgentTool {
+    maestro_app::create_edit_tool(
+        root.path().display().to_string(),
+        EditToolOptions::default(),
+    )
+}
+
 /// Runs one edit against a disposable file and compares both its result and final bytes.
 fn check_edit(name: &str, before: &str, edits: Value) {
     let root = maestro_test_directory::Scratch::new().unwrap();
     let path = root.path().join("file.txt");
     std::fs::write(&path, before).unwrap();
-    let tool = maestro_app::create_edit_tool(
-        root.path().display().to_string(),
-        EditToolOptions::default(),
-    );
+    let tool = edit_tool(&root);
     let mut arguments = json!({"path":path.display().to_string()});
     arguments["edits"] = edits;
     let result = run_io((tool.execute)("edit".into(), arguments, None, None));
@@ -56,10 +61,7 @@ fn edit_preserves_missing_file_failure_kind() {
     let root = maestro_test_directory::Scratch::new().unwrap();
     let native = std::fs::read(root.path().join("missing.txt")).unwrap_err();
     assert_eq!(native.kind(), std::io::ErrorKind::NotFound);
-    let tool = maestro_app::create_edit_tool(
-        root.path().display().to_string(),
-        EditToolOptions::default(),
-    );
+    let tool = edit_tool(&root);
     let error = run_io((tool.execute)(
         "edit".into(),
         json!({"path":"missing.txt","edits":[{"oldText":"hello","newText":"world"}]}),
@@ -122,10 +124,7 @@ fn edit_rejects_empty_replacement_list() {
     let root = maestro_test_directory::Scratch::new().unwrap();
     let file = root.path().join("file.txt");
     std::fs::write(&file, "hello\nworld\n").unwrap();
-    let tool = maestro_app::create_edit_tool(
-        root.path().display().to_string(),
-        EditToolOptions::default(),
-    );
+    let tool = edit_tool(&root);
     let error = run_io((tool.execute)(
         "edit".into(),
         json!({"path":"file.txt","edits":[]}),
@@ -168,10 +167,7 @@ fn edit_preserves_write_access_failure_kind() {
         eprintln!("host permits writes despite denied file mode");
         return;
     };
-    let tool = maestro_app::create_edit_tool(
-        root.path().display().to_string(),
-        EditToolOptions::default(),
-    );
+    let tool = edit_tool(&root);
     let native = std::fs::OpenOptions::new()
         .write(true)
         .open(&file)
@@ -424,10 +420,7 @@ fn edit_root_preparation_retains_in_place_and_returned_forms() {
         let root = maestro_test_directory::Scratch::new().unwrap();
         let file = root.path().join("file.txt");
         std::fs::write(&file, "a b").unwrap();
-        let tool = maestro_app::create_edit_tool(
-            root.path().display().to_string(),
-            EditToolOptions::default(),
-        );
+        let tool = edit_tool(&root);
         let prepared = (tool.prepare_arguments.as_ref().unwrap())(&mut retained).unwrap();
         let result = run_io((tool.execute)("edit".into(), prepared.clone(), None, None));
         let mut observed = json!({"ok":{"retained":retained,"prepared":prepared},"after":{"content":std::fs::read_to_string(file).unwrap()}});
