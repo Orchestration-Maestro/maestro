@@ -1,8 +1,10 @@
 //! Reduction of response events into the shared assistant message.
 
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::sync::{Arc, PoisonError};
 
+use serde_json::Value;
 use serde_json::value::RawValue;
 
 use super::wire::{appended, arguments, joined, kind, last, signature};
@@ -14,6 +16,7 @@ use crate::{
     AssistantMessageEventStream, DiagnosticErrorInfo, JsonObject, Model, SharedAssistantMessage,
     StopReason, TextContent, ThinkingContent, ToolCall, Usage, calculate_cost,
 };
+use maestro_request::presence::Presence;
 
 /// The open item and the block position captured when it started.
 enum Current {
@@ -48,8 +51,11 @@ pub(super) struct Reducer<'a> {
     model: &'a Model,
     /// Service tier settings of the caller.
     options: Option<&'a OpenAIResponsesStreamOptions<'a>>,
-    /// The open item.
+    /// The open item of the event being reduced.
     current: Current,
+    /// The items still open, by the output position the service gave them, which the event
+    /// being reduced takes out and puts back.
+    open_items: HashMap<Option<String>, Current>,
     /// Whether a completed or incomplete response was seen.
     terminal: bool,
 }
@@ -68,6 +74,7 @@ impl<'a> Reducer<'a> {
             model,
             options,
             current: Current::Idle,
+            open_items: HashMap::new(),
             terminal: false,
         }
     }
@@ -156,7 +163,7 @@ impl<'a> Reducer<'a> {
 
     /// Store the arguments parsed so far on the captured block, a tool call, and announce `delta`
     /// when there is one.
-    fn set_arguments(&self, arguments: JsonObject, delta: Option<String>) {
+    fn set_arguments(&self, arguments: Value, delta: Option<String>) {
         self.publish(|block, content_index, partial| {
             let Block::ToolCall(call) = block else {
                 return None;
@@ -207,9 +214,22 @@ impl<'a> Reducer<'a> {
         });
     }
 
-    /// Select one event before reading the members its branch consumes.
+    /// Reduce one event against the item at its output position, so items finishing out of
+    /// order keep their own state.
     pub(super) fn event(&mut self, input: &str) -> Result<(), DiagnosticErrorInfo> {
         let raw = required(Some(raw_json(input).map_err(|error| native(&error))?))?;
+        let position = member(raw, "output_index").map(|index| index.get().to_owned());
+        self.current = self.open_items.remove(&position).unwrap_or(Current::Idle);
+        let outcome = self.reduce(raw);
+        if !matches!(self.current, Current::Idle) {
+            let current = std::mem::replace(&mut self.current, Current::Idle);
+            self.open_items.insert(position, current);
+        }
+        outcome
+    }
+
+    /// Select one event before reading the members its branch consumes.
+    fn reduce(&mut self, raw: &RawValue) -> Result<(), DiagnosticErrorInfo> {
         match kind(raw, "type")?.as_str() {
             "response.created" => {
                 let id = field(required(member(raw, "response"))?, "id")?;
@@ -263,7 +283,7 @@ impl<'a> Reducer<'a> {
                 )
             }
             "function_call" => {
-                let call = call(raw, JsonObject::new())?;
+                let call = call(raw, JsonObject::new().into())?;
                 let scratch = arguments(raw)?;
                 Current::Function(self.open(Block::ToolCall(call)), scratch)
             }
@@ -326,8 +346,12 @@ impl<'a> Reducer<'a> {
         Ok(())
     }
 
-    /// Replace final content on the captured block and clear the open state.
+    /// Replace final content on the captured block and clear the open state. A known item that
+    /// finishes without having been added opens its block first.
     fn item_done(&mut self, raw: &RawValue) -> Result<(), DiagnosticErrorInfo> {
+        if matches!(self.current, Current::Idle) {
+            self.item_added(raw)?;
+        }
         match (kind(raw, "type")?.as_str(), &self.current) {
             ("reasoning", Current::Reasoning(_, _)) => {
                 let summary = joined(raw, "summary", false)?;
@@ -341,41 +365,22 @@ impl<'a> Reducer<'a> {
                 self.final_text(Some(content));
                 self.end(signature(raw)?);
             }
-            ("function_call", _) => self.function_done(raw)?,
+            ("function_call", Current::Function(_, scratch)) => {
+                let arguments = if scratch.is_empty() {
+                    parsed_arguments(&arguments(raw)?)
+                } else {
+                    parsed_arguments(scratch)
+                };
+                self.end_call(arguments);
+            }
             _ => return Ok(()),
         }
         self.current = Current::Idle;
         Ok(())
     }
 
-    /// Finalize existing calls without reading unused identity, or insert a final-only call.
-    fn function_done(&self, raw: &RawValue) -> Result<(), DiagnosticErrorInfo> {
-        let arguments = match &self.current {
-            Current::Function(_, scratch) if !scratch.is_empty() => parsed_arguments(scratch),
-            _ => parsed_arguments(&arguments(raw)?),
-        };
-        if matches!(self.current, Current::Function(_, _)) {
-            self.end_call(arguments);
-        } else {
-            let tool_call = call(raw, arguments)?;
-            let block = Block::ToolCall(tool_call.clone());
-            let partial = Arc::clone(self.output);
-            let index = self.change(|message| {
-                let index = message.content.len();
-                message.content.push(block);
-                index
-            });
-            self.stream.push(Update::ToolcallEnd {
-                content_index: index,
-                tool_call,
-                partial,
-            });
-        }
-        Ok(())
-    }
-
     /// Set the final arguments of the captured block, a tool call, and announce its end.
-    fn end_call(&self, arguments: JsonObject) {
+    fn end_call(&self, arguments: Value) {
         self.publish(|block, content_index, partial| {
             let Block::ToolCall(call) = block else {
                 return None;
@@ -413,7 +418,7 @@ impl<'a> Reducer<'a> {
             usage.output = count(reported, "output_tokens")?;
             usage.cache_read = cached;
             usage.cache_write = 0.0;
-            usage.total_tokens = count(reported, "total_tokens")?;
+            usage.total_tokens = Presence::Present(count(reported, "total_tokens")?);
         }
         calculate_cost(self.model, &mut usage);
         self.change(|message| message.usage = usage.clone());
@@ -466,7 +471,7 @@ fn argument_update(
     scratch: &mut String,
     raw: &RawValue,
     event_kind: &str,
-) -> Result<(JsonObject, Option<String>), DiagnosticErrorInfo> {
+) -> Result<(Value, Option<String>), DiagnosticErrorInfo> {
     let delta = if event_kind == "response.function_call_arguments.delta" {
         let delta = string(member(raw, "delta"))?;
         scratch.push_str(&delta);
@@ -484,7 +489,7 @@ fn argument_update(
 }
 
 /// Build a final call from the selected identity and already-parsed arguments.
-fn call(raw: &RawValue, arguments: JsonObject) -> Result<ToolCall, DiagnosticErrorInfo> {
+fn call(raw: &RawValue, arguments: Value) -> Result<ToolCall, DiagnosticErrorInfo> {
     let mut id = string(member(raw, "call_id"))?;
     if id.contains('|') {
         return Err(DiagnosticErrorInfo::new(

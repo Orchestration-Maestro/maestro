@@ -332,7 +332,7 @@ fn updates(stream: &AssistantMessageEventStream) {
         let call = maestro_models::ToolCall {
             id: "preview".into(),
             name: "echo".into(),
-            arguments: maestro_models::JsonObject::new(),
+            arguments: maestro_models::JsonObject::new().into(),
             thought_signature: None,
         };
         partial.write().unwrap().content = vec![match i {
@@ -428,7 +428,7 @@ fn call(id: &str) -> maestro_models::ToolCall {
     maestro_models::ToolCall {
         id: id.into(),
         name: "echo".into(),
-        arguments: maestro_models::JsonObject::new(),
+        arguments: maestro_models::JsonObject::new().into(),
         thought_signature: None,
     }
 }

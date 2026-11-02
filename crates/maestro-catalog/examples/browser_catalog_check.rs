@@ -48,9 +48,9 @@ mod browser {
         fn get_api_key<'a>(
             &self,
             credentials: &'a OAuthCredentials,
-        ) -> Result<&'a str, maestro_models::OAuthError> {
+        ) -> Result<std::borrow::Cow<'a, str>, maestro_models::OAuthError> {
             self.0.set(self.0.get() + 1);
-            Ok(&credentials.access)
+            Ok(std::borrow::Cow::Borrowed(&credentials.access))
         }
     }
     /// Caller-local configured-value commands; a browser build runs no process.

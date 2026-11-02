@@ -10,7 +10,10 @@ fn block_documentation_is_rejected_with_file_and_line() {
     let workspace = Workspace::new();
     workspace.member("models", "maestro-models", "");
     workspace.list(&[("maestro-models", "core")]);
-    let path = workspace.root.path().join("crates/models/src/lib.rs");
+    let path = workspace
+        .root
+        .path()
+        .join(support::native_path("crates/models/src/lib.rs"));
     for source in ["\n/** Item. */\npub struct Item;\n", "\n/*! Crate. */\n"] {
         std::fs::write(&path, source).unwrap();
         let error = check_workspace(workspace.root.path()).unwrap_err();
@@ -26,7 +29,10 @@ fn only_generated_guest_bindings_allow_block_documentation() {
     let workspace = Workspace::new();
     workspace.member("guest", "maestro-extensions-wasm", "");
     workspace.list(&[("maestro-extensions-wasm", "core")]);
-    let root = workspace.root.path().join("crates/guest/src");
+    let root = workspace
+        .root
+        .path()
+        .join(support::native_path("crates/guest/src"));
     let bindings = root.join("bindings.rs");
     std::fs::write(
         &bindings,
@@ -50,7 +56,10 @@ fn only_generated_guest_bindings_allow_block_documentation() {
         ("maestro-extensions-wasm", "core"),
         ("maestro-models", "core"),
     ]);
-    let other = workspace.root.path().join("crates/models/src/bindings.rs");
+    let other = workspace
+        .root
+        .path()
+        .join(support::native_path("crates/models/src/bindings.rs"));
     std::fs::write(&other, "/*! Crate. */").unwrap();
     let error = check_workspace(workspace.root.path()).unwrap_err();
     assert_eq!(

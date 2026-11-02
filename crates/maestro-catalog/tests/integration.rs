@@ -11,10 +11,7 @@ mod catalog_provider_lifecycle;
 mod catalog_provider_registration;
 mod catalog_reentry;
 mod catalog_request_auth;
-#[allow(
-    dead_code,
-    reason = "This binary uses part of the shared credential fallback corpus."
-)]
+mod cloudflare_auth;
 use maestro_credentials::test_support::fallback_support as credential_fallback;
 #[path = "support/descriptors.rs"]
 mod descriptors;
@@ -25,6 +22,7 @@ mod fallback;
 #[path = "support/isolation.rs"]
 mod isolation;
 mod model_cli_resolution;
+mod model_file_layers;
 mod model_initial_choice;
 mod model_locale_ordering;
 mod model_reference_matching;
@@ -37,6 +35,5 @@ mod saved_model_owner;
 #[path = "selection/scopes.rs"]
 mod scopes;
 mod selection;
-#[path = "support/subprocess.rs"]
-mod subprocess;
+use maestro_test_process::subprocess;
 mod support;

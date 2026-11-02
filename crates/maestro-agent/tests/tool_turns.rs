@@ -246,7 +246,7 @@ async fn tool_artifacts_keep_content_details_and_timestamps_case() {
     calls.write().unwrap().content = vec![AssistantContent::ToolCall(ToolCall {
         id: "id".into(),
         name: "echo".into(),
-        arguments: maestro_models::JsonObject::new(),
+        arguments: maestro_models::JsonObject::new().into(),
         thought_signature: None,
     })];
     run_agent_loop_continue(context, &config(), emit, responses(vec![calls]))
@@ -489,7 +489,7 @@ fn ordered_calls() -> maestro_models::SharedAssistantMessage {
             AssistantContent::ToolCall(ToolCall {
                 id: index.to_string(),
                 name: name.into(),
-                arguments: maestro_models::JsonObject::new(),
+                arguments: maestro_models::JsonObject::new().into(),
                 thought_signature: None,
             })
         })

@@ -124,12 +124,11 @@ pub async fn get_latest_maestro_release(
     service_origin: &str,
     options: &VersionCheckOptions,
 ) -> io::Result<Option<LatestMaestroRelease>> {
-    if options
-        .skip_version_check
-        .unwrap_or_else(|| super::flag_is_set("MAESTRO_SKIP_VERSION_CHECK"))
-        || options
-            .offline
-            .unwrap_or_else(|| super::flag_is_set("MAESTRO_OFFLINE"))
+    if options.skip_version_check.unwrap_or_else(|| {
+        super::flag_is_set(std::env::var("MAESTRO_SKIP_VERSION_CHECK").ok().as_deref())
+    }) || options
+        .offline
+        .unwrap_or_else(|| super::flag_is_set(std::env::var("MAESTRO_OFFLINE").ok().as_deref()))
     {
         return Ok(None);
     }

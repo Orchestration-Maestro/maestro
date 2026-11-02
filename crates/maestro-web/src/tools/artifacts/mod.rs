@@ -1,20 +1,26 @@
 //! Retained artifact panels using application-owned filename policy.
 pub mod artifact_pill;
 pub mod artifacts_tool_renderer;
+#[cfg(target_arch = "wasm32")]
+pub mod console;
 mod presentation_cause;
 pub use presentation_cause::PresentationCause;
 mod ui_error;
 pub use ui_error::ArtifactUiError;
 pub mod artifact_element;
+#[cfg(target_arch = "wasm32")]
+pub mod docx_artifact;
 pub mod excel_artifact;
 pub mod generic_artifact;
+#[cfg(target_arch = "wasm32")]
+pub mod html_artifact;
 pub mod image_artifact;
 pub mod markdown_artifact;
 pub mod pdf_artifact;
 pub mod svg_artifact;
 pub mod text_artifact;
 use crate::browser::attachment_content::AttachmentHost;
-use artifact_element::ArtifactElement;
+pub use artifact_element::ArtifactElement;
 use artifact_element::ArtifactView;
 use maestro_app::browser::tools::artifacts::ArtifactPresentation;
 use maestro_app::browser::tools::artifacts::{FileType, get_file_type};
@@ -59,10 +65,13 @@ fn with_element(
             .ok_or(ArtifactUiError::BorrowConflict)?,
     )
 }
+/// Replaceable close or caller-notification operation.
+type Callback = Rc<RefCell<Option<Rc<dyn Fn()>>>>;
+
 /// Retained views and layout using the application's single selected-file slot.
 pub struct ArtifactsPanel {
     /// Native effect owner.
-    host: Rc<dyn AttachmentHost>,
+    host: Option<Rc<dyn AttachmentHost>>,
     /// Per-instance layout and modal identity.
     id: egui::Id,
     /// Installed views keyed by literal filename.
@@ -70,11 +79,20 @@ pub struct ArtifactsPanel {
     /// Whether the panel is attached to its caller's surface.
     connected: Cell<bool>,
     /// Requested collapsed property.
-    collapsed: Cell<bool>,
+    collapsed: Rc<Cell<bool>>,
     /// Requested full-screen property.
     overlay: Cell<bool>,
     /// Owned optional notification.
-    on_close: RefCell<Option<Rc<dyn Fn()>>>,
+    on_close: Callback,
+    /// Stable native placement identity for this panel instance.
+    #[cfg(target_arch = "wasm32")]
+    native_key: String,
+    /// Native application adapter initialized by page content.
+    #[cfg(target_arch = "wasm32")]
+    native: RefCell<Option<Rc<panel::State>>>,
+    /// Native callbacks and sandbox address, independently replaceable.
+    #[cfg(target_arch = "wasm32")]
+    native_options: Rc<panel::Options>,
     /// Last owned repaint target.
     context: RefCell<Option<egui::Context>>,
     /// One-shot literal tab-scroll intent, not selected state.
@@ -84,14 +102,24 @@ impl ArtifactsPanel {
     /// Create a disconnected, expanded inline panel with no views.
     #[must_use]
     pub fn new(host: Rc<dyn AttachmentHost>) -> Self {
+        Self::with_host(Some(host))
+    }
+    /// Create panel storage independently of retained effects.
+    fn with_host(host: Option<Rc<dyn AttachmentHost>>) -> Self {
         Self {
             host,
             id: crate::browser::attachment_content::identity(),
             elements: RefCell::default(),
             connected: Cell::new(false),
-            collapsed: Cell::new(false),
+            collapsed: Rc::new(Cell::new(false)),
             overlay: Cell::new(false),
-            on_close: RefCell::default(),
+            on_close: Rc::default(),
+            #[cfg(target_arch = "wasm32")]
+            native: RefCell::default(),
+            #[cfg(target_arch = "wasm32")]
+            native_key: panel::new_key(),
+            #[cfg(target_arch = "wasm32")]
+            native_options: Rc::default(),
             context: RefCell::default(),
             scroll: RefCell::default(),
         }
@@ -125,6 +153,10 @@ impl ArtifactsPanel {
     /// Wake the owned context outside its container borrow.
     fn repaint(&self) {
         let context = self.context.borrow().clone();
+        #[cfg(target_arch = "wasm32")]
+        if let Some(state) = self.native.borrow().clone() {
+            state.refresh();
+        }
         if let Some(context) = context {
             context.request_repaint();
         }
@@ -155,7 +187,11 @@ impl ArtifactsPanel {
                 Ok(())
             })?;
         } else {
-            let mut element = create_artifact_element(filename, content, Rc::clone(&self.host))?;
+            let mut element = create_artifact_element(
+                filename,
+                content,
+                Rc::clone(retained::host(self.host.as_ref())?),
+            )?;
             element.set_visibility(false, None)?;
             if self.connected.get() {
                 element.connected_callback()?;
@@ -237,15 +273,23 @@ impl ArtifactsPanel {
                 element.set_visibility(shown && active == Some(name.as_str()), modal)
             })?;
         }
-        self.host
+        retained::host(self.host.as_ref())?
             .set_overlay(self.id, modal.is_some())
             .map_err(ArtifactUiError::Host)
+    }
+}
+impl Default for ArtifactsPanel {
+    /// Empty host-free native panel.
+    fn default() -> Self {
+        Self::with_host(None)
     }
 }
 impl Drop for ArtifactsPanel {
     fn drop(&mut self) {
         self.elements.get_mut().clear();
-        let _ = self.host.set_overlay(self.id, false);
+        if let Some(host) = &self.host {
+            let _ = host.set_overlay(self.id, false);
+        }
     }
 }
 /// Construct the installed view without disguising recognized specialized files.
@@ -284,4 +328,20 @@ fn extension(filename: &str) -> String {
         .to_lowercase()
 }
 
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod native;
 mod retained;
+
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod panel;
+pub use maestro_app::browser::tools::artifacts::{Artifact, ArtifactsParams};
+
+pub use artifacts_tool_renderer::ArtifactsToolRenderer;
+#[cfg(target_arch = "wasm32")]
+pub use html_artifact::HtmlArtifact;
+pub use markdown_artifact::MarkdownArtifact;
+pub use svg_artifact::SvgArtifact;
+pub use text_artifact::TextArtifact;
+
+#[cfg(target_arch = "wasm32")]
+pub use native::NativeArtifact;

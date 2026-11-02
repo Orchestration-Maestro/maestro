@@ -8,6 +8,9 @@ mod extraction;
 mod files;
 #[cfg(not(target_arch = "wasm32"))]
 mod persistence;
+mod records;
+#[cfg(not(target_arch = "wasm32"))]
+mod storage;
 pub use conversions::migrate_session_entries;
 #[cfg(not(target_arch = "wasm32"))]
 pub use discovery::SessionListProgress;
@@ -16,6 +19,8 @@ pub use files::{
     SessionDir, find_most_recent_session, get_default_session_dir, load_entries_from_file,
     sessions_dir,
 };
+#[cfg(not(target_arch = "wasm32"))]
+pub use storage::rewrite_session_file;
 /// Context projection operations.
 pub mod context;
 mod tree;

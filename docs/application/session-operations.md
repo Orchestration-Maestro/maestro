@@ -31,6 +31,14 @@ replaces it in the shared history, so the listeners, later events, the totals
 and the stored entry read the replacement. Extension turn events count turns
 from the run's start.
 
+The session tells its listeners of every agent event in one place, and reads the
+`holdUncheckedText` setting there ([settings](../settings.md#delivery-and-transport)).
+While it is `true`, the listeners hear no text or thinking delta, and the start and
+tool-call updates of an assistant message reach them with their text and thinking
+blocks emptied. A tool's progress reaches them without its content or details.
+Tool-call and status events, the message end and the completed tool result arrive as
+they are. The extensions are told first and see the events whole.
+
 A tool call reaches the `tool_call` handlers only after the queued events are
 processed, and the arguments they edit are the ones executed. `tool_result`
 handlers may replace a result's content, details and error flag. A manual
@@ -80,7 +88,17 @@ slow handler never delays the change. An unrecognized saved level reads as
 
 `cycle_thinking_level` returns `None` for a model that cannot reason and otherwise
 moves to the next supported level, wrapping. `set_steering_mode` and
-`set_follow_up_mode` set the agent's queue mode and save it.
+`set_follow_up_mode` return `Result<(), DiagnosticErrorInfo>`. They admit the
+preference edit before changing the agent's queue mode, then save it. A refusal
+changes neither value and reaches RPC as an unsuccessful response.
+`set_transport` admits and saves the transport before updating the next request's
+live preference.
+
+SDK model, thinking and explicit tool options are admitted before initial history
+entries are appended. Recorded model and thinking values instead use stored-value
+resolution. A model that resolves to a different identity takes the ordinary
+fallback path and message; thinking resolves before the model's capability clamp.
+Resolution reports settings diagnostics without rewriting the saved session.
 
 ## Tools and the system prompt
 
@@ -104,6 +122,11 @@ selected names, their snippets and all their guidelines in order. That prompt an
 the options that built it become the base prompt that prompts restore.
 `get_all_tools` lists the registry with each tool's source.
 
+Explicit active-tool selection asks the registered decider before changing tools
+or the prompt. Automatic startup and reload ask it for each candidate, retain
+refused definitions in the registry and leave them inactive with a diagnostic.
+Without a decider, the active set and its ordering are unchanged.
+
 ## Prompts, queues and shell commands
 
 `prompt`, `steer`, `follow_up`, `send_custom_message`, `send_user_message`,
@@ -115,8 +138,11 @@ the options that built it become the base prompt that prompts restore.
 `set_session_name` records a `session_info` entry and announces the trimmed name,
 or no name when it is empty.
 
-`navigate_tree` does nothing when the target is already the leaf and refuses an
-unknown target with `Entry <id> not found`. Extensions handling
+Calling `navigate_tree` reads the target and starts the before-tree operation
+before the returned future is polled. Dropping even a never-polled result future
+leaves the move running; `abort_branch_summary` stops its summary. It does nothing
+when the target is already the leaf and refuses an unknown target with
+`Entry <id> not found`. Extensions handling
 `session_before_tree` receive the branch left behind and may cancel the move,
 supply the summary (used only when a summary was requested), or override the
 instructions and the label; a null override clears it. Otherwise, when a summary
@@ -137,12 +163,23 @@ credential failure is returned verbatim.
 `get_user_messages_for_forking` lists the user messages that have text, in entry
 order.
 
+## New sessions
+
+`AgentSessionRuntime::new_session` starts a session in the working directory. It
+follows the session it replaces: a stored session gives a new history in the same
+session directory, and a session that was never stored (in-memory history) gives
+another in-memory history, so `/new` after an unsaved session writes no session file.
+
 ## Compaction and retries
 
 `compact` shrinks the context on demand, and the session compacts on its own when
 a run ends past the reserve; a failed response is repeated after a doubling delay.
 Both announce their start and end events, can be aborted, and are described with
 the preferences they read in [compaction and retries](recovery.md).
+`set_auto_compaction_enabled` and `set_auto_retry_enabled` return
+`Result<(), DiagnosticErrorInfo>` and admit their edits before publishing them.
+RPC reports a refusal as unsuccessful; a refused compaction edit leaves the
+terminal footer unchanged.
 
 ## Statistics
 

@@ -268,7 +268,10 @@ async fn maestro_response_sessions_terminal_abort_wins_scenario() {
     let output = result.read().unwrap();
     assert_eq!(output.stop_reason, StopReason::Aborted);
     assert_eq!(output.error_message.as_deref(), Some("Request was aborted"));
-    assert_eq!(output.usage.total_tokens.to_bits(), 8.0_f64.to_bits());
+    assert_eq!(
+        output.usage.total_tokens.present().unwrap().to_bits(),
+        8.0_f64.to_bits()
+    );
     assert_eq!(
         serde_json::to_value(&*output).unwrap()["content"][0]["text"],
         "retained Ω😀"
@@ -489,7 +492,10 @@ async fn key_case(key: Option<String>, aborted: bool) {
             }
         );
         assert!(output.content.is_empty());
-        assert_eq!(output.usage.total_tokens.to_bits(), 0.0_f64.to_bits());
+        assert_eq!(
+            output.usage.total_tokens.present().unwrap().to_bits(),
+            0.0_f64.to_bits()
+        );
         assert_eq!(
             output.error_message.as_deref(),
             Some("No API key for provider: fixture-no-key")

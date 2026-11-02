@@ -40,6 +40,11 @@ just test
 ```
 
 Both must pass. `just test` runs cargo-nextest followed by Cargo doctests.
+Nextest flags a test as slow at 30 seconds and kills it at 120 seconds, with a
+ten-second shutdown grace period on Unix. Fix a slow test at its cause. A test
+that needs more than 120 seconds needs a per-test or shared-fixture exception
+with its measured cause and an open removal issue. Fixing the cause also removes
+the exception; see [test time budget](docs/development.md#test-time-budget).
 Required CI runs tests on Linux and checks compilation for Windows and macOS.
 Native Windows and macOS test runs must be restored before the first release.
 A test that binds the fixed OAuth callback port goes in a module named
@@ -90,11 +95,9 @@ AI can help group duplicates, summarize reports, and spot missing information. I
 
 No. It is a guardrail against burnout and tracker spam. Short, concrete, reproducible issues are welcome. Thoughtful contributions are welcome. Automated slop, entitlement, and large volumes of low-effort reports are not.
 
-Crates whose `Cargo.toml` sets `autotests = false` build their integration
-tests as one program from `tests/integration.rs`. Add new `tests/*.rs` files as
-unconditional out-of-line modules in that root; support modules stay in their
-existing directories. The conventions check covers every crate whose
-`Cargo.toml` sets `autotests = false` or declares an `integration` test target.
-When such a crate has top-level integration-test sources, the check requires
-`autotests = false` and exactly one test target: the runnable `integration`
-target at `tests/integration.rs`.
+Every crate builds its integration tests as one program from
+`tests/integration.rs`. Add new `tests/*.rs` files as unconditional out-of-line
+modules in that root; support modules stay in their existing directories. The
+conventions check covers every workspace member, new crates included: a member
+with top-level integration-test sources needs `autotests = false` and exactly
+one test target, the runnable `integration` target at `tests/integration.rs`.

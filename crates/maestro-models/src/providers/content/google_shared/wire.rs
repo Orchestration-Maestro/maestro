@@ -5,9 +5,11 @@ use serde_json::Value;
 use serde_json::value::RawValue;
 
 use super::ThoughtMetadata;
+use crate::arguments::replay::nullish_default;
 use crate::providers::json_text::{is_truthy, json_value, member, raw_json};
 use crate::providers::selected_fields::{count, field, native, required};
 use crate::{DiagnosticErrorInfo, JsonObject, Usage, UsageCost};
+use maestro_request::presence::Presence;
 
 /// The members of a part that decide which updates it makes.
 pub(super) struct Part<'a> {
@@ -100,15 +102,14 @@ pub(super) fn call(raw: &RawValue) -> Result<Call<'_>, DiagnosticErrorInfo> {
     })
 }
 
-/// Materialize call arguments; missing or null arguments are an empty object.
-pub(super) fn arguments(raw: Option<&RawValue>) -> Result<JsonObject, DiagnosticErrorInfo> {
+/// Materialize call arguments of any root kind; missing or null arguments are an empty
+/// object.
+pub(super) fn arguments(raw: Option<&RawValue>) -> Result<Value, DiagnosticErrorInfo> {
     let Some(raw) = raw else {
-        return Ok(JsonObject::new());
+        return Ok(JsonObject::new().into());
     };
-    match json_value(object(raw)?).map_err(|error| native(&error))? {
-        Value::Object(members) => Ok(members),
-        _ => Ok(JsonObject::new()),
-    }
+    let value = json_value(raw).map_err(|error| native(&error))?;
+    Ok(nullish_default(value))
 }
 
 /// Read a usage report; the cost is left for the model's rates to fill.
@@ -123,7 +124,7 @@ pub(super) fn usage(raw: &RawValue) -> Result<Usage, DiagnosticErrorInfo> {
         output: candidates + thoughts,
         cache_read: cached,
         cache_write: 0.0,
-        total_tokens: count(raw, "totalTokenCount")?,
+        total_tokens: Presence::Present(count(raw, "totalTokenCount")?),
         cost: UsageCost {
             input: 0.0,
             output: 0.0,

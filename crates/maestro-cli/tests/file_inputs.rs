@@ -82,7 +82,7 @@ fn expected_text(case: &Recorded, root: &std::path::Path) -> String {
 }
 
 /// The recorded attachments as their shared records.
-fn expected_images(case: &Recorded) -> Vec<ImageContent> {
+pub(crate) fn expected_images(case: &Recorded) -> Vec<ImageContent> {
     case.expected["images"]
         .as_array()
         .unwrap()
@@ -107,16 +107,16 @@ fn assert_prepared(
 }
 
 /// A supplied operation route that delegates to the native one and records its calls.
-struct SuppliedFileOperations {
+pub(crate) struct SuppliedFileOperations {
     /// The operation names in their call order.
-    calls: RefCell<Vec<&'static str>>,
+    pub(crate) calls: RefCell<Vec<&'static str>>,
     /// The native route the supplied one delegates to.
     native: NativeFileArgumentOperations,
 }
 
 impl SuppliedFileOperations {
     /// A supplied route recording its calls with unstyled diagnostics.
-    fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             calls: RefCell::new(Vec::new()),
             native: NativeFileArgumentOperations::new(false),
@@ -162,7 +162,7 @@ impl FileArgumentOperations for SuppliedFileOperations {
 
 /// The file effect one supplied route refuses.
 #[derive(Clone, Copy)]
-enum Refusal {
+pub(crate) enum Refusal {
     /// Report the path length.
     Size,
     /// Report the supported image MIME type.
@@ -174,18 +174,18 @@ enum Refusal {
 }
 
 /// A file-effect route that refuses one operation and delegates the rest.
-struct RefusingOperations {
+pub(crate) struct RefusingOperations {
     /// The operation that refuses.
     refusal: Refusal,
     /// The operation names in their call order.
-    calls: RefCell<Vec<&'static str>>,
+    pub(crate) calls: RefCell<Vec<&'static str>>,
     /// The native route the other operations delegate to.
     native: NativeFileArgumentOperations,
 }
 
 impl RefusingOperations {
     /// A supplied route refusing `refusal` with unstyled diagnostics.
-    fn new(refusal: Refusal) -> Self {
+    pub(crate) fn new(refusal: Refusal) -> Self {
         Self {
             refusal,
             calls: RefCell::new(Vec::new()),
@@ -251,6 +251,10 @@ fn native_and_supplied_file_operations_have_the_same_contract() {
     for case in support::operation("files", "files") {
         if case.expected.get("text").is_none() {
             // The fatal cases leave the process; they have their own witnesses.
+            continue;
+        }
+        if cfg!(windows) && file_names(&case).iter().any(|name| name.contains('"')) {
+            // Windows cannot store a double quote in a name, so it has no such fixture.
             continue;
         }
         assert_prepared(&case, scratch.path(), &native);
@@ -321,12 +325,13 @@ fn text_decoding_and_authored_file_names_are_not_rewritten() {
 fn read_path_variants_reach_the_existing_path_owner() {
     let scratch = scratch();
     let native = NativeFileArgumentOperations::new(false);
-    let absolute = format!("{}/first.txt", scratch.path().display());
+    let absolute = scratch.path().join("first.txt").display().to_string();
     let resolved = native.resolve_path(&absolute).unwrap();
     assert_eq!(resolved, absolute);
     for authored in ["./first.txt", "first.txt", "first.txt"] {
         let variant = native.resolve_path(authored).unwrap();
-        assert!(variant.ends_with("/first.txt"), "{authored}: {variant}");
+        let leaf = format!("{}first.txt", std::path::MAIN_SEPARATOR);
+        assert!(variant.ends_with(&leaf), "{authored}");
     }
 }
 
@@ -350,7 +355,7 @@ fn file_failure_phases_keep_their_diagnostics_and_exit_status() {
         assert_eq!(output.status.code(), Some(1), "{case}");
         let expected = recorded.expected["stderr"].as_str().unwrap().replace(
             "missing.txt",
-            &format!("{}/missing.txt", scratch.path().display()),
+            &scratch.path().join("missing.txt").display().to_string(),
         );
         assert_eq!(
             String::from_utf8_lossy(&output.stderr),
@@ -379,8 +384,8 @@ fn a_supplied_text_read_refusal_keeps_the_native_diagnostic_and_status() {
     assert_eq!(
         String::from_utf8_lossy(&output.stderr),
         format!(
-            "Error: Could not read file {}/first.txt: refused by the test route\n",
-            scratch.path().display()
+            "Error: Could not read file {}: refused by the test route\n",
+            scratch.path().join("first.txt").display()
         ),
         "a refused text read reports its path and cause"
     );

@@ -63,21 +63,24 @@ pub fn build_params(
 /// Missing reasoning requests disabled thinking. An effort is clamped to the model's supported
 /// levels first; extra-high and off both select high. Level-based families map the effort to a
 /// level and ignore custom budgets; other models use the selected budget slot or the family
-/// default. The context and cancellation are not inspected.
+/// default. The context is read only to estimate the room left for the output limit; cancellation
+/// is not inspected.
 ///
 /// # Errors
 /// Fails with `No API key for provider: <provider>` when neither a nonempty supplied key nor
 /// the environment provides one.
 pub fn build_simple_options(
     model: &Model,
+    context: &Context,
     options: Option<&SimpleStreamOptions>,
 ) -> Result<GoogleOptions, DiagnosticErrorInfo> {
-    simple_options(model, options)
+    simple_options(model, context, options)
 }
 
 /// Select simple settings without changing the hook capture family.
 fn simple_options<E: ProviderExecution>(
     model: &Model,
+    context: &Context,
     options: Option<&SimpleStreamOptions<E>>,
 ) -> Result<GoogleOptions<E>, DiagnosticErrorInfo> {
     let key = resolve_api_key(
@@ -97,7 +100,7 @@ fn simple_options<E: ProviderExecution>(
         }
     };
     Ok(GoogleOptions {
-        common: build_base_options_for(model, options, Some(&key)),
+        common: build_base_options_for(model, context, options, Some(&key)),
         tool_choice: None,
         thinking: Some(thinking),
     })
@@ -224,7 +227,7 @@ fn simple<E: ProviderExecution>(
     options: Option<SimpleStreamOptions<E>>,
     submit: E::Submission,
 ) -> Result<crate::AssistantMessageEventStream, DiagnosticErrorInfo> {
-    let selected = simple_options(&model, options.as_ref())?;
+    let selected = simple_options(&model, &context, options.as_ref())?;
     drop(options);
     Ok(dispatch(
         model,

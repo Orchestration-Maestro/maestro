@@ -2,7 +2,7 @@
 use crate::{CallbackEmitter, EventError, ExtensionAPI, ExtensionExecution};
 use std::{
     hash::{Hash, Hasher},
-    rc::Rc,
+    rc::{Rc, Weak},
 };
 
 /// An extension UI callback bound to the facade that authored it.
@@ -45,6 +45,37 @@ impl<A, R> UIHostCall<A, R> {
     #[must_use]
     pub fn ptr_eq(&self, other: &Self) -> bool {
         Rc::ptr_eq(&self.callback, &other.callback)
+    }
+
+    /// A reference to the same callback that does not keep it alive.
+    #[must_use]
+    pub fn downgrade(&self) -> WeakUIHostCall<A, R> {
+        WeakUIHostCall {
+            callback: Rc::downgrade(&self.callback),
+        }
+    }
+}
+
+/// A reference to a UI callback that does not keep the callback alive.
+///
+/// While it exists, no other callback is allocated at its address, so the address identifies
+/// the callback until it is dropped.
+pub struct WeakUIHostCall<A, R> {
+    /// The callback allocation.
+    callback: Weak<dyn Fn(A) -> Result<R, EventError>>,
+}
+
+impl<A, R> WeakUIHostCall<A, R> {
+    /// The address of the callback allocation.
+    #[must_use]
+    pub fn addr(&self) -> usize {
+        self.callback.as_ptr().cast::<()>().addr()
+    }
+
+    /// Whether a handle still retains the callback.
+    #[must_use]
+    pub fn alive(&self) -> bool {
+        self.callback.strong_count() > 0
     }
 }
 

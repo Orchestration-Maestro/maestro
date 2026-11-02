@@ -10,6 +10,155 @@ const UNDERLINE_OFF: &str = "\x1b[24m";
 const RESET: &str = "\x1b[0m";
 const RED: &str = "\x1b[31m";
 const MARKER: &str = "\x1b_maestro:c\x07";
+const PROMPT: &str = "\x1b]133;A\x07";
+
+/// An input whose escapes sit where a row breaks, the width it wraps at, the rows it wraps into
+/// and the rows `Text` pads them to.
+pub(crate) struct BoundaryCase {
+    /// Text to wrap.
+    pub text: String,
+    /// Width to wrap at.
+    pub width: usize,
+    /// Rows the wrapper returns.
+    pub wrapped: Vec<String>,
+    /// Rows `Text` renders without padding or background.
+    pub rendered: Vec<String>,
+}
+
+/// Escapes written before an overflowing CJK grapheme, after a wide blank that closes its row,
+/// or between words: a background, inverse or underline reset with a marker before or after it,
+/// two metadata escapes, and a closed hyperlink. The blank is dropped at the break, and the
+/// escapes between it and the grapheme that starts the next row move to that row.
+pub(crate) fn boundary_cases() -> Vec<BoundaryCase> {
+    let moved = |first: String, carried: String, width: usize, padding: &str| BoundaryCase {
+        text: format!("{first}{carried}\u{754c}"),
+        width,
+        rendered: vec![format!("{first}{padding}"), format!("{carried}\u{754c} ")],
+        wrapped: vec![first, format!("{carried}\u{754c}")],
+    };
+    let mut cases = Vec::new();
+    for (on, off) in [
+        ("\x1b[44m", "\x1b[49m"),
+        ("\x1b[7m", "\x1b[27m"),
+        ("\x1b[4m", "\x1b[24m"),
+    ] {
+        for (before, after) in [
+            ("", ""),
+            (MARKER, ""),
+            ("", MARKER),
+            (PROMPT, ""),
+            ("", PROMPT),
+        ] {
+            let first = if on == UNDERLINE_ON {
+                format!("ab{on}{UNDERLINE_OFF}")
+            } else {
+                format!("ab{on}")
+            };
+            let mut case = moved(first, format!("{on}{before}{off}{after}"), 5, "   ");
+            case.text = format!("ab{on}\u{3000}{before}{off}{after}\u{754c}");
+            case.rendered[1] = format!("{on}{before}{off}{after}\u{754c}   ");
+            cases.push(case);
+        }
+    }
+    cases.push(moved("ab".to_owned(), format!("{PROMPT}{MARKER}"), 3, " "));
+    let link = "\x1b]8;;https://example.com\x07";
+    let close = "\x1b]8;;\x07";
+    let mut case = moved(format!("{link}ab{close}"), format!("{link}{close}"), 3, " ");
+    case.text = format!("{link}ab{close}\u{754c}");
+    cases.push(case);
+    cases
+}
+
+/// Breaks after which a row would hold only the style it inherits: a background before a long
+/// word, and a foreground blank whose prompt or cursor marker ends the line.
+pub(crate) fn inherited_style_cases() -> Vec<BoundaryCase> {
+    let case = |text: String, wrapped: Vec<String>, rendered: Vec<String>| BoundaryCase {
+        text,
+        width: 2,
+        wrapped,
+        rendered,
+    };
+    let mut cases = Vec::new();
+    for marker in ["", MARKER] {
+        let wrapped = vec![
+            "\x1b[44mab".to_owned(),
+            format!("\x1b[44m{marker}cd"),
+            "\x1b[44me".to_owned(),
+        ];
+        let mut rendered = wrapped.clone();
+        rendered[2].push(' ');
+        cases.push(case(format!("\x1b[44mab {marker}cde"), wrapped, rendered));
+    }
+    for marker in [PROMPT, "\x1b]133;B\x07", MARKER] {
+        let row = vec![format!("ab{marker}")];
+        cases.push(case(format!("ab{RED} {marker}"), row.clone(), row));
+        let row = vec![format!("{RED}ab{marker}")];
+        cases.push(case(format!("{RED}ab {marker}"), row.clone(), row));
+    }
+    cases
+}
+
+/// Asserts the rows each case wraps into, naming every input that differs.
+fn assert_wraps(cases: &[BoundaryCase]) {
+    let actual: Vec<_> = cases
+        .iter()
+        .map(|case| {
+            (
+                case.text.as_str(),
+                wrap_text_with_ansi(&case.text, case.width),
+            )
+        })
+        .collect();
+    let expected: Vec<_> = cases
+        .iter()
+        .map(|case| (case.text.as_str(), case.wrapped.clone()))
+        .collect();
+    assert_eq!(actual, expected);
+}
+
+#[test]
+fn cjk_runs_break_between_graphemes_after_latin_text() {
+    let text = "This is an example \u{4e2d}\u{6587}\u{6c49}\u{5b57}\u{6d4b}\u{8bd5}\u{6bb5}\u{843d}\u{5185}\u{5bb9}\u{4e2d}\u{6587}\u{6c49}\u{5b57}\u{6d4b}\u{8bd5}\u{6bb5}\u{843d}\u{5185}\u{5bb9}.";
+    let wrapped = wrap_text_with_ansi(text, 40);
+    assert_eq!(
+        wrapped,
+        [
+            "This is an example \u{4e2d}\u{6587}\u{6c49}\u{5b57}\u{6d4b}\u{8bd5}\u{6bb5}\u{843d}\u{5185}\u{5bb9}",
+            "\u{4e2d}\u{6587}\u{6c49}\u{5b57}\u{6d4b}\u{8bd5}\u{6bb5}\u{843d}\u{5185}\u{5bb9}."
+        ]
+    );
+    assert!(wrapped.iter().all(|line| visible_width(line) <= 40));
+}
+
+#[test]
+fn cjk_wrapping_keeps_the_color_on_every_row() {
+    let text = format!(
+        "{RED}This is an example \u{4e2d}\u{6587}\u{6c49}\u{5b57}\u{6d4b}\u{8bd5}\u{6bb5}\u{843d}\u{5185}\u{5bb9}\u{4e2d}\u{6587}\u{6c49}\u{5b57}\u{6d4b}\u{8bd5}\u{6bb5}\u{843d}\u{5185}\u{5bb9}.{RESET}"
+    );
+    let wrapped = wrap_text_with_ansi(&text, 40);
+    assert_eq!(
+        wrapped,
+        [
+            format!(
+                "{RED}This is an example \u{4e2d}\u{6587}\u{6c49}\u{5b57}\u{6d4b}\u{8bd5}\u{6bb5}\u{843d}\u{5185}\u{5bb9}"
+            ),
+            format!(
+                "{RED}\u{4e2d}\u{6587}\u{6c49}\u{5b57}\u{6d4b}\u{8bd5}\u{6bb5}\u{843d}\u{5185}\u{5bb9}.{RESET}"
+            )
+        ]
+    );
+    assert!(wrapped.iter().all(|line| visible_width(line) <= 40));
+}
+
+#[test]
+fn rows_never_hold_inherited_style_alone() {
+    assert_wraps(&inherited_style_cases());
+}
+
+#[test]
+fn long_word_escapes_precede_the_overflowing_grapheme() {
+    assert_wraps(&boundary_cases());
+}
 
 #[test]
 fn underline_begins_with_its_content() {
@@ -248,8 +397,8 @@ fn maestro_wrap_discards_style_only_overflow() {
         ("\x1b[31m\n\n", 1, &["", "", ""]),
         ("\x1b[31m\n\n", 2, &["", "", ""]),
         ("\u{754c}\u{301}a", 1, &["\u{754c}\u{301}", "a"]),
-        ("\u{301}\u{754c}", 1, &["\u{301}\u{754c}"]),
-        ("\u{754c}\u{85}x", 1, &["\u{754c}\u{85}", "x"]),
+        ("\u{301}\u{754c}", 1, &["\u{301}", "\u{754c}"]),
+        ("\u{754c}\u{85}x", 1, &["\u{754c}", "\u{85}x"]),
         ("ab\x1b[31m  \x1b[0m", 2, &["ab\x1b[0m"]),
     ];
     for (text, width, expected) in cases {
@@ -328,10 +477,13 @@ fn sgr_continuations_keep_canonical_attributes_and_color_spelling() {
         assert_eq!(lines.len(), 3, "{control:?}");
         assert_eq!(lines[2], format!("{state}c"), "{control:?}");
         assert!(
-            lines[1].starts_with(&format!("{base}{control}b")),
-            "{control:?} is written out as spelled"
+            lines[1].starts_with(&format!("{state}b")),
+            "{control:?} reopens the state"
         );
-        assert!(lines[0].starts_with(&format!("{base}a")), "{control:?}");
+        assert!(
+            lines[0].starts_with(&format!("{base}a{control}")),
+            "{control:?} is written out as spelled before the break"
+        );
     }
 }
 
@@ -342,11 +494,11 @@ fn style_follows_the_sgr_nested_in_a_malformed_csi() {
     let cases: &[(&str, &[&str])] = &[
         (
             "\x1b[31ma\x1b[bad\x1b[39mbc",
-            &["\x1b[31ma", "\x1b[31m\x1b[bad\x1b[39mb", "c"],
+            &["\x1b[31ma\x1b[bad\x1b[39m", "b", "c"],
         ),
         (
             "\x1b[1;2ma\x1b[1x\x1b[22mbc",
-            &["\x1b[1;2ma", "\x1b[1;2m\x1b[1x\x1b[22mb", "c"],
+            &["\x1b[1;2ma\x1b[1x\x1b[22m", "b", "c"],
         ),
     ];
     for (text, expected) in cases {
@@ -364,7 +516,7 @@ const LINK_CASES: &[LinkCase] = &[
     ("<O>a\n\nb", 1, &["<O>a<C>", "", "<O>b<C>"]),
     ("<O>a\n\nb", 20, &["<O>a<C>", "", "<O>b<C>"]),
     ("<O>a\x1b[0mb", 20, &["<O>a\x1b[0mb<C>"]),
-    ("<O>a\x1b[0mb", 1, &["<O>a<C>", "<O>\x1b[0mb<C>"]),
+    ("<O>a\x1b[0mb", 1, &["<O>a\x1b[0m<C>", "<O>b<C>"]),
     ("<O>\x1b[4mab", 20, &["<O>\x1b[4mab<C>"]),
     (
         "<O>\x1b[4mab",
@@ -404,4 +556,145 @@ fn metadata_before_dropped_leading_whitespace_moves_to_the_first_line() {
         wrap_text_with_ansi(&format!("{MARKER}  ab"), 2),
         [format!("{MARKER}ab")]
     );
+}
+
+/// Inverse, underline and background blanks paint a cell, so a wrapped row keeps them and the
+/// plain whitespace inside the same run instead of dropping it as trailing whitespace.
+#[test]
+fn styled_whitespace_survives_soft_wrapping() {
+    let cases: &[(&str, usize, &[&str])] = &[
+        (
+            "ab \u{1b}[7m \u{1b}[27m cd",
+            3,
+            &["ab", " \u{1b}[7m \u{1b}[27m", "cd"],
+        ),
+        (
+            "ab \u{1b}[7m \u{1b}[27m cd",
+            2,
+            &["ab", " \u{1b}[7m \u{1b}[27m", "cd"],
+        ),
+        (
+            "ab \u{1b}[7m \u{1b}[27m cd",
+            4,
+            &["ab", " \u{1b}[7m \u{1b}[27m", "cd"],
+        ),
+        (
+            "ab \u{1b}[7m \u{1b}[27m cd",
+            8,
+            &["ab \u{1b}[7m \u{1b}[27m cd"],
+        ),
+        ("\u{1b}[7m \u{1b}[27m", 3, &["\u{1b}[7m \u{1b}[27m"]),
+        (
+            "ab\n\u{1b}[7m \u{1b}[27m\ncd",
+            1,
+            &["a", "b", "\u{1b}[7m \u{1b}[27m", "c", "d"],
+        ),
+        (
+            "a\u{1b}[7m \u{1b}[7m \u{1b}[27m\u{1b}[27mb",
+            2,
+            &["a", "\u{1b}[7m \u{1b}[7m", "\u{1b}[7m\u{1b}[27m\u{1b}[27mb"],
+        ),
+        (
+            "ab \u{1b}[7m \u{1b}[27m",
+            3,
+            &["ab", " \u{1b}[7m \u{1b}[27m"],
+        ),
+        ("- \u{1b}[4m \u{1b}[24m", 1, &["-", "\u{1b}[4m \u{1b}[24m"]),
+        (
+            "- \u{1b}[44m \u{1b}[49m",
+            1,
+            &["-", " \u{1b}[44m", "\u{1b}[44m \u{1b}[49m"],
+        ),
+    ];
+    for (text, width, expected) in cases {
+        assert_eq!(
+            wrap_text_with_ansi(text, *width),
+            *expected,
+            "{text:?} at {width}"
+        );
+    }
+}
+
+/// Whitespace that paints nothing keeps the existing correction: escape-only pieces and
+/// plain, foreground-only, bold-only and hidden-only blanks do not add rows.
+#[test]
+fn styled_whitespace_checks_do_not_keep_invisible_overflow() {
+    let cases: &[(&str, usize, &[&str])] = &[
+        (
+            "ab\u{1b}[31m \u{1b}[39mcd",
+            2,
+            &["ab", "\u{1b}[31m\u{1b}[39mcd"],
+        ),
+        (
+            "ab\u{1b}[1m \u{1b}[22mcd",
+            2,
+            &["ab", "\u{1b}[1m\u{1b}[22mcd"],
+        ),
+        (
+            "ab\u{1b}[8m \u{1b}[28mcd",
+            2,
+            &["ab", "\u{1b}[8m\u{1b}[28mcd"],
+        ),
+        ("ab \u{1b}[7m\u{1b}[27m cd", 3, &["ab", "cd"]),
+        ("ab   ", 2, &["ab"]),
+        ("  ", 1, &[""]),
+        ("a\n\nb", 1, &["a", "", "b"]),
+    ];
+    for (text, width, expected) in cases {
+        assert_eq!(
+            wrap_text_with_ansi(text, *width),
+            *expected,
+            "{text:?} at {width}"
+        );
+    }
+}
+
+#[test]
+fn consecutive_painted_continuations_keep_their_rows() {
+    let mut actual_rows = Vec::new();
+    let mut expected_rows = Vec::new();
+    for (on, off, middle, prefix) in [
+        ("\x1b[44m", "\x1b[49m", "\x1b[44m", " \x1b[44m"),
+        ("\x1b[7m", "\x1b[27m", "\x1b[7m", " \x1b[7m"),
+        ("\x1b[4m", "\x1b[24m", "\x1b[4m \x1b[24m", ""),
+    ] {
+        let mut expected = vec!["-".to_owned()];
+        if !prefix.is_empty() {
+            expected.push(prefix.to_owned());
+        }
+        expected.extend([middle.to_owned(), middle.to_owned(), format!("{on} {off}")]);
+        actual_rows.push(wrap_text_with_ansi(&format!("- {on}   {off}"), 1));
+        expected_rows.push(expected);
+    }
+    assert_eq!(actual_rows, expected_rows);
+}
+
+#[test]
+fn filtered_authored_lines_keep_a_row_and_metadata() {
+    let markers = ["", "\x1b]133;A\x07", MARKER];
+    let actual: Vec<_> = markers
+        .iter()
+        .map(|marker| wrap_text_with_ansi(&format!("a\n\x1b[31m{marker}  \x1b[39m\nb"), 1))
+        .collect();
+    let expected: Vec<_> = markers
+        .iter()
+        .map(|marker| vec!["a", marker, "b"])
+        .collect();
+    assert_eq!(actual, expected);
+}
+
+#[test]
+fn metadata_on_discarded_continuations_is_emitted_once() {
+    for marker in [MARKER, "\x1b]133;A\x07"] {
+        assert_eq!(
+            (
+                wrap_text_with_ansi(&format!("- \x1b[4m{marker} \x1b[24m"), 1),
+                wrap_text_with_ansi(&format!("\t{marker}a"), 1)
+            ),
+            (
+                vec!["-".to_owned(), format!("\x1b[4m{marker} \x1b[24m")],
+                vec![format!("{marker}a")]
+            )
+        );
+    }
 }

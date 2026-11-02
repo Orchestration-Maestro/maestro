@@ -1,7 +1,9 @@
 //! Model, effort, tool and resource-path selections of a created session.
 
 use crate::support::startup;
-use maestro_app::{Model, ModelRegistry, NoTools, ScopedModel, ThinkingLevel};
+use maestro_app::{
+    AgentSessionRuntimeDiagnosticType, Model, ModelRegistry, NoTools, ScopedModel, ThinkingLevel,
+};
 use maestro_cli::startup::main::options::{
     BuiltSessionOptions, SessionOptionInputs, build_session_options, resolve_cli_paths,
 };
@@ -111,6 +113,31 @@ fn explicit_model_and_provider_keep_catalog_diagnostics() {
         "a failed explicit selection still takes the fresh scoped default"
     );
     assert_eq!(fallback.diagnostics.len(), 1);
+}
+
+#[test]
+fn unknown_model_under_a_known_provider_warns_and_keeps_the_authored_identifier() {
+    let catalog = startup::registry(&[("alpha", &["one", "two"])]);
+    let compare = startup::comparator();
+    let settings = startup::settings(&[]);
+    let fixture = Fixture {
+        catalog: &catalog,
+        settings: &settings,
+        compare: &compare,
+    };
+
+    let custom = fixture.build(&["--provider", "alpha", "--model", "three"], &[], false);
+    assert_eq!(provider(&custom).as_deref(), Some("alpha"));
+    assert_eq!(model_id(&custom).as_deref(), Some("three"));
+    assert_eq!(custom.diagnostics.len(), 1);
+    assert_eq!(
+        custom.diagnostics[0].r#type,
+        AgentSessionRuntimeDiagnosticType::Warning
+    );
+    assert_eq!(
+        custom.diagnostics[0].message,
+        r#"Model "three" not found for provider "alpha". Using custom model id."#
+    );
 }
 
 #[test]
@@ -234,6 +261,64 @@ fn thinking_precedence_retains_inherited_scope_values() {
 }
 
 #[test]
+fn resolved_scope_keeps_its_order_and_efforts_whatever_the_selection() {
+    let catalog = startup::registry(&[("alpha", &["one", "two"]), ("beta", &["one"])]);
+    let compare = startup::comparator();
+    let settings = startup::settings(&[]);
+    let fixture = Fixture {
+        catalog: &catalog,
+        settings: &settings,
+        compare: &compare,
+    };
+    let scope = [
+        scoped(&catalog, "beta", "one", Some(ThinkingLevel::Low)),
+        scoped(&catalog, "alpha", "two", None),
+        scoped(&catalog, "alpha", "one", Some(ThinkingLevel::High)),
+    ];
+    let recorded = |built: &BuiltSessionOptions| {
+        built
+            .options
+            .scoped_models
+            .as_ref()
+            .expect("a resolved scope")
+            .iter()
+            .map(|entry| {
+                let model = entry.model.read().unwrap();
+                (
+                    format!("{}/{}", model.provider, model.id),
+                    entry.thinking_level.clone(),
+                )
+            })
+            .collect::<Vec<_>>()
+    };
+    let expected = vec![
+        ("beta/one".to_owned(), Some(ThinkingLevel::Low)),
+        ("alpha/two".to_owned(), None),
+        ("alpha/one".to_owned(), Some(ThinkingLevel::High)),
+    ];
+
+    let fresh = fixture.build(&[], &scope, false);
+    assert_eq!(recorded(&fresh), expected);
+    assert_eq!(model_id(&fresh).as_deref(), Some("one"));
+    assert_eq!(
+        fresh.options.thinking_level,
+        Some(ThinkingLevel::Low),
+        "the first entry's effort comes with it"
+    );
+    assert_eq!(recorded(&fixture.build(&[], &scope, true)), expected);
+    let explicit = fixture.build(&["--model", "alpha/two"], &scope, false);
+    assert_eq!(recorded(&explicit), expected);
+    assert_eq!(model_id(&explicit).as_deref(), Some("two"));
+    assert!(
+        fixture
+            .build(&[], &[], false)
+            .options
+            .scoped_models
+            .is_none()
+    );
+}
+
+#[test]
 fn tool_selection_keeps_allowlist_with_disable_policy() {
     let catalog = startup::registry(&[("alpha", &["one"])]);
     let compare = startup::comparator();
@@ -263,6 +348,13 @@ fn tool_selection_keeps_allowlist_with_disable_policy() {
     let ordinary = select(&[]);
     assert_eq!(ordinary.options.no_tools, None);
     assert_eq!(ordinary.options.tools, None);
+
+    let empty = select(&["--tools", ""]);
+    assert_eq!(
+        empty.options.tools,
+        Some(Vec::new()),
+        "an authored empty allowlist enables no tool, unlike an absent one"
+    );
 }
 
 #[test]
@@ -276,14 +368,16 @@ fn cli_resource_paths_keep_startup_directory() {
         "/absolute/theme".to_owned(),
     ];
     let resolved = resolve_cli_paths(cwd, Some(&authored)).unwrap().unwrap();
+    // The host's spelling of a POSIX path: Windows puts it on the working drive.
+    let native = |path: &str| maestro_app::resolve(&[path]).unwrap();
     assert_eq!(
         resolved,
         vec![
-            "/projects/current/extensions/local".to_owned(),
+            native("/projects/current/extensions/local"),
             "npm:maestro-formatter".to_owned(),
             "https://example.test/skill".to_owned(),
-            "/projects/current/  ./skills/spaced  ".to_owned(),
-            "/absolute/theme".to_owned(),
+            native("/projects/current/  ./skills/spaced  "),
+            native("/absolute/theme"),
         ]
     );
     assert_eq!(resolve_cli_paths(cwd, None).unwrap(), None);
@@ -386,4 +480,92 @@ fn selected_model_keeps_the_shared_descriptor() {
         Arc::ptr_eq(&selected, &catalog.find("alpha", "one").unwrap()),
         "the shared descriptor is retained rather than copied"
     );
+}
+
+#[test]
+fn model_patterns_use_cli_before_saved_settings() {
+    use crate::startup_runtime::{Fixture, run};
+    use maestro_app::ModelResolverOutput;
+    use maestro_cli::startup::main::runtime::create_runtime;
+    run(
+        "model_patterns_use_cli_before_saved_settings",
+        |local| async move {
+            for (stored, cli, expected) in [
+                (json!(["startup/first"]), Some(vec![]), vec![]),
+                (
+                    json!(["startup/first"]),
+                    Some(vec!["startup/second".into()]),
+                    vec!["second"],
+                ),
+                (json!(["startup/first"]), None, vec!["first"]),
+                (json!({}), None, vec![]),
+                (json!([]), None, vec![]),
+            ] {
+                let fixture = Fixture::new(
+                    local.clone(),
+                    startup::settings(&[("enabledModels", stored)]),
+                )
+                .await;
+                let parsed = maestro_cli::input::args::Args {
+                    models: cli,
+                    ..Default::default()
+                };
+                let created = create_runtime(
+                    &parsed,
+                    fixture.creation(),
+                    &mut ModelResolverOutput {
+                        stdout: &mut Vec::new(),
+                        stderr: &mut Vec::new(),
+                        color: false,
+                    },
+                )
+                .await
+                .unwrap();
+                assert_eq!(
+                    created
+                        .session
+                        .scoped_models()
+                        .iter()
+                        .map(|model| model.model.read().unwrap().id.clone())
+                        .collect::<Vec<_>>(),
+                    expected
+                );
+                created.session.dispose();
+            }
+            assert_mixed_patterns_fail(local).await;
+        },
+    );
+}
+
+/// Invalid stored members fail after the valid prefix reports its warnings.
+async fn assert_mixed_patterns_fail(local: std::rc::Rc<tokio::task::LocalSet>) {
+    use crate::startup_runtime::Fixture;
+    use maestro_app::ModelResolverOutput;
+    use maestro_cli::startup::main::runtime::create_runtime;
+    let fixture = Fixture::new(
+        local,
+        startup::settings(&[(
+            "enabledModels",
+            json!(["unmatched-prefix", null, "startup/first"]),
+        )]),
+    )
+    .await;
+    let mut warnings = Vec::new();
+    let result = create_runtime(
+        &startup::args(&[]),
+        fixture.creation(),
+        &mut ModelResolverOutput {
+            stdout: &mut Vec::new(),
+            stderr: &mut warnings,
+            color: false,
+        },
+    )
+    .await;
+    let Err(error) = result else {
+        panic!("mixed patterns must fail");
+    };
+    assert_eq!(error.message, "Model pattern must be a string");
+    let warnings = String::from_utf8(warnings).unwrap();
+    assert!(warnings.contains("unmatched-prefix"));
+    assert!(!warnings.contains("startup/first"));
 }

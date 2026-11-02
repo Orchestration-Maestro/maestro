@@ -12,13 +12,15 @@ mod footer_support;
 #[path = "support/keybindings.rs"]
 mod keybindings;
 mod login_dialog;
+mod login_provider_admission;
 mod message_rendering;
 mod model_selection;
 mod model_selector_support;
 #[path = "support/occurrences.rs"]
 mod occurrences;
-#[path = "message_support/palette.rs"]
-mod palette;
+use maestro_theme::test_support::palette;
+#[path = "support/platform_keys.rs"]
+mod platform_keys;
 mod provider_auth_selection;
 #[path = "support/recorded_keys/registry.rs"]
 mod recorded_registry;

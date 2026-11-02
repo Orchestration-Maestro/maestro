@@ -915,3 +915,117 @@ fn bash_default_themes_keep_role_colors() {
         );
     }
 }
+
+/// Renders a finished, truncated result whose text is `text`, with the full output at
+/// `/tmp/output.log`, as plain rows.
+fn truncated_rows(text: &str, expanded: bool) -> Vec<String> {
+    let env = env(0);
+    let setup = setup();
+    let _bindings = display::bind(&display::expand_keys(&render_context()));
+    let args = serde_json::json!({});
+    let ctx = display::context(&args, &setup, &env, None);
+    let mut result = text_result(text);
+    result.details = Some(maestro_tools::BashToolDetails {
+        full_output_path: Some("/tmp/output.log".into()),
+        truncation: Some(maestro_tools::truncate_tail(
+            &(1..=4001)
+                .map(|line| format!("line-{line:04}"))
+                .collect::<Vec<_>>()
+                .join("\n"),
+            maestro_tools::TruncationOptions {
+                max_lines: Some(2000),
+                max_bytes: None,
+            },
+        )),
+    });
+    let row = crate::display_support::native(
+        definition().render_result.as_ref().unwrap(),
+        &ToolRenderResultLike::from(&result),
+        maestro_tools::ToolRenderResultOptions {
+            expanded,
+            is_partial: false,
+        },
+        &env.live,
+        &ctx,
+    )
+    .unwrap();
+    row.render(120)
+        .iter()
+        .map(|line| {
+            maestro_tools::output::render_utils::strip_ansi(line)
+                .unwrap()
+                .trim_end()
+                .to_owned()
+        })
+        .collect()
+}
+
+#[test]
+fn bash_finished_truncated_card_shows_full_output_path_once() {
+    let kept = (2002..=4001)
+        .map(|line| format!("line-{line:04}"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let footer = "[Showing lines 2002-4001 of 4001. Full output: /tmp/output.log]";
+    let rows = truncated_rows(&format!("{kept}\n\n{footer}"), true);
+    let mentions: Vec<_> = rows
+        .iter()
+        .filter(|row| row.contains("Full output:"))
+        .collect();
+    assert_eq!(mentions.len(), 1, "{mentions:?}");
+    let last = rows.iter().position(|row| row == "line-4001").unwrap();
+    assert_eq!(rows[last + 1], "");
+    assert!(
+        rows[last + 2]
+            .starts_with("[Full output: /tmp/output.log. Truncated: showing 2000 of 4001 lines")
+    );
+    let collapsed = truncated_rows(&format!("{kept}\n\n{footer}"), false);
+    let mentions: Vec<_> = collapsed
+        .iter()
+        .filter(|row| row.contains("Full output:"))
+        .collect();
+    assert_eq!(mentions.len(), 1, "{mentions:?}");
+}
+
+#[test]
+fn bash_footer_alone_after_a_blank_tail_is_cut() {
+    let footer = "[Showing lines 2002-4001 of 4001. Full output: /tmp/output.log]";
+    let rows = truncated_rows(&format!("  \n\n{footer}"), true);
+    let mentions: Vec<_> = rows
+        .iter()
+        .filter(|row| row.contains("Full output:"))
+        .collect();
+    assert_eq!(mentions.len(), 1, "{mentions:?}");
+}
+
+#[test]
+fn bash_expand_hint_closes_in_the_muted_colour() {
+    let env = env(0);
+    let setup = setup();
+    let _bindings = display::bind(&display::expand_keys(&render_context()));
+    let args = serde_json::json!({});
+    let ctx = display::context(&args, &setup, &env, None);
+    let text = (1..=20).map(|line| line.to_string()).collect::<Vec<_>>();
+    let row = crate::display_support::native(
+        definition().render_result.as_ref().unwrap(),
+        &ToolRenderResultLike::from(&text_result(&text.join("\n"))),
+        maestro_tools::ToolRenderResultOptions {
+            expanded: false,
+            is_partial: false,
+        },
+        &env.live,
+        &ctx,
+    )
+    .unwrap();
+    let theme = env.live.get().unwrap();
+    let close = theme.fg(&maestro_theme::ThemeColor::Muted, ")").unwrap();
+    let rows = row.render(120);
+    let hint = rows
+        .iter()
+        .find(|row| row.contains("earlier lines"))
+        .unwrap();
+    assert!(
+        hint.contains(&format!("to expand\x1b[39m{close}")),
+        "{hint:?}"
+    );
+}

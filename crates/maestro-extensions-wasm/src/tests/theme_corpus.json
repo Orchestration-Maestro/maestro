@@ -1,0 +1,1006 @@
+{
+  "palettes": {
+    "dark": {
+      "name": "dark",
+      "sourcePath": "/themes/dark.json",
+      "sourceInfo": null,
+      "mode": "truecolor",
+      "replies": [
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            ""
+          ],
+          "answer": {
+            "ok": "\u001b[38;2;138;190;183m\u001b[39m"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            "plain"
+          ],
+          "answer": {
+            "ok": "\u001b[38;2;138;190;183mplain\u001b[39m"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            "a\nb"
+          ],
+          "answer": {
+            "ok": "\u001b[38;2;138;190;183ma\nb\u001b[39m"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            "a\r\nb"
+          ],
+          "answer": {
+            "ok": "\u001b[38;2;138;190;183ma\r\nb\u001b[39m"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            "\u001b[22minner"
+          ],
+          "answer": {
+            "ok": "\u001b[38;2;138;190;183m\u001b[22minner\u001b[39m"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            "界 👩‍💻"
+          ],
+          "answer": {
+            "ok": "\u001b[38;2;138;190;183m界 👩‍💻\u001b[39m"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            " "
+          ],
+          "answer": {
+            "ok": "\u001b[38;2;138;190;183m \u001b[39m"
+          }
+        },
+        {
+          "method": "bg",
+          "operands": [
+            "selectedBg",
+            ""
+          ],
+          "answer": {
+            "ok": "\u001b[48;2;58;58;74m\u001b[49m"
+          }
+        },
+        {
+          "method": "bg",
+          "operands": [
+            "selectedBg",
+            "plain"
+          ],
+          "answer": {
+            "ok": "\u001b[48;2;58;58;74mplain\u001b[49m"
+          }
+        },
+        {
+          "method": "bg",
+          "operands": [
+            "selectedBg",
+            "a\nb"
+          ],
+          "answer": {
+            "ok": "\u001b[48;2;58;58;74ma\nb\u001b[49m"
+          }
+        },
+        {
+          "method": "bg",
+          "operands": [
+            "selectedBg",
+            "a\r\nb"
+          ],
+          "answer": {
+            "ok": "\u001b[48;2;58;58;74ma\r\nb\u001b[49m"
+          }
+        },
+        {
+          "method": "bg",
+          "operands": [
+            "selectedBg",
+            "\u001b[22minner"
+          ],
+          "answer": {
+            "ok": "\u001b[48;2;58;58;74m\u001b[22minner\u001b[49m"
+          }
+        },
+        {
+          "method": "bg",
+          "operands": [
+            "selectedBg",
+            "界 👩‍💻"
+          ],
+          "answer": {
+            "ok": "\u001b[48;2;58;58;74m界 👩‍💻\u001b[49m"
+          }
+        },
+        {
+          "method": "bg",
+          "operands": [
+            "selectedBg",
+            " "
+          ],
+          "answer": {
+            "ok": "\u001b[48;2;58;58;74m \u001b[49m"
+          }
+        },
+        {
+          "method": "bold",
+          "operands": [
+            ""
+          ],
+          "answer": {
+            "ok": ""
+          }
+        },
+        {
+          "method": "bold",
+          "operands": [
+            "plain"
+          ],
+          "answer": {
+            "ok": "\u001b[1mplain\u001b[22m"
+          }
+        },
+        {
+          "method": "bold",
+          "operands": [
+            "a\nb"
+          ],
+          "answer": {
+            "ok": "\u001b[1ma\u001b[22m\n\u001b[1mb\u001b[22m"
+          }
+        },
+        {
+          "method": "bold",
+          "operands": [
+            "a\r\nb"
+          ],
+          "answer": {
+            "ok": "\u001b[1ma\u001b[22m\r\n\u001b[1mb\u001b[22m"
+          }
+        },
+        {
+          "method": "bold",
+          "operands": [
+            "\u001b[22minner"
+          ],
+          "answer": {
+            "ok": "\u001b[1m\u001b[22m\u001b[1minner\u001b[22m"
+          }
+        },
+        {
+          "method": "bold",
+          "operands": [
+            "界 👩‍💻"
+          ],
+          "answer": {
+            "ok": "\u001b[1m界 👩‍💻\u001b[22m"
+          }
+        },
+        {
+          "method": "bold",
+          "operands": [
+            " "
+          ],
+          "answer": {
+            "ok": "\u001b[1m \u001b[22m"
+          }
+        },
+        {
+          "method": "italic",
+          "operands": [
+            ""
+          ],
+          "answer": {
+            "ok": ""
+          }
+        },
+        {
+          "method": "italic",
+          "operands": [
+            "plain"
+          ],
+          "answer": {
+            "ok": "\u001b[3mplain\u001b[23m"
+          }
+        },
+        {
+          "method": "italic",
+          "operands": [
+            "a\nb"
+          ],
+          "answer": {
+            "ok": "\u001b[3ma\u001b[23m\n\u001b[3mb\u001b[23m"
+          }
+        },
+        {
+          "method": "italic",
+          "operands": [
+            "a\r\nb"
+          ],
+          "answer": {
+            "ok": "\u001b[3ma\u001b[23m\r\n\u001b[3mb\u001b[23m"
+          }
+        },
+        {
+          "method": "italic",
+          "operands": [
+            "\u001b[22minner"
+          ],
+          "answer": {
+            "ok": "\u001b[3m\u001b[22minner\u001b[23m"
+          }
+        },
+        {
+          "method": "italic",
+          "operands": [
+            "界 👩‍💻"
+          ],
+          "answer": {
+            "ok": "\u001b[3m界 👩‍💻\u001b[23m"
+          }
+        },
+        {
+          "method": "italic",
+          "operands": [
+            " "
+          ],
+          "answer": {
+            "ok": "\u001b[3m \u001b[23m"
+          }
+        },
+        {
+          "method": "underline",
+          "operands": [
+            ""
+          ],
+          "answer": {
+            "ok": ""
+          }
+        },
+        {
+          "method": "underline",
+          "operands": [
+            "plain"
+          ],
+          "answer": {
+            "ok": "\u001b[4mplain\u001b[24m"
+          }
+        },
+        {
+          "method": "underline",
+          "operands": [
+            "a\nb"
+          ],
+          "answer": {
+            "ok": "\u001b[4ma\u001b[24m\n\u001b[4mb\u001b[24m"
+          }
+        },
+        {
+          "method": "underline",
+          "operands": [
+            "a\r\nb"
+          ],
+          "answer": {
+            "ok": "\u001b[4ma\u001b[24m\r\n\u001b[4mb\u001b[24m"
+          }
+        },
+        {
+          "method": "underline",
+          "operands": [
+            "\u001b[22minner"
+          ],
+          "answer": {
+            "ok": "\u001b[4m\u001b[22minner\u001b[24m"
+          }
+        },
+        {
+          "method": "underline",
+          "operands": [
+            "界 👩‍💻"
+          ],
+          "answer": {
+            "ok": "\u001b[4m界 👩‍💻\u001b[24m"
+          }
+        },
+        {
+          "method": "underline",
+          "operands": [
+            " "
+          ],
+          "answer": {
+            "ok": "\u001b[4m \u001b[24m"
+          }
+        },
+        {
+          "method": "inverse",
+          "operands": [
+            ""
+          ],
+          "answer": {
+            "ok": ""
+          }
+        },
+        {
+          "method": "inverse",
+          "operands": [
+            "plain"
+          ],
+          "answer": {
+            "ok": "\u001b[7mplain\u001b[27m"
+          }
+        },
+        {
+          "method": "inverse",
+          "operands": [
+            "a\nb"
+          ],
+          "answer": {
+            "ok": "\u001b[7ma\u001b[27m\n\u001b[7mb\u001b[27m"
+          }
+        },
+        {
+          "method": "inverse",
+          "operands": [
+            "a\r\nb"
+          ],
+          "answer": {
+            "ok": "\u001b[7ma\u001b[27m\r\n\u001b[7mb\u001b[27m"
+          }
+        },
+        {
+          "method": "inverse",
+          "operands": [
+            "\u001b[22minner"
+          ],
+          "answer": {
+            "ok": "\u001b[7m\u001b[22minner\u001b[27m"
+          }
+        },
+        {
+          "method": "inverse",
+          "operands": [
+            "界 👩‍💻"
+          ],
+          "answer": {
+            "ok": "\u001b[7m界 👩‍💻\u001b[27m"
+          }
+        },
+        {
+          "method": "inverse",
+          "operands": [
+            " "
+          ],
+          "answer": {
+            "ok": "\u001b[7m \u001b[27m"
+          }
+        },
+        {
+          "method": "strikethrough",
+          "operands": [
+            ""
+          ],
+          "answer": {
+            "ok": ""
+          }
+        },
+        {
+          "method": "strikethrough",
+          "operands": [
+            "plain"
+          ],
+          "answer": {
+            "ok": "\u001b[9mplain\u001b[29m"
+          }
+        },
+        {
+          "method": "strikethrough",
+          "operands": [
+            "a\nb"
+          ],
+          "answer": {
+            "ok": "\u001b[9ma\u001b[29m\n\u001b[9mb\u001b[29m"
+          }
+        },
+        {
+          "method": "strikethrough",
+          "operands": [
+            "a\r\nb"
+          ],
+          "answer": {
+            "ok": "\u001b[9ma\u001b[29m\r\n\u001b[9mb\u001b[29m"
+          }
+        },
+        {
+          "method": "strikethrough",
+          "operands": [
+            "\u001b[22minner"
+          ],
+          "answer": {
+            "ok": "\u001b[9m\u001b[22minner\u001b[29m"
+          }
+        },
+        {
+          "method": "strikethrough",
+          "operands": [
+            "界 👩‍💻"
+          ],
+          "answer": {
+            "ok": "\u001b[9m界 👩‍💻\u001b[29m"
+          }
+        },
+        {
+          "method": "strikethrough",
+          "operands": [
+            " "
+          ],
+          "answer": {
+            "ok": "\u001b[9m \u001b[29m"
+          }
+        },
+        {
+          "method": "bold",
+          "operands": [
+            "before\u001b[22mafter"
+          ],
+          "answer": {
+            "ok": "\u001b[1mbefore\u001b[22m\u001b[1mafter\u001b[22m"
+          }
+        },
+        {
+          "method": "italic",
+          "operands": [
+            "before\u001b[23mafter"
+          ],
+          "answer": {
+            "ok": "\u001b[3mbefore\u001b[23m\u001b[3mafter\u001b[23m"
+          }
+        },
+        {
+          "method": "underline",
+          "operands": [
+            "before\u001b[24mafter"
+          ],
+          "answer": {
+            "ok": "\u001b[4mbefore\u001b[24m\u001b[4mafter\u001b[24m"
+          }
+        },
+        {
+          "method": "inverse",
+          "operands": [
+            "before\u001b[27mafter"
+          ],
+          "answer": {
+            "ok": "\u001b[7mbefore\u001b[27m\u001b[7mafter\u001b[27m"
+          }
+        },
+        {
+          "method": "strikethrough",
+          "operands": [
+            "before\u001b[29mafter"
+          ],
+          "answer": {
+            "ok": "\u001b[9mbefore\u001b[29m\u001b[9mafter\u001b[29m"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "missing",
+            "text"
+          ],
+          "answer": {
+            "error": "Unknown theme color: missing"
+          }
+        },
+        {
+          "method": "bg",
+          "operands": [
+            "missing",
+            "text"
+          ],
+          "answer": {
+            "error": "Unknown theme background color: missing"
+          }
+        },
+        {
+          "method": "getFgAnsi",
+          "operands": [
+            "missing"
+          ],
+          "answer": {
+            "error": "Unknown theme color: missing"
+          }
+        },
+        {
+          "method": "getBgAnsi",
+          "operands": [
+            "missing"
+          ],
+          "answer": {
+            "error": "Unknown theme background color: missing"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            "x"
+          ],
+          "answer": {
+            "ok": "\u001b[38;2;138;190;183mx\u001b[39m"
+          }
+        },
+        {
+          "method": "bg",
+          "operands": [
+            "selectedBg",
+            "x"
+          ],
+          "answer": {
+            "ok": "\u001b[48;2;58;58;74mx\u001b[49m"
+          }
+        },
+        {
+          "method": "getFgAnsi",
+          "operands": [
+            "accent"
+          ],
+          "answer": {
+            "ok": "\u001b[38;2;138;190;183m"
+          }
+        },
+        {
+          "method": "getBgAnsi",
+          "operands": [
+            "selectedBg"
+          ],
+          "answer": {
+            "ok": "\u001b[48;2;58;58;74m"
+          }
+        },
+        {
+          "method": "thinkingBorder",
+          "operands": [
+            "off",
+            "│ 雪 "
+          ],
+          "answer": {
+            "ok": "\u001b[38;2;80;80;80m│ 雪 \u001b[39m"
+          }
+        },
+        {
+          "method": "thinkingBorder",
+          "operands": [
+            "minimal",
+            "│ 雪 "
+          ],
+          "answer": {
+            "ok": "\u001b[38;2;110;110;110m│ 雪 \u001b[39m"
+          }
+        },
+        {
+          "method": "thinkingBorder",
+          "operands": [
+            "low",
+            "│ 雪 "
+          ],
+          "answer": {
+            "ok": "\u001b[38;2;95;135;175m│ 雪 \u001b[39m"
+          }
+        },
+        {
+          "method": "thinkingBorder",
+          "operands": [
+            "medium",
+            "│ 雪 "
+          ],
+          "answer": {
+            "ok": "\u001b[38;2;129;162;190m│ 雪 \u001b[39m"
+          }
+        },
+        {
+          "method": "thinkingBorder",
+          "operands": [
+            "high",
+            "│ 雪 "
+          ],
+          "answer": {
+            "ok": "\u001b[38;2;178;148;187m│ 雪 \u001b[39m"
+          }
+        },
+        {
+          "method": "thinkingBorder",
+          "operands": [
+            "xhigh",
+            "│ 雪 "
+          ],
+          "answer": {
+            "ok": "\u001b[38;2;209;131;232m│ 雪 \u001b[39m"
+          }
+        },
+        {
+          "method": "bashModeBorder",
+          "operands": [
+            "│ 雪 "
+          ],
+          "answer": {
+            "ok": "\u001b[38;2;181;189;104m│ 雪 \u001b[39m"
+          }
+        }
+      ]
+    },
+    "quantized": {
+      "name": "dark",
+      "sourcePath": "/themes/dark.json",
+      "sourceInfo": null,
+      "mode": "256color",
+      "replies": [
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            "x"
+          ],
+          "answer": {
+            "ok": "\u001b[38;5;109mx\u001b[39m"
+          }
+        },
+        {
+          "method": "bg",
+          "operands": [
+            "selectedBg",
+            "x"
+          ],
+          "answer": {
+            "ok": "\u001b[48;5;59mx\u001b[49m"
+          }
+        },
+        {
+          "method": "getFgAnsi",
+          "operands": [
+            "accent"
+          ],
+          "answer": {
+            "ok": "\u001b[38;5;109m"
+          }
+        },
+        {
+          "method": "getBgAnsi",
+          "operands": [
+            "selectedBg"
+          ],
+          "answer": {
+            "ok": "\u001b[48;5;59m"
+          }
+        },
+        {
+          "method": "thinkingBorder",
+          "operands": [
+            "off",
+            "│ 雪 "
+          ],
+          "answer": {
+            "ok": "\u001b[38;5;239m│ 雪 \u001b[39m"
+          }
+        },
+        {
+          "method": "thinkingBorder",
+          "operands": [
+            "minimal",
+            "│ 雪 "
+          ],
+          "answer": {
+            "ok": "\u001b[38;5;242m│ 雪 \u001b[39m"
+          }
+        },
+        {
+          "method": "thinkingBorder",
+          "operands": [
+            "low",
+            "│ 雪 "
+          ],
+          "answer": {
+            "ok": "\u001b[38;5;67m│ 雪 \u001b[39m"
+          }
+        },
+        {
+          "method": "thinkingBorder",
+          "operands": [
+            "medium",
+            "│ 雪 "
+          ],
+          "answer": {
+            "ok": "\u001b[38;5;109m│ 雪 \u001b[39m"
+          }
+        },
+        {
+          "method": "thinkingBorder",
+          "operands": [
+            "high",
+            "│ 雪 "
+          ],
+          "answer": {
+            "ok": "\u001b[38;5;139m│ 雪 \u001b[39m"
+          }
+        },
+        {
+          "method": "thinkingBorder",
+          "operands": [
+            "xhigh",
+            "│ 雪 "
+          ],
+          "answer": {
+            "ok": "\u001b[38;5;176m│ 雪 \u001b[39m"
+          }
+        },
+        {
+          "method": "bashModeBorder",
+          "operands": [
+            "│ 雪 "
+          ],
+          "answer": {
+            "ok": "\u001b[38;5;143m│ 雪 \u001b[39m"
+          }
+        }
+      ]
+    },
+    "alternate": {
+      "name": "alternate",
+      "sourcePath": "/authored/theme.json",
+      "sourceInfo": {
+        "path": "authored",
+        "source": "local",
+        "scope": "user",
+        "origin": "top-level"
+      },
+      "mode": "truecolor",
+      "replies": [
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            "x"
+          ],
+          "answer": {
+            "ok": "\u001b[38;2;1;2;3mx\u001b[39m"
+          }
+        },
+        {
+          "method": "bg",
+          "operands": [
+            "selectedBg",
+            "x"
+          ],
+          "answer": {
+            "ok": "\u001b[48;2;4;5;6mx\u001b[49m"
+          }
+        },
+        {
+          "method": "getFgAnsi",
+          "operands": [
+            "accent"
+          ],
+          "answer": {
+            "ok": "\u001b[38;2;1;2;3m"
+          }
+        },
+        {
+          "method": "getBgAnsi",
+          "operands": [
+            "selectedBg"
+          ],
+          "answer": {
+            "ok": "\u001b[48;2;4;5;6m"
+          }
+        }
+      ]
+    },
+    "custom-header-dark": {
+      "name": "dark",
+      "sourcePath": null,
+      "sourceInfo": null,
+      "mode": "truecolor",
+      "replies": [
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            "       ▄"
+          ],
+          "answer": {
+            "ok": "<dark accent>       ▄</accent>"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            "      ▀█▀"
+          ],
+          "answer": {
+            "ok": "<dark accent>      ▀█▀</accent>"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            "       ▀"
+          ],
+          "answer": {
+            "ok": "<dark accent>       ▀</accent>"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            "  █▄       ▄█"
+          ],
+          "answer": {
+            "ok": "<dark accent>  █▄       ▄█</accent>"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            "  █ ▀▄   ▄▀ █"
+          ],
+          "answer": {
+            "ok": "<dark accent>  █ ▀▄   ▄▀ █</accent>"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            "  █   ▀█▀   █"
+          ],
+          "answer": {
+            "ok": "<dark accent>  █   ▀█▀   █</accent>"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "muted",
+            "   Custom header"
+          ],
+          "answer": {
+            "ok": "<dark muted>   Custom header</muted>"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "dim",
+            " v9.8.7-host"
+          ],
+          "answer": {
+            "ok": "<dark dim> v9.8.7-host</dim>"
+          }
+        }
+      ]
+    },
+    "custom-header-alternate": {
+      "name": "alternate",
+      "sourcePath": null,
+      "sourceInfo": null,
+      "mode": "truecolor",
+      "replies": [
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            "       ▄"
+          ],
+          "answer": {
+            "ok": "<alternate accent>       ▄</accent>"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            "      ▀█▀"
+          ],
+          "answer": {
+            "ok": "<alternate accent>      ▀█▀</accent>"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            "       ▀"
+          ],
+          "answer": {
+            "ok": "<alternate accent>       ▀</accent>"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            "  █▄       ▄█"
+          ],
+          "answer": {
+            "ok": "<alternate accent>  █▄       ▄█</accent>"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            "  █ ▀▄   ▄▀ █"
+          ],
+          "answer": {
+            "ok": "<alternate accent>  █ ▀▄   ▄▀ █</accent>"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            "  █   ▀█▀   █"
+          ],
+          "answer": {
+            "ok": "<alternate accent>  █   ▀█▀   █</accent>"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "muted",
+            "   Custom header"
+          ],
+          "answer": {
+            "ok": "<alternate muted>   Custom header</muted>"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "dim",
+            " v9.8.7-host"
+          ],
+          "answer": {
+            "ok": "<alternate dim> v9.8.7-host</dim>"
+          }
+        }
+      ]
+    }
+  },
+  "edited": {
+    "path": "edited",
+    "source": "local",
+    "scope": "project",
+    "origin": "package",
+    "baseDir": "/authored"
+  }
+}

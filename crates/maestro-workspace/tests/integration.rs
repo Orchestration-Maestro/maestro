@@ -1,6 +1,7 @@
 //! Workspace topology behaviour.
 #![cfg(test)]
 mod git;
+mod git_config;
 mod identity;
 mod layout;
 mod metadata_tokens;

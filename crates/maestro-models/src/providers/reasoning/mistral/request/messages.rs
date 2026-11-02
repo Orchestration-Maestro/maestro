@@ -1,7 +1,7 @@
 //! Borrowed message views for callback payloads.
 
 use super::{tool_ids::ToolCallIds, trim};
-use crate::providers::json_text::compact_object;
+use crate::arguments::replay::truthy_text;
 use crate::{
     AssistantContent, Context, DiagnosticErrorInfo, Message, Model, UserBlock, UserContent,
 };
@@ -161,7 +161,7 @@ fn assistant_message(
                 r#type: "function",
                 function: Function {
                     name: &call.name,
-                    arguments: compact_object(&call.arguments).map_err(super::native_error)?,
+                    arguments: truthy_text(&call.arguments).map_err(super::native_error)?,
                 },
             }),
             _ => {}

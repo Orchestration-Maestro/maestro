@@ -1,0 +1,5512 @@
+[
+  {
+    "test": "helper_width_keeps_unicode_and_ansi",
+    "operation": "u.visibleWidth",
+    "args": [
+      ""
+    ],
+    "context": {},
+    "ok": 0
+  },
+  {
+    "test": "helper_width_keeps_unicode_and_ansi",
+    "operation": "u.visibleWidth",
+    "args": [
+      "plain"
+    ],
+    "context": {},
+    "ok": 5
+  },
+  {
+    "test": "helper_width_keeps_unicode_and_ansi",
+    "operation": "u.visibleWidth",
+    "args": [
+      "\u001b[31mred\u001b[0m"
+    ],
+    "context": {},
+    "ok": 3
+  },
+  {
+    "test": "helper_width_keeps_unicode_and_ansi",
+    "operation": "u.visibleWidth",
+    "args": [
+      "a\t中"
+    ],
+    "context": {},
+    "ok": 6
+  },
+  {
+    "test": "helper_width_keeps_unicode_and_ansi",
+    "operation": "u.visibleWidth",
+    "args": [
+      "é👩‍💻"
+    ],
+    "context": {},
+    "ok": 3
+  },
+  {
+    "test": "helper_width_keeps_unicode_and_ansi",
+    "operation": "u.visibleWidth",
+    "args": [
+      "\u001b]8;;https://example.org\u0007x\u001b]8;;\u0007"
+    ],
+    "context": {},
+    "ok": 1
+  },
+  {
+    "test": "helper_terminal_normalization_uses_native_owner",
+    "operation": "u.normalizeTerminalOutput",
+    "args": [
+      ""
+    ],
+    "context": {},
+    "ok": ""
+  },
+  {
+    "test": "helper_terminal_normalization_uses_native_owner",
+    "operation": "u.normalizeTerminalOutput",
+    "args": [
+      "a\tb\r\nc\rd"
+    ],
+    "context": {},
+    "ok": "a\tb\r\nc\rd"
+  },
+  {
+    "test": "helper_terminal_normalization_uses_native_owner",
+    "operation": "u.normalizeTerminalOutput",
+    "args": [
+      "ำຳ"
+    ],
+    "context": {},
+    "ok": "ําໍາ"
+  },
+  {
+    "test": "helper_ansi_offsets_follow_utf8_boundaries",
+    "operation": "u.extractAnsiCode",
+    "args": [
+      "x\u001b[31my",
+      1
+    ],
+    "context": {},
+    "ok": {
+      "code": "\u001b[31m",
+      "length": 5
+    }
+  },
+  {
+    "test": "helper_ansi_offsets_follow_utf8_boundaries",
+    "operation": "u.extractAnsiCode",
+    "args": [
+      "é\u001b[0m",
+      2
+    ],
+    "context": {},
+    "ok": {
+      "code": "\u001b[0m",
+      "length": 4
+    }
+  },
+  {
+    "test": "helper_ansi_offsets_follow_utf8_boundaries",
+    "operation": "u.extractAnsiCode",
+    "args": [
+      "plain",
+      0
+    ],
+    "context": {},
+    "ok": null
+  },
+  {
+    "test": "helper_ansi_offsets_follow_utf8_boundaries",
+    "operation": "u.extractAnsiCode",
+    "args": [
+      "\u001b]8;;url\u0007",
+      0
+    ],
+    "context": {},
+    "ok": {
+      "code": "\u001b]8;;url\u0007",
+      "length": 9
+    }
+  },
+  {
+    "test": "helper_ansi_offsets_follow_utf8_boundaries",
+    "operation": "u.extractAnsiCode",
+    "args": [
+      "\u001b[",
+      0
+    ],
+    "context": {},
+    "ok": null
+  },
+  {
+    "test": "helper_character_classes_keep_boundaries",
+    "operation": "u.isWhitespaceChar",
+    "args": [
+      ""
+    ],
+    "context": {},
+    "ok": false
+  },
+  {
+    "test": "helper_character_classes_keep_boundaries",
+    "operation": "u.isPunctuationChar",
+    "args": [
+      ""
+    ],
+    "context": {},
+    "ok": false
+  },
+  {
+    "test": "helper_character_classes_keep_boundaries",
+    "operation": "u.isWhitespaceChar",
+    "args": [
+      " "
+    ],
+    "context": {},
+    "ok": true
+  },
+  {
+    "test": "helper_character_classes_keep_boundaries",
+    "operation": "u.isPunctuationChar",
+    "args": [
+      " "
+    ],
+    "context": {},
+    "ok": false
+  },
+  {
+    "test": "helper_character_classes_keep_boundaries",
+    "operation": "u.isWhitespaceChar",
+    "args": [
+      "\t"
+    ],
+    "context": {},
+    "ok": true
+  },
+  {
+    "test": "helper_character_classes_keep_boundaries",
+    "operation": "u.isPunctuationChar",
+    "args": [
+      "\t"
+    ],
+    "context": {},
+    "ok": false
+  },
+  {
+    "test": "helper_character_classes_keep_boundaries",
+    "operation": "u.isWhitespaceChar",
+    "args": [
+      "\n"
+    ],
+    "context": {},
+    "ok": true
+  },
+  {
+    "test": "helper_character_classes_keep_boundaries",
+    "operation": "u.isPunctuationChar",
+    "args": [
+      "\n"
+    ],
+    "context": {},
+    "ok": false
+  },
+  {
+    "test": "helper_character_classes_keep_boundaries",
+    "operation": "u.isWhitespaceChar",
+    "args": [
+      "﻿"
+    ],
+    "context": {},
+    "ok": true
+  },
+  {
+    "test": "helper_character_classes_keep_boundaries",
+    "operation": "u.isPunctuationChar",
+    "args": [
+      "﻿"
+    ],
+    "context": {},
+    "ok": false
+  },
+  {
+    "test": "helper_character_classes_keep_boundaries",
+    "operation": "u.isWhitespaceChar",
+    "args": [
+      ""
+    ],
+    "context": {},
+    "ok": false
+  },
+  {
+    "test": "helper_character_classes_keep_boundaries",
+    "operation": "u.isPunctuationChar",
+    "args": [
+      ""
+    ],
+    "context": {},
+    "ok": false
+  },
+  {
+    "test": "helper_character_classes_keep_boundaries",
+    "operation": "u.isWhitespaceChar",
+    "args": [
+      "."
+    ],
+    "context": {},
+    "ok": false
+  },
+  {
+    "test": "helper_character_classes_keep_boundaries",
+    "operation": "u.isPunctuationChar",
+    "args": [
+      "."
+    ],
+    "context": {},
+    "ok": true
+  },
+  {
+    "test": "helper_character_classes_keep_boundaries",
+    "operation": "u.isWhitespaceChar",
+    "args": [
+      "，"
+    ],
+    "context": {},
+    "ok": false
+  },
+  {
+    "test": "helper_character_classes_keep_boundaries",
+    "operation": "u.isPunctuationChar",
+    "args": [
+      "，"
+    ],
+    "context": {},
+    "ok": false
+  },
+  {
+    "test": "helper_character_classes_keep_boundaries",
+    "operation": "u.isWhitespaceChar",
+    "args": [
+      "a"
+    ],
+    "context": {},
+    "ok": false
+  },
+  {
+    "test": "helper_character_classes_keep_boundaries",
+    "operation": "u.isPunctuationChar",
+    "args": [
+      "a"
+    ],
+    "context": {},
+    "ok": false
+  },
+  {
+    "test": "helper_character_classes_keep_boundaries",
+    "operation": "u.isWhitespaceChar",
+    "args": [
+      "🙂"
+    ],
+    "context": {},
+    "ok": false
+  },
+  {
+    "test": "helper_character_classes_keep_boundaries",
+    "operation": "u.isPunctuationChar",
+    "args": [
+      "🙂"
+    ],
+    "context": {},
+    "ok": false
+  },
+  {
+    "test": "helper_character_classes_keep_boundaries",
+    "operation": "u.isWhitespaceChar",
+    "args": [
+      "a "
+    ],
+    "context": {},
+    "ok": true
+  },
+  {
+    "test": "helper_character_classes_keep_boundaries",
+    "operation": "u.isPunctuationChar",
+    "args": [
+      "a "
+    ],
+    "context": {},
+    "ok": false
+  },
+  {
+    "test": "helper_character_classes_keep_boundaries",
+    "operation": "u.isWhitespaceChar",
+    "args": [
+      "a?"
+    ],
+    "context": {},
+    "ok": false
+  },
+  {
+    "test": "helper_character_classes_keep_boundaries",
+    "operation": "u.isPunctuationChar",
+    "args": [
+      "a?"
+    ],
+    "context": {},
+    "ok": true
+  },
+  {
+    "test": "helper_compiled_guest_calls_production_owners",
+    "operation": "composition",
+    "args": [
+      "中"
+    ],
+    "ok": {
+      "width": 2,
+      "normalized": "ําໍາ",
+      "ansi": {
+        "code": "\u001b[0m",
+        "length": 4
+      },
+      "whitespace": true,
+      "punctuation": true,
+      "background": {
+        "value": "\u001b[44mx   \u001b[0m",
+        "calls": [
+          "x   "
+        ]
+      },
+      "fuzzy": {
+        "ids": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "calls": [],
+        "identity": true
+      },
+      "metadata": {
+        "frontmatter": {
+          "kind": "mapping",
+          "value": [
+            [
+              "x",
+              {
+                "kind": "number",
+                "value": {
+                  "$number": "NaN"
+                }
+              }
+            ],
+            [
+              "y",
+              {
+                "kind": "number",
+                "value": {
+                  "$number": "Infinity"
+                }
+              }
+            ],
+            [
+              "z",
+              {
+                "kind": "number",
+                "value": {
+                  "$number": "-Infinity"
+                }
+              }
+            ]
+          ]
+        },
+        "body": "body"
+      },
+      "path": "${ROOT}${SEP}café.txt",
+      "key": "ctrl+x",
+      "version": "installed-component-host",
+      "transcript": "[User]: hello",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1.0
+        }
+      ],
+      "truncation": {
+        "content": "",
+        "truncated": false,
+        "truncatedBy": null,
+        "totalLines": 0.0,
+        "totalBytes": 0.0,
+        "outputLines": 0.0,
+        "outputBytes": 0.0,
+        "lastLinePartial": false,
+        "firstLineExceedsLimit": false,
+        "maxLines": 2000.0,
+        "maxBytes": 51200.0
+      },
+      "wrapped": [
+        "abc",
+        "def"
+      ],
+      "slice": {
+        "text": "b",
+        "width": 1
+      }
+    },
+    "cwd": "${ROOT}"
+  },
+  {
+    "test": "helper_wrap_preserves_styled_spaces",
+    "operation": "u.wrapTextWithAnsi",
+    "args": [
+      "abcdef",
+      3
+    ],
+    "context": {},
+    "ok": [
+      "abc",
+      "def"
+    ]
+  },
+  {
+    "test": "helper_wrap_preserves_styled_spaces",
+    "operation": "u.wrapTextWithAnsi",
+    "args": [
+      "ab cd",
+      4
+    ],
+    "context": {},
+    "ok": [
+      "ab",
+      "cd"
+    ]
+  },
+  {
+    "test": "helper_wrap_preserves_styled_spaces",
+    "operation": "u.wrapTextWithAnsi",
+    "args": [
+      "中a",
+      3
+    ],
+    "context": {},
+    "ok": [
+      "中a"
+    ]
+  },
+  {
+    "test": "helper_wrap_preserves_styled_spaces",
+    "operation": "u.wrapTextWithAnsi",
+    "args": [
+      "\u001b[7m  x y\u001b[0m",
+      4
+    ],
+    "context": {},
+    "ok": [
+      "\u001b[7m  x",
+      "\u001b[7my\u001b[0m"
+    ]
+  },
+  {
+    "test": "helper_wrap_preserves_styled_spaces",
+    "operation": "u.wrapTextWithAnsi",
+    "args": [
+      "a\nb",
+      4
+    ],
+    "context": {},
+    "ok": [
+      "a",
+      "b"
+    ]
+  },
+  {
+    "test": "helper_wrap_preserves_styled_spaces",
+    "operation": "u.wrapTextWithAnsi",
+    "args": [
+      "",
+      3
+    ],
+    "context": {},
+    "ok": [
+      ""
+    ]
+  },
+  {
+    "test": "helper_wrap_preserves_styled_spaces",
+    "operation": "u.wrapTextWithAnsi",
+    "args": [
+      "- \u001b[4m \u001b[24m",
+      1
+    ],
+    "ok": [
+      "-",
+      "\u001b[4m \u001b[24m"
+    ]
+  },
+  {
+    "test": "helper_background_callback_receives_padded_line_once",
+    "operation": "u.applyBackgroundToLine",
+    "args": [
+      "x",
+      4
+    ],
+    "context": {},
+    "ok": {
+      "value": "\u001b[44mx   \u001b[0m",
+      "calls": [
+        "x   "
+      ]
+    }
+  },
+  {
+    "test": "helper_background_callback_receives_padded_line_once",
+    "operation": "u.applyBackgroundToLine",
+    "args": [
+      "中",
+      2
+    ],
+    "context": {},
+    "ok": {
+      "value": "\u001b[44m中\u001b[0m",
+      "calls": [
+        "中"
+      ]
+    }
+  },
+  {
+    "test": "helper_background_callback_receives_padded_line_once",
+    "operation": "u.applyBackgroundToLine",
+    "args": [
+      "long",
+      2
+    ],
+    "context": {},
+    "ok": {
+      "value": "\u001b[44mlong\u001b[0m",
+      "calls": [
+        "long"
+      ]
+    }
+  },
+  {
+    "test": "helper_background_callback_receives_padded_line_once",
+    "operation": "u.applyBackgroundToLine",
+    "args": [
+      "",
+      3
+    ],
+    "context": {},
+    "ok": {
+      "value": "\u001b[44m   \u001b[0m",
+      "calls": [
+        "   "
+      ]
+    }
+  },
+  {
+    "test": "helper_width_truncation_keeps_options",
+    "operation": "u.truncateToWidth",
+    "args": [
+      "abcdef",
+      5
+    ],
+    "context": {},
+    "ok": {
+      "text": "ab\u001b[0m...\u001b[0m",
+      "width": 5
+    }
+  },
+  {
+    "test": "helper_width_truncation_keeps_options",
+    "operation": "u.truncateToWidth",
+    "args": [
+      "中a",
+      1
+    ],
+    "context": {},
+    "ok": {
+      "text": "\u001b[0m.\u001b[0m",
+      "width": 1
+    }
+  },
+  {
+    "test": "helper_width_truncation_keeps_options",
+    "operation": "u.truncateToWidth",
+    "args": [
+      "",
+      3,
+      "...",
+      true
+    ],
+    "context": {},
+    "ok": {
+      "text": "   ",
+      "width": 3
+    }
+  },
+  {
+    "test": "helper_width_truncation_keeps_options",
+    "operation": "u.truncateToWidth",
+    "args": [
+      "ab",
+      4,
+      "...",
+      true
+    ],
+    "context": {},
+    "ok": {
+      "text": "ab  ",
+      "width": 4
+    }
+  },
+  {
+    "test": "helper_width_truncation_keeps_options",
+    "operation": "u.truncateToWidth",
+    "args": [
+      "abcdef",
+      4,
+      "→",
+      false
+    ],
+    "context": {},
+    "ok": {
+      "text": "abc\u001b[0m→\u001b[0m",
+      "width": 4
+    }
+  },
+  {
+    "test": "helper_width_truncation_keeps_options",
+    "operation": "u.truncateToWidth",
+    "args": [
+      "x",
+      0
+    ],
+    "context": {},
+    "ok": {
+      "text": "",
+      "width": 0
+    }
+  },
+  {
+    "test": "helper_width_truncation_keeps_options",
+    "operation": "u.truncateToWidth",
+    "args": [
+      "\u001b[4m abc def\u001b[0m",
+      6
+    ],
+    "context": {},
+    "ok": {
+      "text": "\u001b[4m ab\u001b[0m...\u001b[0m",
+      "width": 6
+    }
+  },
+  {
+    "test": "helper_column_slice_keeps_strict_and_width",
+    "operation": "u.sliceWithWidth",
+    "args": [
+      "a中bc",
+      1,
+      1,
+      false
+    ],
+    "context": {},
+    "ok": {
+      "text": "中",
+      "width": 2
+    }
+  },
+  {
+    "test": "helper_column_slice_keeps_strict_and_width",
+    "operation": "u.sliceByColumn",
+    "args": [
+      "a中bc",
+      1,
+      1,
+      false
+    ],
+    "context": {},
+    "ok": "中"
+  },
+  {
+    "test": "helper_column_slice_keeps_strict_and_width",
+    "operation": "u.sliceWithWidth",
+    "args": [
+      "a中bc",
+      1,
+      1,
+      true
+    ],
+    "context": {},
+    "ok": {
+      "text": "",
+      "width": 0
+    }
+  },
+  {
+    "test": "helper_column_slice_keeps_strict_and_width",
+    "operation": "u.sliceByColumn",
+    "args": [
+      "a中bc",
+      1,
+      1,
+      true
+    ],
+    "context": {},
+    "ok": ""
+  },
+  {
+    "test": "helper_column_slice_keeps_strict_and_width",
+    "operation": "u.sliceWithWidth",
+    "args": [
+      "\u001b[31ma中b\u001b[0m",
+      1,
+      2,
+      false
+    ],
+    "context": {},
+    "ok": {
+      "text": "\u001b[31m中",
+      "width": 2
+    }
+  },
+  {
+    "test": "helper_column_slice_keeps_strict_and_width",
+    "operation": "u.sliceByColumn",
+    "args": [
+      "\u001b[31ma中b\u001b[0m",
+      1,
+      2,
+      false
+    ],
+    "context": {},
+    "ok": "\u001b[31m中"
+  },
+  {
+    "test": "helper_column_slice_keeps_strict_and_width",
+    "operation": "u.sliceWithWidth",
+    "args": [
+      "abc",
+      0,
+      0,
+      false
+    ],
+    "context": {},
+    "ok": {
+      "text": "",
+      "width": 0
+    }
+  },
+  {
+    "test": "helper_column_slice_keeps_strict_and_width",
+    "operation": "u.sliceByColumn",
+    "args": [
+      "abc",
+      0,
+      0,
+      false
+    ],
+    "context": {},
+    "ok": ""
+  },
+  {
+    "test": "helper_segments_keep_both_widths_and_style",
+    "operation": "u.extractSegments",
+    "args": [
+      "\u001b[7ma中bcd\u001b[0m",
+      1,
+      3,
+      2,
+      false
+    ],
+    "context": {},
+    "ok": {
+      "before": "\u001b[7ma",
+      "beforeWidth": 1,
+      "after": "\u001b[7mbc",
+      "afterWidth": 2
+    }
+  },
+  {
+    "test": "helper_segments_keep_both_widths_and_style",
+    "operation": "u.extractSegments",
+    "args": [
+      "abc",
+      0,
+      3,
+      2,
+      false
+    ],
+    "context": {},
+    "ok": {
+      "before": "",
+      "beforeWidth": 0,
+      "after": "",
+      "afterWidth": 0
+    }
+  },
+  {
+    "test": "helper_segments_keep_both_widths_and_style",
+    "operation": "u.extractSegments",
+    "args": [
+      "a中b",
+      1,
+      1,
+      1,
+      true
+    ],
+    "context": {},
+    "ok": {
+      "before": "a",
+      "beforeWidth": 1,
+      "after": "",
+      "afterWidth": 0
+    }
+  },
+  {
+    "test": "helper_segments_keep_both_widths_and_style",
+    "operation": "u.extractSegments",
+    "args": [
+      "\u001b[7m  x",
+      1,
+      1,
+      1,
+      false
+    ],
+    "ok": {
+      "before": "\u001b[7m ",
+      "beforeWidth": 1,
+      "after": "\u001b[7m ",
+      "afterWidth": 1
+    }
+  },
+  {
+    "test": "helper_segments_keep_both_widths_and_style",
+    "operation": "u.extractSegments",
+    "args": [
+      "\u001b[44m  x",
+      1,
+      1,
+      1,
+      false
+    ],
+    "ok": {
+      "before": "\u001b[44m ",
+      "beforeWidth": 1,
+      "after": "\u001b[44m ",
+      "afterWidth": 1
+    }
+  },
+  {
+    "test": "helper_segments_keep_both_widths_and_style",
+    "operation": "u.extractSegments",
+    "args": [
+      "\u001b[4m  x",
+      1,
+      1,
+      1,
+      false
+    ],
+    "ok": {
+      "before": "\u001b[4m ",
+      "beforeWidth": 1,
+      "after": "\u001b[4m ",
+      "afterWidth": 1
+    }
+  },
+  {
+    "test": "helper_key_vocabulary_and_modifiers_match_host",
+    "operation": "k.Key",
+    "args": [],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": {
+      "escape": "escape",
+      "esc": "esc",
+      "enter": "enter",
+      "return": "return",
+      "tab": "tab",
+      "space": "space",
+      "backspace": "backspace",
+      "delete": "delete",
+      "insert": "insert",
+      "clear": "clear",
+      "home": "home",
+      "end": "end",
+      "pageUp": "pageUp",
+      "pageDown": "pageDown",
+      "up": "up",
+      "down": "down",
+      "left": "left",
+      "right": "right",
+      "f1": "f1",
+      "f2": "f2",
+      "f3": "f3",
+      "f4": "f4",
+      "f5": "f5",
+      "f6": "f6",
+      "f7": "f7",
+      "f8": "f8",
+      "f9": "f9",
+      "f10": "f10",
+      "f11": "f11",
+      "f12": "f12",
+      "backtick": "`",
+      "hyphen": "-",
+      "equals": "=",
+      "leftbracket": "[",
+      "rightbracket": "]",
+      "backslash": "\\",
+      "semicolon": ";",
+      "quote": "'",
+      "comma": ",",
+      "period": ".",
+      "slash": "/",
+      "exclamation": "!",
+      "at": "@",
+      "hash": "#",
+      "dollar": "$",
+      "percent": "%",
+      "caret": "^",
+      "ampersand": "&",
+      "asterisk": "*",
+      "leftparen": "(",
+      "rightparen": ")",
+      "underscore": "_",
+      "plus": "+",
+      "pipe": "|",
+      "tilde": "~",
+      "leftbrace": "{",
+      "rightbrace": "}",
+      "colon": ":",
+      "lessthan": "<",
+      "greaterthan": ">",
+      "question": "?",
+      "ctrl": "ctrl+x",
+      "shift": "shift+x",
+      "alt": "alt+x",
+      "super": "super+x",
+      "ctrlShift": "ctrl+shift+x",
+      "shiftCtrl": "shift+ctrl+x",
+      "ctrlAlt": "ctrl+alt+x",
+      "altCtrl": "alt+ctrl+x",
+      "shiftAlt": "shift+alt+x",
+      "altShift": "alt+shift+x",
+      "ctrlSuper": "ctrl+super+x",
+      "superCtrl": "super+ctrl+x",
+      "shiftSuper": "shift+super+x",
+      "superShift": "super+shift+x",
+      "altSuper": "alt+super+x",
+      "superAlt": "super+alt+x",
+      "ctrlShiftAlt": "ctrl+shift+alt+x",
+      "ctrlShiftSuper": "ctrl+shift+super+x"
+    }
+  },
+  {
+    "test": "helper_keyboard_state_is_shared_with_host",
+    "operation": "k.isKittyProtocolActive",
+    "args": [],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_keyboard_state_is_shared_with_host",
+    "operation": "k.isKittyProtocolActive",
+    "args": [],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": true
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.parseKey",
+    "args": [
+      "\r"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": "enter"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodeKittyPrintable",
+    "args": [
+      "\r"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodePrintableKey",
+    "args": [
+      "\r"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRelease",
+    "args": [
+      "\r"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRepeat",
+    "args": [
+      "\r"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.parseKey",
+    "args": [
+      "\u001b[A"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": "up"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodeKittyPrintable",
+    "args": [
+      "\u001b[A"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodePrintableKey",
+    "args": [
+      "\u001b[A"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRelease",
+    "args": [
+      "\u001b[A"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRepeat",
+    "args": [
+      "\u001b[A"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.parseKey",
+    "args": [
+      "\u001b[97;5u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": "ctrl+a"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodeKittyPrintable",
+    "args": [
+      "\u001b[97;5u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodePrintableKey",
+    "args": [
+      "\u001b[97;5u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRelease",
+    "args": [
+      "\u001b[97;5u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRepeat",
+    "args": [
+      "\u001b[97;5u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.parseKey",
+    "args": [
+      "\u001b[97;1:2u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": "a"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodeKittyPrintable",
+    "args": [
+      "\u001b[97;1:2u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": "a"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodePrintableKey",
+    "args": [
+      "\u001b[97;1:2u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": "a"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRelease",
+    "args": [
+      "\u001b[97;1:2u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRepeat",
+    "args": [
+      "\u001b[97;1:2u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": true
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.parseKey",
+    "args": [
+      "\u001b[97;1:3u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": "a"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodeKittyPrintable",
+    "args": [
+      "\u001b[97;1:3u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": "a"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodePrintableKey",
+    "args": [
+      "\u001b[97;1:3u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": "a"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRelease",
+    "args": [
+      "\u001b[97;1:3u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": true
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRepeat",
+    "args": [
+      "\u001b[97;1:3u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.parseKey",
+    "args": [
+      "x"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": "x"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodeKittyPrintable",
+    "args": [
+      "x"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodePrintableKey",
+    "args": [
+      "x"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRelease",
+    "args": [
+      "x"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRepeat",
+    "args": [
+      "x"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.parseKey",
+    "args": [
+      "\u001b[8364u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodeKittyPrintable",
+    "args": [
+      "\u001b[8364u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": "€"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodePrintableKey",
+    "args": [
+      "\u001b[8364u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": "€"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRelease",
+    "args": [
+      "\u001b[8364u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRepeat",
+    "args": [
+      "\u001b[8364u"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.parseKey",
+    "args": [
+      "\u001b["
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodeKittyPrintable",
+    "args": [
+      "\u001b["
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodePrintableKey",
+    "args": [
+      "\u001b["
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRelease",
+    "args": [
+      "\u001b["
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRepeat",
+    "args": [
+      "\u001b["
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.parseKey",
+    "args": [
+      "\r"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": "enter"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodeKittyPrintable",
+    "args": [
+      "\r"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodePrintableKey",
+    "args": [
+      "\r"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRelease",
+    "args": [
+      "\r"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRepeat",
+    "args": [
+      "\r"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.parseKey",
+    "args": [
+      "\u001b[A"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": "up"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodeKittyPrintable",
+    "args": [
+      "\u001b[A"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodePrintableKey",
+    "args": [
+      "\u001b[A"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRelease",
+    "args": [
+      "\u001b[A"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRepeat",
+    "args": [
+      "\u001b[A"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.parseKey",
+    "args": [
+      "\u001b[97;5u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": "ctrl+a"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodeKittyPrintable",
+    "args": [
+      "\u001b[97;5u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodePrintableKey",
+    "args": [
+      "\u001b[97;5u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRelease",
+    "args": [
+      "\u001b[97;5u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRepeat",
+    "args": [
+      "\u001b[97;5u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.parseKey",
+    "args": [
+      "\u001b[97;1:2u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": "a"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodeKittyPrintable",
+    "args": [
+      "\u001b[97;1:2u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": "a"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodePrintableKey",
+    "args": [
+      "\u001b[97;1:2u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": "a"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRelease",
+    "args": [
+      "\u001b[97;1:2u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRepeat",
+    "args": [
+      "\u001b[97;1:2u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": true
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.parseKey",
+    "args": [
+      "\u001b[97;1:3u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": "a"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodeKittyPrintable",
+    "args": [
+      "\u001b[97;1:3u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": "a"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodePrintableKey",
+    "args": [
+      "\u001b[97;1:3u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": "a"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRelease",
+    "args": [
+      "\u001b[97;1:3u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": true
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRepeat",
+    "args": [
+      "\u001b[97;1:3u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.parseKey",
+    "args": [
+      "x"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": "x"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodeKittyPrintable",
+    "args": [
+      "x"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodePrintableKey",
+    "args": [
+      "x"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRelease",
+    "args": [
+      "x"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRepeat",
+    "args": [
+      "x"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.parseKey",
+    "args": [
+      "\u001b[8364u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodeKittyPrintable",
+    "args": [
+      "\u001b[8364u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": "€"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodePrintableKey",
+    "args": [
+      "\u001b[8364u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": "€"
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRelease",
+    "args": [
+      "\u001b[8364u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRepeat",
+    "args": [
+      "\u001b[8364u"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.parseKey",
+    "args": [
+      "\u001b["
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodeKittyPrintable",
+    "args": [
+      "\u001b["
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.decodePrintableKey",
+    "args": [
+      "\u001b["
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": null
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRelease",
+    "args": [
+      "\u001b["
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_decoding_forwards_all_result_branches",
+    "operation": "k.isKeyRepeat",
+    "args": [
+      "\u001b["
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\r",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\u001b[A",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\u001b[97;5u",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": true
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\u001b[97;1:2u",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\u001b[97;1:3u",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "x",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\u001b[8364u",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\u001b[",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\r",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\u001b[A",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\u001b[97;5u",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": true
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\u001b[97;1:2u",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\u001b[97;1:3u",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "x",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\u001b[8364u",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\u001b[",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": true
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\u0001",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": true
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\u0001",
+      "a"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "a",
+      "ctrl+a"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "a",
+      "a"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": true
+  },
+  {
+    "test": "helper_key_matching_keeps_modifier_negatives",
+    "operation": "k.matchesKey",
+    "args": [
+      "\u001b[97;5u",
+      "a"
+    ],
+    "context": {
+      "kittyProtocolActive": false
+    },
+    "ok": false
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "",
+      ""
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": 0.0
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "abc",
+      "abc"
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": -139.7
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "ac",
+      "a/c"
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": -22.8
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "z",
+      "abc"
+    ],
+    "context": {},
+    "ok": {
+      "matches": false,
+      "score": 0.0
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "a2",
+      "2a"
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": -119.9
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "2a",
+      "a2"
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": -119.9
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "ab",
+      "a﻿b"
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": -22.8
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "ab",
+      "ab"
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": -12.8
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "",
+      "anything"
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": 0.0
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "longquery",
+      "short"
+    ],
+    "context": {},
+    "ok": {
+      "matches": false,
+      "score": 0.0
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "test",
+      "test"
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": -159.4
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "abc",
+      "aXbXc"
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": -10.4
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "abc",
+      "cba"
+    ],
+    "context": {},
+    "ok": {
+      "matches": false,
+      "score": 0.0
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "ABC",
+      "abc"
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": -139.7
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "abc",
+      "ABC"
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": -139.7
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "foo",
+      "foobar"
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": -39.699999999999996
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "foo",
+      "f_o_o_bar"
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": -30.400000000000002
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "fb",
+      "foo-bar"
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": -18.6
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "fb",
+      "afbx"
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": -4.7
+    }
+  },
+  {
+    "test": "helper_fuzzy_match_keeps_scores_and_swap",
+    "operation": "f.fuzzyMatch",
+    "args": [
+      "codex52",
+      "gpt-5.2-codex"
+    ],
+    "context": {},
+    "ok": {
+      "matches": true,
+      "score": -64.99999999999999
+    }
+  },
+  {
+    "test": "helper_fuzzy_filter_keeps_identity_and_getter_order",
+    "operation": "f.fuzzyFilter",
+    "args": [
+      ""
+    ],
+    "context": {},
+    "ok": {
+      "ids": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "calls": [],
+      "identity": true
+    }
+  },
+  {
+    "test": "helper_fuzzy_filter_keeps_identity_and_getter_order",
+    "operation": "f.fuzzyFilter",
+    "args": [
+      " ﻿\t"
+    ],
+    "context": {},
+    "ok": {
+      "ids": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "calls": [],
+      "identity": true
+    }
+  },
+  {
+    "test": "helper_fuzzy_filter_keeps_identity_and_getter_order",
+    "operation": "f.fuzzyFilter",
+    "args": [
+      ""
+    ],
+    "context": {},
+    "ok": {
+      "ids": [],
+      "calls": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "identity": true
+    }
+  },
+  {
+    "test": "helper_fuzzy_filter_keeps_identity_and_getter_order",
+    "operation": "f.fuzzyFilter",
+    "args": [
+      "ab"
+    ],
+    "context": {},
+    "ok": {
+      "ids": [
+        1,
+        2,
+        0
+      ],
+      "calls": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "identity": true
+    }
+  },
+  {
+    "test": "helper_fuzzy_filter_keeps_identity_and_getter_order",
+    "operation": "f.fuzzyFilter",
+    "args": [
+      "a b"
+    ],
+    "context": {},
+    "ok": {
+      "ids": [
+        0,
+        1,
+        2
+      ],
+      "calls": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "identity": true
+    }
+  },
+  {
+    "test": "helper_fuzzy_filter_keeps_identity_and_getter_order",
+    "operation": "f.fuzzyFilter",
+    "args": [
+      "x"
+    ],
+    "context": {},
+    "ok": {
+      "ids": [
+        3
+      ],
+      "calls": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "identity": true
+    }
+  },
+  {
+    "test": "helper_fuzzy_filter_keeps_identity_and_getter_order",
+    "operation": "f.fuzzyFilter",
+    "args": [
+      [
+        "apple",
+        "banana",
+        "cherry"
+      ],
+      ""
+    ],
+    "context": {},
+    "ok": {
+      "ids": [
+        0,
+        1,
+        2
+      ],
+      "calls": [],
+      "identity": true
+    }
+  },
+  {
+    "test": "helper_fuzzy_filter_keeps_identity_and_getter_order",
+    "operation": "f.fuzzyFilter",
+    "args": [
+      [
+        "apple",
+        "banana",
+        "cherry"
+      ],
+      "an"
+    ],
+    "context": {},
+    "ok": {
+      "ids": [
+        1
+      ],
+      "calls": [
+        0,
+        1,
+        2
+      ],
+      "identity": true
+    }
+  },
+  {
+    "test": "helper_fuzzy_filter_keeps_identity_and_getter_order",
+    "operation": "f.fuzzyFilter",
+    "args": [
+      [
+        "a_p_p",
+        "app",
+        "application"
+      ],
+      "app"
+    ],
+    "context": {},
+    "ok": {
+      "ids": [
+        1,
+        2,
+        0
+      ],
+      "calls": [
+        0,
+        1,
+        2
+      ],
+      "identity": true
+    }
+  },
+  {
+    "test": "helper_fuzzy_filter_keeps_identity_and_getter_order",
+    "operation": "f.fuzzyFilter",
+    "args": [
+      [
+        "clone",
+        "cl"
+      ],
+      "cl"
+    ],
+    "context": {},
+    "ok": {
+      "ids": [
+        1,
+        0
+      ],
+      "calls": [
+        0,
+        1
+      ],
+      "identity": true
+    }
+  },
+  {
+    "test": "helper_fuzzy_filter_keeps_identity_and_getter_order",
+    "operation": "f.fuzzyFilter",
+    "args": [
+      [
+        "foo",
+        "bar",
+        "foobar"
+      ],
+      "foo"
+    ],
+    "context": {},
+    "ok": {
+      "ids": [
+        0,
+        2
+      ],
+      "calls": [
+        0,
+        1,
+        2
+      ],
+      "identity": true
+    }
+  },
+  {
+    "test": "helper_fuzzy_callbacks_keep_live_edits",
+    "operation": "f.fuzzyFilter",
+    "args": [
+      "in-place"
+    ],
+    "context": {},
+    "ok": {
+      "ids": [
+        0,
+        1
+      ],
+      "calls": [
+        0,
+        1
+      ],
+      "aborted": false,
+      "identity": true
+    }
+  },
+  {
+    "test": "helper_fuzzy_callbacks_keep_live_edits",
+    "operation": "f.fuzzyFilter",
+    "args": [
+      "abort"
+    ],
+    "context": {},
+    "ok": {
+      "ids": [
+        0
+      ],
+      "calls": [
+        0,
+        1
+      ],
+      "aborted": true,
+      "identity": true
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "a\r\nb\rc"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": []
+      },
+      "body": "a\nb\nc"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\nx: 1\n---\n ﻿body﻿ "
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": [
+          [
+            "x",
+            {
+              "kind": "number",
+              "value": 1.0
+            }
+          ]
+        ]
+      },
+      "body": "body"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\r\nx: true\r\n---\r\n body "
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": [
+          [
+            "x",
+            {
+              "kind": "bool",
+              "value": true
+            }
+          ]
+        ]
+      },
+      "body": "body"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\nx: [a, b]\n---\nbody"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": [
+          [
+            "x",
+            {
+              "kind": "sequence",
+              "value": [
+                {
+                  "kind": "string",
+                  "value": "a"
+                },
+                {
+                  "kind": "string",
+                  "value": "b"
+                }
+              ]
+            }
+          ]
+        ]
+      },
+      "body": "body"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\n---\nx"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": []
+      },
+      "body": "x"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\nx: 1"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": []
+      },
+      "body": "---\nx: 1"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\n42\n---\nbody"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "number",
+        "value": 42.0
+      },
+      "body": "body"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\nnull\n---\nbody"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": []
+      },
+      "body": "body"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\nfalse\n---\nbody"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "bool",
+        "value": false
+      },
+      "body": "body"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\n[a, b]\n---\nbody"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "sequence",
+        "value": [
+          {
+            "kind": "string",
+            "value": "a"
+          },
+          {
+            "kind": "string",
+            "value": "b"
+          }
+        ]
+      },
+      "body": "body"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\nx: .nan\ny: .inf\nz: -.inf\n---\nbody"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": [
+          [
+            "x",
+            {
+              "kind": "number",
+              "value": {
+                "$number": "NaN"
+              }
+            }
+          ],
+          [
+            "y",
+            {
+              "kind": "number",
+              "value": {
+                "$number": "Infinity"
+              }
+            }
+          ],
+          [
+            "z",
+            {
+              "kind": "number",
+              "value": {
+                "$number": "-Infinity"
+              }
+            }
+          ]
+        ]
+      },
+      "body": "body"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\nstr\n---\nbody"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "string",
+        "value": "str"
+      },
+      "body": "body"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\nx: -0.0\ny: null\nz: true\n---\nbody"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": [
+          [
+            "x",
+            {
+              "kind": "number",
+              "value": {
+                "$number": "-0"
+              }
+            }
+          ],
+          [
+            "y",
+            {
+              "kind": "null"
+            }
+          ],
+          [
+            "z",
+            {
+              "kind": "bool",
+              "value": true
+            }
+          ]
+        ]
+      },
+      "body": "body"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\n{2: b, 1: a, z: c}\n---\nbody"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": [
+          [
+            "1",
+            {
+              "kind": "string",
+              "value": "a"
+            }
+          ],
+          [
+            "2",
+            {
+              "kind": "string",
+              "value": "b"
+            }
+          ],
+          [
+            "z",
+            {
+              "kind": "string",
+              "value": "c"
+            }
+          ]
+        ]
+      },
+      "body": "body"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\nname: \"skill-name\"\ndescription: 'A desc'\nfoo-bar: value\n---\n\nBody text"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": [
+          [
+            "name",
+            {
+              "kind": "string",
+              "value": "skill-name"
+            }
+          ],
+          [
+            "description",
+            {
+              "kind": "string",
+              "value": "A desc"
+            }
+          ],
+          [
+            "foo-bar",
+            {
+              "kind": "string",
+              "value": "value"
+            }
+          ]
+        ]
+      },
+      "body": "Body text"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\r\nname: test\r\n---\r\nLine one\r\nLine two"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": [
+          [
+            "name",
+            {
+              "kind": "string",
+              "value": "test"
+            }
+          ]
+        ]
+      },
+      "body": "Line one\nLine two"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\ndescription: |\n  Line one\n  Line two\n---\n\nBody"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": [
+          [
+            "description",
+            {
+              "kind": "string",
+              "value": "Line one\nLine two\n"
+            }
+          ]
+        ]
+      },
+      "body": "Body"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "Just text\nsecond line"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": []
+      },
+      "body": "Just text\nsecond line"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\nname: test\nBody without terminator"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": []
+      },
+      "body": "---\nname: test\nBody without terminator"
+    }
+  },
+  {
+    "test": "helper_frontmatter_preserves_document_kinds",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\n# just a comment\n---\nBody"
+    ],
+    "context": {},
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": []
+      },
+      "body": "Body"
+    }
+  },
+  {
+    "test": "helper_strip_frontmatter_keeps_parse_failures",
+    "operation": "fm.stripFrontmatter",
+    "args": [
+      "a\r\nb\rc"
+    ],
+    "context": {},
+    "ok": "a\nb\nc"
+  },
+  {
+    "test": "helper_strip_frontmatter_keeps_parse_failures",
+    "operation": "fm.stripFrontmatter",
+    "args": [
+      "---\nx: 1\n---\n ﻿body﻿ "
+    ],
+    "context": {},
+    "ok": "body"
+  },
+  {
+    "test": "helper_strip_frontmatter_keeps_parse_failures",
+    "operation": "fm.stripFrontmatter",
+    "args": [
+      "---\r\nx: true\r\n---\r\n body "
+    ],
+    "context": {},
+    "ok": "body"
+  },
+  {
+    "test": "helper_strip_frontmatter_keeps_parse_failures",
+    "operation": "fm.stripFrontmatter",
+    "args": [
+      "---\nx: [a, b]\n---\nbody"
+    ],
+    "context": {},
+    "ok": "body"
+  },
+  {
+    "test": "helper_strip_frontmatter_keeps_parse_failures",
+    "operation": "fm.stripFrontmatter",
+    "args": [
+      "---\n---\nx"
+    ],
+    "context": {},
+    "ok": "x"
+  },
+  {
+    "test": "helper_strip_frontmatter_keeps_parse_failures",
+    "operation": "fm.stripFrontmatter",
+    "args": [
+      "---\nx: 1"
+    ],
+    "context": {},
+    "ok": "---\nx: 1"
+  },
+  {
+    "test": "helper_strip_frontmatter_keeps_parse_failures",
+    "operation": "fm.stripFrontmatter",
+    "args": [
+      "---\n42\n---\nbody"
+    ],
+    "context": {},
+    "ok": "body"
+  },
+  {
+    "test": "helper_strip_frontmatter_keeps_parse_failures",
+    "operation": "fm.stripFrontmatter",
+    "args": [
+      "---\nnull\n---\nbody"
+    ],
+    "context": {},
+    "ok": "body"
+  },
+  {
+    "test": "helper_strip_frontmatter_keeps_parse_failures",
+    "operation": "fm.stripFrontmatter",
+    "args": [
+      "---\nfalse\n---\nbody"
+    ],
+    "context": {},
+    "ok": "body"
+  },
+  {
+    "test": "helper_strip_frontmatter_keeps_parse_failures",
+    "operation": "fm.stripFrontmatter",
+    "args": [
+      "---\n[a, b]\n---\nbody"
+    ],
+    "context": {},
+    "ok": "body"
+  },
+  {
+    "test": "helper_strip_frontmatter_keeps_parse_failures",
+    "operation": "fm.stripFrontmatter",
+    "args": [
+      "---\nx: .nan\ny: .inf\nz: -.inf\n---\nbody"
+    ],
+    "context": {},
+    "ok": "body"
+  },
+  {
+    "test": "helper_strip_frontmatter_keeps_parse_failures",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\nx: [\n---\nbody"
+    ],
+    "context": {},
+    "ok": {
+      "error": "while parsing a flow sequence, expected ',' or ']' at byte 4 line 2 column 1"
+    }
+  },
+  {
+    "test": "helper_strip_frontmatter_keeps_parse_failures",
+    "operation": "fm.stripFrontmatter",
+    "args": [
+      "---\nx: [\n---\nbody"
+    ],
+    "context": {},
+    "ok": {
+      "error": "while parsing a flow sequence, expected ',' or ']' at byte 4 line 2 column 1"
+    }
+  },
+  {
+    "test": "helper_strip_frontmatter_keeps_parse_failures",
+    "operation": "fm.stripFrontmatter",
+    "args": [
+      "---\nkey: value\n---\n\nBody\n"
+    ],
+    "context": {},
+    "ok": "Body"
+  },
+  {
+    "test": "helper_strip_frontmatter_keeps_parse_failures",
+    "operation": "fm.stripFrontmatter",
+    "args": [
+      "\n  No frontmatter body  \n"
+    ],
+    "context": {},
+    "ok": "\n  No frontmatter body  \n"
+  },
+  {
+    "test": "helper_strip_frontmatter_keeps_parse_failures",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\nfoo: [bar\n---\nBody"
+    ],
+    "context": {},
+    "ok": {
+      "error": "while parsing a flow sequence, expected ',' or ']' at byte 9 line 2 column 1"
+    }
+  },
+  {
+    "test": "helper_adapter_swaps_without_author_changes",
+    "operation": "u.applyBackgroundToLine",
+    "args": [
+      "x",
+      4
+    ],
+    "context": {},
+    "ok": {
+      "value": "\u001b[44mx   \u001b[0m",
+      "calls": [
+        "x   "
+      ]
+    }
+  },
+  {
+    "test": "helper_adapter_swaps_without_author_changes",
+    "operation": "f.fuzzyFilter",
+    "args": [
+      ""
+    ],
+    "context": {},
+    "ok": {
+      "ids": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "calls": [],
+      "identity": true
+    }
+  },
+  {
+    "test": "helper_adapter_swaps_without_author_changes",
+    "operation": "f.fuzzyFilter",
+    "args": [
+      "ab"
+    ],
+    "context": {},
+    "ok": {
+      "ids": [
+        1,
+        2,
+        0
+      ],
+      "calls": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "identity": true
+    }
+  },
+  {
+    "test": "helper_adapter_swaps_without_author_changes",
+    "operation": "fm.parseFrontmatter",
+    "args": [
+      "---\nx: .nan\n---\nbody"
+    ],
+    "ok": {
+      "frontmatter": {
+        "kind": "mapping",
+        "value": [
+          [
+            "x",
+            {
+              "kind": "number",
+              "value": {
+                "$number": "NaN"
+              }
+            }
+          ]
+        ]
+      },
+      "body": "body"
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateHead",
+    "args": [
+      "",
+      {}
+    ],
+    "context": {},
+    "ok": {
+      "content": "",
+      "truncated": false,
+      "truncatedBy": null,
+      "totalLines": 0.0,
+      "totalBytes": 0.0,
+      "outputLines": 0.0,
+      "outputBytes": 0.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": false,
+      "maxLines": 2000.0,
+      "maxBytes": 51200.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateTail",
+    "args": [
+      "",
+      {}
+    ],
+    "context": {},
+    "ok": {
+      "content": "",
+      "truncated": false,
+      "truncatedBy": null,
+      "totalLines": 0.0,
+      "totalBytes": 0.0,
+      "outputLines": 0.0,
+      "outputBytes": 0.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": false,
+      "maxLines": 2000.0,
+      "maxBytes": 51200.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateHead",
+    "args": [
+      "a\nb\nc",
+      {
+        "maxLines": 2
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "a\nb",
+      "truncated": true,
+      "truncatedBy": "lines",
+      "totalLines": 3.0,
+      "totalBytes": 5.0,
+      "outputLines": 2.0,
+      "outputBytes": 3.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": false,
+      "maxLines": 2.0,
+      "maxBytes": 51200.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateTail",
+    "args": [
+      "a\nb\nc",
+      {
+        "maxLines": 2
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "b\nc",
+      "truncated": true,
+      "truncatedBy": "lines",
+      "totalLines": 3.0,
+      "totalBytes": 5.0,
+      "outputLines": 2.0,
+      "outputBytes": 3.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": false,
+      "maxLines": 2.0,
+      "maxBytes": 51200.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateHead",
+    "args": [
+      "é中",
+      {
+        "maxBytes": 3
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "",
+      "truncated": true,
+      "truncatedBy": "bytes",
+      "totalLines": 1.0,
+      "totalBytes": 5.0,
+      "outputLines": 0.0,
+      "outputBytes": 0.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": true,
+      "maxLines": 2000.0,
+      "maxBytes": 3.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateTail",
+    "args": [
+      "é中",
+      {
+        "maxBytes": 3
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "中",
+      "truncated": true,
+      "truncatedBy": "bytes",
+      "totalLines": 1.0,
+      "totalBytes": 5.0,
+      "outputLines": 1.0,
+      "outputBytes": 3.0,
+      "lastLinePartial": true,
+      "firstLineExceedsLimit": false,
+      "maxLines": 2000.0,
+      "maxBytes": 3.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateHead",
+    "args": [
+      "a\nb",
+      {
+        "maxBytes": 3
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "a\nb",
+      "truncated": false,
+      "truncatedBy": null,
+      "totalLines": 2.0,
+      "totalBytes": 3.0,
+      "outputLines": 2.0,
+      "outputBytes": 3.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": false,
+      "maxLines": 2000.0,
+      "maxBytes": 3.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateTail",
+    "args": [
+      "a\nb",
+      {
+        "maxBytes": 3
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "a\nb",
+      "truncated": false,
+      "truncatedBy": null,
+      "totalLines": 2.0,
+      "totalBytes": 3.0,
+      "outputLines": 2.0,
+      "outputBytes": 3.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": false,
+      "maxLines": 2000.0,
+      "maxBytes": 3.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateHead",
+    "args": [
+      "abc",
+      {
+        "maxBytes": 1
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "",
+      "truncated": true,
+      "truncatedBy": "bytes",
+      "totalLines": 1.0,
+      "totalBytes": 3.0,
+      "outputLines": 0.0,
+      "outputBytes": 0.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": true,
+      "maxLines": 2000.0,
+      "maxBytes": 1.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateTail",
+    "args": [
+      "abc",
+      {
+        "maxBytes": 1
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "c",
+      "truncated": true,
+      "truncatedBy": "bytes",
+      "totalLines": 1.0,
+      "totalBytes": 3.0,
+      "outputLines": 1.0,
+      "outputBytes": 1.0,
+      "lastLinePartial": true,
+      "firstLineExceedsLimit": false,
+      "maxLines": 2000.0,
+      "maxBytes": 1.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateHead",
+    "args": [
+      "a\nb",
+      {
+        "maxLines": 1,
+        "maxBytes": 1
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "a",
+      "truncated": true,
+      "truncatedBy": "lines",
+      "totalLines": 2.0,
+      "totalBytes": 3.0,
+      "outputLines": 1.0,
+      "outputBytes": 1.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": false,
+      "maxLines": 1.0,
+      "maxBytes": 1.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateTail",
+    "args": [
+      "a\nb",
+      {
+        "maxLines": 1,
+        "maxBytes": 1
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "b",
+      "truncated": true,
+      "truncatedBy": "lines",
+      "totalLines": 2.0,
+      "totalBytes": 3.0,
+      "outputLines": 1.0,
+      "outputBytes": 1.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": false,
+      "maxLines": 1.0,
+      "maxBytes": 1.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateHead",
+    "args": [
+      "a\nb\nc",
+      {
+        "maxLines": 1,
+        "maxBytes": 3
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "a",
+      "truncated": true,
+      "truncatedBy": "lines",
+      "totalLines": 3.0,
+      "totalBytes": 5.0,
+      "outputLines": 1.0,
+      "outputBytes": 1.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": false,
+      "maxLines": 1.0,
+      "maxBytes": 3.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateTail",
+    "args": [
+      "a\nb\nc",
+      {
+        "maxLines": 1,
+        "maxBytes": 3
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "c",
+      "truncated": true,
+      "truncatedBy": "lines",
+      "totalLines": 3.0,
+      "totalBytes": 5.0,
+      "outputLines": 1.0,
+      "outputBytes": 1.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": false,
+      "maxLines": 1.0,
+      "maxBytes": 3.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateHead",
+    "args": [
+      "a\nb\nc",
+      {
+        "maxLines": 3,
+        "maxBytes": 1
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "a",
+      "truncated": true,
+      "truncatedBy": "bytes",
+      "totalLines": 3.0,
+      "totalBytes": 5.0,
+      "outputLines": 1.0,
+      "outputBytes": 1.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": false,
+      "maxLines": 3.0,
+      "maxBytes": 1.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateTail",
+    "args": [
+      "a\nb\nc",
+      {
+        "maxLines": 3,
+        "maxBytes": 1
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "c",
+      "truncated": true,
+      "truncatedBy": "bytes",
+      "totalLines": 3.0,
+      "totalBytes": 5.0,
+      "outputLines": 1.0,
+      "outputBytes": 1.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": false,
+      "maxLines": 3.0,
+      "maxBytes": 1.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateHead",
+    "args": [
+      "a\nb",
+      {
+        "maxLines": 0
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "",
+      "truncated": true,
+      "truncatedBy": "lines",
+      "totalLines": 2.0,
+      "totalBytes": 3.0,
+      "outputLines": 0.0,
+      "outputBytes": 0.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": false,
+      "maxLines": 0.0,
+      "maxBytes": 51200.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateTail",
+    "args": [
+      "a\nb",
+      {
+        "maxLines": 0
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "",
+      "truncated": true,
+      "truncatedBy": "lines",
+      "totalLines": 2.0,
+      "totalBytes": 3.0,
+      "outputLines": 0.0,
+      "outputBytes": 0.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": false,
+      "maxLines": 0.0,
+      "maxBytes": 51200.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateHead",
+    "args": [
+      "a\nb",
+      {
+        "maxBytes": 0
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "",
+      "truncated": true,
+      "truncatedBy": "bytes",
+      "totalLines": 2.0,
+      "totalBytes": 3.0,
+      "outputLines": 0.0,
+      "outputBytes": 0.0,
+      "lastLinePartial": false,
+      "firstLineExceedsLimit": true,
+      "maxLines": 2000.0,
+      "maxBytes": 0.0
+    }
+  },
+  {
+    "test": "helper_tool_truncation_keeps_all_accounting",
+    "operation": "tr.truncateTail",
+    "args": [
+      "a\nb",
+      {
+        "maxBytes": 0
+      }
+    ],
+    "context": {},
+    "ok": {
+      "content": "",
+      "truncated": true,
+      "truncatedBy": "bytes",
+      "totalLines": 2.0,
+      "totalBytes": 3.0,
+      "outputLines": 1.0,
+      "outputBytes": 0.0,
+      "lastLinePartial": true,
+      "firstLineExceedsLimit": false,
+      "maxLines": 2000.0,
+      "maxBytes": 0.0
+    }
+  },
+  {
+    "test": "helper_line_truncation_keeps_default_and_flag",
+    "operation": "tr.truncateLine",
+    "args": [
+      "abcdef",
+      3
+    ],
+    "context": {},
+    "ok": {
+      "text": "abc... [truncated]",
+      "wasTruncated": true
+    }
+  },
+  {
+    "test": "helper_line_truncation_keeps_default_and_flag",
+    "operation": "tr.truncateLine",
+    "args": [
+      "é中",
+      2
+    ],
+    "context": {},
+    "ok": {
+      "text": "é... [truncated]",
+      "wasTruncated": true
+    }
+  },
+  {
+    "test": "helper_line_truncation_keeps_default_and_flag",
+    "operation": "tr.truncateLine",
+    "args": [
+      "abc"
+    ],
+    "context": {},
+    "ok": {
+      "text": "abc",
+      "wasTruncated": false
+    }
+  },
+  {
+    "test": "helper_line_truncation_keeps_default_and_flag",
+    "operation": "tr.truncateLine",
+    "args": [
+      "abc",
+      0
+    ],
+    "context": {},
+    "ok": {
+      "text": "... [truncated]",
+      "wasTruncated": true
+    }
+  },
+  {
+    "test": "helper_size_display_keeps_unit_boundaries",
+    "operation": "tr.formatSize",
+    "args": [
+      0
+    ],
+    "context": {},
+    "ok": "0B"
+  },
+  {
+    "test": "helper_size_display_keeps_unit_boundaries",
+    "operation": "tr.formatSize",
+    "args": [
+      1023
+    ],
+    "context": {},
+    "ok": "1023B"
+  },
+  {
+    "test": "helper_size_display_keeps_unit_boundaries",
+    "operation": "tr.formatSize",
+    "args": [
+      1024
+    ],
+    "context": {},
+    "ok": "1.0KB"
+  },
+  {
+    "test": "helper_size_display_keeps_unit_boundaries",
+    "operation": "tr.formatSize",
+    "args": [
+      1048575
+    ],
+    "context": {},
+    "ok": "1024.0KB"
+  },
+  {
+    "test": "helper_size_display_keeps_unit_boundaries",
+    "operation": "tr.formatSize",
+    "args": [
+      1048576
+    ],
+    "context": {},
+    "ok": "1.0MB"
+  },
+  {
+    "test": "helper_truncation_defaults_come_from_host",
+    "operation": "tr.constants",
+    "args": [],
+    "context": {},
+    "ok": {
+      "lines": 2000,
+      "bytes": 51200,
+      "grep": 500
+    }
+  },
+  {
+    "test": "helper_paths_use_native_expansion_and_resolution",
+    "operation": "p.expandPath",
+    "args": [
+      "@foo"
+    ],
+    "context": {},
+    "ok": "foo"
+  },
+  {
+    "test": "helper_paths_use_native_expansion_and_resolution",
+    "operation": "p.resolveToCwd",
+    "args": [
+      "@foo",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${ROOT}${SEP}foo"
+  },
+  {
+    "test": "helper_paths_use_native_expansion_and_resolution",
+    "operation": "p.expandPath",
+    "args": [
+      "~/file"
+    ],
+    "context": {},
+    "ok": "${HOME}/file"
+  },
+  {
+    "test": "helper_paths_use_native_expansion_and_resolution",
+    "operation": "p.resolveToCwd",
+    "args": [
+      "~/file",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${HOME}/file"
+  },
+  {
+    "test": "helper_paths_use_native_expansion_and_resolution",
+    "operation": "p.expandPath",
+    "args": [
+      "a/../b"
+    ],
+    "context": {},
+    "ok": "a/../b"
+  },
+  {
+    "test": "helper_paths_use_native_expansion_and_resolution",
+    "operation": "p.resolveToCwd",
+    "args": [
+      "a/../b",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${ROOT}${SEP}b"
+  },
+  {
+    "test": "helper_paths_use_native_expansion_and_resolution",
+    "operation": "p.expandPath",
+    "args": [
+      "/tmp/a/../b"
+    ],
+    "context": {},
+    "ok": "/tmp/a/../b"
+  },
+  {
+    "test": "helper_paths_use_native_expansion_and_resolution",
+    "operation": "p.resolveToCwd",
+    "args": [
+      "/tmp/a/../b",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "/tmp/a/../b"
+  },
+  {
+    "test": "helper_paths_use_native_expansion_and_resolution",
+    "operation": "p.expandPath",
+    "args": [
+      "a b"
+    ],
+    "context": {},
+    "ok": "a b"
+  },
+  {
+    "test": "helper_paths_use_native_expansion_and_resolution",
+    "operation": "p.resolveToCwd",
+    "args": [
+      "a b",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${ROOT}${SEP}a b"
+  },
+  {
+    "test": "helper_paths_use_native_expansion_and_resolution",
+    "operation": "p.resolveToCwd",
+    "args": [
+      "~",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${HOME}"
+  },
+  {
+    "test": "helper_paths_use_native_expansion_and_resolution",
+    "operation": "p.resolveToCwd",
+    "args": [
+      "",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${ROOT}"
+  },
+  {
+    "test": "helper_paths_use_native_expansion_and_resolution",
+    "operation": "p.resolveToCwd",
+    "args": [
+      "@/tmp/a/../b",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "/tmp/a/../b"
+  },
+  {
+    "test": "helper_paths_use_native_expansion_and_resolution",
+    "operation": "p.expandPath",
+    "args": [
+      "~"
+    ],
+    "context": {},
+    "ok": "${HOME}"
+  },
+  {
+    "test": "helper_read_path_uses_existing_spelling",
+    "operation": "p.resolveReadPath",
+    "args": [
+      "@foo",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${ROOT}${SEP}foo"
+  },
+  {
+    "test": "helper_read_path_uses_existing_spelling",
+    "operation": "p.resolveReadPath",
+    "args": [
+      "~/file",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${HOME}/file"
+  },
+  {
+    "test": "helper_read_path_uses_existing_spelling",
+    "operation": "p.resolveReadPath",
+    "args": [
+      "a/../b",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${ROOT}${SEP}b"
+  },
+  {
+    "test": "helper_read_path_uses_existing_spelling",
+    "operation": "p.resolveReadPath",
+    "args": [
+      "/tmp/a/../b",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "/tmp/a/../b"
+  },
+  {
+    "test": "helper_read_path_uses_existing_spelling",
+    "operation": "p.resolveReadPath",
+    "args": [
+      "a b",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${ROOT}${SEP}a b"
+  },
+  {
+    "test": "helper_read_path_uses_existing_spelling",
+    "operation": "p.resolveReadPath",
+    "args": [
+      "café.txt",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${ROOT}${SEP}café.txt"
+  },
+  {
+    "test": "helper_read_path_uses_existing_spelling",
+    "operation": "p.resolveReadPath",
+    "args": [
+      "café.txt",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${ROOT}${SEP}café.txt"
+  },
+  {
+    "test": "helper_read_path_uses_existing_spelling",
+    "operation": "p.resolveReadPath",
+    "args": [
+      "space name",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${ROOT}${SEP}space name"
+  },
+  {
+    "test": "helper_read_path_uses_existing_spelling",
+    "operation": "p.resolveReadPath",
+    "args": [
+      "missing",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${ROOT}${SEP}missing"
+  },
+  {
+    "test": "helper_read_path_uses_existing_spelling",
+    "operation": "p.resolveReadPath",
+    "args": [
+      "shot 10 AM.png",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${ROOT}${SEP}shot 10 AM.png"
+  },
+  {
+    "test": "helper_read_path_uses_existing_spelling",
+    "operation": "p.resolveReadPath",
+    "args": [
+      "decomposé.png",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${ROOT}${SEP}decomposé.png"
+  },
+  {
+    "test": "helper_read_path_uses_existing_spelling",
+    "operation": "p.resolveReadPath",
+    "args": [
+      "capture d'écran.png",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${ROOT}${SEP}capture d’écran.png"
+  },
+  {
+    "test": "helper_read_path_uses_existing_spelling",
+    "operation": "p.resolveReadPath",
+    "args": [
+      "décran d'écran.png",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${ROOT}${SEP}décran d’écran.png"
+  },
+  {
+    "test": "helper_read_path_uses_existing_spelling",
+    "operation": "p.resolveReadPath",
+    "args": [
+      "shot 10 pm.png",
+      "${ROOT}"
+    ],
+    "context": {},
+    "ok": "${ROOT}${SEP}shot 10 pm.png"
+  },
+  {
+    "test": "helper_read_path_uses_existing_spelling",
+    "operation": "p.resolveReadPath",
+    "args": [
+      "g'é",
+      "${ROOT}"
+    ],
+    "ok": "${ROOT}${SEP}g’é"
+  },
+  {
+    "test": "helper_conversation_conversion_keeps_each_role",
+    "operation": "msg.convertToLlm",
+    "args": [
+      [
+        {
+          "role": "user",
+          "content": "hi",
+          "timestamp": 0.0
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "plan"
+            },
+            {
+              "type": "text",
+              "text": "hello"
+            },
+            {
+              "type": "toolCall",
+              "id": "t",
+              "name": "read",
+              "arguments": {
+                "path": "a"
+              }
+            }
+          ],
+          "timestamp": 1.0,
+          "api": "openai-responses",
+          "provider": "controlled-provider",
+          "model": "controlled-model",
+          "stopReason": "stop",
+          "usage": {
+            "input": 0.0,
+            "output": 0.0,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "totalTokens": 0.0,
+            "cost": {
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "total": 0.0
+            }
+          }
+        },
+        {
+          "role": "toolResult",
+          "toolCallId": "t",
+          "toolName": "read",
+          "content": [
+            {
+              "type": "text",
+              "text": "ok"
+            }
+          ],
+          "isError": false,
+          "timestamp": 2.0
+        },
+        {
+          "role": "bashExecution",
+          "command": "echo hi",
+          "output": "hi",
+          "exitCode": 0,
+          "cancelled": false,
+          "truncated": false,
+          "timestamp": 3.0
+        },
+        {
+          "role": "custom",
+          "customType": "note",
+          "content": "custom",
+          "display": true,
+          "timestamp": 4.0
+        },
+        {
+          "role": "branchSummary",
+          "summary": "branch",
+          "fromId": "x",
+          "timestamp": 5.0
+        },
+        {
+          "role": "compactionSummary",
+          "summary": "compact",
+          "tokensBefore": 5,
+          "timestamp": 6.0
+        },
+        {
+          "role": "other",
+          "data": "ignored"
+        }
+      ]
+    ],
+    "context": {},
+    "ok": [
+      {
+        "role": "user",
+        "content": "hi",
+        "timestamp": 0.0
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "plan"
+          },
+          {
+            "type": "text",
+            "text": "hello"
+          },
+          {
+            "type": "toolCall",
+            "id": "t",
+            "name": "read",
+            "arguments": {
+              "path": "a"
+            }
+          }
+        ],
+        "timestamp": 1.0,
+        "api": "openai-responses",
+        "provider": "controlled-provider",
+        "model": "controlled-model",
+        "stopReason": "stop",
+        "usage": {
+          "input": 0.0,
+          "output": 0.0,
+          "cacheRead": 0.0,
+          "cacheWrite": 0.0,
+          "totalTokens": 0.0,
+          "cost": {
+            "input": 0.0,
+            "output": 0.0,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "total": 0.0
+          }
+        }
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "t",
+        "toolName": "read",
+        "content": [
+          {
+            "type": "text",
+            "text": "ok"
+          }
+        ],
+        "isError": false,
+        "timestamp": 2.0
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Ran `echo hi`\n```\nhi\n```"
+          }
+        ],
+        "timestamp": 3.0
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "custom"
+          }
+        ],
+        "timestamp": 4.0
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "The following is a summary of a branch that this conversation came back from:\n\n<summary>\nbranch</summary>"
+          }
+        ],
+        "timestamp": 5.0
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\ncompact\n</summary>"
+          }
+        ],
+        "timestamp": 6.0
+      }
+    ]
+  },
+  {
+    "test": "helper_conversation_conversion_keeps_each_role",
+    "operation": "msg.convertToLlm",
+    "args": [
+      [
+        {
+          "role": "bashExecution",
+          "command": "false",
+          "output": "",
+          "exitCode": null,
+          "cancelled": false,
+          "truncated": false,
+          "timestamp": 0.0
+        }
+      ]
+    ],
+    "context": {},
+    "ok": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Ran `false`\n(no output)"
+          }
+        ],
+        "timestamp": 0.0
+      }
+    ]
+  },
+  {
+    "test": "helper_conversation_conversion_keeps_each_role",
+    "operation": "msg.convertToLlm",
+    "args": [
+      [
+        {
+          "role": "bashExecution",
+          "command": "false",
+          "output": "x",
+          "exitCode": 9,
+          "cancelled": true,
+          "truncated": false,
+          "timestamp": 0.0
+        }
+      ]
+    ],
+    "context": {},
+    "ok": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Ran `false`\n```\nx\n```\n\n(command cancelled)"
+          }
+        ],
+        "timestamp": 0.0
+      }
+    ]
+  },
+  {
+    "test": "helper_conversation_conversion_keeps_each_role",
+    "operation": "msg.convertToLlm",
+    "args": [
+      [
+        {
+          "role": "bashExecution",
+          "command": "false",
+          "output": "x",
+          "exitCode": 9,
+          "cancelled": false,
+          "truncated": false,
+          "timestamp": 0.0
+        }
+      ]
+    ],
+    "context": {},
+    "ok": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Ran `false`\n```\nx\n```\n\nCommand exited with code 9"
+          }
+        ],
+        "timestamp": 0.0
+      }
+    ]
+  },
+  {
+    "test": "helper_conversation_conversion_keeps_each_role",
+    "operation": "msg.convertToLlm",
+    "args": [
+      [
+        {
+          "role": "bashExecution",
+          "command": "false",
+          "output": "x",
+          "exitCode": 0,
+          "cancelled": false,
+          "truncated": true,
+          "timestamp": 0.0,
+          "fullOutputPath": "/fixture/output"
+        }
+      ]
+    ],
+    "context": {},
+    "ok": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Ran `false`\n```\nx\n```\n\n[Output truncated. Full output: /fixture/output]"
+          }
+        ],
+        "timestamp": 0.0
+      }
+    ]
+  },
+  {
+    "test": "helper_conversation_conversion_keeps_each_role",
+    "operation": "msg.convertToLlm",
+    "args": [
+      [
+        {
+          "role": "bashExecution",
+          "command": "false",
+          "output": "x",
+          "exitCode": 0,
+          "cancelled": false,
+          "truncated": false,
+          "timestamp": 0.0,
+          "excludeFromContext": true
+        }
+      ]
+    ],
+    "context": {},
+    "ok": []
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      [
+        {
+          "role": "user",
+          "content": "hi",
+          "timestamp": 0.0
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "plan"
+            },
+            {
+              "type": "text",
+              "text": "hello"
+            },
+            {
+              "type": "toolCall",
+              "id": "t",
+              "name": "read",
+              "arguments": {
+                "path": "a"
+              }
+            }
+          ],
+          "timestamp": 1.0,
+          "api": "openai-responses",
+          "provider": "controlled-provider",
+          "model": "controlled-model",
+          "stopReason": "stop",
+          "usage": {
+            "input": 0.0,
+            "output": 0.0,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "totalTokens": 0.0,
+            "cost": {
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "total": 0.0
+            }
+          }
+        },
+        {
+          "role": "toolResult",
+          "toolCallId": "t",
+          "toolName": "read",
+          "content": [
+            {
+              "type": "text",
+              "text": "ok"
+            }
+          ],
+          "isError": false,
+          "timestamp": 2.0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "Ran `echo hi`\n```\nhi\n```"
+            }
+          ],
+          "timestamp": 3.0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "custom"
+            }
+          ],
+          "timestamp": 4.0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "The following is a summary of a branch that this conversation came back from:\n\n<summary>\nbranch</summary>"
+            }
+          ],
+          "timestamp": 5.0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\ncompact\n</summary>"
+            }
+          ],
+          "timestamp": 6.0
+        }
+      ]
+    ],
+    "context": {},
+    "ok": "[User]: hi\n\n[Assistant]: hello\n\n[Assistant tool calls]: read(path=\"a\")\n\n[Tool result]: ok\n\n[User]: Ran `echo hi`\n```\nhi\n```\n\n[User]: custom\n\n[User]: The following is a summary of a branch that this conversation came back from:\n\n<summary>\nbranch</summary>\n\n[User]: The conversation history before this point was compacted into the following summary:\n\n<summary>\ncompact\n</summary>"
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      []
+    ],
+    "context": {},
+    "ok": ""
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      [
+        {
+          "role": "toolResult",
+          "toolCallId": "t",
+          "toolName": "read",
+          "content": [
+            {
+              "type": "text",
+              "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0.0
+        }
+      ]
+    ],
+    "context": {},
+    "ok": "[Tool result]: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      [
+        {
+          "role": "toolResult",
+          "toolCallId": "t",
+          "toolName": "read",
+          "content": [
+            {
+              "type": "text",
+              "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0.0
+        }
+      ]
+    ],
+    "context": {},
+    "ok": "[Tool result]: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      [
+        {
+          "role": "toolResult",
+          "toolCallId": "t",
+          "toolName": "read",
+          "content": [
+            {
+              "type": "text",
+              "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0.0
+        }
+      ]
+    ],
+    "context": {},
+    "ok": "[Tool result]: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[... 1 more characters truncated]"
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      [
+        {
+          "role": "toolResult",
+          "toolCallId": "t",
+          "toolName": "read",
+          "content": [
+            {
+              "type": "text",
+              "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0.0
+        }
+      ]
+    ],
+    "context": {},
+    "ok": "[Tool result]: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[... 3000 more characters truncated]"
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "t",
+              "name": "read",
+              "arguments": {
+                "value": null
+              }
+            }
+          ],
+          "timestamp": 0.0,
+          "api": "openai-responses",
+          "provider": "controlled-provider",
+          "model": "controlled-model",
+          "stopReason": "stop",
+          "usage": {
+            "input": 0.0,
+            "output": 0.0,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "totalTokens": 0.0,
+            "cost": {
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "total": 0.0
+            }
+          }
+        }
+      ]
+    ],
+    "context": {},
+    "ok": "[Assistant tool calls]: read(value=null)"
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "t",
+              "name": "read",
+              "arguments": {
+                "value": "text"
+              }
+            }
+          ],
+          "timestamp": 0.0,
+          "api": "openai-responses",
+          "provider": "controlled-provider",
+          "model": "controlled-model",
+          "stopReason": "stop",
+          "usage": {
+            "input": 0.0,
+            "output": 0.0,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "totalTokens": 0.0,
+            "cost": {
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "total": 0.0
+            }
+          }
+        }
+      ]
+    ],
+    "context": {},
+    "ok": "[Assistant tool calls]: read(value=\"text\")"
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "t",
+              "name": "read",
+              "arguments": {
+                "value": 0
+              }
+            }
+          ],
+          "timestamp": 0.0,
+          "api": "openai-responses",
+          "provider": "controlled-provider",
+          "model": "controlled-model",
+          "stopReason": "stop",
+          "usage": {
+            "input": 0.0,
+            "output": 0.0,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "totalTokens": 0.0,
+            "cost": {
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "total": 0.0
+            }
+          }
+        }
+      ]
+    ],
+    "context": {},
+    "ok": "[Assistant tool calls]: read(value=0)"
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "t",
+              "name": "read",
+              "arguments": {
+                "value": false
+              }
+            }
+          ],
+          "timestamp": 0.0,
+          "api": "openai-responses",
+          "provider": "controlled-provider",
+          "model": "controlled-model",
+          "stopReason": "stop",
+          "usage": {
+            "input": 0.0,
+            "output": 0.0,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "totalTokens": 0.0,
+            "cost": {
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "total": 0.0
+            }
+          }
+        }
+      ]
+    ],
+    "context": {},
+    "ok": "[Assistant tool calls]: read(value=false)"
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "t",
+              "name": "read",
+              "arguments": {
+                "value": {
+                  "1": 1,
+                  "2": 2,
+                  "z": 1
+                }
+              }
+            }
+          ],
+          "timestamp": 0.0,
+          "api": "openai-responses",
+          "provider": "controlled-provider",
+          "model": "controlled-model",
+          "stopReason": "stop",
+          "usage": {
+            "input": 0.0,
+            "output": 0.0,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "totalTokens": 0.0,
+            "cost": {
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "total": 0.0
+            }
+          }
+        }
+      ]
+    ],
+    "context": {},
+    "ok": "[Assistant tool calls]: read(value={\"1\":1,\"2\":2,\"z\":1})"
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "t",
+              "name": "read",
+              "arguments": {
+                "value": [
+                  1,
+                  2
+                ]
+              }
+            }
+          ],
+          "timestamp": 0.0,
+          "api": "openai-responses",
+          "provider": "controlled-provider",
+          "model": "controlled-model",
+          "stopReason": "stop",
+          "usage": {
+            "input": 0.0,
+            "output": 0.0,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "totalTokens": 0.0,
+            "cost": {
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "total": 0.0
+            }
+          }
+        }
+      ]
+    ],
+    "context": {},
+    "ok": "[Assistant tool calls]: read(value=[1,2])"
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "t",
+              "name": "read",
+              "arguments": {
+                "value": -0.0
+              }
+            }
+          ],
+          "timestamp": 0.0,
+          "api": "openai-responses",
+          "provider": "controlled-provider",
+          "model": "controlled-model",
+          "stopReason": "stop",
+          "usage": {
+            "input": 0.0,
+            "output": 0.0,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "totalTokens": 0.0,
+            "cost": {
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "total": 0.0
+            }
+          }
+        }
+      ]
+    ],
+    "context": {},
+    "ok": "[Assistant tool calls]: read(value=0)"
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+            }
+          ],
+          "timestamp": 0.0
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+            }
+          ],
+          "timestamp": 0.0,
+          "api": "openai-responses",
+          "provider": "controlled-provider",
+          "model": "controlled-model",
+          "stopReason": "stop",
+          "usage": {
+            "input": 0.0,
+            "output": 0.0,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "totalTokens": 0.0,
+            "cost": {
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "total": 0.0
+            }
+          }
+        }
+      ]
+    ],
+    "context": {},
+    "ok": "[User]: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\n\n[Assistant]: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "image",
+              "data": "AA==",
+              "mimeType": "image/png"
+            }
+          ],
+          "timestamp": 0.0
+        }
+      ]
+    ],
+    "context": {},
+    "ok": ""
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      [
+        {
+          "role": "toolResult",
+          "toolCallId": "t",
+          "toolName": "read",
+          "content": [
+            {
+              "type": "image",
+              "data": "AA==",
+              "mimeType": "image/png"
+            }
+          ],
+          "isError": false,
+          "timestamp": 0.0
+        }
+      ]
+    ],
+    "context": {},
+    "ok": ""
+  },
+  {
+    "test": "helper_conversation_serialization_keeps_text_and_tools",
+    "operation": "co.serializeConversation",
+    "args": [
+      [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "image",
+              "data": "AA==",
+              "mimeType": "image/png"
+            },
+            {
+              "type": "text",
+              "text": "visible"
+            }
+          ],
+          "timestamp": 0.0
+        }
+      ]
+    ],
+    "context": {},
+    "ok": "[User]: visible"
+  },
+  {
+    "test": "helper_version_reads_installation_identity",
+    "operation": "config.VERSION",
+    "args": [],
+    "context": {},
+    "ok": "installed-component-host"
+  },
+  {
+    "test": "helper_size_display_keeps_unit_boundaries",
+    "operation": "tr.formatSize",
+    "args": [
+      {
+        "$number": "NaN"
+      }
+    ],
+    "ok": "NaNMB"
+  },
+  {
+    "test": "helper_size_display_keeps_unit_boundaries",
+    "operation": "tr.formatSize",
+    "args": [
+      {
+        "$number": "Infinity"
+      }
+    ],
+    "ok": "InfinityMB"
+  },
+  {
+    "test": "helper_size_display_keeps_unit_boundaries",
+    "operation": "tr.formatSize",
+    "args": [
+      {
+        "$number": "-Infinity"
+      }
+    ],
+    "ok": "-InfinityB"
+  },
+  {
+    "test": "helper_size_display_keeps_unit_boundaries",
+    "operation": "tr.formatSize",
+    "args": [
+      -0.0
+    ],
+    "ok": "0B"
+  },
+  {
+    "test": "helper_agent_directory_reads_installation_identity",
+    "operation": "config.getAgentDir",
+    "args": [],
+    "context": {},
+    "ok": "/controlled-agent"
+  },
+{
+  "test": "helper_raw_yaml_preserves_document_values",
+  "operation": "fm.parseYaml",
+  "args": [
+    ""
+  ],
+  "ok": {
+    "kind": "null"
+  }
+},
+{
+  "test": "helper_raw_yaml_preserves_document_values",
+  "operation": "fm.parseYaml",
+  "args": [
+    "null"
+  ],
+  "ok": {
+    "kind": "null"
+  }
+},
+{
+  "test": "helper_raw_yaml_preserves_document_values",
+  "operation": "fm.parseYaml",
+  "args": [
+    "false"
+  ],
+  "ok": {
+    "kind": "bool",
+    "value": false
+  }
+},
+{
+  "test": "helper_raw_yaml_preserves_document_values",
+  "operation": "fm.parseYaml",
+  "args": [
+    "42"
+  ],
+  "ok": {
+    "kind": "number",
+    "value": 42.0
+  }
+},
+{
+  "test": "helper_raw_yaml_preserves_document_values",
+  "operation": "fm.parseYaml",
+  "args": [
+    "plain"
+  ],
+  "ok": {
+    "kind": "string",
+    "value": "plain"
+  }
+},
+{
+  "test": "helper_raw_yaml_preserves_document_values",
+  "operation": "fm.parseYaml",
+  "args": [
+    "[null, true]"
+  ],
+  "ok": {
+    "kind": "sequence",
+    "value": [
+      {
+        "kind": "null"
+      },
+      {
+        "kind": "bool",
+        "value": true
+      }
+    ]
+  }
+},
+{
+  "test": "helper_raw_yaml_preserves_document_values",
+  "operation": "fm.parseYaml",
+  "args": [
+    "z: &a [one]\na: *a"
+  ],
+  "ok": {
+    "kind": "mapping",
+    "value": [
+      [
+        "z",
+        {
+          "kind": "sequence",
+          "value": [
+            {
+              "kind": "string",
+              "value": "one"
+            }
+          ]
+        }
+      ],
+      [
+        "a",
+        {
+          "kind": "sequence",
+          "value": [
+            {
+              "kind": "string",
+              "value": "one"
+            }
+          ]
+        }
+      ]
+    ]
+  }
+},
+{
+  "test": "helper_raw_yaml_preserves_document_values",
+  "operation": "fm.parseYaml",
+  "args": [
+    "text: |\n  ---\n  ...\n"
+  ],
+  "ok": {
+    "kind": "mapping",
+    "value": [
+      [
+        "text",
+        {
+          "kind": "string",
+          "value": "---\n...\n"
+        }
+      ]
+    ]
+  }
+},
+{
+  "test": "helper_raw_yaml_preserves_document_values",
+  "operation": "fm.parseYaml",
+  "args": [
+    "---\r\n[1, 2]\r\n..."
+  ],
+  "ok": {
+    "kind": "sequence",
+    "value": [
+      {
+        "kind": "number",
+        "value": 1.0
+      },
+      {
+        "kind": "number",
+        "value": 2.0
+      }
+    ]
+  }
+},
+{
+  "test": "helper_raw_yaml_preserves_document_values",
+  "operation": "fm.parseYaml",
+  "args": [
+    ".nan"
+  ],
+  "ok": {
+    "kind": "number",
+    "value": {
+      "$number": "NaN"
+    }
+  }
+},
+{
+  "test": "helper_raw_yaml_preserves_document_values",
+  "operation": "fm.parseYaml",
+  "args": [
+    ".inf"
+  ],
+  "ok": {
+    "kind": "number",
+    "value": {
+      "$number": "Infinity"
+    }
+  }
+},
+{
+  "test": "helper_raw_yaml_preserves_document_values",
+  "operation": "fm.parseYaml",
+  "args": [
+    "-.inf"
+  ],
+  "ok": {
+    "kind": "number",
+    "value": {
+      "$number": "-Infinity"
+    }
+  }
+},
+{
+  "test": "helper_raw_yaml_preserves_document_values",
+  "operation": "fm.parseYaml",
+  "args": [
+    "-0.0"
+  ],
+  "ok": {
+    "kind": "number",
+    "value": {
+      "$number": "-0"
+    }
+  }
+},
+{
+  "test": "helper_raw_yaml_preserves_document_values",
+  "operation": "fm.parseYaml",
+  "args": [
+    "2: two\n1: one"
+  ],
+  "ok": {
+    "kind": "mapping",
+    "value": [
+      [
+        "2",
+        {
+          "kind": "string",
+          "value": "two"
+        }
+      ],
+      [
+        "1",
+        {
+          "kind": "string",
+          "value": "one"
+        }
+      ]
+    ]
+  }
+},
+{
+  "test": "helper_raw_yaml_preserves_document_values",
+  "operation": "fm.parseYaml",
+  "args": [
+    "x: ["
+  ],
+  "ok": {
+    "error": "while parsing a flow sequence, expected ',' or ']' at byte 4 line 2 column 1"
+  }
+},
+{
+  "test": "helper_raw_yaml_preserves_document_values",
+  "operation": "fm.parseYaml",
+  "args": [
+    "---\none\n---\ntwo"
+  ],
+  "ok": {
+    "error": "Source contains multiple documents at byte 8 line 3 column 1"
+  }
+}
+]

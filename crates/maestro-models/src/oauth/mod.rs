@@ -163,7 +163,7 @@ fn get_oauth_api_key_with_clock(
         } else {
             credentials
         };
-        let api_key = provider.get_api_key(&credentials)?.to_owned();
+        let api_key = provider.get_api_key(&credentials)?.into_owned();
         Ok(Some(OAuthApiKey {
             new_credentials: credentials,
             api_key,

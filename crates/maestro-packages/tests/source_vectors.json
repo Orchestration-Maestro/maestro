@@ -77,7 +77,7 @@
   },
   {
     "input": "~name",
-    "expected": "/home/fake/name"
+    "expected": "/work/project/.maestro/~name"
   },
   {
     "input": "/abs/pkg",

@@ -92,7 +92,7 @@ async fn login_with_clock(
         .await?;
     polling::check_cancelled(callbacks.signal())?;
     let enterprise = normalize_domain(&input).filter(|domain| !domain.is_empty());
-    if !input.trim_matches(authorization_whitespace).is_empty() && enterprise.is_none() {
+    if !crate::arguments::json_parse::is_blank(&input) && enterprise.is_none() {
         return Err(OAuthError::message("Invalid GitHub Enterprise URL/domain"));
     }
     let domain = enterprise.as_deref().unwrap_or("github.com");
@@ -158,8 +158,11 @@ impl OAuthProviderInterface for GitHubCopilotOAuthProvider {
             Ok(refreshed)
         })
     }
-    fn get_api_key<'a>(&self, credentials: &'a OAuthCredentials) -> Result<&'a str, OAuthError> {
-        Ok(&credentials.access)
+    fn get_api_key<'a>(
+        &self,
+        credentials: &'a OAuthCredentials,
+    ) -> Result<Cow<'a, str>, OAuthError> {
+        Ok(Cow::Borrowed(&credentials.access))
     }
     fn modify_models<'m>(
         &self,

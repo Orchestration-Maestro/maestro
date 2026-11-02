@@ -12,7 +12,7 @@ fn shell_operations_are_available_from_application_root() {
     let config = get_shell_config(Some(".")).unwrap();
     assert_eq!(config.shell, ".");
     assert_eq!(config.args, ["-c"]);
-    let _: Arc<dyn BashOperations> =
+    let _: Arc<<maestro_models::Threaded as maestro_tools::BashExecution>::Operations> =
         create_local_bash_operations(String::new(), Some(config.shell));
 }
 

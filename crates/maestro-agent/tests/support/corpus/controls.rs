@@ -141,7 +141,7 @@ fn calls(control: &Control) -> Vec<AssistantContent> {
             AssistantContent::ToolCall(ToolCall {
                 id: format!("call-{id}"),
                 name: name.into(),
-                arguments: JsonObject::from_iter([("value".into(), value)]),
+                arguments: JsonObject::from_iter([("value".into(), value)]).into(),
                 thought_signature: None,
             })
         })

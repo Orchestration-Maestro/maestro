@@ -32,6 +32,55 @@ fn loaded_paths_keep_original_and_resolved_spellings() {
     ]);
 }
 
+/// Module identity is lexical, while records retain the selected path and provenance.
+#[test]
+fn module_loading_normalizes_only_the_module_argument() {
+    use maestro_extensions::{ExtensionFactory, ModuleLoader, load_extensions};
+    use maestro_models::Local;
+    use std::{cell::RefCell, rc::Rc};
+
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path().to_str().unwrap();
+    std::fs::create_dir(scratch.path().join("work")).unwrap();
+    std::os::unix::fs::symlink(scratch.path(), scratch.path().join("link")).unwrap();
+    let seen: Rc<RefCell<Vec<String>>> = Rc::default();
+    let captured = Rc::clone(&seen);
+    let factory: ExtensionFactory<Local> = Rc::new(|_| Box::pin(async { Ok(()) }));
+    let loader: ModuleLoader<Local> = Rc::new(move |path: &str| {
+        captured.borrow_mut().push(path.to_owned());
+        Box::pin(std::future::ready(Ok(Some(Rc::clone(&factory)))))
+    });
+    let rows = [
+        ["/a/../b", "/a/../b", "/b"],
+        ["$ROOT/./b", "$ROOT/./b", "$ROOT/b"],
+        ["$ROOT/b", "$ROOT/b", "$ROOT/b"],
+        ["./work/../b", "$ROOT/b", "$ROOT/b"],
+        ["$ROOT/link/./b", "$ROOT/link/./b", "$ROOT/link/b"],
+    ];
+    crate::local_support::local(async {
+        let bus = crate::local_support::LocalBus::new();
+        for row in rows {
+            let [path, resolved, operand] = row.map(|value| value.replace("$ROOT", root));
+            let result = load_extensions(vec![path.clone()], root, &bus.controller, &loader)
+                .await
+                .unwrap();
+            assert_eq!(*seen.borrow(), [operand]);
+            seen.borrow_mut().clear();
+            assert!(result.errors.is_empty());
+            let [extension] = result.extensions.as_slice() else {
+                panic!("one extension expected");
+            };
+            let extension = extension.read().unwrap();
+            assert_eq!(extension.path, path);
+            assert_eq!(extension.resolved_path, resolved);
+            let source = extension.source_info.read().unwrap();
+            assert_eq!(source.path, path);
+            assert_eq!(source.source, "local");
+            assert_eq!(source.base_dir, Some(maestro_path::dirname(&resolved)));
+        }
+    });
+}
+
 #[test]
 fn home_paths_expand_against_the_home_directory() {
     check_with_home(
@@ -205,7 +254,7 @@ fn tilde_paths_keep_the_written_file_name() {
     );
 }
 
-/// Every leading `~` form loads without reading a removed working directory.
+/// Both expanded `~` forms load without reading a removed working directory.
 #[test]
 fn leading_home_paths_load_without_a_working_directory() {
     use crate::local_support::{LocalBus, local};
@@ -231,7 +280,7 @@ fn leading_home_paths_load_without_a_working_directory() {
         });
         let bus = LocalBus::new();
         let paths = vec![
-            "~missing\u{a0}extension.wasm".to_owned(),
+            "~/missing\u{a0}extension.wasm".to_owned(),
             "~/other\u{a0}extension.wasm".to_owned(),
         ];
         let mut errors = 0;

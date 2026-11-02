@@ -1,16 +1,17 @@
 # Native terminal
 
-`ProcessTerminal` connects a Unix process to the toolkit. It implements the toolkit's
-`Terminal` port over the process's own standard input and standard output, so it needs no
-terminal framework and sends the toolkit raw protocol text rather than decoded key events.
-The type exists on Unix only; the native runtime host described [below](#the-runtime-host) exists
-on every native target, and only browser targets build the crate empty. It drives the
-descriptors directly and never opens the controlling terminal, so redirecting one of the two
-changes what it controls: raw mode and input come from standard input, window size and
-output from standard output.
+`ProcessTerminal` connects a Unix or Windows process to the toolkit. It implements the
+toolkit's `Terminal` port over the process's own standard input and standard output, so it
+needs no terminal framework and sends the toolkit raw protocol text rather than decoded key
+events. The native runtime host described [below](#the-runtime-host) exists on every native
+target, and only browser targets build the crate empty. The terminal drives the standard
+handles directly and never opens the controlling terminal or console, so redirecting one of
+the two changes what it controls: raw mode and input come from standard input, window size
+and output from standard output. [Windows consoles](#windows-consoles) describes what differs
+there.
 
 ```rust,no_run
-# #[cfg(unix)] {
+# #[cfg(any(unix, windows))] {
 use std::rc::Rc;
 
 use maestro_tui::Terminal;
@@ -32,10 +33,10 @@ runtime.block_on(local.run_until(async {
 
 ## The runtime it needs
 
-The terminal starts no runtime and no thread. It is given a `LocalSet`, and every task it
+The terminal starts no runtime, and on Unix no thread. It is given a `LocalSet`, and every task it
 creates runs there: the input reader, the output writer, the progress keepalive and every callback. Tasks run
 only while the caller drives that set inside a Tokio runtime whose I/O, time and signal
-drivers are enabled; a runtime built without one of them is a caller error, which Tokio
+drivers are enabled (time alone on Windows); a runtime built without one of them is a caller error, which Tokio
 reports itself. The standalone one-input wait validates the I/O driver before changing
 standard-input attributes or flags. `start` called outside a running runtime returns an `ErrorKind::Other` error
 and changes nothing, even on a terminal that is already started. Because callbacks never
@@ -57,7 +58,8 @@ Tokio runtime with the time driver enabled.
 - `spawn_local` queues a future on the set; it is not polled before the call returns.
 - A callback or future that returns an error has the `Display` text of the error and then of
   each source error written to standard error, each followed by a newline; the host then
-  keeps running. A failure to write to standard error is ignored.
+  keeps running. A failure to write there releases the lock on standard error and then
+  reaches the registered output-error handlers once.
 - `environment` returns the value as the platform holds it, with invalid text converted
   lossily; it does not trim or interpret the value.
 - `log_context` reports the home directory (empty when the platform has none), the current
@@ -69,14 +71,19 @@ Tokio runtime with the time driver enabled.
 Dropping the set drops the work still pending. The host's own tasks hold no handle to the
 host; callers release any strong handle their callbacks capture.
 
+The interactive mode installs termination and output-error handlers before starting
+this terminal. Its Unix signal registrations share the process owner's native
+default lifetime: the final removal restores TERM/HUP defaults, including while
+application disposal is pending. See [interactive shutdown](../chat/interactive-mode.md#native-shutdown).
+
 ## Starting and stopping
 
 `new` reads the size of standard output and the write-log setting and does nothing else.
-`start` puts standard input in raw mode when it is a terminal, makes its reads nonblocking,
+On Unix, `start` puts standard input in raw mode when it is a terminal, makes its reads nonblocking,
 subscribes to window-change signals, writes the bracketed-paste enable and the keyboard
 query, registers nonblocking output and spawns the input and output tasks.
 
-Raw mode is applied to the device standard input refers to. It clears echo, line editing,
+On Unix, raw mode is applied to the device standard input refers to. It clears echo, line editing,
 signal keys, extended input processing, break handling, parity marking, stripping, newline
 and carriage-return mapping and the start and stop keys, so bytes are delivered as they
 become available, without line buffering. It also turns output post-processing and
@@ -118,7 +125,7 @@ input and output share an open file description, input restoration runs last.
 ## Input
 
 Standard input uses the shared [streaming text decoder](../text.md) and is read as UTF-8,
-at most 4096 bytes per read: a read takes what
+on Unix at most 4096 bytes per read: a read takes what
 is available at that moment, and a longer burst arrives in consecutive reads. A character
 split across reads is held until it completes, and invalid bytes become U+FFFD; only text
 that is complete reaches the toolkit's shared `StdinBuffer`. Its framing and release rules
@@ -126,19 +133,44 @@ are described in [Input](https://github.com/Orchestration-Maestro/maestro/blob/m
 order, except keyboard replies and the events of a drain, which are described below; a
 paste has its two markers put back. Malformed UTF-8 is never treated as a legacy
 alt-modified byte. At the end of input the decoder is flushed and reading stops, but the
-buffer's deadline, the keyboard decision and window-size tracking continue until `stop`.
+buffer's and held fragment's deadlines and window-size tracking continue until `stop`.
 A read error ends the input task, and with it that tracking; the first such error is kept
 and returned by the next `stop`.
 
 ## Keyboard protocols
 
-`start` asks the terminal for its enhanced keyboard flags. A reply is exactly `ESC [ ?`, one
-or more ASCII digits and `u`. The first reply enables the enhanced protocol (flags 7) and is
-not passed on; `kitty_protocol_active` becomes true and the toolkit's shared flag is set. A
-later reply while the protocol is active is ordinary input. If no reply arrives within
-150 ms of `start`, the modified-key reporting mode is enabled instead; a reply that arrives
-after that still enables the enhanced protocol, and both modes are then disabled at
-`stop`. Replies that do not match the form are ordinary input.
+`start` requests the enhanced keyboard flags (7), then asks the terminal which flags it runs
+and for its device attributes. Maestro waits for the answers; no timer chooses a mode. A reply
+is exactly `ESC [ ?`, one or more ASCII digits and `u` for the flags, or `ESC [ ?`, any ASCII
+digits and semicolons and `c` for the device attributes. Every reply is consumed and never
+reaches the input callback; other sequences are ordinary input.
+
+- Non-zero flags set `kitty_protocol_active` and the toolkit's shared flag, and switch the
+  modified-key reporting off if it is on.
+- Zero flags, or device attributes while the enhanced protocol is off, enable the modified-key
+  reporting. A terminal that does not know the enhanced protocol answers only the attributes,
+  so it gets the fallback as soon as that reply arrives.
+- A reply that arrives later still counts: a late flags reply turns the fallback off and the
+  enhanced protocol on.
+
+The framing may release the start of a reply (`ESC [` or `ESC [ ?` and digits) before the rest
+arrives. The terminal holds such a fragment for up to 150 ms and joins it with what follows. A
+fragment that never completes is then delivered as ordinary input, and a following sequence
+that cannot continue it delivers the fragment first. At `stop` the flags requested at `start`
+are popped, and the modified-key reporting is disabled if it was on. Every start requests the
+flags, so a terminal that is started again while it holds them pops each request at `stop`.
+
+## Ending without `stop`
+
+Dropping a terminal that was started, or that hid the cursor, restores what it owns
+exactly as `stop` does: it shows the cursor if this terminal hid it and nothing showed
+it since, clears an active progress indicator, turns bracketed paste off, pops the
+requested keyboard flags and turns the modified-key reporting off. `stop` writes the
+cursor only in that same case, so a toolkit that showed the cursor before stopping
+causes no second write. A process that ends through `std::process::exit` skips drops.
+The interactive shutdown and the fatal-error path stop the terminal before they exit. The
+emergency exit after a disconnected standard stream (status 129) does not: the terminal can no
+longer be written to, as [interactive mode](../chat/interactive-mode.md) describes.
 
 ## Draining
 
@@ -149,17 +181,18 @@ Input still goes to the shared buffer under the [Input](https://github.com/Orche
 While the drain runs, every event the buffer releases is discarded, whatever released it.
 The drain does not reset framing state.
 
-The future checks the elapsed quiet time and the maximum, then waits the shorter of the idle
-time and the time left, so the idle exit is noticed on that cadence. Only complete decoded
+The future owns its state, so the terminal it came from stays usable while the drain
+is pending. It checks the elapsed quiet time and the maximum, then waits the shorter
+of the idle time and the time left, so the idle exit is noticed on that cadence. Only complete decoded
 text counts as activity, not the bytes of an unfinished character. When the future ends, or
 is dropped, input delivery resumes with the original callback. A drain also closes keyboard
-negotiation for the current generation: no later reply and no pending fallback decision
-enables a mode, and a reply that arrives is consumed instead of delivered.
+negotiation for the current generation: no later reply changes a mode, a held reply fragment
+is dropped, and a reply that arrives is consumed instead of delivered.
 
 ## Window size
 
 The size is cached from standard output when the terminal is created and refreshed when the
-input task starts and on each window-change signal. The resize callback runs only when the
+input task starts and on each window-change signal (on Windows, each window-size record). The resize callback runs only when the
 size differs from the cached one. A failed query leaves the cached size as it was. A
 dimension the cache holds as zero, or never observed, falls back independently: to the
 number in `COLUMNS` (width) or `LINES` (height), then to 80 by 24.
@@ -173,7 +206,7 @@ which a `usize` cannot hold.
 
 ## Output
 
-While started, output commands accept owned UTF-8 bytes into one ordered queue and
+On Unix, while started, output commands accept owned UTF-8 bytes into one ordered queue and
 return without waiting for the terminal reader. One task writes at most 16 KiB per
 syscall and waits on descriptor readiness when output is full, leaving input runnable.
 A permanent write failure drops the remaining queue, refuses further accumulation
@@ -182,6 +215,14 @@ refuses, stay synchronous; commands while stopped also write synchronously and
 return the original write error. Stopping or dropping a started terminal cancels
 the writer and drains its retained partial buffer before restoring modes. This final
 drain has no deadline and can wait indefinitely for a live reader that never resumes.
+
+`on_output_error` registers a handler for a failure to write, and returns the operation
+that removes it; removing it twice does nothing and a stale removal leaves a later
+registration in place. Each failure is passed to the registered handlers once, with the
+original error: a synchronous write, an asynchronous writer failure, a keepalive write and
+a failure to report on standard error. A read error from standard input is retained for
+`stop` and is never passed to them. The handlers run with no borrow held, so one may remove
+or replace itself.
 
 `move_by` writes nothing for zero. The title is written unchanged between `ESC ] 0 ;` and a
 bell. `set_progress(true)` writes the indeterminate-progress sequence to the same queue and, when no
@@ -222,7 +263,7 @@ background tasks cannot be returned where they happen, so the first is kept and 
 
 ## One-input wait
 
-On Unix, `terminal::wait_for_input()` is a standalone future for a host-owned pause.
+`terminal::wait_for_input()` is a standalone future for a host-owned pause.
 Its first poll checks the caller's Tokio runtime and opens the existing input source
 before acquiring raw/nonblocking stdin through the terminal's restoration guard.
 It completes on one nonempty raw read: no key decoding, Enter requirement, protocol
@@ -232,5 +273,41 @@ A pipe is supported and arbitrary bytes count as input. EOF stays pending until 
 Success, errors and future drop restore the saved terminal attributes and descriptor
 flags, including initially raw state. Explicit completion reports restoration failures
 unless an earlier operation already failed. Opening or acquisition failures release the
-input registration. A later wait opens its own reader rather than retaining one.
-Windows native raw input is not exposed by this Unix operation.
+input registration. On Unix, a later wait opens its own reader rather than retaining one.
+On Windows it acquires the standard-input console as `start` does, without the output
+mode, and completes on the first text or redirected bytes the shared reader delivers. EOF
+stays pending until drop, and drop restores the saved mode.
+
+## Windows consoles
+
+On Windows, `start` saves the console mode of standard input and applies raw mode: line
+input, echo and processed input (so Ctrl+C arrives as input) are turned off and window-size
+records on. It then adds escape-sequence input, so the console sends the sequences a
+terminal sends and modified keys such as Shift+Tab are told apart. A console that refuses
+escape-sequence input stays in raw mode without it, and `start` still succeeds; such a
+console delivers typed characters but no sequences for keys that produce none. `start` also
+turns on escape-sequence processing for the standard-output console when it accepts it.
+`stop` restores the saved output mode. Standard input's original mode is restored after
+the last terminal or standalone wait releases it; repeated and replacing starts keep the
+mode saved first, as on Unix. Standard input or output that is not a console is left alone.
+
+Windows input uses one process-wide reader thread shared by terminal generations and
+standalone waits. It queries an idle console every 10 ms and reads the waiting records.
+The count is only a latency optimization: another reader can consume those records before
+the read begins. Stopping removes the generation's subscription without joining or waiting
+for that read, so neither a console nor a pipe can block shutdown. A completed batch with
+no subscriber is held for the next start, and concurrent subscriptions each receive the
+same input. External readers are not coordinated.
+
+Character-producing key presses, including NUL from Ctrl+Space or Ctrl+2, and Alt releases
+that carry a character composed on the numeric keypad become text in order, repeated as
+the record says. Modifier-only records are not text. Control-state metadata distinguishes
+NUL-producing keys from records that carry no character. Surrogate pairs split across
+reads are joined; an unpaired surrogate becomes U+FFFD. Text then follows the shared
+[Input](#input) path. Window-size records refresh the size from the standard-output console.
+A read failure ends the source and is returned by the next `stop`.
+
+Redirected standard input is read as bytes on the same reader thread, at most 4096 bytes
+per read. A pending read can outlive `stop`, but cannot forward to a stopped generation;
+its bytes are held for resume. EOF ends input delivery. Output is synchronous, so
+`pending_output_bytes` is always zero.

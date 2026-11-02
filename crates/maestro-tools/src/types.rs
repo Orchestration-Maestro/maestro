@@ -187,7 +187,7 @@ pub struct ToolDefinitionRecord<
     I: maestro_agent::AgentExecution = E,
 > {
     /// Model-facing declaration.
-    pub definition: Tool,
+    pub definition: Tool<E::SchemaCode>,
     /// Display label.
     pub label: String,
     /// One-line description for the system prompt.

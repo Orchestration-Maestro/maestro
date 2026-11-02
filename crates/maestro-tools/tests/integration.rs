@@ -12,9 +12,11 @@ mod diff_rendering;
 mod diff_support;
 mod direct_shell_execution;
 mod display_cases;
-mod display_context;
+#[cfg(not(target_arch = "wasm32"))]
+use maestro_tools::test_support::display_context;
 mod display_helpers;
-mod display_palette;
+#[cfg(not(target_arch = "wasm32"))]
+use maestro_tools::test_support::display_palette;
 mod display_support;
 mod edit_execution;
 #[cfg(not(target_arch = "wasm32"))]
@@ -67,6 +69,7 @@ mod write_support;
 
 mod visual_tail;
 
+mod bash_operation_affinity;
 mod bash_rendering;
 
 mod renderer_projection;

@@ -1,14 +1,13 @@
 //! Markdown mounted as native page content through its public component.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{
-    call, computed, container, document, host, page_module, rgb, view,
+    call, computed, container, document, host, page_module, rgb, selection, view,
 };
 use crate::markdown_support::{
     BlockRow, ContextRow, rows,
     walk::{self, Mounter as _},
 };
 use maestro_web::{
-    I18n,
     components::markdown_block::MarkdownBlock,
     contributions::ContributionHost,
     dom::{DomView, MountedContent},
@@ -82,14 +81,6 @@ impl Fixture {
     fn root(&self) -> Element {
         self.shown.root().cloned().unwrap().unchecked_into()
     }
-}
-/// The selected text and whether `root` holds the selection.
-async fn selection(page: &JsValue, root: &Element) -> (String, bool) {
-    let pair = js_sys::Array::from(&call(page, "selection", &js_sys::Array::of1(root)).await);
-    (
-        pair.get(0).as_string().unwrap(),
-        pair.get(1).as_bool().unwrap(),
-    )
 }
 /// Select every child of `node`, returning the selected text.
 async fn select(page: &JsValue, node: &Element) -> String {
@@ -258,15 +249,7 @@ async fn supplied_adapters_reach_updates(
     copy: &Element,
 ) {
     let view = Rc::clone(&fixture.view);
-    let german = I18n::new(Rc::new(crate::support::Host {
-        stored: Some("de".to_owned()).into(),
-        ..crate::support::Host::default()
-    }))
-    .unwrap();
-    fixture.view = Rc::new(DomView {
-        i18n: Rc::new(german),
-        ..(*view).clone()
-    });
+    fixture.view = crate::contributions_support::localized_view(&view, "de");
     fixture.show(block);
     assert_eq!(
         copy.get_attribute("title").as_deref(),

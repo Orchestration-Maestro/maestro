@@ -5,10 +5,12 @@ use serde::ser::{SerializeMap, SerializeStruct};
 use serde::{Serialize, Serializer};
 use serde_json::Value;
 
-use super::compat::{OpenAICompletionsCapability as Capability, ResolvedOpenAICompletionsCompat};
-use crate::arguments::json_parse::whitespace;
+use super::compat::{
+    OpenAICompletionsCapability as Capability, ResolvedOpenAICompletionsCompat, reasoning_field,
+};
+use crate::arguments::json_parse::is_blank;
 use crate::projection::IMAGE_PLACEHOLDER;
-use crate::providers::json_text::{compact_object, is_truthy, json_value, raw_json};
+use crate::providers::json_text::{compact_json, is_truthy, json_value, raw_json};
 use crate::{
     AssistantContent, AssistantMessage, Context, DiagnosticErrorInfo, JsonObject, Message, Model,
     ModelInput, ThinkingContent, ToolCall, ToolResultMessage, UserBlock, UserContent, UserMessage,
@@ -290,11 +292,6 @@ fn text_part(text: impl Into<String>) -> ChatCompletionContentPart {
     })
 }
 
-/// Report whether trimming leaves any text.
-fn has_text(text: &str) -> bool {
-    !text.trim_matches(whitespace).is_empty()
-}
-
 /// The blocks of an assistant turn that the wire format carries.
 struct AssistantBlocks<'a> {
     /// Text blocks with visible characters.
@@ -315,10 +312,10 @@ impl<'a> AssistantBlocks<'a> {
         };
         for block in &assistant.content {
             match block {
-                AssistantContent::Text(text) if has_text(&text.text) => {
+                AssistantContent::Text(text) if !is_blank(&text.text) => {
                     blocks.texts.push(&text.text);
                 }
-                AssistantContent::Thinking(thinking) if has_text(&thinking.thinking) => {
+                AssistantContent::Thinking(thinking) if !is_blank(&thinking.thinking) => {
                     blocks.thinking.push(thinking);
                 }
                 AssistantContent::ToolCall(call) => blocks.calls.push(call),
@@ -336,7 +333,7 @@ fn convert_assistant(
     compat: &ResolvedOpenAICompletionsCompat,
 ) -> Result<Option<ChatCompletionMessageParam>, DiagnosticErrorInfo> {
     let blocks = AssistantBlocks::of(assistant);
-    let (content, mut extension_fields) = replay_content(&blocks, compat);
+    let (content, mut extension_fields) = replay_content(&blocks, model, compat);
     let tool_calls = blocks
         .calls
         .iter()
@@ -376,6 +373,7 @@ fn convert_assistant(
 /// Choose the assistant content and the reasoning replay fields for the endpoint.
 fn replay_content(
     blocks: &AssistantBlocks<'_>,
+    model: &Model,
     compat: &ResolvedOpenAICompletionsCompat,
 ) -> (Option<ChatCompletionContent>, JsonObject) {
     let mut content = compat
@@ -403,14 +401,17 @@ fn replay_content(
         .and_then(|first| first.thinking_signature.as_deref())
         .filter(|signature| !signature.is_empty());
     if let Some(signature) = signature {
-        fields.insert(signature.to_owned(), Value::String(reasoning.join("\n")));
+        fields.insert(
+            reasoning_field(model, signature).to_owned(),
+            Value::String(reasoning.join("\n")),
+        );
     }
     (content, fields)
 }
 
 /// Convert a tool call, rendering its arguments as compact JSON text.
 fn wire_tool_call(call: &ToolCall) -> Result<ChatCompletionMessageToolCall, DiagnosticErrorInfo> {
-    let arguments = compact_object(&call.arguments)
+    let arguments = compact_json(&call.arguments)
         .map_err(|error| DiagnosticErrorInfo::error(error.to_string()))?;
     Ok(ChatCompletionMessageToolCall {
         id: call.id.clone(),

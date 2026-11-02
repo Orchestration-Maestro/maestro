@@ -4,6 +4,7 @@ version = "0.1.0"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
+autotests = false
 
 [dependencies]
 maestro-text = { path = "../maestro-text" }
@@ -13,6 +14,10 @@ regress = { version = "=0.12.0", features = ["prohibit-unsafe"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
+
+[[test]]
+name = "integration"
+path = "tests/integration.rs"
 
 [lints]
 workspace = true

@@ -32,8 +32,7 @@ fn daemon_legacy_bare_tab_id_uses_tab_position_not_public_tab_number() {
 }
 
 #[cfg(unix)]
-#[path = "support/launch.rs"]
-mod launch;
+use crate::support::launch;
 
 /// Builds the daemon with retained adapters but no native process.
 #[cfg(unix)]
@@ -43,7 +42,10 @@ fn app(config: &Config) -> maestro_daemon::app::App<fn() -> u128> {
 
 /// Builds the daemon with the setup entry's own harness arguments.
 #[cfg(unix)]
-fn app_with_args(config: &Config, args: &[String]) -> maestro_daemon::app::App<fn() -> u128> {
+pub(crate) fn app_with_args(
+    config: &Config,
+    args: &[String],
+) -> maestro_daemon::app::App<fn() -> u128> {
     let manifests = std::sync::Arc::new(std::sync::RwLock::new(
         maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
     ));
@@ -564,7 +566,7 @@ fn shutdown_drains_pending_exit_hooks_before_runtime_release() {
     if maestro_test_process::run_alone(name).unwrap() {
         return;
     }
-    maestro_test_process::TestProcess::named("setup_entry")
+    maestro_test_process::TestProcess::named("daemon_runtime::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()
@@ -738,7 +740,7 @@ fn default_workspace_cwd(policy: &str) -> std::path::PathBuf {
     config.terminal.default_shell = "/bin/sh".into();
     config.terminal.new_cwd =
         maestro_daemon::settings::model::NewTerminalCwdConfig::Path(policy.into());
-    let args = maestro_test_process::TestProcess::named("setup_entry")
+    let args = maestro_test_process::TestProcess::named("daemon_runtime::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()
@@ -789,8 +791,8 @@ fn daemon_new_terminal_cwd_follows_the_link_above_a_tilde_path() {
     );
 }
 
-/// A `~` path's written rest joins the home directory as a native path, so an absolute rest
-/// replaces it.
+/// A `~` path's written rest joins below the home directory as written, so an absolute rest
+/// stays below it, and `~name` is not a home form.
 #[cfg(unix)]
 #[test]
 fn daemon_tilde_paths_join_their_rest_natively() {
@@ -803,9 +805,10 @@ fn daemon_tilde_paths_join_their_rest_natively() {
     let cases = [
         ("~", home.clone()),
         ("~/", format!("{home}/")),
-        ("~//note", "/note".to_owned()),
+        ("~//note", format!("{home}//note")),
         ("~/a/../f", format!("{home}/a/../f")),
-        ("~//x", "/x".to_owned()),
+        ("~//x", format!("{home}//x")),
+        ("~x", "~x".to_owned()),
     ];
     tokio::runtime::Builder::new_current_thread()
         .enable_all()

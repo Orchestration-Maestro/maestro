@@ -1,9 +1,5 @@
 //! Native original-byte downloads with scoped URL and anchor ownership.
-use crate::{
-    Attachment,
-    browser::attachment_content::{AttachmentHostError, browser::host_error},
-};
-use std::cell::RefCell;
+use crate::browser::attachment_content::{AttachmentHostError, browser::host_error};
 use wasm_bindgen::JsCast as _;
 use web_sys::{Document, HtmlAnchorElement, Url};
 /// Resources released on either successful click or a later platform failure.
@@ -23,11 +19,11 @@ impl Drop for Download {
 /// Use the owning window's native decoder and Blob implementation.
 pub(crate) fn download(
     document: &Document,
-    attachment: &RefCell<Attachment>,
+    attachment: &crate::SharedAttachment,
 ) -> Result<(), AttachmentHostError> {
     let (content, name, mime) = {
         let a = attachment
-            .try_borrow()
+            .try_read()
             .map_err(|_| AttachmentHostError::BorrowConflict)?;
         (a.content.clone(), a.file_name.clone(), a.mime_type.clone())
     };

@@ -1,8 +1,8 @@
 //! Typed input through the editor's installed submission and the single waiting input.
-use super::{World, cases as recorded_cases, isolated, started};
+use super::{World, cases as recorded_cases, debug::only_log, isolated, started};
 use crate::{CustomEditor, InteractiveMode};
-use maestro_tui::KeybindingKeys;
 use maestro_tui::tui::InputHandler;
+use maestro_tui::{Component, KeybindingKeys};
 use serde::Deserialize;
 use std::{
     cell::RefCell,
@@ -80,9 +80,9 @@ struct Selected {
 #[test]
 fn typed_submission_trims_ecmascript_whitespace_and_records_history() {
     const TEST: &str = "typed_submission_trims_ecmascript_whitespace_and_records_history";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (input, expected) in recorded_cases::<Selection, Selected>(FIXTURES, TEST) {
-            let world = started(directory);
+            let world = started(directory).await;
             let mut waiter = input.waiting.then(|| waiting(&world.mode));
             submit(&world.mode, &input.value);
             let delivered: Vec<String> = waiter.as_mut().and_then(poll).into_iter().collect();
@@ -166,9 +166,9 @@ fn replace(world: &World) -> (bool, String, Vec<String>) {
 #[test]
 fn typed_waiter_is_one_shot_without_buffering_early_submissions() {
     const TEST: &str = "typed_waiter_is_one_shot_without_buffering_early_submissions";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (input, expected) in recorded_cases::<Sequence, Waited>(FIXTURES, TEST) {
-            let world = started(directory);
+            let world = started(directory).await;
             let cleared = |world: &World| world.mode.on_input_callback.borrow().is_none();
             match (input.op.as_str(), expected) {
                 (
@@ -199,7 +199,7 @@ fn typed_waiter_is_one_shot_without_buffering_early_submissions() {
                 (op, _) => panic!("unknown sequence {op}"),
             }
         }
-        let world = started(directory);
+        let world = started(directory).await;
         let mut unpolled = Box::pin(world.mode.get_user_input());
         submit(&world.mode, " unclaimed ");
         assert!(world.mode.on_input_callback.borrow().is_none());
@@ -218,29 +218,32 @@ fn typed_waiter_is_one_shot_without_buffering_early_submissions() {
 
 #[test]
 fn typed_callback_does_not_retain_the_mode() {
-    isolated("typed_callback_does_not_retain_the_mode", |directory| {
-        let World {
-            mode,
-            terminal,
-            runtime,
-            themes,
-            host,
-            loader,
-        } = started(directory);
-        let editor = Rc::clone(&mode.editor);
-        let callback = editor.on_submit().unwrap();
-        let mut unpolled = Box::pin(mode.get_user_input());
-        let mut waiter = waiting(&mode);
-        let weak = Rc::downgrade(&mode);
-        drop(mode);
-        assert!(weak.upgrade().is_none());
-        callback(" after release ");
-        assert!(weak.upgrade().is_none());
-        assert_eq!(poll(&mut waiter), None);
-        assert_eq!(poll(&mut unpolled), None);
-        assert!(recalled(&editor).is_empty());
-        drop((terminal, runtime, themes, host, loader));
-    });
+    isolated(
+        "typed_callback_does_not_retain_the_mode",
+        async |directory| {
+            let World {
+                mode,
+                terminal,
+                runtime,
+                themes,
+                host,
+                loader,
+            } = started(directory).await;
+            let editor = Rc::clone(&mode.editor);
+            let callback = editor.on_submit().unwrap();
+            let mut unpolled = Box::pin(mode.get_user_input());
+            let mut waiter = waiting(&mode);
+            let weak = Rc::downgrade(&mode);
+            drop(mode);
+            assert!(weak.upgrade().is_none());
+            callback(" after release ");
+            assert!(weak.upgrade().is_none());
+            assert_eq!(poll(&mut waiter), None);
+            assert_eq!(poll(&mut unpolled), None);
+            assert!(recalled(&editor).is_empty());
+            drop((terminal, runtime, themes, host, loader));
+        },
+    );
 }
 
 thread_local! {
@@ -291,13 +294,13 @@ struct Reentered {
 #[test]
 fn typed_delivery_precedes_history_and_accepts_reentrant_registration() {
     const TEST: &str = "typed_delivery_precedes_history_and_accepts_reentrant_registration";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         let [(input, expected)] =
             <[(Sequence, Reentered); 1]>::try_from(recorded_cases(FIXTURES, TEST))
                 .ok()
                 .unwrap();
         assert_eq!(input.op, "callback-reentry");
-        let world = started(directory);
+        let world = started(directory).await;
         world.mode.editor.add_to_history("older");
         let first = Rc::new(RefCell::new(Box::pin(world.mode.get_user_input())));
         let waker = Waker::from(Arc::new(Observer));
@@ -407,15 +410,19 @@ enum Routed {
 }
 
 /// A started mode whose key binding file binds submission to `binding`.
-fn bound(directory: &Path, binding: &str) -> World {
+async fn bound(directory: &Path, binding: &str) -> World {
     let config = serde_json::json!({ "tui.input.submit": binding });
     std::fs::write(directory.join("keybindings.json"), config.to_string()).unwrap();
-    started(directory)
+    started(directory).await
 }
 
 /// Sends `keys` under the binding loaded at construction, then recalls with Up.
-fn constructor_binding(directory: &Path, binding: &str, keys: &[String]) -> (Vec<KeyStep>, String) {
-    let world = bound(directory, binding);
+async fn constructor_binding(
+    directory: &Path,
+    binding: &str,
+    keys: &[String],
+) -> (Vec<KeyStep>, String) {
+    let world = bound(directory, binding).await;
     let mut waiter = waiting(&world.mode);
     world.mode.editor.set_text(" through terminal ");
     let mut received = None;
@@ -439,8 +446,8 @@ fn constructor_binding(directory: &Path, binding: &str, keys: &[String]) -> (Vec
 
 /// Changes the live submit binding to each step's key and sends the previous key, then
 /// the current one.
-fn live_binding(directory: &Path, steps: &[LiveStep]) {
-    let world = bound(directory, "ctrl+x");
+async fn live_binding(directory: &Path, steps: &[LiveStep]) {
+    let world = bound(directory, "ctrl+x").await;
     for step in steps {
         maestro_tui::get_keybindings().set_user_bindings(vec![(
             "tui.input.submit".to_owned(),
@@ -460,7 +467,7 @@ fn live_binding(directory: &Path, steps: &[LiveStep]) {
 #[test]
 fn typed_input_obeys_the_live_submit_binding() {
     const TEST: &str = "typed_input_obeys_the_live_submit_binding";
-    isolated(TEST, |directory| {
+    isolated(TEST, async |directory| {
         for (input, expected) in recorded_cases::<Binding, Routed>(FIXTURES, TEST) {
             match (input, expected) {
                 (
@@ -471,16 +478,146 @@ fn typed_input_obeys_the_live_submit_binding() {
                     },
                 ) => {
                     assert_eq!(
-                        constructor_binding(directory, &binding, &keys),
+                        constructor_binding(directory, &binding, &keys).await,
                         (steps, history_recall)
                     );
                 }
                 (Binding::Live { binding }, Routed::Live { steps }) => {
                     assert_eq!(binding, "live-change-both-directions");
-                    live_binding(directory, &steps);
+                    live_binding(directory, &steps).await;
                 }
                 _ => panic!("a binding case and its observation disagree"),
             }
         }
     });
+}
+
+/// Types `text` into the editor through the terminal and submits it with Enter.
+fn enter(world: &World, text: &str) {
+    world.terminal.send_input(text);
+    world.terminal.send_input("\r");
+}
+
+/// Types `text` with Enter and a waiting input, then checks that a command consumed it: the
+/// input keeps waiting, the editor is empty and the history records nothing.
+fn consumed(world: &World, text: &str) {
+    let mut waiter = waiting(&world.mode);
+    enter(world, text);
+    assert_eq!(poll(&mut waiter), None);
+    assert_eq!(world.mode.editor.get_text(), "");
+    assert!(recalled(&world.mode.editor).is_empty());
+}
+
+/// Types `text` with Enter and a waiting input, then checks that it arrives as ordinary input.
+fn ordinary(world: &World, text: &str) {
+    let mut waiter = waiting(&world.mode);
+    enter(world, text);
+    assert_eq!(poll(&mut waiter).as_deref(), Some(text.trim()));
+    assert_eq!(recalled(&world.mode.editor)[0], text.trim());
+}
+
+/// The transcript rendered wide enough to keep each notice on one row.
+fn transcript(world: &World) -> String {
+    world.mode.chat_container.render(200).join("\n")
+}
+
+#[test]
+fn name_submission_consumes_command_before_prompt() {
+    isolated(
+        "name_submission_consumes_command_before_prompt",
+        async |directory| {
+            let world = started(directory).await;
+            consumed(&world, "/name");
+            assert!(transcript(&world).contains("Warning: Usage: /name <name>"));
+            consumed(&world, "  /name Demo  ");
+            assert!(transcript(&world).contains("Session name set: Demo"));
+            let name = world.host.session().session_name().unwrap();
+            assert_eq!(name.as_deref(), Some("Demo"));
+            let notices = world.mode.chat_container.children().borrow().len();
+            ordinary(&world, "/names");
+            ordinary(&world, "rename /name it");
+            assert_eq!(world.mode.chat_container.children().borrow().len(), notices);
+        },
+    );
+}
+
+#[test]
+fn session_submission_reports_without_prompt() {
+    isolated(
+        "session_submission_reports_without_prompt",
+        async |directory| {
+            let world = started(directory).await;
+            consumed(&world, "/session");
+            assert!(transcript(&world).contains("Session Info"));
+            let notices = world.mode.chat_container.children().borrow().len();
+            ordinary(&world, "/session extra");
+            assert_eq!(world.mode.chat_container.children().borrow().len(), notices);
+        },
+    );
+}
+
+#[test]
+fn debug_submission_records_then_clears_editor() {
+    isolated(
+        "debug_submission_records_then_clears_editor",
+        async |directory| {
+            let world = started(directory).await;
+            consumed(&world, "/debug");
+            assert!(only_log(&world).starts_with("Debug output at "));
+            assert!(transcript(&world).contains("Debug log written"));
+            world
+                .runtime
+                .set_write_error(Some(std::io::ErrorKind::PermissionDenied));
+            let notices = world.mode.chat_container.children().borrow().len();
+            let mut waiter = waiting(&world.mode);
+            enter(&world, "/debug");
+            assert_eq!(poll(&mut waiter), None);
+            assert_eq!(world.mode.editor.get_text(), "");
+            assert_eq!(world.mode.chat_container.children().borrow().len(), notices);
+            assert_eq!(world.runtime.drain_futures().len(), 1);
+            ordinary(&world, "/debug now");
+        },
+    );
+}
+
+#[test]
+fn hotkeys_submission_uses_effective_keys_without_prompt() {
+    isolated(
+        "hotkeys_submission_uses_effective_keys_without_prompt",
+        async |directory| {
+            let world = started(directory).await;
+            for (text, key) in [("/hotkeys", "alt+x"), ("\u{feff}/hotkeys\u{feff}", "alt+y")] {
+                maestro_tui::get_keybindings().set_user_bindings(vec![(
+                    "app.interrupt".to_owned(),
+                    Some(KeybindingKeys::Single(key.to_owned())),
+                )]);
+                let before = world.mode.chat_container.children().borrow().len();
+                consumed(&world, text);
+                let children = world.mode.chat_container.children();
+                let children = children.borrow();
+                assert_eq!(children.len(), before + 6);
+                let panel = children[before..]
+                    .iter()
+                    .flat_map(|child| child.render(200))
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                assert!(panel.contains("Keyboard Shortcuts"));
+                let label = if key == "alt+x" { "Alt+X" } else { "Alt+Y" };
+                let cancel = panel
+                    .lines()
+                    .find(|row| row.contains("Cancel autocomplete / abort streaming"))
+                    .unwrap();
+                assert!(cancel.contains(label));
+            }
+            for text in ["/hotkey", "/HOTKEYS", "/hotkeys extra", "/hotkeys\u{85}"] {
+                let before = world.mode.chat_container.children().borrow().len();
+                let mut waiter = waiting(&world.mode);
+                enter(&world, text);
+                assert_eq!(poll(&mut waiter).as_deref(), Some(text));
+                assert_eq!(world.mode.editor.get_text(), "");
+                assert_eq!(recalled(&world.mode.editor)[0], text);
+                assert_eq!(world.mode.chat_container.children().borrow().len(), before);
+            }
+        },
+    );
 }

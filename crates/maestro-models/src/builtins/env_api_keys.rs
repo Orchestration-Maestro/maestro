@@ -79,7 +79,7 @@ fn has_vertex_adc_credentials() -> bool {
 /// List environment key candidates in each provider's precedence order.
 fn get_api_key_env_vars(provider: &str) -> &'static [&'static str] {
     match provider {
-        "github-copilot" => &["COPILOT_GITHUB_TOKEN", "GH_TOKEN", "GITHUB_TOKEN"],
+        "github-copilot" => &["COPILOT_GITHUB_TOKEN"],
         "anthropic" => &["ANTHROPIC_OAUTH_TOKEN", "ANTHROPIC_API_KEY"],
         "openai" => &["OPENAI_API_KEY"],
         "azure-openai-responses" => &["AZURE_OPENAI_API_KEY"],

@@ -1,7 +1,7 @@
 //! Credential integration tests compiled as one program.
 #![cfg(test)]
 
-mod fallback_support;
+use maestro_credentials::test_support::fallback_support;
 mod gate_support;
 mod oauth_support;
 mod support;

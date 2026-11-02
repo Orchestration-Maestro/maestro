@@ -7,6 +7,72 @@ mod tests {
     use std::sync::Arc;
     use std::task::{Context, Poll, Wake, Waker};
 
+    #[test]
+    fn local_stream_callbacks_keep_local_captures_and_reentry() {
+        use maestro_models::Local;
+        use std::{cell::RefCell, rc::Rc};
+        let holder = Rc::new(RefCell::new(None::<EventStream<i32, Rc<str>, Local>>));
+        let classify_holder = Rc::downgrade(&holder);
+        let extract_holder = Rc::downgrade(&holder);
+        let calls = Rc::new(RefCell::new(Vec::new()));
+        let classify_calls = calls.clone();
+        let extract_calls = calls.clone();
+        let result = Rc::<str>::from("retained local result");
+        let extracted = result.clone();
+        let stream = EventStream::<_, _, Local>::new_local(
+            move |value: &i32| {
+                classify_calls
+                    .borrow_mut()
+                    .push(format!("classify:{value}"));
+                if *value < 0 {
+                    classify_holder
+                        .upgrade()
+                        .unwrap()
+                        .borrow()
+                        .as_ref()
+                        .unwrap()
+                        .push(2);
+                }
+                *value < 0
+            },
+            move |value| {
+                extract_calls.borrow_mut().push(format!("extract:{value}"));
+                extract_holder
+                    .upgrade()
+                    .unwrap()
+                    .borrow()
+                    .as_ref()
+                    .unwrap()
+                    .push(99);
+                extracted.clone()
+            },
+        );
+        *holder.borrow_mut() = Some(stream.clone());
+        stream.push(1);
+        stream.push(-1);
+        stream.push(100);
+        assert_eq!(
+            *calls.borrow(),
+            ["classify:1", "classify:-1", "classify:2", "extract:-1"]
+        );
+        assert_local_result(&stream, &result);
+        for expected in [Some(1), Some(2), Some(-1), None] {
+            assert_eq!(poll(std::pin::pin!(stream.next())), Poll::Ready(expected));
+        }
+        assert_local_result(&stream, &result);
+    }
+
+    /// Compare the original local result owner before and after event draining.
+    fn assert_local_result(
+        stream: &EventStream<i32, std::rc::Rc<str>, maestro_models::Local>,
+        expected: &std::rc::Rc<str>,
+    ) {
+        let Poll::Ready(observed) = poll(std::pin::pin!(stream.result())) else {
+            panic!("terminal result pending")
+        };
+        assert!(std::rc::Rc::ptr_eq(&observed, expected));
+    }
+
     #[derive(Default)]
     struct WakeCount(std::sync::atomic::AtomicUsize);
     impl Wake for WakeCount {
@@ -429,7 +495,7 @@ mod tests {
 
     #[test]
     fn maestro_cleanup_uses_live_registrations() {
-        use maestro_models::records::session_resources::{
+        use maestro_models::{
             SessionResourceCleanup, cleanup_session_resources, register_session_resource_cleanup,
         };
         let _serial = crate::bundled::registry();

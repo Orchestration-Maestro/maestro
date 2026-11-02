@@ -25,8 +25,8 @@ ends the prompt:
    `<skill name="<name>" location="<file>">`, the line
    `References are relative to <directory>.`, a blank line, the skill body without
    its frontmatter and trimmed, and `</skill>`. The block is read back by the
-   application's `parse_skill_block`, which native frontends and browser builds
-   both use, so a transcript and a rendered document share one parser. An unknown
+   application's `parse_skill_block`. The native transcript uses it, and it is
+   available to browser builds, which do not call it yet. An unknown
    skill keeps the text. A skill file that cannot be read is reported with the file
    as its path and event `skill_expansion`, and the text is kept.
 4. While a response streams, the session queues the prompt instead, as a steering
@@ -57,6 +57,19 @@ The base prompt is the system prompt construction built, or the one
 
 A failure supplied by an extension handler or listener, by shell operations or by a
 credential lookup keeps its name, code and stack when the session returns it.
+
+## Default system prompt
+
+The documentation section says:
+
+> - When reading maestro docs or examples, resolve docs/... under Additional docs and examples/... under Examples, not the current working directory
+
+Documentation and example paths use the directories named in that section, not
+the session's working directory.
+
+With `bash` selected and none of `grep`, `find` or `ls`, the exploration guideline
+is `- Use bash for file operations like ls, rg, find`. When any of those search
+tools is selected, or `bash` is absent, no exploration guideline is emitted.
 
 ## Queues
 
@@ -95,9 +108,10 @@ under the command as given. A configured command prefix goes on its own line bef
 the command that runs. A configured shell path runs it unless the options supply
 the shell operations. Progress chunks reach the caller in arrival order.
 `abort_bash` stops the running command, which is then recorded as cancelled without
-an exit status. `is_bash_running` is true while a command runs. Once started, a
-command belongs to the session: dropping the returned future leaves it running and
-its result is still recorded.
+an exit status. `is_bash_running` is true while a command runs. Calling
+`execute_bash` starts the command and installs its cancellation signal before the
+returned future is polled. The command belongs to the session: dropping even a
+never-polled result future leaves it running and its result is still recorded.
 
 `record_bash_result` records a result. While the agent is idle the record is
 appended to the history and the session at once. While a response streams it waits

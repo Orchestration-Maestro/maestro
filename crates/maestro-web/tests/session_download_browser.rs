@@ -5,7 +5,6 @@ use maestro_web::browser::attachment_content::{
     AttachmentHost, AttachmentHostError, BrowserAttachmentHost,
 };
 use maestro_web::export_html::template::{download_session_json, load_document};
-use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{JsCast as _, prelude::*};
 
 /// Exercise both public routes, reached failures and idempotent anchor cleanup.
@@ -85,6 +84,20 @@ impl Fixture {
                 .unwrap(),
         }
     }
+    /// Activate `control` and observe one complete native download of `bytes`.
+    pub async fn saved(
+        &self,
+        control: &web_sys::HtmlElement,
+        bytes: &[u8],
+        mime: &str,
+        name: &str,
+    ) {
+        self.begin("success");
+        control.click();
+        wasm_bindgen_futures::JsFuture::from(self.finish(bytes, mime, name, true))
+            .await
+            .unwrap();
+    }
     /// Start one controlled native DOM transaction.
     pub fn begin(&self, mode: &str) {
         self.module0
@@ -106,6 +119,13 @@ impl Fixture {
             .unwrap()
             .unchecked_into()
     }
+    /// Observe that an activation left the platform's download effects untouched.
+    pub fn finish_none(&self) -> js_sys::Promise {
+        self.module0
+            .call("finishNone", &js_sys::Array::new())
+            .unwrap()
+            .unchecked_into()
+    }
 }
 
 /// Observe the original attachment bytes through the same native cleanup fixture.
@@ -122,7 +142,8 @@ async fn attachment_download(fixture: &Fixture, host: &BrowserAttachmentHost) {
         preview: None,
     };
     fixture.begin("attachment");
-    host.download(Rc::new(RefCell::new(attachment))).unwrap();
+    host.download(std::sync::Arc::new(std::sync::RwLock::new(attachment)))
+        .unwrap();
     wasm_bindgen_futures::JsFuture::from(fixture.finish(
         &bytes,
         "application/octet-stream",

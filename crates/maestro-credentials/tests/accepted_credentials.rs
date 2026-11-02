@@ -126,7 +126,7 @@ mod tests {
     }
 
     #[test]
-    fn unrelated_external_records_survive_without_import() {
+    fn unrelated_external_records_survive_and_are_read() {
         let dir = TempDir::new("external");
         let path = dir.path("auth.json");
         write_file(
@@ -148,12 +148,12 @@ mod tests {
             read_file(&path),
             pretty_keys(&[("openai", "o"), ("google", "g")])
         );
-        assert_eq!(storage.list(), ["openai"]);
-        assert!(!storage.has("google"));
+        assert_eq!(storage.list(), ["openai", "google"]);
+        assert!(storage.has("google"));
     }
 
     #[test]
-    fn rewritten_file_keeps_reread_order_while_listing_keeps_accepted_order() {
+    fn rewritten_file_keeps_reread_order_and_listing_follows_it() {
         let dir = TempDir::new("reordered");
         let path = dir.path("auth.json");
         write_file(&path, &pretty_keys(&[("a", "1"), ("b", "2")]));
@@ -161,7 +161,7 @@ mod tests {
         write_file(&path, &pretty_keys(&[("b", "2"), ("a", "1")]));
         storage.set("a", api_key("3"));
         assert_eq!(read_file(&path), pretty_keys(&[("b", "2"), ("a", "3")]));
-        assert_eq!(storage.list(), ["a", "b"]);
+        assert_eq!(storage.list(), ["b", "a"]);
     }
 
     #[test]
@@ -193,6 +193,21 @@ mod tests {
         storage.reload();
         assert_eq!(storage.list(), ["google"]);
         assert!(storage.drain_errors().is_empty());
+        storage.set("openai", api_key("o"));
+        assert_eq!(
+            read_file(&path),
+            pretty_keys(&[("google", "g"), ("openai", "o")])
+        );
+    }
+
+    #[test]
+    fn reading_a_repaired_document_allows_writes_again() {
+        let dir = TempDir::new("repaired");
+        let path = dir.path("auth.json");
+        write_file(&path, "{invalid-json");
+        let storage = AuthStorage::create(&path);
+        write_file(&path, &pretty_keys(&[("google", "g")]));
+        assert_eq!(storage.list(), ["google"]);
         storage.set("openai", api_key("o"));
         assert_eq!(
             read_file(&path),
@@ -491,6 +506,61 @@ mod tests {
             read_file(&path),
             "{\n  \"b\": {\n    \"type\": \"oauth\",\n    \"refresh\": \"r\",\n    \"access\": \"access\",\n    \"expires\": 1730000000000,\n    \"enterpriseUrl\": \"https://example.test\"\n  }\n}"
         );
+    }
+
+    #[test]
+    fn shared_credentials_keep_existing_type_identity() {
+        let shared: maestro_request::auth_storage::AuthCredential = oauth("r");
+        let native: AuthCredential = shared.clone();
+        let AuthCredential::OAuth(token) = native else {
+            panic!("OAuth variant");
+        };
+        let _: (maestro_models::OAuthCredentials, OAuthCredential) = (token.clone(), token);
+        let mut data = maestro_request::auth_storage::AuthStorageData::new();
+        data.insert("o".into(), shared);
+        data.insert("k".into(), api_key(""));
+        let text = serde_json::to_string(&data).unwrap();
+        assert_eq!(
+            text,
+            r#"{"o":{"type":"oauth","refresh":"r","access":"access","expires":1730000000000.0,"enterpriseUrl":"https://example.test"},"k":{"type":"api_key","key":""}}"#
+        );
+        let decoded: AuthStorageData = serde_json::from_str(&text).unwrap();
+        assert_eq!(decoded, data);
+        let status: maestro_request::auth_storage::AuthStatus = AuthStatus {
+            configured: false,
+            source: Some(AuthSource::ModelsJsonCommand),
+            label: None,
+        };
+        let text = serde_json::to_string(&status).unwrap();
+        assert_eq!(
+            text,
+            r#"{"configured":false,"source":"models_json_command"}"#
+        );
+        assert_eq!(serde_json::from_str::<AuthStatus>(&text).unwrap(), status);
+    }
+
+    #[test]
+    fn credential_mutations_preserve_untyped_sibling_values() {
+        let dir = TempDir::new("untyped-siblings");
+        let path = dir.path("auth.json");
+        let retained = json!({
+            "null": null, "text": "x\u{feff}", "number": 0.25, "bool": false,
+            "object": {"b": 1, "a": []}, "array": [2, 2, 1],
+        });
+        let text = format!("{retained:#}");
+        write_file(&path, &text);
+        let storage = AuthStorage::create(&path);
+        storage.set("valid", api_key("key"));
+        let mut expected = retained.as_object().unwrap().clone();
+        expected.insert("valid".into(), json!({"type": "api_key", "key": "key"}));
+        assert_eq!(read_file(&path), format!("{:#}", Value::Object(expected)));
+        storage.remove("valid");
+        assert_eq!(read_file(&path), text);
+        for provider in retained.as_object().unwrap().keys() {
+            assert!(storage.has(provider), "{provider}");
+            assert_eq!(storage.get(provider), None, "{provider}");
+        }
+        assert!(storage.get_all().is_empty());
     }
 
     /// Drive one store through the shared operations and report what it observed.

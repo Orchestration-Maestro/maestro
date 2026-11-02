@@ -1,68 +1,16 @@
 //! Shared OAuth credential and prompt records.
-use crate::JsonObject;
-use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 
-/// Token data with provider-specific extension fields.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct OAuthCredentials {
-    /// Refresh token text.
-    pub refresh: String,
-    /// Access token text.
-    pub access: String,
-    /// Expiry in Unix epoch milliseconds; carried without expiry policy.
-    pub expires: f64,
-    /// Provider fields other than refresh, access and expires.
-    #[serde(flatten)]
-    pub extra: JsonObject,
-}
+pub use maestro_request::oauth::OAuthCredentials;
 
-/// Text requested during authorization.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct OAuthPrompt {
-    /// Prompt text.
-    pub message: String,
-    /// Optional input hint; absent hints are omitted during serialization.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub placeholder: Option<String>,
-    /// Optional permission for empty input; explicit false is retained.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub allow_empty: Option<bool>,
-}
-
-/// Authorization URL with optional instructions.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct OAuthAuthInfo {
-    /// Supplied authorization URL.
-    pub url: String,
-    /// Optional instructions; absent instructions are omitted during serialization.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub instructions: Option<String>,
-}
+pub use maestro_request::oauth::{
+    OAuthAuthInfo, OAuthPrompt, OAuthSelectOption, OAuthSelectPrompt,
+};
 
 /// Open provider identifier.
 pub type OAuthProviderId = String;
 /// Provider identifier used by authorization records.
 pub type OAuthProvider = OAuthProviderId;
-
-/// One supplied authorization choice.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct OAuthSelectOption {
-    /// Open choice identifier.
-    pub id: String,
-    /// Display label.
-    pub label: String,
-}
-
-/// Choice prompt retaining supplied option order and repeated identifiers.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct OAuthSelectPrompt {
-    /// Prompt text.
-    pub message: String,
-    /// Supplied choices in order.
-    pub options: Vec<OAuthSelectOption>,
-}
 
 /// OAuth failure retaining supplied diagnostics and its wrapped cause.
 #[derive(Debug)]
@@ -168,6 +116,13 @@ pub trait OAuthLoginCallbacks {
     fn on_auth(&self, info: OAuthAuthInfo) -> Result<(), OAuthError>;
     /// Request pasted authorization text.
     fn on_prompt(&self, prompt: OAuthPrompt) -> crate::BoxFuture<Result<String, OAuthError>>;
+    /// Reports whether progress, manual-code and selection callbacks are supplied, in that order.
+    ///
+    /// Override this alongside optional callback methods; the default declares all three absent.
+    /// Reading presence does not start any callback or future.
+    fn callback_presence(&self) -> (bool, bool, bool) {
+        (false, false, false)
+    }
     /// Publish progress; the default does nothing.
     ///
     /// # Errors
@@ -214,11 +169,14 @@ pub trait OAuthProviderInterface {
         credentials: OAuthCredentials,
         fetch: Option<crate::Fetch>,
     ) -> crate::BoxFuture<Result<OAuthCredentials, OAuthError>>;
-    /// Borrow the request access key.
+    /// Borrow a credential field or return an independently computed request key.
     ///
     /// # Errors
     /// Implementations may reject credentials.
-    fn get_api_key<'a>(&self, credentials: &'a OAuthCredentials) -> Result<&'a str, OAuthError>;
+    fn get_api_key<'a>(
+        &self,
+        credentials: &'a OAuthCredentials,
+    ) -> Result<Cow<'a, str>, OAuthError>;
     /// Optionally transform model descriptors; absent by default.
     ///
     /// Borrow an input element to retain its identity, or return an owned descriptor

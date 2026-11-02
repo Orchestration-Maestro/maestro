@@ -3,8 +3,7 @@
 #![cfg(target_os = "linux")]
 
 #[cfg(unix)]
-#[path = "support/launch.rs"]
-mod launch;
+use crate::support::launch;
 
 use maestro_daemon::{app::state::DaemonState, settings::model::Config};
 #[cfg(unix)]

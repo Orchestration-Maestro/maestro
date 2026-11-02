@@ -12,15 +12,18 @@ use super::schema_view::{Document, View};
 pub(crate) struct Context<'a> {
     /// Indexed authored nodes the context reads definitions from.
     pub(crate) document: &'a Document<'a>,
-    /// Definition maps entered by the conversions currently running, outermost first.
+    /// Invocation-local callbacks indexed against the original schema.
+    pub(crate) code: &'a super::super::check::Code<'a>,
+    /// Definition maps active during this conversion.
     frames: Vec<&'a Map<String, Value>>,
 }
 
 impl<'a> Context<'a> {
     /// Start converting the supplied document with no definition entered yet.
-    pub(crate) fn new(document: &'a Document<'a>) -> Self {
+    pub(crate) fn new(document: &'a Document<'a>, code: &'a super::super::check::Code<'a>) -> Self {
         Self {
             document,
+            code,
             frames: Vec::new(),
         }
     }

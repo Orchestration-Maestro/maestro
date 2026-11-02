@@ -2,7 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support;
-use maestro_agent::{AgentEvent, AgentMessage, run_agent_loop};
+use maestro_agent::{AgentEvent, AgentMessage, ToolExecutionMode as Mode, run_agent_loop};
 use std::sync::{Arc, Mutex};
 use support::*;
 
@@ -789,4 +789,86 @@ fn immediate_failure_sink(
         };
         ready(outcome)
     })
+}
+
+/// Where the signal aborts.
+#[derive(Clone, Copy)]
+enum AbortAt {
+    /// Inside the first call's execution.
+    Execution,
+    /// Inside the first call's before hook.
+    Hook,
+}
+
+/// The ids that started and executed, and each result's error flag, when the signal aborts
+/// at `at` in a batch run under `mode`.
+async fn aborted_batch(
+    mode: maestro_agent::ToolExecutionMode,
+    at: AbortAt,
+) -> (Vec<String>, Vec<String>, Vec<bool>) {
+    let in_hook = matches!(at, AbortAt::Hook);
+    let signal = maestro_models::Cancellation::new();
+    let executed = Arc::new(Mutex::new(Vec::new()));
+    let (log, trigger) = (Arc::clone(&executed), signal.clone());
+    let context = with_execute(Arc::new(move |id, _, _, _| {
+        log.lock().unwrap().push(id);
+        if !in_hook {
+            trigger.abort();
+        }
+        ready(Ok(result()))
+    }));
+    let mut config = config();
+    config.tool_execution = Some(mode);
+    if in_hook {
+        let trigger = signal.clone();
+        config.before_tool_call = Some(Arc::new(move |_, _| {
+            trigger.abort();
+            ready(Ok(None))
+        }));
+    }
+    let started = Arc::new(Mutex::new(Vec::new()));
+    let seen = Arc::clone(&started);
+    let mut options = responses(vec![two_calls(), assistant("done")]);
+    options.signal = Some(signal);
+    let sink = Arc::new(move |event| {
+        if let AgentEvent::ToolExecutionStart { tool_call } = event {
+            seen.lock().unwrap().push(tool_call.id);
+        }
+        ready(Ok(()))
+    });
+    let messages = run_agent_loop(vec![], context, &config, sink, options)
+        .await
+        .unwrap();
+    let errors = messages
+        .iter()
+        .filter_map(|message| match message {
+            AgentMessage::ToolResult(result) => Some(result.read().unwrap().is_error),
+            _ => None,
+        })
+        .collect();
+    let (started, executed) = (
+        started.lock().unwrap().clone(),
+        executed.lock().unwrap().clone(),
+    );
+    (started, executed, errors)
+}
+
+/// An abort during a sequential call prepares no later sibling.
+#[test]
+fn sequential_abort_prepares_no_later_sibling() {
+    let (started, executed, errors) = run(aborted_batch(Mode::Sequential, AbortAt::Execution));
+    assert_eq!(started, ["first"]);
+    assert_eq!(executed, ["first"]);
+    assert_eq!(errors, [false]);
+}
+
+/// An abort raised in a before hook executes no tool and prepares no later sibling.
+#[test]
+fn abort_in_a_before_hook_executes_no_tool() {
+    for mode in [Mode::Sequential, Mode::Parallel] {
+        let (started, executed, errors) = run(aborted_batch(mode, AbortAt::Hook));
+        assert_eq!(started, ["first"], "{mode:?}");
+        assert!(executed.is_empty(), "{mode:?}");
+        assert_eq!(errors, [true], "{mode:?}");
+    }
 }

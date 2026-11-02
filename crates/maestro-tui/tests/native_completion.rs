@@ -82,7 +82,12 @@ fn native_filesystem_errors_and_home_expansion_follow_the_same_provider_path() {
 fn native_directories_follow_links_without_filtering_hidden_entries() {
     use fixtures::completion_native::Tree;
     let tree = Tree::new().expect("temporary directory created");
-    for name in ["\u{e9}", "e\u{301}", "A", "a", ".hidden", "file.txt"] {
+    let names = ["\u{e9}", "e\u{301}", "A", "a", ".hidden", "file.txt"];
+    // The recorded listing has one entry per authored name.
+    if !tree.keeps_apart("the listing", &names) {
+        return;
+    }
+    for name in names {
         tree.file(name).expect("fixture entry created");
     }
     for name in ["z dir", ".git"] {
@@ -116,6 +121,35 @@ fn native_directories_follow_links_without_filtering_hidden_entries() {
         });
         assert_eq!(result, expected, "{text}");
     }
+}
+
+#[cfg(unix)]
+#[test]
+fn native_link_and_missing_queries_need_no_distinct_unicode_names() {
+    use fixtures::completion_native::Tree;
+    let tree = Tree::new().expect("temporary directory created");
+    tree.directory("z dir").expect("fixture entry created");
+    std::os::unix::fs::symlink("z dir", tree.path().join("dir-link")).unwrap();
+    std::os::unix::fs::symlink("missing", tree.path().join("broken-link")).unwrap();
+    let provider = CombinedAutocompleteProvider::new(
+        vec![],
+        tree.authored(),
+        None,
+        NativeAutocompleteOperations::default(),
+    );
+    for (text, value) in [("./dir", "./dir-link/"), ("./broken", "./broken-link")] {
+        let found = query(&provider, text).expect("provider succeeds").unwrap();
+        assert_eq!(found.prefix, text);
+        assert_eq!(found.items.len(), 1);
+        assert_eq!(found.items[0].value, value);
+        assert_eq!(found.items[0].label, value.trim_start_matches("./"));
+        assert_eq!(found.items[0].description, None);
+    }
+    assert!(
+        query(&provider, "./none")
+            .expect("provider succeeds")
+            .is_none()
+    );
 }
 
 /// Direct-native query expectations, including all candidate fields.
@@ -166,12 +200,6 @@ const NATIVE_PATHS: &[NativePath] = &[
             ],
         )),
     ),
-    ("./dir", Some(("./dir", &[("./dir-link/", "dir-link/")]))),
-    (
-        "./broken",
-        Some(("./broken", &[("./broken-link", "broken-link")])),
-    ),
-    ("./none", None),
 ];
 
 /// Controlled enumeration over the native locale operation.

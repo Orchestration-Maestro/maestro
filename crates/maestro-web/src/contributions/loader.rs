@@ -56,21 +56,7 @@ impl<C: CustomAgentMessages + serde::Serialize + 'static> ContributionHost<C> {
         sandbox_url: Option<SandboxUrlProvider>,
         import_module: Function,
     ) -> Result<Self, JsValue> {
-        let registry = view
-            .document
-            .default_view()
-            .ok_or_else(|| JsValue::from_str("No window"))?
-            .custom_elements();
-        if registry.get(super::slot::TAG).is_undefined() {
-            crate::dom::install_styles(view)?;
-            crate::components::copy_button::dom::define(view)?;
-            crate::components::code_block::dom::define(view)?;
-            crate::components::markdown_block::MarkdownBlock::define(view)
-                .and_then(|()| crate::ThinkingBlock::define(view))
-                .map_err(|error| JsValue::from_str(&error.to_string()))?;
-            crate::components::preview_code_toggle::dom::define(view)?;
-            super::slot::define(view)?;
-        }
+        super::register_builtin_elements(view)?;
         Ok(Self {
             sandbox_url,
             import_module,

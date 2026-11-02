@@ -10,9 +10,11 @@ repository.workspace = true
 maestro-text = { path = "../maestro-text" }
 maestro-models = { path = "../maestro-models" }
 maestro-path = { path = "../maestro-path" }
+maestro-request = { path = "../maestro-request" }
 indexmap = "=2.14.2"
 serde = { version = "=1.0.229", features = ["derive"] }
 serde_json.workspace = true
+tokio = { version = "=1.53.3", default-features = false, features = ["sync"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true

@@ -1,5 +1,6 @@
 //! Conversion through the constants an enumerated node declares.
 
+use crate::DiagnosticErrorInfo;
 use serde_json::Value;
 
 use super::from_union::from_union;
@@ -12,8 +13,10 @@ pub(crate) fn from_enum<'a>(
     converter: &mut Context<'a>,
     view: View<'a>,
     value: &mut Value,
-) -> Option<Value> {
-    let constants = view.raw.get("enum").and_then(Value::as_array)?;
+) -> Result<Option<Value>, DiagnosticErrorInfo> {
+    let Some(constants) = view.raw.get("enum").and_then(Value::as_array) else {
+        return Ok(None);
+    };
     let alternatives = enum_to_union(constants);
     from_union(converter, &alternatives, None, value)
 }

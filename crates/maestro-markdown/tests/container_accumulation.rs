@@ -1,7 +1,6 @@
 #![cfg(test)]
 //! Recursive container observations through each configured parser route.
-#[path = "grammar_rules/observations.rs"]
-mod observations;
+use crate::observations;
 
 #[test]
 fn container_tables_follow_ordered_dispatch() {

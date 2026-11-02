@@ -4,4 +4,5 @@
 //! scenarios and frontend witnesses use the same controlled effects. The virtual terminal and the
 //! written scenarios stay beside the integration tests.
 
+#[doc(inline)]
 pub use maestro_tui::test_support::{manual_runtime, recording_terminal};

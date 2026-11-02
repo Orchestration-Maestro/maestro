@@ -2,9 +2,7 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-mod config_support;
-#[path = "support/launch.rs"]
-mod launch;
+use crate::config_support;
 
 use config_support::{block_on, fixture, put};
 use maestro_daemon::settings::model::{

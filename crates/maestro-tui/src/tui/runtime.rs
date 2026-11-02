@@ -8,7 +8,7 @@ use std::pin::Pin;
 use std::rc::Rc;
 use std::time::Duration;
 
-use crate::terminal::Terminal;
+use crate::terminal::{OutputErrorHandler, Terminal};
 
 /// A terminal shared between the frame writer and whoever drives it.
 pub type TerminalHandle = Rc<RefCell<dyn Terminal>>;
@@ -78,6 +78,13 @@ pub trait TuiRuntime {
     ///
     /// Returns the file-system error unchanged.
     fn write_log(&self, path: &Path, contents: &str) -> io::Result<()>;
+
+    /// Registers `handler` for the failures of the host's own output; the returned operation
+    /// removes it and does nothing when repeated.
+    fn on_output_error(&self, handler: OutputErrorHandler) -> Box<dyn Fn()> {
+        let _ = handler;
+        Box::new(|| ())
+    }
 }
 
 /// Whether the environment variable `key` is exactly `1`.

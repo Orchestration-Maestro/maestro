@@ -37,7 +37,19 @@ fn pac_proxy_tls_and_destination_tls_keep_failure_phases() {
         });
         return;
     }
-    for trust in ["untrusted", "trusted"] {
+    // Only a verifier that reads a trust file takes `SSL_CERT_FILE`. macOS and Windows verify
+    // against the system store, which a test cannot extend, so there the trusted run states
+    // its premise instead.
+    let system_store = cfg!(any(target_vendor = "apple", windows));
+    if system_store {
+        eprintln!("the trusted run needs a host whose verifier reads SSL_CERT_FILE");
+    }
+    let trusts: &[&str] = if system_store {
+        &["untrusted"]
+    } else {
+        &["untrusted", "trusted"]
+    };
+    for &trust in trusts {
         let process = maestro_test_process::TestProcess::current(TEST)
             .unwrap()
             .env_clear()

@@ -1,79 +1,112 @@
 //! Builds and compiles the author component for test harnesses.
 use std::path::{Path, PathBuf};
-use std::process::Command;
+#[cfg(test)]
 use std::sync::OnceLock;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use wasmtime::component::Component;
-use wasmtime::{Cache, CacheConfig, Config, Engine};
+use wasmtime::{Cache, Engine};
 
-/// Build target of author components.
-const TARGET: &str = "wasm32-wasip2";
+#[path = "build/cargo.rs"]
+pub mod cargo;
+
+/// The example target of the shared author extension.
+#[cfg(test)]
+const AUTHOR_EXAMPLE: &str = cargo::components::FIXED_COMPONENTS[0].0;
 
 /// The component built from the shared author extension.
 ///
 /// Nextest supplies the artifact its setup example prepared; plain Cargo builds once per process.
-/// The compiler wrapper is not passed on, because coverage would instrument the component target.
 ///
 /// # Errors
 /// Returns the build's failure, which names the target to install when it is missing.
+#[cfg(test)]
 pub fn author_component() -> Result<&'static Path, String> {
     static BUILT: OnceLock<Result<PathBuf, String>> = OnceLock::new();
-    BUILT.get_or_init(build).as_deref().map_err(Clone::clone)
+    BUILT
+        .get_or_init(|| example_component(AUTHOR_EXAMPLE))
+        .as_deref()
+        .map_err(Clone::clone)
 }
 
-/// Runs the author build and finds the artifact it reports.
-fn build() -> Result<PathBuf, String> {
-    if let Some(path) = std::env::var_os("MAESTRO_AUTHOR_COMPONENT") {
-        return Ok(PathBuf::from(path));
-    }
-    example_component("author_component")
-}
-
-/// Builds one registered example and finds the component artifact it reports.
+/// Builds one registered example and finds the component artifact it reports, unless its
+/// artifact is supplied by the environment.
 ///
 /// # Errors
 /// Returns the build's failure, which names the target to install when it is missing.
+#[cfg(test)]
 pub fn example_component(name: &str) -> Result<PathBuf, String> {
-    let cargo = std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
-    let output = Command::new(cargo)
-        .current_dir(env!("CARGO_MANIFEST_DIR"))
-        .env_remove("RUSTC_WRAPPER")
-        .args(["build", "--example", name, "--target", TARGET])
-        .args(["--release", "--locked", "--message-format=json"])
-        .output()
-        .map_err(|error| format!("cannot run cargo: {error}"))?;
-    if !output.status.success() {
-        return Err(format!(
-            "building the author component failed (is the {TARGET} target installed? run \
-             `rustup target add {TARGET}`):\n{}",
-            String::from_utf8_lossy(&output.stderr)
-        ));
-    }
-    String::from_utf8_lossy(&output.stdout)
-        .lines()
-        .filter_map(|line| serde_json::from_str::<serde_json::Value>(line).ok())
-        .filter(|message| message["reason"] == "compiler-artifact")
-        .filter(|message| message["target"]["name"] == name)
-        .flat_map(|message| message["filenames"].as_array().cloned().unwrap_or_default())
-        .filter_map(|file| file.as_str().map(PathBuf::from))
-        .find(|file| {
-            file.extension()
-                .is_some_and(|extension| extension == "wasm")
-        })
-        .ok_or_else(|| "the build reported no component".to_owned())
+    cargo::component(
+        Path::new(env!("CARGO_MANIFEST_DIR")),
+        &["--example", name],
+        name,
+    )
 }
 
-/// Compiles the component with the test host's engine, caching the result beside the artifact.
+/// Compiles the component with the test host's engine and optional user cache.
 ///
 /// # Errors
-/// Returns Wasmtime's failure to configure the cache or to compile the component.
+/// Returns Wasmtime's failure to configure the engine or to compile the component.
 pub fn compile(path: &Path) -> wasmtime::Result<(Engine, Component)> {
-    let mut config = Config::new();
-    config.wasm_component_model_async(true);
-    let mut cache = CacheConfig::new();
-    cache.with_directory(path.with_extension("wasmtime-cache"));
-    config.cache(Some(Cache::new(cache)?));
-    let engine = Engine::new(&config)?;
+    let engine = engine()?;
     let component = Component::from_file(&engine, path)?;
     Ok((engine, component))
+}
+
+/// Compiles each component through the test host's cache on a few threads.
+///
+/// # Errors
+/// Returns a compile failure, or a message when a worker thread panicked.
+pub fn warm(paths: &[PathBuf]) -> Result<(), String> {
+    warm_with(paths, |path| {
+        compile(path).map(drop).map_err(|error| error.to_string())
+    })
+}
+
+/// Runs `work` once for every path from one shared queue, on a few threads.
+///
+/// # Errors
+/// Returns a worker's failure, or a message when a worker thread panicked.
+pub fn warm_with<F>(paths: &[PathBuf], work: F) -> Result<(), String>
+where
+    F: Fn(&Path) -> Result<(), String> + Sync,
+{
+    let next = AtomicUsize::new(0);
+    let threads = std::thread::available_parallelism()
+        .map_or(1, usize::from)
+        .min(4);
+    std::thread::scope(|scope| {
+        let workers: Vec<_> = (0..threads)
+            .map(|_| scope.spawn(|| drain(paths, &next, &work)))
+            .collect();
+        workers
+            .into_iter()
+            .map(|worker| {
+                worker
+                    .join()
+                    .unwrap_or_else(|_| Err("a warming thread panicked".to_owned()))
+            })
+            .collect::<Vec<_>>()
+            .into_iter()
+            .collect()
+    })
+}
+
+/// Takes paths from the shared queue until none remain or `work` fails.
+fn drain<F>(paths: &[PathBuf], next: &AtomicUsize, work: &F) -> Result<(), String>
+where
+    F: Fn(&Path) -> Result<(), String>,
+{
+    while let Some(path) = paths.get(next.fetch_add(1, Ordering::Relaxed)) {
+        work(path)?;
+    }
+    Ok(())
+}
+
+/// Creates an async component engine with the optional user cache.
+///
+/// # Errors
+/// Returns Wasmtime's failure to configure the engine.
+pub fn engine() -> wasmtime::Result<Engine> {
+    maestro_extensions_wasmtime::component_engine(Cache::from_file(None).ok())
 }

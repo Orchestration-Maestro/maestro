@@ -1,6 +1,7 @@
 //! Recorded display palette, published environment and render context.
 #![cfg(not(target_arch = "wasm32"))]
 
+#[doc(inline)]
 pub use maestro_tui::test_support::manual_runtime;
 
 use super::display_palette::palette_keys;

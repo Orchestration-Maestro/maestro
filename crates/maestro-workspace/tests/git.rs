@@ -105,3 +105,47 @@ fn native_worktree_unreadable_common_metadata_keeps_workspace_identity() {
     assert_eq!(workspace.git_common_dir, metadata);
     assert!(discover_git_paths_with(&root, DiscoveryPolicy::Footer).is_none());
 }
+
+/// A directory laid out as a bare repository store with the supplied configuration.
+fn bare_store(config: &str) -> (super::support::snapshot::Directory, std::path::PathBuf) {
+    let dir = super::support::snapshot::Directory::new();
+    let store = dir.path().join("store");
+    std::fs::create_dir_all(store.join("objects")).unwrap();
+    std::fs::create_dir_all(store.join("refs")).unwrap();
+    std::fs::write(store.join("HEAD"), "ref: refs/heads/main\n").unwrap();
+    std::fs::write(store.join("config"), config).unwrap();
+    (dir, store)
+}
+
+#[test]
+fn bare_flag_in_another_section_does_not_make_a_store_bare() {
+    use maestro_workspace::workspace::git::native::discover_git_paths;
+    let (_dir, store) =
+        bare_store("[core]\n\tfilemode = true\n[remote \"origin\"]\n\tbare = true\n");
+    assert!(discover_git_paths(&store).is_none());
+}
+
+#[test]
+fn last_bare_flag_decides_whether_a_store_is_bare() {
+    use maestro_workspace::workspace::git::native::discover_git_paths;
+    let (_dir, store) = bare_store("[core]\n\tbare = true\n\tbare = false\n");
+    assert!(discover_git_paths(&store).is_none());
+    let (_dir, store) = bare_store("[core]\n\tbare = false\n\tbare = true\n");
+    assert!(discover_git_paths(&store).is_some());
+}
+
+#[test]
+fn quoted_bare_flag_makes_a_store_bare() {
+    use maestro_workspace::workspace::git::native::discover_git_paths;
+    let (_dir, store) = bare_store("[core]\n\tbare = \"true\"\n");
+    assert!(discover_git_paths(&store).is_some());
+}
+
+#[test]
+fn last_ref_storage_value_decides_reftable() {
+    use maestro_workspace::workspace::git::native::git_ref_storage_is_reftable;
+    let (_dir, store) = bare_store("[extensions]\n\trefStorage = files\n\trefStorage = reftable\n");
+    assert!(git_ref_storage_is_reftable(&store));
+    let (_dir, store) = bare_store("[extensions]\n\trefStorage = reftable\n\trefStorage = files\n");
+    assert!(!git_ref_storage_is_reftable(&store));
+}

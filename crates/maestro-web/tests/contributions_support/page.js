@@ -8,17 +8,57 @@ export function changed(target) {
   });
 }
 
-// Count mutation records below `target`; each call returns the records since the last.
-export function recorder(target) {
-  let count = 0;
-  const observer = new MutationObserver(records => { count += records.length; });
-  observer.observe(target, {subtree: true, childList: true, characterData: true, attributes: true});
+// Record changes below `target`; each call returns `measure` of the records since the last,
+// by default their count.
+export function recorder(target, measure = records => records.length) {
+  let records = [];
+  const observer = new MutationObserver(taken => { records.push(...taken); });
+  observer.observe(target, {subtree: true, childList: true, characterData: true, attributes: true,
+    attributeOldValue: true, characterDataOldValue: true});
   return () => {
-    count += observer.takeRecords().length;
-    const taken = count;
-    count = 0;
+    records.push(...observer.takeRecords());
+    const taken = measure(records);
+    records = [];
     return taken;
   };
+}
+
+// A recorder measure: the UTF-16 code units the changes publish outside elements matching
+// `skip`, counting each written attribute or character-data value and the text and attribute
+// values of each inserted node.
+export function written(skip) {
+  return records => {
+    // Walking backwards, the value a change wrote is the old value of the next change.
+    const next = new Map();
+    const latest = (node, key, current) => next.get(node)?.has(key) ? next.get(node).get(key) : current;
+    const remember = (node, key, old) => next.set(node, (next.get(node) ?? new Map()).set(key, old));
+    let units = 0;
+    for (const record of records.toReversed()) {
+      const node = record.target;
+      const element = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+      if (skip && element?.closest(skip)) continue;
+      if (record.type === 'attributes') {
+        units += latest(node, record.attributeName, node.getAttribute(record.attributeName))?.length ?? 0;
+        remember(node, record.attributeName, record.oldValue);
+      } else if (record.type === 'characterData') {
+        units += latest(node, '', node.data).length;
+        remember(node, '', record.oldValue);
+      } else {
+        for (const added of record.addedNodes) units += inserted(added, latest);
+      }
+    }
+    return units;
+  };
+}
+
+// Text and attribute values below an inserted node; inserted text counts as first written.
+function inserted(node, latest) {
+  if (node.nodeType !== Node.ELEMENT_NODE) return latest(node, '', node.textContent ?? '').length;
+  let units = node.textContent.length;
+  for (const element of [node, ...node.querySelectorAll('*')]) {
+    for (const attribute of element.attributes) units += attribute.value.length;
+  }
+  return units;
 }
 
 // Intervals between the next `count` animation frames, in milliseconds.

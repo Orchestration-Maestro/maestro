@@ -8,25 +8,16 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use maestro_tui::set_kitty_protocol_active;
-use rustix::fs::{OFlags, fcntl_getfl, fcntl_setfl};
-use rustix::stdio::stdin;
-use rustix::termios::{OptionalActions, OutputModes, Termios, tcgetattr, tcsetattr};
 use tokio::runtime::Handle;
-use tokio::signal::unix::{SignalKind, signal};
-use tokio::task::JoinHandle;
 use tokio::time::{Instant, sleep};
 
-use super::descriptor::Source;
 use super::input::Input;
 use super::output::{
-    FALLBACK_OFF, FALLBACK_ON, KEYBOARD_ON, KEYBOARD_POP, KEYBOARD_QUERY, PASTE_OFF, PASTE_ON,
-    PROGRESS_CLEAR, first_failure,
+    CURSOR_SHOW, FALLBACK_OFF, FALLBACK_ON, KEYBOARD_POP, KEYBOARD_PUSH, KEYBOARD_QUERY, PASTE_OFF,
+    PASTE_ON, PROGRESS_CLEAR, first_failure,
 };
-use super::{InputCallback, ProcessTerminal, ResizeCallback, Shared};
-use tokio::io::Interest;
-
-/// How long after `start` a missing keyboard reply selects the fallback reporting mode.
-const NEGOTIATION: Duration = Duration::from_millis(150);
+use super::platform::{self, Acquired, Task};
+use super::{InputCallback, OutputPort, ProcessTerminal, ResizeCallback, Shared};
 
 /// How long a drain lasts at most when the caller names no limit.
 const DRAIN_LIMIT: Duration = Duration::from_millis(1000);
@@ -37,68 +28,9 @@ const DRAIN_IDLE: Duration = Duration::from_millis(50);
 /// The live input task and the standard-input state it changed.
 pub(super) struct Running {
     /// The task reading input and delivering it.
-    pub(super) task: JoinHandle<()>,
+    pub(super) task: Task,
     /// What to give back to standard input when the terminal stops.
     pub(super) acquired: Acquired,
-}
-
-/// The standard-input state a started terminal changed and must give back.
-#[derive(Default)]
-pub(super) struct Acquired {
-    /// The attributes before raw mode, when standard input is a terminal.
-    attributes: Option<Termios>,
-    /// The status flags before reads became nonblocking.
-    flags: Option<OFlags>,
-}
-
-impl Acquired {
-    /// Puts standard input in raw mode, when it is a terminal, and makes its reads
-    /// nonblocking. What is already remembered is kept, so repeating the call never records
-    /// the changed state as the original.
-    fn take(&mut self) -> io::Result<()> {
-        if self.attributes.is_none()
-            && let Ok(original) = tcgetattr(stdin())
-        {
-            tcsetattr(stdin(), OptionalActions::Drain, &raw(&original))?;
-            self.attributes = Some(original);
-        }
-        if self.flags.is_none() {
-            let flags = fcntl_getfl(stdin())?;
-            fcntl_setfl(stdin(), flags | OFlags::NONBLOCK)?;
-            self.flags = Some(flags);
-        }
-        Ok(())
-    }
-
-    /// Gives back what was taken, attempting the flags even when the attributes fail, and
-    /// returns the first failure.
-    pub(super) fn restore(&mut self) -> io::Result<()> {
-        let attributes = self.attributes.take().map_or(Ok(()), |original| {
-            tcsetattr(stdin(), OptionalActions::Drain, &original).map_err(io::Error::from)
-        });
-        let flags = self.flags.take().map_or(Ok(()), |original| {
-            fcntl_setfl(stdin(), original).map_err(io::Error::from)
-        });
-        attributes.and(flags)
-    }
-}
-
-impl Drop for Acquired {
-    fn drop(&mut self) {
-        let _ = self.restore();
-    }
-}
-
-/// `original` in raw mode: no echo, line editing, signal keys, break, parity, strip, newline,
-/// carriage-return or start/stop-key handling on input, reads that return as soon as one byte
-/// is available, and output post-processing with newline-to-CR-LF mapping on so a bare
-/// newline written to the device returns the carriage.
-fn raw(original: &Termios) -> Termios {
-    let mut raw = original.clone();
-    raw.make_raw();
-    raw.output_modes
-        .insert(OutputModes::OPOST | OutputModes::ONLCR);
-    raw
 }
 
 impl ProcessTerminal {
@@ -142,29 +74,23 @@ impl ProcessTerminal {
     }
 
     /// Acquires standard input, opens the reader, announces the modes and spawns the input
-    /// task of a new generation.
+    /// task of a new generation. Every start requests the keyboard flags, and the terminal counts
+    /// the requests so that one stop pops them all.
     fn spawn_input(
         &self,
         acquired: &mut Acquired,
         on_input: InputCallback,
         on_resize: ResizeCallback,
-    ) -> io::Result<JoinHandle<()>> {
-        acquired.take()?;
-        let source = Source::open(stdin(), Interest::READABLE)?;
-        let resize = signal(SignalKind::window_change())?;
-        if self.shared.output.borrow().is_none() {
-            let writer =
-                super::tty_writer::TtyWriter::new(&self.local, Rc::downgrade(&self.shared))?;
-            self.shared.output.replace(writer.map(Rc::new));
-        }
-        self.shared.emit(&[PASTE_ON, KEYBOARD_QUERY].concat())?;
+    ) -> io::Result<Task> {
+        let stream = platform::acquire(acquired)?;
+        self.shared
+            .output
+            .open(&self.local, Rc::downgrade(&self.shared))?;
+        self.shared
+            .emit(&[PASTE_ON, KEYBOARD_PUSH, KEYBOARD_QUERY].concat())?;
+        self.shared.pushes.set(self.shared.pushes.get() + 1);
         let generation = self.shared.install(on_input, on_resize);
-        let input = Input::new(
-            Rc::clone(&self.shared),
-            generation,
-            Instant::now() + NEGOTIATION,
-        );
-        Ok(self.local.spawn_local(input.run(source, resize)))
+        Ok(stream.spawn(&self.local, Input::new(Rc::clone(&self.shared), generation)))
     }
 
     /// Writes the paste and keyboard disables and gives standard input back; every step is
@@ -182,29 +108,96 @@ impl ProcessTerminal {
     pub(super) fn end(&mut self) -> io::Result<()> {
         let mut acquired = self.retire();
         let output = self.shared.finish_output();
+        let cursor = self.shared.show_hidden_cursor();
         let active = self.cancel_keepalive();
         let progress = self.shared.emit_if(active, PROGRESS_CLEAR);
         first_failure([
             self.shared.failure.take().map_or(Ok(()), Err),
             output,
+            cursor,
             progress,
             self.give_back(&mut acquired),
         ])
     }
 }
 
-impl Shared {
-    /// Enables the enhanced keyboard protocol after the terminal reported support.
-    pub(super) fn enable_enhanced(&self) -> io::Result<()> {
-        self.emit(KEYBOARD_ON)?;
-        self.enhanced.set(true);
-        set_kitty_protocol_active(true);
-        Ok(())
+/// What a keyboard reply says about the terminal.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum Reply {
+    /// The terminal runs enhanced keyboard flags.
+    Enhanced,
+    /// The terminal runs none: it reported zero flags, or only its device attributes.
+    Plain,
+}
+
+impl Reply {
+    /// The reply `sequence` is, or `None` when it is something else. A reply is exactly
+    /// `ESC [ ?`, one or more ASCII digits and `u` for the flags, or `ESC [ ?`, any ASCII
+    /// digits and semicolons and `c` for the device attributes.
+    pub(super) fn parse(sequence: &str) -> Option<Self> {
+        let rest = sequence.strip_prefix("\x1b[?")?;
+        rest.strip_suffix('u')
+            .and_then(Self::from_flags)
+            .or_else(|| rest.strip_suffix('c').and_then(Self::from_attributes))
     }
 
-    /// Enables the modified-key reporting when negotiation is open and no keyboard mode is on.
-    pub(super) fn fall_back(&self) -> io::Result<()> {
-        if !self.negotiating.get() || self.enhanced.get() || self.fallback.get() {
+    /// The reply for the `digits` of a flags report, or `None` unless they are one or more
+    /// ASCII digits.
+    fn from_flags(digits: &str) -> Option<Self> {
+        if digits.is_empty() || !digits.bytes().all(|byte| byte.is_ascii_digit()) {
+            return None;
+        }
+        Some(if digits.bytes().all(|byte| byte == b'0') {
+            Self::Plain
+        } else {
+            Self::Enhanced
+        })
+    }
+
+    /// The reply for the parameters of a device-attributes report, or `None` unless they are
+    /// ASCII digits and semicolons.
+    fn from_attributes(parameters: &str) -> Option<Self> {
+        parameters
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || byte == b';')
+            .then_some(Self::Plain)
+    }
+
+    /// Whether `sequence` could be the start of a reply: `ESC [`, or `ESC [ ?` followed by any
+    /// ASCII digits and semicolons.
+    pub(super) fn is_prefix(sequence: &str) -> bool {
+        sequence == "\x1b["
+            || sequence.strip_prefix("\x1b[?").is_some_and(|rest| {
+                rest.bytes()
+                    .all(|byte| byte.is_ascii_digit() || byte == b';')
+            })
+    }
+}
+
+impl Shared {
+    /// Acts on a reply read by the live generation: the enhanced protocol turns the modified-key
+    /// reporting off and the toolkit's shared flag on, and a plain terminal gets the modified-key
+    /// reporting unless the enhanced protocol is on. A drain closes negotiation, so a later
+    /// reply changes nothing.
+    pub(super) fn answer(&self, reply: Reply) -> io::Result<()> {
+        if !self.negotiating.get() {
+            return Ok(());
+        }
+        match reply {
+            Reply::Enhanced => {
+                self.stop_fallback()?;
+                if !self.enhanced.replace(true) {
+                    set_kitty_protocol_active(true);
+                }
+                Ok(())
+            }
+            Reply::Plain => self.fall_back(),
+        }
+    }
+
+    /// Enables the modified-key reporting unless a keyboard mode is on.
+    fn fall_back(&self) -> io::Result<()> {
+        if self.enhanced.get() || self.fallback.get() {
             return Ok(());
         }
         self.emit(FALLBACK_ON)?;
@@ -212,39 +205,28 @@ impl Shared {
         Ok(())
     }
 
-    /// Disables the keyboard modes this terminal enabled, the enhanced protocol first, and
-    /// attempts both even when the first write fails.
+    /// Disables the modified-key reporting when it is on.
+    fn stop_fallback(&self) -> io::Result<()> {
+        self.emit_if(self.fallback.replace(false), FALLBACK_OFF)
+    }
+
+    /// Shows the cursor when this terminal hid it and nothing showed it since.
+    pub(super) fn show_hidden_cursor(&self) -> io::Result<()> {
+        self.emit_if(self.hidden.replace(false), CURSOR_SHOW)
+    }
+
+    /// Pops every keyboard flag request still held and disables the modified-key reporting,
+    /// whichever are on, and attempts both even when the first write fails.
     pub(super) fn disable_keyboard(&self) -> io::Result<()> {
-        let (enhanced, fallback) = (self.enhanced.replace(false), self.fallback.replace(false));
+        let (pushes, enhanced) = (self.pushes.replace(0), self.enhanced.replace(false));
         if enhanced {
             set_kitty_protocol_active(false);
         }
         first_failure([
-            self.emit_if(enhanced, KEYBOARD_POP),
-            self.emit_if(fallback, FALLBACK_OFF),
+            self.emit_if(pushes > 0, &KEYBOARD_POP.repeat(pushes)),
+            self.stop_fallback(),
         ])
     }
-
-    /// Interprets `sequence` as a support reply. Returns whether it was one and so is not
-    /// input: a reply is consumed while the enhanced protocol is off, and enables it only
-    /// while negotiation is open.
-    pub(super) fn consume_reply(&self, sequence: &str) -> io::Result<bool> {
-        if self.enhanced.get() || !is_support_reply(sequence) {
-            return Ok(false);
-        }
-        if self.negotiating.get() {
-            self.enable_enhanced()?;
-        }
-        Ok(true)
-    }
-}
-
-/// Whether `sequence` is exactly `ESC [ ?`, one or more ASCII digits and `u`.
-fn is_support_reply(sequence: &str) -> bool {
-    sequence
-        .strip_prefix("\x1b[?")
-        .and_then(|rest| rest.strip_suffix('u'))
-        .is_some_and(|flags| !flags.is_empty() && flags.bytes().all(|byte| byte.is_ascii_digit()))
 }
 
 /// The input callback taken out of service for a drain, put back when the drain ends or its
@@ -280,7 +262,7 @@ impl ProcessTerminal {
         &mut self,
         max: Option<Duration>,
         idle: Option<Duration>,
-    ) -> Pin<Box<dyn Future<Output = io::Result<()>> + '_>> {
+    ) -> Pin<Box<dyn Future<Output = io::Result<()>> + 'static>> {
         let begin = Instant::now();
         self.shared.activity.set(begin);
         self.shared.negotiating.set(false);
@@ -313,28 +295,4 @@ async fn wait_until_quiet(shared: &Shared, begin: Instant, max: Duration, idle: 
         }
         sleep(left.map_or(idle, |left| left.min(idle))).await;
     }
-}
-
-/// Await one nonempty raw stdin read without starting a terminal or enabling output modes.
-/// Acquires on first poll and restores saved attributes and descriptor flags on completion
-/// or drop. EOF remains pending until dropped. Requires a caller-driven Tokio I/O runtime.
-///
-/// # Errors
-/// Returns runtime, acquisition, open, read or restoration errors, preserving an earlier
-/// operation error when restoration also fails.
-pub async fn wait_for_input() -> io::Result<()> {
-    Handle::try_current().map_err(io::Error::other)?;
-    let mut source = Source::open(stdin(), Interest::READABLE)?;
-    let mut acquired = Acquired::default();
-    let result = async {
-        acquired.take()?;
-        let mut chunk = [0; super::input::READ_SIZE];
-        if source.read(&mut chunk).await? == 0 {
-            std::future::pending::<()>().await;
-        }
-        Ok(())
-    }
-    .await;
-    let restored = acquired.restore();
-    result.and(restored)
 }

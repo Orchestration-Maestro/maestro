@@ -1,0 +1,70 @@
+[
+  {
+    "input": null,
+    "expected": false
+  },
+  {
+    "input": "",
+    "expected": false
+  },
+  {
+    "input": "0",
+    "expected": false
+  },
+  {
+    "input": "1",
+    "expected": true
+  },
+  {
+    "input": "true",
+    "expected": true
+  },
+  {
+    "input": "TRUE",
+    "expected": true
+  },
+  {
+    "input": "TrUe",
+    "expected": true
+  },
+  {
+    "input": "yes",
+    "expected": true
+  },
+  {
+    "input": "YES",
+    "expected": true
+  },
+  {
+    "input": "false",
+    "expected": false
+  },
+  {
+    "input": "y",
+    "expected": false
+  },
+  {
+    "input": "on",
+    "expected": false
+  },
+  {
+    "input": " true",
+    "expected": false
+  },
+  {
+    "input": "true ",
+    "expected": false
+  },
+  {
+    "input": "1\n",
+    "expected": false
+  },
+  {
+    "input": "﻿yes",
+    "expected": false
+  },
+  {
+    "input": "yes",
+    "expected": false
+  }
+]

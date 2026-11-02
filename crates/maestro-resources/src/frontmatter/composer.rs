@@ -21,7 +21,7 @@ pub(super) struct Composer<'a> {
     pub anchors: Anchors,
 }
 
-/// Compose a single extracted header, normalizing only a null root.
+/// Compose one YAML document, retaining an absent or null root.
 pub(super) fn compose(source: &str) -> Result<FrontmatterValue, FrontmatterError> {
     let nodes = parser::parse(source)?;
     let mut composer = Composer {
@@ -58,10 +58,7 @@ pub(super) fn compose(source: &str) -> Result<FrontmatterValue, FrontmatterError
             _ => return Err(composer.error_at(node.offset, "Unexpected document content")),
         }
     }
-    Ok(match value {
-        None | Some(FrontmatterValue::Null) => FrontmatterValue::Mapping(Vec::new()),
-        Some(value) => value,
-    })
+    Ok(value.unwrap_or(FrontmatterValue::Null))
 }
 
 impl<'a> Composer<'a> {

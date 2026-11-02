@@ -10,8 +10,8 @@ use maestro_agent::{
     run_agent_loop,
 };
 use maestro_models::{
-    AssistantContent, AssistantMessage, JsonObject, Message, SharedAssistantMessage, StopReason,
-    TextContent, ToolCall,
+    AssistantContent, AssistantMessage, Message, SharedAssistantMessage, StopReason, TextContent,
+    ToolCall,
 };
 use serde_json::{Value, json};
 use std::sync::{
@@ -26,10 +26,7 @@ pub fn assistant(text: &str, calls: &[(&str, &str, Value)]) -> SharedAssistantMe
         AssistantContent::ToolCall(ToolCall {
             id: (*id).into(),
             name: (*name).into(),
-            arguments: arguments
-                .as_object()
-                .cloned()
-                .unwrap_or_else(JsonObject::new),
+            arguments: arguments.clone(),
             thought_signature: None,
         })
     }));
@@ -121,7 +118,7 @@ fn call_arguments(content: &[AssistantContent]) -> Vec<Value> {
     content
         .iter()
         .filter_map(|block| match block {
-            AssistantContent::ToolCall(call) => Some(Value::Object(call.arguments.clone())),
+            AssistantContent::ToolCall(call) => Some(call.arguments.clone()),
             _ => None,
         })
         .collect()

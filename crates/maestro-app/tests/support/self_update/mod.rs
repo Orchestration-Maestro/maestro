@@ -17,7 +17,7 @@ use std::{
     process::{ExitStatus, Output},
 };
 
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Case {
     pub id: String,
@@ -26,7 +26,7 @@ pub struct Case {
     pub trace: Vec<Value>,
 }
 
-#[derive(Clone, Default, Deserialize, Serialize)]
+#[derive(Default, Deserialize, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Input {
     pub package_dir: Option<String>,
@@ -45,7 +45,7 @@ pub struct Input {
     pub access_errors: Vec<String>,
     pub probe: Probe,
 }
-#[derive(Clone, Default, Deserialize, Serialize)]
+#[derive(Default, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Operation {
     #[default]
@@ -53,7 +53,7 @@ pub enum Operation {
     Unavailable,
     Instruction,
 }
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Deserialize, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Probe {
     pub status: Option<i32>,
@@ -239,8 +239,7 @@ fn moved(root: &str, value: Value) -> Value {
 /// return the case with its POSIX paths moved there. Existence and canonical paths now come
 /// from the file system, so the trace no longer records those reads. `None` for a case that
 /// needs links or a removed working directory where the platform has neither, for a case
-/// recorded with POSIX paths on a Windows host, and for a permission row this host cannot
-/// state because it is not refused the write.
+/// recorded with POSIX paths on a Windows host.
 fn prepare(mut case: Value, tree: &maestro_test_directory::Scratch) -> Option<Case> {
     if case["input"]["windows"] != true {
         if cfg!(windows) {
@@ -384,7 +383,7 @@ fn replay(case: &Case, compose_root: bool) {
 
 /// Replay the case this process received from its parent.
 fn replay_child() {
-    let payload: SuppliedCase =
+    let payload: SuppliedCase<Case> =
         serde_json::from_reader(io::stdin()).expect("a supplied case arrives on standard input");
     replay(&payload.case, payload.compose_root);
 }
@@ -392,11 +391,11 @@ fn replay_child() {
 /// The case one checked child replays.
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-struct SuppliedCase {
+struct SuppliedCase<C> {
     /// Whether selection composes the caller package root.
     compose_root: bool,
     /// The prepared case.
-    case: Case,
+    case: C,
 }
 
 /// Replay one case in a checked child whose environment supplies the home directory the
@@ -410,14 +409,7 @@ fn replay_with_home(
 ) {
     let path = tree.path().join("supplied-case.json");
     let mut file = fs::File::create_new(&path).unwrap();
-    serde_json::to_writer(
-        &mut file,
-        &SuppliedCase {
-            compose_root,
-            case: case.clone(),
-        },
-    )
-    .unwrap();
+    serde_json::to_writer(&mut file, &SuppliedCase { compose_root, case }).unwrap();
     drop(file);
     let mut process = TestProcess::current(std::thread::current().name().unwrap())
         .unwrap()
@@ -525,8 +517,8 @@ impl HomeRow {
             },
             expected: json!({"value": {
                 "command": "bun",
-                "args": ["install", "-g", "@old/agent"],
-                "display": "bun install -g @old/agent",
+                "args": ["install", "-g", "--ignore-scripts", "@old/agent"],
+                "display": "bun install -g --ignore-scripts @old/agent",
             }}),
             trace: vec![json!(["command", "bun", ["pm", "bin", "-g"]])],
         }

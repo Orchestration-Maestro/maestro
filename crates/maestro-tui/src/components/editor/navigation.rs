@@ -41,11 +41,10 @@ impl Owner {
             let state = self.state.borrow();
             let rows = state.visual_rows(self.width.get());
             let index = state.visual_index(&rows);
-            let empty = state.current.lines.len() == 1 && state.current.lines[0].is_empty();
             if down {
                 state.history_index.is_some() && index + 1 == rows.len()
             } else {
-                empty || (state.history_index.is_some() && index == 0)
+                index == 0 && !state.history.is_empty()
             }
         };
         if history {

@@ -27,11 +27,11 @@ pub type EventListener<E = Threaded> =
 /// One independently removable listener registration.
 pub(crate) struct Registration<E: ExtensionExecution> {
     /// Literal channel name.
-    channel: String,
+    pub(crate) channel: String,
     /// Identity of the subscribing extension.
     pub(crate) owner: Arc<()>,
     /// Caller-owned listener.
-    handler: EventListener<E>,
+    pub(crate) handler: EventListener<E>,
 }
 /// Shared subscriptions and caller-supplied execution facilities.
 pub(crate) struct Shared<E: ExtensionExecution> {
@@ -121,6 +121,10 @@ impl<E: ExtensionExecution> EventBus<E> {
         lock(&self.shared.registrations).push(registration);
         subscription
     }
+    /// Reports a synchronous callback failure through this bus's diagnostic destination.
+    pub fn report_error(&self, channel: &str, error: &(dyn Error + Send + Sync)) {
+        self.shared.report_error(channel, error);
+    }
     /// Retains this emission's ordered listener collection.
     pub(crate) fn snapshot(&self, channel: &str) -> Vec<E::Shared<Registration<E>>> {
         lock(&self.shared.registrations)
@@ -136,14 +140,20 @@ impl<E: ExtensionExecution> EventBus<E> {
             owner: Arc::clone(&registration.owner),
         };
         let result = events.invoke_callback(|emitter| (registration.handler)(data, emitter));
+        self.settle_listener(&registration.channel, result);
+    }
+    /// Applies the original report and continuation policy after a listener prefix returns.
+    pub(crate) fn settle_listener(
+        &self,
+        channel: &str,
+        result: Result<Option<EventTail<E>>, EventError>,
+    ) {
         match result {
-            Ok(Some(tail)) => (self.shared.spawn)(E::tail_task(
-                tail,
-                registration.channel.clone(),
-                self.clone(),
-            )),
+            Ok(Some(tail)) => {
+                (self.shared.spawn)(E::tail_task(tail, channel.to_owned(), self.clone()));
+            }
             Ok(None) => {}
-            Err(error) => self.shared.report_error(&registration.channel, &*error),
+            Err(error) => self.shared.report_error(channel, &*error),
         }
     }
 }

@@ -14,16 +14,79 @@ use maestro_entry::session_manager as entry;
 use serde::de::Error as _;
 use serde::{Deserialize, Serialize};
 use std::rc::Rc;
+/// Opaque JSON payload text that serializes as its semantic JSON value.
+///
+/// Reads use compact `serde_json` text, preserving object key order and numbers.
+/// Constructed text is validated when serialized; malformed JSON returns an error.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct JsonText(String);
+
+impl std::ops::Deref for JsonText {
+    type Target = str;
+
+    /// Borrows the stored JSON text without reparsing it.
+    fn deref(&self) -> &str {
+        &self.0
+    }
+}
+
+impl AsRef<str> for JsonText {
+    /// Borrows the stored JSON text.
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
+impl std::fmt::Display for JsonText {
+    /// Writes the stored JSON text unchanged.
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str(&self.0)
+    }
+}
+
+impl From<String> for JsonText {
+    /// Retains authored text, validating it at the serialization boundary.
+    fn from(text: String) -> Self {
+        Self(text)
+    }
+}
+
+impl From<JsonText> for String {
+    /// Returns the stored text without another allocation.
+    fn from(text: JsonText) -> Self {
+        text.0
+    }
+}
+
+impl Serialize for JsonText {
+    /// Restores the semantic JSON value instead of quoting its encoded text.
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::Error as _;
+        let value: serde_json::Value = serde_json::from_str(&self.0).map_err(S::Error::custom)?;
+        value.serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for JsonText {
+    /// Captures arbitrary JSON as compact text rather than requiring a JSON string.
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let value = serde_json::Value::deserialize(deserializer)?;
+        serde_json::to_string(&value)
+            .map(Self)
+            .map_err(D::Error::custom)
+    }
+}
+
 /// Message entry holding a typed agent message.
 pub type SessionMessageEntry = entry::SessionMessageEntry<AgentMessage>;
 /// A persisted compaction whose details are opaque JSON text.
-pub type CompactionEntry = entry::CompactionEntry<String>;
+pub type CompactionEntry = entry::CompactionEntry<JsonText>;
 /// A branch summary whose details are opaque JSON text.
-pub type BranchSummaryEntry = entry::BranchSummaryEntry<String>;
+pub type BranchSummaryEntry = entry::BranchSummaryEntry<JsonText>;
 /// Extension state whose data is opaque JSON text.
-pub type CustomEntry = entry::CustomEntry<String>;
+pub type CustomEntry = entry::CustomEntry<JsonText>;
 /// An extension display message whose details are opaque JSON text.
-pub type CustomMessageEntry = entry::CustomMessageEntry<String>;
+pub type CustomMessageEntry = entry::CustomMessageEntry<JsonText>;
 /// Plain parameters of a setup-created session.
 pub type NewSessionOptions = entry::NewSessionOptions<Option<String>>;
 /// Selected model identity in a built context.
@@ -227,3 +290,6 @@ port! {
  infallible { /// Acquires a read view bound to the same session.
  fn reader() -> ReadonlySessionManager; }
 }
+
+#[cfg(test)]
+mod tests;

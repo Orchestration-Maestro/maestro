@@ -104,6 +104,7 @@ fn payload_case(input: &Value, expected: &Value, simple: bool) {
         let value = &input["options"];
         request::simple_options(
             &model,
+            &context,
             &crate::SimpleStreamOptions {
                 common: common(value),
                 reasoning: value
@@ -334,6 +335,6 @@ fn cases() -> Vec<Case> {
             serde_json::to_string(&case.input).unwrap()
         )));
     }
-    assert_eq!(cases.len(), 467);
+    assert_eq!(cases.len(), 470);
     cases
 }

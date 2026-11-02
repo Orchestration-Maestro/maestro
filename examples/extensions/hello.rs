@@ -1,4 +1,5 @@
 //! A greeting tool registered by an extension factory.
+// maestro-component: MAESTRO_HELLO_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
@@ -24,6 +25,8 @@ struct HelloParams {
 /// A tool that returns a greeting and the supplied name.
 fn hello_tool() -> ToolDefinition {
     ToolDefinition {
+        render_call: None,
+        render_result: None,
         metadata: ToolMetadata {
             name: "hello".into(),
             label: "Hello".into(),
@@ -47,7 +50,7 @@ fn hello_tool() -> ToolDefinition {
                         "Hello, {}!",
                         params.name
                     )))],
-                    details: Presence::Present(json!({"greeted":params.name}).to_string()),
+                    details: Presence::Present(json!({"greeted":params.name}).to_string().into()),
                     terminate: Presence::Missing,
                 })
             })

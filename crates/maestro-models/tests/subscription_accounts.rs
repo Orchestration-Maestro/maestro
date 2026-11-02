@@ -41,6 +41,9 @@ fn subscription_refresh_omits_scope() {
 struct Manual;
 #[cfg(not(target_arch = "wasm32"))]
 impl maestro_models::OAuthLoginCallbacks for Manual {
+    fn callback_presence(&self) -> (bool, bool, bool) {
+        (true, true, false)
+    }
     fn on_auth(
         &self,
         info: maestro_models::OAuthAuthInfo,
@@ -166,18 +169,26 @@ impl maestro_models::OAuthLoginCallbacks for Callback {
     }
 }
 #[cfg(not(target_arch = "wasm32"))]
-/// Interaction which must never run after native binding failure.
-struct Uncalled;
+/// Interaction that records the announced authorization address, then declines to continue.
+#[derive(Default)]
+struct Announcing {
+    /// Address announced by the sign-in.
+    url: std::sync::Mutex<Option<String>>,
+}
 #[cfg(not(target_arch = "wasm32"))]
-impl maestro_models::OAuthLoginCallbacks for Uncalled {
-    fn on_auth(&self, _: maestro_models::OAuthAuthInfo) -> Result<(), maestro_models::OAuthError> {
-        panic!("binding failure must precede auth")
+impl maestro_models::OAuthLoginCallbacks for Announcing {
+    fn on_auth(
+        &self,
+        info: maestro_models::OAuthAuthInfo,
+    ) -> Result<(), maestro_models::OAuthError> {
+        *self.url.lock().unwrap() = Some(info.url);
+        Err(maestro_models::DiagnosticErrorInfo::error("declined").into())
     }
     fn on_prompt(
         &self,
         _: maestro_models::OAuthPrompt,
     ) -> maestro_models::BoxFuture<Result<String, maestro_models::OAuthError>> {
-        panic!("binding failure must precede prompt")
+        panic!("declining the announcement must precede the prompt")
     }
 }
 #[cfg(not(target_arch = "wasm32"))]
@@ -275,12 +286,24 @@ async fn write_peer(peer: &mut tokio::net::TcpStream, mut bytes: &[u8]) {
 }
 #[cfg(not(target_arch = "wasm32"))]
 /// Read peer bytes after readiness, including the shutdown EOF.
+///
+/// A closed listener answers bytes written after its close with a reset, which some hosts,
+/// macOS among them, report before the end of stream, and Windows may report as an aborted
+/// connection, so either also reads as the end.
 async fn read_peer(peer: &mut tokio::net::TcpStream, bytes: &mut [u8]) -> usize {
     loop {
         peer.readable().await.unwrap();
         match peer.try_read(bytes) {
             Ok(count) => return count,
             Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {}
+            Err(error)
+                if matches!(
+                    error.kind(),
+                    std::io::ErrorKind::ConnectionAborted | std::io::ErrorKind::ConnectionReset
+                ) =>
+            {
+                return 0;
+            }
             Err(error) => panic!("{error}"),
         }
     }
@@ -433,14 +456,26 @@ mod oauth_callback {
 
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
-    fn subscription_occupied_port_reports_native_error() {
+    fn subscription_occupied_port_falls_back_to_a_free_port() {
         crate::runtime::run(async {
             let _permit = PORT.acquire().await.unwrap();
             let listener = bind_callback_probe();
-            let error = maestro_models::login_anthropic(Arc::new(Uncalled), None)
+            let callbacks = Arc::new(Announcing::default());
+            let error = maestro_models::login_anthropic(callbacks.clone(), None)
                 .await
                 .unwrap_err();
-            assert!(error.errno.is_some());
+            assert_eq!(error.to_string(), "declined");
+            let announced = callbacks.url.lock().unwrap().clone().unwrap();
+            let announced = url::Url::parse(&announced).unwrap();
+            let redirect = announced
+                .query_pairs()
+                .find(|(key, _)| key == "redirect_uri")
+                .unwrap()
+                .1
+                .into_owned();
+            let redirect = url::Url::parse(&redirect).unwrap();
+            assert_ne!(redirect.port(), Some(53692));
+            assert!(redirect.port().is_some());
             drop(listener);
             let _released = bind_callback_probe();
         });

@@ -10,7 +10,7 @@ including a missing key, ends that stream with an error update instead of failin
 `stream_simple_anthropic(model, context, options)` takes `SimpleStreamOptions`. The function in
 this module returns an immediate error (the root export of the same name settles it as an error
 stream, see the [linkage guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/module-linkage.md)), `No API key for provider: {provider}`, when neither a nonempty explicit key
-nor the provider's environment key can be selected; an ambient bearer alone is not a simple key.
+nor the provider's environment key can be selected.
 Other detected failures end the returned stream as on the raw entry. The simple entry reuses
 [common option and budget helpers](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/model-options.md)
 and does not forward its `tool_choice`.
@@ -32,10 +32,9 @@ Browser targets use local futures.
 ## Key and client
 
 The request is authenticated with the explicit `api_key`, including an explicitly empty one,
-otherwise `get_env_api_key(provider)`, otherwise the empty string. In ordinary key mode the
-environment variable `ANTHROPIC_AUTH_TOKEN`, trimmed of script whitespace (the byte-order
-mark counts, U+0085 does
-not), adds an `authorization: Bearer` header when it is not empty.
+otherwise `get_env_api_key(provider)`, otherwise the empty string. In ordinary key mode the request
+sends `x-api-key` alone: the environment variable `ANTHROPIC_AUTH_TOKEN` is never read, on the
+default endpoint or on a compatible one.
 
 Without an injected client, authorization is selected before `on_payload`: gateway provider
 first, account provider second, then subscription when the key contains the case-sensitive
@@ -70,7 +69,7 @@ Thinking, cache markers, hooks and the other answer reduction rules still apply.
 The endpoint is the model's base URL with `/v1/messages` appended (the base `https://api.anthropic.com`
 when the model's is empty); a trailing slash on the base is not doubled.
 
-Headers are layered case-insensitively: protocol defaults and selected credentials/betas,
+Headers are layered case-insensitively: protocol defaults and selected credentials,
 model headers, account dynamic headers when applicable, then caller headers. The shared HTTP layer keeps each normalized name's first
 insertion position and last value. The body encoding
 sets `content-type: application/json` last. For nongateway requests, a nonempty `x-api-key` or
@@ -78,18 +77,37 @@ sets `content-type: application/json` last. For nongateway requests, a nonempty 
 sending. Gateway requests retain this exemption only while at least one default authentication
 omission survives: when model/caller headers supply both fields, the same nonempty check applies.
 
-Subscription defaults prepend `claude-code-20250219,oauth-2025-04-20` to the optional betas;
-model/caller headers can replace `anthropic-beta`. Before these overrides, `anthropic-beta` names
-`interleaved-thinking-2025-05-14` unless the caller sets
-`interleaved_thinking` to `false` or the model ID contains `opus-4-6`, `opus-4.6`, `opus-4-7`,
-`opus-4.7`, `sonnet-4-6` or `sonnet-4.6`, and `fine-grained-tool-streaming-2025-05-14` when
-tools are declared and the model's compatibility turns eager input streaming off. With eager
-input streaming (the default) each tool carries `eager_input_streaming: true` instead.
+Beta features travel in the payload's optional `betas` array, visible to `on_payload`
+and injected clients. The default HTTP transport removes that field from the body and
+joins its entries with commas into `anthropic-beta`, replacing the layered header.
+Without `betas`, the layered header is unchanged apart from HTTP edge trimming.
 
-The payload holds `model`, `messages`, `max_tokens`, `stream`, then `system`, `temperature`,
+A configured `anthropic-beta` in model or caller headers replaces all defaults.
+Names match case-insensitively; the last match wins, with caller headers read last.
+Its comma-separated entries are trimmed, empty entries dropped and duplicates removed
+in first-seen order. An empty list leaves `betas` absent and sends the configured
+header as written, subject to HTTP edge trimming.
+
+Without a configured header, subscription tokens select `claude-code-20250219` and
+`oauth-2025-04-20` first. Injected clients never select that pair. Next comes
+`fine-grained-tool-streaming-2025-05-14` when tools are declared and the model's
+compatibility turns eager input streaming off. With eager input streaming (the default),
+each tool carries `eager_input_streaming: true` instead. Last comes
+`interleaved-thinking-2025-05-14`, only for a reasoning-capable model with thinking
+explicitly enabled, interleaved thinking not disabled and no adaptive thinking.
+Unset or disabled thinking selects no interleaved beta.
+
+The model's compatibility record also shapes the request. `sendSessionAffinityHeaders`
+(off by default) sends a nonempty session ID as `x-session-affinity`, below the model and
+caller headers, unless caching is off or the request authenticates with an account or a
+subscription token. `supportsCacheControlOnTools`, when `false`, leaves the last tool
+without a cache marker. `allowEmptySignature` (off by default) replays unsigned reasoning
+as a thinking block with an empty signature instead of plain text.
+
+The payload holds `model`, `messages`, `max_tokens`, `stream`, optional `betas`, then `system`, `temperature`,
 `tools`, `thinking`, `output_config`, `metadata` and `tool_choice` where they apply.
 `max_tokens` is the caller's value
-unless it is zero or not a number, otherwise a third of the model's, truncated toward zero. An
+unless it is zero or not a number, otherwise the model's output cap. An
 infinite limit, and a temperature that is infinite or not a number, are written as `null`;
 negative zero is written as `0`. `metadata` carries `user_id` only when the caller's metadata
 holds it as text. `ToolChoice::Auto` and `None` are sent as `auto` and `none`, `Required` as
@@ -108,8 +126,9 @@ hook error ends the stream with the error's message as it is.
 ## Thinking
 
 Thinking fields require model reasoning support. Raw `thinking_enabled` absent omits thinking;
-`false` sends disabled thinking; `true` selects adaptive thinking for the case-sensitive ID
-substrings listed above, otherwise budget-based thinking. True enablement suppresses temperature
+`false` sends disabled thinking; `true` selects adaptive thinking when compatibility sets
+`forceAdaptiveThinking: true` or the ID contains one of the case-sensitive substrings listed
+above, otherwise budget-based thinking. True enablement suppresses temperature
 even on a nonreasoning model. Enabled thinking defaults to summarized display;
 `AnthropicThinkingDisplay::Omitted` selects omitted display.
 
@@ -136,7 +155,8 @@ kept whatever its text, but only when it comes from the same provider, API and m
 never receive it. Images are sent with their type and data when the model accepts images, and
 otherwise the projection replaces them with placeholder text. Reasoning with a nonblank signature,
 which only the same provider, API and model can carry, is replayed signed; other reasoning is
-replayed as plain text; redacted reasoning is replayed as its opaque payload. Consecutive tool
+replayed as plain text, or with an empty signature where the model's compatibility allows
+it; redacted reasoning is replayed as its opaque payload. Consecutive tool
 results become one user message, and blank text blocks in a result are kept. A tool result of text
 blocks only is their text joined by line feeds; one that holds an image is sent as blocks in order,
 led by `(see attached image)` when it has no text block.

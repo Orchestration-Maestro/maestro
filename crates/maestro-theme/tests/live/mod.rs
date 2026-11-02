@@ -1,7 +1,8 @@
 //! Live-theme scratch directories, state and shared fixture access.
-mod document;
+use maestro_theme::test_support::document;
 
 pub use crate::support::environment::{TRUECOLOR, in_child, per_environment};
+#[doc(inline)]
 pub use document::custom_json;
 use maestro_theme::{ThemeDirectories, ThemeState};
 use std::fs;
@@ -20,7 +21,12 @@ impl Scratch {
 
     /// Path of an entry below the scratch directory.
     pub fn path(&self, relative: &str) -> String {
-        self.0.path().join(relative).to_string_lossy().into_owned()
+        // Join by component, so a Windows path keeps one separator throughout.
+        relative
+            .split('/')
+            .fold(self.0.path().to_path_buf(), |path, part| path.join(part))
+            .to_string_lossy()
+            .into_owned()
     }
 
     /// Write a file below the scratch directory.

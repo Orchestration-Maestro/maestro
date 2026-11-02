@@ -1,0 +1,5881 @@
+[
+  {
+    "tool": "repl",
+    "input": {
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Preparing JavaScript...",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": false,
+      "url": null,
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "Preparing JavaScript...",
+      "status": "inprogress",
+      "spinner": 1,
+      "collapsible": false,
+      "url": null,
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Preparing JavaScript...",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": false,
+      "url": null,
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "Preparing JavaScript...",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": false,
+      "url": null,
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Preparing JavaScript...",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": false,
+      "url": null,
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "Preparing JavaScript...",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": false,
+      "url": null,
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {},
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {},
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "inprogress",
+      "spinner": 1,
+      "collapsible": true,
+      "url": null,
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {},
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {},
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {},
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "error"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {},
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "error"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": ""
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": ""
+      },
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "inprogress",
+      "spinner": 1,
+      "collapsible": true,
+      "url": null,
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": ""
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": ""
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": ""
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "error"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": ""
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "error"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": "YWJj"
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "YWJj",
+          "language": "javascript"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": "YWJj"
+      },
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "inprogress",
+      "spinner": 1,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "YWJj",
+          "language": "javascript"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": "YWJj"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "YWJj",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": "YWJj"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "YWJj",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": "YWJj"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "YWJj",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "error"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": "YWJj"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "YWJj",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "error"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": "<b>literal & code</b>",
+        "title": "chosen"
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "chosen",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "<b>literal & code</b>",
+          "language": "javascript"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": "<b>literal & code</b>",
+        "title": "chosen"
+      },
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "chosen",
+      "status": "inprogress",
+      "spinner": 1,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "<b>literal & code</b>",
+          "language": "javascript"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": "<b>literal & code</b>",
+        "title": "chosen"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "chosen",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "<b>literal & code</b>",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": "<b>literal & code</b>",
+        "title": "chosen"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "chosen",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "<b>literal & code</b>",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": "<b>literal & code</b>",
+        "title": "chosen"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "chosen",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "<b>literal & code</b>",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "error"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": "<b>literal & code</b>",
+        "title": "chosen"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "chosen",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "<b>literal & code</b>",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "error"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": "x"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "x",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "title": null,
+        "code": "x"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "x",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "title": "",
+        "code": "x"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "x",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "title": false,
+        "code": "x"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "x",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "title": true,
+        "code": "x"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "true",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "x",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "title": 0,
+        "code": "x"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "x",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "title": 2,
+        "code": "x"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "2",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "x",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "title": "named",
+        "code": "x"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "named",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "x",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "title": "  named  ",
+        "code": "x"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "  named  ",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "x",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "title": " ",
+        "code": "x"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": " ",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "x",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "title": {},
+        "code": "x"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "{}",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "x",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "title": [
+          1
+        ],
+        "code": "x"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "[1]",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "x",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": "x"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": {
+          "files": [
+            {
+              "fileName": "note.txt",
+              "mimeType": "text/plain",
+              "contentBase64": "w6k=",
+              "size": 2
+            },
+            {
+              "fileName": "note.txt",
+              "mimeType": "text/plain",
+              "contentBase64": "w6k=",
+              "size": 2
+            }
+          ]
+        }
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "x",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": [
+        {
+          "type": "document",
+          "fileName": "note.txt",
+          "mimeType": "text/plain",
+          "size": 2,
+          "content": "w6k=",
+          "extractedText": "é"
+        },
+        {
+          "type": "document",
+          "fileName": "note.txt",
+          "mimeType": "text/plain",
+          "size": 2,
+          "content": "w6k=",
+          "extractedText": "é"
+        }
+      ]
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": "x"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": {
+          "files": [
+            {
+              "fileName": "image.png",
+              "mimeType": "image/png",
+              "contentBase64": "AA==",
+              "size": 0
+            },
+            {
+              "fileName": "image.png",
+              "mimeType": "image/png",
+              "contentBase64": "AA==",
+              "size": 0
+            }
+          ]
+        }
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "x",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": [
+        {
+          "type": "image",
+          "fileName": "image.png",
+          "mimeType": "image/png",
+          "size": 0,
+          "content": "AA==",
+          "preview": "AA=="
+        },
+        {
+          "type": "image",
+          "fileName": "image.png",
+          "mimeType": "image/png",
+          "size": 0,
+          "content": "AA==",
+          "preview": "AA=="
+        }
+      ]
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": "x"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": {
+          "files": [
+            {
+              "fileName": "",
+              "mimeType": "",
+              "contentBase64": "",
+              "size": 0
+            },
+            {
+              "fileName": "",
+              "mimeType": "",
+              "contentBase64": "",
+              "size": 0
+            }
+          ]
+        }
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "x",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": [
+        {
+          "type": "document",
+          "fileName": "file-0",
+          "mimeType": "application/octet-stream",
+          "size": 0,
+          "content": ""
+        },
+        {
+          "type": "document",
+          "fileName": "file-1",
+          "mimeType": "application/octet-stream",
+          "size": 0,
+          "content": ""
+        }
+      ]
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": "x"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": {
+          "files": [
+            {
+              "fileName": "broken.txt",
+              "mimeType": "text/plain",
+              "contentBase64": "!",
+              "size": 1
+            },
+            {
+              "fileName": "broken.txt",
+              "mimeType": "text/plain",
+              "contentBase64": "!",
+              "size": 1
+            }
+          ]
+        }
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "x",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": [
+        {
+          "type": "document",
+          "fileName": "broken.txt",
+          "mimeType": "text/plain",
+          "size": 1,
+          "content": "!"
+        },
+        {
+          "type": "document",
+          "fileName": "broken.txt",
+          "mimeType": "text/plain",
+          "size": 1,
+          "content": "!"
+        }
+      ]
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": null
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": false
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": true
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "true",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": 0
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": 2
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "2",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": "named"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "named",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": "  named  "
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "  named  ",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": " "
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": " ",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": {}
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "{}",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": [
+          1
+        ]
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "[1]",
+          "language": "javascript"
+        }
+      ],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "default"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": "x"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": []
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "x",
+          "language": "javascript"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": "x"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "x",
+          "language": "javascript"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": "x"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": []
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "x",
+          "language": "javascript"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "repl",
+    "input": {
+      "params": {
+        "code": "x"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Executing JavaScript",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "x",
+          "language": "javascript"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Preparing extraction...",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": false,
+      "url": null,
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "Preparing extraction...",
+      "status": "inprogress",
+      "spinner": 1,
+      "collapsible": false,
+      "url": null,
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Preparing extraction...",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": false,
+      "url": null,
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "Preparing extraction...",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": false,
+      "url": null,
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Preparing extraction...",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": false,
+      "url": null,
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "Preparing extraction...",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": false,
+      "url": null,
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": {
+          "fileName": "file.pdf",
+          "format": "pdf",
+          "size": 1536
+        }
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Preparing extraction...",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": false,
+      "url": null,
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": {
+          "fileName": "file.pdf",
+          "format": "pdf",
+          "size": 1536
+        }
+      },
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "Preparing extraction...",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": false,
+      "url": null,
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": {
+          "fileName": "file.pdf"
+        }
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Preparing extraction...",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": false,
+      "url": null,
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": {
+          "fileName": "file.pdf"
+        }
+      },
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "Preparing extraction...",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": false,
+      "url": null,
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {},
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracting document...",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "",
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {},
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "Extracting document...",
+      "status": "inprogress",
+      "spinner": 1,
+      "collapsible": true,
+      "url": "",
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {},
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracted text from document",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "first\nlast",
+          "language": "plaintext"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {},
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "Extracted text from document",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "first\nlast",
+          "language": "plaintext"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {},
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Failed to extract document",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "error"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {},
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "Failed to extract document",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "error"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {},
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": {
+          "fileName": "file.pdf",
+          "format": "pdf",
+          "size": 1536
+        }
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracted text from file.pdf (PDF, 1.5KB)",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "first\nlast",
+          "language": "plaintext"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {},
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": {
+          "fileName": "file.pdf",
+          "format": "pdf",
+          "size": 1536
+        }
+      },
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "Extracted text from file.pdf (PDF, 1.5KB)",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "first\nlast",
+          "language": "plaintext"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {},
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": {
+          "fileName": "file.pdf"
+        }
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Failed to extract file.pdf",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "error"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {},
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": {
+          "fileName": "file.pdf"
+        }
+      },
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "Failed to extract file.pdf",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "error"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": ""
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracting document...",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "",
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": ""
+      },
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "Extracting document...",
+      "status": "inprogress",
+      "spinner": 1,
+      "collapsible": true,
+      "url": "",
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": ""
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracted text from document",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "first\nlast",
+          "language": "plaintext"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": ""
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "Extracted text from document",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "first\nlast",
+          "language": "plaintext"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": ""
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Failed to extract document",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "error"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": ""
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "Failed to extract document",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "error"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": ""
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": {
+          "fileName": "file.pdf",
+          "format": "pdf",
+          "size": 1536
+        }
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracted text from file.pdf (PDF, 1.5KB)",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "first\nlast",
+          "language": "plaintext"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": ""
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": {
+          "fileName": "file.pdf",
+          "format": "pdf",
+          "size": 1536
+        }
+      },
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "Extracted text from file.pdf (PDF, 1.5KB)",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "first\nlast",
+          "language": "plaintext"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": ""
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": {
+          "fileName": "file.pdf"
+        }
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Failed to extract file.pdf",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "error"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": ""
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": {
+          "fileName": "file.pdf"
+        }
+      },
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "Failed to extract file.pdf",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "error"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "https://example.test/a?x=1&y=2"
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracting document...",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "https://example.test/a?x=1&y=2",
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "https://example.test/a?x=1&y=2"
+      },
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "Extracting document...",
+      "status": "inprogress",
+      "spinner": 1,
+      "collapsible": true,
+      "url": "https://example.test/a?x=1&y=2",
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "https://example.test/a?x=1&y=2"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracted text from document",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "https://example.test/a?x=1&y=2",
+      "blocks": [
+        {
+          "code": "first\nlast",
+          "language": "plaintext"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "https://example.test/a?x=1&y=2"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "Extracted text from document",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "https://example.test/a?x=1&y=2",
+      "blocks": [
+        {
+          "code": "first\nlast",
+          "language": "plaintext"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "https://example.test/a?x=1&y=2"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Failed to extract document",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "https://example.test/a?x=1&y=2",
+      "blocks": [],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "error"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "https://example.test/a?x=1&y=2"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "Failed to extract document",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "https://example.test/a?x=1&y=2",
+      "blocks": [],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "error"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "https://example.test/a?x=1&y=2"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": {
+          "fileName": "file.pdf",
+          "format": "pdf",
+          "size": 1536
+        }
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracted text from file.pdf (PDF, 1.5KB)",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "https://example.test/a?x=1&y=2",
+      "blocks": [
+        {
+          "code": "first\nlast",
+          "language": "plaintext"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "https://example.test/a?x=1&y=2"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": {
+          "fileName": "file.pdf",
+          "format": "pdf",
+          "size": 1536
+        }
+      },
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "Extracted text from file.pdf (PDF, 1.5KB)",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "https://example.test/a?x=1&y=2",
+      "blocks": [
+        {
+          "code": "first\nlast",
+          "language": "plaintext"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "https://example.test/a?x=1&y=2"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": {
+          "fileName": "file.pdf"
+        }
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Failed to extract file.pdf",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "https://example.test/a?x=1&y=2",
+      "blocks": [],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "error"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "https://example.test/a?x=1&y=2"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": {
+          "fileName": "file.pdf"
+        }
+      },
+      "isStreaming": true
+    },
+    "expected": {
+      "caption": "Failed to extract file.pdf",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "https://example.test/a?x=1&y=2",
+      "blocks": [],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "error"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": null
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracting document...",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "",
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": null
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracted text from document",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "first\nlast",
+          "language": "plaintext"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": false
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracting document...",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "false",
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": false
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracted text from document",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "first\nlast",
+          "language": "plaintext"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": true
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracting document...",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "true",
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": true
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracted text from document",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "true",
+      "blocks": [
+        {
+          "code": "first\nlast",
+          "language": "plaintext"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": 0
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracting document...",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "0",
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": 0
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracted text from document",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": null,
+      "blocks": [
+        {
+          "code": "first\nlast",
+          "language": "plaintext"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": 2
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracting document...",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "2",
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": 2
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracted text from document",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "2",
+      "blocks": [
+        {
+          "code": "first\nlast",
+          "language": "plaintext"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "named"
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracting document...",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "named",
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "named"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracted text from document",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "named",
+      "blocks": [
+        {
+          "code": "first\nlast",
+          "language": "plaintext"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "  named  "
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracting document...",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "  named  ",
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "  named  "
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracted text from document",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "  named  ",
+      "blocks": [
+        {
+          "code": "first\nlast",
+          "language": "plaintext"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": " "
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracting document...",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": " ",
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": " "
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracted text from document",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": " ",
+      "blocks": [
+        {
+          "code": "first\nlast",
+          "language": "plaintext"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": {}
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracting document...",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "{}",
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": {}
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracted text from document",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "{}",
+      "blocks": [
+        {
+          "code": "first\nlast",
+          "language": "plaintext"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": [
+          1
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracting document...",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "[1]",
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": [
+          1
+        ]
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracted text from document",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "[1]",
+      "blocks": [
+        {
+          "code": "first\nlast",
+          "language": "plaintext"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "u"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracted text from document",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "u",
+      "blocks": [
+        {
+          "code": "first\nlast",
+          "language": "plaintext"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "u"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Failed to extract document",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "u",
+      "blocks": [],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "error"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "u"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": null
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracted text from document",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "u",
+      "blocks": [
+        {
+          "code": "first\nlast",
+          "language": "plaintext"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "u"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": null
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Failed to extract document",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "u",
+      "blocks": [],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "error"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "u"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": false
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracted text from document",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "u",
+      "blocks": [
+        {
+          "code": "first\nlast",
+          "language": "plaintext"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "u"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": false
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Failed to extract document",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "u",
+      "blocks": [],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "error"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "u"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": 0
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracted text from document",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "u",
+      "blocks": [
+        {
+          "code": "first\nlast",
+          "language": "plaintext"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "u"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": 0
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Failed to extract document",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "u",
+      "blocks": [],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "error"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "u"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": ""
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracted text from document",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "u",
+      "blocks": [
+        {
+          "code": "first\nlast",
+          "language": "plaintext"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "u"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": ""
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Failed to extract document",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "u",
+      "blocks": [],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "error"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "u"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": {}
+      },
+      "isStreaming": false
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "u"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": {}
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Failed to extract document",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "u",
+      "blocks": [],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "error"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "u"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": []
+      },
+      "isStreaming": false
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "u"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": []
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Failed to extract document",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "u",
+      "blocks": [],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "error"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "u"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": {
+          "fileName": "",
+          "format": "pdf",
+          "size": 51.2
+        }
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracted text from  (PDF, 0.1KB)",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "u",
+      "blocks": [
+        {
+          "code": "first\nlast",
+          "language": "plaintext"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "u"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": {
+          "fileName": "",
+          "format": "pdf",
+          "size": 51.2
+        }
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Failed to extract document",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "u",
+      "blocks": [],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "error"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "u"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": {
+          "fileName": "雪",
+          "format": "ß",
+          "size": 1024
+        }
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracted text from 雪 (SS, 1.0KB)",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "u",
+      "blocks": [
+        {
+          "code": "first\nlast",
+          "language": "plaintext"
+        }
+      ],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "u"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "details": {
+          "fileName": "雪",
+          "format": "ß",
+          "size": 1024
+        }
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Failed to extract 雪",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "u",
+      "blocks": [],
+      "console": [
+        {
+          "content": "first\nlast",
+          "variant": "error"
+        }
+      ],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "u"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": []
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracted text from document",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "u",
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "u"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": false,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Extracted text from document",
+      "status": "complete",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "u",
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "u"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": []
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Failed to extract document",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "u",
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  },
+  {
+    "tool": "extract",
+    "input": {
+      "params": {
+        "url": "u"
+      },
+      "result": {
+        "toolCallId": "call",
+        "toolName": "tool",
+        "isError": true,
+        "timestamp": 1,
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      },
+      "isStreaming": false
+    },
+    "expected": {
+      "caption": "Failed to extract document",
+      "status": "error",
+      "spinner": 0,
+      "collapsible": true,
+      "url": "u",
+      "blocks": [],
+      "console": [],
+      "attachments": []
+    }
+  }
+]

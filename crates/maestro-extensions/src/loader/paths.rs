@@ -4,6 +4,7 @@ use crate::{
     EventBusController, ExtensionExecution, create_extension_runtime,
     types::{ExtensionAPI, ExtensionLoadError, LoadExtensionsResult, ModuleLoader},
 };
+use maestro_path::{Tilde, parse_tilde};
 use maestro_resources::paths::{home_directory, resolve};
 use maestro_tools::path_utils::resolve_existing_spelling;
 use std::io;
@@ -24,21 +25,22 @@ fn anchor_path(
 
 /// Join the rest of a leading `~` below the home directory through `home`.
 ///
-/// The rest is always joined, an empty one included, so a home spelling that ends in `/` or `/.`
-/// is normalized. Characters stay as written, so the selector still sees the written candidate
-/// before it falls back to the space-replaced one. Any other path is returned as written without
-/// reading the home directory.
+/// The rest is always joined, an exact `~` included, so a home spelling that ends in `/` or
+/// `/.` is normalized. Characters stay as written, so the selector still sees the written
+/// candidate before it falls back to the space-replaced one. Any other path, `~name` included,
+/// is returned as written without reading the home directory.
 fn expand_extension_path(
     path: &str,
     home: impl FnOnce() -> io::Result<String>,
 ) -> io::Result<String> {
-    if !path.starts_with('~') {
-        return Ok(path.to_owned());
-    }
-    let rest = path.strip_prefix('~').unwrap_or_default();
-    let rest = rest.strip_prefix('/').unwrap_or(rest);
+    let rest = match parse_tilde(path) {
+        Tilde::Other => return Ok(path.to_owned()),
+        Tilde::Home => "",
+        Tilde::Below(rest) => rest,
+    };
     Ok(maestro_path::join(&[&home()?, rest]))
 }
+
 /// Anchors `extension_path` at `cwd` and resolves it through
 /// [`resolve_existing_spelling`], which keeps the spelling of the directories the file
 /// system holds.
@@ -50,8 +52,9 @@ pub(super) fn resolve_path(extension_path: &str, cwd: &str) -> io::Result<String
     )
 }
 /// Loads `paths` in order through `module_loader`, with one shared runtime and one bus
-/// identity per path. A failed path is recorded with its supplied spelling and loading
-/// continues.
+/// identity per path. The module loader receives a lexically normalized absolute path;
+/// the extension record keeps the selected spelling. A failed path is recorded with
+/// its supplied spelling and loading continues.
 ///
 /// # Errors
 /// Returns the home-directory or working-directory error when a path cannot be resolved.
@@ -61,14 +64,36 @@ pub async fn load_extensions<E: ExtensionExecution>(
     event_bus: &EventBusController<E>,
     module_loader: &ModuleLoader<E>,
 ) -> io::Result<LoadExtensionsResult<E>> {
+    load_extensions_with_runtime(
+        paths,
+        cwd,
+        event_bus,
+        module_loader,
+        create_extension_runtime::<E>(),
+    )
+    .await
+}
+
+/// Loads paths on a supplied runtime whose constructor services are already available.
+///
+/// # Errors
+/// Returns a path resolution failure; individual extension failures remain in the result.
+pub async fn load_extensions_with_runtime<E: ExtensionExecution>(
+    paths: Vec<String>,
+    cwd: &str,
+    event_bus: &EventBusController<E>,
+    module_loader: &ModuleLoader<E>,
+    runtime: E::Shared<crate::types::ExtensionRuntime<E>>,
+) -> io::Result<LoadExtensionsResult<E>> {
     let mut result = LoadExtensionsResult {
         extensions: Vec::new(),
         errors: Vec::new(),
-        runtime: create_extension_runtime::<E>(),
+        runtime,
     };
     for path in paths {
         let resolved_path = resolve_path(&path, cwd)?;
-        let loaded = match module_loader(&resolved_path).await {
+        let module_path = resolve(&[&resolved_path])?;
+        let loaded = match module_loader(&module_path).await {
             Ok(Some(factory)) => {
                 let extension = create_extension::<E>(path.clone(), resolved_path);
                 let api = ExtensionAPI::new(
@@ -111,9 +136,10 @@ mod tests {
                     ("~", r"C:\h", r"C:\h"),
                     ("~/", r"C:\h", r"C:\h"),
                     ("~/x", r"C:\h", r"C:\h\x"),
-                    ("~x", r"C:\h", r"C:\h\x"),
+                    ("~x", r"C:\h", r"C:\w\~x"),
                     ("~", r"C:\h\.", r"C:\h"),
                     ("~", "", r"C:\w"),
+                    ("~/x", "", r"C:\w\x"),
                 ],
             )
         } else {
@@ -123,9 +149,10 @@ mod tests {
                     ("~", "/h", "/h"),
                     ("~/", "/h", "/h"),
                     ("~/x", "/h", "/h/x"),
-                    ("~x", "/h", "/h/x"),
+                    ("~x", "/h", "/w/~x"),
                     ("~", "/h/.", "/h"),
                     ("~", "", "/w"),
+                    ("~/x", "", "/w/x"),
                 ],
             )
         };
@@ -138,15 +165,17 @@ mod tests {
         }
     }
 
-    /// A path that does not start with `~` never reads the home directory.
+    /// A path that is neither `~` nor `~` plus a separator never reads the home directory.
     #[test]
     fn other_forms_read_no_home_directory() {
         let failing = || Err(io::Error::new(io::ErrorKind::NotFound, "unknown home"));
-        let (cwd, expected) = if cfg!(windows) {
-            (r"C:\w", r"C:\w\x\~\y")
+        let (cwd, rows) = if cfg!(windows) {
+            (r"C:\w", [("x/~/y", r"C:\w\x\~\y"), ("~x", r"C:\w\~x")])
         } else {
-            ("/w", "/w/x/~/y")
+            ("/w", [("x/~/y", "/w/x/~/y"), ("~x", "/w/~x")])
         };
-        assert_eq!(anchor_path("x/~/y", cwd, failing).unwrap(), expected);
+        for (written, expected) in rows {
+            assert_eq!(anchor_path(written, cwd, failing).unwrap(), expected);
+        }
     }
 }

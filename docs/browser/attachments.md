@@ -1,52 +1,48 @@
 # Attachment tiles and overlays
 
-`maestro_web::AttachmentTile` renders a thumbnail or document glyph with a clipped
-filename. Its public `attachment` is an `Rc<RefCell<Attachment>>`; replacing it or
-editing the shared record is observed on subsequent frames. `show_delete` defaults
-to false. When enabled, the remove target calls the optional `on_delete` without
-opening an overlay. Hover-capable platforms reveal its paint on hover; other
-platforms keep it visible. A PDF badge is not part of the image hover/click
-target; the remaining image area opens the overlay. The badge background follows
-the tile's rounded outline, clipped to the badge region.
+Tiles and overlays take the application-owned `SharedAttachment`
+(`Arc<RwLock<Attachment>>`). Messages, tiles, overlays and downloads retain the
+same member even after its parent list is removed, so editing the shared record is
+observed on the next update. Model input and runtime globals receive independent
+value snapshots; saved records remain plain attachment objects.
 
-Retain the `AttachmentOverlay` returned by a tile click, or construct one with
-`AttachmentOverlay::open`. Call `render` each frame and release it when it returns
-false. Escape and the close control close it; filename and full-width content
-container interactions, including its side gutters, do not. Closing notifies the
-optional callback before removing its surfaces.
-Dropping either widget releases its surfaces, without synthesizing a close callback.
-No focus capture or restoration is performed. Tab visits preview, text, download
-and close in that order, omitting unavailable toggle modes.
+## Tiles
+
+On WebAssembly, `AttachmentTile::from(attachment)` mounts through `DomContent`
+without an attachment host. It shows a thumbnail or document glyph with a
+whole-character truncated filename and keeps the original shared attachment,
+including when its operand is replaced. A PDF badge sits outside the image's open
+target; the remaining image area opens the overlay. `show_delete` defaults to
+false. When enabled, the removal button calls the current `on_delete` after an
+update and never opens a preview. Hover-capable pointers reveal the button on
+hover, and keyboard focus reveals it too. Other pointer types keep it visible.
+Opened overlays outlive their tiles.
+
+## Native page overlay
+
+On WebAssembly, `AttachmentOverlay::open(&view, attachment, on_close)`
+opens a native preview in the `DomView` document without an `AttachmentHost`.
+Creation and body-append failures return immediately. Its `DomContent` mount
+exposes that same already-appended root; dropping the returned handle does not
+close the connected element.
 
 The overlay shows original images, selectable literal text and presentation text.
 Only PDF, Word and spreadsheet attachments with nonempty extracted text have a
-preview/text toggle. Whitespace-only text is present. PDF previews render ordered
-opaque pages through the application PDF adapter, one page per repaint frame.
-The native reading viewport scrolls, bounds overlay pages to 1000 points and keeps
-completed page nodes across ordinary repaints. The bounded PDF viewport owns its
-panel background and border; its fixed outer frame owns the two-layer shadow.
-Both stay at the visible viewport edges while pages scroll. Ancestor/canvas clipping
-and control holes constrain the shadow; a viewport without ancestor margin cannot
-paint its shadow in that direction. Artifact padding/background remain separate.
-Selecting text, replacing content or closing cancels unfinished page work.
-Modern spreadsheet previews share the artifact table owner: workbook-order sheet
-controls select retained native tables with formatted text, merged cells, rich
-emphasis and non-executable links styled with the live accent role. Keyboard
-traversal reaches and reveals offscreen sheet tabs; clipped pointer hits do not
-select sheets. Failed sheets in a mixed XLSX workbook keep their tabs and show the
-existing selectable error panel with a live localized heading and literal detail;
-readable siblings still show their tables. All-corrupt workbooks remain whole-view
-errors. One sheet omits the tab strip. Each multi-sheet body retains its own scroll
-offsets; ordinary repaints retain the table and error nodes.
-The registry owns position and scaling, while the spreadsheet root keeps its
-bounded height during measurement. Selecting text, replacing content or closing
-releases that workbook view. Word rendering remains pending in
-[#1761](https://github.com/Orchestration-Maestro/maestro/issues/1761); no extracted-text
-fallback is substituted for it. Legacy spreadsheet reading remains in
-[#1046](https://github.com/Orchestration-Maestro/maestro/issues/1046). A file-presentation failure replaces the body
-with centered, selectable native error text while leaving download and close
-available. A nonempty overlay failure stays dominant through record edits until
-a mode change clears it; an empty host-presentation diagnostic stays suppressed.
+preview/text toggle; whitespace-only text counts as present. The fixed header
+stays outside the scrolling body. PDF pages use the shared progressive raster
+owner; Word keeps the shared renderer's fonts, page heights, headers, footers and
+notes while ignoring page width. Spreadsheet tabs retain sheet nodes and their
+scroll offsets; a failed sheet in a mixed workbook keeps its tab and shows the
+selectable error panel while readable siblings show their tables. File/text
+selection releases the previous document and clears its displayed load error. A
+file-presentation failure replaces the body with centered, selectable error text
+while leaving download and close available. Downloads keep the original bytes,
+filename and MIME type through the existing scoped download owner.
+
+Close, Escape and backdrop activation cancel pending page work, detach native
+listeners and notify once before removing the element. Header and body clicks do
+not close it. Removing the element directly releases its document resources and
+listeners without synthesizing a close callback.
 
 ## Platform ownership
 
@@ -88,8 +84,7 @@ Production installs no default font bundle. Native tests use test-only fallback
 fonts and do not qualify installed brand faces. See
 [browser libraries](../libraries/browser-frontend.md) for features and licences.
 
-Invalid caller-supplied colors propagate as `AttachmentUiError::Presentation`
-from `dialogs::attachment_overlay` through both tile and overlay drawing.
+Invalid caller-supplied colors propagate as `AttachmentUiError::Presentation`.
 Platform failures use `AttachmentUiError::Host(AttachmentHostError)`;
 color admission uses the existing shared style owner, before content placement.
 
@@ -104,6 +99,14 @@ and the factory never retains it. Root teardown attempts detachment through the
 shared subscription owner; a failed native removal may retain the callable, but
 its expired weak capture cannot change released feature state. It is not a
 raw-markup or template interface. The host retains the complete returned owner.
+
+A feature whose nodes do not need the canvas can build them once and mount them
+both ways. The generic file artifact constructs its glyph, filename and guidance
+nodes in one builder: the retained factory wraps them in a `ReadingRoot` for the
+overlay, and `DomContent` places them directly on a page. The overlay keeps
+placement, measurement and clipping; the direct mount keeps only its own nodes and
+reaches no host surface. Features that stay retained until their own delivery keep
+using the factory alone.
 
 An optional `ReadingRoot::commit` callback reconciles a staged update into the
 previous root only after placement succeeds. This infallible callback preserves
@@ -152,11 +155,12 @@ is unaffected. Natural-flow consumers can grow horizontal rows beyond their prov
 the offline header keeps an explicit viewport bound. The shared allocation owner
 uses the same resolved bound for measurement and publication.
 
-Tool rows retain placement scopes separately from widget ownership. Detaching an
+Retained placements keep scopes separately from widget ownership. Detaching an
 ancestor scope detaches its currently placed descendants; retained widget aliases
-keep resources alive but do not keep an inactive row visible. Explicit retained
-artifact visibility remains independent. A failed re-entry leaves a detached root
-detached; measurement connects it only while hidden and restores its detachment.
+keep resources alive but do not keep an inactive placement visible. Explicit
+retained artifact visibility remains independent. A failed re-entry leaves a
+detached root detached; measurement connects it only while hidden and restores
+its detachment.
 
 
 ## Error ownership
@@ -165,7 +169,9 @@ detached; measurement connects it only while hidden and restores its detachment.
 presentation and reference-borrow admission. Shared glyph drawing uses
 `ControlError`. Attachment operations compose these errors with localization and
 local record-borrow failures. Localization and icon causes remain inspectable
-through `std::error::Error::source`. The overlay catches native Presentation only
-at its body boundary; downloads and outer drawing failures do not select a file
-error view. Rust callers must use the operation's error path and nested Host
+through `std::error::Error::source`. Downloads and outer failures do not select a file error view. Rust callers must use the operation's error path and nested Host
 payload; these source-interface changes preserve existing messages and recovery.
+
+The independent native Word artifact also uses the error panel's node builder.
+The shared builder creates literal heading/detail nodes; each caller keeps its
+own failure, retry and placement policy.

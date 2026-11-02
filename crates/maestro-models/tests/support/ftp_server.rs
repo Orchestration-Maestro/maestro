@@ -189,7 +189,7 @@ pub struct Scenario {
     pub replies: Option<(&'static [&'static str], Dribble)>,
     /// The completion reply of a transfer, sent in pieces.
     pub completion: Option<Dribble>,
-    /// Close the control connection right after the greeting.
+    /// End the control connection's output right after the greeting.
     pub hang_up: bool,
 }
 
@@ -296,7 +296,9 @@ impl Peer {
     pub fn finish(mut self) -> TestResult<Closed> {
         self.stop.store(true, Ordering::SeqCst);
         match TcpStream::connect(self.address) {
-            Err(error) if error.kind() == std::io::ErrorKind::ConnectionRefused => {}
+            // The stopped listener can close before or during the wake-up handshake.
+            Err(error)
+                if error.kind() == std::io::ErrorKind::ConnectionRefused || vanished(&error) => {}
             other => other.map(drop)?,
         }
         let worker = self.worker.take().ok_or("server already finished")?;
@@ -386,7 +388,7 @@ fn session(control: TcpStream, scenario: &Scenario, observed: &Observed) -> std:
         None => reply(&mut control, scenario.greeting)?,
     }
     if scenario.hang_up {
-        return Ok(());
+        return end_stream(&control.stream);
     }
     let mut data: Option<TcpListener> = None;
     loop {
@@ -474,17 +476,29 @@ fn close_data(stream: &mut Wire, observed: &Observed) -> std::io::Result<()> {
     // A client that closed the connection first ends the dialogue just as surely as one that
     // read every byte, so the observation covers both shapes.
     observed.data_closed.store(true, Ordering::SeqCst);
-    if let Err(error) = stream.stream.shutdown(std::net::Shutdown::Write) {
+    end_stream(&stream.stream)
+}
+
+/// Close the write side of `stream` and read what the client still sends until it closes.
+///
+/// Closing with the client's bytes unread would answer them with a reset, and some hosts,
+/// macOS among them, report that reset to the client before the end of stream it follows.
+///
+/// # Errors
+/// Returns the write shutdown or read failure, except the broken pipe, reset, aborted and
+/// not-connected errors of a peer that already closed, which end the stream normally.
+fn end_stream(mut stream: &TcpStream) -> std::io::Result<()> {
+    if let Err(error) = stream.shutdown(std::net::Shutdown::Write) {
         return if vanished(&error) { Ok(()) } else { Err(error) };
     }
     let mut exhausted = Vec::new();
-    match stream.stream.read_to_end(&mut exhausted) {
+    match stream.read_to_end(&mut exhausted) {
         Err(error) if vanished(&error) => Ok(()),
         other => other.map(drop),
     }
 }
 
-/// Whether the error reports a client that closed its end of the data connection.
+/// Whether the error reports a peer that closed its connection.
 fn vanished(error: &std::io::Error) -> bool {
     matches!(
         error.kind(),
@@ -657,11 +671,9 @@ fn accept_until_stopped(
         let script = &scenarios[served.min(last)];
         served += 1;
         if let Err(error) = session(control, script, observed) {
-            // A client that went away mid-reply is a completed session, not a peer failure.
-            if !matches!(
-                error.kind(),
-                std::io::ErrorKind::BrokenPipe | std::io::ErrorKind::ConnectionReset
-            ) {
+            // A client that went away mid-reply is a completed session, not a peer failure;
+            // Windows reports the closed connection as aborted rather than reset.
+            if !vanished(&error) {
                 return Err(error);
             }
             // A client that closed its connection took its control connection with it.
@@ -702,4 +714,23 @@ pub fn serve(scenarios: Vec<Scenario>) -> TestResult<Peer> {
         stop,
         worker: Some(worker),
     })
+}
+
+/// Shutdown regressions for the scripted peer.
+#[cfg(test)]
+mod tests {
+    use super::{Scenario, serve};
+
+    /// Finishing without a client session tolerates the listener closing during wake-up.
+    #[test]
+    fn ftp_peer_finish_joins_an_idle_server() {
+        for _ in 0..1_000 {
+            let peer = serve(vec![Scenario::default()]).unwrap();
+            let closed = peer
+                .finish()
+                .expect("the wake-up connection may race shutdown");
+            assert!(!closed.control, "no client session was admitted");
+            assert!(!closed.data, "no data connection was opened");
+        }
+    }
 }

@@ -1,5 +1,6 @@
 //! Conversion through the pattern members of a record.
 
+use crate::DiagnosticErrorInfo;
 use serde_json::Value;
 
 use super::from_additional::from_additional;
@@ -13,12 +14,13 @@ pub(crate) fn from_record<'a>(
     converter: &mut Context<'a>,
     view: View<'a>,
     value: &mut Value,
-) -> Option<Value> {
-    let object = value.as_object_mut()?;
-    let patterns = view
-        .raw
-        .get("patternProperties")
-        .and_then(Value::as_object)?;
+) -> Result<Option<Value>, DiagnosticErrorInfo> {
+    let Some(object) = value.as_object_mut() else {
+        return Ok(None);
+    };
+    let Some(patterns) = view.raw.get("patternProperties").and_then(Value::as_object) else {
+        return Ok(None);
+    };
     let entries: Vec<(&str, regress::Regex)> = patterns
         .iter()
         .filter_map(|(source, _)| Some((source.as_str(), pattern(source)?)))
@@ -30,7 +32,7 @@ pub(crate) fn from_record<'a>(
         let child = Node::Leaf(converter.document.view(child));
         for (name, member) in object.iter_mut() {
             if expression.find(name).is_some()
-                && let Some(replacement) = from_type(converter, &child, member)
+                && let Some(replacement) = from_type(converter, &child, member)?
             {
                 *member = replacement;
             }
@@ -42,7 +44,7 @@ pub(crate) fn from_record<'a>(
         .filter(|schema| schema.is_object())
     {
         let additional = Node::Leaf(converter.document.view(additional));
-        from_additional(converter, object, &entries, &additional);
+        from_additional(converter, object, &entries, &additional)?;
     }
-    None
+    Ok(None)
 }

@@ -246,6 +246,17 @@ impl World {
         self.append_entries(&[serde_json::json!({"type": "message", "message": message})]);
     }
 
+    /// Puts one already-decoded answer into the conversation the session derives its context
+    /// usage from.
+    pub fn push_answer(&self, document: &Value) {
+        let message = serde_json::from_value(document.clone()).expect("a controlled answer");
+        self.session
+            .messages()
+            .write()
+            .unwrap_or_else(PoisonError::into_inner)
+            .push(message);
+    }
+
     /// Puts one answer into the conversation the session derives its context usage from.
     pub fn set_context(&self, tokens: f64) {
         let document = serde_json::json!({
@@ -271,12 +282,7 @@ impl World {
             "stopReason": "stop",
             "timestamp": 0.0
         });
-        let message = serde_json::from_value(document).expect("a controlled answer");
-        self.session
-            .messages()
-            .write()
-            .unwrap_or_else(PoisonError::into_inner)
-            .push(message);
+        self.push_answer(&document);
     }
 
     /// Appends a compaction record, which leaves context tokens unknown until the next answer.

@@ -1,6 +1,6 @@
 //! Agent shell records and factories.
 
-use super::{BashExecution, BashOperations, create_local_bash_operations};
+use super::{BashExecution, create_local_bash_operations};
 use crate::{
     ToolDefinition, TruncationResult, tool_definition_wrapper::wrap_tool_definition,
     utils::shell::ShellEnv,
@@ -51,7 +51,7 @@ pub type BashSpawnHook<E = Threaded> =
 /// Selects the shell operation and command preparation.
 pub struct BashToolOptionsRecord<E: BashExecution = Threaded> {
     /// Supplied operation; otherwise uses the local shell.
-    pub operations: Option<Arc<dyn BashOperations<E>>>,
+    pub operations: Option<E::Shared<E::Operations>>,
     /// Nonempty literal prefix, followed by one newline.
     pub command_prefix: Option<String>,
     /// Explicit executable for local operations only.
@@ -114,7 +114,7 @@ pub fn create_bash_tool_definition<C: 'static>(
                 }
             } else { context };
             if let Some(update) = &update { update(AgentToolResult { content: Vec::new(), details: None, terminate: None }); }
-            let operations = Arc::clone(&operations);
+            let operations = $ptr::clone(&operations);
             Box::pin($run(operations, context, input.timeout, signal, update))
         }),
         render_call: Some($ptr::new(crate::process::bash::render::render_call)),
@@ -136,8 +136,8 @@ factories!(Arc, super::execute::run);
 /// Caller-local shell definitions and executables.
 pub mod local {
     use super::{
-        AgentToolResult, Arc, BashSpawnContext, BashToolDetails, BashToolInput,
-        BashToolOptionsRecord, Local, Rc, Tool, json,
+        AgentToolResult, BashSpawnContext, BashToolDetails, BashToolInput, BashToolOptionsRecord,
+        Local, Rc, Tool, json,
     };
     use crate::process::bash::local::create_local_bash_operations;
     use crate::tool_definition_wrapper::local::wrap_tool_definition;

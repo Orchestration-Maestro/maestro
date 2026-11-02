@@ -92,16 +92,12 @@ fn repl_factory_declares_schema_and_exports() {
             let call = maestro_models::ToolCall {
                 id: name.clone(),
                 name: definition.name.clone(),
-                arguments: row["input"].as_object().unwrap().clone(),
+                arguments: row["input"].clone(),
                 thought_signature: None,
             };
             let result = maestro_models::arguments::validate_tool_arguments(&definition, &call);
             if row["expected"]["branch"] == "success" {
-                assert_eq!(
-                    serde_json::Value::Object(result.unwrap()),
-                    row["expected"]["arguments"],
-                    "{name}"
-                );
+                assert_eq!(result.unwrap(), row["expected"]["arguments"], "{name}");
             } else {
                 assert!(result.is_err(), "{name}");
             }

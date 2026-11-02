@@ -1,6 +1,9 @@
 //! Byte input through terminal reads, viewport selection and reset.
 
-use super::support::terminal::{assert_text, cell};
+use super::support::{
+    LARGE_PAGES,
+    terminal::{assert_text, cell},
+};
 use maestro_terminal::{
     Coordinate, Mode, Point, Terminal, screen_set::Key, terminal::ScrollViewport,
 };
@@ -181,7 +184,10 @@ fn zero_history_budget_disables_scrollback() {
 #[test]
 fn larger_byte_budgets_retain_more_history() {
     let mut retained = Vec::new();
-    for (budget, minimum) in [(1_000_000, 669), (10_000_000, 1248)] {
+    // 16 KiB host pages hold more rows each, so pruning whole pages at the smaller budget
+    // leaves a different history.
+    let smaller = if LARGE_PAGES { 657 } else { 669 };
+    for (budget, minimum) in [(1_000_000, smaller), (10_000_000, 1248)] {
         let mut t = Terminal::new(80, 3, budget).unwrap();
         let line = format!("{}\r\n", "x".repeat(70));
         for _ in 0..1250 {

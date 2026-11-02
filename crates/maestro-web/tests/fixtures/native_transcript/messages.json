@@ -1,0 +1,3513 @@
+{
+  "call": {
+    "type": "toolCall",
+    "id": "call",
+    "name": "registered",
+    "arguments": {
+      "message": "producer value"
+    }
+  },
+  "toolResult": {
+    "role": "toolResult",
+    "toolCallId": "call",
+    "toolName": "registered",
+    "isError": false,
+    "content": [
+      {
+        "type": "text",
+        "text": "done"
+      }
+    ],
+    "timestamp": 1
+  },
+  "tool": [
+    {
+      "input": {
+        "pending": false,
+        "streaming": false,
+        "aborted": false,
+        "hasResult": false
+      },
+      "expected": {
+        "sameParams": true,
+        "streaming": false,
+        "result": {
+          "undefined": true
+        }
+      }
+    },
+    {
+      "input": {
+        "pending": true,
+        "streaming": false,
+        "aborted": false,
+        "hasResult": false
+      },
+      "expected": {
+        "sameParams": true,
+        "streaming": true,
+        "result": {
+          "undefined": true
+        }
+      }
+    },
+    {
+      "input": {
+        "pending": false,
+        "streaming": true,
+        "aborted": false,
+        "hasResult": false
+      },
+      "expected": {
+        "sameParams": true,
+        "streaming": true,
+        "result": {
+          "undefined": true
+        }
+      }
+    },
+    {
+      "input": {
+        "pending": true,
+        "streaming": true,
+        "aborted": true,
+        "hasResult": false
+      },
+      "expected": {
+        "sameParams": true,
+        "streaming": false,
+        "result": {
+          "role": "toolResult",
+          "isError": true,
+          "content": [],
+          "toolCallId": "call",
+          "toolName": "registered",
+          "timestamp": "CURRENT_TIME"
+        }
+      }
+    },
+    {
+      "input": {
+        "pending": false,
+        "streaming": false,
+        "aborted": true,
+        "hasResult": true
+      },
+      "expected": {
+        "sameParams": true,
+        "streaming": false,
+        "result": {
+          "role": "toolResult",
+          "isError": true,
+          "content": [],
+          "toolCallId": "call",
+          "toolName": "registered",
+          "timestamp": "CURRENT_TIME"
+        }
+      }
+    },
+    {
+      "input": {
+        "pending": false,
+        "streaming": false,
+        "aborted": false,
+        "hasResult": true
+      },
+      "expected": {
+        "sameParams": true,
+        "streaming": false,
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "registered",
+          "isError": false,
+          "content": [
+            {
+              "type": "text",
+              "text": "done"
+            }
+          ],
+          "timestamp": 1
+        }
+      }
+    },
+    {
+      "input": {
+        "pending": true,
+        "streaming": true,
+        "aborted": false,
+        "hasResult": true
+      },
+      "expected": {
+        "sameParams": true,
+        "streaming": true,
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "registered",
+          "isError": false,
+          "content": [
+            {
+              "type": "text",
+              "text": "done"
+            }
+          ],
+          "timestamp": 1
+        }
+      }
+    }
+  ],
+  "pretty": [
+    {
+      "input": {
+        "undefined": true
+      },
+      "expected": {
+        "content": "",
+        "isJson": true
+      }
+    },
+    {
+      "input": null,
+      "expected": {
+        "content": "null",
+        "isJson": true
+      }
+    },
+    {
+      "input": "",
+      "expected": {
+        "content": "",
+        "isJson": false
+      }
+    },
+    {
+      "input": false,
+      "expected": {
+        "content": "false",
+        "isJson": true
+      }
+    },
+    {
+      "input": 0,
+      "expected": {
+        "content": "0",
+        "isJson": true
+      }
+    },
+    {
+      "input": {
+        "negativeZero": true
+      },
+      "expected": {
+        "content": "0",
+        "isJson": true
+      }
+    },
+    {
+      "input": 1e+21,
+      "expected": {
+        "content": "1e+21",
+        "isJson": true
+      }
+    },
+    {
+      "input": {},
+      "expected": {
+        "content": "{}",
+        "isJson": true
+      }
+    },
+    {
+      "input": [],
+      "expected": {
+        "content": "[]",
+        "isJson": true
+      }
+    },
+    {
+      "input": {
+        "2": 2,
+        "10": {
+          "negativeZero": true
+        },
+        "b": 1,
+        "a": "雪<&>"
+      },
+      "expected": {
+        "content": "{\n  \"2\": 2,\n  \"10\": 0,\n  \"b\": 1,\n  \"a\": \"雪<&>\"\n}",
+        "isJson": true
+      }
+    },
+    {
+      "input": [
+        1,
+        "x"
+      ],
+      "expected": {
+        "content": "[\n  1,\n  \"x\"\n]",
+        "isJson": true
+      }
+    },
+    {
+      "input": "raw text",
+      "expected": {
+        "content": "raw text",
+        "isJson": false
+      }
+    },
+    {
+      "input": "{\"b\":1,\"2\":2,\"1\":3}",
+      "expected": {
+        "content": "{\n  \"1\": 3,\n  \"2\": 2,\n  \"b\": 1\n}",
+        "isJson": true
+      }
+    },
+    {
+      "input": "null",
+      "expected": {
+        "content": "null",
+        "isJson": true
+      }
+    },
+    {
+      "input": "[1]",
+      "expected": {
+        "content": "[\n  1\n]",
+        "isJson": true
+      }
+    },
+    {
+      "input": "\"hello\"",
+      "expected": {
+        "content": "\"hello\"",
+        "isJson": true
+      }
+    },
+    {
+      "input": "﻿{\"a\":1}",
+      "expected": {
+        "content": "﻿{\"a\":1}",
+        "isJson": false
+      }
+    },
+    {
+      "input": "{\"a\":1}",
+      "expected": {
+        "content": "{\"a\":1}",
+        "isJson": false
+      }
+    },
+    {
+      "input": "1e309",
+      "expected": {
+        "content": "null",
+        "isJson": true
+      }
+    },
+    {
+      "input": "-1e309",
+      "expected": {
+        "content": "null",
+        "isJson": true
+      }
+    },
+    {
+      "input": "{\"n\":1e309}",
+      "expected": {
+        "content": "{\n  \"n\": null\n}",
+        "isJson": true
+      }
+    },
+    {
+      "input": "1e308",
+      "expected": {
+        "content": "1e+308",
+        "isJson": true
+      }
+    },
+    {
+      "input": "{\"a\":1,\"a\":2}",
+      "expected": {
+        "content": "{\n  \"a\": 2\n}",
+        "isJson": true
+      }
+    },
+    {
+      "input": "\"raw\ncontrol\"",
+      "expected": {
+        "content": "\"raw\ncontrol\"",
+        "isJson": false
+      }
+    },
+    {
+      "input": "{\"a\":\"\\ud800\",\"a\":\"good\"}",
+      "expected": {
+        "content": "{\n  \"a\": \"good\"\n}",
+        "isJson": true
+      }
+    }
+  ],
+  "debugCall": {
+    "z": 1,
+    "2": {
+      "negativeZero": true
+    },
+    "1": 2
+  },
+  "debugContent": [
+    {
+      "type": "text",
+      "text": "first"
+    },
+    {
+      "type": "image",
+      "data": "AA==",
+      "mimeType": "image/png"
+    },
+    {
+      "type": "text",
+      "text": "last"
+    }
+  ],
+  "debug": [
+    {
+      "input": {
+        "language": "en",
+        "hasResult": false
+      },
+      "expected": {
+        "labels": [
+          "Call",
+          "Result"
+        ],
+        "noResult": true,
+        "code": [
+          {
+            "code": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}",
+            "language": "json",
+            "displayed": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "language": "en",
+        "hasResult": false,
+        "details": null
+      },
+      "expected": {
+        "labels": [
+          "Call",
+          "Result"
+        ],
+        "noResult": true,
+        "code": [
+          {
+            "code": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}",
+            "language": "json",
+            "displayed": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "language": "en",
+        "hasResult": false,
+        "details": false
+      },
+      "expected": {
+        "labels": [
+          "Call",
+          "Result"
+        ],
+        "noResult": true,
+        "code": [
+          {
+            "code": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}",
+            "language": "json",
+            "displayed": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "language": "en",
+        "hasResult": false,
+        "details": 0
+      },
+      "expected": {
+        "labels": [
+          "Call",
+          "Result"
+        ],
+        "noResult": true,
+        "code": [
+          {
+            "code": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}",
+            "language": "json",
+            "displayed": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "language": "en",
+        "hasResult": false,
+        "details": "raw"
+      },
+      "expected": {
+        "labels": [
+          "Call",
+          "Result"
+        ],
+        "noResult": true,
+        "code": [
+          {
+            "code": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}",
+            "language": "json",
+            "displayed": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "language": "en",
+        "hasResult": false,
+        "details": "YWJj"
+      },
+      "expected": {
+        "labels": [
+          "Call",
+          "Result"
+        ],
+        "noResult": true,
+        "code": [
+          {
+            "code": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}",
+            "language": "json",
+            "displayed": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "language": "en",
+        "hasResult": false,
+        "details": {}
+      },
+      "expected": {
+        "labels": [
+          "Call",
+          "Result"
+        ],
+        "noResult": true,
+        "code": [
+          {
+            "code": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}",
+            "language": "json",
+            "displayed": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "language": "en",
+        "hasResult": false,
+        "details": [
+          1
+        ]
+      },
+      "expected": {
+        "labels": [
+          "Call",
+          "Result"
+        ],
+        "noResult": true,
+        "code": [
+          {
+            "code": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}",
+            "language": "json",
+            "displayed": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "language": "en",
+        "hasResult": true
+      },
+      "expected": {
+        "labels": [
+          "Call",
+          "Result"
+        ],
+        "noResult": false,
+        "code": [
+          {
+            "code": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}",
+            "language": "json",
+            "displayed": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}"
+          },
+          {
+            "code": "first\nlast",
+            "language": "text",
+            "displayed": "first\nlast"
+          },
+          {
+            "code": "",
+            "language": "json",
+            "displayed": ""
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "language": "en",
+        "hasResult": true,
+        "details": null
+      },
+      "expected": {
+        "labels": [
+          "Call",
+          "Result"
+        ],
+        "noResult": false,
+        "code": [
+          {
+            "code": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}",
+            "language": "json",
+            "displayed": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}"
+          },
+          {
+            "code": "first\nlast",
+            "language": "text",
+            "displayed": "first\nlast"
+          },
+          {
+            "code": "null",
+            "language": "json",
+            "displayed": "null"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "language": "en",
+        "hasResult": true,
+        "details": false
+      },
+      "expected": {
+        "labels": [
+          "Call",
+          "Result"
+        ],
+        "noResult": false,
+        "code": [
+          {
+            "code": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}",
+            "language": "json",
+            "displayed": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}"
+          },
+          {
+            "code": "first\nlast",
+            "language": "text",
+            "displayed": "first\nlast"
+          },
+          {
+            "code": "false",
+            "language": "json",
+            "displayed": "false"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "language": "en",
+        "hasResult": true,
+        "details": 0
+      },
+      "expected": {
+        "labels": [
+          "Call",
+          "Result"
+        ],
+        "noResult": false,
+        "code": [
+          {
+            "code": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}",
+            "language": "json",
+            "displayed": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}"
+          },
+          {
+            "code": "first\nlast",
+            "language": "text",
+            "displayed": "first\nlast"
+          },
+          {
+            "code": "0",
+            "language": "json",
+            "displayed": "0"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "language": "en",
+        "hasResult": true,
+        "details": "raw"
+      },
+      "expected": {
+        "labels": [
+          "Call",
+          "Result"
+        ],
+        "noResult": false,
+        "code": [
+          {
+            "code": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}",
+            "language": "json",
+            "displayed": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}"
+          },
+          {
+            "code": "first\nlast",
+            "language": "text",
+            "displayed": "first\nlast"
+          },
+          {
+            "code": "raw",
+            "language": "text",
+            "displayed": "raw"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "language": "en",
+        "hasResult": true,
+        "details": "YWJj"
+      },
+      "expected": {
+        "labels": [
+          "Call",
+          "Result"
+        ],
+        "noResult": false,
+        "code": [
+          {
+            "code": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}",
+            "language": "json",
+            "displayed": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}"
+          },
+          {
+            "code": "first\nlast",
+            "language": "text",
+            "displayed": "first\nlast"
+          },
+          {
+            "code": "YWJj",
+            "language": "text",
+            "displayed": "YWJj"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "language": "en",
+        "hasResult": true,
+        "details": {}
+      },
+      "expected": {
+        "labels": [
+          "Call",
+          "Result"
+        ],
+        "noResult": false,
+        "code": [
+          {
+            "code": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}",
+            "language": "json",
+            "displayed": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}"
+          },
+          {
+            "code": "first\nlast",
+            "language": "text",
+            "displayed": "first\nlast"
+          },
+          {
+            "code": "{}",
+            "language": "json",
+            "displayed": "{}"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "language": "en",
+        "hasResult": true,
+        "details": [
+          1
+        ]
+      },
+      "expected": {
+        "labels": [
+          "Call",
+          "Result"
+        ],
+        "noResult": false,
+        "code": [
+          {
+            "code": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}",
+            "language": "json",
+            "displayed": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}"
+          },
+          {
+            "code": "first\nlast",
+            "language": "text",
+            "displayed": "first\nlast"
+          },
+          {
+            "code": "[\n  1\n]",
+            "language": "json",
+            "displayed": "[\n  1\n]"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "language": "de",
+        "hasResult": false
+      },
+      "expected": {
+        "labels": [
+          "Aufruf",
+          "Ergebnis"
+        ],
+        "noResult": true,
+        "code": [
+          {
+            "code": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}",
+            "language": "json",
+            "displayed": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "language": "de",
+        "hasResult": false,
+        "details": null
+      },
+      "expected": {
+        "labels": [
+          "Aufruf",
+          "Ergebnis"
+        ],
+        "noResult": true,
+        "code": [
+          {
+            "code": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}",
+            "language": "json",
+            "displayed": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "language": "de",
+        "hasResult": false,
+        "details": false
+      },
+      "expected": {
+        "labels": [
+          "Aufruf",
+          "Ergebnis"
+        ],
+        "noResult": true,
+        "code": [
+          {
+            "code": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}",
+            "language": "json",
+            "displayed": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "language": "de",
+        "hasResult": false,
+        "details": 0
+      },
+      "expected": {
+        "labels": [
+          "Aufruf",
+          "Ergebnis"
+        ],
+        "noResult": true,
+        "code": [
+          {
+            "code": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}",
+            "language": "json",
+            "displayed": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "language": "de",
+        "hasResult": false,
+        "details": "raw"
+      },
+      "expected": {
+        "labels": [
+          "Aufruf",
+          "Ergebnis"
+        ],
+        "noResult": true,
+        "code": [
+          {
+            "code": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}",
+            "language": "json",
+            "displayed": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "language": "de",
+        "hasResult": false,
+        "details": "YWJj"
+      },
+      "expected": {
+        "labels": [
+          "Aufruf",
+          "Ergebnis"
+        ],
+        "noResult": true,
+        "code": [
+          {
+            "code": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}",
+            "language": "json",
+            "displayed": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "language": "de",
+        "hasResult": false,
+        "details": {}
+      },
+      "expected": {
+        "labels": [
+          "Aufruf",
+          "Ergebnis"
+        ],
+        "noResult": true,
+        "code": [
+          {
+            "code": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}",
+            "language": "json",
+            "displayed": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "language": "de",
+        "hasResult": false,
+        "details": [
+          1
+        ]
+      },
+      "expected": {
+        "labels": [
+          "Aufruf",
+          "Ergebnis"
+        ],
+        "noResult": true,
+        "code": [
+          {
+            "code": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}",
+            "language": "json",
+            "displayed": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "language": "de",
+        "hasResult": true
+      },
+      "expected": {
+        "labels": [
+          "Aufruf",
+          "Ergebnis"
+        ],
+        "noResult": false,
+        "code": [
+          {
+            "code": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}",
+            "language": "json",
+            "displayed": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}"
+          },
+          {
+            "code": "first\nlast",
+            "language": "text",
+            "displayed": "first\nlast"
+          },
+          {
+            "code": "",
+            "language": "json",
+            "displayed": ""
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "language": "de",
+        "hasResult": true,
+        "details": null
+      },
+      "expected": {
+        "labels": [
+          "Aufruf",
+          "Ergebnis"
+        ],
+        "noResult": false,
+        "code": [
+          {
+            "code": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}",
+            "language": "json",
+            "displayed": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}"
+          },
+          {
+            "code": "first\nlast",
+            "language": "text",
+            "displayed": "first\nlast"
+          },
+          {
+            "code": "null",
+            "language": "json",
+            "displayed": "null"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "language": "de",
+        "hasResult": true,
+        "details": false
+      },
+      "expected": {
+        "labels": [
+          "Aufruf",
+          "Ergebnis"
+        ],
+        "noResult": false,
+        "code": [
+          {
+            "code": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}",
+            "language": "json",
+            "displayed": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}"
+          },
+          {
+            "code": "first\nlast",
+            "language": "text",
+            "displayed": "first\nlast"
+          },
+          {
+            "code": "false",
+            "language": "json",
+            "displayed": "false"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "language": "de",
+        "hasResult": true,
+        "details": 0
+      },
+      "expected": {
+        "labels": [
+          "Aufruf",
+          "Ergebnis"
+        ],
+        "noResult": false,
+        "code": [
+          {
+            "code": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}",
+            "language": "json",
+            "displayed": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}"
+          },
+          {
+            "code": "first\nlast",
+            "language": "text",
+            "displayed": "first\nlast"
+          },
+          {
+            "code": "0",
+            "language": "json",
+            "displayed": "0"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "language": "de",
+        "hasResult": true,
+        "details": "raw"
+      },
+      "expected": {
+        "labels": [
+          "Aufruf",
+          "Ergebnis"
+        ],
+        "noResult": false,
+        "code": [
+          {
+            "code": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}",
+            "language": "json",
+            "displayed": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}"
+          },
+          {
+            "code": "first\nlast",
+            "language": "text",
+            "displayed": "first\nlast"
+          },
+          {
+            "code": "raw",
+            "language": "text",
+            "displayed": "raw"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "language": "de",
+        "hasResult": true,
+        "details": "YWJj"
+      },
+      "expected": {
+        "labels": [
+          "Aufruf",
+          "Ergebnis"
+        ],
+        "noResult": false,
+        "code": [
+          {
+            "code": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}",
+            "language": "json",
+            "displayed": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}"
+          },
+          {
+            "code": "first\nlast",
+            "language": "text",
+            "displayed": "first\nlast"
+          },
+          {
+            "code": "YWJj",
+            "language": "text",
+            "displayed": "YWJj"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "language": "de",
+        "hasResult": true,
+        "details": {}
+      },
+      "expected": {
+        "labels": [
+          "Aufruf",
+          "Ergebnis"
+        ],
+        "noResult": false,
+        "code": [
+          {
+            "code": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}",
+            "language": "json",
+            "displayed": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}"
+          },
+          {
+            "code": "first\nlast",
+            "language": "text",
+            "displayed": "first\nlast"
+          },
+          {
+            "code": "{}",
+            "language": "json",
+            "displayed": "{}"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "language": "de",
+        "hasResult": true,
+        "details": [
+          1
+        ]
+      },
+      "expected": {
+        "labels": [
+          "Aufruf",
+          "Ergebnis"
+        ],
+        "noResult": false,
+        "code": [
+          {
+            "code": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}",
+            "language": "json",
+            "displayed": "{\n  \"1\": 2,\n  \"2\": 0,\n  \"z\": 1\n}"
+          },
+          {
+            "code": "first\nlast",
+            "language": "text",
+            "displayed": "first\nlast"
+          },
+          {
+            "code": "[\n  1\n]",
+            "language": "json",
+            "displayed": "[\n  1\n]"
+          }
+        ]
+      }
+    }
+  ],
+  "debugOutputs": [
+    {
+      "input": {
+        "content": []
+      },
+      "expected": {
+        "code": [
+          {
+            "code": "YWJj",
+            "language": "json",
+            "displayed": "YWJj"
+          },
+          {
+            "code": "",
+            "language": "text",
+            "displayed": ""
+          },
+          {
+            "code": "null",
+            "language": "json",
+            "displayed": "null"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "content": [
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          }
+        ]
+      },
+      "expected": {
+        "code": [
+          {
+            "code": "YWJj",
+            "language": "json",
+            "displayed": "YWJj"
+          },
+          {
+            "code": "",
+            "language": "text",
+            "displayed": ""
+          },
+          {
+            "code": "null",
+            "language": "json",
+            "displayed": "null"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "text",
+            "text": "x"
+          }
+        ]
+      },
+      "expected": {
+        "code": [
+          {
+            "code": "YWJj",
+            "language": "json",
+            "displayed": "YWJj"
+          },
+          {
+            "code": "\nx",
+            "language": "text",
+            "displayed": "\nx"
+          },
+          {
+            "code": "null",
+            "language": "json",
+            "displayed": "null"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": "[1]"
+          }
+        ]
+      },
+      "expected": {
+        "code": [
+          {
+            "code": "YWJj",
+            "language": "json",
+            "displayed": "YWJj"
+          },
+          {
+            "code": "[\n  1\n]",
+            "language": "json",
+            "displayed": "[\n  1\n]"
+          },
+          {
+            "code": "null",
+            "language": "json",
+            "displayed": "null"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": "YWJj"
+          }
+        ]
+      },
+      "expected": {
+        "code": [
+          {
+            "code": "YWJj",
+            "language": "json",
+            "displayed": "YWJj"
+          },
+          {
+            "code": "YWJj",
+            "language": "text",
+            "displayed": "YWJj"
+          },
+          {
+            "code": "null",
+            "language": "json",
+            "displayed": "null"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "content": null
+      },
+      "expected": {
+        "code": [
+          {
+            "code": "YWJj",
+            "language": "json",
+            "displayed": "YWJj"
+          },
+          {
+            "code": "",
+            "language": "text",
+            "displayed": ""
+          },
+          {
+            "code": "",
+            "language": "json",
+            "displayed": ""
+          }
+        ]
+      }
+    }
+  ],
+  "absent": {
+    "en": "(no result)",
+    "de": "(kein Ergebnis)"
+  },
+  "aborted": {
+    "en": "Request aborted",
+    "de": "Anfrage abgebrochen"
+  },
+  "assistant": [
+    {
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "thinking",
+            "thinking": ""
+          }
+        ],
+        "stopReason": "stop"
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": " "
+          },
+          {
+            "type": "thinking",
+            "thinking": " "
+          }
+        ],
+        "stopReason": "stop"
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": "\t\r\n"
+          },
+          {
+            "type": "thinking",
+            "thinking": "\t\r\n"
+          }
+        ],
+        "stopReason": "stop"
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": "﻿"
+          },
+          {
+            "type": "thinking",
+            "thinking": "﻿"
+          }
+        ],
+        "stopReason": "stop"
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "thinking",
+            "thinking": ""
+          }
+        ],
+        "stopReason": "stop"
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "text",
+            "source": ""
+          },
+          {
+            "kind": "thinking",
+            "source": "",
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": "  kept  "
+          },
+          {
+            "type": "thinking",
+            "thinking": "  kept  "
+          }
+        ],
+        "stopReason": "stop"
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "text",
+            "source": "  kept  "
+          },
+          {
+            "kind": "thinking",
+            "source": "  kept  ",
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": "雪"
+          },
+          {
+            "type": "thinking",
+            "thinking": "雪"
+          }
+        ],
+        "stopReason": "stop"
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "text",
+            "source": "雪"
+          },
+          {
+            "kind": "thinking",
+            "source": "雪",
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": false,
+        "hidePending": false,
+        "pending": false,
+        "result": false,
+        "aborted": false
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "tool",
+            "call": {
+              "type": "toolCall",
+              "id": "call",
+              "name": "registered",
+              "arguments": {
+                "message": "producer value"
+              }
+            },
+            "result": {
+              "undefined": true
+            },
+            "pending": false,
+            "aborted": false,
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": false,
+        "hidePending": false,
+        "pending": false,
+        "result": false,
+        "aborted": true
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "tool",
+            "call": {
+              "type": "toolCall",
+              "id": "call",
+              "name": "registered",
+              "arguments": {
+                "message": "producer value"
+              }
+            },
+            "result": {
+              "undefined": true
+            },
+            "pending": false,
+            "aborted": true,
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "hide": false,
+        "hidePending": false,
+        "pending": false,
+        "result": true,
+        "aborted": false
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "tool",
+            "call": {
+              "type": "toolCall",
+              "id": "call",
+              "name": "registered",
+              "arguments": {
+                "message": "producer value"
+              }
+            },
+            "result": {
+              "role": "toolResult",
+              "toolCallId": "call",
+              "toolName": "registered",
+              "content": [],
+              "isError": false,
+              "timestamp": 0
+            },
+            "pending": false,
+            "aborted": false,
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": false,
+        "hidePending": false,
+        "pending": false,
+        "result": true,
+        "aborted": true
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "tool",
+            "call": {
+              "type": "toolCall",
+              "id": "call",
+              "name": "registered",
+              "arguments": {
+                "message": "producer value"
+              }
+            },
+            "result": {
+              "role": "toolResult",
+              "toolCallId": "call",
+              "toolName": "registered",
+              "content": [],
+              "isError": false,
+              "timestamp": 0
+            },
+            "pending": false,
+            "aborted": false,
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "hide": false,
+        "hidePending": false,
+        "pending": true,
+        "result": false,
+        "aborted": false
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "tool",
+            "call": {
+              "type": "toolCall",
+              "id": "call",
+              "name": "registered",
+              "arguments": {
+                "message": "producer value"
+              }
+            },
+            "result": {
+              "undefined": true
+            },
+            "pending": true,
+            "aborted": false,
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": false,
+        "hidePending": false,
+        "pending": true,
+        "result": false,
+        "aborted": true
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "tool",
+            "call": {
+              "type": "toolCall",
+              "id": "call",
+              "name": "registered",
+              "arguments": {
+                "message": "producer value"
+              }
+            },
+            "result": {
+              "undefined": true
+            },
+            "pending": true,
+            "aborted": true,
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "hide": false,
+        "hidePending": false,
+        "pending": true,
+        "result": true,
+        "aborted": false
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "tool",
+            "call": {
+              "type": "toolCall",
+              "id": "call",
+              "name": "registered",
+              "arguments": {
+                "message": "producer value"
+              }
+            },
+            "result": {
+              "role": "toolResult",
+              "toolCallId": "call",
+              "toolName": "registered",
+              "content": [],
+              "isError": false,
+              "timestamp": 0
+            },
+            "pending": true,
+            "aborted": false,
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": false,
+        "hidePending": false,
+        "pending": true,
+        "result": true,
+        "aborted": true
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "tool",
+            "call": {
+              "type": "toolCall",
+              "id": "call",
+              "name": "registered",
+              "arguments": {
+                "message": "producer value"
+              }
+            },
+            "result": {
+              "role": "toolResult",
+              "toolCallId": "call",
+              "toolName": "registered",
+              "content": [],
+              "isError": false,
+              "timestamp": 0
+            },
+            "pending": true,
+            "aborted": false,
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "hide": false,
+        "hidePending": true,
+        "pending": false,
+        "result": false,
+        "aborted": false
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "tool",
+            "call": {
+              "type": "toolCall",
+              "id": "call",
+              "name": "registered",
+              "arguments": {
+                "message": "producer value"
+              }
+            },
+            "result": {
+              "undefined": true
+            },
+            "pending": false,
+            "aborted": false,
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": false,
+        "hidePending": true,
+        "pending": false,
+        "result": false,
+        "aborted": true
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "tool",
+            "call": {
+              "type": "toolCall",
+              "id": "call",
+              "name": "registered",
+              "arguments": {
+                "message": "producer value"
+              }
+            },
+            "result": {
+              "undefined": true
+            },
+            "pending": false,
+            "aborted": true,
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "hide": false,
+        "hidePending": true,
+        "pending": false,
+        "result": true,
+        "aborted": false
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "tool",
+            "call": {
+              "type": "toolCall",
+              "id": "call",
+              "name": "registered",
+              "arguments": {
+                "message": "producer value"
+              }
+            },
+            "result": {
+              "role": "toolResult",
+              "toolCallId": "call",
+              "toolName": "registered",
+              "content": [],
+              "isError": false,
+              "timestamp": 0
+            },
+            "pending": false,
+            "aborted": false,
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": false,
+        "hidePending": true,
+        "pending": false,
+        "result": true,
+        "aborted": true
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "tool",
+            "call": {
+              "type": "toolCall",
+              "id": "call",
+              "name": "registered",
+              "arguments": {
+                "message": "producer value"
+              }
+            },
+            "result": {
+              "role": "toolResult",
+              "toolCallId": "call",
+              "toolName": "registered",
+              "content": [],
+              "isError": false,
+              "timestamp": 0
+            },
+            "pending": false,
+            "aborted": false,
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "hide": false,
+        "hidePending": true,
+        "pending": true,
+        "result": false,
+        "aborted": false
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": false,
+        "hidePending": true,
+        "pending": true,
+        "result": false,
+        "aborted": true
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "hide": false,
+        "hidePending": true,
+        "pending": true,
+        "result": true,
+        "aborted": false
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "tool",
+            "call": {
+              "type": "toolCall",
+              "id": "call",
+              "name": "registered",
+              "arguments": {
+                "message": "producer value"
+              }
+            },
+            "result": {
+              "role": "toolResult",
+              "toolCallId": "call",
+              "toolName": "registered",
+              "content": [],
+              "isError": false,
+              "timestamp": 0
+            },
+            "pending": true,
+            "aborted": false,
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": false,
+        "hidePending": true,
+        "pending": true,
+        "result": true,
+        "aborted": true
+      },
+      "expected": {
+        "parts": [
+          {
+            "kind": "tool",
+            "call": {
+              "type": "toolCall",
+              "id": "call",
+              "name": "registered",
+              "arguments": {
+                "message": "producer value"
+              }
+            },
+            "result": {
+              "role": "toolResult",
+              "toolCallId": "call",
+              "toolName": "registered",
+              "content": [],
+              "isError": false,
+              "timestamp": 0
+            },
+            "pending": true,
+            "aborted": false,
+            "streaming": false
+          }
+        ],
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "hide": true,
+        "hidePending": false,
+        "pending": false,
+        "result": false,
+        "aborted": false
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": true,
+        "hidePending": false,
+        "pending": false,
+        "result": false,
+        "aborted": true
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "hide": true,
+        "hidePending": false,
+        "pending": false,
+        "result": true,
+        "aborted": false
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": true,
+        "hidePending": false,
+        "pending": false,
+        "result": true,
+        "aborted": true
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "hide": true,
+        "hidePending": false,
+        "pending": true,
+        "result": false,
+        "aborted": false
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": true,
+        "hidePending": false,
+        "pending": true,
+        "result": false,
+        "aborted": true
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "hide": true,
+        "hidePending": false,
+        "pending": true,
+        "result": true,
+        "aborted": false
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": true,
+        "hidePending": false,
+        "pending": true,
+        "result": true,
+        "aborted": true
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "hide": true,
+        "hidePending": true,
+        "pending": false,
+        "result": false,
+        "aborted": false
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": true,
+        "hidePending": true,
+        "pending": false,
+        "result": false,
+        "aborted": true
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "hide": true,
+        "hidePending": true,
+        "pending": false,
+        "result": true,
+        "aborted": false
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": true,
+        "hidePending": true,
+        "pending": false,
+        "result": true,
+        "aborted": true
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "hide": true,
+        "hidePending": true,
+        "pending": true,
+        "result": false,
+        "aborted": false
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": true,
+        "hidePending": true,
+        "pending": true,
+        "result": false,
+        "aborted": true
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "hide": true,
+        "hidePending": true,
+        "pending": true,
+        "result": true,
+        "aborted": false
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "hide": true,
+        "hidePending": true,
+        "pending": true,
+        "result": true,
+        "aborted": true
+      },
+      "expected": {
+        "parts": [],
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": false,
+        "stopReason": "stop"
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": false,
+        "stopReason": "stop",
+        "errorMessage": ""
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": false,
+        "stopReason": "stop",
+        "errorMessage": "provider failed"
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": false,
+        "stopReason": "error"
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": false,
+        "stopReason": "error",
+        "errorMessage": ""
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": false,
+        "stopReason": "error",
+        "errorMessage": "provider failed"
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": [
+          "Error:",
+          "provider failed"
+        ],
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": false,
+        "stopReason": "aborted"
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": false,
+        "stopReason": "aborted",
+        "errorMessage": ""
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": false,
+        "stopReason": "aborted",
+        "errorMessage": "provider failed"
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": true,
+        "stopReason": "stop"
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": true,
+        "stopReason": "stop",
+        "errorMessage": ""
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": true,
+        "stopReason": "stop",
+        "errorMessage": "provider failed"
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": true,
+        "stopReason": "error"
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": true,
+        "stopReason": "error",
+        "errorMessage": ""
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": true,
+        "stopReason": "error",
+        "errorMessage": "provider failed"
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": [
+          "Error:",
+          "provider failed"
+        ],
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": true,
+        "stopReason": "aborted"
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": true,
+        "stopReason": "aborted",
+        "errorMessage": ""
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "isStreaming": false,
+        "clickable": true,
+        "stopReason": "aborted",
+        "errorMessage": "provider failed"
+      },
+      "expected": {
+        "parts": [],
+        "usage": "↑1.0k ↓2 R3 W4 $0.0010",
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": false,
+        "stopReason": "stop"
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": false,
+        "stopReason": "stop",
+        "errorMessage": ""
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": false,
+        "stopReason": "stop",
+        "errorMessage": "provider failed"
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": false,
+        "stopReason": "error"
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": false,
+        "stopReason": "error",
+        "errorMessage": ""
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": false,
+        "stopReason": "error",
+        "errorMessage": "provider failed"
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": [
+          "Error:",
+          "provider failed"
+        ],
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": false,
+        "stopReason": "aborted"
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": false,
+        "stopReason": "aborted",
+        "errorMessage": ""
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": false,
+        "stopReason": "aborted",
+        "errorMessage": "provider failed"
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": true,
+        "stopReason": "stop"
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": true,
+        "stopReason": "stop",
+        "errorMessage": ""
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": true,
+        "stopReason": "stop",
+        "errorMessage": "provider failed"
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": true,
+        "stopReason": "error"
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": true,
+        "stopReason": "error",
+        "errorMessage": ""
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": null,
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": true,
+        "stopReason": "error",
+        "errorMessage": "provider failed"
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": [
+          "Error:",
+          "provider failed"
+        ],
+        "abort": null
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": true,
+        "stopReason": "aborted"
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": true,
+        "stopReason": "aborted",
+        "errorMessage": ""
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": null,
+        "abort": "Request aborted"
+      }
+    },
+    {
+      "input": {
+        "isStreaming": true,
+        "clickable": true,
+        "stopReason": "aborted",
+        "errorMessage": "provider failed"
+      },
+      "expected": {
+        "parts": [],
+        "usage": null,
+        "error": null,
+        "abort": "Request aborted"
+      }
+    }
+  ],
+  "assistantNames": [
+    {
+      "tools": null,
+      "selected": "registered"
+    },
+    {
+      "tools": [],
+      "selected": "registered"
+    },
+    {
+      "tools": [
+        {
+          "name": "other"
+        }
+      ],
+      "selected": "registered"
+    },
+    {
+      "tools": [
+        {
+          "name": "registered"
+        }
+      ],
+      "selected": "registered"
+    },
+    {
+      "tools": [
+        {
+          "name": "registered",
+          "marker": 1
+        },
+        {
+          "name": "registered",
+          "marker": 2
+        }
+      ],
+      "selected": "registered"
+    }
+  ],
+  "assistantStrings": [
+    {
+      "language": "en",
+      "aborted": "Request aborted",
+      "errorPrefix": "Error:",
+      "errorText": "Error: <b>literal & error</b>",
+      "errorElements": 0
+    },
+    {
+      "language": "de",
+      "aborted": "Anfrage abgebrochen",
+      "errorPrefix": "Fehler:",
+      "errorText": "Fehler: <b>literal & error</b>",
+      "errorElements": 0
+    }
+  ],
+  "assistantInteractions": [
+    {
+      "action": "cost-click",
+      "expected": {
+        "firstClicks": 1,
+        "secondClicks": 0,
+        "text": "↑1.0k ↓2 R3 W4 $0.0010"
+      }
+    },
+    {
+      "action": "replace-cost-handler",
+      "expected": {
+        "firstClicks": 1,
+        "secondClicks": 1
+      }
+    },
+    {
+      "action": "stream-usage",
+      "expected": {
+        "usageVisible": false
+      }
+    },
+    {
+      "action": "plain-usage",
+      "expected": {
+        "clickable": false,
+        "text": "↑1.0k ↓2 R3 W4 $0.0010"
+      }
+    }
+  ],
+  "assistantUsage": {
+    "input": 1000,
+    "output": 2,
+    "cacheRead": 3,
+    "cacheWrite": 4,
+    "cost": {
+      "total": 0.001
+    }
+  },
+  "listExactIds": [
+    {
+      "id": "",
+      "expected": [
+        {
+          "key": "",
+          "details": "last"
+        },
+        {
+          "key": "!",
+          "details": "decoy"
+        }
+      ]
+    },
+    {
+      "id": "x",
+      "expected": [
+        {
+          "key": "x",
+          "details": "last"
+        },
+        {
+          "key": "x!",
+          "details": "decoy"
+        }
+      ]
+    },
+    {
+      "id": "X",
+      "expected": [
+        {
+          "key": "X",
+          "details": "last"
+        },
+        {
+          "key": "X!",
+          "details": "decoy"
+        }
+      ]
+    },
+    {
+      "id": "雪",
+      "expected": [
+        {
+          "key": "雪",
+          "details": "last"
+        },
+        {
+          "key": "雪!",
+          "details": "decoy"
+        }
+      ]
+    },
+    {
+      "id": "x ",
+      "expected": [
+        {
+          "key": "x ",
+          "details": "last"
+        },
+        {
+          "key": "x !",
+          "details": "decoy"
+        }
+      ]
+    }
+  ],
+  "listForwarding": [
+    {
+      "input": {
+        "streaming": false,
+        "hasTools": false,
+        "hasPending": false,
+        "hasCost": false
+      },
+      "expected": {
+        "isStreaming": false,
+        "hideToolCalls": false,
+        "hidePendingToolCalls": false,
+        "originalOperands": true
+      }
+    },
+    {
+      "input": {
+        "streaming": false,
+        "hasTools": false,
+        "hasPending": false,
+        "hasCost": true
+      },
+      "expected": {
+        "isStreaming": false,
+        "hideToolCalls": false,
+        "hidePendingToolCalls": false,
+        "originalOperands": true
+      }
+    },
+    {
+      "input": {
+        "streaming": false,
+        "hasTools": false,
+        "hasPending": true,
+        "hasCost": false
+      },
+      "expected": {
+        "isStreaming": false,
+        "hideToolCalls": false,
+        "hidePendingToolCalls": false,
+        "originalOperands": true
+      }
+    },
+    {
+      "input": {
+        "streaming": false,
+        "hasTools": false,
+        "hasPending": true,
+        "hasCost": true
+      },
+      "expected": {
+        "isStreaming": false,
+        "hideToolCalls": false,
+        "hidePendingToolCalls": false,
+        "originalOperands": true
+      }
+    },
+    {
+      "input": {
+        "streaming": false,
+        "hasTools": true,
+        "hasPending": false,
+        "hasCost": false
+      },
+      "expected": {
+        "isStreaming": false,
+        "hideToolCalls": false,
+        "hidePendingToolCalls": false,
+        "originalOperands": true
+      }
+    },
+    {
+      "input": {
+        "streaming": false,
+        "hasTools": true,
+        "hasPending": false,
+        "hasCost": true
+      },
+      "expected": {
+        "isStreaming": false,
+        "hideToolCalls": false,
+        "hidePendingToolCalls": false,
+        "originalOperands": true
+      }
+    },
+    {
+      "input": {
+        "streaming": false,
+        "hasTools": true,
+        "hasPending": true,
+        "hasCost": false
+      },
+      "expected": {
+        "isStreaming": false,
+        "hideToolCalls": false,
+        "hidePendingToolCalls": false,
+        "originalOperands": true
+      }
+    },
+    {
+      "input": {
+        "streaming": false,
+        "hasTools": true,
+        "hasPending": true,
+        "hasCost": true
+      },
+      "expected": {
+        "isStreaming": false,
+        "hideToolCalls": false,
+        "hidePendingToolCalls": false,
+        "originalOperands": true
+      }
+    },
+    {
+      "input": {
+        "streaming": true,
+        "hasTools": false,
+        "hasPending": false,
+        "hasCost": false
+      },
+      "expected": {
+        "isStreaming": false,
+        "hideToolCalls": false,
+        "hidePendingToolCalls": true,
+        "originalOperands": true
+      }
+    },
+    {
+      "input": {
+        "streaming": true,
+        "hasTools": false,
+        "hasPending": false,
+        "hasCost": true
+      },
+      "expected": {
+        "isStreaming": false,
+        "hideToolCalls": false,
+        "hidePendingToolCalls": true,
+        "originalOperands": true
+      }
+    },
+    {
+      "input": {
+        "streaming": true,
+        "hasTools": false,
+        "hasPending": true,
+        "hasCost": false
+      },
+      "expected": {
+        "isStreaming": false,
+        "hideToolCalls": false,
+        "hidePendingToolCalls": true,
+        "originalOperands": true
+      }
+    },
+    {
+      "input": {
+        "streaming": true,
+        "hasTools": false,
+        "hasPending": true,
+        "hasCost": true
+      },
+      "expected": {
+        "isStreaming": false,
+        "hideToolCalls": false,
+        "hidePendingToolCalls": true,
+        "originalOperands": true
+      }
+    },
+    {
+      "input": {
+        "streaming": true,
+        "hasTools": true,
+        "hasPending": false,
+        "hasCost": false
+      },
+      "expected": {
+        "isStreaming": false,
+        "hideToolCalls": false,
+        "hidePendingToolCalls": true,
+        "originalOperands": true
+      }
+    },
+    {
+      "input": {
+        "streaming": true,
+        "hasTools": true,
+        "hasPending": false,
+        "hasCost": true
+      },
+      "expected": {
+        "isStreaming": false,
+        "hideToolCalls": false,
+        "hidePendingToolCalls": true,
+        "originalOperands": true
+      }
+    },
+    {
+      "input": {
+        "streaming": true,
+        "hasTools": true,
+        "hasPending": true,
+        "hasCost": false
+      },
+      "expected": {
+        "isStreaming": false,
+        "hideToolCalls": false,
+        "hidePendingToolCalls": true,
+        "originalOperands": true
+      }
+    },
+    {
+      "input": {
+        "streaming": true,
+        "hasTools": true,
+        "hasPending": true,
+        "hasCost": true
+      },
+      "expected": {
+        "isStreaming": false,
+        "hideToolCalls": false,
+        "hidePendingToolCalls": true,
+        "originalOperands": true
+      }
+    }
+  ],
+  "listCallbacks": [
+    {
+      "edit": "mutate",
+      "expected": {
+        "values": [
+          "edited",
+          "second",
+          "third"
+        ],
+        "keys": [
+          "msg:0",
+          "msg:1",
+          "msg:2"
+        ],
+        "called": 1
+      }
+    },
+    {
+      "edit": "replace",
+      "expected": {
+        "values": [
+          "first",
+          "replacement",
+          "third"
+        ],
+        "keys": [
+          "msg:0",
+          "msg:1",
+          "msg:2"
+        ],
+        "called": 1
+      }
+    },
+    {
+      "edit": "add",
+      "expected": {
+        "values": [
+          "first",
+          "second",
+          "third",
+          "added"
+        ],
+        "keys": [
+          "msg:0",
+          "msg:1",
+          "msg:2",
+          "msg:3"
+        ],
+        "called": 1
+      }
+    },
+    {
+      "edit": "delete",
+      "expected": {
+        "values": [
+          "first",
+          "third"
+        ],
+        "keys": [
+          "msg:0",
+          "msg:1"
+        ],
+        "called": 1
+      }
+    },
+    {
+      "edit": "throw",
+      "expected": {
+        "called": 1,
+        "throwsOriginal": true
+      }
+    },
+    {
+      "edit": "result-after-index",
+      "expected": {
+        "indexKey": "call",
+        "retainedId": "changed",
+        "details": 2,
+        "sameEnvelope": true
+      }
+    }
+  ],
+  "stream": [
+    {
+      "id": "stream_last_pending",
+      "input": {
+        "texts": [
+          "first",
+          "last"
+        ]
+      },
+      "expected": {
+        "text": "last"
+      }
+    },
+    {
+      "id": "stream_nested_snapshot",
+      "input": {
+        "initial": "initial",
+        "beforeFrame": "before frame",
+        "afterFrame": "after frame"
+      },
+      "expected": {
+        "published": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "before frame"
+            }
+          ]
+        },
+        "snapshotStable": true
+      }
+    },
+    {
+      "id": "stream_immediate_identity",
+      "input": {
+        "immediate": true
+      },
+      "expected": {
+        "sameIdentity": true,
+        "text": "live immediate"
+      }
+    },
+    {
+      "id": "stream_clear_retires_pending",
+      "input": {
+        "operations": [
+          "queue stale",
+          "clear",
+          "frame"
+        ]
+      },
+      "expected": {
+        "synchronous": null,
+        "after": null
+      }
+    },
+    {
+      "id": "stream_next_turn_defect_false",
+      "input": {
+        "queued": false,
+        "operations": [
+          "clear",
+          "queue next turn",
+          "frame"
+        ]
+      },
+      "expected": {
+        "reference": null,
+        "required": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "next turn"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "stream_next_turn_defect_true",
+      "input": {
+        "queued": true,
+        "operations": [
+          "clear",
+          "queue next turn",
+          "frame"
+        ]
+      },
+      "expected": {
+        "reference": null,
+        "required": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "next turn"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "streamRender": [
+    {
+      "input": {
+        "role": null,
+        "streaming": false
+      },
+      "expected": {
+        "hasAssistant": false,
+        "hasPulse": false,
+        "empty": true
+      }
+    },
+    {
+      "input": {
+        "role": null,
+        "streaming": true
+      },
+      "expected": {
+        "hasAssistant": false,
+        "hasPulse": true,
+        "empty": false
+      }
+    },
+    {
+      "input": {
+        "role": "user",
+        "streaming": false
+      },
+      "expected": {
+        "hasAssistant": false,
+        "hasPulse": false,
+        "empty": true
+      }
+    },
+    {
+      "input": {
+        "role": "user",
+        "streaming": true
+      },
+      "expected": {
+        "hasAssistant": false,
+        "hasPulse": false,
+        "empty": true
+      }
+    },
+    {
+      "input": {
+        "role": "user-with-attachments",
+        "streaming": false
+      },
+      "expected": {
+        "hasAssistant": false,
+        "hasPulse": false,
+        "empty": true
+      }
+    },
+    {
+      "input": {
+        "role": "user-with-attachments",
+        "streaming": true
+      },
+      "expected": {
+        "hasAssistant": false,
+        "hasPulse": false,
+        "empty": true
+      }
+    },
+    {
+      "input": {
+        "role": "toolResult",
+        "streaming": false
+      },
+      "expected": {
+        "hasAssistant": false,
+        "hasPulse": false,
+        "empty": true
+      }
+    },
+    {
+      "input": {
+        "role": "toolResult",
+        "streaming": true
+      },
+      "expected": {
+        "hasAssistant": false,
+        "hasPulse": false,
+        "empty": true
+      }
+    },
+    {
+      "input": {
+        "role": "unregistered",
+        "streaming": false
+      },
+      "expected": {
+        "hasAssistant": false,
+        "hasPulse": false,
+        "empty": true
+      }
+    },
+    {
+      "input": {
+        "role": "unregistered",
+        "streaming": true
+      },
+      "expected": {
+        "hasAssistant": false,
+        "hasPulse": false,
+        "empty": true
+      }
+    },
+    {
+      "input": {
+        "role": "assistant",
+        "streaming": false
+      },
+      "expected": {
+        "hasAssistant": true,
+        "hasPulse": false,
+        "empty": false
+      }
+    },
+    {
+      "input": {
+        "role": "assistant",
+        "streaming": true
+      },
+      "expected": {
+        "hasAssistant": true,
+        "hasPulse": true,
+        "empty": false
+      }
+    }
+  ]
+}

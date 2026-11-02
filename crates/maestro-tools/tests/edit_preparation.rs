@@ -134,12 +134,12 @@ fn edit_arguments_use_preparation_before_shared_validation() {
                 let call = ToolCall {
                     id: "id".into(),
                     name: "edit".into(),
-                    arguments,
+                    arguments: arguments.into(),
                     thought_signature: None,
                 };
                 let observed = validate_tool_arguments(&tool.definition, &call);
                 assert_eq!(observed.is_ok(), expected.ok);
-                assert_eq!(observed.ok().map(Value::Object), expected.args);
+                assert_eq!(observed.ok(), expected.args);
             }
             args => {
                 assert!(!expected.ok && expected.args.is_none());
@@ -155,18 +155,12 @@ fn edit_arguments_use_preparation_before_shared_validation() {
     let call = ToolCall {
         id: "id".into(),
         name: "edit".into(),
-        arguments: json!({"path":null,"edits":[{"oldText":null,"newText":null}]})
-            .as_object()
-            .unwrap()
-            .clone(),
+        arguments: json!({"path":null,"edits":[{"oldText":null,"newText":null}]}),
         thought_signature: None,
     };
     assert_eq!(
         validate_tool_arguments(&tool.definition, &call).unwrap(),
         json!({"path":"null","edits":[{"oldText":"null","newText":"null"}]})
-            .as_object()
-            .unwrap()
-            .clone()
     );
 }
 

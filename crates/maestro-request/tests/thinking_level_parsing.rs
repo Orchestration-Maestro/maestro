@@ -46,3 +46,17 @@ fn model_thinking_level_parses_only_exact_spellings() {
         ["off", "minimal", "low", "medium", "high", "xhigh"]
     );
 }
+
+#[test]
+fn model_thinking_level_display_matches_wire_name() {
+    for (level, name) in [
+        (ModelThinkingLevel::Off, "off"),
+        (ModelThinkingLevel::Minimal, "minimal"),
+        (ModelThinkingLevel::Low, "low"),
+        (ModelThinkingLevel::Medium, "medium"),
+        (ModelThinkingLevel::High, "high"),
+        (ModelThinkingLevel::Xhigh, "xhigh"),
+    ] {
+        assert_eq!(level.to_string(), name);
+    }
+}

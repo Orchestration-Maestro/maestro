@@ -1,6 +1,6 @@
 //! Strict recorded recipes and complete public-result comparisons.
 #![cfg(test)]
-pub use super::resource_output::output;
+pub use super::resource_output::{output, recorded_output};
 use super::support;
 use maestro_packages::{DefaultPackageManager, PackageManagerOptions};
 use serde_json::json;

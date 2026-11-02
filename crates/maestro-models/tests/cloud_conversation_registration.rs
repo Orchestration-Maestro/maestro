@@ -581,7 +581,6 @@ async fn assert_setup_failure(
             usage.output,
             usage.cache_read,
             usage.cache_write,
-            usage.total_tokens,
             usage.cost.input,
             usage.cost.output,
             usage.cost.cache_read,
@@ -590,6 +589,11 @@ async fn assert_setup_failure(
         ]
         .iter()
         .all(|value| *value == 0.0)
+    );
+    assert_eq!(
+        usage.total_tokens,
+        maestro_request::presence::Presence::Present(0.0),
+        "a failed response reports an explicit zero total"
     );
     assert_eq!(message.stop_reason, maestro_models::StopReason::Error);
     assert_eq!(message.error_message.as_deref(), Some(text));
