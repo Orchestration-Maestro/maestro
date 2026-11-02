@@ -1248,16 +1248,14 @@ fn requested_rewrite_retains_existing_mode_before_bytes() {
     fs::hard_link(&target, &alias).unwrap();
     let before = fs::metadata(&target).unwrap();
     let observed = target.clone();
-    EFFECTS.set(Effects {
-        before_write: Some(Box::new(move || {
-            assert_eq!(
-                fs::metadata(&observed).unwrap().permissions().mode() & 0o777,
-                0o640
-            );
-            assert_eq!(fs::read(observed).unwrap(), b"previous");
-        })),
-        ..Effects::default()
-    });
+    EFFECTS.set(Effects::default());
+    CREATED.set(Some(Box::new(move || {
+        assert_eq!(
+            fs::metadata(&observed).unwrap().permissions().mode() & 0o777,
+            0o640
+        );
+        assert_eq!(fs::read(observed).unwrap(), b"previous");
+    })));
 
     replace(
         &target,
@@ -1276,7 +1274,8 @@ fn requested_rewrite_retains_existing_mode_before_bytes() {
         (before.ino(), before.uid(), before.gid())
     );
     assert_eq!(fs::read(alias).unwrap(), b"next");
-    assert!(EFFECTS.take().before_write.is_none());
+    assert!(CREATED.take().is_none());
+    EFFECTS.take();
 }
 
 #[cfg(unix)]
@@ -1518,6 +1517,9 @@ fn unreadable_creation_interruption_replays_recorded_bytes() {
         crate::CreationMode::AfterSync(0),
     ] {
         let (scratch, target) = interrupted_unreadable_creation(mode);
+        let Some(_restore) = maestro_test_directory::deny(&target, 0).unwrap() else {
+            return;
+        };
 
         drop(crate::acquire_write(&target, true).unwrap());
 
@@ -1540,6 +1542,9 @@ fn unreadable_creation_replay_retries_chmod_and_write_interruptions() {
         crate::CreationMode::AfterSync(0),
     ] {
         let (scratch, target) = interrupted_unreadable_creation(mode);
+        let Some(_restore) = maestro_test_directory::deny(&target, 0).unwrap() else {
+            return;
+        };
         for phase in ["replay_chmod", "replay_widened"] {
             EFFECTS.set(Effects {
                 fault: Some((phase, io::ErrorKind::Interrupted)),

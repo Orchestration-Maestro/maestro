@@ -5,8 +5,9 @@
 Use the component's standard filesystem calls for ordinary native access. For
 native host code saving files, use
 [`maestro_lock::replace`](../locking.md#recoverable-byte-publication) with
-`CreationMode::AtCreation` for requested creation permissions. The component save/mode facade remains undelivered;
-the [host contract](../specs/extension-host.md) describes its required behavior.
+`CreationMode::AtCreation` for requested creation permissions. The component
+save/mode facade remains undelivered; the
+[host contract](../specs/extension-host.md) describes its required behavior.
 
 ## Reference
 
@@ -91,12 +92,6 @@ an interrupted write from its recovery record.
 This publisher support does not deliver component saves or mode operations.
 Final application-mode output routing remains separate from these host capabilities.
 
-## Examples
-
-Convert native paths only at the standard-library boundary, as shown above. Native
-hosts saving private bytes follow the [in-place save example](../locking.md#examples);
-that operation preserves file identity and hard links.
-
 ## Link checks
 
 The real-component probe uses ordinary Rust `std::fs` through WASI 0.2 and
@@ -159,3 +154,10 @@ synchronous regular-file destinations return no handle.
 The executable's final selection of this supplied route is not wired here.
 The ordered-output guarantee applies to active queued destinations, not to
 inherited stdout redirected to a regular file.
+
+## Examples
+
+Convert native paths only at the standard-library boundary, as shown above. Native
+hosts saving private bytes follow the
+[in-place save example](../locking.md#examples); that operation preserves file
+identity and hard links.

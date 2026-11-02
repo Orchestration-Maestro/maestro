@@ -31,7 +31,7 @@ impl CreationMode {
 pub struct Replace {
     /// Follow final symbolic links, including dangling targets.
     pub through_symlinks: bool,
-    /// Creation bits for missing files; existing access controls remain unchanged.
+    /// Creation policy for missing files; existing access controls remain unchanged.
     pub creation_mode: Option<CreationMode>,
 }
 /// Successful publication with an optional postcommit durability warning.

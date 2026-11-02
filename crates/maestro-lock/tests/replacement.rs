@@ -301,11 +301,7 @@ fn requested_publication_accepts_full_length_native_leaves() {
     for leaf in ["x".repeat(255), unicode] {
         let scratch = maestro_test_directory::Scratch::new().unwrap();
         let target = scratch.path().join(leaf);
-        if let Err(error) = fs::write(&target, b"native control") {
-            assert!(fs::write(scratch.path().join("control"), b"control").is_ok());
-            eprintln!("host refuses the full-length leaf: {error}");
-            continue;
-        }
+        fs::write(&target, b"native control").unwrap();
         for bytes in [b"rewritten".as_slice(), b"\0\xffcreated"] {
             replace(
                 &target,
