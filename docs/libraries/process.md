@@ -68,8 +68,9 @@ wait with `sigwait` after reporting readiness. No package version changes.
 
 The test-process owner's single harness-free native fixture inherits the existing
 workspace `serde` and `serde_json` pins, including `float_roundtrip`, for its
-controlled Cargo and search records. Unix fixture development dependencies reuse
-`signal-hook =0.3.18`, defaults off, and `rustix =1.1.5` with `process`.
+controlled Cargo and search records. Unix fixture development dependencies inherit
+the workspace `signal-hook =0.3.18` and `rustix =1.1.5` pins, both with defaults off;
+the fixture enables rustix's `process` feature.
 The signal handler queues TERM notifications in a retained socket pair before
 search readiness; a blocking read consumes that byte even when TERM arrives
 before the wait. Rustix sends native termination to the current process for

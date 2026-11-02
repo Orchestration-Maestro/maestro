@@ -1,5 +1,16 @@
 # Component operating environment
 
+## Quick start
+
+Use the component's standard filesystem calls for ordinary native access. For
+native host code saving files, use
+[`maestro_lock::replace`](../locking.md#recoverable-byte-publication) with
+`CreationMode::AtCreation` for requested creation permissions. The component
+save/mode facade remains undelivered; the
+[host contract](../specs/extension-host.md) describes its required behavior.
+
+## Reference
+
 The native host supplies one owned WASI context and resource table to both the
 standard-library 0.2 interfaces and the native asynchronous 0.3 interfaces.
 The existing Store thread runs their I/O and timer drivers; application
@@ -73,9 +84,14 @@ passes paths through the root. A directory that a 0.3 caller opens itself
 keeps the standard rules for paths below it, so an absolute link there is
 refused; pass the whole path through the root instead. WASI paths are strings: a
 followed link whose final native name is not UTF-8 returns `illegal-byte-sequence`
-rather than opening a replacement-character spelling. Atomic saves and file modes remain
-undelivered. Final application-mode output routing remains separate from these
-host capabilities.
+rather than opening a replacement-character spelling. The native recoverable
+publisher supports requested Unix creation modes at open, filtered by umask,
+before writing bytes. Existing modes take precedence on rewrite; `None` keeps
+native defaults. Saves preserve identity, hard links, owner and ACLs. Unlocked
+readers may see partial bytes mid-save; the next coordinated acquisition completes
+an interrupted write from its recovery record.
+This publisher support does not deliver component saves or mode operations.
+Final application-mode output routing remains separate from these host capabilities.
 
 ## Link checks
 
@@ -179,3 +195,10 @@ The shipped stdout route is qualified on Linux with both output generations,
 including blocked output, reload, suspend/resume and separate native exec streams.
 Windows and macOS runtime behavior remains unqualified and is tracked in the
 [native-platform checks](https://github.com/Orchestration-Maestro/maestro-rust-workflows/issues/286).
+
+## Examples
+
+Convert native paths only at the standard-library boundary, as shown above. Native
+hosts saving private bytes follow the
+[in-place save example](../locking.md#examples); that operation preserves file
+identity and hard links.
