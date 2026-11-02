@@ -10,6 +10,7 @@ Deliver crate by crate; write each crate's tickets when that crate is reached.
 
 ## Checks
 
+Install MinGW-w64 as described in [development setup](docs/development.md#setup-and-build).
 Install mise and rustup, enable mise on `PATH`, then run:
 
 ```sh

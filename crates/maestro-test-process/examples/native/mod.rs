@@ -8,6 +8,7 @@ mod author;
 #[cfg(unix)]
 mod browser_launch;
 mod cargo;
+mod credentials;
 #[cfg(unix)]
 mod editor;
 mod observe;
@@ -31,6 +32,8 @@ enum Request {
     /// Announce a desktop viewer launch and wait for its release.
     #[cfg(unix)]
     BrowserLaunch(browser_launch::Record, Vec<OsString>),
+    /// Answer as an AWS credential process or a Google executable source.
+    Credentials(credentials::Record, Vec<OsString>),
     /// Edit a caller-owned file through the recorded effects.
     #[cfg(unix)]
     Editor(editor::Record, Vec<OsString>),
@@ -85,6 +88,10 @@ impl Request {
             Some("observe") => Ok(Self::Observe(observe::Record::parse(&text)?, operands)),
             Some("tooling-cargo") => Ok(Self::Cargo(cargo::Record::parse(&text)?, operands)),
             Some("tooling-author") => Ok(Self::Author(author::Record::parse(&text)?, operands)),
+            Some("credentials") => Ok(Self::Credentials(
+                credentials::Record::parse(&text)?,
+                operands,
+            )),
             #[cfg(unix)]
             Some("browser_launch") => Ok(Self::BrowserLaunch(
                 browser_launch::Record::parse(&text)?,
@@ -110,6 +117,7 @@ pub(super) fn run() -> io::Result<()> {
         Request::Observe(record, operands) => observe::run(&record, &operands),
         Request::Cargo(record, operands) => cargo::run(&record, &operands),
         Request::Author(record, operands) => author::run(&record, &operands),
+        Request::Credentials(record, operands) => credentials::run(&record, &operands),
         #[cfg(unix)]
         Request::BrowserLaunch(record, operands) => browser_launch::run(&record, &operands),
         #[cfg(unix)]
