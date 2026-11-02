@@ -5,6 +5,7 @@ mod env;
 mod manifests;
 mod notifications;
 mod overlay;
+mod panes;
 mod respawn;
 mod responses;
 mod state_events;
@@ -22,7 +23,6 @@ use maestro_protocol::{
     schema::{ErrorBody, ResponseResult},
 };
 use maestro_settings::SettingsManager;
-use responses::api_error;
 
 impl<C: FnMut() -> u128> App<C> {
     /// Answers one workspace command after applying every queued internal observation.
@@ -66,7 +66,7 @@ impl<C: FnMut() -> u128> App<C> {
         }
     }
 
-    /// Routes workspace and tab commands to their handlers; unhandled families return an error.
+    /// Routes workspace and tab commands to their handlers; other families go on to the panes.
     async fn dispatch_topology_request(
         &mut self,
         command: RpcCommand,
@@ -92,7 +92,7 @@ impl<C: FnMut() -> u128> App<C> {
             RpcCommand::TabRename(params) => self.handle_tab_rename(params),
             RpcCommand::TabMove(params) => self.handle_tab_move(&params),
             RpcCommand::TabClose(target) => self.handle_tab_close(&target.tab_id).await,
-            _ => Err(api_error("not_implemented", "method not implemented yet")),
+            command => self.dispatch_pane_request(command).await,
         }
     }
 

@@ -249,6 +249,37 @@ fn runtime_process_cwd_does_not_require_traversing_the_directory_path() {
 }
 
 #[test]
+fn runtime_observe_processes_reads_off_the_async_executor() {
+    let name = "runtime_observe_processes_reads_off_the_async_executor";
+    if run_alone(name).unwrap() {
+        return;
+    }
+    with_runtime(name, "read -r line", |runtime, _, _| async move {
+        let executor = std::thread::current().id();
+        let reader = runtime
+            .observe_processes(|_, _| std::thread::current().id())
+            .await;
+        runtime.shutdown().await;
+        assert!(matches!(reader, Ok(Some(thread)) if thread != executor));
+    });
+}
+
+#[test]
+fn runtime_observe_processes_reports_a_failed_observation() {
+    let name = "runtime_observe_processes_reports_a_failed_observation";
+    if run_alone(name).unwrap() {
+        return;
+    }
+    with_runtime(name, "read -r line", |runtime, _, _| async move {
+        let failed = runtime
+            .observe_processes(|_, _| -> u32 { panic!("observation failed") })
+            .await;
+        runtime.shutdown().await;
+        assert!(failed.is_err_and(|error| error.is_panic()));
+    });
+}
+
+#[test]
 fn runtime_follow_cwd_falls_back_to_reported_pane_cwd_without_foreground_group() {
     let name = "runtime_follow_cwd_falls_back_to_reported_pane_cwd_without_foreground_group";
     if run_alone(name).unwrap() {
