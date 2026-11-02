@@ -790,12 +790,12 @@ Archived CI shards receive `TEST_ARCHIVE=1` and `TEST_PREPARE_OUTPUT` pointing t
 The `test_prepare` command in `.github/ci.toml` is the development tool's
 `prepare-test-setup prepare`. Shared CI runs it only when a selected package is
 named by `test_prepare_packages` there, the packages that nextest's
-`author-component` and `browser-author` setups serve. Shared CI caches the bundle under the
-contents of the files that `test_prepare_inputs` matches and restores it instead of preparing
-again. Those patterns name the crates the preparation builds, `maestro-extensions-wasm`,
-`maestro-tooling` and `maestro-web`, and every workspace crate they depend on through a path
-dependency of any kind, plus the fixed inputs, so a change to any other crate keeps the cached
-bundle.
+`author-component`, `browser-author` and `native-fixture` setups serve. Shared CI caches
+the bundle under the contents of the files that `test_prepare_inputs` matches and restores it
+instead of preparing again. Those patterns name the crates the preparation builds,
+`maestro-extensions-wasm`, `maestro-tooling` and `maestro-web`, and every workspace crate
+they depend on through a path dependency of any kind, plus the fixed inputs, so a change to
+any other crate keeps the cached bundle.
 The preparation reads that closure from the workspace metadata, compiling nothing, and
 records it in the bundle manifest, so a shard validates the same files without Cargo.
 `ci_cache_key_names_exactly_the_files_the_preparation_reads` fails when a file the
