@@ -571,3 +571,40 @@ fn malformed_tags_and_bodies_still_fail() {
         );
     }
 }
+
+#[test]
+fn repeated_members_still_fail_when_the_request_is_read_from_text() {
+    use maestro_request::types::Context;
+
+    let rows = [
+        (
+            "repeated timestamp",
+            r#"{"messages": [{"role": "user", "content": "hello", "timestamp": 0, "timestamp": 1}]}"#,
+        ),
+        (
+            "repeated content",
+            r#"{"messages": [{"role": "user", "content": "first", "content": "second", "timestamp": 1}]}"#,
+        ),
+        (
+            "repeated block text",
+            r#"{"messages": [{"role": "user", "content": [{"type": "text", "text": "one", "text": "two"}], "timestamp": 1}]}"#,
+        ),
+        (
+            "repeated usage member",
+            r#"{"messages": [{"role": "assistant", "content": [], "api": "chat", "provider": "faux", "model": "test", "usage": {"input": 7.0, "input": 8.0, "output": 3.0, "cacheRead": 2.0, "cacheWrite": 1.0}, "stopReason": "stop", "timestamp": 0.0}]}"#,
+        ),
+    ];
+    for (row, text) in rows {
+        assert!(
+            serde_json::from_str::<Context>(text).is_err(),
+            "{row} decoded"
+        );
+    }
+    // A single member still reads, so the refusal above is about the repetition alone.
+    assert!(
+        serde_json::from_str::<Context>(
+            r#"{"messages": [{"role": "user", "content": "hello", "timestamp": 1}]}"#
+        )
+        .is_ok()
+    );
+}

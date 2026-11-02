@@ -2,15 +2,17 @@
 //!
 //! A derived record can also accept a JSON array and read its elements as the properties in
 //! declaration order. These readers hand a record only the map of a JSON object and so
-//! reject arrays. Defaults, duplicate members, unknown members and nested values stay with
-//! the record's own decoders and the caller's deserializer.
+//! reject arrays. Defaults, unknown members and nested values stay with the record's own
+//! decoders and the caller's deserializer. A repeated member fails the record's own decoder,
+//! and `list_naming` refuses one before it decodes.
 
 use std::fmt;
 use std::marker::PhantomData;
 
 use serde::Deserialize;
 use serde::de::value::{MapAccessDeserializer, MapDeserializer};
-use serde::de::{self, DeserializeOwned, Deserializer, MapAccess, Visitor};
+use serde::de::{self, DeserializeOwned, Deserializer, MapAccess, SeqAccess, Visitor};
+use serde_json::{Map, Value};
 
 /// The expectation reported for a value that is not an object.
 const EXPECTING: &str = "a JSON object";
@@ -106,6 +108,126 @@ pub fn optional_list<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
     Option::<Vec<Object<T>>>::deserialize(deserializer).map(|records| {
         records.map(|records| records.into_iter().map(|Object(record)| record).collect())
     })
+}
+
+/// Reads a required list of records, leaving out each entry whose string tag `member` the
+/// family `T` does not name and decoding every other entry with `T`'s own decoder.
+///
+/// An entry is left out only where its tag names a variant `T` does not have. A member an
+/// object inside the entry repeats, a tag that is not a string, and an entry with no tag at
+/// all, fail the whole list, as they do for the record's own decoder.
+///
+/// # Errors
+/// Returns the deserializer's error for a value that is not a list, for an entry that repeats
+/// a member of any object inside it, and for a kept entry `T` does not accept.
+pub fn list_naming<'de, D: Deserializer<'de>, T: DeserializeOwned>(
+    deserializer: D,
+    member: &str,
+) -> Result<Vec<T>, D::Error> {
+    Vec::<Unrepeated>::deserialize(deserializer)?
+        .into_iter()
+        .filter(|entry| !names_unknown_tag::<T>(&entry.0, member))
+        .map(|entry| serde_json::from_value(entry.0).map_err(de::Error::custom))
+        .collect()
+}
+
+/// Whether `entry` names a tag `member` the family `T` does not name.
+fn names_unknown_tag<T: DeserializeOwned>(entry: &Value, member: &str) -> bool {
+    entry
+        .get(member)
+        .and_then(Value::as_str)
+        .is_some_and(|kind| !names::<T>(member, kind))
+}
+
+/// A JSON value whose every object names each member once.
+struct Unrepeated(Value);
+
+impl<'de> Deserialize<'de> for Unrepeated {
+    /// Read the value, refusing an object that repeats a member.
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        deserializer.deserialize_any(UnrepeatedVisitor)
+    }
+}
+
+/// Builds a value and refuses an object that names a member twice, at any depth.
+struct UnrepeatedVisitor;
+
+impl<'de> Visitor<'de> for UnrepeatedVisitor {
+    type Value = Unrepeated;
+
+    /// Name the value being read.
+    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str("a JSON value")
+    }
+
+    /// Read a boolean.
+    fn visit_bool<E: de::Error>(self, value: bool) -> Result<Unrepeated, E> {
+        Ok(Unrepeated(Value::Bool(value)))
+    }
+
+    /// Read a signed integer.
+    fn visit_i64<E: de::Error>(self, value: i64) -> Result<Unrepeated, E> {
+        Ok(Unrepeated(Value::from(value)))
+    }
+
+    /// Read an unsigned integer.
+    fn visit_u64<E: de::Error>(self, value: u64) -> Result<Unrepeated, E> {
+        Ok(Unrepeated(Value::from(value)))
+    }
+
+    /// Read a float.
+    fn visit_f64<E: de::Error>(self, value: f64) -> Result<Unrepeated, E> {
+        serde_json::Number::from_f64(value).map_or_else(
+            || Err(de::Error::custom("JSON does not carry a nonfinite number")),
+            |number| Ok(Unrepeated(Value::Number(number))),
+        )
+    }
+
+    /// Read a borrowed string.
+    fn visit_str<E: de::Error>(self, value: &str) -> Result<Unrepeated, E> {
+        Ok(Unrepeated(Value::String(value.to_owned())))
+    }
+
+    /// Read an owned string.
+    fn visit_string<E: de::Error>(self, value: String) -> Result<Unrepeated, E> {
+        Ok(Unrepeated(Value::String(value)))
+    }
+
+    /// Read a null.
+    fn visit_unit<E: de::Error>(self) -> Result<Unrepeated, E> {
+        Ok(Unrepeated(Value::Null))
+    }
+
+    /// Read a null where a value is optional.
+    fn visit_none<E: de::Error>(self) -> Result<Unrepeated, E> {
+        Ok(Unrepeated(Value::Null))
+    }
+
+    /// Read a present value where a value is optional.
+    fn visit_some<D: Deserializer<'de>>(self, deserializer: D) -> Result<Unrepeated, D::Error> {
+        Unrepeated::deserialize(deserializer)
+    }
+
+    /// Read a list.
+    fn visit_seq<A: SeqAccess<'de>>(self, mut seq: A) -> Result<Unrepeated, A::Error> {
+        let mut items = Vec::new();
+        while let Some(item) = seq.next_element::<Unrepeated>()? {
+            items.push(item.0);
+        }
+        Ok(Unrepeated(Value::Array(items)))
+    }
+
+    /// Read an object, refusing a member it names twice.
+    fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Unrepeated, A::Error> {
+        let mut members = Map::new();
+        while let Some(key) = map.next_key::<String>()? {
+            let Unrepeated(value) = map.next_value::<Unrepeated>()?;
+            if members.insert(key.clone(), value).is_some() {
+                return Err(de::Error::custom(format!("repeated member `{key}`")));
+            }
+        }
+        Ok(Unrepeated(Value::Object(members)))
+    }
 }
 
 /// Whether the family `T`, tagged by the member `member`, names the tag value `kind`.

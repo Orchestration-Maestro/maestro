@@ -32,9 +32,12 @@ framing to this leaf.
   map of a JSON object, so a derived record never reads a positional array. `record_with`
   names the caller's expectation in the error; `record`, `from_str`, `list` and
   `optional_list` use `a JSON object`. A repeated member is handled by the record and the
-  deserializer the caller supplies; these readers add no duplicate policy. `names` asks a tagged
+  deserializer the caller supplies; those readers add no duplicate policy. `names` asks a tagged
   family's own decoder whether it names a tag value, so a reader can leave an entry out without
-  matching error text or keeping a list of names.
+  matching error text or keeping a list of names. `list_naming` reads a list that way: it leaves
+  out each entry whose tag value the family does not name, decodes every other entry, and fails
+  the list on an object that repeats a member at any depth, so the reader never accepts what
+  the family's own decoder refuses.
 
 The optional-field helper that keeps null apart from absence is `present` in
 `maestro-request`; the JSON leaf does not depend on it. Dependencies are listed in

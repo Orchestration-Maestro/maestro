@@ -298,9 +298,9 @@ current epoch milliseconds and append without removing prior entries.
 Messages and content serialize with their fixed role/type tags, even when used
 alone. Tagged unions decode by their role/type; an unknown block type in user or assistant
 content, and an unknown role among a model request's messages, is left out, while anything
-else malformed still fails. Optional absent fields are omitted;
-explicit null is retained for supported thinking/routing fields and open tool
-details. Signature
+else malformed still fails; so does an object that names one of its members twice.
+Optional absent fields are omitted; explicit null is retained for supported
+thinking/routing fields and open tool details. Signature
 strings remain opaque; the separate signature metadata record accepts version 1.
 
 `Usage::total_tokens` keeps the presence of the saved count. An omitted total
