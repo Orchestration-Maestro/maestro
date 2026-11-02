@@ -6,15 +6,29 @@ use std::path::{Path, PathBuf};
 /// The recipe that stages the development tool the setup runs.
 const PREPARE: &str = "just prepare-tests";
 
-/// The packages whose tests nextest's author-component setup serves, as shared CI declares them.
+/// The packages nextest assigns to the setups that shared CI prepares.
 fn served_packages() -> Vec<String> {
     let ci: toml::Table = include_str!("../../../.github/ci.toml").parse().unwrap();
-    ci["test_prepare_packages"]
-        .as_array()
-        .unwrap()
+    let setups = ci["test_prepare_setups"].as_array().unwrap();
+    let nextest: toml::Table = include_str!("../../../.config/nextest.toml")
+        .parse()
+        .unwrap();
+    let rules = nextest["profile"]["default"]["scripts"].as_array().unwrap();
+    let mut consumers: Vec<_> = rules
         .iter()
-        .map(|name| name.as_str().unwrap().to_owned())
-        .collect()
+        .filter(|rule| setups.contains(&rule["setup"]))
+        .flat_map(|rule| rule["filter"].as_str().unwrap().split("package(").skip(1))
+        .map(|rest| {
+            rest.split_once(')')
+                .unwrap()
+                .0
+                .trim_start_matches('=')
+                .to_owned()
+        })
+        .collect();
+    consumers.sort_unstable();
+    consumers.dedup();
+    consumers
 }
 
 /// The Markdown files under `directory`, recursively.
