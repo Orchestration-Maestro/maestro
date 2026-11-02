@@ -790,12 +790,13 @@ Archived CI shards receive `TEST_ARCHIVE=1` and `TEST_PREPARE_OUTPUT` pointing t
 The `test_prepare` command in `.github/ci.toml` is the development tool's
 `prepare-test-setup prepare`. Shared CI runs it only when a selected package is
 named by `test_prepare_packages` there, the packages that nextest's
-`author-component`, `browser-author` and `native-fixture` setups serve. Shared CI caches
-the bundle under the contents of the files that `test_prepare_inputs` matches and restores it
-instead of preparing again. Those patterns name the crates the preparation builds,
-`maestro-extensions-wasm`, `maestro-tooling` and `maestro-web`, and every workspace crate
-they depend on through a path dependency of any kind, plus the fixed inputs, so a change to
-any other crate keeps the cached bundle.
+`author-component`, `browser-author` and `native-fixture` setups serve. Shared CI
+caches the bundle under the contents of the files that `test_prepare_inputs`
+matches and restores it instead of preparing again. Those patterns name the
+crates the preparation builds, `maestro-extensions-wasm`, `maestro-tooling` and
+`maestro-web`, and every workspace crate they depend on through a path
+dependency of any kind, plus the fixed inputs, so a change to any other crate
+keeps the cached bundle.
 The preparation reads that closure from the workspace metadata, compiling nothing, and
 records it in the bundle manifest, so a shard validates the same files without Cargo.
 `ci_cache_key_names_exactly_the_files_the_preparation_reads` fails when a file the
@@ -1102,8 +1103,8 @@ is [Rust test children](specs/test-processes.md).
 
 Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` for the
 currently served packages: `maestro-test-process`, `maestro-tooling`,
-`maestro-tools`, the toolkit's attachment-completion tests and the application
-RPC client tests. Local setup builds the example
+`maestro-tools`, `maestro-models`, the toolkit's attachment-completion tests and
+the application RPC client tests. Local setup builds the example
 with the locked host `dev` profile and reads Cargo's emitted executable path. It
 records source inputs, content digest and host in
 `target/test-setup/native-fixture.json`; unchanged inputs reuse that artifact.
@@ -1256,6 +1257,55 @@ and startup cases replace `PATH` explicitly; ordinary native find/grep corpus
 cases still use the provisioned real tools. Run the complete `maestro-tools`
 nextest selection to qualify both routes. A missing real tool fails the native
 cases; the fixture never replaces or downloads it.
+
+#### Credential processes
+
+Run the model credential rows against their prepared program:
+
+```sh
+just prepare-tests
+cargo nextest run --locked -p maestro-models -E 'test(/cloud_profile_credentials/)'
+```
+
+Install the same artifact as the program that an AWS profile names in
+`credential_process`, or as the executable source of a Google external account
+credential. Write `credentials` on the first line of `<alias>.fixture`, followed
+by the scenario name. The fixture parses the whole record before it counts a run
+or writes output, so an unknown record fails with no document.
+
+| Scenario | Behavior |
+| --- | --- |
+| `AwsProcess` | Counts the run in `process-count` beside the alias, then answers as its single operand says. No operand and `ok` print a complete credential document. `fail` ends with status 7 and no output; `once` fails the first run only; `invalid_json` prints unusable text; `wrong_version`, `missing_key` and `expired` print a document the reader must refuse. |
+| `GoogleExecutable` | Prints one success document naming a subject token and takes no operand. |
+
+Call `maestro_test_process::credentials::install(entry, scenario)` from the
+parent test, which holds `MAESTRO_NATIVE_FIXTURE`. The alias path is anything the
+backend can launch; an AWS profile field names it with one variant, such as
+`credential_process = /scratch/process once`. Read `process-count` back after the
+run to state how often the backend started the program.
+
+```rust,no_run
+fn main() -> std::io::Result<()> {
+    use maestro_test_process::credentials::{Scenario, install};
+    let directory = maestro_test_directory::Scratch::new()?;
+    let process = directory
+        .path()
+        .join(format!("process{}", std::env::consts::EXE_SUFFIX));
+    install(&process, Scenario::AwsProcess)?;
+    std::fs::write(directory.path().join("process-count"), "")?;
+    std::fs::write(
+        directory.path().join("config"),
+        format!("[profile selected]\ncredential_process = {} once\n", process.display()),
+    )?;
+    Ok(())
+}
+```
+
+The model profile rows install an `AwsProcess` alias named `process` in each
+row's directory and read its count beside the file they compare. The Google
+credential tests install a `GoogleExecutable` alias as the executable source of
+an external account credential. Neither program needs an interpreter or an
+`install` command.
 
 #### Checked reruns
 
