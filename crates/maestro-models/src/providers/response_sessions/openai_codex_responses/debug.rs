@@ -43,18 +43,21 @@ pub struct OpenAICodexWebSocketDebugStats {
     pub last_web_socket_error: Option<String>,
 }
 
-/// Statistics and fallback flags, keyed by session.
+/// Statistics, fallback flags and completed-response records, keyed by session.
 struct DebugState {
     /// Counters of sessions that selected a request or recorded an outcome.
     stats: BTreeMap<String, OpenAICodexWebSocketDebugStats>,
     /// Sessions whose socket failed.
     fallback: BTreeSet<String>,
+    /// Sessions whose socket completed a response.
+    completed: BTreeSet<String>,
 }
 
 /// Process-wide debug state.
 static DEBUG: Mutex<DebugState> = Mutex::new(DebugState {
     stats: BTreeMap::new(),
     fallback: BTreeSet::new(),
+    completed: BTreeSet::new(),
 });
 
 /// Lock the debug state; a poisoned lock is used as it is.
@@ -111,9 +114,11 @@ pub fn reset_openai_codex_web_socket_debug_stats(session_id: Option<&str>) {
     if let Some(id) = session_id.filter(|id| !id.is_empty()) {
         state.stats.remove(id);
         state.fallback.remove(id);
+        state.completed.remove(id);
     } else {
         state.stats.clear();
         state.fallback.clear();
+        state.completed.clear();
     }
 }
 
@@ -130,22 +135,42 @@ pub(crate) fn record_web_socket_sse_fallback(session_id: Option<&str>) {
         return;
     };
     let mut guard = lock();
-    let DebugState { stats, fallback } = &mut *guard;
+    let DebugState {
+        stats, fallback, ..
+    } = &mut *guard;
     let stats = stats.entry(id.to_owned()).or_default();
     stats.sse_fallbacks += 1;
     stats.websocket_fallback_active = Some(fallback.contains(id));
 }
 
-/// Activate the session's fallback and record the failure text.
+/// Record that the session's socket completed a response, so its network serves the socket and a
+/// later failure is transient.
+pub(crate) fn record_web_socket_completion(session_id: Option<&str>) {
+    let Some(id) = session_id.filter(|id| !id.is_empty()) else {
+        return;
+    };
+    lock().completed.insert(id.to_owned());
+}
+
+/// Record the failure text and activate the session's fallback, unless its socket already
+/// completed a response; that failure falls back for one request only.
 pub(crate) fn record_web_socket_failure(session_id: Option<&str>, error: DiagnosticInput<'_>) {
     let Some(id) = session_id.filter(|id| !id.is_empty()) else {
         return;
     };
     let text = format_thrown_value(error);
     let mut guard = lock();
-    guard.fallback.insert(id.to_owned());
-    let stats = guard.stats.entry(id.to_owned()).or_default();
+    let DebugState {
+        stats,
+        fallback,
+        completed,
+    } = &mut *guard;
+    if !completed.contains(id) {
+        fallback.insert(id.to_owned());
+    }
+    let active = fallback.contains(id);
+    let stats = stats.entry(id.to_owned()).or_default();
     stats.websocket_failures += 1;
     stats.last_web_socket_error = Some(text);
-    stats.websocket_fallback_active = Some(true);
+    stats.websocket_fallback_active = Some(active);
 }

@@ -371,20 +371,18 @@ const DEBUG_CLOSE: (u16, &str) = (1000, "debug_close");
 /// Reset removes one session's counters and fallback state and leaves its connection usable;
 /// close keeps the counters.
 async fn reset_then_close_one_session(listener: &TcpListener, url: &str) -> Peer {
-    let [a, b] = ["ctl-a", "ctl-b"];
+    let [a, b, d] = ["ctl-a", "ctl-b", "ctl-d"];
     let (chat_a, chat_b) = (
         Conversation::new(url, Some(a), None).await,
         Conversation::new(url, Some(b), None).await,
     );
     let mut peer_a = first_request(&chat_a, listener).await;
     let peer_b = first_request(&chat_b, listener).await;
-    for session in [a, b] {
-        record_web_socket_failure(Some(session), DiagnosticInput::Text("x"));
-    }
+    record_web_socket_failure(Some(d), DiagnosticInput::Text("x"));
 
     reset(Some(a));
     assert!(stats_of(a).is_none() && !active(Some(a)));
-    assert!(stats_of(b).is_some() && active(Some(b)));
+    assert!(stats_of(d).is_some() && active(Some(d)));
     let (request, outcome) = join(answer(&mut peer_a, "r2", "second"), chat_a.send()).await;
     outcome.result.unwrap();
     assert!(request.get("previous_response_id").is_none());
@@ -415,7 +413,12 @@ async fn reset_then_close_one_session(listener: &TcpListener, url: &str) -> Peer
 /// Reset of every session leaves connections; close of every session leaves counters.
 async fn reset_all_then_close_all(mut peer_b: Peer) {
     reset(None);
-    assert!(stats_of("ctl-a").is_none() && stats_of("ctl-b").is_none() && !active(Some("ctl-b")));
+    assert!(
+        stats_of("ctl-a").is_none()
+            && stats_of("ctl-b").is_none()
+            && stats_of("ctl-d").is_none()
+            && !active(Some("ctl-d"))
+    );
     acknowledged(&mut peer_b).await;
     assert!(cached_entry("ctl-b").is_some(), "reset leaves connections");
     close(Some(""));

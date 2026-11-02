@@ -10,9 +10,12 @@ crate root. Generic invocation and typed root forwarding are described in
 missing-key errors instead of returning them immediately.
 
 Missing transport selects `auto` for both dispatch and cached-context selection.
-Explicit `sse` bypasses sockets. Otherwise, a session's sticky fallback selects
-SSE; a socket transport failure falls back only before the first selected event.
-After start, that failure ends the stream without replaying the response.
+Explicit `sse` bypasses sockets. Otherwise, a socket transport failure falls back
+only before the first selected event; after start, it ends the stream without
+replaying the response. The fallback lasts beyond that request only while the
+session's socket has never completed a response, as on a network that refuses
+the upgrade. Once a socket response completes, the failed request alone uses the
+HTTP stream and the next request tries the socket again.
 API/protocol failures and cancellation do not trigger fallback.
 
 The invocation uses independently running request work and shared partial-message
@@ -25,10 +28,11 @@ that family's hooks through the existing socket and SSE paths; the root simple
 counterpart keeps setup-error settlement.
 
 `get_openai_codex_web_socket_debug_stats` returns an independent snapshot.
-`reset_openai_codex_web_socket_debug_stats` clears counters and fallback state,
-not connections. `close_openai_codex_web_socket_sessions` closes connections,
-not counters or fallback state. An absent or empty control identity selects all
-sessions. Public invocation registers socket cleanup with
+`reset_openai_codex_web_socket_debug_stats` clears counters, fallback state and
+the record of completed socket responses, not connections.
+`close_openai_codex_web_socket_sessions` closes connections, not counters or
+fallback state. An absent or empty control identity selects all sessions. Public
+invocation registers socket cleanup with
 [`cleanup_session_resources`](https://docs.rs/maestro-models/latest/maestro_models/fn.cleanup_session_resources.html).
 
 Native User-Agent identity uses the operating system's release and the compile
