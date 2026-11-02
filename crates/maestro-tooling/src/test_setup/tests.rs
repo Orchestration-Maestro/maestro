@@ -153,6 +153,7 @@ fn component_crates_hold_only_what_the_wasm_build_uses() {
             "crates/maestro-package",
             "crates/maestro-request",
             "crates/maestro-subagents",
+            "crates/maestro-text",
             "crates/maestro-tool"
         ]
     );

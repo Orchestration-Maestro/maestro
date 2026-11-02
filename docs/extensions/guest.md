@@ -573,6 +573,11 @@ may keep the callback record or an input future after login ends; its last alias
 releases the original native captures. Pending input leaves the host available,
 and synchronous native notifications may reenter the same guest implementation.
 
+An authored login that uses a proof key calls `generate_pkce(&api)`. The host draws
+32 secure random bytes and returns a `Pkce` record: the verifier is their unpadded
+URL-safe Base64 and the challenge is that text's SHA-256 digest in the same encoding.
+Entropy failure returns the host's error. The guest links no hashing or encoding crate.
+
 Absent fields are omitted; empty strings, lists and maps and
 `false` are sent as written, header, model and input order is kept, and signed zero
 survives. A nonfinite number fails with the finite-number error before the host
@@ -1170,3 +1175,9 @@ baseline. `maestro_extensions_wasm::wasi` also exposes the pinned standard WASI
 and `wit_stream` byte-stream construction. Both generations use the same host
 context; neither introduces an extension-specific permission list. See
 [component operating environment](host_io.md) for access and platform limits.
+
+### Portable provider primitives
+
+`calculate_cost` re-exports the request owner's flat-rate arithmetic over supplied
+model and usage records. `ByteLineDecoder` re-exports the text owner's raw CR/LF
+framing; callers keep their UTF-8, BOM and event-dispatch policies.
