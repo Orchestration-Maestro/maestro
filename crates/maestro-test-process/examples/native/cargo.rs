@@ -14,7 +14,7 @@ const FIXTURE_MODIFIED_OFFSET: std::time::Duration = std::time::Duration::from_h
 pub(super) struct Record {
     /// Real Cargo used only for workspace metadata.
     cargo: String,
-    /// Existing setup-example source copied for author-component builds.
+    /// Finite author-example declaration installed beside the built fixture.
     template: String,
 }
 
@@ -41,7 +41,7 @@ impl Record {
 
 /// The two example builds this fixture supports.
 enum Example {
-    /// The shared setup example whose retained source the caller supplies.
+    /// The shared setup example whose declaration the caller supplies.
     Author,
     /// The single raw native fixture itself.
     Native,
@@ -111,10 +111,17 @@ fn build(record: &Record, build: &Build, start: bool) -> io::Result<()> {
     let (name, source, log) = match build.example {
         Example::Author => (
             "prepare_author_component",
-            PathBuf::from(&record.template),
+            std::env::current_exe()?,
             "builds",
         ),
         Example::Native => ("native_fixture", std::env::current_exe()?, "native-builds"),
+    };
+    let declaration = if matches!(build.example, Example::Author) {
+        let text = std::fs::read_to_string(&record.template)?;
+        super::author::Record::parse(&text)?;
+        Some(text)
+    } else {
+        None
     };
     let path = build
         .target
@@ -126,6 +133,11 @@ fn build(record: &Record, build: &Build, start: bool) -> io::Result<()> {
     )?;
     std::fs::copy(source, &path)?;
     executable(&path)?;
+    if let Some(text) = declaration {
+        let mut sibling = path.as_os_str().to_owned();
+        sibling.push(".fixture");
+        std::fs::write(sibling, text)?;
+    }
     writeln!(
         std::fs::File::options()
             .append(true)

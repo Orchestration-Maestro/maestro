@@ -34,12 +34,14 @@ pub trait ToolRenderer<P = JsonObject, D = Value, C = PreparedContent> {
     ) -> Result<ToolRenderResult<C>, ToolUiError>;
 }
 /// Borrowed parameters with a deferred default-rendering projection.
+#[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
 pub struct ToolParams<'a, P = Value> {
     /// Original caller operand.
     pub(crate) value: &'a P,
     /// Invoked only after default rendering is selected.
     pub(crate) format: fn(&P) -> Result<Option<String>, ToolUiError>,
 }
+#[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
 impl<'a> ToolParams<'a, JsonObject> {
     /// Borrow model arguments with deferred canonical object formatting.
     #[must_use]
@@ -51,6 +53,7 @@ impl<'a> ToolParams<'a, JsonObject> {
         })
     }
 }
+#[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
 impl<'a> ToolParams<'a, Value> {
     /// Borrow ordinary JSON using the default formatter.
     #[must_use]
@@ -58,6 +61,7 @@ impl<'a> ToolParams<'a, Value> {
         Self::typed(value, super::renderers::default_renderer::format_params)
     }
 }
+#[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
 impl<'a, P> ToolParams<'a, P> {
     /// Borrow a native value with its optional literal input projection.
     #[must_use]
