@@ -157,3 +157,13 @@ fn compaction_summary_drops_terminal_controls() {
 fn user_message_keeps_authored_terminal_styles() {
     message_support::user_styles();
 }
+
+#[test]
+fn adjacent_thinking_blocks_render_as_one_section() {
+    message_support::adjacent_thinking();
+}
+
+#[test]
+fn user_message_is_one_padded_markdown_layer() {
+    message_support::user_markdown_layer();
+}

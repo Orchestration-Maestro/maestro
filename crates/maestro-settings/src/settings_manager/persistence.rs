@@ -11,7 +11,9 @@ use super::BaseSettingsLayer;
 use super::change::Edit;
 use super::conversion::parse_document;
 use super::preferences::SettingsStorageHandle;
-use super::preferences::{SettingsError, SettingsScope, SettingsStorage, SettingsStorageError};
+use super::preferences::{
+    SettingsError, SettingsErrorKind, SettingsScope, SettingsStorage, SettingsStorageError,
+};
 use maestro_json::pretty_object;
 
 /// Shared state handle: atomically counted and locked on native targets.
@@ -134,8 +136,18 @@ impl Queue {
 
     /// Records a failure for later draining.
     pub(super) fn record_error(&self, scope: SettingsScope, error: SettingsStorageError) {
+        self.record(scope, SettingsErrorKind::Failure, error);
+    }
+
+    /// Records a failure or a resolved stored conflict on the same error channel.
+    pub(super) fn record(
+        &self,
+        scope: SettingsScope,
+        kind: SettingsErrorKind,
+        error: SettingsStorageError,
+    ) {
         self.context
-            .with(|shared| shared.errors.push(SettingsError { scope, error }));
+            .with(|shared| shared.errors.push(SettingsError { kind, scope, error }));
     }
 
     /// Takes every recorded failure.
@@ -200,7 +212,13 @@ fn execute(job: Job, context: &Context) {
         }
         Job::BaseLayer { scope, layer } => {
             if let Err(error) = context.storage.write_base_layer(scope, layer.as_ref()) {
-                context.with(|shared| shared.errors.push(SettingsError { scope, error }));
+                context.with(|shared| {
+                    shared.errors.push(SettingsError {
+                        kind: SettingsErrorKind::Failure,
+                        scope,
+                        error,
+                    });
+                });
             }
         }
         Job::Save {
@@ -210,7 +228,11 @@ fn execute(job: Job, context: &Context) {
         } => match persist(&*context.storage, scope, &snapshot, &edits) {
             Ok(()) => context.with(|shared| shared.acknowledge(scope, &edits)),
             Err(error) => context.with(|shared| {
-                shared.errors.push(SettingsError { scope, error });
+                shared.errors.push(SettingsError {
+                    kind: SettingsErrorKind::Failure,
+                    scope,
+                    error,
+                });
             }),
         },
     }

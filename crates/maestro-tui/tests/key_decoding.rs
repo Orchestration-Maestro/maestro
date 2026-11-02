@@ -798,6 +798,29 @@ fn enhanced_navigation_forms_keep_event_and_modifier_fields() {
 }
 
 #[test]
+fn modifier_words_match_before_or_after_the_key() {
+    let mut protocol = ProtocolGuard::new(false);
+    for active in [false, true] {
+        protocol.set(active);
+        for (report, id) in [
+            ("\x0b", "k+ctrl"),
+            ("\x1b[Z", "tab+shift"),
+            ("\x1b[107;6u", "ctrl+k+shift"),
+        ] {
+            assert_key(report, id);
+        }
+        for rejected in [
+            "ctlr+k", "a+k", "ctrl+a+b", "ctrl+", "ctrl++v", "+ctrl", "ctrl+k+", "shift",
+            "ctrl+alt",
+        ] {
+            for report in ["k", "a", "b", "\x0b", "\x1b[Z", "\x1b[107;6u", "\x1b[43;5u"] {
+                assert_not_key(report, rejected);
+            }
+        }
+    }
+}
+
+#[test]
 fn identifier_aliases_case_and_modifier_order_match() {
     let _protocol = ProtocolGuard::new(false);
     let inputs = ["\x1b", "\r", "\x1b[5~", "\x1b[99;6u", "\x1b[99;13u", "\x03"];
@@ -820,7 +843,6 @@ fn identifier_aliases_case_and_modifier_order_match() {
         ("\x1b[99;6u", "ctrl+shift+c"),
         ("\x1b[99;13u", "super+ctrl+c"),
         ("\x03", "ctrl+ctrl+c"),
-        ("\x03", "hyper+ctrl+c"),
     ];
     for data in inputs {
         for id in identifiers {

@@ -1,4 +1,5 @@
 //! A real authored extension exercising standard interfaces alongside the canonical host.
+// maestro-component: MAESTRO_WASI_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

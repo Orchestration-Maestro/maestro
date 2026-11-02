@@ -1,4 +1,5 @@
 //! An extension contributing resources beside its installed component.
+// maestro-component: MAESTRO_RESOURCE_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

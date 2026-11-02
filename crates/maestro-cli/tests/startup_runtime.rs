@@ -26,14 +26,25 @@ pub(crate) struct Fixture {
 impl Fixture {
     /// Reload actual application services without automatic resource discovery.
     pub(crate) async fn new(local: Rc<LocalSet>, settings: SettingsManager) -> Self {
-        Self::build(local, settings, false).await
+        Self::build(local, settings, |_| {}).await
     }
     /// Retain extension load failures supplied through the loader's actual override seam.
     async fn with_errors(local: Rc<LocalSet>, settings: SettingsManager) -> Self {
-        Self::build(local, settings, true).await
+        Self::build(local, settings, refuse_extensions).await
     }
-    /// Construct the actual service owner with or without supplied extension failures.
-    async fn build(local: Rc<LocalSet>, settings: SettingsManager, errors: bool) -> Self {
+    /// Load an extension that registers the tool [`PROBE_TOOL`].
+    async fn with_probe_tool(local: Rc<LocalSet>, settings: SettingsManager) -> Self {
+        Self::build(local, settings, |resources| {
+            resources.extension_factories.push(register_probe_tool());
+        })
+        .await
+    }
+    /// Construct the actual service owner, letting `configure` adjust its resource loading.
+    async fn build(
+        local: Rc<LocalSet>,
+        settings: SettingsManager,
+        configure: impl FnOnce(&mut ResourceLoaderOptions<Local>),
+    ) -> Self {
         let scratch = Scratch::new().unwrap();
         let cwd = scratch.path().to_str().unwrap();
         let mut resources = ResourceLoaderOptions::<Local>::new(
@@ -51,17 +62,7 @@ impl Fixture {
         resources.system_prompt = Some("controlled startup".into());
         let events = Rc::new(RefCell::new(Vec::new()));
         resources.extension_factories.push(record_starts(&events));
-        if errors {
-            resources.extensions_override = Some(Box::new(|mut loaded| {
-                loaded.errors = ["first", "second"]
-                    .map(|path| maestro_app::ExtensionLoadError {
-                        path: path.into(),
-                        error: format!("{path} refusal"),
-                    })
-                    .into();
-                loaded
-            }));
-        }
+        configure(&mut resources);
         let catalog = Arc::new(startup::registry(&[("startup", &["first", "second"])]));
         let services =
             maestro_app::create_agent_session_services(CreateAgentSessionServicesOptions {
@@ -197,6 +198,39 @@ fn created_session_receives_every_selected_option() {
                 [json!({"reason":"fork","previousSessionFile":"earlier.jsonl"})]
             );
             created.session.dispose();
+        },
+    );
+}
+
+/// The active and the registered tool names of a session created with `flag` over a loaded
+/// extension that registers [`PROBE_TOOL`].
+async fn probe_tool_names(local: &Rc<LocalSet>, flag: &str) -> (Vec<String>, Vec<String>) {
+    let fixture = Fixture::with_probe_tool(Rc::clone(local), startup::settings(&[])).await;
+    let (created, warnings) = fixture.create(&[flag]).await;
+    assert!(warnings.is_empty());
+    let registered = created
+        .session
+        .get_all_tools()
+        .into_iter()
+        .map(|tool| tool.name)
+        .collect();
+    let active = created.session.get_active_tool_names();
+    created.session.dispose();
+    (active, registered)
+}
+
+#[test]
+fn disabled_tool_policies_keep_extension_registered_tools_by_policy() {
+    run(
+        "disabled_tool_policies_keep_extension_registered_tools_by_policy",
+        |local| async move {
+            let (active, registered) = probe_tool_names(&local, "--no-tools").await;
+            assert!(active.is_empty() && registered.is_empty());
+            let (active, registered) = probe_tool_names(&local, "--no-builtin-tools").await;
+            assert_eq!(active, [PROBE_TOOL]);
+            for name in [PROBE_TOOL, "read"] {
+                assert!(registered.iter().any(|known| known == name), "{name}");
+            }
         },
     );
 }
@@ -409,6 +443,53 @@ fn runtime_diagnostics_keep_all_producer_groups() {
             created.session.dispose();
         },
     );
+}
+
+/// Replace the loaded extensions' failures with two refusals through the loader's override seam.
+fn refuse_extensions(resources: &mut ResourceLoaderOptions<Local>) {
+    resources.extensions_override = Some(Box::new(|mut loaded| {
+        loaded.errors = ["first", "second"]
+            .map(|path| maestro_app::ExtensionLoadError {
+                path: path.into(),
+                error: format!("{path} refusal"),
+            })
+            .into();
+        loaded
+    }));
+}
+
+/// The name of the tool [`register_probe_tool`] registers, distinct from every built-in tool.
+const PROBE_TOOL: &str = "extension_probe";
+
+/// An extension registering [`PROBE_TOOL`] through the real registration owner.
+fn register_probe_tool() -> maestro_app::ExtensionFactory<Local> {
+    Rc::new(|api| {
+        let tool =
+            maestro_app::local::ToolDefinition::<maestro_app::ExtensionContext, Value, Value, ()> {
+                definition: serde_json::from_value(json!({
+                    "name": PROBE_TOOL,
+                    "description": "probe",
+                    "parameters": {"type": "object", "properties": {}},
+                }))
+                .unwrap(),
+                label: PROBE_TOOL.into(),
+                prompt_snippet: None,
+                prompt_guidelines: None,
+                render_shell: None,
+                prepare_arguments: None,
+                execution_mode: None,
+                execute: Rc::new(|_, _, _, _, _| {
+                    Box::pin(std::future::ready(Ok(maestro_app::AgentToolResult {
+                        content: vec![],
+                        details: None,
+                        terminate: None,
+                    })))
+                }),
+                render_call: None,
+                render_result: None,
+            };
+        Box::pin(std::future::ready(api.register_tool(tool)))
+    })
 }
 
 /// Record events through the real extension registration and dispatch owners.

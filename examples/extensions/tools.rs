@@ -1,4 +1,5 @@
 //! Interactive tool selection retained in the current session branch.
+// maestro-component: MAESTRO_TOOLS_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

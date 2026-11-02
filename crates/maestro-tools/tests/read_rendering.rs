@@ -5,8 +5,8 @@
 use crate::display_support;
 
 use display_support::{
-    Env, Probe, Setup, WIDTH, assert_rows, bare_theme, bind, cases, check_rows, context,
-    native_highlighter, padded, theme_keys,
+    Env, Probe, Setup, WIDTH, assert_rows, bare_theme, bind, cases, check_rows, context, padded,
+    theme_keys,
 };
 use futures_util::FutureExt;
 use maestro_agent::AgentToolResult;
@@ -22,7 +22,12 @@ use std::{rc::Rc, sync::Arc};
 
 /// The palette color of a theme key, before any shift.
 fn color(key: &str) -> usize {
-    theme_keys().iter().position(|name| name == key).unwrap() + 1
+    theme_keys()
+        .unwrap()
+        .iter()
+        .position(|name| name == key)
+        .unwrap()
+        + 1
 }
 
 /// A setup with the expand key bound.
@@ -30,6 +35,7 @@ fn setup() -> Setup {
     Setup::from(
         &json!({"readme": "/opt/maestro/README.md", "bindings": ["ctrl+o"], "expanded": true}),
     )
+    .unwrap()
 }
 
 /// The tool whose renderers are under test.
@@ -117,13 +123,14 @@ fn read_preview_limits_count_logical_lines_before_wrapping() {
         false,
     );
     let _bindings = bind(&["ctrl+o".to_owned()]);
-    let env = Env::new(0);
+    let env = Env::new(0).unwrap();
     let args = json!({"path": "notes.txt"});
     let long = "x".repeat(50);
     let lines: Vec<String> = std::iter::once(long)
         .chain((2..=12).map(|n| format!("line {n}")))
         .collect();
-    let setup = Setup::from(&json!({"readme": "/opt/maestro/README.md", "bindings": ["ctrl+o"]}));
+    let setup =
+        Setup::from(&json!({"readme": "/opt/maestro/README.md", "bindings": ["ctrl+o"]})).unwrap();
     let ctx = context(&args, &setup, &env, None);
     let row = crate::display_support::native(
         &(tool().render_result.unwrap()),
@@ -203,10 +210,7 @@ fn read_highlighting_uses_only_selected_filename_language() {
         ),
     ] {
         let probe = Probe::new(supported);
-        let env = Env::with(
-            Rc::new(display_support::palette(0)),
-            Rc::clone(&probe) as Rc<dyn SyntaxHighlighter>,
-        );
+        let env = probe_env(Rc::clone(&probe));
         let ctx = context(&args, &setup(), &env, None);
         let row_component = crate::display_support::native(
             &(tool().render_result.unwrap()),
@@ -231,10 +235,7 @@ fn read_highlighting_reads_the_current_published_theme() {
     check_rows("read_highlighting_reads_the_current_published_theme", true);
     let keyword = color("syntaxKeyword");
     let probe = Probe::new(true);
-    let env = Env::with(
-        Rc::new(display_support::palette(0)),
-        Rc::clone(&probe) as Rc<dyn SyntaxHighlighter>,
-    );
+    let env = probe_env(Rc::clone(&probe));
     let before_theme = maestro_theme::LiveTheme::from_theme(env.live.get().unwrap());
     let args = json!({"path": "main.rs"});
     let render = |env: &Env| {
@@ -256,7 +257,7 @@ fn read_highlighting_reads_the_current_published_theme() {
         render(&env),
         padded(&format!("\x1b[38;5;{keyword}mfn main() {{}}\x1b[39m"))
     );
-    env.republish(40);
+    env.republish(40).unwrap();
     assert_eq!(
         render(&env),
         padded(&format!(
@@ -264,7 +265,7 @@ fn read_highlighting_reads_the_current_published_theme() {
             keyword + 40
         ))
     );
-    let native = Env::with(Rc::new(display_support::palette(0)), native_highlighter());
+    let native = Env::new(0).unwrap();
     let original = maestro_theme::LiveTheme::from_theme(native.live.get().unwrap());
     assert_eq!(
         native_row(
@@ -275,7 +276,7 @@ fn read_highlighting_reads_the_current_published_theme() {
         ),
         padded(&native_styled(0))
     );
-    native.republish(40);
+    native.republish(40).unwrap();
     assert_eq!(
         native_row(
             &json!({"path": "main.rs"}),
@@ -309,7 +310,7 @@ fn native_row(
 
 /// Native engine rows for the selected-language paths, with their styles intact.
 fn assert_native_language_selection() {
-    let env = Env::with(Rc::new(display_support::palette(0)), native_highlighter());
+    let env = Env::new(0).unwrap();
     let plain = format!("\x1b[38;5;{}mfn main() {{}}\x1b[39m", color("toolOutput"));
     for (args, expected) in [
         (json!({"path": "code.rs"}), native_styled(0)),
@@ -370,7 +371,7 @@ fn read_result_uses_options_expansion_not_unrelated_flags() {
 #[test]
 fn read_renderers_reuse_the_supplied_text_slot() {
     let _bindings = bind(&["ctrl+o".to_owned()]);
-    let env = Env::new(0);
+    let env = Env::new(0).unwrap();
     let mut survivors = Vec::new();
     for case in cases("read_renderers_reuse_the_supplied_text_slot") {
         let prior = Rc::new(Text::new("before".into(), 0, 0, None));
@@ -422,7 +423,7 @@ fn read_renderers_reuse_the_supplied_text_slot() {
 
 #[test]
 fn read_renderer_errors_leave_previous_text_unchanged() {
-    let env = Env::with(Rc::new(bare_theme()), Probe::new(true));
+    let env = Env::with(Rc::new(bare_theme()), Probe::new(true)).unwrap();
     for case in cases("read_renderer_errors_leave_previous_text_unchanged") {
         let prior = Rc::new(Text::new("before".into(), 0, 0, None));
         let args = json!({"path": "after.txt"});
@@ -457,11 +458,12 @@ fn classified_results_avoid_unused_display_dependencies() {
     let env = Env::with(
         Rc::new(bare_theme()),
         Rc::clone(&probe) as Rc<dyn SyntaxHighlighter>,
-    );
+    )
+    .unwrap();
     let args = json!({"path": "/work/SKILL.md"});
     let mut ctx = context(
         &args,
-        &Setup::from(&json!({"readme": "/opt/maestro/README.md", "bindings": []})),
+        &Setup::from(&json!({"readme": "/opt/maestro/README.md", "bindings": []})).unwrap(),
         &env,
         None,
     );
@@ -512,7 +514,7 @@ impl ReadOperations for Fixed {
 #[test]
 fn read_definition_keeps_render_alias_separate_from_execution_input() {
     let _bindings = bind(&["ctrl+o".to_owned()]);
-    let env = Env::new(0);
+    let env = Env::new(0).unwrap();
     let options = ReadToolOptions {
         operations: Some(Arc::new(Fixed)),
         ..ReadToolOptions::default()
@@ -546,7 +548,7 @@ fn read_definition_keeps_render_alias_separate_from_execution_input() {
 #[test]
 fn one_read_definition_follows_each_render_context() {
     let _bindings = bind(&["ctrl+o".to_owned()]);
-    let env = Env::new(0);
+    let env = Env::new(0).unwrap();
     let definition = tool();
     let args = json!({"path": "docs/guide.md"});
     let title = |cwd: &str, readme: &str| {
@@ -583,7 +585,7 @@ fn one_read_definition_follows_each_render_context() {
 #[test]
 fn rooted_windows_documentation_paths_take_the_process_drive() {
     let _bindings = bind(&["ctrl+o".to_owned()]);
-    let env = Env::new(0);
+    let env = Env::new(0).unwrap();
     let process = std::env::current_dir().unwrap();
     let drive = process.to_string_lossy()[..2].to_owned();
     let other = if drive.eq_ignore_ascii_case("D:") {
@@ -605,7 +607,7 @@ fn rooted_windows_documentation_paths_take_the_process_drive() {
 #[cfg(windows)]
 #[test]
 fn documentation_paths_respect_windows_roots_and_separators() {
-    let env = Env::new(0);
+    let env = Env::new(0).unwrap();
     for case in cases("documentation_paths_respect_windows_roots_and_separators") {
         let mut setup = setup();
         setup.readme = case.input["readme"].as_str().unwrap().to_owned();
@@ -645,7 +647,7 @@ fn classification_reads_the_process_directory_only_for_operands_that_need_it() {
 #[cfg(unix)]
 fn read_renders_without_process_directory() {
     let _bindings = bind(&["ctrl+o".to_owned()]);
-    let env = Env::new(0);
+    let env = Env::new(0).unwrap();
     let title = |path: &str, readme: &str| {
         let args = json!({"path": path});
         let mut setup = setup();
@@ -718,4 +720,9 @@ fn read_results_without_process_directory(env: &Env) {
             .contains("served")
     );
     assert!(result("/opt/maestro/docs/guide.md", "relative/README.md").is_err());
+}
+
+/// Controlled palette rendered through the supplied language probe.
+fn probe_env(probe: Rc<Probe>) -> Env {
+    Env::with(Rc::new(display_support::palette(0).unwrap()), probe).unwrap()
 }

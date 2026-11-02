@@ -258,6 +258,20 @@ fn final_tab_close_publishes_tab_then_workspace() {
 }
 
 #[test]
+fn final_tab_close_empties_the_daemon_and_clears_focus() {
+    let mut app = daemon_with_workspaces(&["/only"]);
+    app.state.session_dirty = false;
+
+    let close = json!({"type": "tab.close", "tab_id": "w1:t1"});
+    assert_eq!(request(&mut app, close), Ok(ResponseResult::Ok {}));
+
+    assert!(app.state.topology.workspaces.is_empty());
+    assert!(app.state.terminals.is_empty());
+    assert_eq!(app.state.active, None);
+    assert!(app.state.session_dirty);
+}
+
+#[test]
 fn tab_close_preserves_confirmation_and_terminal_ownership() {
     let mut app = three_tabs();
     let closing = app.state.topology.workspaces[0].tabs[1].clone();

@@ -109,6 +109,8 @@ agents' hook files, and runtime mechanics ([list](#runtime-mechanics-not-copied)
 - **Allowed dependencies.** A package crate may depend on `maestro-extensions-wasm`, other package crates,
   `maestro-request`, `maestro-entry`, `maestro-tool`, `maestro-json`, and approved libraries that build for
   `wasm32-wasip2`.
+- **Enforcement.** The conventions checker reads package classifications from the inventory, checks declared
+  and host-resolved dependencies, and checks component targets and export locations in member sources.
 - **One export per component.** The library is an `rlib` exposing `factory`. The component is the cdylib example
   target `component` at `src/component.rs`, which holds the one `export_extension!` line. A library never exports,
   because two export sets in one component fail to link. Conventions check both rules.
@@ -144,6 +146,18 @@ The full-user host gives components the user's network (name lookup, connect, li
 While the native terminal's queued output runs, component stdout goes through the same ordered queue,
 so it never splits a host frame. Other modes and regular-file destinations inherit stdout.
 Local sockets arrive through `maestro-ipc`, the one local-socket owner (delivery 59).
+
+### Guest files
+
+Component saves delegate through application native I/O to
+recoverable in-place `maestro_lock::replace`, with final-link following.
+Requested Unix creation modes apply at open, filtered by umask, before bytes are
+written; rewrites preserve existing modes. File identity, hard links, owner and
+ACLs survive. Unlocked readers may see partial bytes mid-save. The lock owner
+keeps exclusion, recovery, cleanup and committed durability warnings. Existing
+exact-mode callers retain their chmod-after-sync behavior. The
+[component host contract](extension-host.md) describes the file operations and
+qualification required before the guest facade is delivered.
 
 ### Shared libraries
 

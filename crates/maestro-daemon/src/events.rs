@@ -81,7 +81,7 @@ pub enum AppEvent {
         /// Pane receiving the report.
         pane_id: PaneId,
         /// Canonical presentation update with its clear, guard and lifetime controls.
-        report: AgentMetadataReport,
+        report: Box<AgentMetadataReport>,
     },
     /// Integration authority was explicitly cleared for a pane.
     HookAuthorityCleared {
@@ -135,6 +135,13 @@ pub enum AppEvent {
         process_exited: bool,
         /// Time of the screen observation.
         observed_at: Instant,
+    },
+    /// A background refresh of repository status finished.
+    GitStatusRefreshed {
+        /// One observation for each workspace the refresh covered.
+        results: Vec<maestro_workspace::workspace::WorkspaceGitStatus>,
+        /// Cache entries to retain, keyed by repository.
+        cache_updates: Vec<(std::path::PathBuf, crate::git::status::GitStatusCacheEntry)>,
     },
 }
 

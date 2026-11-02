@@ -265,7 +265,7 @@ impl Drop for InputRelease {
         let Some(mode) = self.mode.borrow().upgrade() else {
             return;
         };
-        assert!(mode.working.loading_animation.borrow().is_none());
+        assert!(mode.working_loader().is_none());
         assert!(
             self.footer.upgrade().is_some(),
             "input precedes footer disposal"

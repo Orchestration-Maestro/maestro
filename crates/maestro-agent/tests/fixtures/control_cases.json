@@ -82252,14 +82252,16 @@
           "type": "message_start",
           "message": {
             "role": "user",
-            "content": "prompt"
+            "content": "prompt",
+            "timestamp": 1.0
           }
         },
         {
           "type": "message_end",
           "message": {
             "role": "user",
-            "content": "prompt"
+            "content": "prompt",
+            "timestamp": 1.0
           }
         },
         {
@@ -82280,20 +82282,21 @@
             "provider": "fixture",
             "model": "fixture",
             "usage": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "totalTokens": 0,
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "totalTokens": 0.0,
               "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
+                "input": 0.0,
+                "output": 0.0,
+                "cacheRead": 0.0,
+                "cacheWrite": 0.0,
+                "total": 0.0
               }
             },
-            "stopReason": "toolUse"
+            "stopReason": "toolUse",
+            "timestamp": 2.0
           }
         },
         {
@@ -82314,20 +82317,21 @@
             "provider": "fixture",
             "model": "fixture",
             "usage": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "totalTokens": 0,
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "totalTokens": 0.0,
               "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
+                "input": 0.0,
+                "output": 0.0,
+                "cacheRead": 0.0,
+                "cacheWrite": 0.0,
+                "total": 0.0
               }
             },
-            "stopReason": "toolUse"
+            "stopReason": "toolUse",
+            "timestamp": 2.0
           }
         },
         {
@@ -82346,21 +82350,12 @@
             "content": [
               {
                 "type": "text",
-                "text": "result:call-0"
-              },
-              {
-                "type": "image",
-                "data": "AA==",
-                "mimeType": "image/png"
+                "text": "Operation aborted"
               }
             ],
-            "details": {
-              "z": 2,
-              "a": 1
-            },
-            "terminate": true
+            "details": {}
           },
-          "isError": false
+          "isError": true
         },
         {
           "type": "message_start",
@@ -82371,19 +82366,12 @@
             "content": [
               {
                 "type": "text",
-                "text": "result:call-0"
-              },
-              {
-                "type": "image",
-                "data": "AA==",
-                "mimeType": "image/png"
+                "text": "Operation aborted"
               }
             ],
-            "details": {
-              "z": 2,
-              "a": 1
-            },
-            "isError": false
+            "details": {},
+            "isError": true,
+            "timestamp": 1793447010372.0
           }
         },
         {
@@ -82395,19 +82383,12 @@
             "content": [
               {
                 "type": "text",
-                "text": "result:call-0"
-              },
-              {
-                "type": "image",
-                "data": "AA==",
-                "mimeType": "image/png"
+                "text": "Operation aborted"
               }
             ],
-            "details": {
-              "z": 2,
-              "a": 1
-            },
-            "isError": false
+            "details": {},
+            "isError": true,
+            "timestamp": 1793447010372.0
           }
         },
         {
@@ -82428,20 +82409,21 @@
             "provider": "fixture",
             "model": "fixture",
             "usage": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "totalTokens": 0,
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "totalTokens": 0.0,
               "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
+                "input": 0.0,
+                "output": 0.0,
+                "cacheRead": 0.0,
+                "cacheWrite": 0.0,
+                "total": 0.0
               }
             },
-            "stopReason": "toolUse"
+            "stopReason": "toolUse",
+            "timestamp": 2.0
           },
           "toolResults": [
             {
@@ -82451,28 +82433,119 @@
               "content": [
                 {
                   "type": "text",
-                  "text": "result:call-0"
-                },
-                {
-                  "type": "image",
-                  "data": "AA==",
-                  "mimeType": "image/png"
+                  "text": "Operation aborted"
                 }
               ],
-              "details": {
-                "z": 2,
-                "a": 1
-              },
-              "isError": false
+              "details": {},
+              "isError": true,
+              "timestamp": 1793447010372.0
             }
           ]
+        },
+        {
+          "type": "turn_start"
+        },
+        {
+          "type": "message_start",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "done"
+              }
+            ],
+            "api": "fixture",
+            "provider": "fixture",
+            "model": "fixture",
+            "usage": {
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "totalTokens": 0.0,
+              "cost": {
+                "input": 0.0,
+                "output": 0.0,
+                "cacheRead": 0.0,
+                "cacheWrite": 0.0,
+                "total": 0.0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 2.0
+          }
+        },
+        {
+          "type": "message_end",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "done"
+              }
+            ],
+            "api": "fixture",
+            "provider": "fixture",
+            "model": "fixture",
+            "usage": {
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "totalTokens": 0.0,
+              "cost": {
+                "input": 0.0,
+                "output": 0.0,
+                "cacheRead": 0.0,
+                "cacheWrite": 0.0,
+                "total": 0.0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 2.0
+          }
+        },
+        {
+          "type": "turn_end",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "done"
+              }
+            ],
+            "api": "fixture",
+            "provider": "fixture",
+            "model": "fixture",
+            "usage": {
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "totalTokens": 0.0,
+              "cost": {
+                "input": 0.0,
+                "output": 0.0,
+                "cacheRead": 0.0,
+                "cacheWrite": 0.0,
+                "total": 0.0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 2.0
+          },
+          "toolResults": []
         },
         {
           "type": "agent_end",
           "messages": [
             {
               "role": "user",
-              "content": "prompt"
+              "content": "prompt",
+              "timestamp": 1.0
             },
             {
               "role": "assistant",
@@ -82490,20 +82563,21 @@
               "provider": "fixture",
               "model": "fixture",
               "usage": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "totalTokens": 0,
+                "input": 0.0,
+                "output": 0.0,
+                "cacheRead": 0.0,
+                "cacheWrite": 0.0,
+                "totalTokens": 0.0,
                 "cost": {
-                  "input": 0,
-                  "output": 0,
-                  "cacheRead": 0,
-                  "cacheWrite": 0,
-                  "total": 0
+                  "input": 0.0,
+                  "output": 0.0,
+                  "cacheRead": 0.0,
+                  "cacheWrite": 0.0,
+                  "total": 0.0
                 }
               },
-              "stopReason": "toolUse"
+              "stopReason": "toolUse",
+              "timestamp": 2.0
             },
             {
               "role": "toolResult",
@@ -82512,19 +82586,40 @@
               "content": [
                 {
                   "type": "text",
-                  "text": "result:call-0"
-                },
-                {
-                  "type": "image",
-                  "data": "AA==",
-                  "mimeType": "image/png"
+                  "text": "Operation aborted"
                 }
               ],
-              "details": {
-                "z": 2,
-                "a": 1
+              "details": {},
+              "isError": true,
+              "timestamp": 1793447010372.0
+            },
+            {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "done"
+                }
+              ],
+              "api": "fixture",
+              "provider": "fixture",
+              "model": "fixture",
+              "usage": {
+                "input": 0.0,
+                "output": 0.0,
+                "cacheRead": 0.0,
+                "cacheWrite": 0.0,
+                "totalTokens": 0.0,
+                "cost": {
+                  "input": 0.0,
+                  "output": 0.0,
+                  "cacheRead": 0.0,
+                  "cacheWrite": 0.0,
+                  "total": 0.0
+                }
               },
-              "isError": false
+              "stopReason": "stop",
+              "timestamp": 2.0
             }
           ]
         }
@@ -82540,14 +82635,19 @@
         "message_end",
         "tool_execution_start:call-0",
         "before:call-0",
-        "execute:call-0",
-        "after:call-0",
         "tool_execution_end:call-0",
         "message_start",
         "message_end",
         "turn_end",
         "stop",
         "steering:1",
+        "turn_start",
+        "request",
+        "message_start",
+        "message_end",
+        "turn_end",
+        "stop",
+        "steering:2",
         "follow:0",
         "agent_end"
       ],
@@ -82556,7 +82656,7 @@
           "phase": "before",
           "id": "call-0",
           "args": {
-            "value": 7
+            "value": 7.0
           },
           "raw": {
             "value": "7"
@@ -82564,11 +82664,13 @@
           "history": [
             {
               "role": "user",
-              "content": "earlier"
+              "content": "earlier",
+              "timestamp": 1.0
             },
             {
               "role": "user",
-              "content": "prompt"
+              "content": "prompt",
+              "timestamp": 1.0
             },
             {
               "role": "assistant",
@@ -82586,20 +82688,21 @@
               "provider": "fixture",
               "model": "fixture",
               "usage": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "totalTokens": 0,
+                "input": 0.0,
+                "output": 0.0,
+                "cacheRead": 0.0,
+                "cacheWrite": 0.0,
+                "totalTokens": 0.0,
                 "cost": {
-                  "input": 0,
-                  "output": 0,
-                  "cacheRead": 0,
-                  "cacheWrite": 0,
-                  "total": 0
+                  "input": 0.0,
+                  "output": 0.0,
+                  "cacheRead": 0.0,
+                  "cacheWrite": 0.0,
+                  "total": 0.0
                 }
               },
-              "stopReason": "toolUse"
+              "stopReason": "toolUse",
+              "timestamp": 2.0
             }
           ],
           "assistant": {
@@ -82618,98 +82721,22 @@
             "provider": "fixture",
             "model": "fixture",
             "usage": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "totalTokens": 0,
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "totalTokens": 0.0,
               "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
+                "input": 0.0,
+                "output": 0.0,
+                "cacheRead": 0.0,
+                "cacheWrite": 0.0,
+                "total": 0.0
               }
             },
-            "stopReason": "toolUse"
+            "stopReason": "toolUse",
+            "timestamp": 2.0
           },
-          "signalSame": true
-        },
-        {
-          "phase": "execute",
-          "id": "call-0",
-          "args": {
-            "value": 7
-          },
-          "signalSame": true,
-          "aborted": true
-        },
-        {
-          "phase": "after",
-          "id": "call-0",
-          "args": {
-            "value": 7
-          },
-          "result": {
-            "content": [
-              {
-                "type": "text",
-                "text": "result:call-0"
-              },
-              {
-                "type": "image",
-                "data": "AA==",
-                "mimeType": "image/png"
-              }
-            ],
-            "details": {
-              "z": 2,
-              "a": 1
-            },
-            "terminate": true
-          },
-          "isError": false,
-          "history": [
-            {
-              "role": "user",
-              "content": "earlier"
-            },
-            {
-              "role": "user",
-              "content": "prompt"
-            },
-            {
-              "role": "assistant",
-              "content": [
-                {
-                  "type": "toolCall",
-                  "id": "call-0",
-                  "name": "echo",
-                  "arguments": {
-                    "value": "7"
-                  }
-                }
-              ],
-              "api": "fixture",
-              "provider": "fixture",
-              "model": "fixture",
-              "usage": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "totalTokens": 0,
-                "cost": {
-                  "input": 0,
-                  "output": 0,
-                  "cacheRead": 0,
-                  "cacheWrite": 0,
-                  "total": 0
-                }
-              },
-              "stopReason": "toolUse"
-            }
-          ],
           "signalSame": true
         },
         {
@@ -82730,20 +82757,21 @@
             "provider": "fixture",
             "model": "fixture",
             "usage": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "totalTokens": 0,
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "totalTokens": 0.0,
               "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
+                "input": 0.0,
+                "output": 0.0,
+                "cacheRead": 0.0,
+                "cacheWrite": 0.0,
+                "total": 0.0
               }
             },
-            "stopReason": "toolUse"
+            "stopReason": "toolUse",
+            "timestamp": 2.0
           },
           "toolResults": [
             {
@@ -82753,29 +82781,24 @@
               "content": [
                 {
                   "type": "text",
-                  "text": "result:call-0"
-                },
-                {
-                  "type": "image",
-                  "data": "AA==",
-                  "mimeType": "image/png"
+                  "text": "Operation aborted"
                 }
               ],
-              "details": {
-                "z": 2,
-                "a": 1
-              },
-              "isError": false
+              "details": {},
+              "isError": true,
+              "timestamp": 1793447010372.0
             }
           ],
           "history": [
             {
               "role": "user",
-              "content": "earlier"
+              "content": "earlier",
+              "timestamp": 1.0
             },
             {
               "role": "user",
-              "content": "prompt"
+              "content": "prompt",
+              "timestamp": 1.0
             },
             {
               "role": "assistant",
@@ -82793,20 +82816,21 @@
               "provider": "fixture",
               "model": "fixture",
               "usage": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "totalTokens": 0,
+                "input": 0.0,
+                "output": 0.0,
+                "cacheRead": 0.0,
+                "cacheWrite": 0.0,
+                "totalTokens": 0.0,
                 "cost": {
-                  "input": 0,
-                  "output": 0,
-                  "cacheRead": 0,
-                  "cacheWrite": 0,
-                  "total": 0
+                  "input": 0.0,
+                  "output": 0.0,
+                  "cacheRead": 0.0,
+                  "cacheWrite": 0.0,
+                  "total": 0.0
                 }
               },
-              "stopReason": "toolUse"
+              "stopReason": "toolUse",
+              "timestamp": 2.0
             },
             {
               "role": "toolResult",
@@ -82815,25 +82839,19 @@
               "content": [
                 {
                   "type": "text",
-                  "text": "result:call-0"
-                },
-                {
-                  "type": "image",
-                  "data": "AA==",
-                  "mimeType": "image/png"
+                  "text": "Operation aborted"
                 }
               ],
-              "details": {
-                "z": 2,
-                "a": 1
-              },
-              "isError": false
+              "details": {},
+              "isError": true,
+              "timestamp": 1793447010372.0
             }
           ],
           "newMessages": [
             {
               "role": "user",
-              "content": "prompt"
+              "content": "prompt",
+              "timestamp": 1.0
             },
             {
               "role": "assistant",
@@ -82851,20 +82869,21 @@
               "provider": "fixture",
               "model": "fixture",
               "usage": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "totalTokens": 0,
+                "input": 0.0,
+                "output": 0.0,
+                "cacheRead": 0.0,
+                "cacheWrite": 0.0,
+                "totalTokens": 0.0,
                 "cost": {
-                  "input": 0,
-                  "output": 0,
-                  "cacheRead": 0,
-                  "cacheWrite": 0,
-                  "total": 0
+                  "input": 0.0,
+                  "output": 0.0,
+                  "cacheRead": 0.0,
+                  "cacheWrite": 0.0,
+                  "total": 0.0
                 }
               },
-              "stopReason": "toolUse"
+              "stopReason": "toolUse",
+              "timestamp": 2.0
             },
             {
               "role": "toolResult",
@@ -82873,19 +82892,211 @@
               "content": [
                 {
                   "type": "text",
-                  "text": "result:call-0"
-                },
-                {
-                  "type": "image",
-                  "data": "AA==",
-                  "mimeType": "image/png"
+                  "text": "Operation aborted"
                 }
               ],
-              "details": {
-                "z": 2,
-                "a": 1
+              "details": {},
+              "isError": true,
+              "timestamp": 1793447010372.0
+            }
+          ]
+        },
+        {
+          "phase": "stop",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "done"
+              }
+            ],
+            "api": "fixture",
+            "provider": "fixture",
+            "model": "fixture",
+            "usage": {
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "totalTokens": 0.0,
+              "cost": {
+                "input": 0.0,
+                "output": 0.0,
+                "cacheRead": 0.0,
+                "cacheWrite": 0.0,
+                "total": 0.0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 2.0
+          },
+          "toolResults": [],
+          "history": [
+            {
+              "role": "user",
+              "content": "earlier",
+              "timestamp": 1.0
+            },
+            {
+              "role": "user",
+              "content": "prompt",
+              "timestamp": 1.0
+            },
+            {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "toolCall",
+                  "id": "call-0",
+                  "name": "echo",
+                  "arguments": {
+                    "value": "7"
+                  }
+                }
+              ],
+              "api": "fixture",
+              "provider": "fixture",
+              "model": "fixture",
+              "usage": {
+                "input": 0.0,
+                "output": 0.0,
+                "cacheRead": 0.0,
+                "cacheWrite": 0.0,
+                "totalTokens": 0.0,
+                "cost": {
+                  "input": 0.0,
+                  "output": 0.0,
+                  "cacheRead": 0.0,
+                  "cacheWrite": 0.0,
+                  "total": 0.0
+                }
               },
-              "isError": false
+              "stopReason": "toolUse",
+              "timestamp": 2.0
+            },
+            {
+              "role": "toolResult",
+              "toolCallId": "call-0",
+              "toolName": "echo",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Operation aborted"
+                }
+              ],
+              "details": {},
+              "isError": true,
+              "timestamp": 1793447010372.0
+            },
+            {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "done"
+                }
+              ],
+              "api": "fixture",
+              "provider": "fixture",
+              "model": "fixture",
+              "usage": {
+                "input": 0.0,
+                "output": 0.0,
+                "cacheRead": 0.0,
+                "cacheWrite": 0.0,
+                "totalTokens": 0.0,
+                "cost": {
+                  "input": 0.0,
+                  "output": 0.0,
+                  "cacheRead": 0.0,
+                  "cacheWrite": 0.0,
+                  "total": 0.0
+                }
+              },
+              "stopReason": "stop",
+              "timestamp": 2.0
+            }
+          ],
+          "newMessages": [
+            {
+              "role": "user",
+              "content": "prompt",
+              "timestamp": 1.0
+            },
+            {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "toolCall",
+                  "id": "call-0",
+                  "name": "echo",
+                  "arguments": {
+                    "value": "7"
+                  }
+                }
+              ],
+              "api": "fixture",
+              "provider": "fixture",
+              "model": "fixture",
+              "usage": {
+                "input": 0.0,
+                "output": 0.0,
+                "cacheRead": 0.0,
+                "cacheWrite": 0.0,
+                "totalTokens": 0.0,
+                "cost": {
+                  "input": 0.0,
+                  "output": 0.0,
+                  "cacheRead": 0.0,
+                  "cacheWrite": 0.0,
+                  "total": 0.0
+                }
+              },
+              "stopReason": "toolUse",
+              "timestamp": 2.0
+            },
+            {
+              "role": "toolResult",
+              "toolCallId": "call-0",
+              "toolName": "echo",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Operation aborted"
+                }
+              ],
+              "details": {},
+              "isError": true,
+              "timestamp": 1793447010372.0
+            },
+            {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "done"
+                }
+              ],
+              "api": "fixture",
+              "provider": "fixture",
+              "model": "fixture",
+              "usage": {
+                "input": 0.0,
+                "output": 0.0,
+                "cacheRead": 0.0,
+                "cacheWrite": 0.0,
+                "totalTokens": 0.0,
+                "cost": {
+                  "input": 0.0,
+                  "output": 0.0,
+                  "cacheRead": 0.0,
+                  "cacheWrite": 0.0,
+                  "total": 0.0
+                }
+              },
+              "stopReason": "stop",
+              "timestamp": 2.0
             }
           ]
         }
@@ -82894,24 +83105,86 @@
         [
           {
             "role": "user",
-            "content": "earlier"
+            "content": "earlier",
+            "timestamp": 1.0
           },
           {
             "role": "user",
-            "content": "prompt"
+            "content": "prompt",
+            "timestamp": 1.0
+          }
+        ],
+        [
+          {
+            "role": "user",
+            "content": "earlier",
+            "timestamp": 1.0
+          },
+          {
+            "role": "user",
+            "content": "prompt",
+            "timestamp": 1.0
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "call-0",
+                "name": "echo",
+                "arguments": {
+                  "value": "7"
+                }
+              }
+            ],
+            "api": "fixture",
+            "provider": "fixture",
+            "model": "fixture",
+            "usage": {
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "totalTokens": 0.0,
+              "cost": {
+                "input": 0.0,
+                "output": 0.0,
+                "cacheRead": 0.0,
+                "cacheWrite": 0.0,
+                "total": 0.0
+              }
+            },
+            "stopReason": "toolUse",
+            "timestamp": 2.0
+          },
+          {
+            "role": "toolResult",
+            "toolCallId": "call-0",
+            "toolName": "echo",
+            "content": [
+              {
+                "type": "text",
+                "text": "Operation aborted"
+              }
+            ],
+            "details": {},
+            "isError": true,
+            "timestamp": 1793447010372.0
           }
         ]
       ],
       "history": [
         {
           "role": "user",
-          "content": "earlier"
+          "content": "earlier",
+          "timestamp": 1.0
         }
       ],
       "returned": [
         {
           "role": "user",
-          "content": "prompt"
+          "content": "prompt",
+          "timestamp": 1.0
         },
         {
           "role": "assistant",
@@ -82929,20 +83202,21 @@
           "provider": "fixture",
           "model": "fixture",
           "usage": {
-            "input": 0,
-            "output": 0,
-            "cacheRead": 0,
-            "cacheWrite": 0,
-            "totalTokens": 0,
+            "input": 0.0,
+            "output": 0.0,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "totalTokens": 0.0,
             "cost": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "total": 0
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "total": 0.0
             }
           },
-          "stopReason": "toolUse"
+          "stopReason": "toolUse",
+          "timestamp": 2.0
         },
         {
           "role": "toolResult",
@@ -82951,19 +83225,40 @@
           "content": [
             {
               "type": "text",
-              "text": "result:call-0"
-            },
-            {
-              "type": "image",
-              "data": "AA==",
-              "mimeType": "image/png"
+              "text": "Operation aborted"
             }
           ],
-          "details": {
-            "z": 2,
-            "a": 1
+          "details": {},
+          "isError": true,
+          "timestamp": 1793447010372.0
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "done"
+            }
+          ],
+          "api": "fixture",
+          "provider": "fixture",
+          "model": "fixture",
+          "usage": {
+            "input": 0.0,
+            "output": 0.0,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "totalTokens": 0.0,
+            "cost": {
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "total": 0.0
+            }
           },
-          "isError": false
+          "stopReason": "stop",
+          "timestamp": 2.0
         }
       ]
     }

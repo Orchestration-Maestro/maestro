@@ -1,4 +1,5 @@
 //! An opt-in confirmation hook for illustrative dangerous bash patterns.
+// maestro-component: MAESTRO_PERMISSION_GATE_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

@@ -1,33 +1,23 @@
 //! Synchronous capture through the public native process interface.
 #![cfg(test)]
 #![cfg(unix)]
+use crate::child_programs::{self, async_command};
 use maestro_process::{OutputMode, SpawnSyncOptions, spawn_sync};
+use maestro_test_process::HARNESS_START;
+use maestro_test_process::child::harness;
 use std::{os::unix::process::ExitStatusExt, time::Duration};
 use tokio::process::Command;
 
 #[test]
 fn sync_capture_keeps_raw_stdout_status_and_closed_input() {
     let directory = std::env::temp_dir().canonicalize().unwrap();
-    let script = r"
-import os, sys
-assert sys.stdin.buffer.read() == b''
-os.write(2, b'ignored')
-def null(fd): return str(os.fstat(fd).st_rdev == os.stat(os.devnull).st_rdev)
-fields = sys.argv[2:] + [os.environ['MAESTRO_CAPTURE'], os.getcwd(), null(0), null(2)]
-os.write(1, '|'.join(fields).encode() + b'\x00\xff')
-sys.exit(int(sys.argv[1]))
-";
     for code in [0, 7] {
-        let mut command = Command::new("python3");
+        let mut command = async_command(
+            child_programs::capture_probe,
+            &[("CHILD_EXIT", &code.to_string())],
+        );
         command
-            .args([
-                "-c",
-                script,
-                &code.to_string(),
-                "literal $HOME;|",
-                "",
-                "literal $HOME;|",
-            ])
+            .args(["literal $HOME;|", "", "literal $HOME;|"])
             .env("MAESTRO_CAPTURE", "chosen")
             .current_dir(&directory);
         let output = spawn_sync(
@@ -47,7 +37,7 @@ sys.exit(int(sys.argv[1]))
         )
         .into_bytes();
         expected.extend_from_slice(b"\0\xff");
-        assert_eq!(output.stdout, expected);
+        assert_eq!(output.stdout, harness(&expected));
         assert!(output.stderr.is_empty());
         assert_eq!(output.status.code(), Some(code));
     }
@@ -56,11 +46,7 @@ sys.exit(int(sys.argv[1]))
 
 /// Checks that synchronous capture retains native signal status.
 fn assert_signal_status() {
-    let mut signal = Command::new("python3");
-    signal.args([
-        "-c",
-        "import os, signal; os.kill(os.getpid(), signal.SIGTERM)",
-    ]);
+    let mut signal = async_command(child_programs::self_terminating, &[]);
     let output = spawn_sync(
         &mut signal,
         SpawnSyncOptions::Capture {
@@ -73,7 +59,7 @@ fn assert_signal_status() {
     )
     .unwrap();
     assert_eq!(output.status.signal(), Some(15));
-    assert!(output.stdout.is_empty());
+    assert_eq!(output.stdout, harness(b""));
 }
 
 #[test]
@@ -175,14 +161,23 @@ fn bounded_capture_counts_combined_output() {
         ok: succeeds,
     } in rows
     {
-        let limit = Some(max_buffer);
-        let mut command = Command::new("python3");
-        command.args([
-            "-c",
-            "import os,sys; os.write(1,b'x'*int(sys.argv[1])); os.write(2,b'y'*int(sys.argv[2]))",
-            &out.to_string(),
-            &err.to_string(),
-        ]);
+        // The harness start bytes count toward the combined limit; a zero limit stays off.
+        let limit = Some(if max_buffer == 0 {
+            0
+        } else {
+            max_buffer + HARNESS_START.len()
+        });
+        let mut command = async_command(
+            child_programs::sized_writer,
+            &[
+                ("CHILD_OUT", &out.to_string()),
+                ("CHILD_ERR", &err.to_string()),
+            ],
+        );
+        // An overflowing child waits for the capture to stop it, so the stop never meets its exit.
+        if !succeeds {
+            command.env("CHILD_STOPPED", "1");
+        }
         let result = spawn_sync(
             &mut command,
             SpawnSyncOptions::Capture {
@@ -195,7 +190,7 @@ fn bounded_capture_counts_combined_output() {
         );
         if succeeds {
             let output = result.unwrap();
-            assert_eq!(output.stdout, vec![b'x'; out]);
+            assert_eq!(output.stdout, harness(&vec![b'x'; out]));
             assert_eq!(output.stderr, vec![b'y'; err]);
         } else {
             assert!(matches!(
@@ -215,8 +210,10 @@ fn bounded_capture_reaps_overflowing_child() {
     let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
     let port = listener.local_addr().unwrap().port();
     let worker = std::thread::spawn(move || {
-        let mut command = Command::new("python3");
-        command.args(["-c", "import os,socket,sys; s=socket.create_connection(('127.0.0.1',int(sys.argv[1]))); s.sendall(str(os.getpid()).encode()+b'\\n'); s.recv(1); os.write(1,b'x'*100000); s.recv(1)", &port.to_string()]);
+        let mut command = async_command(
+            child_programs::overflowing_writer,
+            &[("CHILD_PORT", &port.to_string())],
+        );
         spawn_sync(
             &mut command,
             SpawnSyncOptions::Capture {

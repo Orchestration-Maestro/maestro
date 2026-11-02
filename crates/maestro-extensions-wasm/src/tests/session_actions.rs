@@ -287,6 +287,27 @@ fn compaction_options_preserve_presence() -> Result<(), String> {
     on_both_adapters!(compaction_presence)
 }
 
+/// Malformed instructions fail before a compaction reaches the host.
+async fn invalid_compaction_instructions(driver: &mut impl Driver) -> Result<(), String> {
+    for value in [Value::Null, json!(false), json!(42), json!([]), json!({})] {
+        let before = admissions(driver);
+        let input = json!({"instructions":{"present":true,"value":value}});
+        assert_eq!(
+            driver
+                .run_plain_command("capture", &format!("compact {input}"))
+                .await,
+            Err("instructions are not a string".to_owned())
+        );
+        assert_eq!(admissions(driver), before);
+    }
+    Ok(())
+}
+
+#[test]
+fn compaction_instructions_reject_non_strings_before_admission() -> Result<(), String> {
+    on_both_adapters!(invalid_compaction_instructions)
+}
+
 /// Notification delivery stays closed until the synchronous admission has returned.
 async fn compaction_returns(driver: &mut impl Driver) -> Result<(), String> {
     driver

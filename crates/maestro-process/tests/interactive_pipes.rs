@@ -1,10 +1,10 @@
 //! Children whose three standard streams the caller drives directly.
 #![cfg(unix)]
+use crate::child_programs::{self, async_command};
 use maestro_process::child_process::{CapturedChild, Termination};
 use std::os::unix::process::ExitStatusExt;
 use std::time::Duration;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
-use tokio::process::Command;
 
 /// A runtime with the process and timer drivers.
 fn runtime() -> tokio::runtime::Runtime {
@@ -14,22 +14,22 @@ fn runtime() -> tokio::runtime::Runtime {
         .unwrap()
 }
 
+/// Reads output lines up to the child's `ready` line, past the harness start lines.
+async fn read_until_ready(output: &mut BufReader<tokio::process::ChildStdout>) {
+    loop {
+        let mut line = String::new();
+        assert_ne!(output.read_line(&mut line).await.unwrap(), 0);
+        if line == "ready\n" {
+            return;
+        }
+    }
+}
+
 #[test]
 fn interactive_pipes_keep_native_command_and_stream_ownership() {
     let dir = std::env::temp_dir().canonicalize().unwrap();
-    let script = r"
-import os, sys
-sys.stdout.write('ready\n'); sys.stdout.flush()
-line = sys.stdin.readline()
-sys.stderr.buffer.write(b'diag\xff'); sys.stderr.flush()
-sys.stdout.write('|'.join([line.strip(), *sys.argv[1:], os.getcwd(), os.environ['PROBE']]))
-sys.exit(3)
-";
-    let mut command = Command::new("python3");
-    command
-        .args(["-c", script, "two words", "$HOME"])
-        .current_dir(&dir)
-        .env("PROBE", "set");
+    let mut command = async_command(child_programs::line_answerer, &[("PROBE", "set")]);
+    command.args(["two words", "$HOME"]).current_dir(&dir);
     runtime().block_on(async {
         let mut child = CapturedChild::spawn_piped(&mut command).unwrap();
         let mut input = child.take_stdin().unwrap();
@@ -38,9 +38,7 @@ sys.exit(3)
         assert!(child.take_stdin().is_none());
         assert!(child.take_stdout().is_none());
         assert!(child.take_stderr().is_none());
-        let mut ready = String::new();
-        output.read_line(&mut ready).await.unwrap();
-        assert_eq!(ready, "ready\n");
+        read_until_ready(&mut output).await;
         assert!(child.try_wait().unwrap().is_none());
         input.write_all(b"hello\n").await.unwrap();
         let mut rest = String::new();
@@ -61,25 +59,28 @@ fn taken_pipes_keep_termination_and_reaping_policy() {
         after: Duration::from_millis(1000),
     };
     runtime().block_on(async {
-        for (handler, signal) in [("signal.SIG_DFL", 15), ("signal.SIG_IGN", 9)] {
-            let script = format!(
-                "import signal, sys\nsignal.signal(signal.SIGTERM, {handler})\n\
-                 print('ready', flush=True)\nsys.stdin.read()"
-            );
-            let mut child =
-                CapturedChild::spawn_piped(Command::new("python3").args(["-c", &script])).unwrap();
+        for (survives, signal) in [(false, 15), (true, 9)] {
+            let variables: &[(&str, &str)] = if survives {
+                &[("CHILD_SURVIVES", "1")]
+            } else {
+                &[]
+            };
+            let mut command = async_command(child_programs::terminable, variables);
+            let mut child = CapturedChild::spawn_piped(&mut command).unwrap();
             let _input = child.take_stdin().unwrap();
             let mut output = BufReader::new(child.take_stdout().unwrap());
-            let mut ready = String::new();
-            output.read_line(&mut ready).await.unwrap();
-            assert_eq!(ready, "ready\n");
+            read_until_ready(&mut output).await;
             child.terminate(escalate).await.unwrap();
             assert_eq!(child.wait().await.unwrap().signal(), Some(signal));
             assert_eq!(child.id(), None);
         }
-        let mut capture = CapturedChild::spawn(Command::new("python3").args(["-c", ""])).unwrap();
+        let mut capture =
+            CapturedChild::spawn(&mut async_command(child_programs::immediate_exit, &[])).unwrap();
         assert!(capture.take_stdin().is_none());
-        assert!(capture.take_stdout().is_some());
+        // The harness start bytes need a live reader until the child ends.
+        let stdout = capture.take_stdout();
+        assert!(stdout.is_some());
         assert!(capture.wait().await.unwrap().success());
+        drop(stdout);
     });
 }

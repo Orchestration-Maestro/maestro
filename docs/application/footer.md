@@ -33,9 +33,10 @@ local.block_on(&runtime, async { provider.dispose(); });
 
 `FooterOperations` supplies the watch registration, timer scheduling, polling
 and Git lookups, so native and controlled adapters are interchangeable;
-`NativeFooterOperations` (Unix) is the native adapter and other targets pass
-their own. Paths stay authored strings; their lexical rules are those of
-[`maestro-path`](../../crates/maestro-path/src/lib.rs).
+`NativeFooterOperations` (Unix and Windows) is the native adapter and other
+targets pass their own. Stable Rust has no file change time on Windows, so there
+the poll reports the modification time as the change time. Paths stay authored
+strings; their lexical rules are those of [`maestro-path`](../../crates/maestro-path/src/lib.rs).
 
 Construction walks from the working directory towards the root for the nearest
 `.git` entry. A directory needs a `HEAD`; a file is a worktree link when it
@@ -107,3 +108,15 @@ the branch, statuses and count readable. Changing the working directory after
 disposal retains synchronous metadata and notification behavior without opening
 new watch resources. Closing one provider's polling registration leaves other
 providers' registrations intact.
+
+## Working-directory display
+
+The footer shows the working directory with the home directory spelled `~` only
+for the home itself and the paths below it, through
+`maestro_path::shorten_home_normalized`, which folds `.` and `..` segments and
+doubled separators in the part below the home and writes it with the platform's
+separator. A sibling whose name starts with the home's name, such as `/srv/u2/x`
+under the home `/srv/u`, keeps its full path, as does any path when the home is
+empty, relative or the root directory. The session selector, the tree selector,
+the context-file list and the tool call rows use `maestro_path::shorten_home`,
+which keeps the part below the home exactly as written.

@@ -118,6 +118,7 @@ pub fn config() -> SettingsConfig {
             hide_thinking_block: false,
             collapse_changelog: true,
             enable_install_telemetry: false,
+            http_idle_timeout_ms: 300_000.0,
         },
         show_images: false,
         image_width_cells: 80.0,
@@ -154,23 +155,37 @@ impl Events {
     fn push(&self, name: &str, value: Value) {
         self.0.borrow_mut().push(vec![name.into(), value]);
     }
-    /// Boolean callback.
-    fn boolean(&self, name: &'static str) -> Rc<dyn Fn(bool)> {
+    /// Callback recording each value under `name`.
+    fn record<T: Into<Value> + 'static>(&self, name: &'static str) -> Rc<dyn Fn(T) -> bool> {
         let events = self.clone();
-        Rc::new(move |value| events.push(name, value.into()))
+        Rc::new(move |value: T| {
+            events.push(name, value.into());
+            true
+        })
     }
     /// Numeric callback for finite chosen values.
-    fn numeric(&self, name: &'static str) -> Rc<dyn Fn(f64)> {
+    fn numeric(&self, name: &'static str) -> Rc<dyn Fn(f64) -> bool> {
         let events = self.clone();
         Rc::new(move |value| {
             let value = serde_json::from_str(ryu_js::Buffer::new().format(value)).unwrap();
             events.push(name, value);
+            true
         })
     }
     /// Text callback.
-    fn text(&self, name: &'static str) -> Rc<dyn Fn(&str)> {
-        let events = self.clone();
-        Rc::new(move |value| events.push(name, value.into()))
+    fn text(&self, name: &'static str) -> Rc<dyn Fn(&str) -> bool> {
+        let record = self.record::<String>(name);
+        Rc::new(move |value| record(value.to_owned()))
+    }
+    /// Records warning members and their order.
+    fn warning(&self, value: WarningSettings) -> bool {
+        let keys: Vec<_> = value.0.keys().cloned().collect();
+        self.0.borrow_mut().push(vec![
+            "Warnings".into(),
+            serde_json::to_value(value).unwrap(),
+            serde_json::to_value(keys).unwrap(),
+        ]);
+        true
     }
     /// Every constructor notification.
     pub fn callbacks(&self, preview: bool) -> SettingsCallbacks {
@@ -183,50 +198,55 @@ impl Events {
         let warnings = self.clone();
         let cancel = self.clone();
         SettingsCallbacks {
-            on_auto_compact_change: self.boolean("AutoCompact"),
-            on_show_images_change: self.boolean("ShowImages"),
+            on_auto_compact_change: self.record("AutoCompact"),
+            on_show_images_change: self.record("ShowImages"),
             on_image_width_cells_change: self.numeric("ImageWidthCells"),
-            on_auto_resize_images_change: self.boolean("AutoResizeImages"),
-            on_block_images_change: self.boolean("BlockImages"),
-            on_enable_skill_commands_change: self.boolean("EnableSkillCommands"),
-            on_show_hardware_cursor_change: self.boolean("ShowHardwareCursor"),
+            on_auto_resize_images_change: self.record("AutoResizeImages"),
+            on_block_images_change: self.record("BlockImages"),
+            on_enable_skill_commands_change: self.record("EnableSkillCommands"),
+            on_show_hardware_cursor_change: self.record("ShowHardwareCursor"),
             on_editor_padding_x_change: self.numeric("EditorPaddingX"),
             on_autocomplete_max_visible_change: self.numeric("AutocompleteMaxVisible"),
-            on_clear_on_shrink_change: self.boolean("ClearOnShrink"),
-            on_show_terminal_progress_change: self.boolean("ShowTerminalProgress"),
+            on_clear_on_shrink_change: self.record("ClearOnShrink"),
+            on_show_terminal_progress_change: self.record("ShowTerminalProgress"),
 
             on_steering_mode_change: Rc::new(move |value: MessageDeliveryMode| {
                 steering.push("SteeringMode", value.as_str().into());
+                true
             }),
             on_follow_up_mode_change: Rc::new(move |value: MessageDeliveryMode| {
                 follow.push("FollowUpMode", value.as_str().into());
+                true
             }),
             on_transport_change: Rc::new(move |value: Transport| {
                 transport.push("Transport", serde_json::to_value(value).unwrap());
+                true
             }),
             on_thinking_level_change: Rc::new(move |value: ThinkingLevel| {
                 thinking.push("ThinkingLevel", serde_json::to_value(value).unwrap());
+                true
             }),
             on_theme_change: self.text("Theme"),
-            on_theme_preview: preview.then(|| self.text("preview")),
-            on_hide_thinking_block_change: self.boolean("HideThinkingBlock"),
-            on_collapse_changelog_change: self.boolean("CollapseChangelog"),
-            on_enable_install_telemetry_change: self.boolean("EnableInstallTelemetry"),
+            on_theme_preview: preview.then(|| {
+                let callback = self.text("preview");
+                Rc::new(move |value: &str| {
+                    callback(value);
+                }) as Rc<dyn Fn(&str)>
+            }),
+            on_hide_thinking_block_change: self.record("HideThinkingBlock"),
+            on_collapse_changelog_change: self.record("CollapseChangelog"),
+            on_enable_install_telemetry_change: self.record("EnableInstallTelemetry"),
+            on_http_idle_timeout_ms_change: self.numeric("HttpIdleTimeoutMs"),
             on_double_escape_action_change: Rc::new(move |value: DoubleEscapeAction| {
                 action.push("DoubleEscapeAction", value.as_str().into());
+                true
             }),
             on_tree_filter_mode_change: Rc::new(move |value: TreeFilterMode| {
                 filter.push("TreeFilterMode", value.as_str().into());
+                true
             }),
-            on_quiet_startup_change: self.boolean("QuietStartup"),
-            on_warnings_change: Rc::new(move |value: WarningSettings| {
-                let keys: Vec<_> = value.0.keys().cloned().collect();
-                warnings.0.borrow_mut().push(vec![
-                    "Warnings".into(),
-                    serde_json::to_value(value).unwrap(),
-                    serde_json::to_value(keys).unwrap(),
-                ]);
-            }),
+            on_quiet_startup_change: self.record("QuietStartup"),
+            on_warnings_change: Rc::new(move |value| warnings.warning(value)),
             on_cancel: Rc::new(move || cancel.0.borrow_mut().push(vec!["cancel".into()])),
         }
     }
@@ -257,6 +277,7 @@ pub fn select_with_images(
         "steering-mode",
         "follow-up-mode",
         "transport",
+        "http-idle-timeout",
         "hide-thinking",
         "collapse-changelog",
         "quiet-startup",
@@ -518,7 +539,10 @@ pub fn assert_inventory_row(selector: &maestro_chat::SettingsSelectorComponent, 
     let selected = rows.iter().find(|line| line.starts_with("→ ")).unwrap();
     assert!(selected.starts_with(&format!("→ {}", item.label)));
     assert!(selected.ends_with(&item.current_value));
-    assert!(rows.contains(&format!("  {}", item.description)));
+    assert!(rows.contains(&format!(
+        "  {}",
+        crate::platform_keys::on_this_platform(&item.description)
+    )));
     let before = list.render(240);
     input(&**list, &["\r"]);
     if item.submenu {
@@ -572,18 +596,19 @@ pub fn no_images() -> maestro_tui::TerminalImage {
 pub type Target = std::rc::Rc<std::cell::RefCell<std::rc::Weak<maestro_tui::SettingsList>>>;
 /// Records the live list after the original typed notification.
 pub fn observing<T: 'static>(
-    original: std::rc::Rc<dyn Fn(T)>,
+    original: std::rc::Rc<dyn Fn(T) -> bool>,
     target: Target,
     events: super::settings_selection_support::Events,
-) -> std::rc::Rc<dyn Fn(T)> {
+) -> std::rc::Rc<dyn Fn(T) -> bool> {
     use maestro_tui::Component;
     std::rc::Rc::new(move |value| {
-        original(value);
+        let accepted = original(value);
         let list = target.borrow().upgrade().unwrap();
         let lines = list.render(80);
         events.0.borrow_mut().push(vec![
             "during-callback".into(),
             serde_json::to_value(lines).unwrap(),
         ]);
+        accepted
     })
 }

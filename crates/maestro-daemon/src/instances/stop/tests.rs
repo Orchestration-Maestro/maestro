@@ -133,13 +133,42 @@ fn serve(
 
 /// An explicit named selection under `root`.
 fn named(root: &Scratch, name: &str) -> Selection {
-    Selection::from_args(
+    let selection = Selection::from_args(
         root.path().to_str().unwrap(),
         &[],
         Some(name),
         SelectionEnvironment::default(),
     )
-    .unwrap()
+    .unwrap();
+    for path in [
+        Path::new(&selection.api_socket_path),
+        &selection.client_socket_path,
+    ] {
+        assert!(
+            path.as_os_str().len() < 104,
+            "socket fixture too long: {path:?}"
+        );
+    }
+    selection
+}
+
+#[test]
+fn stop_socket_fixtures_fit_with_a_long_temporary_base() {
+    let parent = Scratch::new_socket().unwrap();
+    let long_base = parent.path().join("temporary-base-".repeat(10));
+    std::fs::create_dir(&long_base).unwrap();
+    let old_root = Scratch::new_in(&long_base).unwrap();
+    assert!(
+        old_root
+            .path()
+            .join("daemons/full-client/daemon-client.sock")
+            .as_os_str()
+            .len()
+            > 108
+    );
+    let root = Scratch::new_socket().unwrap();
+    let selection = named(&root, "full-client");
+    assert!(selection.client_socket_path.as_os_str().len() < 104);
 }
 
 /// The deadline diagnostic naming the still-reachable sockets.
@@ -157,7 +186,7 @@ fn still_reachable(label: &str, paths: &[&Path]) -> String {
 #[test]
 fn graceful_stop_retains_the_full_shutdown_budget() {
     assert_eq!(STOP_WAIT_TIMEOUT, Duration::from_secs(15));
-    let root = Scratch::new().unwrap();
+    let root = Scratch::new_socket().unwrap();
     let selection = named(&root, "slow");
     let api = Endpoint::bind(
         Path::new(&selection.api_socket_path),
@@ -188,7 +217,7 @@ fn retryable_stop_failures_defer_to_socket_reachability() {
         assert!(!stop_request_error_allows_wait(&kind.into()), "{kind:?}");
     }
     // A connection closed before its request is read still waits for the socket itself.
-    let root = Scratch::new().unwrap();
+    let root = Scratch::new_socket().unwrap();
     let selection = named(&root, "closing");
     let api = Endpoint::bind(
         Path::new(&selection.api_socket_path),
@@ -239,7 +268,7 @@ fn stop_socket_timeouts_keep_a_positive_minimum() {
 
 #[test]
 fn an_empty_stop_response_defers_to_socket_shutdown() {
-    let root = Scratch::new().unwrap();
+    let root = Scratch::new_socket().unwrap();
     let selection = named(&root, "empty");
     let api = Endpoint::bind(
         Path::new(&selection.api_socket_path),
@@ -259,7 +288,7 @@ fn an_empty_stop_response_defers_to_socket_shutdown() {
 
 #[test]
 fn a_silent_reachable_daemon_exhausts_the_stop_budget() {
-    let root = Scratch::new().unwrap();
+    let root = Scratch::new_socket().unwrap();
     let selection = named(&root, "silent");
     let path = PathBuf::from(&selection.api_socket_path);
     let api = Endpoint::bind(&path, Some(Answer::Hold), None);
@@ -272,7 +301,7 @@ fn a_silent_reachable_daemon_exhausts_the_stop_budget() {
 
 #[test]
 fn a_responding_reachable_daemon_still_exhausts_the_stop_budget() {
-    let root = Scratch::new().unwrap();
+    let root = Scratch::new_socket().unwrap();
     let selection = named(&root, "lingering");
     let path = PathBuf::from(&selection.api_socket_path);
     let api = Endpoint::bind(&path, Some(Answer::Bytes(STOPPED)), None);
@@ -285,7 +314,7 @@ fn a_responding_reachable_daemon_still_exhausts_the_stop_budget() {
 
 #[test]
 fn stop_errors_and_both_endpoints_preserve_the_deadline() {
-    let root = Scratch::new().unwrap();
+    let root = Scratch::new_socket().unwrap();
     let selection = named(&root, "work");
     let api_path = PathBuf::from(&selection.api_socket_path);
     let client_path = selection.client_socket_path.clone();
@@ -340,7 +369,7 @@ fn stop_errors_and_both_endpoints_preserve_the_deadline() {
 
 #[test]
 fn stopped_information_describes_the_overridden_endpoint() {
-    let root = Scratch::new().unwrap();
+    let root = Scratch::new_socket().unwrap();
     let mut selection = named(&root, "overridden");
     let decoy = Endpoint::bind(Path::new(&selection.api_socket_path), None, None);
     let overridden = root.path().join("override.sock");
@@ -355,7 +384,7 @@ fn stopped_information_describes_the_overridden_endpoint() {
 
 /// Sends a single typed-response witness through the stop endpoint.
 fn stop_reply(bytes: &'static [u8]) -> Result<(), String> {
-    let root = Scratch::new().unwrap();
+    let root = Scratch::new_socket().unwrap();
     let selection = named(&root, "typed");
     let api = Endpoint::bind(
         Path::new(&selection.api_socket_path),
@@ -380,7 +409,7 @@ fn successful_stop_replies_ignore_extra_error_members() {
 
 #[test]
 fn fragmented_stop_replies_do_not_extend_the_deadline() {
-    let root = Scratch::new().unwrap();
+    let root = Scratch::new_socket().unwrap();
     let selection = named(&root, "fragments");
     let api = Endpoint::bind(
         Path::new(&selection.api_socket_path),
@@ -436,7 +465,7 @@ fn saturated_endpoint(path: &Path) -> JoinHandle<()> {
 
 #[test]
 fn saturated_initial_connections_keep_the_stop_deadline() {
-    let root = Scratch::new().unwrap();
+    let root = Scratch::new_socket().unwrap();
     let selection = named(&root, "full");
     let peer = saturated_endpoint(Path::new(&selection.api_socket_path));
     let start = Instant::now();
@@ -455,7 +484,7 @@ fn saturated_initial_connections_keep_the_stop_deadline() {
 
 #[test]
 fn saturated_client_probes_keep_the_stop_deadline() {
-    let root = Scratch::new().unwrap();
+    let root = Scratch::new_socket().unwrap();
     let selection = named(&root, "full-client");
     let api = Endpoint::bind(
         Path::new(&selection.api_socket_path),

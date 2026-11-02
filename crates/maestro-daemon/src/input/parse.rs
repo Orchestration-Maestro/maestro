@@ -13,13 +13,30 @@ pub fn parse_terminal_key_sequence(data: &str) -> Option<TerminalKey> {
 
 /// Retain supported identities, phase, shifted alternate and associated text.
 fn project_key(sequence: Sequence) -> Option<TerminalKey> {
-    let code = match sequence.code {
+    let code = project_code(sequence.code)?;
+    let kind = match sequence.event_type {
+        KeyEventType::Press => ClientKeyKind::Press,
+        KeyEventType::Repeat => ClientKeyKind::Repeat,
+        KeyEventType::Release => ClientKeyKind::Release,
+    };
+    let mut key =
+        TerminalKey::new(code, toolkit_modifiers_to_wire(sequence.modifier)).with_kind(kind);
+    if let Some(shifted) = sequence.shifted {
+        key = key.with_shifted_codepoint(shifted);
+    }
+    Some(key.with_generated_text(sequence.generated_text))
+}
+
+/// Map a toolkit key onto the daemon key vocabulary, absent for keys it has no code for.
+pub(crate) fn project_code(code: Code) -> Option<ClientKeyCode> {
+    Some(match code {
         Code::Char(ch) => ClientKeyCode::Char(ch),
         Code::Key(named) => match named {
             Named::Escape => ClientKeyCode::Esc,
             Named::Enter => ClientKeyCode::Enter,
             Named::Tab => ClientKeyCode::Tab,
             Named::BackTab => ClientKeyCode::BackTab,
+            Named::Space => ClientKeyCode::Char(' '),
             Named::Backspace => ClientKeyCode::Backspace,
             Named::Insert => ClientKeyCode::Insert,
             Named::Delete => ClientKeyCode::Delete,
@@ -34,22 +51,11 @@ fn project_key(sequence: Sequence) -> Option<TerminalKey> {
             Named::Function(number) => ClientKeyCode::F(number),
             _ => return None,
         },
-    };
-    let kind = match sequence.event_type {
-        KeyEventType::Press => ClientKeyKind::Press,
-        KeyEventType::Repeat => ClientKeyKind::Repeat,
-        KeyEventType::Release => ClientKeyKind::Release,
-    };
-    let mut key =
-        TerminalKey::new(code, toolkit_modifiers_to_wire(sequence.modifier)).with_kind(kind);
-    if let Some(shifted) = sequence.shifted {
-        key = key.with_shifted_codepoint(shifted);
-    }
-    Some(key.with_generated_text(sequence.generated_text))
+    })
 }
 
 /// Convert the toolkit's Alt/Control layout, dropping lock bits.
-fn toolkit_modifiers_to_wire(modifier: u32) -> u8 {
+pub(crate) fn toolkit_modifiers_to_wire(modifier: u32) -> u8 {
     let mut wire = 0;
     for (bit, mapped) in [
         (1, KeyModifiers::SHIFT),

@@ -1,6 +1,7 @@
 //! Strict public-operation recording replay.
 pub mod runtime;
 use super::{manual_runtime, published, recording_terminal};
+use crate::platform_keys::for_this_platform;
 use maestro_chat::BashExecutionComponent;
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeOptions};
 use maestro_tui::{Component, TUI, TerminalImage};
@@ -35,6 +36,8 @@ struct Case {
     name: String,
     input: Input,
     expected: Expected,
+    /// Complete macOS layout when its key names differ.
+    expected_macos: Option<Expected>,
 }
 /// Constructor and ordered public operations.
 #[derive(Deserialize)]
@@ -190,7 +193,8 @@ pub fn replay(name: &str) {
     }
 }
 /// Executes a case using the public component and controlled host.
-fn run(case: Case, palettes: &BTreeMap<String, Palette>) {
+fn run(mut case: Case, palettes: &BTreeMap<String, Palette>) {
+    case.expected = for_this_platform(case.expected, case.expected_macos.take());
     let input = case.input;
     let runtime_requested = case.expected.runtime.is_some();
     bindings(&input.bindings.unwrap_or_default());
@@ -203,7 +207,8 @@ fn run(case: Case, palettes: &BTreeMap<String, Palette>) {
         TerminalImage::default(),
         None,
     );
-    let (state, live) = published::published(&theme(&palettes["a"], input.brand_mode.as_deref()));
+    let (state, live) =
+        published::published(&theme(&palettes["a"], input.brand_mode.as_deref())).unwrap();
     let command = input.command.unwrap_or_else(|| "echo hello".into());
     let component = BashExecutionComponent::new(
         command.clone(),

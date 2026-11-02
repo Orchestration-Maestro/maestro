@@ -139,7 +139,7 @@ async fn execute(
     if config["retain"].as_bool().unwrap_or(false) {
         let mut slot = kept.borrow_mut();
         slot.output = Some(options.on_data.clone());
-        slot.signal = options.signal.clone();
+        slot.signal.clone_from(&options.signal);
     }
     let chunks: Vec<Vec<u8>> =
         serde_json::from_value(config["chunks"].clone()).map_err(|e| e.to_string())?;

@@ -7,7 +7,7 @@ use serde_json::{Map, Value};
 use super::BedrockOptions;
 use super::messages::{messages, system_blocks, tool_config};
 use super::proxy::Environment;
-use super::thinking::{additional_model_request_fields, cache_point};
+use super::thinking::{additional_model_request_fields, cache_point, is_anthropic_claude_model};
 use super::wire::{
     ContentBlock, PromptVariableValues, SystemContentBlock, ToolConfiguration, Union, list, map,
 };
@@ -217,7 +217,10 @@ pub(super) fn payload<E: crate::ProviderExecution>(
         messages: Some(messages(model, &history, cache.as_ref())?),
         system: system_blocks(system_prompt, cache.as_ref()),
         inference_config: Some(Inference {
-            max_tokens: options.common.max_tokens,
+            max_tokens: options
+                .common
+                .max_tokens
+                .or_else(|| is_anthropic_claude_model(model).then_some(model.max_tokens)),
             temperature: options.common.temperature,
             ..Inference::default()
         }),

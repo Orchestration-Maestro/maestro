@@ -2,6 +2,7 @@
 //!
 //! Only the `wasm32` build exports the component; a native build links an empty library so a
 //! workspace test run still compiles every example.
+// maestro-component: MAESTRO_HOOK_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

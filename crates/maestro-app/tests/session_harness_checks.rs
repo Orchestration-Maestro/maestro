@@ -117,14 +117,6 @@ async fn echo_session(responses: Vec<Scripted>, executed: Rc<RefCell<bool>>) -> 
     .await
 }
 
-/// A scripted call of the echo tool with `text`.
-fn echo_call(text: &str) -> Scripted {
-    Scripted {
-        tool_calls: vec![("echo".into(), json!({"text": text}))],
-        ..Scripted::default()
-    }
-}
-
 #[test]
 fn observes_simple_text_response() {
     let expected = expected("simple_text_response");
@@ -166,7 +158,7 @@ fn observes_tool_call_response_triggers_tool_execution() {
     let expected = expected("tool_call_triggers_execution");
     on_task_set(|_| async {
         let executed = Rc::new(RefCell::new(false));
-        let responses = vec![echo_call("hi"), Scripted::text("done after tool")];
+        let responses = vec![Scripted::echo_call("hi"), Scripted::text("done after tool")];
         let h = echo_session(responses, Rc::clone(&executed)).await;
         prompt(&h, "use the tool").await;
         assert_eq!(json!(*executed.borrow()), expected["tool_executed"]);
@@ -359,7 +351,11 @@ fn tool_call_deltas_stream_before_the_call_runs() {
     let expected = expected("streams_tool_call_deltas");
     on_task_set(|_| async {
         let executed = Rc::new(RefCell::new(false));
-        let h = echo_session(vec![echo_call("hi"), Scripted::text("done")], executed).await;
+        let h = echo_session(
+            vec![Scripted::echo_call("hi"), Scripted::text("done")],
+            executed,
+        )
+        .await;
         let events = delivered_events(&h.session);
         prompt(&h, "use tool").await;
         let events = events.borrow();
@@ -386,7 +382,7 @@ fn orders_thinking_text_and_tool_call_streams() {
             thinking: Some("hmm".into()),
             ..Scripted {
                 text: Some("I will call a tool".into()),
-                ..echo_call("x")
+                ..Scripted::echo_call("x")
             }
         };
         let h = echo_session(vec![answer, Scripted::text("final")], executed).await;

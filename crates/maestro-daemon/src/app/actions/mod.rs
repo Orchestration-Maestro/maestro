@@ -4,6 +4,7 @@ mod close;
 mod death;
 mod events;
 mod focus;
+mod git_status;
 mod managed;
 mod metadata;
 mod notifications;

@@ -92,7 +92,7 @@ fn of_type<'a>(manager: &'a dyn ReadonlySessionManager, kind: &str) -> &'a Sessi
         .unwrap_or_else(|| panic!("no {kind} entry"))
 }
 
-/// The position of `entry`'s identity among the appended identities.
+/// Whether `entry`'s identity is the appended identity at `index`.
 fn identity_matches(ids: &[String], entry: &SessionEntry, index: usize) -> Value {
     json!(entry["id"] == json!(ids[index]))
 }
@@ -287,14 +287,23 @@ fn each_append_advances_the_active_leaf() {
     on_task_set(|_| async {
         let h = harness(HarnessOptions::default()).await;
         let mut manager = history(&h);
-        let mut advanced = Vec::new();
-        let appends: [&str; 4] = ["1", "2", "3", "4"];
-        for (offset, text) in appends.into_iter().enumerate() {
-            let id = manager
-                .append_message(user(&json!(text), offset as u64 + 1))
-                .expect("append");
-            advanced.push(json!(manager.get_leaf_id() == Some(id.as_str())));
-        }
+        let mut advanced = vec![json!(manager.get_leaf_id().is_none())];
+        let id = manager
+            .append_message(user(&json!("1"), 1))
+            .expect("append");
+        advanced.push(json!(manager.get_leaf_id() == Some(id.as_str())));
+        let id = manager
+            .append_message(crate::support::session_harness::assistant(
+                "2",
+                2,
+                &json!({}),
+            ))
+            .expect("append");
+        advanced.push(json!(manager.get_leaf_id() == Some(id.as_str())));
+        let id = manager
+            .append_thinking_level_change("high")
+            .expect("append");
+        advanced.push(json!(manager.get_leaf_id() == Some(id.as_str())));
         assert_eq!(json!(advanced), expected);
     });
 }
@@ -323,11 +332,12 @@ fn active_branch_lists_root_to_leaf_in_order() {
     );
     on_task_set(|_| async {
         let h = harness(HarnessOptions::default()).await;
-        let mut ids = append(&h, &linear_messages());
+        let mut ids = append(&h, &linear_messages()[..2]);
         let thinking = history(&h)
             .append_thinking_level_change("high")
             .expect("append");
         ids.push(thinking);
+        ids.extend(append(&h, &linear_messages()[2..]));
         let manager = history_view(&h);
         let branch: Vec<String> = manager
             .get_branch(None)

@@ -232,10 +232,10 @@ impl<C: FnMut() -> u128> App<C> {
         if changes_presentation {
             self.handle_internal_event(AppEvent::HookMetadataReported {
                 pane_id: pane,
-                report: AgentMetadataReport {
+                report: Box::new(AgentMetadataReport {
                     seq: None,
                     ..presentation
-                },
+                }),
             });
         }
         if tokens_changed {

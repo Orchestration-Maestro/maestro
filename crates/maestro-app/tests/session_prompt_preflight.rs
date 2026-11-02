@@ -377,6 +377,29 @@ fn prompt_without_credentials_is_refused() {
 }
 
 #[test]
+fn invalid_http_idle_timeout_refuses_prompt_before_turn_or_retry() {
+    on_task_set(|_| async {
+        tokio::time::pause();
+        let h = harness(HarnessOptions {
+            settings: json!({"httpIdleTimeoutMs": -5, "retry": {"enabled": true}}),
+            ..HarnessOptions::default()
+        })
+        .await;
+        let requests = script_responses(&h, vec![answer("unused", None, None)]);
+        let (accepted, options) = observed_preflight();
+        let result = h.session.prompt("hi", options).await;
+        assert_eq!(
+            result.unwrap_err().message,
+            "Invalid httpIdleTimeoutMs setting: -5"
+        );
+        assert_eq!(*accepted.borrow(), [false]);
+        assert!(requests.lock().unwrap().is_empty(), "no provider request");
+        assert!(h.events.borrow().is_empty(), "no turn or retry events");
+        assert!(h.session.messages().read().unwrap().is_empty());
+    });
+}
+
+#[test]
 fn throwing_input_handler_is_reported_and_the_prompt_continues() {
     on_task_set(|_| async {
         let expected = expected("a throwing input handler is reported and the prompt continues");

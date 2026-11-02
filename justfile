@@ -8,8 +8,9 @@ setup:
     mise exec -- prek install
 
 # Formatting, lint, public documentation and the checkout's workspace conventions.
-check:
+check: prepare-tests
     cargo fmt --all
+    just example-index-check
     just _check --workspace
     if [ -f crates/maestro-models/examples/browser_import_check.rs ]; then just check-browser-smoke; fi
 
@@ -21,8 +22,12 @@ _check *selection:
     @RUSTDOCFLAGS="-D warnings -D missing_docs" cargo doc {{quote(selection)}} --no-deps --locked
     cargo test -p maestro-test-conventions --locked --test integration -- --exact architecture::real_workspace_obeys_crate_rules dependency_locks::maestro_locked_resolution_keeps_checkout_clean
 
+# Stage the development tool that nextest's component setup runs.
+prepare-tests:
+    @if [ -d crates/maestro-tooling ]; then cargo run --quiet --locked -p maestro-tooling --bin development -- prepare-test-setup install target/test-setup; fi
+
 # Run all workspace tests.
-test *args:
+test *args: prepare-tests
     @cargo nextest run --workspace --locked {{quote(args)}}
     @cargo test --workspace --locked --doc {{quote(args)}}
 
@@ -267,10 +272,10 @@ browser-test:
     node crates/maestro-web/tests/sandbox_loading_support/run.cjs
     node crates/maestro-app/tests/browser/analysis_page.cjs
 
-# Render the extension index from each example's own documentation.
+# Generate the extension index, example targets and workspace-derived guide lock.
 example-index:
     cargo run --quiet --locked -p maestro-tooling --bin development -- example-index
 
-# Check the tracked extension index without rewriting it.
+# Check generated extension files without rewriting them.
 example-index-check:
     cargo run --quiet --locked -p maestro-tooling --bin development -- example-index --check

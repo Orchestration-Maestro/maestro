@@ -187,6 +187,75 @@ mod tests {
     }
 
     #[test]
+    fn http_idle_timeout_reads_numbers_and_disabled() {
+        support::assert_number(manager().0.get_http_idle_timeout_ms().unwrap(), 300_000.0);
+        for (stored, expected) in [
+            (json!(120_000), 120_000.0),
+            (json!(0), 0.0),
+            (json!("disabled"), 0.0),
+            (json!("DISABLED"), 0.0),
+            (json!(" 45000 "), 45_000.0),
+            (json!(1500.7), 1500.0),
+        ] {
+            let settings = manager_with(json!({ "httpIdleTimeoutMs": stored })).0;
+            support::assert_number(settings.get_http_idle_timeout_ms().unwrap(), expected);
+        }
+    }
+
+    #[test]
+    fn http_idle_timeout_rejects_invalid_stored_values() {
+        for (stored, text) in [
+            (json!(-5), "-5"),
+            (json!(-1), "-1"),
+            (json!("abc"), "abc"),
+            (json!("soon"), "soon"),
+            (json!(""), ""),
+            (json!(true), "true"),
+            (Value::Null, "null"),
+            (json!([1, 2]), "[1,2]"),
+            (json!({"n": 1}), "{\"n\":1}"),
+        ] {
+            let settings = manager_with(json!({"httpIdleTimeoutMs": stored})).0;
+            assert_eq!(
+                settings.get_http_idle_timeout_ms().unwrap_err().to_string(),
+                format!("Invalid httpIdleTimeoutMs setting: {text}")
+            );
+        }
+    }
+
+    #[test]
+    fn http_idle_timeout_saves_whole_milliseconds() {
+        for (value, saved) in [(60_000.0, 60_000), (0.0, 0), (2500.9, 2500)] {
+            let document =
+                saved_after(|settings| settings.set_http_idle_timeout_ms(value).unwrap());
+            assert_eq!(document, json!({ "httpIdleTimeoutMs": saved }));
+        }
+    }
+
+    #[test]
+    fn invalid_http_idle_timeout_edits_leave_storage_unchanged() {
+        let (mut settings, storage) = manager_with(json!({"httpIdleTimeoutMs": 1200}));
+        let before = support::raw(&*storage, SettingsScope::Global);
+        for (value, text) in [
+            (-5.0, "-5"),
+            (f64::NAN, "NaN"),
+            (f64::INFINITY, "Infinity"),
+            (f64::NEG_INFINITY, "-Infinity"),
+        ] {
+            assert_eq!(
+                settings
+                    .set_http_idle_timeout_ms(value)
+                    .unwrap_err()
+                    .to_string(),
+                format!("Invalid httpIdleTimeoutMs setting: {text}")
+            );
+            block_on(settings.flush());
+            assert_eq!(support::raw(&*storage, SettingsScope::Global), before);
+            support::assert_number(settings.get_http_idle_timeout_ms().unwrap(), 1200.0);
+        }
+    }
+
+    #[test]
     fn image_members_read_independently() {
         let (settings, _) =
             manager_with(json!({"images": {"autoResize": false, "blockImages": true}}));

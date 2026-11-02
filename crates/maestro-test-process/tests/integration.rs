@@ -2,7 +2,12 @@
 #![cfg(test)]
 
 mod checked_runs;
+mod child_helpers;
+mod command_route;
 mod environment_groups;
+mod native_aliases;
+mod user_cache;
+mod windows_console;
 
 use std::ffi::OsStr;
 use std::fmt::Write as _;

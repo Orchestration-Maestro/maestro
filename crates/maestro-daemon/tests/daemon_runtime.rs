@@ -42,7 +42,10 @@ fn app(config: &Config) -> maestro_daemon::app::App<fn() -> u128> {
 
 /// Builds the daemon with the setup entry's own harness arguments.
 #[cfg(unix)]
-fn app_with_args(config: &Config, args: &[String]) -> maestro_daemon::app::App<fn() -> u128> {
+pub(crate) fn app_with_args(
+    config: &Config,
+    args: &[String],
+) -> maestro_daemon::app::App<fn() -> u128> {
     let manifests = std::sync::Arc::new(std::sync::RwLock::new(
         maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
     ));
@@ -788,8 +791,8 @@ fn daemon_new_terminal_cwd_follows_the_link_above_a_tilde_path() {
     );
 }
 
-/// A `~` path's written rest joins the home directory as a native path, so an absolute rest
-/// replaces it.
+/// A `~` path's written rest joins below the home directory as written, so an absolute rest
+/// stays below it, and `~name` is not a home form.
 #[cfg(unix)]
 #[test]
 fn daemon_tilde_paths_join_their_rest_natively() {
@@ -802,9 +805,10 @@ fn daemon_tilde_paths_join_their_rest_natively() {
     let cases = [
         ("~", home.clone()),
         ("~/", format!("{home}/")),
-        ("~//note", "/note".to_owned()),
+        ("~//note", format!("{home}//note")),
         ("~/a/../f", format!("{home}/a/../f")),
-        ("~//x", "/x".to_owned()),
+        ("~//x", format!("{home}//x")),
+        ("~x", "~x".to_owned()),
     ];
     tokio::runtime::Builder::new_current_thread()
         .enable_all()

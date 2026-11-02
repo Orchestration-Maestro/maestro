@@ -1,14 +1,6 @@
 //! Owner-private cache observations alongside the renderer-facing witnesses.
 
-use crate::Terminal;
-
-/// Enabled terminal with a known pixel grid.
-fn terminal() -> Terminal {
-    let mut terminal = Terminal::new(10, 5, 100_000).unwrap();
-    terminal.enable_kitty_graphics();
-    terminal.resize(10, 5, 8, 16).unwrap();
-    terminal
-}
+use crate::tests::kitty_terminal::kitty_terminal as terminal;
 
 #[test]
 fn empty_generation_requires_observing_no_stored_placements() {

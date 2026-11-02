@@ -1,4 +1,5 @@
 //! Named model, thinking, tool and prompt configurations selected for one session.
+// maestro-component: MAESTRO_PRESET_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

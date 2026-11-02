@@ -35,6 +35,8 @@ pub struct AgentLoopConfigRecord<
     pub after_tool_call: Option<super::AfterToolCall<C, E>>,
     /// Optional completed-turn stop decision.
     pub should_stop_after_turn: Option<super::ShouldStopAfterTurn<C, E>>,
+    /// Optional replacement of the next request's context, model and thinking level.
+    pub prepare_next_turn: Option<super::PrepareNextTurn<C, E>>,
     /// Optional steering poll at entry and after a completed turn.
     pub get_steering_messages: Option<super::GetSteeringMessages<C, E>>,
     /// Optional follow-up poll when ordinary continuation is exhausted.

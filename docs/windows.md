@@ -98,17 +98,13 @@ environment. A shell fix does not enable the unsupported native selectors.
 
 ## Extension file access
 
-Native Windows extension filesystem access is incomplete: the current host
-exposes filesystem roots only on Unix. The Windows root mapping is tracked in
-[extension filesystem roots](https://github.com/Orchestration-Maestro/maestro/issues/2873).
-Do not rely on extension `std::fs` reads or writes on native Windows.
-
-The Windows root-mapping work has a documented reach limit: drives are captured when
-an extension loads (including mapped network drives), together with the working
-directory's own share. Other UNC shares remain unreachable, and a drive mounted
-later requires a reload. [Full Windows path access](https://github.com/Orchestration-Maestro/maestro/issues/2942)
-is still open; this guide does not promise that access. These extension limits
-are separate from the built-in file tools.
+Extensions reach every path the user can open on Windows, through `std::fs`
+and the 0.3 filesystem interfaces alike: any drive, including one mounted after
+the extension loads, any network share, junctions and absolute links. Convert a
+native path with `tools::path_utils::guest_path` before opening it; a share
+`\\server\share\x` becomes `/?/UNC/server/share/x`. See the
+[operating environment](extensions/host_io.md) for the spelling and its limits.
+These extension paths are separate from the built-in file tools.
 
 For compiler prerequisites and the Unicode build-directory limitation, use
 [Windows source-build troubleshooting](development.md#windows-x86-64-msvc-builds-with-unicode-paths).

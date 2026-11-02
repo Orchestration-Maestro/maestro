@@ -1,9 +1,8 @@
 //! One owned operating environment shared by both standard-interface generations.
+pub(crate) mod root;
 use maestro_extensions::helpers::guest_path;
 use std::{
-    collections::BTreeSet,
     io::{self, Write},
-    path::Path,
     pin::Pin,
     sync::{Arc, Mutex},
     task::{Context, Poll},
@@ -16,32 +15,33 @@ use wasmtime_wasi::{
 
 /// One caller-owned writer shared by all output handles of an instance.
 #[derive(Clone)]
-pub(crate) struct Output {
+pub struct Stdout {
     /// The caller's retained writer.
     writer: Arc<Mutex<Box<dyn Write + Send>>>,
     /// Whether the writer represents a terminal.
     terminal: bool,
 }
-impl Output {
+impl Stdout {
     /// Retains the supplied writer independently of the factory call.
-    pub(crate) fn new(writer: Box<dyn Write + Send>, terminal: bool) -> Self {
+    #[must_use]
+    pub fn new(writer: Box<dyn Write + Send>, terminal: bool) -> Self {
         Self {
             writer: Arc::new(Mutex::new(writer)),
             terminal,
         }
     }
 }
-impl IsTerminal for Output {
+impl IsTerminal for Stdout {
     fn is_terminal(&self) -> bool {
         self.terminal
     }
 }
-impl StdoutStream for Output {
+impl StdoutStream for Stdout {
     fn async_stream(&self) -> Box<dyn AsyncWrite + Send + Sync> {
         Box::new(self.clone())
     }
 }
-impl AsyncWrite for Output {
+impl AsyncWrite for Stdout {
     fn poll_write(
         self: Pin<&mut Self>,
         _: &mut Context<'_>,
@@ -66,26 +66,8 @@ impl AsyncWrite for Output {
         self.poll_flush(cx)
     }
 }
-/// Opens every accessible drive and the cwd's own root, such as a share, under its guest name.
-///
-/// Windows has no single root. A root that cannot be opened leaves the others accessible.
-fn windows_roots(builder: &mut WasiCtxBuilder, cwd: Option<&str>) {
-    let cwd_root = cwd.and_then(|cwd| Path::new(cwd).ancestors().last()?.to_str());
-    let roots: BTreeSet<_> = ('A'..='Z')
-        .map(|letter| format!(r"{letter}:\"))
-        .chain(cwd_root.map(str::to_owned))
-        .collect();
-    for root in roots {
-        let name = guest_path(&root);
-        let _unavailable = builder.preopened_dir(
-            &root,
-            name.trim_end_matches('/'),
-            wasmtime_wasi::FsPerms::ReadWrite,
-        );
-    }
-}
 /// Copies the native environment, reserving the artifact location for this instance.
-pub(crate) fn build(path: &str, output: Option<Output>) -> wasmtime::Result<WasiCtx> {
+pub(crate) fn build(path: &str, output: Option<Stdout>) -> WasiCtx {
     let env: Vec<_> = std::env::vars_os()
         .filter(|(key, _)| {
             if cfg!(windows) {
@@ -116,16 +98,11 @@ pub(crate) fn build(path: &str, output: Option<Output>) -> wasmtime::Result<Wasi
     let cwd = std::env::current_dir()
         .ok()
         .and_then(|cwd| cwd.to_str().map(str::to_owned));
-    if cfg!(unix) {
-        builder.preopened_dir("/", "/", wasmtime_wasi::FsPerms::ReadWrite)?;
-    } else if cfg!(windows) {
-        windows_roots(&mut builder, cwd.as_deref());
-    }
     if let Some(cwd) = cwd {
         builder.initial_cwd(guest_path(&cwd));
     }
     if let Some(output) = output {
         builder.stdout(output);
     }
-    Ok(builder.build())
+    builder.build()
 }

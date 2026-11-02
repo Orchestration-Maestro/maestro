@@ -100,7 +100,7 @@ fn edit_execution_inherits_matching_corrections() {
     native_cases("edit_execution_inherits_matching_corrections");
 }
 
-use maestro_models::{Cancellation, DiagnosticErrorInfo};
+use maestro_models::{Cancellation, DiagnosticCode, DiagnosticErrorInfo};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use write_support::{Mode, failure, poll_once, ready};
@@ -276,7 +276,12 @@ fn edit_synchronous_abort_wins_over_stage_result() {
         .unwrap();
         assert!(!expected.ok && expected.calls.is_none());
         assert_eq!(Some(ops.script.names()), expected.events);
-        assert_eq!(error.message, "Operation aborted");
+        let message = if args.fails.unwrap() && args.stage != "access" {
+            "stage failed"
+        } else {
+            "Operation aborted"
+        };
+        assert_eq!(error.message, message);
     }
     let signal = Cancellation::new();
     let ops = Arc::new(Operations::new(b"hello"));
@@ -319,13 +324,14 @@ fn edit_preaborted_call_starts_no_operations() {
 }
 
 #[test]
-fn edit_abort_drops_each_pending_stage_and_releases_queue() {
-    for row in rows("edit_abort_drops_each_pending_stage_and_releases_queue") {
+fn edit_abort_keeps_each_pending_stage_and_queue() {
+    for row in rows("edit_abort_keeps_each_pending_stage_and_queue") {
         let args: StageInput = serde_json::from_value(row.input).unwrap();
         assert!(args.coded.is_none() && args.fails.is_none());
         let expected: Vec<String> = serde_json::from_value(row.expected).unwrap();
         let signal = Cancellation::new();
-        let ops = Arc::new(Operations::new(b"hello").at(&args.stage, Mode::Pend, None));
+        let (finish, mode) = write_support::Gate::operation();
+        let ops = Arc::new(Operations::new(b"hello").at(&args.stage, mode, None));
         let mut pending = start(
             &tool(&ops, "/work"),
             input("pending-file", "hello", "world"),
@@ -334,15 +340,24 @@ fn edit_abort_drops_each_pending_stage_and_releases_queue() {
         assert!(poll_once(&mut pending).is_pending());
         let journal = write_support::Journal::default();
         let after = journal.clone();
-        let mut successor =
-            maestro_tools::with_file_mutation_queue("/work/pending-file", move || async move {
-                after.push("successor");
-                Ok(())
-            });
+        let next_ops = Arc::new(Operations::new(b"hello"));
+        let next = start(
+            &tool(&next_ops, "/work"),
+            input("pending-file", "hello", "again"),
+            None,
+        );
+        let mut successor: maestro_models::BoxFuture<_> = Box::pin(async move {
+            let result = next.await;
+            after.push("successor");
+            result
+        });
         assert!(poll_once(&mut successor).is_pending());
         signal.abort();
+        assert!(poll_once(&mut pending).is_pending());
+        assert!(poll_once(&mut successor).is_pending());
+        assert!(next_ops.events.entries().is_empty());
+        finish.open();
         let error = ready(&mut pending).err().unwrap();
-        assert_eq!(ops.script.dropped.load(Ordering::SeqCst), 1);
         let mut events = ops.events.entries();
         events.push(error.message);
         ready(&mut successor).unwrap();
@@ -853,4 +868,43 @@ fn edit_path_capture_reads_ambient_state_only_when_needed() {
         }
     }
     std::env::set_current_dir(std::env::temp_dir()).unwrap();
+}
+
+#[test]
+fn edit_access_cancellation_overrides_missing_file() {
+    let signal = Cancellation::new();
+    let mut missing = failure("No such file or directory");
+    missing.code = Some(DiagnosticCode::Text("ENOENT".into()));
+    let ops =
+        Arc::new(Operations::new(b"").at("access", Mode::AbortThenFail(missing), Some(&signal)));
+
+    let error = run(start(
+        &tool(&ops, "/work"),
+        input("missing-file", "hello", "world"),
+        Some(signal),
+    ))
+    .err()
+    .unwrap();
+
+    assert_eq!(error.message, "Operation aborted");
+    assert_eq!(ops.script.names(), ["access"]);
+    assert!(ops.bytes.lock().unwrap().is_empty());
+}
+
+#[test]
+fn edit_read_cancellation_starts_no_write() {
+    let signal = Cancellation::new();
+    let ops = Arc::new(Operations::new(b"hello").at("read", Mode::AbortThenSucceed, Some(&signal)));
+
+    let error = run(start(
+        &tool(&ops, "/work"),
+        input("read-abort-file", "hello", "world"),
+        Some(signal),
+    ))
+    .err()
+    .unwrap();
+
+    assert_eq!(error.message, "Operation aborted");
+    assert_eq!(ops.script.names(), ["access", "read"]);
+    assert_eq!(*ops.bytes.lock().unwrap(), b"hello");
 }

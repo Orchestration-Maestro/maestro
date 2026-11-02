@@ -1,4 +1,5 @@
 //! An opt-in bash override using the host's native shell factory.
+// maestro-component: MAESTRO_BASH_SPAWN_HOOK_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

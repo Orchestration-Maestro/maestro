@@ -44,11 +44,15 @@ impl ModelRegistry {
 }
 
 impl ModelRegistry {
-    /// Resolve keys and headers in layer order through the catalog's own handle,
-    /// returning the winning error.
+    /// Resolve request keys, layered headers and required provider account endpoints.
+    /// Returns the winning configuration or credential error.
     pub async fn get_api_key_and_headers(&self, model: &Arc<RwLock<Model>>) -> ResolvedRequestAuth {
         match self.resolve_request(model).await {
-            Ok((api_key, headers)) => ResolvedRequestAuth::Ok { api_key, headers },
+            Ok((api_key, headers, base_url)) => ResolvedRequestAuth::Ok {
+                api_key,
+                headers,
+                base_url,
+            },
             Err(error) => ResolvedRequestAuth::Error { error },
         }
     }
@@ -66,9 +70,24 @@ impl ModelRegistry {
             config.as_ref().and_then(|c| c.api_key.as_deref()),
             model,
         )?;
+        let headers = self.resolve_headers(model, config.as_deref(), api_key.as_deref())?;
+        let descriptor = model.read().unwrap_or_else(PoisonError::into_inner).clone();
+        let base_url = self
+            .auth_storage
+            .cloudflare_base_url(&descriptor)
+            .map_err(|e| e.message)?;
+        Ok((api_key, headers, base_url))
+    }
+    /// Resolve and merge provider, model and synthesized authentication headers in order.
+    fn resolve_headers(
+        &self,
+        model: &Arc<RwLock<Model>>,
+        config: Option<&ProviderRequestConfig>,
+        api_key: Option<&str>,
+    ) -> Result<Option<IndexMap<String, String>>, String> {
         let provider = read_provider(model);
         let provider_headers = resolve_headers_or_throw(
-            config.as_ref().and_then(|c| c.headers.as_ref()),
+            config.and_then(|c| c.headers.as_ref()),
             &format!("provider \"{provider}\""),
             &*self.config_values,
         )
@@ -98,15 +117,15 @@ impl ModelRegistry {
             .unwrap_or_default();
         headers.extend(provider_headers.into_iter().flatten());
         headers.extend(model_headers.into_iter().flatten());
-        if config.as_ref().is_some_and(|c| c.auth_header) {
-            let Some(key) = api_key.as_ref().filter(|key| !key.is_empty()) else {
+        if config.is_some_and(|c| c.auth_header) {
+            let Some(key) = api_key.filter(|key| !key.is_empty()) else {
                 let provider = read_provider(model);
                 return Err(format!("No API key found for \"{provider}\""));
             };
             headers.insert("Authorization".into(), format!("Bearer {key}"));
         }
         let headers = super::composition::ordered(Some(headers)).filter(|h| !h.is_empty());
-        Ok((api_key, headers))
+        Ok(headers)
     }
     /// Resolve configured fallback only when storage supplied no key.
     fn resolve_key(
@@ -134,4 +153,8 @@ impl ModelRegistry {
     }
 }
 /// Internal success payload before conversion to the public result.
-type RequestValues = (Option<String>, Option<IndexMap<String, String>>);
+type RequestValues = (
+    Option<String>,
+    Option<IndexMap<String, String>>,
+    Option<String>,
+);

@@ -338,7 +338,7 @@ impl Host for ControlledHost {
     fn execute(&mut self, step: &Step) -> Result<Value, String> {
         let tool = step.tool.as_deref().ok_or("a recorded tool")?;
         let key = self.host.observed().callback(&format!("tool {tool}"))?;
-        let params = step.params.clone().ok_or("recorded params")?;
+        let params = step.params.as_ref().ok_or("recorded params")?;
         let flag = Flag::default();
         if step.aborted {
             flag.abort();
@@ -435,7 +435,7 @@ impl Host for ComponentHost {
             .harness
             .callback(&format!("tool {tool}"))
             .map_err(|error| error.to_string())?;
-        let params = step.params.clone().ok_or("recorded params")?;
+        let params = step.params.as_ref().ok_or("recorded params")?;
         let resources = ComponentToolCapabilities {
             ctx: self
                 .harness
@@ -451,7 +451,7 @@ impl Host for ComponentHost {
                 .then(|| self.harness.update().map_err(|error| error.to_string()))
                 .transpose()?,
         };
-        let encoded = invoke_tool_on_component(&mut self.harness, key, &params, resources)?;
+        let encoded = invoke_tool_on_component(&mut self.harness, key, params, resources)?;
         Ok(result_value(&encoded))
     }
 
@@ -497,7 +497,8 @@ fn dynamic_tools_duplicate_names_keep_first_registration() -> Result<(), String>
     )
 }
 
-/// Both tool families echo every recorded message behind their own prefix.
+/// The message rows echo through both tool families, each behind its own prefix; the
+/// extra-argument and unused-cancellation rows invoke only the session tool.
 #[test]
 fn dynamic_tools_echo_preserves_messages() -> Result<(), String> {
     replay(|case| case.group == Group::Echo, ControlledHost::new)
