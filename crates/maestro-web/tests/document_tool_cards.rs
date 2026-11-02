@@ -1,6 +1,9 @@
 //! Native preparation and independent opened-owner transfer for document cards.
-#![cfg(test)]
-use crate::{document_card_support as cards, recipes};
+#![cfg(all(test, not(target_arch = "wasm32")))]
+use crate::{
+    document_card_support as cards,
+    recipes::{self, view},
+};
 use maestro_app::JsonObject;
 use maestro_web::{
     get_tool_renderer, register_tool_renderer, render_tool, set_show_json_mode,
@@ -74,41 +77,75 @@ fn document_cards_register_once_with_replacement_removal_and_json_mode() {
 
 #[test]
 fn document_renderers_keep_model_json_and_native_operands() {
-    use maestro_app::browser::tools::{
-        extract_document::{ExtractDocumentParams, ExtractDocumentResult},
-        javascript_repl::{JavaScriptReplParams, JavaScriptReplToolResult},
-    };
     for name in ["javascript_repl", "extract_document"] {
         let params = json!({"title":"title", "code":"YWJj", "url":"url", "unused":true});
         let model: JsonObject = serde_json::from_value(params.clone()).unwrap();
-        assert!(
-            !render_tool::<_, Value>(name, Some(ToolParams::object(&model)), None, false)
-                .unwrap()
-                .is_custom
-        );
+        let pending =
+            render_tool::<_, Value>(name, Some(ToolParams::object(&model)), None, false).unwrap();
+        assert!(!pending.is_custom);
+        // Parameters without a result select the pending disclosure; once streaming has ended
+        // the header no longer shows progress.
+        let pending = view(&pending);
+        assert_eq!(pending["state"], "Complete", "{name}");
+        assert_eq!(pending["body"]["phase"], "pending", "{name}");
         assert!(
             !render_tool::<_, Value>(name, Some(ToolParams::json(&params)), None, false)
                 .unwrap()
                 .is_custom
         );
     }
+}
+
+#[test]
+fn javascript_disclosures_keep_code_console_and_decoded_file_tiles() {
+    use maestro_app::browser::tools::javascript_repl::{
+        JavaScriptReplFile, JavaScriptReplParams, JavaScriptReplToolResult,
+    };
     let repl =
         get_tool_renderer::<JavaScriptReplParams, JavaScriptReplToolResult>("javascript_repl")
             .unwrap();
-    let result = recipes::message(Some(JavaScriptReplToolResult { files: None }));
-    assert!(
-        !repl
-            .render(
-                Some(&JavaScriptReplParams {
-                    title: "owned".into(),
-                    code: "YWJj".into()
-                }),
-                Some((&result).into()),
-                false
-            )
-            .unwrap()
-            .is_custom
+    let result = recipes::message(Some(JavaScriptReplToolResult {
+        files: Some(vec![JavaScriptReplFile {
+            file_name: "notes.txt".into(),
+            mime_type: "text/plain".into(),
+            size: 3,
+            content_base64: "YWJj".into(),
+        }]),
+    }));
+    let shown = repl
+        .render(
+            Some(&JavaScriptReplParams {
+                title: "owned".into(),
+                code: "YWJj".into(),
+            }),
+            Some((&result).into()),
+            false,
+        )
+        .unwrap();
+    assert!(!shown.is_custom);
+    // A failed result replaces the pending subtree with the result template.
+    let shown = view(&shown);
+    assert_eq!(shown["state"], "Error");
+    assert_eq!(shown["body"]["phase"], "result");
+    assert_eq!(
+        shown["body"]["code"],
+        json!({"code": "YWJj", "language": "javascript"})
     );
+    assert_eq!(
+        shown["body"]["console"],
+        json!({"text": "one\ntwo", "variant": "error"})
+    );
+    assert_eq!(
+        shown["attachments"],
+        json!([{"fileName": "notes.txt", "extractedText": "abc"}])
+    );
+}
+
+#[test]
+fn extraction_disclosures_keep_failed_result_url_and_output() {
+    use maestro_app::browser::tools::extract_document::{
+        ExtractDocumentParams, ExtractDocumentResult,
+    };
     let extract =
         get_tool_renderer::<ExtractDocumentParams, ExtractDocumentResult>("extract_document")
             .unwrap();
@@ -118,16 +155,18 @@ fn document_renderers_keep_model_json_and_native_operands() {
         format: "ßé".into(),
         size: 1280,
     }));
-    assert!(
-        !extract
-            .render(
-                Some(&ExtractDocumentParams { url: "url".into() }),
-                Some((&result).into()),
-                false
-            )
-            .unwrap()
-            .is_custom
-    );
+    let shown = extract
+        .render(
+            Some(&ExtractDocumentParams { url: "url".into() }),
+            Some((&result).into()),
+            false,
+        )
+        .unwrap();
+    assert!(!shown.is_custom);
+    let shown = view(&shown);
+    assert_eq!(shown["state"], "Error");
+    assert_eq!(shown["body"]["phase"], "result");
+    assert_eq!(shown["body"]["url"], "url");
 }
 
 #[test]
