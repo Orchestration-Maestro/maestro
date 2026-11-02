@@ -218,10 +218,10 @@
     }
   },
   {
-    "name": "cloudflare_url_substring",
+    "name": "cloudflare_path_is_not_the_host",
     "model": {
       "provider": "unrelated",
-      "baseUrl": "https://proxy.example/forward/api.cloudflare.com"
+      "baseUrl": "https://proxy.example/api.cloudflare.com/v1"
     },
     "settings": {
       "enableInstallTelemetry": true
@@ -235,7 +235,6 @@
     "expected": {
       "present": true,
       "headers": {
-        "User-Agent": "maestro-coding-agent",
         "X-Credential": "credential",
         "X-Caller": "caller"
       }
@@ -266,7 +265,7 @@
     }
   },
   {
-    "name": "gateway_url_substring",
+    "name": "gateway_path_is_not_the_host",
     "model": {
       "provider": "unrelated",
       "baseUrl": "https://proxy.example/forward/gateway.ai.cloudflare.com"
@@ -283,7 +282,6 @@
     "expected": {
       "present": true,
       "headers": {
-        "User-Agent": "maestro-coding-agent",
         "X-Credential": "credential",
         "X-Caller": "caller"
       }
@@ -336,7 +334,7 @@
     }
   },
   {
-    "name": "url_comparison_is_case_sensitive",
+    "name": "host_comparison_ignores_case",
     "model": {
       "provider": "unrelated",
       "baseUrl": "https://API.CLOUDFLARE.COM/v1"
@@ -353,6 +351,7 @@
     "expected": {
       "present": true,
       "headers": {
+        "User-Agent": "maestro-coding-agent",
         "X-Credential": "credential",
         "X-Caller": "caller"
       }
@@ -599,6 +598,227 @@
     "expected": {
       "present": true,
       "headers": {}
+    }
+  },
+  {
+    "name": "nvidia_host",
+    "model": {
+      "provider": "unrelated",
+      "baseUrl": "https://integrate.api.nvidia.com/v1"
+    },
+    "settings": {
+      "enableInstallTelemetry": true
+    },
+    "credentialHeaders": {
+      "X-Credential": "credential"
+    },
+    "requestHeaders": {
+      "X-Caller": "caller"
+    },
+    "expected": {
+      "present": true,
+      "headers": {
+        "X-BILLING-INVOKE-ORIGIN": "maestro",
+        "X-Credential": "credential",
+        "X-Caller": "caller"
+      }
+    }
+  },
+  {
+    "name": "nvidia_provider",
+    "model": {
+      "provider": "nvidia",
+      "baseUrl": "https://unrelated.example/v1"
+    },
+    "settings": {
+      "enableInstallTelemetry": true
+    },
+    "credentialHeaders": {
+      "X-Credential": "credential"
+    },
+    "requestHeaders": {
+      "X-Caller": "caller"
+    },
+    "expected": {
+      "present": true,
+      "headers": {
+        "X-BILLING-INVOKE-ORIGIN": "maestro",
+        "X-Credential": "credential",
+        "X-Caller": "caller"
+      }
+    }
+  },
+  {
+    "name": "nvidia_path_is_not_the_host",
+    "model": {
+      "provider": "unrelated",
+      "baseUrl": "https://proxy.example/integrate.api.nvidia.com/v1"
+    },
+    "settings": {
+      "enableInstallTelemetry": true
+    },
+    "credentialHeaders": {
+      "X-Credential": "credential"
+    },
+    "requestHeaders": {
+      "X-Caller": "caller"
+    },
+    "expected": {
+      "present": true,
+      "headers": {
+        "X-Credential": "credential",
+        "X-Caller": "caller"
+      }
+    }
+  },
+  {
+    "name": "opencode_host_session",
+    "model": {
+      "provider": "unrelated",
+      "baseUrl": "https://opencode.ai/zen/v1"
+    },
+    "settings": {
+      "enableInstallTelemetry": true
+    },
+    "sessionId": "session-1",
+    "credentialHeaders": {
+      "X-Credential": "credential"
+    },
+    "requestHeaders": {
+      "X-Caller": "caller"
+    },
+    "expected": {
+      "present": true,
+      "headers": {
+        "x-opencode-session": "session-1",
+        "x-opencode-client": "maestro",
+        "X-Credential": "credential",
+        "X-Caller": "caller"
+      }
+    }
+  },
+  {
+    "name": "opencode_provider_session",
+    "model": {
+      "provider": "opencode-go",
+      "baseUrl": "https://unrelated.example/v1"
+    },
+    "settings": {
+      "enableInstallTelemetry": true
+    },
+    "sessionId": "session-1",
+    "credentialHeaders": {
+      "X-Credential": "credential"
+    },
+    "requestHeaders": {
+      "X-Caller": "caller"
+    },
+    "expected": {
+      "present": true,
+      "headers": {
+        "x-opencode-session": "session-1",
+        "x-opencode-client": "maestro",
+        "X-Credential": "credential",
+        "X-Caller": "caller"
+      }
+    }
+  },
+  {
+    "name": "opencode_without_session",
+    "model": {
+      "provider": "opencode",
+      "baseUrl": "https://opencode.ai/zen/v1"
+    },
+    "settings": {
+      "enableInstallTelemetry": true
+    },
+    "credentialHeaders": {
+      "X-Credential": "credential"
+    },
+    "requestHeaders": {
+      "X-Caller": "caller"
+    },
+    "expected": {
+      "present": true,
+      "headers": {
+        "X-Credential": "credential",
+        "X-Caller": "caller"
+      }
+    }
+  },
+  {
+    "name": "opencode_path_is_not_the_host",
+    "model": {
+      "provider": "unrelated",
+      "baseUrl": "https://proxy.example/opencode.ai/v1"
+    },
+    "settings": {
+      "enableInstallTelemetry": true
+    },
+    "sessionId": "session-1",
+    "credentialHeaders": {
+      "X-Credential": "credential"
+    },
+    "requestHeaders": {
+      "X-Caller": "caller"
+    },
+    "expected": {
+      "present": true,
+      "headers": {
+        "X-Credential": "credential",
+        "X-Caller": "caller"
+      }
+    }
+  },
+  {
+    "name": "opencode_session_ignores_telemetry_setting",
+    "model": {
+      "provider": "opencode",
+      "baseUrl": "https://opencode.ai/zen/v1"
+    },
+    "settings": {
+      "enableInstallTelemetry": false
+    },
+    "sessionId": "session-1",
+    "credentialHeaders": {
+      "X-Credential": "credential"
+    },
+    "requestHeaders": {
+      "X-Caller": "caller"
+    },
+    "expected": {
+      "present": true,
+      "headers": {
+        "x-opencode-session": "session-1",
+        "x-opencode-client": "maestro",
+        "X-Credential": "credential",
+        "X-Caller": "caller"
+      }
+    }
+  },
+  {
+    "name": "caller_overrides_session_headers",
+    "model": {
+      "provider": "opencode",
+      "baseUrl": "https://opencode.ai/zen/v1"
+    },
+    "settings": {
+      "enableInstallTelemetry": true
+    },
+    "sessionId": "session-1",
+    "credentialHeaders": {
+      "X-Credential": "credential"
+    },
+    "requestHeaders": {
+      "x-opencode-session": "caller"
+    },
+    "expected": {
+      "present": true,
+      "headers": {
+        "x-opencode-session": "caller",
+        "x-opencode-client": "maestro",
+        "X-Credential": "credential"
+      }
     }
   }
 ]

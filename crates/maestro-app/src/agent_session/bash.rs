@@ -84,9 +84,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
         Ok(result)
     }
 
-    /// Records a shell result: appended to the history and the session at once, or kept
-    /// until the next prompt while a response streams, so the response's tool calls and
-    /// results stay together.
+    /// Records a shell result immediately when idle, or when the streaming run settles.
+    /// Pending results follow the run's tool calls and results in history and stored entries.
     ///
     /// # Errors
     /// Returns the session history's failure.

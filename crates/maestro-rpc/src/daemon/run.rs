@@ -2,8 +2,9 @@
 //! until the daemon stops.
 use super::server::Server;
 use maestro_app::SettingsManager;
-use maestro_app::daemon::pane::launch_env::STARTUP_CWD_ENV;
-use maestro_app::daemon::{app::App, logging, paths::DaemonPaths, platform};
+use maestro_app::daemon::{
+    App, DaemonPaths, STARTUP_CWD_ENV, current_process_is_detached_server_daemon, logging,
+};
 use maestro_app::rpc_mode::DaemonWorkspaceOperations;
 use maestro_app::rpc_types::workspace_schema::ServerCapabilities;
 use std::path::{Path, PathBuf};
@@ -79,6 +80,6 @@ fn announce(api_socket: &Path, paths: &DaemonPaths) {
 fn capabilities() -> ServerCapabilities {
     ServerCapabilities {
         live_handoff: false,
-        detached_server_daemon: platform::current_process_is_detached_server_daemon(),
+        detached_server_daemon: current_process_is_detached_server_daemon(),
     }
 }

@@ -504,9 +504,13 @@ impl ComponentHost {
 
 impl Host for ComponentHost {
     fn start(instances: usize) -> Result<Self, String> {
-        let path = super::build::example_component("trigger_compact")?;
-        let (engine, component) =
-            super::build::compile(&path).map_err(|error| error.to_string())?;
+        static PATH: std::sync::OnceLock<Result<std::path::PathBuf, String>> =
+            std::sync::OnceLock::new();
+        let path = PATH
+            .get_or_init(|| super::build::example_component("trigger_compact"))
+            .as_ref()
+            .map_err(Clone::clone)?;
+        let (engine, component) = super::host::compiled(path).map_err(|error| error.to_string())?;
         let mut started = Vec::new();
         for _ in 0..instances {
             let harness = super::block_on(Harness::from_compiled(&engine, &component))

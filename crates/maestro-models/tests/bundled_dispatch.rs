@@ -340,8 +340,9 @@ fn maestro_registration_keeps_custom_order() {
         bundled::conversation().unwrap(),
         None,
     );
-    assert!(
-        restored.is_ok(),
+    assert_eq!(
+        restored.err().map(|error| error.message).as_deref(),
+        Some("No API key for provider: fixture"),
         "the built-in replaced the custom callback"
     );
     assert!(replaced.is_some_and(|handle| {
@@ -394,10 +395,9 @@ fn maestro_reset_restores_builtin_adapters() -> TestResult {
                 bundled::protocol_model(protocol)?,
                 bundled::conversation()?,
                 None,
-            )?;
-            let message = simple.result().await;
+            );
             assert_eq!(
-                bundled::error_of(&message).as_deref(),
+                simple.err().map(|error| error.message).as_deref(),
                 Some("No API key for provider: fixture"),
                 "{}",
                 protocol.api
@@ -600,7 +600,7 @@ fn assert_error_identity(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-/// A settled keyless failure through every public simple route of `protocol`.
+/// Registry setup failures precede streams; convenience roots retain their settled result.
 async fn assert_setup_error(
     protocol: &Protocol,
     signal: Option<maestro_models::Cancellation>,
@@ -611,43 +611,31 @@ async fn assert_setup_error(
         model.clone(),
         bundled::conversation()?,
         Some(signalled(signal.as_ref(), key.clone())),
-    )?;
-    let events = bundled::drain(&generic).await;
-    assert!(
-        matches!(
-            events.as_slice(),
-            [AssistantMessageEvent::Error {
-                reason: maestro_models::ErrorReason::Error,
-                ..
-            }]
-        ),
-        "{} generic events",
-        protocol.api
     );
-    let result = generic.result().await;
-    assert_error_identity(&events, &result)?;
-    let root = root_simple(protocol, Some(signalled(signal.as_ref(), key.clone())))?;
+    assert_eq!(
+        generic.err().map(|error| error.message).as_deref(),
+        Some("No API key for provider: fixture")
+    );
+    let completion = complete_simple(
+        model,
+        bundled::conversation()?,
+        Some(signalled(signal.as_ref(), key.clone())),
+    )
+    .await;
+    assert_eq!(
+        completion.err().map(|error| error.message).as_deref(),
+        Some("No API key for provider: fixture")
+    );
+    let root = root_simple(protocol, Some(signalled(signal.as_ref(), key)))?;
     let root_events = bundled::drain(&root).await;
     let root_result = root.result().await;
     assert_error_identity(&root_events, &root_result)?;
-    let results = [
-        result,
-        complete_simple(
-            model,
-            bundled::conversation()?,
-            Some(signalled(signal.as_ref(), key.clone())),
-        )
-        .await?,
-        root_result,
-    ];
-    for result in results {
-        let mut seen = serde_json::to_value(&*result.read().map_err(|_| "poisoned")?)?;
-        assert!(seen["timestamp"].is_number(), "{} timestamp", protocol.api);
-        seen.as_object_mut()
-            .ok_or("object")?
-            .shift_remove("timestamp");
-        assert_eq!(seen, expected_setup_error(protocol), "{}", protocol.api);
-    }
+    let mut seen = serde_json::to_value(&*root_result.read().map_err(|_| "poisoned")?)?;
+    assert!(seen["timestamp"].is_number(), "{} timestamp", protocol.api);
+    seen.as_object_mut()
+        .ok_or("object")?
+        .shift_remove("timestamp");
+    assert_eq!(seen, expected_setup_error(protocol), "{}", protocol.api);
     Ok(())
 }
 

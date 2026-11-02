@@ -10,7 +10,7 @@ use maestro_extensions::{
     types::{ForkOptions, NewSessionCommandOptions, SwitchSessionOptions},
 };
 use maestro_models::Local;
-use maestro_session::Presence;
+use maestro_session::{Presence, session_manager::ReadonlySessionManager};
 use serde_json::{Value, json};
 use std::{
     cell::{Cell, RefCell},
@@ -232,39 +232,59 @@ fn shutdown_precedes_invalidation_and_rebinding() {
     });
 }
 
-/// A veto prevents both valid and invalid entries from reaching construction.
-async fn assert_fork_vetoes(
+/// A vetoed fork: the entry it names, its position and the recorded outcome and events.
+struct Veto<'a> {
+    /// The entry the fork names.
+    entry: &'a str,
+    /// The requested fork position.
+    position: Option<ForkPosition>,
+    /// The recorded result.
+    result: &'a Value,
+    /// The recorded lifecycle events.
+    events: &'a Value,
+}
+
+/// The recorded vetoes of a fork naming `user`, then of one naming an unknown entry.
+fn vetoes<'a>(user: &'a str, fork: &'a Value) -> [Veto<'a>; 2] {
+    [
+        Veto {
+            entry: user,
+            position: None,
+            result: &fork["valid"],
+            events: &fork["validEvents"],
+        },
+        Veto {
+            entry: "missing-entry",
+            position: Some(ForkPosition::At),
+            result: &fork["invalid"],
+            events: &fork["invalidEvents"],
+        },
+    ]
+}
+
+/// A veto stops the fork before construction, whatever the entry it names.
+async fn assert_fork_veto(
     runtime: &AgentSessionRuntime,
     recorded: &crate::support::runtime_fixtures::Recorded,
     log: &RefCell<Vec<Value>>,
     labels: &[(&str, &str)],
-    expected: &Value,
+    veto: Veto<'_>,
 ) {
     let calls = recorded.factory_calls.borrow().len();
-    for (entry, position, key, events) in [
-        (labels[0].0, None, "valid", "validEvents"),
-        (
-            "missing-entry",
-            Some(ForkPosition::At),
-            "invalid",
-            "invalidEvents",
-        ),
-    ] {
-        log.borrow_mut().clear();
-        let result = runtime
-            .fork(
-                entry,
-                ForkOptions {
-                    position,
-                    with_session: None,
-                },
-            )
-            .await
-            .unwrap();
-        assert_eq!(json!({"cancelled": result.cancelled}), expected[key]);
-        assert_eq!(substituting(json!(*log.borrow()), labels), expected[events]);
-        assert_eq!(recorded.factory_calls.borrow().len(), calls);
-    }
+    log.borrow_mut().clear();
+    let result = runtime
+        .fork(
+            veto.entry,
+            ForkOptions {
+                position: veto.position,
+                with_session: None,
+            },
+        )
+        .await
+        .unwrap();
+    assert_eq!(json!({"cancelled": result.cancelled}), *veto.result);
+    assert_eq!(substituting(json!(*log.borrow()), labels), *veto.events);
+    assert_eq!(recorded.factory_calls.borrow().len(), calls);
 }
 
 #[test]
@@ -285,20 +305,32 @@ fn fork_veto_precedes_entry_validation_and_replacement() {
             .entry_id
             .clone();
         let old = runtime.session().session_file().unwrap();
+        let fork = &expected["fork_events"];
+        let [valid, invalid] = vetoes(&user, fork);
+        // The valid veto runs first, while the entry it names is still in the history.
+        assert!(
+            runtime
+                .session()
+                .session_manager()
+                .borrow()
+                .get_entry(&user)
+                .is_some()
+        );
+        veto.set(true);
+        let known = [(&*user, "USER"), (&*old, "OLD")];
+        assert_fork_veto(&runtime, &recorded, &log, &known, valid).await;
+        veto.set(false);
         log.borrow_mut().clear();
         let result = runtime.fork(&user, ForkOptions::default()).await.unwrap();
         assert_eq!(
             json!({"cancelled": result.cancelled, "selectedText": result.selected_text}),
-            expected["fork_events"]["result"]
+            fork["result"]
         );
         let new = runtime.session().session_file().unwrap();
         let labels = [(&*user, "USER"), (&*old, "OLD"), (&*new, "NEW")];
-        assert_eq!(
-            substituting(json!(*log.borrow()), &labels),
-            expected["fork_events"]["success"]
-        );
+        assert_eq!(substituting(json!(*log.borrow()), &labels), fork["success"]);
         veto.set(true);
-        assert_fork_vetoes(&runtime, &recorded, &log, &labels, &expected["fork_events"]).await;
+        assert_fork_veto(&runtime, &recorded, &log, &labels, invalid).await;
         veto.set(false);
         assert_eq!(
             json!(
@@ -308,7 +340,7 @@ fn fork_veto_precedes_entry_validation_and_replacement() {
                     .unwrap_err()
                     .to_string()
             ),
-            expected["fork_events"]["error"]
+            fork["error"]
         );
         runtime.dispose().await.unwrap();
     });

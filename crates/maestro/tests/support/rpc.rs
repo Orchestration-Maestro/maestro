@@ -56,9 +56,7 @@ impl Rpc {
         self.next += 1;
         let id = self.next.to_string();
         command["id"] = id.clone().into();
-        let input = self.child.stdin.as_mut().unwrap();
-        writeln!(input, "{command}").unwrap();
-        input.flush().unwrap();
+        self.send(&command);
         loop {
             let record = self.read();
             if record["type"] == "response" && record["id"] == id {
@@ -67,6 +65,13 @@ impl Rpc {
             }
             self.events.push(record);
         }
+    }
+    /// Sends a supplied correlated command or extension UI reply without awaiting it.
+    pub fn send(&mut self, record: &Value) {
+        let input = self.child.stdin.as_mut().unwrap();
+        let line = maestro_app::serialize_json_line(record).unwrap();
+        input.write_all(line.as_bytes()).unwrap();
+        input.flush().unwrap();
     }
     /// Read one actual framed record, failing on premature process exit.
     pub fn read(&mut self) -> Value {

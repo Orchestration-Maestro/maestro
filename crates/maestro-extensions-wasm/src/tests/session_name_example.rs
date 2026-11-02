@@ -249,22 +249,40 @@ fn session_name_propagates_host_errors() -> Result<(), String> {
 fn refused_registration(case: &Case) {
     let host = Controlled::default();
     let error = case.expected.error.clone().unwrap_or_default();
-    host.observe().registrations.error = Some(error.clone());
+    host.observe().registrations.error = Some(error);
     let exports = Exports::new(host.clone());
     let outcome = super::block_on(exports.start::<SessionName>());
+    assert_refused(case, outcome, &host.observed());
+}
+
+/// The built component's refused registration, observed through the host it ran on.
+fn refused_in_component(case: &Case) -> Result<(), String> {
+    let path = super::build::example_component("session_name")?;
+    let (engine, component) = super::build::compile(&path).map_err(|error| error.to_string())?;
+    let error = case.expected.error.clone().unwrap_or_default();
+    let (mut harness, outcome) = super::block_on(Harness::from_compiled_refusing(
+        &engine, &component, &error,
+    ))
+    .map_err(|error| error.to_string())?;
+    assert_refused(case, outcome, harness.observed());
+    Ok(())
+}
+
+/// A refused start returned the host's message and left nothing registered or recorded.
+fn assert_refused(case: &Case, outcome: Result<(), String>, observed: &Observed) {
     assert_eq!(
-        outcome.as_ref().err(),
-        Some(&error),
+        outcome.err(),
+        case.expected.error,
         "{}: the registration refusal",
         case.name
     );
     assert!(
-        host.observed().registrations.commands.is_empty(),
+        observed.registrations.commands.is_empty(),
         "{}: nothing stays registered",
         case.name
     );
     assert!(
-        host.observed().transcript.is_empty(),
+        observed.transcript.is_empty(),
         "{}: no session or UI operation runs",
         case.name
     );
@@ -282,6 +300,12 @@ fn session_name_component_runs_registered_command() -> Result<(), String> {
         .filter(|case| case.input.reject != Some(Refusal::Register))
     {
         assert_case(&mut started, case);
+    }
+    let refusals = selected(&corpus.records, |case| {
+        case.input.reject == Some(Refusal::Register)
+    });
+    for case in refusals {
+        refused_in_component(case)?;
     }
     let key = started.command;
     super::block_on(started.harness.release(key)).map_err(|error| error.to_string())?;

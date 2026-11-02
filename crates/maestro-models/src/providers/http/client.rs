@@ -3,7 +3,10 @@
 use std::borrow::Borrow;
 use std::error::Error;
 #[cfg(not(target_arch = "wasm32"))]
-use std::sync::Arc;
+use std::{
+    sync::{Arc, LazyLock, PoisonError, RwLock},
+    time::{Duration, TryFromFloatSecsError},
+};
 
 use futures_util::StreamExt;
 
@@ -205,21 +208,56 @@ fn configured_clients(
     Ok((client, socks))
 }
 
-/// The process-wide client; automatic retries are off because the sender owns retry policy.
+/// The shared native client starts with a five-minute idle limit.
 #[cfg(not(target_arch = "wasm32"))]
-fn build() -> Result<&'static reqwest::Client, FetchError> {
-    use std::sync::OnceLock;
+static CLIENT: LazyLock<RwLock<Result<reqwest::Client, String>>> = LazyLock::new(|| {
+    RwLock::new(
+        reqwest::Client::builder()
+            .retry(reqwest::retry::never())
+            .read_timeout(Duration::from_secs(300))
+            .build()
+            .map_err(|error| chain(&error)),
+    )
+});
 
-    static CLIENT: OnceLock<Result<reqwest::Client, String>> = OnceLock::new();
+/// Applies the idle limit to subsequent shared-client requests; zero disables it.
+///
+/// Fractional milliseconds are floored. The limit covers response headers and the gap
+/// between body chunks. Existing requests
+/// keep their client. Client-construction failures are reported by the next request.
+///
+/// # Errors
+/// Returns the conversion error when milliseconds cannot be represented as a duration.
+///
+/// # Examples
+/// ```
+/// maestro_models::configure_http_dispatcher(30_000.0)?;
+/// # Ok::<(), std::time::TryFromFloatSecsError>(())
+/// ```
+#[cfg(not(target_arch = "wasm32"))]
+pub fn configure_http_dispatcher(timeout_ms: f64) -> Result<(), TryFromFloatSecsError> {
+    let timeout = Duration::try_from_secs_f64(timeout_ms.floor() / 1000.0)?;
+    let mut builder = reqwest::Client::builder().retry(reqwest::retry::never());
+    if !timeout.is_zero() {
+        builder = builder.read_timeout(timeout);
+    }
+    let client = builder.build().map_err(|error| chain(&error));
+    let previous = std::mem::replace(
+        &mut *CLIENT.write().unwrap_or_else(PoisonError::into_inner),
+        client,
+    );
+    drop(previous);
+    Ok(())
+}
+
+/// Clone the process-wide client without holding its slot during a request.
+#[cfg(not(target_arch = "wasm32"))]
+fn build() -> Result<reqwest::Client, FetchError> {
     CLIENT
-        .get_or_init(|| {
-            reqwest::Client::builder()
-                .retry(reqwest::retry::never())
-                .build()
-                .map_err(|error| chain(&error))
-        })
-        .as_ref()
-        .map_err(|message| connection(message.clone()))
+        .read()
+        .unwrap_or_else(PoisonError::into_inner)
+        .clone()
+        .map_err(connection)
 }
 
 /// A browser client; the platform fetch owns connection reuse.

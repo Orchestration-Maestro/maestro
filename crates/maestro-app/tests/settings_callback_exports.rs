@@ -1,4 +1,7 @@
 //! The queue vocabulary the interactive settings consumer needs, imported at the root.
+//!
+//! `delivery_mode` and `queue_mode` belong to the native session, so the browser build skips it.
+#![cfg(not(target_arch = "wasm32"))]
 
 use maestro_app::{MessageDeliveryMode, QueueMode, delivery_mode, queue_mode};
 

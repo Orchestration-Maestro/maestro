@@ -18,13 +18,7 @@ mod hotkeys;
 mod info;
 mod lifecycle;
 mod models;
-#[allow(
-    dead_code,
-    unused_imports,
-    reason = "Only executable installation is shared."
-)]
-#[path = "../../../maestro-app/tests/support/native.rs"]
-mod native;
+use maestro_test_process::native;
 mod navigation;
 mod notices;
 mod progress;
@@ -43,11 +37,11 @@ mod typed;
 
 use crate::components::thinking_selector::thinking_text;
 use crate::interactive_mode::bash::component_address;
+use crate::platform_keys;
 use crate::{BashExecutionComponent, InteractiveMode, InteractiveModeOptions};
-// The controlled host, disposable directory and palettes are compiled once in the library tests.
+// The controlled host and palettes are compiled once in the library tests.
 use crate::components::session_selector::list::tests::session_picker::{
-    manual_runtime::ManualRuntime, native_child as child, published,
-    recording_terminal::RecordingTerminal,
+    manual_runtime::ManualRuntime, published, recording_terminal::RecordingTerminal,
 };
 use maestro_app::agent_session::PromptOptions;
 use maestro_app::configuration::config::{APP_NAME, ENV_AGENT_DIR, VERSION};
@@ -103,8 +97,8 @@ pub(super) fn isolated_package(test: &str, body: impl AsyncFnOnce(&Path, &Path))
         on_tasks(body(Path::new(&directory), Path::new(&package)));
         return Vec::new();
     }
-    let scratch = child::Scratch::new();
-    let directory = scratch.0.path();
+    let scratch = maestro_test_directory::Scratch::new().expect("scratch directory is new");
+    let directory = scratch.path();
     let package = directory.join("package");
     std::fs::create_dir(&package).unwrap();
     let output = TestProcess::current(test)
@@ -168,8 +162,8 @@ pub(super) fn isolated_output(
         }
         return None;
     }
-    let scratch = child::Scratch::new();
-    let root = scratch.0.path();
+    let scratch = maestro_test_directory::Scratch::new().expect("scratch directory is new");
+    let root = scratch.path();
     for name in ["bin", "tmp"] {
         std::fs::create_dir(root.join(name)).unwrap();
     }
@@ -429,12 +423,12 @@ impl ResourceLoader<Local> for ForwardingLoader {
 
 /// The dark palette the loader registers.
 pub(super) fn dark() -> Rc<Theme> {
-    published::named(0, Some("dark"))
+    published::named(0, Some("dark")).unwrap()
 }
 
 /// The light palette the loader registers, in other colours.
 pub(super) fn light() -> Rc<Theme> {
-    published::named(100, Some("light"))
+    published::named(100, Some("light")).unwrap()
 }
 
 /// One mode over a recording terminal, a controlled host and the loader's themes.
@@ -772,6 +766,8 @@ pub(super) struct Case {
     input: serde_json::Value,
     /// The recorded observation.
     expected: serde_json::Value,
+    /// Complete macOS layout when its key names differ.
+    expected_macos: Option<serde_json::Value>,
 }
 
 /// The recorded operations.
@@ -872,7 +868,11 @@ pub(super) fn cases<I: DeserializeOwned, E: DeserializeOwned>(
         .map(|case| {
             (
                 serde_json::from_value(case.input).unwrap(),
-                serde_json::from_value(case.expected).unwrap(),
+                serde_json::from_value(platform_keys::for_this_platform(
+                    case.expected,
+                    case.expected_macos,
+                ))
+                .unwrap(),
             )
         })
         .collect();
@@ -1528,11 +1528,17 @@ pub(super) async fn echoing_shell(directory: &Path) -> World {
     bash::shelling(directory, &script).await
 }
 
-/// Submits `count` shell commands while the response streams, awaiting each command it
-/// admits so its row settles.
+/// Submits `count` shell commands, each with its own text, while the response streams,
+/// awaiting each command it admits so its row settles.
 pub(super) async fn start_shells(world: &World, count: usize) {
+    start_commands(world, count, |index| format!("!mark{index}")).await;
+}
+
+/// Submits `count` shell commands worded by `text` while the response streams, awaiting
+/// each command it admits so its row settles.
+pub(super) async fn start_commands(world: &World, count: usize, text: impl Fn(usize) -> String) {
     for index in 0..count {
-        submit(&world.mode, &format!("!mark{index}"));
+        submit(&world.mode, &text(index));
         for command in world.runtime.take_futures() {
             command.await.expect("the shell command completes");
         }
@@ -1685,7 +1691,7 @@ fn watching(directory: &Path, watched: &Rc<Watched>) -> World {
     std::fs::write(custom.join("watched.json"), "{}").unwrap();
     Setup {
         configure: Box::new(|settings| settings.set_theme("watched".to_owned())),
-        themes: vec![published::named(1, Some("watched"))],
+        themes: vec![published::named(1, Some("watched")).unwrap()],
         directories: Some(maestro_theme::ThemeDirectories {
             themes_dir: String::new(),
             custom_themes_dir: custom.to_str().unwrap().to_owned(),
@@ -1764,12 +1770,12 @@ fn fatal_runtime_error_ends_the_process_with_failure_status() {
         }
         return;
     }
-    let scratch = child::Scratch::new();
+    let scratch = maestro_test_directory::Scratch::new().expect("scratch directory is new");
     let output = TestProcess::current(test)
         .unwrap()
         .case("fatal")
-        .current_dir(scratch.0.path())
-        .env(&*ENV_AGENT_DIR, scratch.0.path())
+        .current_dir(scratch.path())
+        .env(&*ENV_AGENT_DIR, scratch.path())
         .nocapture()
         .output()
         .unwrap();

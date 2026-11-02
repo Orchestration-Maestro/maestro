@@ -247,6 +247,7 @@ fn catalog_constructors_keep_selected_credential_command_effects() {
                     "provider",
                     maestro_extensions::AuthCredential::ApiKey(
                         maestro_credentials::ApiKeyCredential {
+                            env: None,
                             key: "!constructor-effect".into(),
                         },
                     ),

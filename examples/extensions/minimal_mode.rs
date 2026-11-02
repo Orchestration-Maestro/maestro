@@ -1,4 +1,5 @@
 //! Opt-in minimal tool rows with full expanded output.
+// maestro-component: MAESTRO_MINIMAL_MODE_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

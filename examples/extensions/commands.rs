@@ -1,4 +1,5 @@
 //! Lists the host's slash commands through an opt-in `/commands` selector.
+// maestro-component: MAESTRO_COMMANDS_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

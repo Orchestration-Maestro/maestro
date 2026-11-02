@@ -28,7 +28,10 @@ pub use compaction::{
     extract_file_ops_from_message, find_cut_point, find_turn_start_index, format_file_operations,
     get_last_assistant_usage, prepare_compaction, serialize_conversation, should_compact,
 };
-pub use compaction::{CompactionResult, SummaryOptions, compact, generate_summary};
+pub use compaction::{
+    CompactionResult, GeneratedSummary, SummaryOptions, compact, generate_summary,
+    generate_summary_with_usage,
+};
 
 pub use compaction::{CollectEntriesResult, collect_entries_for_branch_summary};
 

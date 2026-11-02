@@ -278,7 +278,8 @@ fn child_case(name: &str, group: Group, index: usize) {
             scratch.0.path(),
             &refs,
             fixture::REMOVED
-        ),
+        )
+        .expect("child starts"),
         ["routes-ok"]
     );
 }
@@ -324,7 +325,8 @@ fn qualify(name: &str, group: Group) {
                     ("MAESTRO_PACKAGE_DIR", "inherited-decoy")
                 ],
                 &[]
-            ),
+            )
+            .expect("child starts"),
             ["outer-ok"]
         );
         assert_eq!(

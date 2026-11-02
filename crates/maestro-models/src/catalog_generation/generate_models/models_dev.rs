@@ -5,6 +5,9 @@ use crate::providers::json_text::{is_truthy, member};
 use serde_json::value::RawValue;
 use std::io::{self, Write};
 
+/// Versioned Kimi aliases replaced by the canonical coding model.
+const KIMI_ALIASES: [&str; 3] = ["k2p5", "k2p6", "k2p7"];
+
 /// Project models in authored provider order.
 pub(super) fn normalize(raw: &RawValue, errors: &mut dyn Write) -> io::Result<Vec<Model>> {
     let mut models = Vec::new();
@@ -32,7 +35,7 @@ pub(super) fn normalize(raw: &RawValue, errors: &mut dyn Write) -> io::Result<Ve
                 continue;
             }
             let id = id.text();
-            if included_canonical && ["k2p5", "k2p6"].contains(&id.as_str()) {
+            if included_canonical && KIMI_ALIASES.contains(&id.as_str()) {
                 continue;
             }
             let projected = if source == "kimi-for-coding" && id == "kimi-for-coding" {
@@ -46,8 +49,38 @@ pub(super) fn normalize(raw: &RawValue, errors: &mut dyn Write) -> io::Result<Ve
                 Err(_) => super::feeds::skipped(errors, "Failed to load models.dev data:", &id)?,
             }
         }
+        if provider == "cloudflare-ai-gateway" {
+            derive_workers_models(raw, (api, provider, url), &mut models, errors)?;
+        }
     }
     Ok(models)
+}
+/// Derive the gateway's `workers-ai/` models from the Workers AI catalog when the gateway
+/// feed omits them.
+fn derive_workers_models(
+    raw: &RawValue,
+    (api, provider, url): (&str, &str, &str),
+    models: &mut Vec<Model>,
+    errors: &mut dyn Write,
+) -> io::Result<()> {
+    for (id, raw) in input::entries(input::field(raw, "cloudflare-workers-ai", "models")) {
+        if raw.get() != "null" && !eligible(raw) {
+            continue;
+        }
+        let id = format!("workers-ai/{}", id.text());
+        if models
+            .iter()
+            .any(|model| model.provider == provider && model.id == id)
+        {
+            continue;
+        }
+        match project(input::descriptor(id.clone(), api, provider, url), raw) {
+            Ok(Some(model)) => models.push(model),
+            Ok(None) => {}
+            Err(_) => super::feeds::skipped(errors, "Failed to load models.dev data:", &id)?,
+        }
+    }
+    Ok(())
 }
 /// Apply eligibility before interpreting optional metadata.
 fn project(model: Model, raw: &RawValue) -> Result<Option<Model>, input::Invalid> {
@@ -57,7 +90,7 @@ fn project(model: Model, raw: &RawValue) -> Result<Option<Model>, input::Invalid
     let Some(mut model) = routes::route(model, raw) else {
         return Ok(None);
     };
-    let alias = model.provider == "kimi-coding" && ["k2p5", "k2p6"].contains(&model.id.as_str());
+    let alias = model.provider == "kimi-coding" && KIMI_ALIASES.contains(&model.id.as_str());
     if alias {
         model.id = "kimi-for-coding".into();
         model.name = "Kimi For Coding".into();

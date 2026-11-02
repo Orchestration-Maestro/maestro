@@ -119,10 +119,11 @@ pub fn request(app: &mut TestApp, wire: Value) -> Result<ResponseResult, ErrorBo
     block_on(answer(app, wire))
 }
 
-/// Answers the wire-form `wire` from inside a running test runtime.
+/// Answers `wire` through the handler from inside a running test runtime.
 pub async fn answer(app: &mut TestApp, wire: Value) -> Result<ResponseResult, ErrorBody> {
     let mut settings = settings();
-    app.handle_api_request(command(wire), &mut settings, &untouched_paths())
+    let paths = untouched_paths();
+    app.handle_api_request(command(wire), &mut settings, &paths)
         .await
 }
 

@@ -9391,7 +9391,7 @@
         },
         "stopReason": "error",
         "responseId": "response-a",
-        "errorMessage": "An unknown error occurred"
+        "errorMessage": "Provider stopped with: error (server error)"
       }
     }
   },
@@ -68021,7 +68021,7 @@
         },
         "stopReason": "error",
         "responseId": "response-a",
-        "errorMessage": "An unknown error occurred"
+        "errorMessage": "Provider stopped with: error (server error)"
       }
     }
   },
@@ -84981,7 +84981,7 @@
         },
         "stopReason": "error",
         "responseId": "response-a",
-        "errorMessage": "An unknown error occurred"
+        "errorMessage": "Provider stopped with: error (server error)"
       }
     }
   },

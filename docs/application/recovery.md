@@ -13,6 +13,9 @@ reserve. The saved preferences decide whether it happens automatically, how many
 tokens stay free (`reserveTokens`, 16384 by default) and how much recent
 conversation survives (`keepRecentTokens`, 20000 by default).
 
+[Using compaction](compaction.md) covers manual compaction, persisted histories
+and extension results.
+
 Calling `compact(custom_instructions)` disconnects session event forwarding,
 stops a waiting retry and requests cancellation of the running turn before the
 returned future is polled. It waits for the agent to settle, then records the
@@ -45,12 +48,12 @@ prompt is sent. With the preference off, it does nothing. It skips an aborted
 response unless the check runs before a prompt, and it skips a response recorded
 at or before the newest compaction. When the response reports an overflow from the
 selected model, the failed response leaves the agent history but stays in the
-stored history, the session compacts once and asks the agent to continue 100 ms
-later; a second overflow in the same turn adds no second start event and reports
-that the recovery failed. When the reported usage passes the reserve instead,
-the session compacts without retrying and resumes any queued messages 100 ms
-later. A started user message and a successful response re-arm the one recovery
-a turn gets.
+stored history, the session compacts once and continues the prompt; a second
+overflow in the same turn adds no second start event and reports that recovery
+failed. When reported usage passes the reserve instead, the session compacts
+without retrying and resumes queued messages, including messages queued only on
+the agent. A started user message and a successful response re-arm the one
+recovery a turn gets.
 
 Automatic compaction reads its preferences once, before `compaction_start`, so a
 listener that changes them affects only the next compaction. Missing
@@ -85,7 +88,11 @@ turn and waits for the agent to settle.
 A prompt returns after its run and, when a retry is in flight, after the retry
 and the agent settle. A successful response after retries announces
 `auto_retry_end` with success `true`; its listeners still read the completed
-attempt from `retry_attempt()`, which returns to 0 afterwards. Dropping the
+attempt from `retry_attempt()`, which returns to 0 afterwards. A final non-retryable
+error after retries announces the same event with success `false`, the current
+attempt and the final error, then resets the counter before checking compaction.
+Exhausting the retry limit still emits only one failure event; a first non-retryable
+error emits none. Dropping the
 prompt never aborts the retry. `is_retrying()` reports a retry in flight and
 `retry_attempt()` the attempts it has made. `auto_retry_enabled()`,
 `set_auto_retry_enabled`, `auto_compaction_enabled()` and

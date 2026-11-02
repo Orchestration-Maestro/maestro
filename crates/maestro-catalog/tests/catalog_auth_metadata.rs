@@ -76,7 +76,7 @@ fn metadata_preserves_sources_without_helper_or_refresh_effects() {
             ("literal", None),
             ("OPENAI_API_KEY", Some("ambient-key")),
         ];
-        return crate::subprocess::run_child(process.case("*"), &environment);
+        return crate::subprocess::run_child(process.case("*"), &environment).unwrap();
     }
     let marker = std::env::temp_dir().join(format!(
         "maestro-catalog-auth-marker-{}",
@@ -200,6 +200,7 @@ fn oauth_discrimination_uses_stored_kind_not_current_key() {
     registry.auth_storage().set(
         "p",
         AuthCredential::ApiKey(ApiKeyCredential {
+            env: None,
             key: "stored".into(),
         }),
     );
@@ -340,6 +341,7 @@ fn lower_layer_status(registry: &ModelRegistry) {
     registry.auth_storage().set(
         "p",
         AuthCredential::ApiKey(ApiKeyCredential {
+            env: None,
             key: "!stored-helper".into(),
         }),
     );

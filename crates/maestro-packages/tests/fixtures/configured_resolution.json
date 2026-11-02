@@ -7398,17 +7398,7 @@
     },
     "expected": {
       "result": {
-        "extensions": [
-          {
-            "path": "$BASE/home/file.ts",
-            "enabled": true,
-            "metadata": {
-              "source": "local",
-              "scope": "user",
-              "origin": "top-level"
-            }
-          }
-        ],
+        "extensions": [],
         "skills": [],
         "prompts": [],
         "themes": []

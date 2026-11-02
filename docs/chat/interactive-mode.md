@@ -107,8 +107,9 @@ returned, and the settings before it stay applied.
 
 The binding also installs the mode's shutdown and error handlers. An extension's
 shutdown request records the request; while the session is idle it starts
-[graceful shutdown](#native-shutdown) at once, and while a response streams the
-agent's end starts it. A shortcut's context reaches the same handler.
+[graceful shutdown](#native-shutdown) at once. During a run, including retry waits
+and compaction, shutdown starts only when the run settles. A shortcut's context
+reaches the same handler.
 
 Each attributed extension failure the runner reports is appended to the transcript
 as `Extension "<path>" error: <message>` in the error colour. When the failure
@@ -119,12 +120,10 @@ runner.
 
 ## Stopping the presentation
 
-`stop` removes lifecycle handlers, clears terminal progress when enabled, stops
-and releases the working loader, clears extension terminal input listeners,
-disposes the footer and its repository watch, removes the session subscription,
-and stops the UI if initialized. Unrelated terminal listeners stay registered.
-The status container keeps its
-rows. A later session event no longer restarts this presentation, and the shared
+`stop` removes lifecycle handlers, clears terminal progress when enabled, clears
+the status indicator, clears extension terminal input listeners, disposes the
+footer and its repository watch, removes the session subscription, and stops the
+UI if initialized. Unrelated terminal listeners stay registered. A later session event no longer restarts this presentation, and the shared
 theme watch stays active.
 
 A progress-clearing failure prevents the remaining cleanup, leaving extension
@@ -142,24 +141,29 @@ and do not add signal-only detached-child cleanup.
 
 ## Native shutdown
 
-On Unix, TERM kills tracked detached children, then starts graceful shutdown. The
-mode removes its handlers and drains terminal input with the existing 1,000 ms
-maximum and default 50 ms idle period. It stops the presentation, awaits application
-disposal and exits 0. Admission happens before asynchronous work is scheduled;
-repeated requests do not repeat shutdown. A drain, progress, UI-stop or disposal
-failure ends that sequence without a successful exit.
+On Unix, TERM and HUP kill tracked detached children, then start graceful shutdown. The
+mode removes its handlers and awaits application disposal first, so the extensions'
+shutdown handlers run before any terminal write and cannot be skipped when a later write
+fails on a dead terminal. It then drains terminal input with the existing 1,000 ms
+maximum and default 50 ms idle period, stops the presentation and exits 0. A quit by key,
+command or extension request keeps the opposite order: drain, stop the presentation, then
+dispose, so extension cleanup cannot repaint the last frame. Admission happens before
+asynchronous work is scheduled; repeated requests do not repeat shutdown. A drain,
+progress, UI-stop or disposal failure ends that sequence without a successful exit.
 
-HUP and native stdout/stderr disconnection errors take the emergency route:
-remove handlers, kill tracked children and exit 129, without draining, restoring
-the terminal or disposing the application runtime. EIO, broken-pipe and
-not-connected errors select this route; input errors and other output errors
-keep their existing handling. During graceful disposal, a second termination or
-hangup signal takes its native default action. Windows console-close integration
-is not provided by this mode.
+Native stdout/stderr disconnection errors take the emergency route: remove handlers,
+kill tracked children and exit 129, without draining, restoring the terminal or
+disposing the application runtime. A hangup that leaves the terminal dead reaches the
+same route through the failing terminal writes of the graceful sequence. EIO,
+broken-pipe and not-connected errors select this route; input errors and other output
+errors keep their existing handling. During graceful disposal, once the mode's signal
+handlers are removed and no other registration in the process is live, a later
+termination or hangup signal takes its native default action. Windows
+console-close integration is not provided by this mode.
 
-At agent end, a requested shutdown follows transient-row cleanup through this
-same graceful owner instead of requesting a final frame. Extension requests reach
-it through the [session binding](#session-binding).
+Agent end cleans up transient rows and requests a frame. A requested shutdown
+waits for the run to settle, then uses this same graceful owner once. Extension
+requests reach it through the [session binding](#session-binding).
 
 ## Loaded resources
 
@@ -173,12 +177,16 @@ the resource diagnostics described below.
 `[Context]` lists the context files the session's resource loader discovered, in
 discovery order. The compact form puts them on one row, separated by commas: a file
 inside the working directory shows its relative path (`.` for the directory
-itself), and any other file its absolute path. The expanded form puts each path on
-its own row. Paths resolve lexically, without reading the filesystem. A leading
-home directory is shown as `~`; a home directory that is empty or `/` abbreviates
-nothing, so paths stay as written. The home directory is looked up only when a
-full path is shown, so a listing of prompts alone needs none. When that lookup
-fails, the listing reports the failure.
+itself), and any other file, including one whose relative path would start with
+`..`, keeps its full path. The compact form resolves paths lexically, without
+reading the filesystem; the expanded form puts each path on its own row in the
+spelling the loader supplied. A leading home directory is shown as `~`; a home
+directory that is empty or `/` abbreviates nothing, so paths stay as written. The
+home directory is looked up whenever a listing prepares a path that shows it
+abbreviated. Every section prepares its expanded body even while it shows only its
+compact form, so a listing of context files, or of skills outside a package, needs
+the lookup when only names or relative paths show. An empty listing or one of
+prompts alone needs none. When that lookup fails, the listing reports the failure.
 
 `[Skills]` and `[Prompts]` list the loader's skills and the session's prompt
 templates. The compact form is one row of skill names, or of prompt names with a
@@ -186,7 +194,8 @@ leading `/`, trimmed and sorted for the current locale. The expanded form groups
 entries under `project`, `user` and `path` (command-line and temporary resources).
 Within each scope it lists plain paths first, then each package source with its
 entries, all sorted for the locale. A package entry is shown relative to its
-package root, or else by its path inside the npm or Git package directory. Prompts
+package root, or else by its path inside the npm or Git package directory, or
+else by its full path with the home directory shown as `~`. Prompts
 show their `/name`; when several templates share a file, the last one's name is
 shown.
 
@@ -289,9 +298,11 @@ on the transcript, completes no waiting input and enters no history. `/export`,
 `/share` and `/copy` are admitted on the terminal runtime. Import clears the editor
 only on normal completion, leaving text written during a rejected operation intact.
 Import confirmation and directory retry reuse the native dialogs, and its
-replacement is [bound](#session-binding) before the replay. Near spellings are
-prompt text, so `/exporter notes.jsonl`, `/export` followed by a tab, `/share extra`,
-`/important`, `/import` followed by a tab and `/copyx` reach the input. See [interactive commands](commands.md).
+replacement is [bound](#session-binding) before the replay. The submission is trimmed
+first, so `/export` followed only by a tab runs the command and a submission of white
+space alone is dropped. Near spellings are prompt text, so `/exporter notes.jsonl`,
+`/export<Tab>path`, `/share extra`, `/important`, `/import<Tab>path` and `/copyx`
+reach the input. See [interactive commands](commands.md).
 
 ## Running the prompt loop
 
@@ -329,8 +340,9 @@ for it.
 
 ## Session replay
 
-`render_initial_messages` rebuilds the transcript from the session's current
-context. Each message is shown by its existing component:
+`render_initial_messages` appends the session's current context to the transcript and
+clears nothing first; the rebuild after the thinking shortcut clears the transcript and
+then replays the same way. Each message is shown by its existing component:
 
 - user text, with its text blocks joined without a separator; a skill block shows
   as a collapsible skill row followed by any text after it as a separate user row;
@@ -396,6 +408,10 @@ line then says `Restored 1 queued message to editor`,
 `Restored <n> queued messages to editor` or `No queued messages to restore`; with
 nothing queued the editor is left as it was.
 
+An extension that aborts from its context gets the streaming case of the interrupt key: the
+queued messages return to the editor exactly as typed and the response stops, including while
+one of its confirmation dialogs is open.
+
 The interrupt key (Escape by default) takes the first case that applies: while a
 response streams it restores the queued messages the same way and then stops the
 response, even when nothing was queued; while a shell command runs it cancels that
@@ -428,8 +444,9 @@ the event carries:
 The agent's events drive the working row and the transcript:
 
 - an agent start forgets the registered tool calls, shows terminal progress when
-  `terminal.showTerminalProgress` is set, and replaces the working row in the status
-  rows, unless an extension hid it: the indicator in the accent colour beside the
+  `terminal.showTerminalProgress` is set, and shows the working row as the status
+  indicator, or clears the indicator when an extension hid the working row: the
+  spinner in the accent colour beside the
   muted working message, painted by the theme in effect when the row last updated
   its frame or message;
 - a message start adds a custom or user message to the transcript, the user one
@@ -454,8 +471,7 @@ The agent's events drive the working row and the transcript:
   row's renderer as the tool returned them, with a missing value kept apart from
   null;
 - an agent end clears terminal progress when `terminal.showTerminalProgress` is set,
-  stops the working row and empties the status rows when a working row is shown,
-  removes an unfinished
+  ends the working indicator when it is the one shown, removes an unfinished
   streaming row and forgets the registered calls; completed rows stay. A requested
   shutdown then runs through the graceful owner; otherwise the mode requests a frame.
 
@@ -486,7 +502,7 @@ takes the event's error route and leaves the current title in place.
 
 ## Compaction and retry progress
 
-`compaction_start` shows a loader in the status container and makes the interrupt
+`compaction_start` shows the compaction indicator and makes the interrupt
 key abort the compaction. The label names the reason it records: `Compacting
 context... (escape to cancel)` when the caller asked for it, `Auto-compacting...
 (escape to cancel)` at the reserve threshold, and `Context overflow detected,
@@ -499,8 +515,8 @@ when the event arrives rather than when the mode was built, so changing it betwe
 the start and the end changes what the next event does.
 
 `compaction_end` restores the interrupt callback the compaction replaced, or the
-editor's ordinary action when it had none, turns the terminal's progress off, stops
-the loader and empties its row. It then shows what the compaction ended with:
+editor's ordinary action when it had none, turns the terminal's progress off and
+ends the compaction indicator. It then shows what the compaction ended with:
 
 - an aborted manual compaction shows `Compaction cancelled` as an error notice; an
   aborted automatic one shows `Auto-compaction cancelled` as a status line;
@@ -512,19 +528,19 @@ the loader and empties its row. It then shows what the compaction ended with:
 - an end with neither a result nor a non-empty failure message adds no row.
 
 `auto_retry_start` shows `Retrying (<attempt>/<limit>) in <seconds>s... (escape to
-cancel)` in the status container, where the same key aborts the retry. The
+cancel)` as the retry indicator, where the same key aborts the retry. The
 seconds are the wait rounded up, which the existing countdown timer writes on its
 first report; it then reports each whole second left, and the label is rebuilt on
 every tick so it reads the keys bound then. The attempt limit keeps its numeric
-spelling, so a fractional limit reads `2.5`. `auto_retry_end` stops the countdown
-and the loader, empties their row, restores the interrupt callback, and shows
+spelling, so a fractional limit reads `2.5`. `auto_retry_end` ends the retry
+indicator and its countdown, restores the interrupt callback, and shows
 `Retry failed after <attempt> attempts: <error>` only when the retries are
 exhausted, with `Unknown error` for an absent or empty failure.
 
-A started response clears the retry row and its countdown before the working
-presentation resumes, and turns the terminal's progress on. Because the
-retry's own row is removed there, a retry end that arrives afterwards removes
-nothing. When the response ends, the terminal's progress is turned off again, and
+A started response restores the interrupt callback the retry replaced, and the
+working indicator replaces the retry indicator and stops its countdown; it also
+turns the terminal's progress on. A retry end that arrives afterwards changes
+nothing in the status area. When the response ends, the terminal's progress is turned off again, and
 both ends read the setting as their event arrives.
 
 When a compaction ends, the mode captures the input it kept before the session
@@ -540,6 +556,25 @@ clears the session's queues, restores the captured batch ahead of any input
 admitted since, and shows one notice reading
 `Failed to send queued message<s>: <error>`; a second failure changes nothing. A
 compaction that ends with nothing captured delivers nothing.
+
+## Status indicator
+
+The status area shows at most one indicator: working, retry, compaction or branch
+summary, each a blank row and a spinner row. Showing one stops the one shown
+before. Ending a kind does nothing while another kind, or none, is shown: an
+agent end or hiding the working row ends `working`, a compaction end ends
+`compaction`, a retry end ends `retry`, and a finished branch summary ends
+`branch summary`. A new session, a session switch, an import, `/clear`, `/compact`,
+stopping the mode and an agent start with the working row hidden clear whatever is
+shown.
+
+With `terminal.clearOnShrink` on, a clear that follows an indicator, or the idle
+rows standing in for one, shows two idle rows of spaces, so the area keeps its
+height between responses. Before any indicator has run the area is empty. Turning
+the setting off at startup, in the settings selector or on reload removes the idle
+rows while no indicator is shown; turning it on adds none until an indicator next
+ends. The working message, indicator frames and interrupt hint change only a
+working indicator that is shown.
 
 ## Status lines
 
@@ -569,8 +604,11 @@ up.
 
 The expand shortcut (`app.tools.expand`) flips expansion of the startup help and of
 every expandable transcript row: loaded-resource sections, tool rows, shell runs,
-summaries, skill rows and custom messages. The walk uses the transcript's rows as they are when it starts, so
-a row a renderer appends during the walk is reached, and a row it removes is not.
+summaries, skill rows and custom messages. The walk goes through the child array the
+transcript holds when it starts, one position at a time: a row a renderer appends to
+that array is reached when its position comes up, and a row it removes before then
+is not. Replacing or clearing the transcript during the walk does not stop it, which
+finishes over the array it started with.
 
 The thinking shortcut (`app.thinking.toggle`) flips and saves `hideThinkingBlock`,
 replays the transcript, puts a streaming row back after it with the new visibility

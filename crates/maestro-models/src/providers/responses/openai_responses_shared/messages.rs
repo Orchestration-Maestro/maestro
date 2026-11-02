@@ -8,6 +8,7 @@ use serde_json::{Map, Value, json};
 use super::{ConvertResponsesMessagesOptions, ConvertResponsesToolsOptions, native};
 use crate::projection::IMAGE_PLACEHOLDER;
 use crate::providers::json_text::{compact_json, json_value, member, raw_json, raw_number};
+use crate::providers::model_compat::compat_flag;
 use crate::{
     AssistantContent, AssistantMessage, Context, DiagnosticErrorInfo, Message, Model, ModelInput,
     TextContent, TextPhase, Tool, ToolCall, ToolResultMessage, UserBlock, UserContent, UserMessage,
@@ -44,7 +45,7 @@ pub(crate) fn convert_responses_messages<S: BuildHasher>(
         .as_deref()
         .filter(|prompt| include_prompt && !prompt.is_empty())
     {
-        let role = if model.reasoning {
+        let role = if model.reasoning && compat_flag(model, "supportsDeveloperRole", true) {
             "developer"
         } else {
             "system"
@@ -162,6 +163,7 @@ pub(crate) fn convert_assistant(
         && assistant.provider == model.provider
         && assistant.api == model.api;
     let mut items = Vec::new();
+    let mut texts = 0;
     for block in &assistant.content {
         match block {
             AssistantContent::Thinking(thinking) => {
@@ -171,7 +173,10 @@ pub(crate) fn convert_assistant(
                     items.push(json_value(raw).map_err(|error| native(&error))?);
                 }
             }
-            AssistantContent::Text(text) => items.push(output_message(text, retained)),
+            AssistantContent::Text(text) => {
+                items.push(output_message(text, retained, texts));
+                texts += 1;
+            }
             AssistantContent::ToolCall(call) => items.push(function_call(call, other_model)?),
         }
     }
@@ -209,13 +214,15 @@ fn text_identity(signature: Option<&str>) -> Option<TextIdentity> {
 }
 
 /// Convert an assistant text block into a completed output message. An identifier of more than
-/// 64 UTF-16 units is replaced by a hash of it, and a missing one by the message position.
-fn output_message(text: &TextContent, retained: usize) -> Value {
+/// 64 UTF-16 units is replaced by a hash of it, and a missing one by the message position, with
+/// the position of the text block among the message's text blocks after the first.
+fn output_message(text: &TextContent, retained: usize, block: usize) -> Value {
     let identity = text_identity(text.text_signature.as_deref());
     let id = match identity.as_ref().map(|identity| identity.id.as_str()) {
         Some(id) if id.encode_utf16().count() > ID_LIMIT => format!("msg_{}", short_hash(id)),
         Some(id) if !id.is_empty() => id.to_owned(),
-        _ => format!("msg_{retained}"),
+        _ if block == 0 => format!("msg_{retained}"),
+        _ => format!("msg_{retained}_{block}"),
     };
     let mut message = json!({"type": "message", "role": "assistant",
         "content": [{"type": "output_text", "text": text.text, "annotations": []}],

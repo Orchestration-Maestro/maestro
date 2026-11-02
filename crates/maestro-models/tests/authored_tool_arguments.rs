@@ -8,6 +8,7 @@
 use std::collections::BTreeMap;
 use std::collections::HashSet;
 
+use crate::json_equivalence::equivalent;
 use maestro_models::{
     ParameterSchema, SchemaKind, Tool, ToolCall, validate_tool_arguments, validate_tool_call,
 };
@@ -296,29 +297,8 @@ fn assert_case(case: &Case) {
 fn same_outcome(actual: &Expected, expected: &Expected) -> bool {
     match (actual, expected) {
         (Expected::Err(actual), Expected::Err(expected)) => actual == expected,
-        (Expected::Ok(actual), Expected::Ok(expected)) => same_value(actual, expected),
+        (Expected::Ok(actual), Expected::Ok(expected)) => equivalent(actual, expected),
         _ => false,
-    }
-}
-
-/// Compare JSON values, treating numbers by their binary64 value.
-fn same_value(left: &Value, right: &Value) -> bool {
-    match (left, right) {
-        (Value::Number(left), Value::Number(right)) => left.as_f64() == right.as_f64(),
-        (Value::Array(left), Value::Array(right)) => {
-            left.len() == right.len()
-                && left
-                    .iter()
-                    .zip(right)
-                    .all(|(left, right)| same_value(left, right))
-        }
-        (Value::Object(left), Value::Object(right)) => {
-            left.len() == right.len()
-                && left
-                    .iter()
-                    .all(|(key, left)| right.get(key).is_some_and(|right| same_value(left, right)))
-        }
-        _ => left == right,
     }
 }
 

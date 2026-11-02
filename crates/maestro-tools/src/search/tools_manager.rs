@@ -97,12 +97,15 @@ impl SearchTool {
         }
     }
 
+    /// The version fixed for `host` because later releases carry no build for it.
+    fn pinned_version(self, host: Host) -> Option<&'static str> {
+        (self == Self::Fd && host.os == "macos" && host.asset_arch() == "x86_64")
+            .then_some("10.3.0")
+    }
+
     /// The release asset for `host`, or `None` on an unsupported platform.
     fn asset(self, version: &str, host: Host) -> Option<Asset> {
-        let arch = match host.arch {
-            "aarch64" => "aarch64",
-            _ => "x86_64",
-        };
+        let arch = host.asset_arch();
         let (target, archive) = match (host.os, self) {
             ("macos", _) => ("apple-darwin", Archive::TarGz),
             ("linux", Self::Rg) if arch == "x86_64" => ("unknown-linux-musl", Archive::TarGz),
@@ -128,6 +131,16 @@ struct Host {
     os: &'static str,
     /// `std::env::consts::ARCH` value.
     arch: &'static str,
+}
+
+impl Host {
+    /// Architecture spelling used in release asset names.
+    fn asset_arch(self) -> &'static str {
+        match self.arch {
+            "aarch64" => "aarch64",
+            _ => "x86_64",
+        }
+    }
 }
 
 /// The host this build runs on.
@@ -277,12 +290,15 @@ impl ToolsManager {
         maestro_path::join(&[&self.bin_dir, &self.binary_file_name(config)])
     }
 
-    /// Download, unpack and publish the latest release of `tool`.
+    /// Download, unpack and publish the latest release of `tool`, or its pinned version.
     ///
     /// Zip extraction and post-extraction steps do not yield; a dropped tar is killed.
     async fn download_tool(&self, tool: SearchTool) -> io::Result<String> {
         let config = tool.config();
-        let version = self.get_latest_version(config.repo).await?;
+        let version = match tool.pinned_version(self.host) {
+            Some(pinned) => pinned.to_owned(),
+            None => self.get_latest_version(config.repo).await?,
+        };
         let asset = tool.asset(&version, self.host).ok_or_else(|| {
             io::Error::other(format!(
                 "Unsupported platform: {}/{}",

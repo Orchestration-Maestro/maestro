@@ -65,7 +65,7 @@ pub enum Credential {
 impl From<Credential> for AuthCredential {
     fn from(value: Credential) -> Self {
         match value {
-            Credential::ApiKey { key } => Self::ApiKey(ApiKeyCredential { key }),
+            Credential::ApiKey { key } => Self::ApiKey(ApiKeyCredential { env: None, key }),
             Credential::OAuth {
                 access,
                 refresh,

@@ -4,6 +4,7 @@ mod application_message_encoding;
 
 mod application_message_records;
 mod branch_summary;
+mod compaction_context;
 mod compaction_preparation;
 mod context_projection;
 mod converter_binding;
@@ -16,10 +17,11 @@ mod session_extraction;
 mod session_files;
 mod session_history;
 mod session_tree;
-#[path = "../../maestro-catalog/tests/support/subprocess.rs"]
-mod subprocess;
+#[cfg(not(target_arch = "wasm32"))]
+use maestro_test_process::subprocess;
 mod summary_generation;
 mod summary_text;
+mod summary_usage;
 mod tool_argument_roots;
 /// Recorded corpus support shared by the test modules.
 mod support {
@@ -47,3 +49,7 @@ mod support {
     /// Full value comparison.
     pub mod value;
 }
+
+mod session_storage;
+
+mod session_storage_process;

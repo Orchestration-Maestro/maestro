@@ -54,7 +54,7 @@ pub(super) fn replay() {
         vec![],
     ));
     let cases: Vec<Case> =
-        serde_json::from_str(include_str!("../fixtures/tree-writer-focus.json")).unwrap();
+        super::on_this_platform(include_str!("../fixtures/tree-writer-focus.json"));
     assert_eq!(cases.len(), 2);
     for case in cases {
         replay_case(&case);
@@ -74,7 +74,7 @@ fn replay_case(case: &Case) {
         TerminalImage::new(|_| None, || 1),
         Some(true),
     );
-    let (_, theme) = published::published(&palette::palette("dark"));
+    let (_, theme) = published::published(&palette::palette("dark").unwrap()).unwrap();
     let entry = json!({"id":"a","parentId":null,"type":"message","message":{"role":"user","content":"hello"}});
     let node = maestro_app::SessionTreeNode {
         entry: &entry,

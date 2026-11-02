@@ -102,6 +102,7 @@ fn http_status_text_no_phrase_fallback() {
     }
 }
 
+mod idle_timeout;
 mod pac;
 
 #[test]

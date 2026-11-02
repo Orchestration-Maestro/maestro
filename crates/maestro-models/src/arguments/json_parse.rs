@@ -98,6 +98,11 @@ fn projection_error(error: &serde_json::Error) -> bool {
 
 pub(crate) use maestro_text::is_whitespace_scalar as whitespace;
 
+/// Whether `text` holds only whitespace.
+pub(crate) fn is_blank(text: &str) -> bool {
+    text.trim_matches(whitespace).is_empty()
+}
+
 /// Parse complete or useful incomplete JSON, falling back to an empty object.
 /// Strictly parsed scalar values, including null, are preserved. Numbers round to
 /// binary64 doubles, with valid overflow represented as null, even in partial containers.
@@ -106,7 +111,7 @@ pub(crate) use maestro_text::is_whitespace_scalar as whitespace;
 /// unconsumed trailing text or counting delimiters inside strings.
 #[must_use]
 pub fn parse_streaming_json(partial_json: Option<&str>) -> serde_json::Value {
-    let Some(input) = partial_json.filter(|text| !text.trim_matches(whitespace).is_empty()) else {
+    let Some(input) = partial_json.filter(|text| !is_blank(text)) else {
         return serde_json::json!({});
     };
     parse_json_with_repair(input)

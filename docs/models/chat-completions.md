@@ -85,19 +85,19 @@ token-limit field, the reasoning convention (`openai`, `openrouter`, `deepseek`,
 markers, session affinity and the one-hour cache lifetime. A zero or NaN token limit is
 omitted; a zero temperature is sent. A NaN or infinite temperature and an infinite token
 limit are sent as `null`, the way JSON text writes them. `OpenRouter` routing preferences are
-forwarded without field selection when the base URL contains `openrouter.ai` and the
-supplied value is truthy. Gateway routing selects only truthy `only` and `order`, in
-that order, when the base URL contains `ai-gateway.vercel.sh`; empty arrays are truthy.
+forwarded without field selection whenever the supplied value is truthy, whatever the base
+URL, so a proxy in front of the gateway still receives them. Gateway routing selects only truthy `only` and `order`, in
+that order, whatever the base URL; empty arrays are truthy.
 
 Reasoning follows the model's convention. A model that does not reason sends no
 reasoning fields. For one that does, `openai` sends a requested level as
 `reasoning_effort` (only where the endpoint accepts that field), `deepseek` as
-`reasoning_effort` with `thinking: enabled`, `openrouter` as `reasoning.effort`, `zai` and
-`qwen` as `enable_thinking: true`, and `qwen-chat-template` as `enable_thinking: true`
+`reasoning_effort` with `thinking: enabled`, `openrouter` as `reasoning.effort`, `zai` as
+`thinking: enabled`, `qwen` as `enable_thinking: true`, and `qwen-chat-template` as `enable_thinking: true`
 (with `preserve_thinking: true`) in `chat_template_kwargs`. Where a level is sent by name
 (`openai`, `deepseek`, `openrouter`), the name is the model's `thinking_level_map` entry,
 or the level's own name when the map has none (a `null` entry included). With no level
-requested, `zai` and `qwen` send `enable_thinking: false`, `qwen-chat-template` sends it
+requested, `zai` sends `thinking: disabled`, `qwen` sends `enable_thinking: false`, `qwen-chat-template` sends it
 in `chat_template_kwargs`, `deepseek` sends `thinking: disabled`, `openrouter` sends the
 map's `off` name (effort `none` when the map has no entry, nothing when it is `null`) and
 `openai` sends the map's `off` name when it has one, again only where the endpoint accepts
@@ -107,7 +107,7 @@ Cache retention follows the shared [options policy](../model-options.md#cache-re
 `none` suppresses
 prompt-cache and affinity fields. Cache markers, where the compatibility selects the
 `anthropic` style (by default the `openrouter` provider with a model whose ID starts with
-`anthropic/`), go on the first instruction, the last tool and the last conversation text;
+`anthropic/` or `~anthropic/`), go on the first instruction, the last tool and the last conversation text;
 with `long` retention they carry a one-hour lifetime where the compatibility supports it.
 `long` sends the `24h` retention and the session key only where the compatibility supports
 long caching; direct `OpenAI` URLs send the session key for any retention but `none`.
@@ -128,7 +128,11 @@ Other such IDs are kept, except for the `openai` provider, where they are cut to
 UTF-16 units at a character boundary. Blank assistant text and reasoning are dropped:
 spaces, line breaks, the no-break space and the byte-order mark count as blank, U+0085
 and U+200B do not. User text is kept as it is, and kept assistant text is never trimmed.
-Instructions use the developer role when the model reasons and the endpoint supports it.
+Instructions use the developer role when the model reasons and the endpoint supports it;
+an `OpenRouter` endpoint supports it only for model IDs starting with `anthropic/` or
+`openai/`. Reasoning replays in the field its block's signature names; the `opencode-go`
+provider streams its reasoning as `reasoning` and takes it back as `reasoning_content`, so
+the block carries and replays that name.
 Tool results are grouped; when the model accepts images, their images follow as one user
 message (preceded by an assistant bridge when the endpoint requires one). Tool-call
 arguments are written as compact JSON with array-index keys first in numeric order and
@@ -197,8 +201,8 @@ need no retry policy; replace it with `StreamOptions::fetch`, a function from
 timeout elapses, or the response status is 408, 409, 429 or at least 500;
 `x-should-retry: true` or `false` overrides the status. A 2xx response is accepted as it
 is: neither `x-should-retry` nor the retry hints below are read for it. The default is
-two retries and a 600,000-millisecond timeout that ends when the response headers arrive,
-so a slow body is not cut short. Before a retry of a response, the wait comes from
+two retries and a 600,000-millisecond setup timeout that ends when the response
+headers arrive. The shared native client's separate idle limit covers body chunks too. Before a retry of a response, the wait comes from
 `retry-after-ms` when it is nonzero, else from `retry-after` as seconds or an HTTP date (a
 past date means no wait), else from a zero `retry-after-ms`; with no usable hint, and after
 a connection failure or a timeout, it is `min(0.5 * 2^n, 8)` seconds reduced by up to a
@@ -209,6 +213,14 @@ is sent, including a retry count beyond what a 64-bit integer holds. The retry c
 exact integer budget, so even a very large count is used up one retry at a time. Aborting
 the signal interrupts a pending request, the read of an error body or a retry wait, and on
 browser targets the timers of requests that finish, fail or are aborted are cleared.
+
+The shared native client starts with a 300,000 ms idle limit for response headers
+and the gap between body chunks. `configure_http_dispatcher(timeout_ms)` replaces
+the client for subsequent requests. Fractional milliseconds are floored; `0`
+disables both limits. Header waiting
+includes connecting and sending. This setting does not change private clients
+or browser transport, and disabling it leaves the provider's setup timeout in
+place.
 
 HTTP responses carry `status_text`; see [`default_fetch`](https://docs.rs/maestro-models/latest/maestro_models/fn.default_fetch.html) for the default client's platform policy.
 

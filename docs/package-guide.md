@@ -115,7 +115,6 @@ normal session, so select your model and credentials as usual.
    skills, prompts and themes. Search for an entry, select it with the navigation
    keys, toggle with Space, and close with Escape. The selector saves changes in
    the owning scope; see [selectors](chat/selectors.md#resource-configuration).
-   Known issue: keys are currently ignored ([#3006](https://github.com/Orchestration-Maestro/maestro/issues/3006)); edit `packages`/filter settings manually meanwhile.
 3. Update packages without updating the executable:
 
    ```sh
