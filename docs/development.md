@@ -518,6 +518,25 @@ An unmatched ordinary-test filter fails rather than passing an empty selection.
 Use direct `cargo test --doc` for doctest-only runs and direct `cargo nextest run`
 for runner-only flags or target selection. `tui-test-ansi` runs only nextest.
 
+### Shared test support
+
+Keep one owner for a reusable fixture inside its crate. When unit and integration
+tests need the same fixture, put it in `tests/support/` and include that file from
+both test programs. A test-only self alias lets the file name its owning crate
+consistently in either program; it adds no production export.
+
+For example, the models tests include
+[`oauth_admission.rs`](../crates/maestro-models/tests/support/oauth_admission.rs)
+from `src/tests.rs` and `tests/integration.rs`. Each program keeps its own registry
+admission lock and resets its registry on entry and drop. The same layout owns
+native peer reads, process readiness polling and image-enabled terminal fixtures.
+Helpers used only by sibling unit modules stay beside those tests, as the daemon's
+terminal fixture does. Chat callback recorders and web pointer events likewise
+stay in their existing integration-test support modules.
+
+Use the shared fixture without changing the caller's assertions or adding a
+production feature for test access.
+
 ### FTP peer support
 
 The models tests share the scripted peer in
@@ -993,6 +1012,57 @@ workspace, a browser resolution and a consumer workspace in a child whose shared
 still reaches the shared home fails at once instead of waiting for another test.
 
 ### Child-process tests
+
+Stage the setup tool before a filtered native-fixture run:
+
+```sh
+just prepare-tests
+cargo nextest run --locked -p maestro-test-process
+```
+
+Use checked reruns when the test owns the invocation and harness framing. Use the
+prepared `native_fixture` example when a backend launches a program by name with
+literal operands, or when its protocol requires raw bytes. The complete contract
+is [Rust test children](specs/test-processes.md).
+
+#### Direct native fixtures
+
+Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` for the
+currently served packages, `maestro-test-process` and `maestro-tooling`. Local
+setup builds the example with the locked host `dev` profile and reads Cargo's
+emitted executable path. It records source inputs, content digest and host in
+`target/test-setup/native-fixture.json`; unchanged inputs reuse that artifact.
+Prepared archive runs validate the staged copy and export its remapped absolute
+path without building. A missing or stale archive artifact fails setup. Re-run
+preparation instead of adding a target-directory search or a runtime compiler.
+
+Call `install_executable(artifact, destination)` with that explicit path. The
+caller's disposable directory owns the alias. Installation runs inside the same
+artifact and waits for the copy's writer to close; the test runner never opens a
+writable executable that a sibling child could inherit. Copies have independent
+modification times. Windows aliases use the native `.exe` suffix.
+
+The observation scenario reads `<alias>.fixture`, including the `.exe` suffix
+when present. The record has exactly three lines: `observe`, the parent's
+nonzero TCP port and an exit status from 0 to 255. It reports its actual PID, cwd,
+`MTP_VALUE` and each unmodified operand on that socket as length-prefixed native
+strings (eight-byte little-endian byte length). It closes the socket, writes
+`err` followed by NUL, byte FE and `!` on stderr, echoes stdin unchanged to stdout
+and exits with the supplied status. Neither output stream carries harness text.
+An unknown or malformed record fails before connecting or writing the optional
+`MTP_EFFECT` sentinel. Direct invocation uses `--maestro-observe <record> <operands>`;
+installed aliases leave all operands untouched. Add cohesive finite Rust fixture
+families to this one target, never a script evaluator or another launcher.
+
+The preparation tests also use a `tooling-cargo` record with the real Cargo path
+and an existing setup-example template path. That scenario forwards metadata,
+accepts the existing Clippy probe and stages the two preparation examples. On Unix,
+metadata replaces the fixture process, keeping its native PID and signal delivery. The
+remaining setup-example templates still use their existing shell fixtures until
+their owning conversion lands. Typed isolated native setup is planned; current
+Unix `shell_setup` remains available during that conversion.
+
+#### Checked reruns
 
 A test that re-runs one test in a fresh process starts it through
 `maestro-test-process`, a native dev-dependency, instead of building a `Command`

@@ -106,9 +106,10 @@ as a thinking block with an empty signature instead of plain text.
 
 The payload holds `model`, `messages`, `max_tokens`, `stream`, optional `betas`, then `system`, `temperature`,
 `tools`, `thinking`, `output_config`, `metadata` and `tool_choice` where they apply.
-`max_tokens` is the caller's value
-unless it is zero or not a number, otherwise the model's output cap. An
-infinite limit, and a temperature that is infinite or not a number, are written as `null`;
+For raw requests, `max_tokens` is the caller's value whenever supplied, including
+`0`; only an absent limit takes the model's output cap. The simple entry computes
+its own budget and uses the model cap when the computed limit is zero or `NaN`. A limit or temperature that is infinite or
+not a number is written as `null`;
 negative zero is written as `0`. `metadata` carries `user_id` only when the caller's metadata
 holds it as text. `ToolChoice::Auto` and `None` are sent as `auto` and `none`, `Required` as
 `any`, and `Function` as a `tool` choice naming the function. A tool declares its name,

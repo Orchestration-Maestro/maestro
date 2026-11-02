@@ -304,6 +304,29 @@ fn settings_changes_preserve_each_callback_effect() {
 }
 
 #[test]
+fn settings_panel_reports_invalid_http_idle_timeout() {
+    isolated(
+        "settings_panel_reports_invalid_http_idle_timeout",
+        async |directory| {
+            let world = started_settings(directory).await;
+            world
+                .host
+                .session()
+                .settings_manager()
+                .borrow_mut()
+                .apply_overrides(serde_json::from_value(json!({"httpIdleTimeoutMs": -5})).unwrap());
+            let result = world.mode.show_settings_selector();
+            assert_eq!(
+                result.unwrap_err().to_string(),
+                "Invalid httpIdleTimeoutMs setting: -5"
+            );
+            assert!(panel(&world).is_none());
+            drop(world.runtime.settle());
+        },
+    );
+}
+
+#[test]
 fn settings_http_idle_timeout_change_is_saved_and_announced() {
     isolated(
         "settings_http_idle_timeout_change_is_saved_and_announced",
@@ -316,16 +339,19 @@ fn settings_http_idle_timeout_change_is_saved_and_announced() {
                     .settings_manager()
                     .borrow()
                     .get_http_idle_timeout_ms()
+                    .unwrap()
             };
             assert!(saved().total_cmp(&300_000.0).is_eq());
             choose(&list, "idle", 0);
             assert!(saved().total_cmp(&0.0).is_eq(), "the choice is saved");
+            next_http_request_uses_idle_limit(None).await;
             assert!(
                 super::actions::shows(&world.mode.chat_container, "HTTP idle timeout: disabled"),
                 "the transcript names the new limit"
             );
             choose(&list, "idle", 0);
             assert!(saved().total_cmp(&30_000.0).is_eq());
+            next_http_request_uses_idle_limit(Some(30_000)).await;
             assert!(super::actions::shows(
                 &world.mode.chat_container,
                 "HTTP idle timeout: 30 sec"
@@ -1641,6 +1667,83 @@ fn settings_theme_cancel_replays_the_saved_theme_without_persisting() {
     );
 }
 
+/// Check the next shared-client request against a peer that withholds response headers.
+pub(super) async fn next_http_request_uses_idle_limit(milliseconds: Option<u64>) {
+    use futures_util::{
+        FutureExt,
+        future::{Either, select},
+    };
+    use tokio::io::AsyncReadExt;
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let address = listener.local_addr().unwrap();
+    let (arrived, received) = tokio::sync::oneshot::channel();
+    let (release, released) = tokio::sync::oneshot::channel();
+    let peer = tokio::task::spawn_local(async move {
+        let (mut socket, _) = listener.accept().await.unwrap();
+        let mut headers = Vec::new();
+        while !headers.ends_with(b"\r\n\r\n") {
+            headers.push(socket.read_u8().await.unwrap());
+        }
+        arrived.send(()).unwrap();
+        released.await.unwrap();
+    });
+    let request = maestro_app::default_fetch()(maestro_app::HttpRequest {
+        method: "GET".into(),
+        url: format!("http://{address}/"),
+        headers: indexmap::IndexMap::new(),
+        body: Vec::new(),
+        signal: None,
+    });
+    let Either::Right((Ok(()), mut request)) = select(request, received).await else {
+        panic!("the peer must receive the request before it ends");
+    };
+    tokio::time::pause();
+    let started = tokio::time::Instant::now();
+    let limit = milliseconds.unwrap_or(600_000);
+    let early = limit * 3 / 4;
+    tokio::time::advance(std::time::Duration::from_millis(early)).await;
+    tokio::task::yield_now().await;
+    assert!(request.as_mut().now_or_never().is_none());
+    tokio::time::advance(std::time::Duration::from_millis(limit - early)).await;
+    tokio::task::yield_now().await;
+    if milliseconds.is_some() {
+        assert!(matches!(
+            request.as_mut().await,
+            Err(maestro_app::FetchError::Timeout)
+        ));
+        // Tokio deadlines round up to the next 1 ms timer tick.
+        assert!(
+            (u128::from(limit)..=u128::from(limit) + 1).contains(&started.elapsed().as_millis())
+        );
+    } else {
+        assert!(request.as_mut().now_or_never().is_none());
+    }
+    drop(request);
+    release.send(()).unwrap();
+    peer.await.unwrap();
+    tokio::time::resume();
+}
+
+#[test]
+fn runtime_settings_apply_http_idle_limit_to_next_request() {
+    isolated(
+        "runtime_settings_apply_http_idle_limit_to_next_request",
+        async |directory| {
+            let world = started_settings(directory).await;
+            world
+                .host
+                .session()
+                .settings_manager()
+                .borrow_mut()
+                .set_http_idle_timeout_ms(60_000.0)
+                .unwrap();
+            world.mode.apply_runtime_settings().unwrap();
+            next_http_request_uses_idle_limit(Some(60_000)).await;
+            drop(world.runtime.settle());
+        },
+    );
+}
+
 /// Refuses explicit behaviour edits while allowing tool refresh candidates.
 struct RefuseBehaviour;
 impl maestro_app::SettingsDecider for RefuseBehaviour {
@@ -1947,18 +2050,22 @@ fn invalid_http_idle_timeout_callback_keeps_saved_value_and_reports_no_success()
             let callbacks = world.mode.settings_callbacks(Rc::new(|| {}));
             let raw = session.settings_manager().borrow().get_global_settings().0;
 
-            for value in [-5.0, f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            for (value, spelling) in [
+                (-5.0, "-5"),
+                (f64::NAN, "NaN"),
+                (f64::INFINITY, "Infinity"),
+                (f64::NEG_INFINITY, "-Infinity"),
+            ] {
                 assert!(!(callbacks.on_http_idle_timeout_ms_change)(value));
                 assert_eq!(
                     session.settings_manager().borrow().get_global_settings().0,
                     raw
                 );
+                assert!(super::actions::shows(
+                    &world.mode.chat_container,
+                    &format!("Invalid httpIdleTimeoutMs setting: {spelling}")
+                ));
             }
-
-            assert!(super::actions::shows(
-                &world.mode.chat_container,
-                "invalid HTTP idle timeout"
-            ));
             assert!(!super::actions::shows(
                 &world.mode.chat_container,
                 "HTTP idle timeout:"

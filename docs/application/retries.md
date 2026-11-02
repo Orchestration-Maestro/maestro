@@ -51,4 +51,6 @@ A context overflow is never retried; compaction recovers it instead. The
 overflow classifier recognizes the Together wording "The input (N tokens) is
 longer than the model's context length (M tokens)" and the LiteLLM wording
 "Requested token count exceeds the model's maximum context length of M tokens"
-beside the other provider wordings.
+beside the other provider wordings. The parenthesized wording
+"Input length (265330) exceeds model's maximum context length (262144)." is not
+an overflow; ordinary retry rules decide whether to retry it.

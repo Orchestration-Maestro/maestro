@@ -37,7 +37,7 @@ maestro-path = { path = "../maestro-path" }
 maestro-resources = { path = "../maestro-resources" }
 maestro-process = { path = "../maestro-process" }
 getrandom = "=0.4.3"
-zip = { version = "=9.0.3", default-features = false, features = ["deflate-flate2"] }
+zip = { version = "=9.0.5", default-features = false, features = ["deflate-flate2"] }
 owo-colors = "=4.2.1"
 icu_normalizer = { version = "=2.3.0", default-features = false, features = ["compiled_data"] }
 tokio = { version = "=1.53.3", default-features = false, features = ["rt", "fs", "sync", "process", "time", "macros"] }

@@ -44,6 +44,7 @@ mod tests {
             assert!(is_context_overflow(&message(Some(text)), None), "{text}");
         }
         for text in [
+            "Input length (265330) exceeds model's maximum context length (262144).",
             "500 `model runner crashed unexpectedly`",
             "Service unavailable: The service is temporarily unavailable.",
             "Rate limit exceeded, please retry after 30 seconds.",

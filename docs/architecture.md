@@ -462,12 +462,20 @@ application dependency passes. Other listed frontend edges are permitted, not
 required, and are declared only when used. Source failures include the offending
 file and line.
 
-Exact test selection belongs to `maestro-test-process`. The conventions checker
-rejects Rust string tokens whose decoded value is `--exact` outside that exact
-Cargo package, reporting the source path and first violating line. It scans all
-loaded Rust sources, including macro tokens, disabled configurations and source
-fragments. Comments, larger fixture strings, byte strings and C strings are not
-selector tokens. This bounded rule does not expand macros, resolve constructed
+Checked test selection and direct native fixtures belong to `maestro-test-process`.
+Its one harness-free example receives literal native operands; its installer copies
+aliases through that same artifact without writable executable handles in the test
+runner. `maestro-tooling` builds, fingerprints and stages the host artifact in the
+existing test bundle and nextest setup exports its explicit path, including after
+archive relocation. This adds no domain dependency or guest/browser native edge.
+Typed isolated native setup is planned; existing shell setup remains documented
+until every caller moves. See [child-process tests](development.md#child-process-tests).
+
+The conventions checker rejects Rust string tokens whose decoded value is
+`--exact` outside `maestro-test-process`, reporting the source path and first
+violating line. It scans all loaded Rust sources, including macro tokens,
+disabled configurations and source fragments. Comments, larger fixture strings,
+byte strings and C strings are not selector tokens. This bounded rule does not expand macros, resolve constructed
 strings, interpret data files or infer process launches; review still checks
 those cases.
 

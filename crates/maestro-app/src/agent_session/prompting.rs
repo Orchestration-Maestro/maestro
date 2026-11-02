@@ -201,6 +201,10 @@ impl<E: ExtensionExecution> AgentSession<E> {
         }
         self.flush_pending_bash_messages()?;
         self.require_credentials()?;
+        self.settings_manager
+            .borrow()
+            .get_http_idle_timeout_ms()
+            .map_err(|error| DiagnosticErrorInfo::error(error.to_string()))?;
         let last = last_assistant_message(&read(&self.messages()));
         if let Some(last) = last {
             let last = read(&last).clone();

@@ -406,16 +406,4 @@ impl<'a> Canvas<'a> {
         (actions, output)
     }
 }
-/// One pointer transition at a supplied canvas point.
-#[must_use]
-pub fn pointer(pos: egui::Pos2, pressed: bool) -> Vec<egui::Event> {
-    vec![
-        egui::Event::PointerMoved(pos),
-        egui::Event::PointerButton {
-            pos,
-            button: egui::PointerButton::Primary,
-            pressed,
-            modifiers: egui::Modifiers::NONE,
-        },
-    ]
-}
+pub use crate::support::pointer::pointer;

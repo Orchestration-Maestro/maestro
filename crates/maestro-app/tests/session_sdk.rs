@@ -667,6 +667,37 @@ fn http_idle_timeout_is_the_default_request_timeout_and_zero_disables_it() {
     });
 }
 
+#[test]
+fn invalid_http_idle_timeout_fails_each_sdk_request() {
+    on_task_set(|_| async {
+        let h = fixture(Auth::Key).await;
+        let mut setup = options(&h, json!({"httpIdleTimeoutMs": -5}));
+        let model = h.model("faux-1");
+        setup.model = Some(Arc::clone(&model));
+        let created = create(setup).await;
+        let requests = script_responses(&h, vec![answer("unused", None, None)]);
+        let agent = created.session.agent();
+        let stream = Rc::clone(agent.stream_fn.read().unwrap().as_ref().unwrap());
+        let selected = model.read().unwrap().clone();
+        let result = stream(
+            selected,
+            maestro_models::Context {
+                system_prompt: None,
+                messages: Vec::new(),
+                tools: None,
+            },
+            maestro_models::SimpleStreamOptions::default(),
+            maestro_models::ProviderStreamOptions::default(),
+        )
+        .await;
+        assert_eq!(
+            result.err().unwrap().message,
+            "Invalid httpIdleTimeoutMs setting: -5"
+        );
+        assert!(requests.lock().unwrap().is_empty());
+    });
+}
+
 /// Exact-spelled request headers captured before protocol normalization.
 type AttributionHeaders = indexmap::IndexMap<String, String>;
 

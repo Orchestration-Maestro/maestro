@@ -429,7 +429,7 @@ pub fn stabilize_agent_detection(
 }
 
 #[cfg(test)]
-mod tests;
+pub(in crate::terminal) mod tests;
 
 /// Supplied detection facts for one observed process generation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

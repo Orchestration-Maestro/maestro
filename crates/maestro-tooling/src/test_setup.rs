@@ -34,6 +34,7 @@ use user_cache::user_cache_home;
 mod base;
 mod compiled_code;
 mod inputs;
+pub(crate) mod native_fixture;
 mod plan;
 #[cfg(test)]
 mod tests;
@@ -161,6 +162,7 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
             components.len()
         ))
     })?;
+    native_fixture::prepare(cargo, checkout, output, target)?;
     stage_browser_graph(cargo, checkout, output)?;
     let mut unchanged = artifacts.is_current(checkout)?;
     for component in components.values() {

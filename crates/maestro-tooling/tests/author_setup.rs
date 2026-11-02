@@ -945,29 +945,6 @@ echo x > "$XDG_CACHE_HOME/wasmtime/modules/wasmtime-fixture-${seconds}000/key"
 echo y > "$XDG_CACHE_HOME/wasmtime/modules/wasmtime-other-${seconds}000/key"
 "#;
 
-/// The fixture Cargo: it counts its builds and builds the setup example `@example@` in the `dev`
-/// profile, which it requires, and a `run` also starts that example.
-const CARGO: &str = r#"#!/bin/sh
-set -eu
-if [ "$1" = metadata ]; then exec "@cargo@" "$@"; fi
-if [ "$1" = clippy ]; then exit 0; fi
-case " $* " in *" --profile dev "*) ;; *) echo "build without the dev profile: $*" >&2; exit 1 ;; esac
-echo build >> builds
-mode=$1
-while [ $# -gt 0 ]; do
-    if [ "$1" = --target-dir ]; then target=$2; fi
-    shift
-done
-example=$target/debug/examples/prepare_author_component
-mkdir -p "${example%/*}"
-cat > "$example" <<'EXAMPLE'
-@example@
-EXAMPLE
-chmod +x "$example"
-touch -t 202001010000.00 "$example"
-if [ "$mode" = run ]; then "$example"; fi
-"#;
-
 /// Give the standalone command a controlled Cargo boundary and source checkout.
 fn fixture(root: &Path) {
     fixture_with(root, EXAMPLE);
@@ -975,7 +952,6 @@ fn fixture(root: &Path) {
 
 /// Like `fixture`, with the setup example script the fixture Cargo builds.
 fn fixture_with(root: &Path, example: &str) {
-    use std::os::unix::fs::PermissionsExt;
     workspace(root);
     fs::write(root.join("component.wasm"), "component bytes").unwrap();
     fs::write(
@@ -989,14 +965,19 @@ fn fixture_with(root: &Path, example: &str) {
     fs::write(root.join("justfile"), BROWSER_RECIPES).unwrap();
     executable(&root.join("target/debug/deps/older"), 100);
     executable(&root.join("target/debug/deps/newer"), 200);
+    fs::write(root.join("example-source"), example).unwrap();
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .expect("nextest native-fixture setup supplies the artifact");
+    maestro_test_process::install_executable(Path::new(&artifact), &root.join("cargo")).unwrap();
     fs::write(
-        root.join("cargo"),
-        CARGO
-            .replace("@example@", example)
-            .replace("@cargo@", env!("CARGO")),
+        root.join("cargo.fixture"),
+        format!(
+            "tooling-cargo\n{}\n{}\n",
+            env!("CARGO"),
+            root.join("example-source").display()
+        ),
     )
     .unwrap();
-    fs::set_permissions(root.join("cargo"), fs::Permissions::from_mode(0o755)).unwrap();
     for args in [["init", "-q"].as_slice(), ["add", "."].as_slice()] {
         assert_success(
             &Command::new("git")
@@ -1021,6 +1002,7 @@ fn workspace(root: &Path) {
         "version = 4\n\n[[package]]\nname = \"maestro-extensions-wasm\"\nversion = \"0.0.0\"\ndependencies = [\n \"shared\",\n]\n\n\
          [[package]]\nname = \"maestro-subagents\"\nversion = \"0.0.0\"\n\n\
          [[package]]\nname = \"maestro-tooling\"\nversion = \"0.0.0\"\n\n\
+         [[package]]\nname = \"maestro-test-process\"\nversion = \"0.0.0\"\n\n\
          [[package]]\nname = \"maestro-web\"\nversion = \"0.0.0\"\n\n\
          [[package]]\nname = \"shared\"\nversion = \"0.0.0\"\n\n\
          [[package]]\nname = \"unrelated\"\nversion = \"0.0.0\"\n",
@@ -1033,6 +1015,7 @@ fn workspace(root: &Path) {
         ),
         ("maestro-subagents", ""),
         ("maestro-tooling", ""),
+        ("maestro-test-process", ""),
         ("maestro-web", ""),
         ("shared", ""),
         ("unrelated", ""),
@@ -1229,5 +1212,104 @@ fn assert_success(output: &Output) {
         "{}\n{}",
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+/// The native setup builds once, exports an explicit artifact and reuses it after relocation.
+#[test]
+fn native_fixture_setup_reuses_one_build_after_archive_relocation() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture(root);
+    let environment = root.join("native-env");
+    let setup = || {
+        let mut command = Command::new(env!("CARGO_BIN_EXE_development"));
+        command
+            .args(["nextest-setup", "native-fixture"])
+            .current_dir(root)
+            .env("CARGO", root.join("cargo"))
+            .env("NEXTEST_ENV", &environment)
+            .env_remove("TEST_PREPARE_OUTPUT")
+            .env_remove("TEST_ARCHIVE");
+        command
+    };
+    assert_success(&setup().output().unwrap());
+    assert_success(&setup().output().unwrap());
+    assert_eq!(
+        fs::read_to_string(root.join("native-builds")).unwrap(),
+        "build\n"
+    );
+    let moved = root.join("archive space é");
+    fs::rename(root.join("target/test-setup"), &moved).unwrap();
+    fs::remove_dir_all(root.join("target/native-fixture")).unwrap();
+    fs::remove_file(&environment).unwrap();
+    assert_success(
+        &setup()
+            .env("TEST_ARCHIVE", "1")
+            .env("TEST_PREPARE_OUTPUT", &moved)
+            .output()
+            .unwrap(),
+    );
+    let line = fs::read_to_string(&environment).unwrap();
+    let artifact = Path::new(
+        line.trim_end()
+            .strip_prefix("MAESTRO_NATIVE_FIXTURE=")
+            .unwrap(),
+    );
+    assert!(artifact.is_absolute() && artifact.starts_with(&moved));
+    let alias = root.join("installed");
+    maestro_test_process::install_executable(artifact, &alias).unwrap();
+    assert_eq!(fs::read(alias).unwrap(), fs::read(artifact).unwrap());
+    assert_eq!(
+        fs::read_to_string(root.join("native-builds")).unwrap(),
+        "build\n"
+    );
+}
+
+/// Archive setup refuses missing, changed or foreign native artifacts without a build or export.
+#[test]
+fn native_fixture_archive_refuses_missing_stale_and_incompatible_artifacts() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture(root);
+    prepare(root);
+    let bundle = root.join("target/test-setup");
+    let artifact = bundle.join("native_fixture");
+    let original = fs::read(&artifact).unwrap();
+    let receipt = bundle.join("native-fixture.json");
+    let record = fs::read(&receipt).unwrap();
+    let source = root.join("crates/maestro-test-process/src/lib.rs");
+    for change in ["missing", "bytes", "host", "source", "receipt"] {
+        match change {
+            "missing" => fs::remove_file(&artifact).unwrap(),
+            "bytes" => fs::write(&artifact, b"changed").unwrap(),
+            "host" => {
+                let mut value: serde_json::Value = serde_json::from_slice(&record).unwrap();
+                value["host"] = "foreign-host".into();
+                fs::write(&receipt, serde_json::to_vec(&value).unwrap()).unwrap();
+            }
+            "source" => fs::write(&source, "changed").unwrap(),
+            "receipt" => fs::remove_file(&receipt).unwrap(),
+            _ => unreachable!(),
+        }
+        let environment = root.join("native-env");
+        let output = Command::new(env!("CARGO_BIN_EXE_development"))
+            .args(["nextest-setup", "native-fixture"])
+            .current_dir(root)
+            .env("CARGO", root.join("missing-cargo"))
+            .env("NEXTEST_ENV", &environment)
+            .env("TEST_ARCHIVE", "1")
+            .env("TEST_PREPARE_OUTPUT", &bundle)
+            .output()
+            .unwrap();
+        assert!(!output.status.success(), "accepted {change}");
+        assert!(!environment.exists());
+        fs::write(&artifact, &original).unwrap();
+        fs::write(&receipt, &record).unwrap();
+        fs::write(&source, "original source").unwrap();
+    }
+    assert_eq!(
+        fs::read_to_string(root.join("native-builds")).unwrap(),
+        "build\n"
     );
 }

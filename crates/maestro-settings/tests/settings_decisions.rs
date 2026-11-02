@@ -243,7 +243,7 @@ fn idle_timeout_setter_and_prepared_edit_share_validation() {
     let mut manager = SettingsManager::from_storage(storage.clone());
     let decider = Arc::new(IdleTimeoutDecider(std::sync::atomic::AtomicUsize::new(0)));
     manager.register_decider(decider.clone()).unwrap();
-    manager.set_http_idle_timeout_ms(2500.9);
+    manager.set_http_idle_timeout_ms(2500.9).unwrap();
     block_on(manager.flush());
     assert_eq!(
         manager.get_global_settings().0["httpIdleTimeoutMs"],
@@ -252,9 +252,20 @@ fn idle_timeout_setter_and_prepared_edit_share_validation() {
     assert_eq!(decider.0.load(std::sync::atomic::Ordering::Relaxed), 1);
     let writes = storage.writes();
 
-    for value in [-5.0, f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
-        assert!(SettingsManager::prepare_http_idle_timeout_ms(value).is_none());
-        manager.set_http_idle_timeout_ms(value);
+    for (value, spelling) in [
+        (-5.0, "-5"),
+        (f64::NAN, "NaN"),
+        (f64::INFINITY, "Infinity"),
+        (f64::NEG_INFINITY, "-Infinity"),
+    ] {
+        let error = SettingsManager::prepare_http_idle_timeout_ms(value)
+            .err()
+            .unwrap();
+        assert_eq!(
+            error.to_string(),
+            format!("Invalid httpIdleTimeoutMs setting: {spelling}")
+        );
+        assert_eq!(manager.set_http_idle_timeout_ms(value).unwrap_err(), error);
         block_on(manager.flush());
         assert_eq!(storage.writes(), writes);
     }
