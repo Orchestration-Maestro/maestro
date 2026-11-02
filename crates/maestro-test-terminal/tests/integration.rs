@@ -1,11 +1,6 @@
 //! Terminal scenarios compiled as one integration-test program.
 
-#[allow(
-    dead_code,
-    reason = "Shared input fixtures expose additional widget scenarios."
-)]
-#[path = "../../maestro-tui/tests/fixtures/input_support/mod.rs"]
-mod input_support;
+use maestro_tui::test_support::input_support;
 #[allow(
     dead_code,
     reason = "Support items are shared by several test scenarios."

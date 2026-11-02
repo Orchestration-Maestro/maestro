@@ -1,6 +1,56 @@
 //! Header inspection and exact cell geometry.
 use super::{CellDimensions, ImageDimensions};
 
+/// The cells an image fills after it is scaled to fit its bounds.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ImageCellSize {
+    /// Columns, from one through the width bound.
+    pub columns: u32,
+    /// Rows, from one through the height bound when there is one.
+    pub rows: usize,
+}
+
+/// Scales an image up or down until it fills `max_width_cells` columns or, when supplied,
+/// `max_height_cells` rows, whichever it reaches first, keeping its aspect ratio; absence for
+/// unusable geometry. A height bound of zero counts as one row.
+#[must_use]
+pub fn calculate_image_cell_size(
+    dimensions: ImageDimensions,
+    max_width_cells: u32,
+    max_height_cells: Option<u32>,
+    cells: Option<CellDimensions>,
+) -> Option<ImageCellSize> {
+    let rows = calculate_image_rows(dimensions, max_width_cells, cells)?;
+    let Some(max_height) = max_height_cells.map(|rows| rows.max(1)) else {
+        return Some(ImageCellSize {
+            columns: max_width_cells,
+            rows,
+        });
+    };
+    let cells = cells.unwrap_or_default();
+    let (width, height) = (
+        u128::from(dimensions.width_px),
+        u128::from(dimensions.height_px),
+    );
+    // The width bound is reached first when its scale is no larger than the height bound's.
+    let width_scaled = u128::from(max_width_cells) * u128::from(cells.width_px) * height;
+    let height_scaled = u128::from(max_height) * u128::from(cells.height_px) * width;
+    if width_scaled <= height_scaled {
+        return Some(ImageCellSize {
+            columns: max_width_cells,
+            rows: rows.max(1),
+        });
+    }
+    let columns = (width * u128::from(max_height) * u128::from(cells.height_px))
+        .div_ceil(height * u128::from(cells.width_px));
+    Some(ImageCellSize {
+        columns: u32::try_from(columns)
+            .unwrap_or(u32::MAX)
+            .clamp(1, max_width_cells),
+        rows: usize::try_from(max_height).ok()?,
+    })
+}
+
 /// Returns the aspect-scaled row ceiling, or absence for unusable geometry.
 #[must_use]
 pub fn calculate_image_rows(

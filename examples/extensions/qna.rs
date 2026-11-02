@@ -1,4 +1,5 @@
 //! Extracts questions from the last complete assistant reply into the editor.
+// maestro-component: MAESTRO_QNA_COMPONENT
 #![cfg(target_arch = "wasm32")]
 #![forbid(
     clippy::pedantic,
@@ -112,6 +113,7 @@ async fn extract(
     let ResolvedRequestAuth::Ok {
         api_key: Some(api_key),
         headers,
+        base_url,
     } = auth
     else {
         return Ok(None);
@@ -138,6 +140,7 @@ async fn extract(
         Some(ProviderStreamOptions {
             common: StreamOptions {
                 api_key: Some(api_key),
+                base_url,
                 headers,
                 signal: Some(loader.signal()?),
                 ..Default::default()

@@ -636,9 +636,10 @@ fn local_renderer_binding_drops_executable_owners() {
     let env = crate::display_support::Env::with(
         crate::display_support::shipped_theme("dark", None),
         Rc::new(crate::display_support::NoLanguages),
-    );
+    )
+    .unwrap();
     let recorded = json!({"readme":"/opt/maestro/README.md","bindings":[]});
-    let setup = crate::display_support::Setup::from(&recorded);
+    let setup = crate::display_support::Setup::from(&recorded).unwrap();
     let _bindings = crate::display_support::bind(&crate::display_support::expand_keys(&recorded));
     let args = json!({});
     let row = crate::display_support::context::<ToolRendererState>(&args, &setup, &env, None);
@@ -956,7 +957,7 @@ fn check_read_context(input: &Value, expected: &Value) {
         signal.abort();
     }
     release.send(()).unwrap();
-    let result = future.now_or_never().unwrap();
+    let result = crate::runtime::run(future);
     if state == "cancel" {
         assert_eq!(json!({"error":result.err().unwrap().message}), *expected);
         assert_eq!(*seen.lock().unwrap(), ["access", "mime"]);

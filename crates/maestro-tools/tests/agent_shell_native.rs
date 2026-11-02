@@ -199,7 +199,7 @@ async fn native_artifact(tool: &maestro_agent::AgentTool, status: i32) {
         .unwrap()
         .as_str()
         .unwrap();
-    assert!(text.contains("[Showing lines 1002-3001 of 3001. Full output: <artifact>]"));
+    assert!(text.contains("[Showing lines 1001-3000 of 3000. Full output: <artifact>]"));
     if status == 7 {
         assert!(text.ends_with("\n\nCommand exited with code 7"));
     }

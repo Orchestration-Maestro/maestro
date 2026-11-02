@@ -17,7 +17,7 @@ mod package_manager;
 pub use package_manager::NativePackageOperations;
 pub use package_manager::{
     CommandCaptureOptions, CommandOutput, ConfiguredPackage, DefaultPackageManager, GitPinStatus,
-    InstalledSourceScope, MissingSourceAction, PackageFuture, PackageManager,
+    GitRelease, InstalledSourceScope, MissingSourceAction, PackageFuture, PackageManager,
     PackageManagerOptions, PackageOperations, PackageUpdate, PackageUpdateType, ProgressAction,
     ProgressCallback, ProgressEvent, ProgressEventType, ResolvedPackage, ResolvedPaths,
     ResolvedResource,
@@ -26,3 +26,7 @@ pub use package_manager::{
 pub use maestro_pattern::{PatternError, minimatch};
 
 pub use maestro_resources::{PathMetadata, SourceOrigin, SourceScope};
+
+/// Opt-in helpers for controlled tests.
+#[cfg(feature = "test-support")]
+pub mod test_support;

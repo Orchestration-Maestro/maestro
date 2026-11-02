@@ -26,6 +26,8 @@ fn add_missing(models: &mut Vec<Model>, addition: Model) {
         models.push(addition);
     }
 }
+/// Leading authored additions that never replace a feed descriptor.
+const MISSING_ONLY_REMAINING: usize = 5;
 /// Compose normalized feeds and authored additions before first-wins grouping.
 fn assemble(feeds: [Vec<Model>; 3]) -> Catalog {
     let mut models: Vec<_> = feeds
@@ -48,7 +50,7 @@ fn assemble(feeds: [Vec<Model>; 3]) -> Catalog {
     overrides::minimax_models(&mut models);
     models.extend(fixed_models::codex());
     for (index, model) in fixed_models::remaining().into_iter().enumerate() {
-        if index < 3 {
+        if index < MISSING_ONLY_REMAINING {
             add_missing(&mut models, model);
         } else {
             models.push(model);

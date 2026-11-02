@@ -1,7 +1,7 @@
 //! Final tail notices and shell status results.
 use super::{BashError, BashExecResult, BashToolDetails};
 use crate::{
-    DEFAULT_MAX_BYTES, TruncationBy, format_size,
+    TruncationBy, format_size,
     output::{
         output_accumulator::OutputSnapshot,
         render_parts::{float, num},
@@ -11,10 +11,19 @@ use crate::{
 use maestro_agent::AgentToolResult;
 use maestro_models::DiagnosticErrorInfo;
 
+/// Byte counts of the two lines a partial tail notice can name.
+#[derive(Clone, Copy)]
+pub(super) struct LineBytes {
+    /// The unterminated line at the end of the output.
+    pub(super) last: usize,
+    /// The most recent newline-terminated line.
+    pub(super) ended: usize,
+}
+
 /// Format the selected tail, preserving raw text and its newline entries.
 fn format(
     snapshot: OutputSnapshot,
-    last_line_bytes: usize,
+    line_bytes: LineBytes,
     empty: &str,
 ) -> (String, Option<BashToolDetails>) {
     let OutputSnapshot {
@@ -34,17 +43,22 @@ fn format(
     let end = truncation.total_lines;
     let path = full_output_path.as_deref().unwrap_or_default();
     let notice = if truncation.last_line_partial {
+        let bytes = if line_bytes.last == 0 {
+            line_bytes.ended
+        } else {
+            line_bytes.last
+        };
         format!(
             "[Showing last {} of line {end} (line is {}). Full output: {path}]",
             format_size(float(truncation.output_bytes)),
-            format_size(float(last_line_bytes))
+            format_size(float(bytes))
         )
     } else if matches!(truncation.truncated_by, Some(TruncationBy::Lines)) {
         format!("[Showing lines {start}-{end} of {end}. Full output: {path}]")
     } else {
         format!(
             "[Showing lines {start}-{end} of {end} ({} limit). Full output: {path}]",
-            format_size(float(DEFAULT_MAX_BYTES))
+            format_size(float(truncation.max_bytes))
         )
     };
     text.push_str("\n\n");
@@ -70,12 +84,12 @@ fn status(text: &str, message: &str) -> DiagnosticErrorInfo {
 /// Classify settlement after decoding and artifact closure.
 pub(super) fn settle(
     snapshot: OutputSnapshot,
-    last_line_bytes: usize,
+    line_bytes: LineBytes,
     result: Result<BashExecResult, BashError>,
 ) -> Result<AgentToolResult<BashToolDetails>, DiagnosticErrorInfo> {
     let (text, details) = format(
         snapshot,
-        last_line_bytes,
+        line_bytes,
         if result.is_ok() { "(no output)" } else { "" },
     );
     match result {

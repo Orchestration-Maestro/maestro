@@ -1049,10 +1049,17 @@ impl host::Host for State {
 
     fn watch(
         &mut self,
-        _path: String,
-        _listener: Resource<Identity>,
+        path: String,
+        listener: Resource<Identity>,
     ) -> wasmtime::Result<Result<Resource<super::native_watch_host::Watcher>, String>> {
-        Ok(Err("native file watch requires the production host".into()))
+        match self
+            .observed
+            .native_watch
+            .component_watch(path, listener.rep())
+        {
+            Ok(watcher) => Ok(Ok(self.push(watcher)?)),
+            Err(error) => Ok(Err(error)),
+        }
     }
     fn kill(&mut self, pid: i32, signal: Option<String>) -> wasmtime::Result<Result<(), String>> {
         Ok(self.observed.native_io.kill(pid, signal))
@@ -1532,20 +1539,22 @@ impl host::Host for State {
         &mut self,
         auth: Resource<super::reader_host::Reader>,
         path: Option<String>,
-    ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
+    ) -> wasmtime::Result<Resource<Route>> {
         let reader = self.table.get(&auth)?.clone();
-        Ok(reader
+        let registry = reader
             .unit("create_model_registry", &[serde_json::json!(path)])
-            .and_then(|()| self.table.push(reader).map_err(|error| error.to_string())))
+            .and_then(|()| self.table.push(reader).map_err(|error| error.to_string()));
+        self.routed_value(registry.map(host::RouteValue::Catalog))
     }
     fn in_memory_model_registry(
         &mut self,
         auth: Resource<super::reader_host::Reader>,
-    ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
+    ) -> wasmtime::Result<Resource<Route>> {
         let reader = self.table.get(&auth)?.clone();
-        Ok(reader
+        let registry = reader
             .unit("in_memory_model_registry", &[])
-            .and_then(|()| self.table.push(reader).map_err(|error| error.to_string())))
+            .and_then(|()| self.table.push(reader).map_err(|error| error.to_string()));
+        self.routed_value(registry.map(host::RouteValue::Catalog))
     }
     fn register_provider(
         &mut self,
@@ -1945,12 +1954,36 @@ impl Harness {
         Ok((harness, stdout))
     }
 
-    /// Instantiates a component on `state` and runs its factory.
+    /// Instantiates a supplied compiled component whose host refuses every registration with
+    /// `error`, and returns the harness beside the outcome of the factory's start.
+    pub async fn from_compiled_refusing(
+        engine: &Engine,
+        component: &Component,
+        error: &str,
+    ) -> wasmtime::Result<(Self, Result<(), String>)> {
+        let mut state = State::new();
+        state.observed.registrations.error = Some(error.to_owned());
+        Box::pin(Self::start_reporting(engine, component, state)).await
+    }
+
+    /// Instantiates a component on `state` and runs its factory, failing when the factory fails.
     async fn start_on(
         engine: &Engine,
         component: &Component,
         state: State,
     ) -> wasmtime::Result<Self> {
+        let (harness, outcome) = Box::pin(Self::start_reporting(engine, component, state)).await?;
+        reported(outcome)?;
+        Ok(harness)
+    }
+
+    /// Instantiates a component on `state` and runs its factory, returning the harness beside
+    /// the factory's own outcome so a refused start can still be observed.
+    async fn start_reporting(
+        engine: &Engine,
+        component: &Component,
+        state: State,
+    ) -> wasmtime::Result<(Self, Result<(), String>)> {
         let origin = Arc::new(OnceLock::new());
         let linker = component_linker(engine)?;
         let mut store = Store::new(engine, state);
@@ -1960,12 +1993,10 @@ impl Harness {
         store.data_mut().schema_origin = Some(origin);
         store.data_mut().guest = Some(exports.clone());
         let started = exports.clone();
-        reported(
-            store
-                .run_concurrent(async |accessor| started.call_start(accessor).await)
-                .await??,
-        )?;
-        Ok(Self { store, exports })
+        let outcome = store
+            .run_concurrent(async |accessor| started.call_start(accessor).await)
+            .await??;
+        Ok((Self { store, exports }, outcome))
     }
 
     /// Start another author instance using the same host resources and store.

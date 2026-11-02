@@ -43,17 +43,6 @@ pub struct GuidanceExpected {
     pub guidance: [String; 2],
     /// Header control tooltips.
     pub titles: Vec<String>,
-    /// Header download payload.
-    pub download: Download,
-}
-/// Original bytes and media type of one saved payload.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Download {
-    /// Saved media type.
-    pub mime: String,
-    /// Saved bytes.
-    pub bytes: Vec<u8>,
 }
 /// One filename to media type observation.
 #[derive(Deserialize)]

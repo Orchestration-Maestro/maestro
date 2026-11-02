@@ -1,10 +1,16 @@
 //! The export command's path argument and the installed submission that runs it.
 use super::super::transfer::get_path_command_argument;
 use super::bindings::{Retiring, installed, renaming_replacements};
+use super::extension_ui::{RecordingWatcher, with_custom_theme};
+use super::transcript::{registering, text, tool};
 use super::typed::{poll, recalled, submit, waiting};
 use super::{Setup, World, cases as recorded_cases, isolated_package, started};
 use maestro_app::configuration::config::{APP_NAME, get_theme_directories};
-use maestro_app::{NativeExportOperations, ReadonlySessionManager, SessionManager};
+use maestro_app::presentation_data::footer_data_provider::FooterOperations;
+use maestro_app::{
+    ExtensionFactory, Local, NativeExportOperations, ReadonlySessionManager, SessionManager,
+    ToolRenderEnvironment,
+};
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeDirectories, ThemeOptions};
 use maestro_tui::Component;
 use serde::Deserialize;
@@ -147,9 +153,19 @@ async fn exportable(directory: &Path) -> World {
 /// A started mode over `directory` whose session is published and whose theme registry
 /// reads the shipped documents the bundle package carries.
 pub(super) async fn themed(directory: &Path, package: &Path) -> World {
+    themed_with(directory, package, None).await
+}
+
+/// [`themed`] over a session that also loads `extension`.
+async fn themed_with(
+    directory: &Path,
+    package: &Path,
+    extension: Option<ExtensionFactory<Local>>,
+) -> World {
     let directories = themes(package);
     let world = Setup {
         directories: Some(directories),
+        extension,
         ..Setup::default()
     }
     .build(directory);
@@ -178,13 +194,28 @@ pub(super) fn assert_last_row(world: &World, role: &ThemeColor, message: &str, l
     let painted = format!(" {}{message}\u{1b}[39m", theme.get_fg_ansi(role).unwrap());
     let padding = WIDTH.saturating_sub(1 + maestro_tui::visible_width(message));
     let expected = format!("{painted}{}", " ".repeat(padding));
-    assert_eq!(rows(world).last().cloned(), Some(expected), "{label}");
+    assert_eq!(notice_row(world, label), expected, "{label}");
 }
 
-/// Asserts the transcript's last row carries `needle`.
+/// Asserts the transcript's last notice row carries `needle`.
 pub(super) fn assert_last_row_holds(world: &World, needle: &str, label: &str) {
-    let row = rows(world).last().cloned().unwrap_or_default();
+    let row = notice_row(world, label);
     assert!(row.contains(needle), "{label}: {row}");
+}
+
+/// The transcript's last notice row; an error notice's own blank row must follow it.
+fn notice_row(world: &World, label: &str) -> String {
+    let mut rendered = rows(world);
+    let row = rendered.pop().unwrap_or_default();
+    if !row.is_empty() {
+        return row;
+    }
+    let notice = rendered.pop().unwrap_or_default();
+    assert!(
+        notice.contains("Error: "),
+        "{label}: only an error notice ends with a blank row"
+    );
+    notice
 }
 
 /// The session file's base name without its `.jsonl` suffix.
@@ -298,21 +329,40 @@ fn transfer_export_errors_are_recoverable_and_keep_the_exact_prefix() {
                 template_dir: template_dir.to_str().unwrap(),
                 theme: &world.themes,
             };
+            let html = |authored: &str| {
+                session
+                    .export_to_html(
+                        Some(authored),
+                        &operations,
+                        Rc::clone(&world.mode.tool_environment),
+                    )
+                    .unwrap_err()
+            };
             for (text, authored, jsonl) in [
                 ("/export blocked/one.jsonl", "blocked/one.jsonl", true),
                 ("/export blocked/one.html", "blocked/one.html", false),
+                // A slash after the suffix is not the suffix: this selects HTML.
+                (
+                    "/export blocked/notes.jsonl/",
+                    "blocked/notes.jsonl/",
+                    false,
+                ),
             ] {
                 let diagnostic = if jsonl {
                     session.export_to_jsonl(Some(authored)).unwrap_err()
                 } else {
-                    session
-                        .export_to_html(
-                            Some(authored),
-                            &operations,
-                            Rc::clone(&world.mode.tool_environment),
-                        )
-                        .unwrap_err()
+                    html(authored)
                 };
+                if authored.ends_with('/') {
+                    assert_ne!(
+                        diagnostic.to_string(),
+                        session
+                            .export_to_jsonl(Some(authored))
+                            .unwrap_err()
+                            .to_string(),
+                        "the two routes tell {authored} apart"
+                    );
+                }
                 submit(&world.mode, text);
                 let message = format!("Error: Failed to export session: {diagnostic}");
                 assert_last_row(&world, &ThemeColor::Error, &message, text);
@@ -392,12 +442,16 @@ fn transfer_submit_clears_after_export_failure_without_consuming_input() {
             let world = exportable(directory).await;
             std::fs::write(directory.join("blocked"), "").unwrap();
             let mut waiter = waiting(&world.mode);
-            submit(&world.mode, "/export blocked/lost.jsonl");
+            // The text is typed and submitted with Enter, as a person would.
+            world.mode.editor.set_text("/export blocked/lost.jsonl");
+            world.terminal.send_input("\r");
             assert_last_row_holds(&world, "Error: Failed to export session: ", "a failure");
+            assert_eq!(world.mode.editor.get_text(), "", "a failed command clears");
             assert_eq!(poll(&mut waiter), None);
             assert!(world.mode.on_input_callback.borrow().is_some());
-            // The same waiting input receives a later ordinary submission.
-            submit(&world.mode, " later text ");
+            // The same waiting input receives a later ordinary submission, sent the same way.
+            world.mode.editor.set_text(" later text ");
+            world.terminal.send_input("\r");
             assert_eq!(poll(&mut waiter).as_deref(), Some("later text"));
             assert_eq!(recalled(&world.mode.editor), ["later text"]);
         },
@@ -443,13 +497,53 @@ fn transfer_jsonl_command_writes_current_branch_with_original_path() {
     );
 }
 
+/// An extension registering the tool `probe`, whose call row names the README path of the
+/// environment that renders it.
+fn probing() -> ExtensionFactory<Local> {
+    let mut probe = tool("probe");
+    probe.render_call = Some(Rc::new(|_, _, context| {
+        Ok(text(&format!("README={}", context.environment.readme_path)))
+    }));
+    registering(vec![probe])
+}
+
+/// Appends a call of `probe` and its result to the current branch of `world`'s session.
+fn call_probe(world: &World) {
+    let session = world.host.session();
+    let mut manager = session.session_manager().borrow_mut();
+    manager
+        .append_message(json!({"role": "assistant",
+            "content": [{"type": "toolCall", "id": "probe-1", "name": "probe", "arguments": {}}],
+            "api": "controlled", "provider": "controlled", "model": "controlled",
+            "stopReason": "toolUse", "timestamp": 4}))
+        .unwrap();
+    manager
+        .append_message(json!({"role": "toolResult", "toolCallId": "probe-1",
+            "toolName": "probe", "content": [{"type": "text", "text": "done"}],
+            "isError": false, "timestamp": 5}))
+        .unwrap();
+}
+
+/// A render environment like the mode's, apart from the README path it names.
+fn elsewhere(world: &World) -> Rc<ToolRenderEnvironment> {
+    let own = &world.mode.tool_environment;
+    Rc::new(ToolRenderEnvironment {
+        runtime: Rc::clone(&own.runtime),
+        readme_path: "/elsewhere/README.md".to_owned(),
+        live_theme: own.live_theme.clone(),
+        highlighter: Rc::clone(&own.highlighter),
+        terminal_image: own.terminal_image.clone(),
+    })
+}
+
 #[test]
 fn transfer_html_command_uses_native_assets_and_the_current_session_environment() {
     isolated_package(
         "transfer_html_command_uses_native_assets_and_the_current_session_environment",
         async |directory, package| {
             bundle(&layout_dir(package, "src"), "SRC");
-            let world = themed(directory, package).await;
+            let world = themed_with(directory, package, Some(probing())).await;
+            call_probe(&world);
             submit(&world.mode, "/export page.html");
             assert_last_row(
                 &world,
@@ -481,10 +575,31 @@ fn transfer_html_command_uses_native_assets_and_the_current_session_environment(
                 document,
                 "the mode's document differs from the owner's"
             );
-            // The document carries the colours of the theme document the settings name.
+            // The probe's row names the environment it rendered through, so a document built
+            // through another environment differs from the mode's.
+            let foreign = world
+                .host
+                .session()
+                .export_to_html(
+                    Some(&format!("{}/foreign.html", cwd())),
+                    &operations,
+                    elsewhere(&world),
+                )
+                .unwrap();
+            assert_ne!(
+                std::fs::read_to_string(&foreign).unwrap(),
+                document,
+                "the mode's document ignores the environment its rows render through"
+            );
+            // The document carries the colours of the theme document the settings name: the
+            // dark document's accent, not the light one's.
             assert!(
-                document.contains("--accent: #"),
+                document.contains("--accent: #D9A066;"),
                 "the document lacks the selected theme's accent"
+            );
+            assert!(
+                !document.contains("--accent: #2A1F1A;"),
+                "the document carries the other theme's accent"
             );
         },
     );
@@ -700,7 +815,7 @@ fn transfer_import_missing_argument_shows_usage_without_confirmation() {
                     "Error: Usage: /import <path.jsonl>",
                     text,
                 );
-                assert!(world.mode.working.loading_animation.borrow().is_some());
+                assert!(world.mode.working_loader().is_some());
                 assert!(Rc::ptr_eq(&old, &world.host.session()));
                 assert!(
                     !world
@@ -735,7 +850,7 @@ fn transfer_import_decline_preserves_progress_and_the_current_session() {
                 );
                 import_answer(&world, key);
                 assert_last_row(&world, &ThemeColor::Dim, "Import cancelled", key);
-                assert!(world.mode.working.loading_animation.borrow().is_some());
+                assert!(world.mode.working_loader().is_some());
                 assert!(Rc::ptr_eq(&old, &world.host.session()));
                 assert_eq!(poll(&mut waiter), None);
                 assert!(recalled(&world.mode.editor).is_empty());
@@ -793,7 +908,7 @@ fn transfer_import_success_stops_progress_then_rebuilds_the_replacement() {
                     name,
                 );
                 assert!(rows(&world).join("\n").contains("IMPORTED_HISTORY"));
-                assert!(world.mode.working.loading_animation.borrow().is_none());
+                assert!(world.mode.working_loader().is_none());
                 assert!(world.mode.status_container.render(WIDTH).is_empty());
                 assert_eq!(poll(&mut waiter), None);
                 assert_eq!(recalled(&world.mode.editor), ["IMPORTED_HISTORY"]);
@@ -820,7 +935,7 @@ fn transfer_import_veto_is_distinct_from_confirmation_cancellation() {
                 import_answer(&world, "\r");
                 assert_eq!(calls.get(), 1);
                 assert!(Rc::ptr_eq(&old, &world.host.session()));
-                assert!(world.mode.working.loading_animation.borrow().is_none());
+                assert!(world.mode.working_loader().is_none());
                 assert!(world.mode.status_container.render(WIDTH).is_empty());
                 assert_last_row(&world, &ThemeColor::Dim, "Import cancelled", "veto");
                 assert!(!rows(&world).join("\n").contains("IMPORTED_HISTORY"));
@@ -852,7 +967,7 @@ fn transfer_import_missing_file_is_recoverable() {
                     name,
                 );
                 assert!(Rc::ptr_eq(&old, &world.host.session()));
-                assert!(world.mode.working.loading_animation.borrow().is_none());
+                assert!(world.mode.working_loader().is_none());
                 assert_eq!(poll(&mut waiter), None);
                 submit(&world.mode, "later input");
                 assert_eq!(poll(&mut waiter).as_deref(), Some("later input"));
@@ -1006,15 +1121,35 @@ fn transfer_import_runtime_failure_reaches_the_existing_fatal_owner() {
     const TEST: &str = "transfer_import_runtime_failure_reaches_the_existing_fatal_owner";
     let output = super::isolated_output(TEST, "fatal", &[], ":", async |directory| {
         let path = import_file(directory, "fatal.jsonl", directory);
+        let watcher = Rc::new(RecordingWatcher::default());
         let world = Setup {
             create: Some(import_failed_factory()),
             session_history: Some(directory.join("destination")),
+            directories: Some(with_custom_theme(directory)),
+            watcher: Some(Rc::clone(&watcher) as Rc<dyn FooterOperations>),
+            configure: Box::new(|settings| settings.set_theme("custom".to_owned())),
             ..Setup::default()
         }
         .build(directory);
         world.mode.init().await.unwrap();
         world.runtime.settle().unwrap();
-        world.terminal.set_tap(|bytes| eprint!("{bytes}"));
+        let theme = watcher
+            .paths()
+            .iter()
+            .position(|path| path.ends_with("custom"));
+        assert!(
+            !watcher.closed(theme.unwrap()),
+            "the custom theme is watched"
+        );
+        world.terminal.set_tap(move |bytes| {
+            if bytes.contains("\x1b[?25h") {
+                eprint!(
+                    "\nPROBE theme watch closed={}\n",
+                    watcher.closed(theme.unwrap())
+                );
+            }
+            eprint!("{bytes}");
+        });
         submit(&world.mode, &format!("/import {}", path.display()));
         import_settle(&world);
         import_answer(&world, "\r");
@@ -1031,6 +1166,10 @@ fn transfer_import_runtime_failure_reaches_the_existing_fatal_owner() {
         assert!(
             painted.contains("\x1b[?25h"),
             "terminal stopped: {painted:?}"
+        );
+        assert!(
+            text.contains("PROBE theme watch closed=true") && !text.contains("closed=false"),
+            "the theme watch closes before the terminal stops: {text}"
         );
     }
 }
@@ -1241,8 +1380,58 @@ fn transfer_import_retains_mode_only_until_completion() {
                 drop((terminal, runtime, themes, host, loader));
             }
             import_held_factory_lifetime(directory).await;
+            import_retry_failure_release(directory).await;
         },
     );
+}
+
+/// Starts a retryable import with a replacement factory that rejects the new session.
+async fn import_retry_world(directory: &Path, name: &str) -> (World, std::path::PathBuf) {
+    let offered = directory.join(name);
+    std::fs::create_dir_all(&offered).unwrap();
+    let path = import_file(directory, &format!("{name}.jsonl"), &directory.join("gone"));
+    let world = Setup {
+        cwd: Some(offered.to_str().unwrap().to_owned()),
+        create: Some(import_failed_factory()),
+        session_history: Some(directory.join("destination")),
+        ..Setup::default()
+    }
+    .build(directory);
+    world.mode.init().await.unwrap();
+    world.runtime.settle().unwrap();
+    (world, path)
+}
+
+/// Releases the in-flight mode once a retry's replacement failure has propagated.
+async fn import_retry_failure_release(directory: &Path) {
+    let (
+        World {
+            mode,
+            terminal,
+            runtime,
+            themes,
+            host,
+            loader,
+        },
+        path,
+    ) = import_retry_world(directory, "released").await;
+    let weak = Rc::downgrade(&mode);
+    let editor = Rc::clone(&mode.editor);
+    editor.on_submit().unwrap()(&format!("/import {}", path.display()));
+    assert!(runtime.drain_futures().is_empty());
+    terminal.send_input("\r");
+    assert!(runtime.drain_futures().is_empty());
+    drop(mode);
+    assert!(weak.upgrade().is_some(), "the cwd prompt owns the mode");
+    terminal.send_input("\r");
+    let errors = runtime.drain_futures();
+    assert_eq!(errors.len(), 1, "{errors:?}");
+    assert_import_retry_error(errors[0].as_ref(), "factory");
+    assert!(
+        weak.upgrade().is_none(),
+        "the propagated failure releases the mode"
+    );
+    drop((terminal, runtime, themes, host, loader));
 }
 
 /// Keeps import dispatch ahead of both busy-session queue owners.
@@ -1275,17 +1464,7 @@ async fn import_busy_submission(directory: &Path) {
 /// Exercises one real retry producer through the installed submit callback.
 async fn import_retry_failure(directory: &Path, failure: &str) {
     let offered = directory.join("offered");
-    std::fs::create_dir_all(&offered).unwrap();
-    let path = import_file(directory, "retry-failure.jsonl", &directory.join("gone"));
-    let world = Setup {
-        cwd: Some(offered.to_str().unwrap().to_owned()),
-        create: Some(import_failed_factory()),
-        session_history: Some(directory.join("destination")),
-        ..Setup::default()
-    }
-    .build(directory);
-    world.mode.init().await.unwrap();
-    world.runtime.settle().unwrap();
+    let (world, path) = import_retry_world(directory, "offered").await;
     let mut waiter = waiting(&world.mode);
     submit(&world.mode, &format!("/import {}", path.display()));
     import_settle(&world);
@@ -1386,7 +1565,7 @@ async fn import_observed_world(directory: &Path) -> World {
     let captured = Rc::clone(&observed);
     let create: maestro_app::CreateAgentSessionRuntimeFactory = Rc::new(move |options| {
         let mode = captured.borrow().upgrade().unwrap();
-        assert!(mode.working.loading_animation.borrow().is_none());
+        assert!(mode.working_loader().is_none());
         assert!(mode.status_container.render(WIDTH).is_empty());
         super::create(mode.runtime_host.services(), false)(options)
     });

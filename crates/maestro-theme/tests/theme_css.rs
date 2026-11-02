@@ -25,7 +25,7 @@ fn custom(themes: &[(&str, Value)]) -> (Scratch, Rc<ThemeState>) {
 /// The export section of the shipped dark theme under another name.
 #[cfg(test)]
 fn with_export(export: &Value) -> Value {
-    let mut json = custom_json("e", "#010203");
+    let mut json = custom_json("e", "#010203").unwrap();
     json["export"] = export.clone();
     json
 }
@@ -33,7 +33,7 @@ fn with_export(export: &Value) -> Value {
 /// A custom document whose accent and export page background are both `color`.
 #[cfg(test)]
 fn with_page_bg(name: &str, color: &str) -> Value {
-    let mut json = custom_json(name, color);
+    let mut json = custom_json(name, color).unwrap();
     json["export"] = json!({ "pageBg": color });
     json
 }
@@ -82,11 +82,11 @@ fn theme_export_source_precedence_differs_from_instance_lookup() {
     };
     scratch.write(
         "elsewhere/dark.json",
-        &custom_json("dark", "#ffffff").to_string(),
+        &custom_json("dark", "#ffffff").unwrap().to_string(),
     );
     scratch.write(
         "elsewhere/reg.json",
-        &custom_json("reg", "#111111").to_string(),
+        &custom_json("reg", "#111111").unwrap().to_string(),
     );
     state.set_registered_themes(vec![
         register("dark", Some(scratch.path("elsewhere/dark.json"))),
@@ -106,7 +106,7 @@ fn theme_export_source_precedence_differs_from_instance_lookup() {
     );
     scratch.write(
         "elsewhere/reg.json",
-        &custom_json("reg", "#222222").to_string(),
+        &custom_json("reg", "#222222").unwrap().to_string(),
     );
     assert_eq!(
         color(
@@ -128,7 +128,7 @@ fn theme_export_source_precedence_differs_from_instance_lookup() {
 
 #[test]
 fn theme_css_expands_every_palette_index() {
-    let mut json = custom_json("palette", "#010203");
+    let mut json = custom_json("palette", "#010203").unwrap();
     for index in 0..=255 {
         json["colors"][format!("palette{index}")] = index.into();
     }
@@ -147,7 +147,7 @@ fn theme_css_expands_every_palette_index() {
 
 #[test]
 fn theme_resolved_css_preserves_key_order_and_empty_fallback() {
-    let mut json = custom_json("light", "#010203");
+    let mut json = custom_json("light", "#010203").unwrap();
     let extras = [
         ("4294967295", "#000001"),
         ("4294967294", "#000002"),
@@ -285,7 +285,7 @@ fn theme_light_check_uses_only_the_supplied_name() {
 
 #[test]
 fn maestro_theme_exports_resolved_alias_colors() {
-    let mut json = custom_json("export-vars", "#010203");
+    let mut json = custom_json("export-vars", "#010203").unwrap();
     json["vars"]["pageBgVar"] = "#112233".into();
     json["vars"]["pageBgAlias"] = "pageBgVar".into();
     json["vars"]["cardBgVar"] = "#223344".into();
@@ -318,7 +318,7 @@ fn maestro_theme_exports_resolved_alias_colors() {
 
 #[test]
 fn theme_export_recursive_alias_yields_no_colors_while_resolution_reports_it() {
-    let mut json = custom_json("loop", "#010203");
+    let mut json = custom_json("loop", "#010203").unwrap();
     json["vars"]["a"] = "b".into();
     json["vars"]["b"] = "a".into();
     json["export"] = json!({ "pageBg": "#112233", "cardBg": "a" });
@@ -360,7 +360,7 @@ fn theme_export_optional_fields_omit_empty_and_missing_values() {
     }
     let json = with_export(&json!({}));
     assert_eq!(exported(&json), ThemeExportColors::default());
-    let mut absent = custom_json("e", "#010203");
+    let mut absent = custom_json("e", "#010203").unwrap();
     absent.as_object_mut().unwrap().shift_remove("export");
     assert_eq!(exported(&absent), ThemeExportColors::default());
     let mixed = with_export(&json!({ "cardBg": "#010203", "infoBg": "" }));
@@ -466,7 +466,7 @@ fn theme_export_resolves_only_the_requested_color_plane() {
 #[test]
 fn theme_export_keeps_last_duplicate_and_ignores_unknown_fields() {
     let (scratch, _state) = custom(&[]);
-    let base = custom_json("dup", "#010203").to_string();
+    let base = custom_json("dup", "#010203").unwrap().to_string();
     let tail = r##","export":{"pageBg":true},"export":{"pageBg":null,"pageBg":"#010203","cardBg":1.0,"infoBg":-0.0,"mystery":{"deep":[1,{"x":null}]}}}"##;
     let text = format!("{}{tail}", base.strip_suffix('}').unwrap());
     scratch.write("custom/dup.json", &text);
@@ -494,7 +494,7 @@ fn theme_scratch_directories_are_exclusively_owned() {
 
 #[test]
 fn palette_expansion_is_shared_by_theme_and_converter() {
-    let mut json = custom_json("shared-palette", "#010203");
+    let mut json = custom_json("shared-palette", "#010203").unwrap();
     for index in 0..=255 {
         json["colors"][format!("palette{index}")] = index.into();
     }

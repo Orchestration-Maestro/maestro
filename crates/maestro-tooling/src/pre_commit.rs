@@ -12,11 +12,10 @@ const CHECK_FAILURE: &str = "❌ Checks failed. Please fix the errors before com
 
 /// Format captured index paths, restage surviving files and verify their crates.
 ///
-/// Verification covers the staged crates and every workspace crate that depends
-/// on them, or the whole workspace when a staged path changes a workspace-wide
-/// input. The full conventions suite runs only when a captured path belongs to
-/// the conventions checker, and the browser smoke check only when the selection
-/// compiles the delivered browser entry.
+/// Formatting and Clippy cover only the crates holding staged paths; CI owns
+/// dependent and workspace-wide checks. The full conventions suite guards edits
+/// to the checker itself. Browser smoke guards staged browser-owning crates,
+/// because their browser targets are not covered by native Clippy.
 ///
 /// # Errors
 /// Returns native process and filesystem failures.
@@ -29,19 +28,22 @@ pub fn run(
 ) -> io::Result<ExitCode> {
     let paths = capture(root)?;
     println!("Running formatting, linting, and type checking...");
-    if !passed(format) {
+    let Some(scope) = selected(root, cargo, &paths) else {
+        println!("{CHECK_FAILURE}");
+        return Ok(ExitCode::FAILURE);
+    };
+    for name in scope.names() {
+        format.args(["-p", name]);
+    }
+    if !scope.names().is_empty() && !passed(format) {
         println!("{CHECK_FAILURE}");
         return Ok(ExitCode::FAILURE);
     }
     if !restage(root, &paths)? {
         return Ok(ExitCode::FAILURE);
     }
-    let Some(scope) = selected(root, cargo, &paths) else {
-        println!("{CHECK_FAILURE}");
-        return Ok(ExitCode::FAILURE);
-    };
     println!("Selected crates: {}", scope.names().join(", "));
-    if !passed(&mut check(root, &scope)) {
+    if !scope.names().is_empty() && !passed(&mut check(root, cargo, &scope)) {
         println!("{CHECK_FAILURE}");
         return Ok(ExitCode::FAILURE);
     }
@@ -75,20 +77,14 @@ fn selected(root: &Path, cargo: &Path, paths: &[OsString]) -> Option<Scope> {
         .ok()
 }
 
-/// Build the shared check recipe for the selected scope.
-fn check(root: &Path, scope: &Scope) -> Command {
-    let mut command = Command::new("just");
-    command.current_dir(root).arg("_check");
-    match scope {
-        Scope::Workspace(_) => {
-            command.arg("--workspace");
-        }
-        Scope::Packages(names) => {
-            for name in names {
-                command.args(["-p", name]);
-            }
-        }
+/// Build Clippy for the staged owners without the workspace-wide check recipe.
+fn check(root: &Path, cargo: &Path, scope: &Scope) -> Command {
+    let mut command = Command::new(cargo);
+    command.current_dir(root).arg("clippy");
+    for name in scope.names() {
+        command.args(["-p", name]);
     }
+    command.args(["--all-targets", "--locked", "--", "-D", "warnings"]);
     command
 }
 

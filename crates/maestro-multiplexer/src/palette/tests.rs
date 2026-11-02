@@ -1,7 +1,7 @@
 use super::*;
 #[cfg(target_os = "linux")]
-use maestro_app::daemon::settings::model::Config;
-use maestro_app::daemon::settings::theme::THEME_NAMES;
+use maestro_app::daemon::Config;
+use maestro_app::daemon::THEME_NAMES;
 use serde::Deserialize;
 use std::collections::BTreeMap;
 
@@ -252,7 +252,7 @@ fn palette_parse_color_matches_reference_cases() {
 
 #[test]
 fn palette_theme_names_match_reference_cases() {
-    use maestro_app::daemon::settings::theme::canonical_theme_name;
+    use maestro_app::daemon::canonical_theme_name;
     let cases = corpus().theme_names;
     assert_eq!(cases.len(), 25);
     for case in cases {

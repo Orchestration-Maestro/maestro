@@ -38,6 +38,17 @@ impl Scratch {
         Ok(scratch)
     }
 
+    /// Create a directory under `/tmp` for Unix socket fixtures.
+    /// Socket paths have a small byte limit, so this ignores `TMPDIR` and avoids
+    /// canonicalization, which can expand `/tmp` into a longer path.
+    ///
+    /// # Errors
+    /// Returns a directory creation failure other than a candidate name collision.
+    #[cfg(unix)]
+    pub fn new_socket() -> io::Result<Self> {
+        Self::new_in(Path::new("/tmp"))
+    }
+
     /// Create a directory under an existing parent using native path joining, without canonicalization.
     ///
     /// # Errors

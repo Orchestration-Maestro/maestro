@@ -16,7 +16,7 @@ pub(super) enum Kill {
 impl Editing {
     /// Deletes an admitted range, retaining direction and no-op action state.
     pub(super) fn kill(&mut self, kind: Kill) {
-        self.history_index = None;
+        self.exit_history();
         let cursor = self.current.cursor;
         let backward = matches!(kind, Kill::WordBackward | Kill::LineStart);
         let length = self.current.lines[cursor.line].len();
@@ -111,7 +111,7 @@ impl Owner {
             if rotate {
                 state.ring.rotate();
             }
-            state.history_index = None;
+            state.exit_history();
             let Editing { current, ring, .. } = &mut *state;
             current.splice(ring.peek().unwrap_or(""));
             let col = state.current.cursor.col;

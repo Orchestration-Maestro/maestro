@@ -1,5 +1,6 @@
 //! Explicit command execution through the authored component and production factory.
 #![cfg(test)]
+use super::example_process::run;
 use maestro_extensions::{
     Cancellation, EventBus, ExtensionRunner, Local, create_event_bus_for, types::ExtensionHandle,
 };
@@ -19,15 +20,6 @@ fn closed(read: &std::io::Result<usize>) -> bool {
         Ok(read) => *read == 0,
         Err(error) => error.kind() == std::io::ErrorKind::ConnectionReset,
     }
-}
-
-/// Drives the native component on its caller-owned local runtime.
-fn run(action: impl std::future::Future<Output = ()>) {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    tokio::task::LocalSet::new().block_on(&runtime, action);
 }
 
 /// Uses the existing fixture's production artifact loader.

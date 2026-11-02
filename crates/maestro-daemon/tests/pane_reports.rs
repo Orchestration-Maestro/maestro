@@ -11,19 +11,19 @@ use serde_json::{Value, json};
 /// The session file the reports below name.
 const SESSION: &str = "/sessions/pi-session.jsonl";
 
-/// A daemon whose only pane runs a recognized Pi process that looks idle.
+/// A daemon whose only pane runs a recognized agent process that looks idle.
 fn piloted() -> TestApp {
     let mut app = daemon_with_workspaces(&["/one"]);
     pilot(&mut app, AgentState::Idle);
     app
 }
 
-/// Makes the Pi integration report a session and then work, which anchors its authority.
+/// Anchors the official integration's authority with session and working-state reports.
 fn anchored(app: &mut TestApp) {
     anchored_under(app, "maestro:pi");
 }
 
-/// Makes the Pi integration report a session and then work under the spelling `source`.
+/// Anchors the official integration's authority with reports under the supplied `source`.
 fn anchored_under(app: &mut TestApp, source: &str) {
     let session = json!({
         "type": "pane.report_agent_session", "pane_id": "w1:p1", "source": source,
@@ -198,7 +198,7 @@ fn a_stale_sequence_is_ignored() {
     assert_eq!(pane(&mut app).agent_status, AgentStatus::Working);
 }
 
-/// The session identity Pi's official integration reports, under its canonical source.
+/// The session identity the official integration reports under its canonical source.
 fn pi_session() -> AgentSessionInfo {
     AgentSessionInfo {
         source: "maestro:pi".into(),

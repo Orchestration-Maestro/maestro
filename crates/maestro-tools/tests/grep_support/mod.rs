@@ -3,7 +3,7 @@
 use crate::display_support::{Case, search_cases, search_keys};
 #[cfg(unix)]
 use crate::{
-    find_support::{executable, manager},
+    find_support::{alias, manager},
     ls_support::{canon, result_json, with_home},
     read_support::{Fixture, Scratch},
     runtime::run,
@@ -123,23 +123,13 @@ pub fn producer(root: &Scratch, input: &Input) {
     if !input.unterminated {
         stdout.push('\n');
     }
-    root.file("stdout", stdout.as_bytes());
-    root.file("stderr", input.stderr.as_bytes());
-    let termination = input.signal_exit.as_ref().map_or(String::new(), |s| {
-        assert_eq!(s, "SIGTERM");
-        "os.kill(os.getpid(),signal.SIGTERM)".into()
-    });
-    let script = format!(
-        "#!/usr/bin/python3\nimport os,sys,json,signal\njson.dump(sys.argv[1:],open({},'w'))\nos.write(1,open({},'rb').read())\nos.write(2,open({},'rb').read())\n{termination}\nsys.exit({})\n",
-        json!(root.path().join("args.json").to_str().unwrap()),
-        json!(root.path().join("stdout").to_str().unwrap()),
-        json!(root.path().join("stderr").to_str().unwrap()),
-        input.code.unwrap_or(0)
-    );
+    let record = json!({"scenario":"response", "args":root.path().join("args.json"),
+        "stdout":stdout.into_bytes(), "stderr":input.stderr.as_bytes(),
+        "code":input.code.unwrap_or(0), "signal":input.signal_exit});
     if input.spawn_error {
         root.file("rg", b"not executable");
     } else {
-        executable(root, "rg", &script);
+        alias(root.path(), "rg", &record);
     }
 }
 /// Invoke one controlled record through a public factory.
@@ -463,17 +453,11 @@ impl GrepOperations for PendingOperations {
 }
 /// Install a producer connected to a parent-owned readiness channel.
 #[cfg(unix)]
-pub fn session(root: &Scratch, body: &str) -> tokio::net::UnixListener {
+pub fn session(root: &Scratch, mut record: Value) -> tokio::net::UnixListener {
     let path = root.path().join("ready.sock");
     let listener = tokio::net::UnixListener::bind(&path).unwrap();
-    executable(
-        root,
-        "rg",
-        &format!(
-            "#!/usr/bin/python3\nimport socket,os,signal,sys,json\ns=socket.socket(socket.AF_UNIX,socket.SOCK_STREAM)\ns.connect({})\n{body}\n",
-            json!(path.to_str().unwrap())
-        ),
-    );
+    record["socket"] = json!(path);
+    alias(root.path(), "rg", &record);
     listener
 }
 /// A wrapped invocation configured for a controlled producer.

@@ -73,12 +73,17 @@ fn config_presentation_space_toggles_and_escape_closes() {
             handler.try_handle_input(key).unwrap();
         }
     }
+    let disabled_prompt = if cfg!(windows) {
+        "-prompts\\review.md"
+    } else {
+        "-prompts/review.md"
+    };
     assert_eq!(
         (
             serde_json::Value::Object(settings.borrow().get_project_settings().0),
             closed.get()
         ),
-        (serde_json::json!({"prompts": ["-prompts/review.md"]}), true),
+        (serde_json::json!({"prompts": [disabled_prompt]}), true),
         "Space must edit project settings and Escape must close the presentation",
     );
     assert_eq!(settings.borrow().get_global_settings(), Settings::default());

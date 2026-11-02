@@ -42,7 +42,8 @@ impl<C: FnMut() -> u128> DaemonState<C> {
             }
             AppEvent::TerminalBell { .. }
             | AppEvent::ClipboardWrite { .. }
-            | AppEvent::TabBarCommandFinished { .. } => None,
+            | AppEvent::TabBarCommandFinished { .. }
+            | AppEvent::GitStatusRefreshed { .. } => None,
         };
         update.into_iter().collect()
     }
@@ -112,7 +113,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
                     terminal.set_agent_session_ref_for_session_start(report)
                 }),
             AppEvent::HookMetadataReported { pane_id, report } => {
-                self.update_terminal_state(pane_id, |terminal| terminal.set_agent_metadata(report))
+                self.update_terminal_state(pane_id, |terminal| terminal.set_agent_metadata(*report))
             }
             AppEvent::HookAuthorityCleared {
                 pane_id,

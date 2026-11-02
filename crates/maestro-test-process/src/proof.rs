@@ -7,11 +7,11 @@ use std::process::{Child, ChildStderr, ChildStdin, ChildStdout, ExitStatus, Outp
 use crate::TestProcessError;
 
 /// Harness bytes that open the standard output of a run that selected exactly one test.
-pub(crate) const START: &[u8] = b"\nrunning 1 test\n";
+pub const HARNESS_START: &[u8] = b"\nrunning 1 test\n";
 
 /// Report whether `seen` already contradicts the start prologue.
 fn diverges(seen: &[u8]) -> bool {
-    !START.starts_with(seen) && !seen.starts_with(START)
+    !HARNESS_START.starts_with(seen) && !seen.starts_with(HARNESS_START)
 }
 
 /// Require a complete start prologue at byte zero of captured output.
@@ -26,7 +26,7 @@ pub(crate) fn check_prefix(
     stderr: &[u8],
     status: ExitStatus,
 ) -> Result<(), TestProcessError> {
-    if seen.starts_with(START) {
+    if seen.starts_with(HARNESS_START) {
         return Ok(());
     }
     Err(TestProcessError::new(
@@ -50,7 +50,7 @@ pub(crate) fn check_file(
     let cursor = file.stream_position().map_err(fail)?;
     file.seek(SeekFrom::Start(0)).map_err(fail)?;
     let mut seen = Vec::new();
-    let read = file.take(START.len() as u64).read_to_end(&mut seen);
+    let read = file.take(HARNESS_START.len() as u64).read_to_end(&mut seen);
     file.seek(SeekFrom::Start(cursor)).map_err(fail)?;
     read.map_err(fail)?;
     check_prefix(test, &seen, &[], status)
@@ -70,9 +70,9 @@ pub struct CheckedStdout {
 impl Read for CheckedStdout {
     /// Yield the prologue first, then the child's own bytes.
     fn read(&mut self, bytes: &mut [u8]) -> io::Result<usize> {
-        if self.replayed < START.len() {
-            let count = bytes.len().min(START.len() - self.replayed);
-            bytes[..count].copy_from_slice(&START[self.replayed..self.replayed + count]);
+        if self.replayed < HARNESS_START.len() {
+            let count = bytes.len().min(HARNESS_START.len() - self.replayed);
+            bytes[..count].copy_from_slice(&HARNESS_START[self.replayed..self.replayed + count]);
             self.replayed += count;
             return Ok(count);
         }
@@ -114,7 +114,7 @@ impl CheckedChild {
                 "standard output is not piped",
             ));
         };
-        while seen.len() < START.len() {
+        while seen.len() < HARNESS_START.len() {
             let mut byte = [0; 1];
             match pipe.read(&mut byte) {
                 Ok(1) => seen.push(byte[0]),
@@ -129,7 +129,7 @@ impl CheckedChild {
                 break;
             }
         }
-        if !seen.starts_with(START) {
+        if !seen.starts_with(HARNESS_START) {
             let message = "the child did not start exactly this test";
             return Err(Self::reap(test, child, stdin, &seen, message));
         }
@@ -192,10 +192,10 @@ impl CheckedChild {
         let mut output = self.child.wait_with_output().map_err(|error| {
             TestProcessError::new(&self.test, "cannot collect the output").caused_by(error)
         })?;
-        if let Some(replayed) = replayed.filter(|replayed| *replayed < START.len()) {
+        if let Some(replayed) = replayed.filter(|replayed| *replayed < HARNESS_START.len()) {
             output
                 .stdout
-                .splice(0..0, START[replayed..].iter().copied());
+                .splice(0..0, HARNESS_START[replayed..].iter().copied());
         }
         Ok(output)
     }

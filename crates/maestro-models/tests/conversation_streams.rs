@@ -98,6 +98,7 @@ fn conversation_streams_preserve_partial_results_on_failure() -> TestResult {
     crate::runtime::run_paused(async {
         corpus::rows("conversation_streams_preserve_partial_results_on_failure").await?;
         lifecycle::lifetime_failures().await?;
+        lifecycle::configured_timeout().await?;
         lifecycle::failure_causes().await?;
         lifecycle::exhausted_signal().await
     })
@@ -117,6 +118,37 @@ fn conversation_streams_validate_complete_events_before_reduction() -> TestResul
     crate::runtime::run(corpus::rows(
         "conversation_streams_validate_complete_events_before_reduction",
     ))
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn conversation_error_finish_reports_a_retryable_server_error() -> TestResult {
+    use maestro_models::{SimpleStreamOptions, StreamOptions};
+    crate::runtime::run(async {
+        let chunk = br#"data: {"id":"r","model":"m","choices":[{"index":0,"delta":{"content":"partial"},"finish_reason":"error"}]}
+
+"#;
+        let stream = stream_simple_mistral(
+            corpus::model()?,
+            chat::context(&json!({"messages": []}))?,
+            Some(SimpleStreamOptions {
+                common: StreamOptions {
+                    api_key: Some("fixture-key".into()),
+                    fetch: Some(corpus::fetch(vec![chunk.to_vec()])),
+                    ..Default::default()
+                },
+                ..Default::default()
+            }),
+        )?;
+        let result = stream.result().await;
+        let result = result.read().unwrap();
+        assert_eq!(result.stop_reason, maestro_models::StopReason::Error);
+        assert_eq!(
+            result.error_message.as_deref(),
+            Some("Provider stopped with: error (server error)")
+        );
+        Ok(())
+    })
 }
 
 #[cfg(not(target_arch = "wasm32"))]

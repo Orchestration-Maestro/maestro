@@ -1,24 +1,17 @@
 //! The RPC client's event callbacks, its deadlines and the work that a stop or the child's
 //! end settles.
 #![cfg(unix)]
-use crate::rpc_peer::{Peer, SERVE, events, hold_clock, next_of, poll_once};
+use crate::rpc_peer::{Peer, Scenario, events, hold_clock, next_of, release as release_peer};
+use crate::support::rpc_connection::poll_once;
 use crate::support::session_harness::{on_paused_task_set, on_task_set};
 use maestro_app::{RpcClient, RpcClientError, RpcEventListener};
 use maestro_process::child_process::process_exists;
 use serde_json::{Value, json};
 use std::{cell::RefCell, pin::pin, rc::Rc, task::Poll, time::Duration};
 
-/// Emits each record of `PEER_RECORDS` once a command arrives, after answering it.
-const BURST: &str = r"
-for line in commands():
-    respond(json.loads(line))
-    for record in json.loads(os.environ['PEER_RECORDS']):
-        emit(record)
-";
-
-/// A client of `peer` running [`BURST`] with `records`.
+/// A client of `peer` emitting a burst with `records`.
 fn bursting(peer: &Peer, records: &Value) -> RpcClient {
-    let mut options = peer.options(BURST);
+    let mut options = peer.options(Scenario::Burst);
     options
         .env
         .insert("PEER_RECORDS".into(), records.to_string());
@@ -157,19 +150,8 @@ fn listener_removal_keeps_the_next_registration() {
 #[test]
 fn request_deadline_keeps_exact_boundary_and_stderr() {
     let peer = Peer::new();
-    let script = r"
-os.write(2, b'diag\n')
-emit({'type': 'peer_ready'})
-lines = commands()
-state = json.loads(next(lines))
-emit({'type': 'received'})
-abort = json.loads(next(lines))
-respond(abort)
-respond(state, {'thinkingLevel': 'off', 'isStreaming': False, 'isCompacting': False, 'steeringMode': 'all', 'followUpMode': 'all', 'sessionId': 's', 'autoCompactionEnabled': False, 'messageCount': 0, 'pendingMessageCount': 0})
-sys.stdin.read()
-";
     on_paused_task_set(|_| async {
-        let client = RpcClient::new(peer.options(script));
+        let client = RpcClient::new(peer.options(Scenario::LateState));
         let mut events = events(&client);
         client.start().await.unwrap();
         next_of(&mut events, "peer_ready").await;
@@ -211,14 +193,8 @@ sys.stdin.read()
 #[test]
 fn request_deadlines_hold_through_a_delayed_first_poll() {
     let peer = Peer::new();
-    let script = r"
-emit({'type': 'peer_ready'})
-lines = commands()
-next(lines)
-sys.stdin.read()
-";
     on_paused_task_set(|_| async {
-        let client = RpcClient::new(peer.options(script));
+        let client = RpcClient::new(peer.options(Scenario::Withhold));
         let mut events = events(&client);
         client.start().await.unwrap();
         next_of(&mut events, "peer_ready").await;
@@ -310,19 +286,8 @@ fn waits_hold_their_deadlines_through_a_delayed_first_poll() {
 #[test]
 fn waits_ignore_events_after_their_deadline() {
     let peer = Peer::new();
-    let script = r"
-emit({'type': 'peer_ready'})
-lines = commands()
-prompt = json.loads(next(lines))
-emit({'type': 'received'})
-abort = json.loads(next(lines))
-emit({'type': 'agent_end'})
-respond(prompt)
-respond(abort)
-sys.stdin.read()
-";
     on_paused_task_set(|_| async {
-        let client = RpcClient::new(peer.options(script));
+        let client = RpcClient::new(peer.options(Scenario::LateEnd));
         let mut events = events(&client);
         client.start().await.unwrap();
         next_of(&mut events, "peer_ready").await;
@@ -359,18 +324,8 @@ sys.stdin.read()
 #[test]
 fn answers_after_their_deadline_reach_listeners() {
     let peer = Peer::new();
-    let script = r"
-emit({'type': 'peer_ready'})
-lines = commands()
-first = json.loads(next(lines))
-emit({'type': 'received'})
-second = json.loads(next(lines))
-respond(first)
-respond(second)
-sys.stdin.read()
-";
     on_paused_task_set(|_| async {
-        let client = RpcClient::new(peer.options(script));
+        let client = RpcClient::new(peer.options(Scenario::LateAnswers));
         let mut events = events(&client);
         client.start().await.unwrap();
         next_of(&mut events, "peer_ready").await;
@@ -397,17 +352,8 @@ const DEADLINE: Duration = Duration::from_secs(30);
 #[test]
 fn work_expired_before_the_child_ends_keeps_its_timeout() {
     let peer = Peer::new();
-    let script = r"
-emit({'type': 'peer_ready'})
-lines = commands()
-next(lines)
-emit({'type': 'received'})
-next(lines)
-os.write(2, b'late\n')
-os._exit(0)
-";
     on_paused_task_set(|_| async {
-        let client = RpcClient::new(peer.options(script));
+        let client = RpcClient::new(peer.options(Scenario::LateExit));
         let mut events = events(&client);
         client.start().await.unwrap();
         next_of(&mut events, "peer_ready").await;
@@ -447,16 +393,8 @@ os._exit(0)
 #[test]
 fn answers_before_the_deadline_count_when_consumed_after_it() {
     let peer = Peer::new();
-    let script = r"
-emit({'type': 'peer_ready'})
-abort = json.loads(next(commands()))
-emit({'type': 'agent_end'})
-respond(abort)
-emit({'type': 'answered'})
-sys.stdin.read()
-";
     on_paused_task_set(|_| async {
-        let client = RpcClient::new(peer.options(script));
+        let client = RpcClient::new(peer.options(Scenario::Answered));
         let mut events = events(&client);
         client.start().await.unwrap();
         next_of(&mut events, "peer_ready").await;
@@ -477,14 +415,8 @@ sys.stdin.read()
 #[test]
 fn stops_before_the_deadline_count_when_consumed_after_it() {
     let peer = Peer::new();
-    let script = r"
-emit({'type': 'peer_ready'})
-next(commands())
-emit({'type': 'received'})
-while True: time.sleep(1)
-";
     on_paused_task_set(|_| async {
-        let client = RpcClient::new(peer.options(script));
+        let client = RpcClient::new(peer.options(Scenario::Received));
         let mut events = events(&client);
         client.start().await.unwrap();
         next_of(&mut events, "peer_ready").await;
@@ -505,16 +437,8 @@ while True: time.sleep(1)
 #[test]
 fn collections_include_the_future_terminal_event() {
     let peer = Peer::new();
-    let script = r"
-emit({'type': 'agent_end', 'past': True})
-for line in commands():
-    command = json.loads(line)
-    for record in [{'type': 'message_update'}, {'type': 'turn_end'}, {'type': 'turn_end'}, {'type': 'agent_end'}, {'type': 'late'}]:
-        emit(record)
-    respond(command)
-";
     on_task_set(|_| async {
-        let client = RpcClient::new(peer.options(script));
+        let client = RpcClient::new(peer.options(Scenario::Collections));
         let mut events = events(&client);
         client.start().await.unwrap();
         next_of(&mut events, "agent_end").await;
@@ -538,17 +462,8 @@ for line in commands():
 #[test]
 fn prompt_collection_is_subscribed_before_the_prompt() {
     let peer = Peer::new();
-    let script = r"
-for line in commands():
-    command = json.loads(line)
-    if command['message'] == 'quiet':
-        respond(command); continue
-    emit({'type': 'agent_start'})
-    emit({'type': 'agent_end', 'messages': []})
-    respond(command)
-";
     on_task_set(|_| async {
-        let client = RpcClient::new(peer.options(script));
+        let client = RpcClient::new(peer.options(Scenario::Prompt));
         client.start().await.unwrap();
         let events = client.prompt_and_wait("hello", None, None).await.unwrap();
         assert_eq!(
@@ -570,11 +485,9 @@ for line in commands():
 #[test]
 fn prompt_failure_releases_its_prepared_collector() {
     let peer = Peer::new();
-    let refusing = "emit({'type': 'peer_ready'})\nfor line in commands():\n    respond(json.loads(line), error='Rejected prompt')\n    emit({'type': 'agent_end'})";
-    let closed = "os.close(0)\nemit({'type': 'peer_ready'})\nwhile True: time.sleep(1)";
     on_paused_task_set(|_| async {
         let started = tokio::time::Instant::now();
-        let unstarted = RpcClient::new(peer.options(SERVE));
+        let unstarted = RpcClient::new(peer.options(Scenario::Serve));
         let error = unstarted
             .prompt_and_wait("hello", None, None)
             .await
@@ -587,11 +500,11 @@ fn prompt_failure_releases_its_prepared_collector() {
         );
     });
     on_task_set(|_| async {
-        for (script, expected) in [
-            (refusing, "Rejected prompt"),
-            (closed, "Broken pipe (os error 32)"),
+        for (scenario, expected) in [
+            (Scenario::RejectPrompt, "Rejected prompt"),
+            (Scenario::ClosedInput, "Broken pipe (os error 32)"),
         ] {
-            let client = RpcClient::new(peer.options(script));
+            let client = RpcClient::new(peer.options(scenario));
             let mut events = events(&client);
             client.start().await.unwrap();
             next_of(&mut events, "peer_ready").await;
@@ -613,16 +526,8 @@ fn prompt_failure_releases_its_prepared_collector() {
 #[test]
 fn stop_and_exit_settle_only_owned_calls_and_waits() {
     let peer = Peer::new();
-    let script = r"
-emit({'type': 'peer_ready'})
-for line in commands():
-    command = json.loads(line)
-    emit({'type': 'received', 'command': command['type']})
-    if command['type'] == 'bash': os._exit(3)
-    if command['type'] == 'abort': respond(command)
-";
     on_task_set(|_| async {
-        let client = RpcClient::new(peer.options(script));
+        let client = RpcClient::new(peer.options(Scenario::Settle));
         let mut events = events(&client);
         for ending in ["stop", "exit"] {
             client.start().await.unwrap();
@@ -669,15 +574,8 @@ fn stopped<T>(
 #[test]
 fn child_exit_settles_work_while_a_descendant_keeps_the_output_open() {
     let peer = Peer::new();
-    let script = r"
-import subprocess
-emit({'type': 'peer_ready', 'pid': os.getpid()})
-next(commands())
-subprocess.Popen(['sh', '-c', 'read _'])
-os._exit(0)
-";
     on_paused_task_set(|_| async {
-        let client = RpcClient::new(peer.options(script));
+        let client = RpcClient::new(peer.options(Scenario::Descendant));
         let mut events = events(&client);
         client.start().await.unwrap();
         let ready = next_of(&mut events, "peer_ready").await;
@@ -686,6 +584,11 @@ os._exit(0)
         let mut idle = pin!(client.wait_for_idle(None));
         let mut state = pin!(client.get_state());
         assert!(poll_once(state.as_mut()).is_pending());
+        next_of(&mut events, "descendant_ready").await;
+        let mut control = std::io::BufReader::new(peer.control());
+        let mut descendant_pid = String::new();
+        std::io::BufRead::read_line(&mut control, &mut descendant_pid).unwrap();
+        assert!(process_exists(descendant_pid.trim().parse().unwrap()));
         while process_exists(pid) {
             tokio::task::yield_now().await;
         }
@@ -693,6 +596,10 @@ os._exit(0)
         assert!(stopped(idle.as_mut()), "the wait settles at the exit");
         release.send(()).unwrap();
         hold.await.unwrap();
+        release_peer(control.get_mut());
+        let mut ended = Vec::new();
+        std::io::Read::read_to_end(&mut control, &mut ended).unwrap();
+        assert!(ended.is_empty(), "the descendant completed its release");
         client.stop().await.unwrap();
     });
 }
@@ -700,13 +607,8 @@ os._exit(0)
 #[test]
 fn work_registered_during_termination_settles_when_it_ends() {
     let peer = Peer::new();
-    let script = r"
-signal.signal(signal.SIGTERM, lambda *_: os.write(2, b'terminating\n'))
-emit({'type': 'peer_ready'})
-while True: time.sleep(1)
-";
     on_paused_task_set(|_| async {
-        let client = RpcClient::new(peer.options(script));
+        let client = RpcClient::new(peer.options(Scenario::Resist));
         let mut events = events(&client);
         client.start().await.unwrap();
         next_of(&mut events, "peer_ready").await;
@@ -737,16 +639,9 @@ while True: time.sleep(1)
 #[test]
 fn cancelled_and_failed_operations_release_only_their_own_resources() {
     let peer = Peer::new();
-    let script = r"
-emit({'type': 'peer_ready'})
-for line in commands():
-    command = json.loads(line)
-    if command['type'] == 'abort': emit({'type': 'agent_end'})
-    respond(command)
-";
     let token = Rc::new(());
     on_task_set(|_| async {
-        let client = RpcClient::new(peer.options(script));
+        let client = RpcClient::new(peer.options(Scenario::Cancelled));
         let kept = Rc::clone(&token);
         let mut events = events(&client);
         let _keep = client.on_event(Rc::new(move |_: &Value| {
@@ -780,9 +675,8 @@ for line in commands():
 #[test]
 fn dispatch_and_framing_work_stays_linear() {
     let peer = Peer::new();
-    let script = "for line in commands():\n    count = json.loads(line)['command']\n    for index in range(int(count)): emit({'type': 'tick', 'index': index})\n    emit({'type': 'done'})\n    respond(json.loads(line))";
     on_task_set(|_| async {
-        let client = RpcClient::new(peer.options(script));
+        let client = RpcClient::new(peer.options(Scenario::Linear));
         let visits = Rc::new(RefCell::new(0_usize));
         let removers: Vec<_> = (0..4)
             .map(|_| {

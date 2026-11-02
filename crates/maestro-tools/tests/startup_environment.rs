@@ -37,20 +37,12 @@ const OVERRIDES: [(Option<bool>, &str, bool); 2] =
 
 /// Places an executable program probe at `root/name` through a child process.
 fn program(root: &Path, name: &str) {
-    let source = root.join(format!("{name}.source"));
-    std::fs::write(
-        &source,
-        "#!/bin/sh\n[ \"$#\" = 1 ] && [ \"$1\" = --version ] || exit 99\nexit 0\n",
-    )
-    .unwrap();
-    assert!(
-        std::process::Command::new("install")
-            .args(["-m", "0700"])
-            .arg(&source)
-            .arg(root.join(name))
-            .status()
-            .unwrap()
-            .success()
+    crate::find_support::alias(
+        root,
+        name,
+        &serde_json::json!({
+            "scenario":"probe", "log":null, "name":name, "stdout":[], "code":0
+        }),
     );
 }
 
@@ -130,8 +122,9 @@ fn startup_selection_keeps_installed_tool_discovery() {
         let manager =
             ToolsManager::new(bin.text(), Some(counting_fetch(&calls))).with_offline(Some(true));
         assert_eq!(
-            manager.get_tool_path(SearchTool::Fd).await,
-            Some(format!("{}/fd", bin.text()))
+            manager.ensure_tool(SearchTool::Fd, None).await,
+            Some(format!("{}/fd", bin.text())),
+            "an offline selection still uses an installed program"
         );
         assert_eq!(calls.load(Ordering::SeqCst), 0);
     });

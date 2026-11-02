@@ -371,6 +371,7 @@ fn config(input: &Arc<Input>, observations: Arc<Mutex<Observations>>) -> AgentLo
         before_tool_call: None,
         after_tool_call: None,
         should_stop_after_turn: None,
+        prepare_next_turn: None,
         get_steering_messages: None,
         get_follow_up_messages: None,
         tool_execution: Some(maestro_agent::ToolExecutionMode::Sequential),

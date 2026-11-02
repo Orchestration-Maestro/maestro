@@ -17,6 +17,13 @@ fn row(text: (&str, &str, &str), current: String, values: &[&str]) -> SettingIte
         submenu: None,
     }
 }
+/// The follow-up mode description, naming the key bound to queue a follow-up.
+fn follow_up_description(key: &str) -> String {
+    format!(
+        "{key} queues follow-up messages until agent stops. 'one-at-a-time': deliver one, wait for response. 'all': deliver all at once."
+    )
+}
+
 /// Creates the supplied rows in their display order.
 pub(super) fn rows(
     config: SettingsConfig,
@@ -188,7 +195,7 @@ fn session_rows(config: &SettingsConfig) -> Vec<SettingItem> {
             (
                 "follow-up-mode",
                 "Follow-up mode",
-                "Alt+Enter queues follow-up messages until agent stops. 'one-at-a-time': deliver one, wait for response. 'all': deliver all at once.",
+                &follow_up_description(&maestro_app::key_display_text("app.message.followUp")),
             ),
             config.follow_up_mode.as_str().into(),
             &["one-at-a-time", "all"],
@@ -202,7 +209,39 @@ fn session_rows(config: &SettingsConfig) -> Vec<SettingItem> {
             config.transport.as_str().into(),
             &["sse", "websocket", "websocket-cached", "auto"],
         ),
+        http_idle_timeout(config.behavior.http_idle_timeout_ms),
     ]
+}
+/// The HTTP idle timeout choices: their displayed label and milliseconds.
+const HTTP_IDLE_TIMEOUTS: [(&str, f64); 5] = [
+    ("30 sec", 30_000.0),
+    ("1 min", 60_000.0),
+    ("2 min", 120_000.0),
+    ("5 min", 300_000.0),
+    ("disabled", 0.0),
+];
+
+/// The HTTP idle timeout row.
+fn http_idle_timeout(milliseconds: f64) -> SettingItem {
+    row(
+        (
+            "http-idle-timeout",
+            "HTTP idle timeout",
+            "Maximum idle gap while waiting for HTTP headers or body chunks. Disable for local models that pause longer than five minutes.",
+        ),
+        http_idle_timeout_label(milliseconds),
+        &HTTP_IDLE_TIMEOUTS.map(|(label, _)| label),
+    )
+}
+/// The label of a timeout: its choice, otherwise its whole seconds.
+pub(crate) fn http_idle_timeout_label(milliseconds: f64) -> String {
+    HTTP_IDLE_TIMEOUTS
+        .iter()
+        .find(|(_, choice)| (*choice - milliseconds).abs() < 0.5)
+        .map_or_else(
+            || format!("{} sec", milliseconds / 1000.0),
+            |(label, _)| (*label).to_owned(),
+        )
 }
 /// Behavior preferences in their displayed order.
 fn behavior_rows(config: &SettingsConfig) -> Vec<SettingItem> {
@@ -286,8 +325,12 @@ fn warnings(
         Rc::new(submenus::WarningSettingsSubmenu::new(
             initial,
             Rc::new(move |value| {
-                state.replace(value.clone());
-                callback(value);
+                let previous = state.replace(value.clone());
+                if callback(value) {
+                    return true;
+                }
+                state.replace(previous);
+                false
             }),
             Rc::new(move || done(None)),
             theme.clone(),
@@ -324,8 +367,8 @@ fn thinking(
             submenus::SelectionCallbacks {
                 select: Rc::new(move |value| {
                     if let Ok(level) = value.parse() {
-                        callback(level);
-                        done(Some(value.into()));
+                        let accepted = callback(level);
+                        done(accepted.then(|| value.into()));
                     }
                 }),
                 cancel: Rc::new(move || cancel(None)),
@@ -353,6 +396,12 @@ fn themes(
         let callback = callbacks.on_theme_change.clone();
         let preview = callbacks.on_theme_preview.clone();
         let restore = current.clone();
+        let restore: Rc<dyn Fn()> = Rc::new(move || {
+            if let Some(preview) = &preview {
+                preview(&restore);
+            }
+        });
+        let refused = restore.clone();
         Rc::new(submenus::SelectSubmenu::new(
             submenus::Selection {
                 title: "Theme",
@@ -369,13 +418,14 @@ fn themes(
             },
             submenus::SelectionCallbacks {
                 select: Rc::new(move |value| {
-                    callback(value);
-                    done(Some(value.into()));
+                    let accepted = callback(value);
+                    if !accepted {
+                        refused();
+                    }
+                    done(accepted.then(|| value.into()));
                 }),
                 cancel: Rc::new(move || {
-                    if let Some(preview) = &preview {
-                        preview(&restore);
-                    }
+                    restore();
                     cancel(None);
                 }),
                 preview: callbacks.on_theme_preview.clone(),
@@ -386,7 +436,7 @@ fn themes(
     item
 }
 /// Converts only the selected cyclic setting into its existing owner type.
-pub(super) fn change(callbacks: &SettingsCallbacks, id: &str, value: &str) {
+pub(super) fn change(callbacks: &SettingsCallbacks, id: &str, value: &str) -> bool {
     let numeric_callback = match id {
         "image-width-cells" => Some(&callbacks.on_image_width_cells_change),
         "editor-padding" => Some(&callbacks.on_editor_padding_x_change),
@@ -394,10 +444,7 @@ pub(super) fn change(callbacks: &SettingsCallbacks, id: &str, value: &str) {
         _ => None,
     };
     if let Some(callback) = numeric_callback {
-        if let Ok(value) = value.parse() {
-            callback(value);
-        }
-        return;
+        return value.parse().is_ok_and(|value| callback(value));
     }
     match id {
         "show-images" => (callbacks.on_show_images_change)(value == "true"),
@@ -416,6 +463,12 @@ pub(super) fn change(callbacks: &SettingsCallbacks, id: &str, value: &str) {
             "auto" => Transport::Auto,
             _ => Transport::Sse,
         }),
+        "http-idle-timeout" => HTTP_IDLE_TIMEOUTS
+            .iter()
+            .find(|(label, _)| *label == value)
+            .is_some_and(|(_, milliseconds)| {
+                (callbacks.on_http_idle_timeout_ms_change)(*milliseconds)
+            }),
         "hide-thinking" => (callbacks.on_hide_thinking_block_change)(value == "true"),
         "collapse-changelog" => (callbacks.on_collapse_changelog_change)(value == "true"),
         "quiet-startup" => (callbacks.on_quiet_startup_change)(value == "true"),
@@ -432,7 +485,7 @@ pub(super) fn change(callbacks: &SettingsCallbacks, id: &str, value: &str) {
             "all" => TreeFilterMode::All,
             _ => TreeFilterMode::Default,
         }),
-        _ => {}
+        _ => true,
     }
 }
 /// Converts the fixed delivery choices.
@@ -443,3 +496,6 @@ fn delivery(value: &str) -> MessageDeliveryMode {
         MessageDeliveryMode::OneAtATime
     }
 }
+
+#[cfg(test)]
+mod tests;

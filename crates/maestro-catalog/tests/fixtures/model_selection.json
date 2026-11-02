@@ -3376,7 +3376,11 @@
       ],
       [
         "zai",
-        "glm-5.1"
+        "glm-5.3"
+      ],
+      [
+        "zai-coding-cn",
+        "glm-5.3"
       ],
       [
         "mistral",

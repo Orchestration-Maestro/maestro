@@ -1,4 +1,5 @@
 //! A turn hook that requests compaction above a usage threshold and a command that requests it immediately.
+// maestro-component: MAESTRO_TRIGGER_COMPACT_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

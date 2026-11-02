@@ -1,5 +1,6 @@
 //! An opt-in input hook: `?quick <question>` requests a brief answer; `ping` and `time`
 //! show immediate feedback without a model call. Extension-injected input passes through.
+// maestro-component: MAESTRO_INPUT_TRANSFORM_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

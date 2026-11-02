@@ -191,18 +191,7 @@ impl Canvas {
         self.frame(pointer(self.rect.center(), false)).0
     }
 }
-#[must_use]
-pub fn pointer(pos: egui::Pos2, pressed: bool) -> Vec<egui::Event> {
-    vec![
-        egui::Event::PointerMoved(pos),
-        egui::Event::PointerButton {
-            pos,
-            button: egui::PointerButton::Primary,
-            pressed,
-            modifiers: egui::Modifiers::NONE,
-        },
-    ]
-}
+pub use crate::support::pointer::pointer;
 /// Assert URL preparation through control activation.
 /// # Panics
 /// Panics if a selected fixture or its output differs.

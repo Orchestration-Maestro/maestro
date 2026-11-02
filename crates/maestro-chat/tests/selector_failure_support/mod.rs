@@ -1,9 +1,9 @@
 //! Strict recorded selector failures and shared original diagnostics.
-use maestro_app::{DiagnosticErrorInfo, OAuthError};
+#[cfg(not(target_arch = "wasm32"))]
+use maestro_app::OAuthError;
+pub use maestro_credentials::test_support::fallback_support::errors;
 use serde::Deserialize;
 use serde_json::Value;
-#[path = "../../../maestro-credentials/tests/fallback_support/errors.rs"]
-pub mod errors;
 /// One recorded transaction.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -48,4 +48,5 @@ pub fn error_value(error: &(dyn std::error::Error + 'static)) -> Value {
             .downcast_ref::<OAuthError>()
             .expect("original account error"),
     )
+    .unwrap()
 }

@@ -586,10 +586,10 @@
     "test": "export_markdown_blocks_unsafe_links_and_images",
     "branch": "success",
     "expected": {
-      "html": "<p><a href=\"\u0000javascript:payload\">label</a></p>\n",
+      "html": "<p>label</p>\n",
       "consumer": {
-        "tag": "A",
-        "attribute": "�javascript:payload",
+        "tag": null,
+        "attribute": null,
         "unsafe_scheme": null
       }
     }
@@ -603,10 +603,10 @@
     "test": "export_markdown_blocks_unsafe_links_and_images",
     "branch": "success",
     "expected": {
-      "html": "<p><img src=\"\u0000javascript:payload\" alt=\"alt\"></p>\n",
+      "html": "<p>alt</p>\n",
       "consumer": {
-        "tag": "IMG",
-        "attribute": "�javascript:payload",
+        "tag": null,
+        "attribute": null,
         "unsafe_scheme": null
       }
     }
@@ -620,10 +620,10 @@
     "test": "export_markdown_blocks_unsafe_links_and_images",
     "branch": "success",
     "expected": {
-      "html": "<p><a href=\"java\u0000script:payload\">label</a></p>\n",
+      "html": "<p>label</p>\n",
       "consumer": {
-        "tag": "A",
-        "attribute": "java�script:payload",
+        "tag": null,
+        "attribute": null,
         "unsafe_scheme": null
       }
     }
@@ -637,10 +637,10 @@
     "test": "export_markdown_blocks_unsafe_links_and_images",
     "branch": "success",
     "expected": {
-      "html": "<p><img src=\"java\u0000script:payload\" alt=\"alt\"></p>\n",
+      "html": "<p>alt</p>\n",
       "consumer": {
-        "tag": "IMG",
-        "attribute": "java�script:payload",
+        "tag": null,
+        "attribute": null,
         "unsafe_scheme": null
       }
     }
@@ -838,7 +838,7 @@
     "test": "export_markdown_keeps_allowed_destinations",
     "branch": "success",
     "expected": {
-      "html": "<p><a href=\"javascriptx:thing\" title=\"title\">a <strong>b</strong></a> <img src=\"javascriptx:thing\" alt=\"alt\" title=\"image title\"></p>\n"
+      "html": "<p>a <strong>b</strong> alt</p>\n"
     }
   },
   {

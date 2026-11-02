@@ -1,11 +1,23 @@
 //! Effective settings view composition for scoped readers.
 
 use super::{
-    BaseSettingsLayer, Settings, SettingsManager, SettingsScope, conversion::merge_one_level,
+    BaseSettingsLayer, Settings, SettingsErrorKind, SettingsManager, SettingsScope,
+    conversion::merge_one_level,
 };
 use serde_json::{Map, Value};
 
 impl SettingsManager {
+    /// Resolves restored preferences over the current view without editing any raw scope.
+    /// Base locks and publisher diagnostics follow the ordinary composition pipeline.
+    #[must_use]
+    pub fn resolve_stored_values(&self, stored: &Settings) -> Settings {
+        Settings(self.compose_effective_settings(
+            self.get_base_layer(),
+            self.effective.clone(),
+            &[(SettingsScope::Global, &stored.0)],
+        ))
+    }
+
     /// Composes supplied scopes with locked inputs and final locks after stored decisions.
     pub(super) fn compose_effective_settings(
         &self,
@@ -26,8 +38,9 @@ impl SettingsManager {
                     .rev()
                     .find(|(_, document)| overrides_path(document, path))
                     .map_or(SettingsScope::Global, |(scope, _)| *scope);
-                self.queue.record_error(
+                self.queue.record(
                     scope,
+                    SettingsErrorKind::StoredValueIgnored,
                     layer.lock_message(path, "Stored value ignored").into(),
                 );
             });
@@ -35,7 +48,11 @@ impl SettingsManager {
         restore(&mut view.0);
         if let Some(decider) = &self.decider {
             for message in decider.resolve(&mut view) {
-                self.report_refusal(SettingsScope::Global, message);
+                self.queue.record(
+                    SettingsScope::Global,
+                    SettingsErrorKind::StoredValueIgnored,
+                    message.into(),
+                );
             }
         }
         restore(&mut view.0);

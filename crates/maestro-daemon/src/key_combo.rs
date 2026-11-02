@@ -1,33 +1,31 @@
 //! Workspace key-combination parsing and matching.
 
 use maestro_protocol::frames::{ClientKeyCode, KeyModifiers};
+use maestro_tui::keys::{Code, Identifier, Target};
+
+use crate::input::parse::{project_code, toolkit_modifiers_to_wire};
 
 /// Semantic key code with protocol modifier bits.
 pub type KeyCombo = (ClientKeyCode, u8);
 
-/// Parses one key-combination spelling, rejecting multiple or absent keys.
+/// Parses one key-combination spelling through the toolkit's key grammar, rejecting multiple
+/// or absent keys.
 #[must_use]
 pub fn parse_key_combo(text: &str) -> Option<KeyCombo> {
-    let mut modifiers = KeyModifiers::NONE;
-    let mut key = None;
-    for part in text.split('+').map(str::trim) {
-        if part.is_empty() {
-            return None;
-        }
-        if let Some(modifier) = parse_modifier_token(part) {
-            modifiers |= modifier;
-        } else if key.replace(part).is_some() {
-            return None;
-        }
-    }
-    let mut code = parse_key_code(key?)?;
-    if let ClientKeyCode::Char(character) = &mut code
-        && character.is_ascii_uppercase()
-    {
-        *character = character.to_ascii_lowercase();
-        modifiers |= KeyModifiers::SHIFT;
-    }
-    Some(normalize_key_combo((code, modifiers)))
+    let identifier = Identifier::parse(text)?;
+    let code = project_code(match identifier.target {
+        Target::Char(character) => Code::Char(character),
+        Target::Named(named) => Code::Key(named),
+    })?;
+    let shift = if identifier.capital {
+        KeyModifiers::SHIFT
+    } else {
+        KeyModifiers::NONE
+    };
+    Some(normalize_key_combo((
+        code,
+        toolkit_modifiers_to_wire(identifier.modifier) | shift,
+    )))
 }
 
 /// Canonicalizes shifted Tab as `BackTab` without a redundant Shift modifier.
@@ -53,58 +51,6 @@ fn normalized_key_parts(code: &ClientKeyCode, modifiers: u8) -> (&ClientKeyCode,
         (&ClientKeyCode::BackTab, modifiers & !KeyModifiers::SHIFT)
     } else {
         (code, modifiers)
-    }
-}
-
-/// Resolves workspace key names or a single Unicode scalar.
-fn parse_key_code(key: &str) -> Option<ClientKeyCode> {
-    let code = match key.to_lowercase().as_str() {
-        "space" | " " => ClientKeyCode::Char(' '),
-        "enter" | "return" => ClientKeyCode::Enter,
-        "esc" | "escape" => ClientKeyCode::Esc,
-        "tab" => ClientKeyCode::Tab,
-        "backspace" | "bs" => ClientKeyCode::Backspace,
-        "left" => ClientKeyCode::Left,
-        "right" => ClientKeyCode::Right,
-        "up" => ClientKeyCode::Up,
-        "down" => ClientKeyCode::Down,
-        "minus" => ClientKeyCode::Char('-'),
-        "comma" => ClientKeyCode::Char(','),
-        "period" => ClientKeyCode::Char('.'),
-        "slash" => ClientKeyCode::Char('/'),
-        "backslash" => ClientKeyCode::Char('\\'),
-        "quote" => ClientKeyCode::Char('\''),
-        "double_quote" | "double-quote" => ClientKeyCode::Char('"'),
-        "semicolon" => ClientKeyCode::Char(';'),
-        "colon" => ClientKeyCode::Char(':'),
-        "percent" => ClientKeyCode::Char('%'),
-        "ampersand" => ClientKeyCode::Char('&'),
-        "backtick" => ClientKeyCode::Char('`'),
-        "plus" => ClientKeyCode::Char('+'),
-        name if name.len() > 1 && name.starts_with('f') => {
-            ClientKeyCode::F(name[1..].parse().ok()?)
-        }
-        _ => {
-            let mut chars = key.chars();
-            let character = chars.next()?;
-            if chars.next().is_some() {
-                return None;
-            }
-            ClientKeyCode::Char(character)
-        }
-    };
-    Some(code)
-}
-
-/// Recognizes the workspace modifier aliases independently of key spelling.
-fn parse_modifier_token(token: &str) -> Option<u8> {
-    match token.to_lowercase().as_str() {
-        "ctrl" | "control" => Some(KeyModifiers::CONTROL),
-        "shift" => Some(KeyModifiers::SHIFT),
-        "alt" | "option" | "meta" => Some(KeyModifiers::ALT),
-        "cmd" | "command" | "super" => Some(KeyModifiers::SUPER),
-        "hyper" => Some(KeyModifiers::HYPER),
-        _ => None,
     }
 }
 

@@ -131,8 +131,7 @@ pub fn detect(app: &mut TestApp, agent: Agent, state: AgentState) {
         );
 }
 
-/// Gives the first pane of the first workspace a recognized Pi process whose fallback state is
-/// `state`.
+/// Gives the first pane of the first workspace a recognized agent process with fallback `state`.
 pub fn pilot(app: &mut TestApp, state: AgentState) {
     let terminal = app.state.topology.workspaces[0]
         .terminal_id(root_pane(app, 0))
@@ -172,7 +171,7 @@ pub fn request(app: &mut TestApp, wire: Value) -> Result<ResponseResult, ErrorBo
     block_on(answer(app, wire))
 }
 
-/// Answers the wire-form `wire` from inside a running test runtime.
+/// Answers `wire` through the handler from inside a running test runtime.
 pub async fn answer(app: &mut TestApp, wire: Value) -> Result<ResponseResult, ErrorBody> {
     answer_command(app, command(wire)).await
 }
@@ -183,8 +182,8 @@ pub async fn answer_command(
     command: RpcCommand,
 ) -> Result<ResponseResult, ErrorBody> {
     let mut settings = settings();
-    app.handle_api_request(command, &mut settings, &untouched_paths())
-        .await
+    let paths = untouched_paths();
+    app.handle_api_request(command, &mut settings, &paths).await
 }
 
 /// The failure with `code` and `message`.

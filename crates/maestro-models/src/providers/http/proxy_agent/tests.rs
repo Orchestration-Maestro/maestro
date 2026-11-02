@@ -411,7 +411,7 @@ async fn framing_exchange(credentials: &str, surplus: bool) {
     server.finish().unwrap();
 }
 
-mod deadlines;
+pub(in crate::providers::http) mod deadlines;
 
 #[test]
 fn socks_request_response_conversions_keep_wire_fields() {

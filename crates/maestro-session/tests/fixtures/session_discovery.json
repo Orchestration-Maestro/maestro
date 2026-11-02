@@ -21,7 +21,23 @@
   "name": "null_first_record",
   "input": "null\n{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n",
   "mtime": 1893456000000,
-  "expected": null
+  "expected": {
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 1735787045000,
+   "messageCount": 0,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
  },
  {
   "name": "header_only",
@@ -311,6 +327,52 @@
     "absent": true
    },
    "created": 42,
+   "modified": 1893456000000,
+   "messageCount": 0,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
+  "name": "boolean_created",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":true,\"cwd\":\"/project\"}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1,
+   "modified": 1893456000000,
+   "messageCount": 0,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
+  "name": "out_of_range_created",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":9000000000000000.0,\"cwd\":\"/project\"}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": {
+    "invalid": true
+   },
    "modified": 1893456000000,
    "messageCount": 0,
    "firstMessage": "(no messages)",
@@ -615,7 +677,23 @@
   "name": "null_record_after_header",
   "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\nnull\n",
   "mtime": 1893456000000,
-  "expected": null
+  "expected": {
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 1735787045000,
+   "messageCount": 0,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
  },
  {
   "name": "nonobject_record_after_header",
@@ -1221,7 +1299,7 @@
     "absent": true
    },
    "created": 1735787045000,
-   "modified": 1735787045000,
+   "modified": 3333,
    "messageCount": 1,
    "firstMessage": "text",
    "allMessagesText": "text"

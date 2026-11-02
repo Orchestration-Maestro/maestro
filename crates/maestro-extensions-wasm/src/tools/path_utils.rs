@@ -31,6 +31,17 @@ pub fn basename(api: &ExtensionAPI, path: &str) -> ExtensionResult<String> {
 pub fn expand_path(api: &ExtensionAPI, file_path: &str) -> ExtensionResult<String> {
     api.helper("paths.expand_path", &(file_path,))
 }
+
+/// Shows the host home as `~` when `path` is that directory or lies below it.
+///
+/// A sibling that only starts with the home's characters keeps its full spelling, and an
+/// empty or root home shortens nothing.
+///
+/// # Errors
+/// Returns the host's home lookup failure or an invalid response.
+pub fn shorten_path(api: &ExtensionAPI, path: &str) -> ExtensionResult<String> {
+    api.helper("paths.shorten_path", &(path,))
+}
 /// Spells a native host path the way this component's standard library opens it.
 ///
 /// Host paths, such as the context's cwd or a [`resolve`] result, use the native

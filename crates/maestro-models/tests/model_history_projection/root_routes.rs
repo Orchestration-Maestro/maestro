@@ -12,12 +12,12 @@ pub async fn check() -> chat::TestResult {
             None => row.input,
         };
         for (api, expected) in [
-            ("openai-completions", &row.expected.chat),
-            ("openai-responses", &row.expected.responses),
-            ("anthropic-messages", &row.expected.message),
-            ("google-generative-ai", &row.expected.content),
-            ("bedrock-converse-stream", &row.expected.cloud),
-            ("mistral-conversations", &row.expected.reasoning),
+            ("openai-completions", Some(&row.expected.chat)),
+            ("openai-responses", Some(&row.expected.responses)),
+            ("anthropic-messages", Some(&row.expected.message)),
+            ("google-generative-ai", Some(&row.expected.content)),
+            ("bedrock-converse-stream", row.expected.cloud.as_ref()),
+            ("mistral-conversations", Some(&row.expected.reasoning)),
         ] {
             let request = outgoing(api, &input).await?;
             assert_call(api, &request, expected);
@@ -129,7 +129,7 @@ fn answer(api: &str) -> chat::TestResult<transport::Attempt> {
     ))
 }
 
-fn assert_call(api: &str, request: &Value, expected: &Value) {
+fn assert_call(api: &str, request: &Value, expected: Option<&Value>) {
     let (call, field, id) = match api {
         "openai-completions" | "mistral-conversations" => {
             let call = &request["messages"][0]["tool_calls"][0];
@@ -163,8 +163,8 @@ fn assert_call(api: &str, request: &Value, expected: &Value) {
     if let Some(id) = id {
         assert_eq!(call[id], "call12345", "{api}");
     }
-    assert_eq!(&call[field], expected, "{api}");
-    if let Some(object) = expected.as_object() {
+    assert_eq!(call.get(field), expected, "{api}");
+    if let Some(object) = expected.and_then(Value::as_object) {
         assert_eq!(
             call[field].as_object().unwrap().keys().collect::<Vec<_>>(),
             object.keys().collect::<Vec<_>>(),

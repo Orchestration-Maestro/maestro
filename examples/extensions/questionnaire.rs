@@ -1,4 +1,5 @@
 //! A questionnaire tool with selectable options and inline custom answers.
+// maestro-component: MAESTRO_QUESTIONNAIRE_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
