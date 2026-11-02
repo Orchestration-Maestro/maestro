@@ -93,13 +93,12 @@ const ORIGINAL_RUSTC_WRAPPER: &str = "MAESTRO_FIXTURE_RUSTC_WRAPPER";
 fn cargo_home_hiding_wrapper(root: &std::path::Path) -> std::io::Result<std::path::PathBuf> {
     let wrapper = root.join("rustc-wrapper");
     if !wrapper.exists() {
-        let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
-            .ok_or_else(|| std::io::Error::other("run just prepare-tests, then cargo nextest"))?;
-        crate::install_executable(std::path::Path::new(&artifact), &wrapper)?;
+        crate::executable::install_recorded(
+            &wrapper,
+            "tooling-wrapper",
+            r#"{"scenario":"hide-home"}"#,
+        )?;
     }
-    let mut record = wrapper.as_os_str().to_owned();
-    record.push(".fixture");
-    std::fs::write(record, "tooling-wrapper\n{\"scenario\":\"hide-home\"}\n")?;
     Ok(wrapper)
 }
 

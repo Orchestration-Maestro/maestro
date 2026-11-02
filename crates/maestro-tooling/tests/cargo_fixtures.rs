@@ -5,6 +5,7 @@ use crate::toolchain_support;
 use maestro_test_directory::Scratch;
 use std::fs;
 use std::path::Path;
+use std::process::Command;
 
 /// Dependency-free fixture resolution creates only its private cache lock.
 #[test]
@@ -90,28 +91,22 @@ fn fixture_cargo_resolution_uses_supplied_sources() {
     );
 }
 
-/// Recipe stand-ins install from the prepared artifact and answer the recipe from their record.
+/// Recipe stand-ins answer the recipe that runs them from the prepared artifact.
 #[test]
-fn recipe_stand_ins_install_from_the_prepared_artifact() {
+fn recipe_stand_ins_answer_their_recipe_command() {
     let workspace = Workspace::new();
-    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
-        .expect("nextest native-fixture setup supplies the artifact");
-    let artifact = fs::read(artifact).unwrap();
-    for name in ["cargo", "mise", "prek", "watchexec", "trunk", "miniserve"] {
-        let alias = workspace.path().join("bin").join(name);
-        assert_eq!(fs::read(&alias).unwrap(), artifact, "{name}");
-        assert_eq!(
-            fs::read_to_string(alias.with_extension("fixture")).unwrap(),
-            "tooling-command\n{\"scenario\":\"stand-in\"}\n",
-            "{name}"
-        );
-    }
+    let log = workspace.path().join("stand-in.log");
+    let output = Command::new(workspace.path().join("bin").join("prek"))
+        .arg("x")
+        .env("MAESTRO_LOG", &log)
+        .output()
+        .unwrap();
     assert!(
-        !Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../target/recipe-tools")
-            .exists(),
-        "the stand-ins must not build a tool of their own"
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
     );
+    assert_eq!(fs::read_to_string(log).unwrap(), "prek x\n");
 }
 
 /// The compiler wrapper behind a fixture command never sees the private Cargo home, so the

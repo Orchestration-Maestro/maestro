@@ -20,15 +20,15 @@ pub fn write_input(root: &Path, name: &str, bytes: &str) {
     fs::write(path, bytes).unwrap();
 }
 
-/// Copies an executable in this process, so nothing holds a writable descriptor to a file it
-/// later runs (a concurrent fork would otherwise make `exec` fail with "Text file busy").
+/// Copies an executable through a child process, so this process never holds a writable
+/// descriptor to a file it later runs (a concurrent fork would otherwise make `exec` fail with
+/// "Text file busy").
 pub fn install_executable(source: &Path, target: &Path) {
-    fs::copy(source, target).unwrap();
     #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        fs::set_permissions(target, fs::Permissions::from_mode(0o700)).unwrap();
-    }
+    maestro_test_process::native::install_executable(source, target).unwrap();
+    // Windows has no fork, so a copy leaves no executable descriptor another launch could fail on.
+    #[cfg(not(unix))]
+    fs::copy(source, target).unwrap();
 }
 
 /// Install the prepared native fixture as `name` in `directory`, selecting `scenario` from the
