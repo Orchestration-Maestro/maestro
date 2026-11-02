@@ -3,7 +3,10 @@ use serde::{Serialize, de::DeserializeOwned};
 mod conversation;
 mod fuzzy;
 mod keys;
+mod oauth;
 mod paths;
+pub use paths::{guest_path, native_path};
+mod time;
 mod tools;
 
 /// Dispatches a synchronous helper without retaining any operands.
@@ -13,6 +16,9 @@ mod tools;
 pub fn call(operation: &str, data: &str) -> Result<String, String> {
     if operation.starts_with("conversation.") {
         return conversation::call(operation, data);
+    }
+    if operation.starts_with("oauth.") {
+        return oauth::call(operation, data);
     }
     if operation.starts_with("paths.") {
         return paths::call(operation, data);
@@ -27,6 +33,8 @@ pub fn call(operation: &str, data: &str) -> Result<String, String> {
         return keys::call(operation, data);
     }
     match operation {
+        "time.local_date_time_string" => time::local_date_time_string(data),
+        "time.local_time_string" => time::local_time_string(data),
         "visible_width" => {
             let (text,): (String,) = decode(data)?;
             encode(&maestro_tui::visible_width(&text))
@@ -121,7 +129,7 @@ fn columns(operation: &str, data: &str) -> Result<String, String> {
 }
 
 /// Complete native metadata model, not a JSON number projection.
-pub use maestro_resources::frontmatter::{FrontmatterValue, parse_frontmatter};
+pub use maestro_resources::frontmatter::{FrontmatterValue, parse_frontmatter, parse_yaml};
 
 /// Native size formatting over the complete floating-point argument domain.
 pub use maestro_tools::format_size;

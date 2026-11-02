@@ -2,7 +2,8 @@
 use super::typed::{poll, recalled, waiting};
 use super::{Setup, VERSION, World, cases, isolated_package, painted, started};
 use maestro_app::is_whitespace_scalar;
-use maestro_tui::Component;
+use maestro_theme::ThemeColor;
+use maestro_tui::{Component, TerminalCapabilities};
 use serde::Deserialize;
 
 /// Every recorded changelog case.
@@ -709,6 +710,39 @@ fn startup_version_notice_keeps_action_link_roles_and_redraw() {
 }
 
 #[test]
+fn update_notice_links_the_changelog_on_link_capable_terminals() {
+    isolated_package(
+        "update_notice_links_the_changelog_on_link_capable_terminals",
+        async |directory, _| {
+            let world = update_world(directory, "dark".into());
+            let terminal = &world.mode.tool_environment.terminal_image;
+            terminal.set_capabilities(TerminalCapabilities {
+                hyperlinks: true,
+                ..TerminalCapabilities::default()
+            });
+            world.mode.show_new_version_notification("9.8.7").unwrap();
+            let theme = world.themes.theme().get().unwrap();
+            let url = "https://github.com/Orchestration-Maestro/maestro/blob/main/CHANGELOG.md";
+            let target = format!("\x1b]8;;{url}\x1b\\");
+            let row = format!(
+                "{}{target}{}\x1b]8;;\x1b\\",
+                theme.fg(&ThemeColor::Muted, "Changelog: ").unwrap(),
+                theme.fg(&ThemeColor::Accent, "open changelog").unwrap(),
+            );
+            let rows = world.mode.chat_container.render(80);
+            assert_eq!(rows.iter().filter(|line| line.contains(&row)).count(), 1);
+            assert!(
+                rows.iter()
+                    .all(|line| !line.replace(&target, "").contains(url))
+            );
+            // The row keeps the link it was built with after the terminal loses link support.
+            terminal.set_capabilities(TerminalCapabilities::default());
+            assert_eq!(world.mode.chat_container.render(80), rows);
+        },
+    );
+}
+
+#[test]
 fn startup_package_notice_keeps_order_duplicates_and_redraw() {
     update_cards("startup_package_notice_keeps_order_duplicates_and_redraw");
 }
@@ -768,15 +802,22 @@ fn update_cards(test: &str) {
     });
 }
 
-/// Builds the same mode setup used by startup, selecting the recorded theme.
+/// Builds the same mode setup used by startup, selecting the recorded theme, on a terminal
+/// without link support, whichever terminal runs the tests.
 fn update_world(directory: &std::path::Path, palette: String) -> World {
-    Setup {
+    let world = Setup {
         configure: Box::new(move |settings| {
             settings.set_theme(palette);
         }),
         ..Setup::default()
     }
-    .build(directory)
+    .build(directory);
+    world
+        .mode
+        .tool_environment
+        .terminal_image
+        .set_capabilities(TerminalCapabilities::default());
+    world
 }
 
 /// Checks all transcript rows and the frame request at the consuming boundary.

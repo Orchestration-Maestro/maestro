@@ -38,6 +38,18 @@ pub(super) fn value(route: &host::ImportRoute) -> ExtensionResult<host::RouteVal
     }
 }
 
+/// Completes a native operation that returns a list of strings, running each nested call it
+/// makes into this instance.
+///
+/// # Errors
+/// Returns the operation's own error.
+pub(super) fn lines(route: &host::ImportRoute) -> ExtensionResult<Vec<String>> {
+    match value(route)? {
+        host::RouteValue::Lines(lines) => Ok(lines),
+        _ => Err("extension route result kind mismatch".into()),
+    }
+}
+
 /// Runs a nested call's prefix now; a call still pending continues in this guest's task and
 /// delivers its result through its settlement, so the host caller is released at once.
 fn start(route: &host::ImportRoute, mut running: Running) {
@@ -59,6 +71,48 @@ fn dispatch(call: host::LocalCall) -> Running {
     let result = match call {
         host::LocalCall::AuthFallback(call) => auth_fallback(&call),
         host::LocalCall::AuthBackend(call) => return backend(call),
+        call @ (host::LocalCall::Renderer(_)
+        | host::LocalCall::Render(_)
+        | host::LocalCall::Unit(_)
+        | host::LocalCall::Key(_)
+        | host::LocalCall::Focused(_)
+        | host::LocalCall::SetFocused(_)) => component(call),
+        host::LocalCall::Prepare(call) => host::LocalResult::Prepared(exports.invoke_prepare(
+            call.target,
+            &call.args,
+            &call.emitter,
+        )),
+        host::LocalCall::Schema(call) => host::LocalResult::Schema(
+            exports
+                .invoke_schema(call.target, call.operation, &call.node, &call.emitter)
+                .map_err(crate::schema_error::to_wire),
+        ),
+        host::LocalCall::Stream(call) => host::LocalResult::Stream(super::streams::invoke(
+            call.target,
+            call.value,
+            call.operation,
+        )),
+        host::LocalCall::Synchronous(call) => host::LocalResult::Synchronous(synchronous(&call)),
+        call @ (host::LocalCall::Expanded(_)
+        | host::LocalCall::Factory(_)
+        | host::LocalCall::CustomFactory(_)
+        | host::LocalCall::ToolRender(_)
+        | host::LocalCall::TerminalInput(_)
+        | host::LocalCall::Style(_)
+        | host::LocalCall::Highlight(_)
+        | host::LocalCall::Widget(_)
+        | host::LocalCall::EditorFactory(_)
+        | host::LocalCall::Editor(_)
+        | host::LocalCall::AutocompleteFactory(_)) => ui(call),
+        call => return asynchronous(call),
+    };
+    Box::pin(std::future::ready(result))
+}
+
+/// Runs one nested message renderer or retained component method.
+fn component(call: host::LocalCall) -> host::LocalResult {
+    let exports = Exports::new(Generated);
+    match call {
         host::LocalCall::Renderer(call) => host::LocalResult::Renderer(
             exports
                 .invoke_renderer(
@@ -85,35 +139,81 @@ fn dispatch(call: host::LocalCall) -> Running {
                 None => view.invalidate(emitter),
             },
         )),
+        host::LocalCall::Focused(call) => host::LocalResult::Focused(exports.invoke_component(
+            call.target,
+            &call.emitter,
+            crate::Component::focused,
+        )),
+        host::LocalCall::SetFocused(call) => host::LocalResult::Unit(exports.invoke_component(
+            call.target,
+            &call.emitter,
+            |view, emitter| view.set_focused(call.focused, emitter),
+        )),
         host::LocalCall::Key(call) => host::LocalResult::Key(exports.invoke_component(
             call.target,
             &call.emitter,
             crate::Component::wants_key_release,
         )),
-        host::LocalCall::Prepare(call) => host::LocalResult::Prepared(exports.invoke_prepare(
+        _ => host::LocalResult::Unit(Err("expected a component call".to_owned())),
+    }
+}
+
+/// Runs one nested UI callback: an expansion, a factory, a tool rendering, terminal input, an
+/// authored style or highlighting, a widget callback or an authored editor request.
+fn ui(call: host::LocalCall) -> host::LocalResult {
+    let exports = Exports::new(Generated);
+    match call {
+        host::LocalCall::Expanded(call) => host::LocalResult::Unit(exports.invoke_set_expanded(
             call.target,
-            &call.args,
+            call.expanded,
             &call.emitter,
         )),
-        host::LocalCall::Schema(call) => host::LocalResult::Schema(
-            exports
-                .invoke_schema(call.target, call.operation, &call.node, &call.emitter)
-                .map_err(crate::schema_error::to_wire),
-        ),
         host::LocalCall::Factory(call) => host::LocalResult::Factory(factory(call)),
+        host::LocalCall::CustomFactory(call) => {
+            let lent = super::super::custom::Lent {
+                tui: call.input.tui,
+                theme: call.input.theme,
+                keybindings: call.input.keybindings,
+                close: call.input.close,
+            };
+            host::LocalResult::CustomFactory(
+                exports
+                    .invoke_custom_factory(call.target, lent, &call.emitter)
+                    .map(|outcome| super::super::custom::transfer(&Generated, outcome)),
+            )
+        }
         host::LocalCall::ToolRender(call) => host::LocalResult::ToolRender(tool_render(call)),
         host::LocalCall::TerminalInput(call) => host::LocalResult::TerminalInput(
             exports.invoke_terminal_input(call.target, &call.data, &call.emitter),
         ),
-        host::LocalCall::Stream(call) => host::LocalResult::Stream(super::streams::invoke(
+        host::LocalCall::EditorFactory(call) => {
+            host::LocalResult::EditorFactory(super::editors::editor_factory(
+                call.target,
+                call.tui,
+                call.theme,
+                call.keybindings,
+                &call.emitter,
+            ))
+        }
+        host::LocalCall::Editor(call) => host::LocalResult::Editor(super::editors::authored(
             call.target,
-            call.value,
-            call.operation,
+            call.request,
+            &call.emitter,
         )),
-        host::LocalCall::Synchronous(call) => host::LocalResult::Synchronous(synchronous(&call)),
-        call => return asynchronous(call),
-    };
-    Box::pin(std::future::ready(result))
+        host::LocalCall::AutocompleteFactory(call) => host::LocalResult::AutocompleteFactory(
+            super::editors::provider_factory(call.target, call.current, &call.emitter),
+        ),
+        host::LocalCall::Style(call) => {
+            host::LocalResult::Style(super::super::invoke_style(call.target, &call.text))
+        }
+        host::LocalCall::Highlight(call) => host::LocalResult::Highlight(
+            super::super::invoke_highlight(call.target, &call.code, call.lang.as_deref()),
+        ),
+        host::LocalCall::Widget(call) => host::LocalResult::Widget(
+            super::widget_events::invoke_widget(call.target, call.event, &call.emitter),
+        ),
+        _ => host::LocalResult::Unit(Err("expected a UI callback".to_owned())),
+    }
 }
 
 /// Invoke the retained credential fallback through its original author adapter.
@@ -137,6 +237,7 @@ fn synchronous(call: &host::LocalSynchronous) -> ExtensionResult<()> {
         host::LocalKind::CompactionError => {
             exports.invoke_compaction_error(call.target, call.data.clone(), &call.emitter)
         }
+        host::LocalKind::Watch => exports.invoke_watch(call.target, &call.emitter),
         host::LocalKind::Abort => exports.invoke_abort(call.target, &call.emitter),
         host::LocalKind::Dispose => exports.invoke_dispose(call.target, &call.emitter),
         host::LocalKind::BranchChange => {
@@ -147,7 +248,13 @@ fn synchronous(call: &host::LocalSynchronous) -> ExtensionResult<()> {
 
 /// Runs one nested tool rendering and transfers what it returned.
 fn tool_render(call: host::LocalToolRender) -> ExtensionResult<host::ToolRendered> {
-    let lent = (call.theme, call.invalidator);
+    let lent = (
+        call.theme,
+        call.invalidator,
+        call.native_row.map(|row| crate::NativeRow {
+            handle: std::rc::Rc::new(row),
+        }),
+    );
     Exports::new(Generated)
         .invoke_tool_render(call.target, &call.render, lent, &call.emitter)
         .map(super::rendered_row)
@@ -182,6 +289,9 @@ fn asynchronous(call: host::LocalCall) -> Running {
                 )
                 .await,
             ),
+            host::LocalCall::Oauth(call) => {
+                host::LocalResult::Oauth(super::oauth::invoke(call).await)
+            }
             host::LocalCall::Event(call) => {
                 host::LocalResult::Event(event(call.target, call.event, call.resources).await)
             }
@@ -203,15 +313,40 @@ fn asynchronous(call: host::LocalCall) -> Running {
             host::LocalCall::WithSession(call) => {
                 host::LocalResult::Unit(exports.invoke_with_session(call.target, call.ctx).await)
             }
+            call @ (host::LocalCall::CustomFuture(_) | host::LocalCall::Autocomplete(_)) => {
+                ui_asynchronous(call).await
+            }
             host::LocalCall::Tail(target) => {
                 host::LocalResult::Unit(Exports::<Generated>::invoke_tail(target).await)
             }
+            call @ (host::LocalCall::Read(_)
+            | host::LocalCall::Write(_)
+            | host::LocalCall::Edit(_)
+            | host::LocalCall::Grep(_)
+            | host::LocalCall::Find(_)
+            | host::LocalCall::Ls(_)) => file_operation(call).await,
             host::LocalCall::Bash(call) => {
                 host::LocalResult::Bash(bash(call.target, call.request, call.resources).await)
             }
             _ => host::LocalResult::Unit(Err("extension nested call has no export".into())),
         }
     })
+}
+
+/// Runs one nested asynchronous UI callback: a custom factory's owned continuation or a
+/// completion provider request.
+async fn ui_asynchronous(call: host::LocalCall) -> host::LocalResult {
+    match call {
+        host::LocalCall::CustomFuture(target) => host::LocalResult::Factory(
+            super::super::custom::invoke_custom_future(target)
+                .await
+                .map(|built| super::super::factories::transfer(&Generated, built)),
+        ),
+        host::LocalCall::Autocomplete(call) => host::LocalResult::Autocomplete(
+            super::editors::provider(call.target, call.request, call.signal).await,
+        ),
+        _ => host::LocalResult::Unit(Err("expected an asynchronous UI callback".into())),
+    }
 }
 
 /// Executes the authored tool with its supplied capabilities.
@@ -327,5 +462,54 @@ pub(super) fn text(route: &host::ImportRoute) -> ExtensionResult<String> {
     match value(route)? {
         host::RouteValue::Text(value) => Ok(value),
         _ => Err("extension route result kind mismatch".into()),
+    }
+}
+
+/// Preserves an encoded record that the original native owner may not have.
+pub(super) fn optional_text(route: &host::ImportRoute) -> ExtensionResult<Option<String>> {
+    match value(route)? {
+        host::RouteValue::OptionalText(value) => Ok(value),
+        _ => Err("extension route result kind mismatch".into()),
+    }
+}
+
+/// Preserves the credential owner a native constructor retained.
+pub(super) fn credentials(route: &host::ImportRoute) -> ExtensionResult<host::AuthStorage> {
+    match value(route)? {
+        host::RouteValue::Credentials(owner) => Ok(owner),
+        _ => Err("extension route result kind mismatch".into()),
+    }
+}
+
+/// Preserves the catalog a native constructor retained.
+pub(super) fn registry(route: &host::ImportRoute) -> ExtensionResult<host::ModelRegistry> {
+    match value(route)? {
+        host::RouteValue::Catalog(registry) => Ok(registry),
+        _ => Err("extension route result kind mismatch".into()),
+    }
+}
+
+/// Forwards nested file observations to their existing typed author adapters.
+async fn file_operation(call: host::LocalCall) -> host::LocalResult {
+    match call {
+        host::LocalCall::Grep(call) => host::LocalResult::Grep(
+            super::super::tools::grep::invoke(call.target, call.operation, call.path).await,
+        ),
+        host::LocalCall::Ls(call) => host::LocalResult::Ls(
+            super::super::tools::ls::invoke(call.target, call.operation, call.path).await,
+        ),
+        host::LocalCall::Find(call) => host::LocalResult::Find(
+            super::super::tools::find::invoke(call.target, call.operation, call.path).await,
+        ),
+        host::LocalCall::Edit(call) => host::LocalResult::Edit(
+            super::super::tools::edit::invoke(call.target, call.operation, call.path).await,
+        ),
+        host::LocalCall::Write(call) => host::LocalResult::Write(
+            super::super::tools::write::invoke(call.target, call.operation, call.path).await,
+        ),
+        host::LocalCall::Read(call) => host::LocalResult::Read(
+            super::super::tools::read::invoke(call.target, call.operation, call.path).await,
+        ),
+        _ => host::LocalResult::Unit(Err("extension nested call has no export".into())),
     }
 }

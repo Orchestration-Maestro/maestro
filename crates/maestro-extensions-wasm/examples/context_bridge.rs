@@ -16,8 +16,64 @@ use std::rc::Rc;
 #[path = "context_bridge/api.rs"]
 mod api;
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/builtin.rs"]
+mod builtin;
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/builtin_bash.rs"]
+mod builtin_bash;
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/builtin_edit.rs"]
+mod builtin_edit;
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/builtin_factories.rs"]
+mod builtin_factories;
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/builtin_find.rs"]
+mod builtin_find;
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/builtin_grep.rs"]
+mod builtin_grep;
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/builtin_lifetimes.rs"]
+mod builtin_lifetimes;
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/builtin_ls.rs"]
+mod builtin_ls;
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/builtin_options.rs"]
+mod builtin_options;
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/builtin_progress.rs"]
+mod builtin_progress;
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/builtin_queue.rs"]
+mod builtin_queue;
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/builtin_read.rs"]
+mod builtin_read;
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/builtin_registered.rs"]
+mod builtin_registered;
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/builtin_render.rs"]
+mod builtin_render;
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/builtin_selection.rs"]
+mod builtin_selection;
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/builtin_signals.rs"]
+mod builtin_signals;
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/builtin_write.rs"]
+mod builtin_write;
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/callbacks.rs"]
+mod callbacks;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/commands.rs"]
 mod commands;
+#[cfg(target_arch = "wasm32")]
+use callbacks::{components, listeners, ordering};
 #[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/credentials.rs"]
 mod credentials;
@@ -27,6 +83,12 @@ mod exec;
 #[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/json_boundary.rs"]
 mod json_boundary;
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/load_time.rs"]
+mod load_time;
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/oauth.rs"]
+mod oauth;
 #[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/prefixes.rs"]
 mod prefixes;
@@ -108,12 +170,19 @@ mod model_protocol_routes;
 fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
         check_start(&api)?;
+        load_time::publish(&api)?;
         providers::factory(&api)?;
-        register_listeners(&api)?;
+        register_callbacks(&api)?;
         let renderer_api = api.clone();
         api.register_message_renderer(
             "bridge-view",
             Rc::new(move |message, options, theme, emitter| {
+                if let Some(method) = message.custom_type.strip_prefix("global-theme ") {
+                    return Ok(Some(theme::view(
+                        maestro_extensions_wasm::theme()?,
+                        method.into(),
+                    )));
+                }
                 if let Some(method) = message.custom_type.strip_prefix("theme ") {
                     return Ok(Some(theme::view(theme, method.into())));
                 }
@@ -131,7 +200,7 @@ fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
                     send_inner(&renderer_api)?;
                     emitter.emit("trace", serde_json::json!("send-returned"))?;
                 }
-                Ok(Some(maestro_extensions_wasm::Component::new(View {
+                Ok(Some(maestro_extensions_wasm::Component::new(ui::View {
                     api: renderer_api.clone(),
                     name: message.custom_type,
                 })))
@@ -202,6 +271,10 @@ fn command(
     context: maestro_extensions_wasm::ExtensionCommandContext,
     api: ExtensionAPI,
 ) -> ExtensionFuture<'static, ()> {
+    if let Some(ops) = args.strip_prefix("listen:") {
+        let ops = ops.to_owned();
+        return Box::pin(async move { listeners::run(api, &ops, context).await });
+    }
     if args == "model-protocol-routes" {
         return Box::pin(async { Err(model_protocol_routes::command().await?) });
     }
@@ -249,6 +322,11 @@ fn command(
         let request = request.to_owned();
         return Box::pin(async move { Err(streams::command(&request).await?) });
     }
+    if args.starts_with("credential ") || args.starts_with("provider ") {
+        return Box::pin(async move {
+            Err(credential_command(&api, &context, &args).await?.to_string())
+        });
+    }
     context_command(args, context, api)
 }
 
@@ -260,8 +338,17 @@ fn context_command(
     api: ExtensionAPI,
 ) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
+        if let Some(result) = builtin::command(&api, &context, &args).await {
+            return result;
+        }
         if args.starts_with("credential ") || args.starts_with("provider ") {
             return Err(credential_command(&api, &context, &args).await?.to_string());
+        }
+        if let Some(answer) = ui::custom(&context, &args).await {
+            return Err(answer?);
+        }
+        if args == "ui writer-drain" {
+            return Err(ui::writer_author::drain().await?);
         }
         if args == "clock wait" {
             std::thread::sleep(std::time::Duration::from_millis(1));
@@ -279,11 +366,8 @@ fn context_command(
         if let Some(request) = args.strip_prefix("exec imports:") {
             return Err(exec::observe(&api, &context, request).await?);
         }
-        if args == "register-tool" || args == "register-painter" {
-            return registrations::register_tool(&api, &args);
-        }
-        if args == "register-prefixes" {
-            return prefixes::register(&api, context);
+        if let Some(result) = registrations::command(&api, &context, &args) {
+            return result;
         }
         if args == "compact" {
             return compact(&context);
@@ -382,70 +466,6 @@ fn session_start(
 #[cfg(target_arch = "wasm32")]
 maestro_extensions_wasm::export_extension!(factory);
 
-/// Retained authored view exposes exact method failures and final destruction.
-#[cfg(target_arch = "wasm32")]
-struct View {
-    /// Original API, including during the guest resource destructor.
-    api: ExtensionAPI,
-    /// Literal custom-message identity supplied by the caller.
-    name: String,
-}
-#[cfg(target_arch = "wasm32")]
-impl maestro_extensions_wasm::ComponentView for View {
-    fn render(
-        &self,
-        width: u32,
-        emitter: maestro_extensions_wasm::CallbackEmitter<'_>,
-    ) -> Result<Vec<String>, String> {
-        emitter.emit("component-rendered", serde_json::json!([self.name, width]))?;
-        if self.name == "render-error" {
-            return Err("guest render failure".into());
-        }
-        Ok(vec![format!("{}:{width}", self.name)])
-    }
-    fn handle_input(
-        &self,
-        data: &str,
-        _: maestro_extensions_wasm::CallbackEmitter<'_>,
-    ) -> Result<(), String> {
-        if data == "error" {
-            Err("guest input failure".into())
-        } else {
-            Ok(())
-        }
-    }
-    fn wants_key_release(
-        &self,
-        _: maestro_extensions_wasm::CallbackEmitter<'_>,
-    ) -> Result<bool, String> {
-        if self.name == "key-error" {
-            Err("guest key failure".into())
-        } else {
-            Ok(true)
-        }
-    }
-    fn invalidate(&self, _: maestro_extensions_wasm::CallbackEmitter<'_>) -> Result<(), String> {
-        if self.name == "invalidate-error" {
-            Err("guest invalidate failure".into())
-        } else {
-            Ok(())
-        }
-    }
-}
-#[cfg(target_arch = "wasm32")]
-impl Drop for View {
-    fn drop(&mut self) {
-        let _ = self.api.register_flag(
-            &format!("dropped-{}", self.name),
-            maestro_extensions_wasm::FlagOptions {
-                description: None,
-                type_: maestro_extensions_wasm::FlagType::Boolean,
-                default: Some(maestro_extensions_wasm::FlagValue::Boolean(true)),
-            },
-        );
-    }
-}
-
 /// Makes a callback-release trap observable through the real lifecycle.
 #[cfg(target_arch = "wasm32")]
 struct ReleaseTrap(std::cell::Cell<bool>);
@@ -465,6 +485,15 @@ impl Drop for ReleaseTrap {
     }
 }
 
+/// Registers independently retained listener and native tool callbacks.
+#[cfg(target_arch = "wasm32")]
+fn register_callbacks(api: &ExtensionAPI) -> maestro_extensions_wasm::ExtensionResult<()> {
+    register_listeners(api)?;
+    ordering::register(api)?;
+    components::register(api)?;
+    builtin::register(api)
+}
+
 /// Selects credential and provider observations without changing the ordinary command routes.
 #[cfg(target_arch = "wasm32")]
 async fn credential_command(
@@ -472,6 +501,9 @@ async fn credential_command(
     context: &maestro_extensions_wasm::ExtensionContext,
     request: &str,
 ) -> Result<serde_json::Value, String> {
+    if let Some(request) = request.strip_prefix("credential callbacks") {
+        return credentials::composition(api, request.trim_start()).await;
+    }
     if let Some(text) = request.strip_prefix("provider control ") {
         return provider_controls::control(api, context, text).await;
     }
@@ -481,12 +513,16 @@ async fn credential_command(
     if let Some(request) = request.strip_prefix("credential pending ") {
         return credentials::pending(api, request).await;
     }
-    match request {
-        "credential fallback" => credentials::fallback(api).await,
-        "credential backend" => credentials::backend(api),
-        "credential state" => credentials::state(api).await,
-        _ => providers::command(api, context, request).await,
+    if let Some(id) = request.strip_prefix("credential oauth builtin ") {
+        return oauth::builtin(api, context, id).await;
     }
+    if let Some(operation) = request.strip_prefix("credential oauth reverse ") {
+        return oauth::reverse(api, operation).await;
+    }
+    if let Some(mode) = request.strip_prefix("credential oauth storage ") {
+        return oauth::storage(api, context, mode).await;
+    }
+    credentials::observation(api, context, request).await
 }
 
 /// Preserves the caller-controlled startup failure before any callback registration.

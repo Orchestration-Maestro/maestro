@@ -107,7 +107,7 @@ fn preparation(
         .then(|| {
             let guard = super::Released::new(api, "tool prepare");
             Rc::new(
-                move |mut args: Value, emitter: maestro_extensions_wasm::CallbackEmitter<'_>| {
+                move |args: &mut Value, emitter: maestro_extensions_wasm::CallbackEmitter<'_>| {
                     let _ = &guard;
                     if let Some(control) = args["control"].as_str() {
                         return control_kept(&prepare_kept, control);
@@ -120,7 +120,7 @@ fn preparation(
                         args["mark"] = json!("after");
                     }
                     prepare_api.append_entry("prepared", Some(args.clone()))?;
-                    Ok(args)
+                    Ok(args.clone())
                 },
             ) as maestro_extensions_wasm::PrepareArguments
         })

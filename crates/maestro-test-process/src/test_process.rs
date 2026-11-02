@@ -10,13 +10,14 @@ use std::process::{Command, ExitStatus, Output, Stdio};
 use crate::proof::{check_file, check_output};
 use crate::{CheckedChild, TestProcessError, selection};
 
-/// Variable the coverage runtime reads; kept when the environment is cleared.
-const PROFILE: &str = "LLVM_PROFILE_FILE";
+/// Variables a cleared environment keeps: the coverage runtime's profile path and the
+/// Windows system root, without which a Windows child cannot load its socket library.
+const KEPT: [&str; 2] = ["LLVM_PROFILE_FILE", "SYSTEMROOT"];
 
 /// One ordered environment edit.
 #[derive(Debug)]
 enum EnvEdit {
-    /// Drop the inherited environment, keeping the coverage profile path.
+    /// Drop the inherited environment, keeping the [`KEPT`] variables.
     Clear,
     /// Set a variable.
     Set(OsString, OsString),
@@ -30,9 +31,10 @@ impl EnvEdit {
         match self {
             Self::Clear => {
                 command.env_clear();
-                if let Some(profile) = std::env::var_os(PROFILE) {
-                    command.env(PROFILE, profile);
-                }
+                let kept = KEPT
+                    .iter()
+                    .filter_map(|name| Some((name, std::env::var_os(name)?)));
+                command.envs(kept);
             }
             Self::Set(key, value) => {
                 command.env(key, value);
@@ -114,6 +116,17 @@ impl TestProcess {
         Self::named(selection::current_name(test)?)
     }
 
+    /// Select an ignored child test by its function item, printing its own output.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the item has no module-qualified path.
+    pub fn child<F: Fn()>(test: F) -> Result<Self, TestProcessError> {
+        Ok(Self::named(selection::test_name(test)?)?
+            .ignored()
+            .nocapture())
+    }
+
     /// Select a test by its complete libtest identity, such as a sibling's.
     ///
     /// # Errors
@@ -172,7 +185,8 @@ impl TestProcess {
         self
     }
 
-    /// Drop the inherited environment, keeping the coverage profile path.
+    /// Drop the inherited environment, keeping the coverage profile path and the
+    /// Windows system root.
     #[must_use]
     pub fn env_clear(mut self) -> Self {
         self.envs.push(EnvEdit::Clear);
@@ -358,6 +372,20 @@ impl TestProcess {
         CheckedChild::start(&self.name, child)
     }
 
+    /// Hand the configured command to a caller that starts the child itself.
+    ///
+    /// The command re-runs the selected test with this builder's environment, directory,
+    /// descriptors and harness flags, for production code that spawns its own children. This
+    /// checks selection, not startup: the child's standard output begins with
+    /// [`crate::HARNESS_START`], which the caller can look for before claiming the test ran.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the test is not eligible.
+    pub fn command(mut self) -> Result<Command, TestProcessError> {
+        self.prepare()
+    }
+
     /// Run through the caller's own invoker and prove the returned output started the test.
     ///
     /// `invoke` receives the final ordered harness arguments and runs the test executable
@@ -445,7 +473,7 @@ impl TestProcess {
     /// Build the configured command once the test is known to be eligible.
     fn prepare(&mut self) -> Result<Command, TestProcessError> {
         let executable = self.eligible()?;
-        let mut command = self.command(executable)?;
+        let mut command = self.base_command(executable)?;
         command.args(self.arguments());
         self.envs.iter().for_each(|edit| edit.apply(&mut command));
         if let Some(dir) = &self.dir {
@@ -477,7 +505,7 @@ impl TestProcess {
     /// The interpreter path the caller supplied is used as it stands, so neither this
     /// process's `PATH` nor the child's decides which shell runs. A path that cannot run
     /// fails at launch with the operating system's error.
-    fn command(&mut self, executable: PathBuf) -> Result<Command, TestProcessError> {
+    fn base_command(&mut self, executable: PathBuf) -> Result<Command, TestProcessError> {
         if let Some((program, setup)) = self.shell.take() {
             if !program.is_absolute() {
                 return Err(self.failure("the setup interpreter path is not absolute"));

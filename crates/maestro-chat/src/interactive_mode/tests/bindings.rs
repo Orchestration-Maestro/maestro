@@ -3,8 +3,8 @@ use super::{Setup, World, admitted, cases, isolated, roles, started};
 use crate::interactive_mode::InteractiveMode;
 use maestro_app::{
     DiagnosticErrorInfo, ExtensionError, ExtensionFactory, ExtensionShortcut, LoadExtensionsResult,
-    Local, ReadonlyFooterDataProvider, ReadonlySessionManager, ResourcesDiscoverEvent,
-    ResourcesDiscoverResult, SessionStartEvent, strip_ansi,
+    Local, NewSessionCommandOptions, ReadonlyFooterDataProvider, ReadonlySessionManager,
+    ResourcesDiscoverEvent, ResourcesDiscoverResult, SessionStartEvent, strip_ansi,
 };
 use maestro_theme::{ColorMode, Theme, ThemeOptions};
 use maestro_tui::{Component, tui::InputHandler};
@@ -198,7 +198,7 @@ fn write_settings(world: &World, input: &Input) {
         settings.set_clear_on_shrink(clear);
         settings.set_hide_thinking_block(hidden);
     }
-    session.set_auto_compaction_enabled(compact);
+    session.set_auto_compaction_enabled(compact).unwrap();
 }
 
 /// Whether the footer shows the automatic-compaction marker.
@@ -306,6 +306,64 @@ fn runtime_settings_follow_the_current_session_without_crossing_policies() {
             assert_eq!(changes.get(), moved + 1, "an unchanged cwd notifies nobody");
         }
     });
+}
+
+#[test]
+fn invalid_replacement_http_settings_leave_footer_unchanged() {
+    isolated(
+        "invalid_replacement_http_settings_leave_footer_unchanged",
+        async |directory| {
+            let cwd = directory.join("replacement");
+            std::fs::create_dir(&cwd).unwrap();
+            let world = Setup {
+                create: Some(Rc::new(move |_| {
+                    let replacement =
+                        super::session::session(cwd.to_str().unwrap(), None, |inner| inner);
+                    replacement.session.model().write().unwrap().id = "rejected-model".into();
+                    *replacement.session.settings_manager().borrow_mut() =
+                        maestro_app::SettingsManager::in_memory(
+                            serde_json::from_value(json!({
+                                "httpIdleTimeoutMs": -5,
+                                "compaction": {"enabled": false}
+                            }))
+                            .unwrap(),
+                        );
+                    Box::pin(async { Ok(replacement) })
+                })),
+                ..Setup::default()
+            }
+            .build(directory);
+            world.mode.init().await.unwrap();
+            world.runtime.settle().unwrap();
+            let previous = world.host.session();
+            previous.model().write().unwrap().id = "retained-model".into();
+            previous.set_auto_compaction_enabled(true).unwrap();
+            world.mode.apply_runtime_settings().unwrap();
+            let before = world.mode.footer.render(120);
+            assert!(auto_marker(&world));
+            let changes = cwd_changes(&world);
+
+            let error = world
+                .host
+                .new_session(NewSessionCommandOptions::default())
+                .await
+                .unwrap_err();
+
+            assert!(
+                error
+                    .to_string()
+                    .contains("Invalid httpIdleTimeoutMs setting: -5")
+            );
+            assert!(!Rc::ptr_eq(&previous, &world.host.session()));
+            assert_eq!(world.mode.footer.render(120), before);
+            assert_eq!(
+                changes.get(),
+                0,
+                "rejected settings must not change the cwd"
+            );
+            assert!(auto_marker(&world));
+        },
+    );
 }
 
 #[test]
@@ -936,7 +994,7 @@ async fn binding_case(directory: &Path, fail: Option<&str>, expected: &Phases) {
 }
 
 /// Requests shutdown through a context created while `created` streams, while `requested`
-/// streams, after recording `before`, and checks whether the handler itself started it.
+/// streams, after recording `before`, and checks that the handler schedules shutdown.
 async fn shutdown_case(
     directory: &Path,
     (created, requested, before): (bool, bool, bool),
@@ -974,8 +1032,8 @@ async fn shutdown_case(
     assert_eq!(world.mode.shutdown_requested.get(), expected.requested);
     assert_eq!(
         started.get(),
-        usize::from(expected.calls == ["shutdown"]),
-        "the handler starts shutdown only while idle"
+        expected.calls.len() + usize::from(requested),
+        "the handler schedules shutdown, waiting for settlement while active"
     );
     request(&runner().create_context());
     assert!(world.runtime.drain_futures().is_empty());
@@ -1600,6 +1658,78 @@ fn real_session_replacement_rebinds_shortcuts_before_continuation() {
             for generation in 1..=2 {
                 replace_once(&world, generation, &log).await;
             }
+        },
+    );
+}
+
+/// Requests shutdown twice during compaction, then waits for the supplied release.
+fn compaction_shutdown(
+    entered: Rc<tokio::sync::Notify>,
+    release: Rc<tokio::sync::Notify>,
+) -> ExtensionFactory<Local> {
+    Rc::new(move |api| {
+        let (waiting, releasing) = (Rc::clone(&entered), Rc::clone(&release));
+        let registered = api
+            .on::<maestro_app::SessionBeforeCompactEvent, maestro_app::SessionBeforeCompactResult>(
+                "session_before_compact".into(),
+                Rc::new(move |_, context| {
+                    let (waiting, releasing) = (Rc::clone(&waiting), Rc::clone(&releasing));
+                    Box::pin(async move {
+                        context.shutdown()?;
+                        context.shutdown()?;
+                        waiting.notify_one();
+                        releasing.notified().await;
+                        Ok(Some(maestro_app::SessionBeforeCompactResult {
+                            cancel: maestro_app::Presence::Present(true),
+                            compaction: maestro_app::Presence::Missing,
+                        }))
+                    })
+                }),
+            );
+        Box::pin(std::future::ready(registered))
+    })
+}
+
+/// A shutdown requested after agent end waits for compaction and starts at run settlement.
+#[test]
+fn shutdown_requested_during_compaction_runs_once_at_settle() {
+    isolated(
+        "shutdown_requested_during_compaction_runs_once_at_settle",
+        async |directory| {
+            let entered = Rc::new(tokio::sync::Notify::new());
+            let release = Rc::new(tokio::sync::Notify::new());
+            let effects = Rc::new(super::lifecycle::Effects::default());
+            let world = Setup {
+                extension: Some(compaction_shutdown(
+                    Rc::clone(&entered),
+                    Rc::clone(&release),
+                )),
+                lifecycle: effects.clone(),
+                ..Setup::default()
+            }
+            .build(directory);
+            world.mode.init().await.unwrap();
+            world.runtime.settle().unwrap();
+            let session = world.host.session();
+            session.model().write().unwrap().context_window = 1_000.0;
+            let receive = super::held_response(&world);
+            let prompted = Rc::clone(&session);
+            let run = tokio::task::spawn_local(async move {
+                prompted
+                    .prompt("one", maestro_app::PromptOptions::default())
+                    .await
+            });
+            let held = receive.await.unwrap();
+            let message = super::answer();
+            message.write().unwrap().usage.input = 2_000.0;
+            message.write().unwrap().usage.total_tokens = maestro_app::Presence::Present(2_000.0);
+            held.stream.end(Some(message));
+            entered.notified().await;
+            assert_eq!(exits(&effects), 0);
+            release.notify_one();
+            run.await.unwrap().unwrap();
+            assert!(world.runtime.drain_futures().is_empty());
+            assert_eq!(exits(&effects), 1);
         },
     );
 }

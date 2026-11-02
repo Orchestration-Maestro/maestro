@@ -78,11 +78,15 @@ pub(crate) struct State {
     /// The original registration facade's endpoint, not a reconstructed API.
     api: Endpoint,
     /// Application installation identity supplied at factory composition.
-    pub(crate) installation_version: String,
+    pub(crate) installation: crate::Installation,
     /// Weak callback registration and the single reply/fault owner.
     callbacks: Callbacks,
     /// The original retained pub.
     pub(crate) exports: Option<Arc<Exports>>,
+    /// The directory behind the one filesystem root the instance lists.
+    root: wasmtime_wasi::filesystem::Dir,
+    /// Temporary filesystem entries retired by completed or cancelled operations.
+    retired: crate::wasi::root::Retired,
 }
 impl State {
     /// Constructs the one instance state before canonical linking.
@@ -92,22 +96,38 @@ impl State {
         api: Endpoint,
         callbacks: Callbacks,
         path: &str,
-        installation_version: String,
-    ) -> Self {
-        Self {
-            installation_version,
-            wasi: wasmtime_wasi::WasiCtxBuilder::new()
-                .env("MAESTRO_EXTENSION_PATH", path)
-                .build(),
+        installation: crate::Installation,
+        output: Option<crate::Stdout>,
+    ) -> wasmtime::Result<Self> {
+        Ok(Self {
+            installation,
+            wasi: crate::wasi::build(path, output),
+            root: crate::wasi::root::open()?,
+            retired: crate::wasi::root::Retired::default(),
             table: ResourceTable::new(),
             api,
             callbacks,
             exports: None,
+        })
+    }
+}
+impl State {
+    /// The standard filesystem beside the directory behind its root.
+    pub(crate) fn root_view(&mut self) -> crate::wasi::root::View<'_> {
+        self.retired.drain(&mut self.table);
+        crate::wasi::root::View {
+            fs: wasmtime_wasi::filesystem::WasiFilesystemCtxView {
+                ctx: self.wasi.filesystem(),
+                table: &mut self.table,
+            },
+            root: &self.root,
+            retired: self.retired.clone(),
         }
     }
 }
 impl WasiView for State {
     fn ctx(&mut self) -> WasiCtxView<'_> {
+        self.retired.drain(&mut self.table);
         WasiCtxView {
             ctx: &mut self.wasi,
             table: &mut self.table,
@@ -133,14 +153,22 @@ impl crate::callback_imports::CallbackView for State {
 /// Installs each canonical import once against its existing domain owner.
 pub(crate) fn link(linker: &mut Linker<State>) -> wasmtime::Result<()> {
     wasmtime_wasi::p2::add_to_linker_async(&mut *linker)?;
+    wasmtime_wasi::p3::add_to_linker(&mut *linker)?;
+    crate::wasi::root::link(&mut *linker)?;
     let mut host = linker.instance("maestro:extension/host@0.1.0")?;
     crate::api_imports::add_to_linker(&mut host)?;
     crate::helper_imports::add_to_linker(&mut host)?;
     crate::exec_imports::add_to_linker(&mut host)?;
+    crate::builtin_imports::add_to_linker(&mut host)?;
+    crate::native_render_imports::link(&mut host)?;
+    crate::local_resources::native_io::add_to_linker(&mut host)?;
+    crate::native_imports::add_to_linker(&mut host)?;
+
     crate::callback_imports::add_to_linker(&mut host)?;
     crate::context_imports::add_to_linker(&mut host)?;
     crate::ui_imports::add_to_linker(&mut host)?;
     crate::ui_themes::add_to_linker(&mut host)?;
+    crate::widget_imports::add_to_linker(&mut host)?;
     crate::footer_data::add_to_linker(&mut host)?;
     crate::theme_imports::add_to_linker(&mut host)?;
     crate::command_imports::add_to_linker(&mut host)?;

@@ -36,7 +36,7 @@ fn flags_keep_native_registration_and_independently_typed_defaults() {
             use maestro_extensions::types::{ExtensionFlagOptions, FlagType, FlagValue};
             let runtime = create_extension_runtime::<Local>();
             let (owner, api) = api(runtime.clone());
-            let (pump, admission) = Pump::new();
+            let (pump, admission) = Pump::new(crate::tests::support::widgets());
             let endpoint = pump.registry().api(api).unwrap();
             let worker = std::thread::spawn(move || {
                 assert_eq!(
@@ -82,7 +82,7 @@ fn actions_select_live_runtime_when_consumed_and_keep_native_errors() {
     tokio::runtime::Builder::new_current_thread().build().unwrap().block_on(async {
         let runtime = create_extension_runtime::<Local>();
         let (_owner, api) = api(runtime.clone());
-        let (mut pump, admission) = Pump::new();
+        let (mut pump, admission) = Pump::new(crate::tests::support::widgets());
         let endpoint = pump.registry().api(api).unwrap();
         let reader = endpoint.clone();
         let worker = std::thread::spawn(move || reader.read(Request::ActiveTools));
@@ -140,7 +140,7 @@ async fn messages() {
         }),
         ..original
     };
-    let (pump, admission) = Pump::new();
+    let (pump, admission) = Pump::new(crate::tests::support::widgets());
     let endpoint = pump.registry().api(api).unwrap();
     let worker = std::thread::spawn(move || send_messages(&endpoint));
     drop(admission);
@@ -218,3 +218,27 @@ fn send_messages(endpoint: &crate::api_reads::Endpoint) {
 }
 
 mod actions;
+
+/// Construction retains the application's owners and rejects an absent or stale facade.
+#[test]
+fn tool_construction_retains_application_services() {
+    let runtime = create_extension_runtime::<Local>();
+    let (_owner, api) = api(runtime.clone());
+    assert_eq!(
+        api.tool_construction().err().unwrap(),
+        "Extension tool construction is not configured"
+    );
+    let manager = Arc::new(maestro_extensions::ToolsManager::new(
+        "/app/bin".into(),
+        None,
+    ));
+    runtime.set_tool_construction(maestro_extensions::ToolConstruction {
+        tools_manager: manager.clone(),
+        bin_dir: "/app/bin".into(),
+    });
+    let services = api.tool_construction().unwrap();
+    assert!(Arc::ptr_eq(&services.tools_manager, &manager));
+    assert_eq!(services.bin_dir, "/app/bin");
+    runtime.invalidate(Some("ended tools".into()));
+    assert_eq!(api.tool_construction().err().unwrap(), "ended tools");
+}

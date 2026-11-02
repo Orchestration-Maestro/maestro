@@ -18,7 +18,7 @@ fn writable_setup_and_its_reader_share_the_real_session() {
             let history = Rc::new(RefCell::new(
                 SessionManager::in_memory(Some("/setup")).unwrap(),
             ));
-            let (pump, admission) = Pump::new();
+            let (pump, admission) = Pump::new(crate::tests::support::widgets());
             let writer = pump.registry().writable(history.clone()).unwrap();
             let worker = std::thread::spawn(move || {
                 observe(&writer);
@@ -147,12 +147,11 @@ fn branch_records(writer: &Endpoint, reader: &history_reads::Endpoint, id: Strin
     writer
         .read(|reply| Request::SetFile("/setup-does-not-write/session.jsonl".into(), reply))
         .unwrap();
+    // The selected file is resolved: Windows puts it on the working drive.
+    let selected = std::path::absolute("/setup-does-not-write/session.jsonl").unwrap();
     assert_eq!(
-        reader
-            .read(history_reads::Request::SessionFile)
-            .unwrap()
-            .as_deref(),
-        Some("/setup-does-not-write/session.jsonl")
+        reader.read(history_reads::Request::SessionFile).unwrap(),
+        Some(selected.display().to_string())
     );
     assert!(
         writer

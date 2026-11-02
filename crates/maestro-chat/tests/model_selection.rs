@@ -827,8 +827,8 @@ impl maestro_app::OAuthProviderInterface for RejectingModels {
     fn get_api_key<'a>(
         &self,
         credentials: &'a maestro_app::OAuthCredentials,
-    ) -> Result<&'a str, maestro_app::OAuthError> {
-        Ok(&credentials.access)
+    ) -> Result<std::borrow::Cow<'a, str>, maestro_app::OAuthError> {
+        Ok(std::borrow::Cow::Borrowed(&credentials.access))
     }
     fn modify_models<'m>(
         &self,

@@ -136,6 +136,8 @@ pub struct Extension<E: ExtensionExecution = Threaded> {
     pub commands: IndexMap<String, E::Shared<RwLock<RegisteredCommand<E>>>>,
     /// Ordered flag registrations.
     pub flags: IndexMap<String, Arc<RwLock<ExtensionFlag>>>,
+    /// First supplied defaults, retained independently of later metadata replacements.
+    pub initial_flag_values: IndexMap<String, FlagValue>,
     /// Ordered shortcut registrations.
     pub shortcuts: IndexMap<KeyId, E::Shared<RwLock<ExtensionShortcut<E>>>>,
     /// Ordered custom-message renderers by custom type.

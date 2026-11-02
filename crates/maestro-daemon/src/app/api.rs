@@ -32,24 +32,12 @@ impl<C: FnMut() -> u128> App<C> {
 
     /// Dispatches a background observation through its existing domain owner.
     fn dispatch_internal_event(&mut self, event: AppEvent) -> (Vec<PaneStateUpdate>, bool) {
-        if let AppEvent::TabBarCommandFinished {
-            generation,
-            segment_index,
-            result,
-        } = event
-        {
-            let changed = self.handle_tab_bar_command_finished(generation, segment_index, result);
-            if changed {
-                self.launch.render_dirty.request_generic();
-                self.launch.render_notify.notify_one();
-            }
-            return (Vec::new(), changed);
-        }
-        if let AppEvent::ClipboardWrite { .. } = event {
-            self.show_clipboard_feedback();
-            self.launch.render_dirty.request_generic();
-            self.launch.render_notify.notify_one();
-            return (Vec::new(), true);
+        let event = match self.dispatch_render_only_event(event) {
+            Ok(changed) => return (Vec::new(), changed),
+            Err(event) => event,
+        };
+        if matches!(event, AppEvent::TerminalCwdReported { .. }) {
+            self.request_git_identity_refresh(std::time::Instant::now());
         }
         let changed = !matches!(&event, AppEvent::TerminalBell { .. });
         self.publish_pane_process_exit(&event);
@@ -86,6 +74,31 @@ impl<C: FnMut() -> u128> App<C> {
             self.restore_overlay_after_exit(exit);
         }
         (updates, changed)
+    }
+
+    /// Applies an observation whose only effect is a render request, or hands it back.
+    fn dispatch_render_only_event(&mut self, event: AppEvent) -> Result<bool, AppEvent> {
+        let changed = match event {
+            AppEvent::TabBarCommandFinished {
+                generation,
+                segment_index,
+                result,
+            } => self.handle_tab_bar_command_finished(generation, segment_index, result),
+            AppEvent::ClipboardWrite { .. } => {
+                self.show_clipboard_feedback();
+                true
+            }
+            AppEvent::GitStatusRefreshed {
+                results,
+                cache_updates,
+            } => self.handle_git_status_refreshed(results, cache_updates),
+            other => return Err(other),
+        };
+        if changed {
+            self.launch.render_dirty.request_generic();
+            self.launch.render_notify.notify_one();
+        }
+        Ok(changed)
     }
 
     /// Refreshes matching retained detectors after their shared manifests have changed.

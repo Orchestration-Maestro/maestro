@@ -290,23 +290,13 @@ async fn signal_identity_case() {
         signal.unwrap().abort();
         Box::pin(async { Ok(None) })
     }));
-    config.after_tool_call = Some(Arc::new(|c, signal| {
-        assert!(signal.unwrap().is_aborted());
-        assert!(
-            !c.context
-                .messages
-                .read()
-                .unwrap()
-                .iter()
-                .any(|m| matches!(m, maestro_agent::AgentMessage::ToolResult(_)))
-        );
-        Box::pin(async { Ok(None) })
+    config.after_tool_call = Some(Arc::new(|_, _| {
+        panic!("an aborted call reaches no after hook");
     }));
-    let context = with_execute(Arc::new(|_, _, signal, _| {
-        assert!(signal.unwrap().is_aborted());
-        ready(Ok(result()))
+    let context = with_execute(Arc::new(|_, _, _, _| {
+        panic!("an aborted call is not executed");
     }));
-    let mut options = responses(vec![requesting]);
+    let mut options = responses(vec![requesting, assistant("done")]);
     options.signal = Some(invocation.clone());
     let returned = run_agent_loop(
         vec![],
@@ -317,7 +307,7 @@ async fn signal_identity_case() {
     )
     .await
     .unwrap();
-    assert_eq!(returned.len(), 2);
+    assert_eq!(returned.len(), 3);
     assert!(invocation.is_aborted());
     assert!(!configured.is_aborted());
 }
@@ -341,4 +331,45 @@ fn mutation_context(schema: &str, expected: serde_json::Value) -> maestro_agent:
             .prepare_arguments = Some(Arc::new(|_| Ok(serde_json::json!({"value":"8"}))));
     }
     context
+}
+
+/// Cancellation during start observation prevents execution even without a hook.
+#[test]
+fn abort_during_tool_start_without_hook_skips_execution() {
+    run(async {
+        let signal = maestro_models::Cancellation::new();
+        let aborter = signal.clone();
+        let executed = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let called = Arc::clone(&executed);
+        let context = with_execute(Arc::new(move |_, _, _, _| {
+            called.store(true, std::sync::atomic::Ordering::Relaxed);
+            ready(Ok(result()))
+        }));
+        let mut options = responses(vec![tool_call(), assistant("stopped")]);
+        options.signal = Some(signal);
+        let returned = run_agent_loop(
+            vec![],
+            context,
+            &config(),
+            Arc::new(move |event| {
+                if matches!(event, maestro_agent::AgentEvent::ToolExecutionStart { .. }) {
+                    aborter.abort();
+                }
+                ready(Ok(()))
+            }),
+            options,
+        )
+        .await
+        .unwrap();
+        assert!(!executed.load(std::sync::atomic::Ordering::Relaxed));
+        let maestro_agent::AgentMessage::ToolResult(message) = &returned[1] else {
+            panic!("tool result");
+        };
+        let message = message.read().unwrap();
+        assert!(message.is_error);
+        assert!(
+            matches!(&message.content[0], maestro_models::UserBlock::Text(text)
+            if text.text == "Operation aborted")
+        );
+    });
 }

@@ -578,9 +578,11 @@ fn maestro_component_bus_uses_borrowed_emitters_and_native_async_tails() -> Exte
                 .iter()
                 .any(|s| s == "entry bus-tail \"done\"")
         );
-        while let Some((_, key)) = harness.observed().next_to_release() {
-            harness.release(key).await.map_err(|e| e.to_string())?;
-        }
+        harness
+            .release_all()
+            .await
+            .into_iter()
+            .try_for_each(|(_, outcome)| outcome.map_err(|e| e.to_string()))?;
         Ok(())
     })
 }

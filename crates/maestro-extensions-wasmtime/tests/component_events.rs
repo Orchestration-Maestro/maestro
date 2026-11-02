@@ -13,7 +13,6 @@ use maestro_extensions::{
     load_extension_from_factory,
     types::{ExtensionHandle, ExtensionRuntime, ProviderActions},
 };
-use maestro_extensions_wasmtime::artifact_factory;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc, sync::RwLock};
@@ -90,7 +89,7 @@ impl Harness {
         let bus = TracedBus::new();
         let loads = (0..POOL).map(|index| {
             load_extension_from_factory(
-                artifact_factory(path.clone(), "installed-component-host".into()),
+                crate::artifact(path.clone()),
                 "/work".into(),
                 bus.controller.for_extension(),
                 runtime.clone(),
@@ -245,5 +244,59 @@ fn component_hooks_replay_recorded_domain_outcomes() {
                 "case {index} left trace values"
             );
         }
+    });
+}
+
+#[test]
+fn component_handler_presence_tracks_registration() {
+    local(async {
+        let harness = Harness::load().await;
+        let empty = harness.prepare("input", &[vec![]]).await;
+        assert!(!empty.runner.has_handlers("input"));
+        assert!(!empty.runner.has_handlers("tool_call"));
+        harness.install(&empty, 0, "input", &[json!([])]).await;
+        assert!(empty.runner.has_handlers("input"));
+        assert!(!empty.runner.has_handlers("tool_call"));
+        harness.install(&empty, 0, "tool_call", &[json!([])]).await;
+        assert!(empty.runner.has_handlers("tool_call"));
+        assert!(!empty.runner.has_handlers("agent_end"));
+        let cleared = harness.prepare("input", &[vec![]]).await;
+        assert!(!cleared.runner.has_handlers("input"));
+        assert!(!cleared.runner.has_handlers("tool_call"));
+    });
+}
+
+#[test]
+fn component_tool_results_consume_prior_content() {
+    local(async {
+        let harness = Harness::load().await;
+        let run = harness
+            .prepare(
+                "tool_result",
+                &[
+                    vec![json!([{"suffix":"first"}])],
+                    vec![json!([{"suffix":"second"}])],
+                ],
+            )
+            .await;
+        let event = cases::typed(json!({
+            "toolName":"read", "toolCallId":"call", "input":{},
+            "content":[{"type":"text", "text":"base"}],
+            "details":{"initial":true}, "isError":false,
+        }));
+        let result = run.runner.emit_tool_result(&event).await.unwrap().unwrap();
+        assert_eq!(
+            cases::encoded(&result),
+            json!({
+                "content":[
+                    {"type":"text", "text":"base"},
+                    {"type":"text", "text":"first"},
+                    {"type":"text", "text":"second"},
+                ],
+                "details":{"initial":true}, "isError":false,
+            })
+        );
+        assert_eq!(run.errors(), json!([]));
+        assert!(harness.bus.take().is_empty());
     });
 }

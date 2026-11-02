@@ -3,7 +3,10 @@
 use std::borrow::Borrow;
 use std::error::Error;
 #[cfg(not(target_arch = "wasm32"))]
-use std::sync::Arc;
+use std::{
+    sync::{Arc, LazyLock, PoisonError, RwLock},
+    time::{Duration, TryFromFloatSecsError},
+};
 
 use futures_util::StreamExt;
 
@@ -12,7 +15,9 @@ use super::{FetchError, HttpBody, HttpRequest, HttpResponse};
 use crate::{BoxFuture, DiagnosticErrorInfo};
 
 /// Send one attempt with the shared client.
-pub(super) fn fetch(request: HttpRequest) -> BoxFuture<Result<HttpResponse, FetchError>> {
+pub(super) fn fetch<B: Into<Option<Vec<u8>>> + Send + 'static>(
+    request: HttpRequest<B>,
+) -> BoxFuture<Result<HttpResponse, FetchError>> {
     Box::pin(async move { send(build()?, request).await })
 }
 
@@ -26,9 +31,9 @@ pub(crate) fn supplied_fetch(client: reqwest::Client) -> super::Fetch {
 }
 
 /// Send one attempt with `client`.
-async fn send(
+async fn send<B: Into<Option<Vec<u8>>>>(
     client: impl Borrow<reqwest::Client>,
-    request: HttpRequest,
+    request: HttpRequest<B>,
 ) -> Result<HttpResponse, FetchError> {
     let request = prepare(client.borrow(), request)?;
     Ok(finish(
@@ -37,9 +42,9 @@ async fn send(
 }
 
 /// Prepare one request for either native sender, including ordinary client defaults.
-pub(super) fn prepare(
+pub(super) fn prepare<B: Into<Option<Vec<u8>>>>(
     client: &reqwest::Client,
-    request: HttpRequest,
+    request: HttpRequest<B>,
 ) -> Result<reqwest::Request, FetchError> {
     let method = reqwest::Method::from_bytes(request.method.as_bytes()).map_err(failed)?;
     let mut headers = request.headers;
@@ -49,7 +54,10 @@ pub(super) fn prepare(
     for (name, value) in client_pairs(&mut headers).map_err(connection)? {
         builder = builder.header(name, value);
     }
-    let mut request = builder.body(request.body).build().map_err(failed)?;
+    if let Some(body) = request.body.into() {
+        builder = builder.body(body);
+    }
+    let mut request = builder.build().map_err(failed)?;
     request
         .headers_mut()
         .entry(reqwest::header::ACCEPT)
@@ -200,21 +208,56 @@ fn configured_clients(
     Ok((client, socks))
 }
 
-/// The process-wide client; automatic retries are off because the sender owns retry policy.
+/// The shared native client starts with a five-minute idle limit.
 #[cfg(not(target_arch = "wasm32"))]
-fn build() -> Result<&'static reqwest::Client, FetchError> {
-    use std::sync::OnceLock;
+static CLIENT: LazyLock<RwLock<Result<reqwest::Client, String>>> = LazyLock::new(|| {
+    RwLock::new(
+        reqwest::Client::builder()
+            .retry(reqwest::retry::never())
+            .read_timeout(Duration::from_secs(300))
+            .build()
+            .map_err(|error| chain(&error)),
+    )
+});
 
-    static CLIENT: OnceLock<Result<reqwest::Client, String>> = OnceLock::new();
+/// Applies the idle limit to subsequent shared-client requests; zero disables it.
+///
+/// Fractional milliseconds are floored. The limit covers response headers and the gap
+/// between body chunks. Existing requests
+/// keep their client. Client-construction failures are reported by the next request.
+///
+/// # Errors
+/// Returns the conversion error when milliseconds cannot be represented as a duration.
+///
+/// # Examples
+/// ```
+/// maestro_models::configure_http_dispatcher(30_000.0)?;
+/// # Ok::<(), std::time::TryFromFloatSecsError>(())
+/// ```
+#[cfg(not(target_arch = "wasm32"))]
+pub fn configure_http_dispatcher(timeout_ms: f64) -> Result<(), TryFromFloatSecsError> {
+    let timeout = Duration::try_from_secs_f64(timeout_ms.floor() / 1000.0)?;
+    let mut builder = reqwest::Client::builder().retry(reqwest::retry::never());
+    if !timeout.is_zero() {
+        builder = builder.read_timeout(timeout);
+    }
+    let client = builder.build().map_err(|error| chain(&error));
+    let previous = std::mem::replace(
+        &mut *CLIENT.write().unwrap_or_else(PoisonError::into_inner),
+        client,
+    );
+    drop(previous);
+    Ok(())
+}
+
+/// Clone the process-wide client without holding its slot during a request.
+#[cfg(not(target_arch = "wasm32"))]
+fn build() -> Result<reqwest::Client, FetchError> {
     CLIENT
-        .get_or_init(|| {
-            reqwest::Client::builder()
-                .retry(reqwest::retry::never())
-                .build()
-                .map_err(|error| chain(&error))
-        })
-        .as_ref()
-        .map_err(|message| connection(message.clone()))
+        .read()
+        .unwrap_or_else(PoisonError::into_inner)
+        .clone()
+        .map_err(connection)
 }
 
 /// A browser client; the platform fetch owns connection reuse.

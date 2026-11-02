@@ -7,7 +7,7 @@ use std::rc::Rc;
 /// Identities inspected while registering `count` live and `count` retired listeners, then
 /// tagging one emission's snapshot of the live ones and one foreign listener.
 fn inspections(count: u32) -> (usize, Vec<Option<u32>>) {
-    let (pump, _admission) = Pump::new();
+    let (pump, _admission) = Pump::new(crate::tests::support::widgets());
     let registry = pump.registry();
     let events = create_event_bus_for::<Local>(Rc::new(|_| {}), Rc::new(|_| {})).for_extension();
     INSPECTIONS.set(0);
@@ -48,7 +48,7 @@ fn listener_identities_register_and_tag_with_linear_work() {
 /// Map capacity scanned by pruning while `count` listeners register and retire together,
 /// then `2 * count` more register and retire one at a time.
 fn pruned_capacity(count: usize) -> usize {
-    let (pump, _admission) = Pump::new();
+    let (pump, _admission) = Pump::new(crate::tests::support::widgets());
     let registry = pump.registry();
     CAPACITY.set(0);
     let burst: Vec<EventListener<Local>> = (0..count)

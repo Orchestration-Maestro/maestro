@@ -22,6 +22,7 @@ impl Call {
             Self::Tail(handler, reply) => Call::Tail(completion.callback(handler), reply),
             Self::Registered(call) => Call::Registered(registered(call, completion)),
             Self::Component(call) => Call::Component(component(call, completion)),
+            Self::OAuth(call) => Call::OAuth(oauth(call, completion)),
             Self::Provider(call) => Call::Provider(provider(call, completion)),
             Self::Assistant(call) => Call::Assistant(assistant(call, completion)),
             Self::ModelHook(call) => Call::ModelHook(model_hook(call, completion)),
@@ -33,21 +34,14 @@ impl Call {
                 completion.retain(release.calls.take());
                 Call::Release(release)
             }
-            Self::Renderer(call) => Call::Renderer(RendererCall {
-                handler: completion.callback(call.handler),
-                message: call.message,
-                expanded: call.expanded,
-                theme: call.theme,
-                emitter: call.emitter,
-                reply: call.reply,
-            }),
-            Self::Event(call) => Call::Event(crate::guest_calls::EventCall {
-                handler: completion.callback(call.handler),
-                event: call.event,
-                context: call.context,
-                signal: call.signal,
-                reply: call.reply,
-            }),
+            Self::Renderer(call) => Call::Renderer(renderer(call, completion)),
+            Self::Event(call) => Call::Event(event(call, completion)),
+            call @ (Self::Read(_)
+            | Self::Write(_)
+            | Self::Grep(_)
+            | Self::Find(_)
+            | Self::Ls(_)
+            | Self::Edit(_)) => file_operation(call, completion),
             Self::Bash(call) => Call::Bash(crate::guest_calls::BashCall {
                 owner: completion.callback(call.owner),
                 request: call.request,
@@ -55,9 +49,16 @@ impl Call {
                 signal: call.signal,
                 reply: call.reply,
             }),
-            Self::Factory(call) => Call::Factory(factory(call, completion)),
-            Self::ToolRender(call) => Call::ToolRender(tool_render(call, completion)),
-            Self::TerminalInput(call) => Call::TerminalInput(terminal_input(call, completion)),
+            call @ (Self::Factory(_)
+            | Self::Custom(_)
+            | Self::ToolRender(_)
+            | Self::Paint(_)
+            | Self::Widget(_)
+            | Self::EditorFactory(_)
+            | Self::AutocompleteFactory(_)
+            | Self::Autocomplete(_)
+            | Self::Editor(_)
+            | Self::TerminalInput(_)) => ui(call, completion),
             Self::Synchronous(call) => Call::Synchronous(crate::guest_calls::Synchronous {
                 handler: completion.callback(call.handler),
                 kind: call.kind,
@@ -66,6 +67,96 @@ impl Call {
                 completion: call.completion,
             }),
         }
+    }
+}
+
+/// Transfers the admission of a UI callback beside its operands.
+fn ui(call: Call, completion: &Completion) -> Call<Callback> {
+    match call {
+        Call::Factory(call) => Call::Factory(factory(call, completion)),
+        Call::Custom(call) => Call::Custom(call.map(|handler| completion.callback(handler))),
+        Call::ToolRender(call) => Call::ToolRender(tool_render(call, completion)),
+        Call::Paint(call) => Call::Paint(call.map(|handler| completion.callback(handler))),
+        Call::Widget(call) => Call::Widget(widget(call, completion)),
+        Call::EditorFactory(call) => Call::EditorFactory(editor_factory(call, completion)),
+        Call::AutocompleteFactory(call) => {
+            Call::AutocompleteFactory(crate::guest_calls::providers::FactoryCall {
+                handler: completion.callback(call.handler),
+                current: call.current,
+                emitter: call.emitter,
+                reply: call.reply,
+            })
+        }
+        Call::Autocomplete(call) => {
+            Call::Autocomplete(crate::guest_calls::providers::ProviderCall {
+                handler: completion.callback(call.handler),
+                request: call.request,
+                signal: call.signal,
+                reply: call.reply,
+            })
+        }
+        Call::Editor(call) => Call::Editor(crate::guest_calls::editors::EditorCall {
+            handler: completion.callback(call.handler),
+            request: call.request,
+            emitter: call.emitter,
+            reply: call.reply,
+        }),
+        Call::TerminalInput(call) => Call::TerminalInput(terminal_input(call, completion)),
+        call => call.admitted(completion),
+    }
+}
+
+/// Transfers the renderer admission beside its message operands.
+fn renderer(call: RendererCall, completion: &Completion) -> RendererCall<Callback> {
+    RendererCall {
+        handler: completion.callback(call.handler),
+        message: call.message,
+        expanded: call.expanded,
+        theme: call.theme,
+        emitter: call.emitter,
+        reply: call.reply,
+    }
+}
+
+/// Transfers the event handler admission beside its context and signal.
+fn event(
+    call: crate::guest_calls::EventCall,
+    completion: &Completion,
+) -> crate::guest_calls::EventCall<Callback> {
+    crate::guest_calls::EventCall {
+        handler: completion.callback(call.handler),
+        event: call.event,
+        context: call.context,
+        signal: call.signal,
+        reply: call.reply,
+    }
+}
+
+/// Transfers the widget callback admission beside its event.
+fn widget(
+    call: crate::guest_calls::widget_calls::WidgetCall,
+    completion: &Completion,
+) -> crate::guest_calls::widget_calls::WidgetCall<Callback> {
+    crate::guest_calls::widget_calls::WidgetCall {
+        handler: completion.callback(call.handler),
+        event: call.event,
+        emitter: call.emitter,
+        reply: call.reply,
+    }
+}
+
+/// Transfers the editor factory admission beside its lent terminal, styles and keybindings.
+fn editor_factory(
+    call: crate::guest_calls::editors::FactoryCall,
+    completion: &Completion,
+) -> crate::guest_calls::editors::FactoryCall<Callback> {
+    crate::guest_calls::editors::FactoryCall {
+        handler: completion.callback(call.handler),
+        tui: call.tui,
+        theme: call.theme,
+        keybindings: call.keybindings,
+        emitter: call.emitter,
+        reply: call.reply,
     }
 }
 
@@ -94,6 +185,7 @@ fn tool_render(
         render: call.render,
         theme: call.theme,
         invalidator: call.invalidator,
+        native_row: call.native_row,
         emitter: call.emitter,
         reply: call.reply,
     }
@@ -135,6 +227,9 @@ fn component(call: ComponentCall, completion: &Completion) -> ComponentCall<Call
         }
         ComponentCall::Unit(owner, method, emitter, reply) => {
             ComponentCall::Unit(completion.callback(owner), method, emitter, reply)
+        }
+        ComponentCall::Focused(owner, emitter, reply) => {
+            ComponentCall::Focused(completion.callback(owner), emitter, reply)
         }
         ComponentCall::WantsKeyRelease(owner, emitter, reply) => {
             ComponentCall::WantsKeyRelease(completion.callback(owner), emitter, reply)
@@ -262,5 +357,93 @@ fn schema(
         node: call.node,
         emitter: call.emitter,
         reply: call.reply,
+    }
+}
+
+/// Transfers the original provider or interaction callback with its native capability.
+fn oauth(
+    call: crate::oauth_callbacks::Invocation,
+    completion: &Completion,
+) -> crate::oauth_callbacks::Invocation<Callback> {
+    crate::oauth_callbacks::Invocation {
+        handler: completion.callback(call.handler),
+        phase: call.phase,
+        data: call.data,
+        interaction: call.interaction,
+        reply: call.reply,
+    }
+}
+
+/// Transfers a reverse read's original callback admission beside its operands.
+fn read(
+    call: crate::guest_calls::read::Invocation,
+    completion: &Completion,
+) -> crate::guest_calls::read::Invocation<Callback> {
+    crate::guest_calls::read::Invocation {
+        handler: completion.callback(call.handler),
+        operation: call.operation,
+        path: call.path,
+        reply: call.reply,
+    }
+}
+
+/// Transfers the original grep observation beside its releasable admission.
+fn grep(
+    call: crate::guest_calls::grep::Invocation,
+    completion: &Completion,
+) -> crate::guest_calls::grep::Invocation<Callback> {
+    crate::guest_calls::grep::Invocation {
+        handler: completion.callback(call.handler),
+        operation: call.operation,
+        path: call.path,
+        reply: call.reply,
+    }
+}
+/// Transfers the original find observation beside its releasable admission.
+fn find(
+    call: crate::guest_calls::find::Invocation,
+    completion: &Completion,
+) -> crate::guest_calls::find::Invocation<Callback> {
+    crate::guest_calls::find::Invocation {
+        handler: completion.callback(call.handler),
+        operation: call.operation,
+        path: call.path,
+        reply: call.reply,
+    }
+}
+
+/// Transfers the original ls observation beside its releasable admission.
+fn ls(
+    call: crate::guest_calls::ls::Invocation,
+    completion: &Completion,
+) -> crate::guest_calls::ls::Invocation<Callback> {
+    crate::guest_calls::ls::Invocation {
+        handler: completion.callback(call.handler),
+        operation: call.operation,
+        path: call.path,
+        reply: call.reply,
+    }
+}
+
+/// Transfers the built-in file operation admissions beside their original operands.
+fn file_operation(call: Call, completion: &Completion) -> Call<Callback> {
+    match call {
+        Call::Read(call) => Call::Read(read(call, completion)),
+        Call::Write(call) => Call::Write(crate::guest_calls::write::Invocation {
+            handler: completion.callback(call.handler),
+            operation: call.operation,
+            path: call.path,
+            reply: call.reply,
+        }),
+        Call::Grep(call) => Call::Grep(grep(call, completion)),
+        Call::Find(call) => Call::Find(find(call, completion)),
+        Call::Ls(call) => Call::Ls(ls(call, completion)),
+        Call::Edit(call) => Call::Edit(crate::guest_calls::edit::Invocation {
+            handler: completion.callback(call.handler),
+            operation: call.operation,
+            path: call.path,
+            reply: call.reply,
+        }),
+        call => call.admitted(completion),
     }
 }

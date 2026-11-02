@@ -49,9 +49,12 @@ impl OAuthProviderInterface for Account {
         credentials.access = "refreshed".into();
         Box::pin(async move { Ok(credentials) })
     }
-    fn get_api_key<'a>(&self, credentials: &'a OAuthCredentials) -> Result<&'a str, OAuthError> {
+    fn get_api_key<'a>(
+        &self,
+        credentials: &'a OAuthCredentials,
+    ) -> Result<Cow<'a, str>, OAuthError> {
         self.events.lock().unwrap().push("key");
-        Ok(&credentials.access)
+        Ok(Cow::Borrowed(&credentials.access))
     }
     fn modify_models<'m>(
         &self,
@@ -209,7 +212,9 @@ async fn assert_request(
     model: &Arc<std::sync::RwLock<Model>>,
 ) {
     match registry.get_api_key_and_headers(model).await {
-        maestro_catalog::ResolvedRequestAuth::Ok { api_key, headers } => {
+        maestro_catalog::ResolvedRequestAuth::Ok {
+            api_key, headers, ..
+        } => {
             assert!(matches!(api_key.as_deref(), Some("literal-key")));
             let headers = headers.unwrap();
             assert!(matches!(headers["X-Order"].as_str(), "model"));
@@ -309,7 +314,9 @@ fn request_variants(
         registry.register_provider("p", config.clone()).unwrap();
         let model = registry.find("p", "m").unwrap();
         match crate::runtime_support::runtime().block_on(registry.get_api_key_and_headers(&model)) {
-            maestro_catalog::ResolvedRequestAuth::Ok { api_key, headers } => {
+            maestro_catalog::ResolvedRequestAuth::Ok {
+                api_key, headers, ..
+            } => {
                 assert!(matches!(api_key.as_deref(), Some("literal-key")));
                 match headers {
                     Some(headers) => {
@@ -333,7 +340,7 @@ async fn exercise_account(account: &OAuthProviderHandle) {
     let credentials = account.login(Arc::new(NoInteraction), None).await.unwrap();
     let credentials = account.refresh_token(credentials, None).await.unwrap();
     assert!(matches!(
-        account.get_api_key(&credentials).unwrap(),
+        account.get_api_key(&credentials).unwrap().as_ref(),
         "refreshed"
     ));
 }

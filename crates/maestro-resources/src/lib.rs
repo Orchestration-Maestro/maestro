@@ -14,7 +14,8 @@ pub use prompt_templates::{
 pub mod skills;
 pub mod source_info;
 pub use frontmatter::{
-    FrontmatterError, FrontmatterValue, ParsedFrontmatter, parse_frontmatter, strip_frontmatter,
+    FrontmatterError, FrontmatterValue, ParsedFrontmatter, parse_frontmatter, parse_yaml,
+    strip_frontmatter,
 };
 pub use maestro_request::slash_commands::{SlashCommandInfo, SlashCommandSource};
 pub use paths::{canonicalize_path, is_local_path};

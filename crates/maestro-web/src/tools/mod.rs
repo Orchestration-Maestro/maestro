@@ -37,19 +37,31 @@ pub fn render_tool<P: 'static, D: 'static>(
     result: Option<&maestro_app::ToolResultMessage<D>>,
     is_streaming: bool,
 ) -> Result<ToolRenderResult, ToolUiError> {
-    if !SHOW_JSON_MODE.get() {
-        let binding =
-            renderer_registry::TOOL_RENDERERS.with(|all| all.borrow().get(tool_name).cloned());
-        if let Some(binding) = binding {
-            let renderer = binding.renderer::<P, D>().ok_or_else(|| {
-                ToolUiError::Presentation("Renderer operand types do not match".into())
-            })?;
-            return renderer.render(
-                params.as_ref().map(|p| p.value),
-                result.map(ToolResultMessageView::from),
-                is_streaming,
-            );
-        }
+    render_with_binding(
+        || renderer_registry::TOOL_RENDERERS.with(|all| all.borrow().get(tool_name).cloned()),
+        params,
+        result,
+        is_streaming,
+    )
+}
+/// Dispatch with a retained binding while keeping JSON mode and default rendering shared.
+fn render_with_binding<P: 'static, D: 'static>(
+    binding: impl FnOnce() -> Option<types::ToolRendererBinding>,
+    params: Option<ToolParams<'_, P>>,
+    result: Option<&maestro_app::ToolResultMessage<D>>,
+    is_streaming: bool,
+) -> Result<ToolRenderResult, ToolUiError> {
+    if !SHOW_JSON_MODE.get()
+        && let Some(binding) = binding()
+    {
+        let renderer = binding.renderer::<P, D>().ok_or_else(|| {
+            ToolUiError::Presentation("Renderer operand types do not match".into())
+        })?;
+        return renderer.render(
+            params.as_ref().map(|p| p.value),
+            result.map(ToolResultMessageView::from),
+            is_streaming,
+        );
     }
     let result = result.map(ToolResultMessageView::from);
     let state = status(result.as_ref(), is_streaming);
@@ -62,7 +74,7 @@ pub fn render_tool<P: 'static, D: 'static>(
         .map(|result| renderer_registry::get_text_output(Some(result)));
     Ok(DefaultRenderer::render_prepared(state, formatted, output))
 }
-/// Route a model call's original arguments to the selected renderer.
+/// Route a model call through its view's renderer, then page registrations or the default.
 ///
 /// An object root borrows its inner map for map registrations; any other root borrows the
 /// whole value through the ordinary JSON route.
@@ -70,20 +82,26 @@ pub fn render_tool<P: 'static, D: 'static>(
 /// Returns an operand-type mismatch, decoder, formatter or custom renderer failure.
 #[cfg(target_arch = "wasm32")]
 pub(crate) fn render_call<D: 'static>(
+    view: &crate::dom::DomView,
     tool_name: &str,
     arguments: &serde_json::Value,
     result: Option<&maestro_app::ToolResultMessage<D>>,
     is_streaming: bool,
 ) -> Result<ToolRenderResult, ToolUiError> {
+    let binding = || {
+        view.tool_renderers.get(tool_name).cloned().or_else(|| {
+            renderer_registry::TOOL_RENDERERS.with(|all| all.borrow().get(tool_name).cloned())
+        })
+    };
     match arguments.as_object() {
-        Some(members) => render_tool(
-            tool_name,
+        Some(members) => render_with_binding(
+            binding,
             Some(ToolParams::object(members)),
             result,
             is_streaming,
         ),
-        None => render_tool(
-            tool_name,
+        None => render_with_binding(
+            binding,
             Some(ToolParams::json(arguments)),
             result,
             is_streaming,

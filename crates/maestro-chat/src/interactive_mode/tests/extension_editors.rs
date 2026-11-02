@@ -7,7 +7,7 @@ use maestro_app::messages::UserMessageDelivery;
 use maestro_app::utils::clipboard_image::ClipboardImage;
 use maestro_app::{
     ActionHandlers, CustomEditorComponent, EditorFactory, EditorFactoryOutcome, ExtensionAPI,
-    ExtensionFactory, ExtensionShortcutCallback, Local,
+    ExtensionFactory, ExtensionKeybindings, ExtensionShortcutCallback, Local,
 };
 use maestro_tui::editor_component::{BorderColor, EditorError, TextCallback};
 use maestro_tui::tui::{ComponentHandle, InputHandler};
@@ -45,6 +45,8 @@ pub(super) struct Knobs {
     built: RefCell<Weak<Probe>>,
     /// A one-shot callback invoked by the padding operation.
     on_padding: RefCell<Option<Box<dyn Fn()>>>,
+    /// The completion provider the editor last accepted.
+    pub(super) provider: RefCell<Option<Rc<dyn AutocompleteProvider<Signal = Cancellation>>>>,
 }
 
 impl Knobs {
@@ -157,6 +159,7 @@ impl EditorComponent for Probe {
         provider: Rc<dyn AutocompleteProvider<Signal = Cancellation>>,
     ) -> Result<Option<()>, EditorError> {
         self.enter("provider")?;
+        drop(self.knobs.provider.replace(Some(Rc::clone(&provider))));
         self.inner.try_set_autocomplete_provider(provider)
     }
     fn try_set_padding_x(&self, padding: f64) -> Result<Option<()>, EditorError> {
@@ -213,13 +216,13 @@ pub(super) fn probe_factory(
     own: Option<Rc<dyn Fn()>>,
 ) -> EditorFactory {
     let knobs = knobs.clone();
-    api.ui_callback(move |(tui, theme, keys), _| {
+    api.ui_callback(move |(tui, theme, keys): (_, _, ExtensionKeybindings), _| {
         knobs.calls.borrow_mut().push("factory".into());
         if knobs.fail.get() == Some("factory") {
             return Err(Box::new(Original(knobs.error.clone())));
         }
         let probe = Rc::new(Probe {
-            inner: CustomEditor::new(&tui, theme, keys, EditorOptions::default()),
+            inner: CustomEditor::new(&tui, theme, keys.manager, EditorOptions::default()),
             knobs: knobs.clone(),
         });
         probe.inner.set_on_escape(own.clone());

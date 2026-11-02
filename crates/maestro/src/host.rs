@@ -4,7 +4,6 @@ use maestro_app::configuration::{
     version_check::VersionCheckOptions,
 };
 use maestro_cli::{MainOptions, packages::PackageCommandContext, startup::main::MainHost};
-use maestro_extensions_wasmtime::artifact_factory;
 use maestro_theme::{ThemeState, supports_color};
 use std::{
     cell::{Cell, RefCell},
@@ -87,6 +86,9 @@ pub async fn run(args: Vec<String>, local: Rc<LocalSet>) -> Result<i32, Box<dyn 
         themes,
         offline: Rc::clone(&offline),
         export: exports(themes, &installation, &package_dir),
+        terminal: Rc::new(RefCell::new(maestro_tui_crossterm::ProcessTerminal::new(
+            Rc::clone(&local),
+        ))),
     };
     startup(args, package, effects).await
 }
@@ -101,6 +103,8 @@ struct NativeStartup {
     offline: Rc<Cell<Option<bool>>>,
     /// Native supplied-bundle export adapter.
     export: Rc<dyn maestro_app::ExportOperations>,
+    /// The unstarted native terminal shared by component output and interactive frames.
+    terminal: Rc<RefCell<maestro_tui_crossterm::ProcessTerminal>>,
 }
 
 /// Bind the native presentations and input to the existing startup entry.
@@ -114,6 +118,7 @@ async fn startup(
         themes,
         offline,
         export,
+        terminal,
     } = effects;
     let now = || {
         (SystemTime::now()
@@ -133,13 +138,13 @@ async fn startup(
         sessions: crate::presentations::sessions(Rc::clone(&local), Rc::clone(themes)),
         missing_cwd: crate::presentations::missing_cwd(Rc::clone(&local), Rc::clone(themes)),
         local: Rc::clone(&local),
-        module_loader: Rc::new(|path: &str| {
-            Box::pin(std::future::ready(Ok(Some(artifact_factory(
-                path.to_owned(),
-                config::VERSION.into(),
-            )))))
-        }),
-        modes: crate::modes::launchers(Rc::clone(&local), themes, Rc::clone(&export)),
+        module_loader: module_loader(themes.theme(), &local, &terminal.borrow()),
+        modes: crate::modes::launchers(
+            Rc::clone(&local),
+            themes,
+            Rc::clone(&export),
+            terminal.clone(),
+        ),
         stdin: &mut stdin,
         stdin_is_tty: &|| io::stdin().is_terminal(),
         now: &now,
@@ -157,6 +162,53 @@ async fn startup(
         }),
     };
     maestro_cli::main(args, MainOptions::default(), host).await
+}
+
+/// Loads each component path with the application's native effects; the host widgets are
+/// built once, when the first loads.
+fn module_loader(
+    theme: maestro_theme::LiveTheme,
+    local: &Rc<LocalSet>,
+    terminal: &maestro_tui_crossterm::ProcessTerminal,
+) -> maestro_app::ModuleLoader<maestro_app::Local> {
+    let stdout = terminal.standard_output_writer();
+    let stdout_is_terminal = io::stdout().is_terminal();
+    let widgets = Rc::new(std::cell::OnceCell::new());
+    let io = maestro_app::extension_native_io::extension_native_io(local);
+    Rc::new(move |path: &str| {
+        let factory = extension_widgets(&widgets, &theme).and_then(|widgets| {
+            Ok(Some(maestro_extensions_wasmtime::artifact_factory_with_io(
+                path.to_owned(),
+                widgets,
+                maestro_extensions_wasmtime::Installation {
+                    version: config::VERSION.into(),
+                    agent_dir: config::get_agent_dir()
+                        .map_err(|error| maestro_app::EventError::from(error.to_string()))?,
+                },
+                Rc::clone(&io),
+                Some(maestro_extensions_wasmtime::Stdout::new(
+                    Box::new(stdout.clone()),
+                    stdout_is_terminal,
+                )),
+            )))
+        });
+        Box::pin(std::future::ready(factory))
+    })
+}
+
+/// The host widgets of every component, with the live theme, the code highlighting and the
+/// terminal's capabilities.
+fn extension_widgets(
+    cell: &std::cell::OnceCell<Rc<dyn maestro_app::ExtensionWidgets>>,
+    theme: &maestro_theme::LiveTheme,
+) -> Result<Rc<dyn maestro_app::ExtensionWidgets>, maestro_app::EventError> {
+    if let Some(widgets) = cell.get() {
+        return Ok(Rc::clone(widgets));
+    }
+    let highlighter = Rc::new(maestro_theme::SyntectHighlighter::new()?);
+    let terminal = maestro_tui::TerminalImage::default();
+    let host = maestro_chat::ExtensionWidgetHost::new(theme.clone(), highlighter, terminal);
+    Ok(Rc::clone(cell.get_or_init(|| Rc::new(host))))
 }
 
 /// Retain the central export bundle path for this executable's lifetime.

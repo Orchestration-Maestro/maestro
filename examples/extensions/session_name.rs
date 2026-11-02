@@ -2,6 +2,7 @@
 //!
 //! The name identifies the session in the session selector in place of its first message.
 //! Usage: `/session-name [name]` sets the name, and `/session-name` shows the name now in effect.
+// maestro-component: MAESTRO_SESSION_NAME_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

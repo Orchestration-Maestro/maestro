@@ -5,13 +5,12 @@ use super::extension_widgets::with_factories;
 use super::{World, isolated};
 use maestro_app::{
     CustomFactoryOutcome, CustomUIOptions, EditorFactory, EventError, ExtensionAPI,
-    ExtensionComponent, Local, OverlayOptionsSource, UIHostCall,
+    ExtensionComponent, ExtensionKeybindings, Local, OverlayOptionsSource, UIHostCall,
 };
 use maestro_theme::LiveTheme;
 use maestro_tui::tui::InputHandler;
 use maestro_tui::{
-    Component, EditorComponent, FocusFlag, Focusable, KeybindingsManager, OverlayHandle,
-    OverlayOptions, SizeValue, TUI,
+    Component, EditorComponent, FocusFlag, Focusable, OverlayHandle, OverlayOptions, SizeValue, TUI,
 };
 use std::{
     cell::{Cell, RefCell},
@@ -25,7 +24,7 @@ pub(super) type Done = Rc<dyn Fn(String) -> Result<(), EventError>>;
 
 /// The typed custom-view factory the witnesses build.
 pub(super) type ViewFactory =
-    UIHostCall<(TUI, LiveTheme, KeybindingsManager, Done), CustomFactoryOutcome>;
+    UIHostCall<(TUI, LiveTheme, ExtensionKeybindings, Done), CustomFactoryOutcome>;
 
 /// The overlay handle an extension receives.
 pub(super) type Handle = Rc<RefCell<Box<dyn OverlayHandle>>>;
@@ -232,7 +231,7 @@ impl Views {
     ) -> ViewFactory {
         let (views, api) = (self.clone(), api.clone());
         api.clone().ui_callback(
-            move |(_, _, _, done): (TUI, LiveTheme, KeybindingsManager, Done), _| {
+            move |(_, _, _, done): (TUI, LiveTheme, ExtensionKeybindings, Done), _| {
                 views.done.borrow_mut().push(done.clone());
                 match build.flow {
                     Flow::DoneFirst => done("first".into())?,
@@ -870,7 +869,7 @@ fn custom_overlay_visibility_completion_removes_only_its_own_view() {
 fn admission_failure_factory(views: &Rc<Views>, api: &ExtensionAPI<Local>) -> ViewFactory {
     let (building, api) = (views.clone(), api.clone());
     api.clone().ui_callback(
-        move |(_, _, _, done): (TUI, LiveTheme, KeybindingsManager, Done), _| {
+        move |(_, _, _, done): (TUI, LiveTheme, ExtensionKeybindings, Done), _| {
             let mut component = building.component(&api, "CUSTOM", plain(Flow::Ready));
             let disposing = building.clone();
             component.dispose = Some(api.ui_callback(move |(), _| {
@@ -941,6 +940,65 @@ fn custom_overlay_cleanup_keeps_the_original_callback_error() {
             assert!(!world.mode.ui.has_overlay());
             assert_eq!(*views.trace.borrow(), ["CUSTOM:dispose"]);
             world.terminal.set_hide_error(None);
+        },
+    );
+}
+
+/// Whether the editor area shows the view labelled `label`.
+fn shows_view(world: &World, label: &str) -> bool {
+    world
+        .mode
+        .editor_container
+        .render(80)
+        .iter()
+        .any(|row| row == label)
+}
+
+#[test]
+fn inline_custom_views_stack_and_reveal_the_one_below() {
+    isolated(
+        "inline_custom_views_stack_and_reveal_the_one_below",
+        async |directory| {
+            let views = Views::new();
+            let (world, bound) = started(directory, &views, TWO).await;
+            let host = port(&world.mode);
+            let first = host.custom(bound.views[0].clone(), None);
+            let second = host.custom(bound.views[1].clone(), None);
+            world.runtime.settle().unwrap();
+            assert!(shows_view(&world, "B") && !shows_view(&world, "A"));
+            views.complete(1, "two").unwrap();
+            assert_eq!(second.await.unwrap().as_deref(), Some("two"));
+            assert!(shows_view(&world, "A"));
+            assert!(views.view(0).focus.get());
+            views.complete(0, "one").unwrap();
+            assert_eq!(first.await.unwrap().as_deref(), Some("one"));
+            assert!(restored(&world, "saved"));
+        },
+    );
+}
+
+#[test]
+fn dialog_opened_from_a_custom_view_returns_to_it() {
+    isolated(
+        "dialog_opened_from_a_custom_view_returns_to_it",
+        async |directory| {
+            let views = Views::new();
+            let (world, bound) = started(directory, &views, TWO).await;
+            let host = port(&world.mode);
+            let view = host.custom(bound.views[0].clone(), None);
+            world.runtime.settle().unwrap();
+            let mut confirm = host.confirm("Sure".to_owned(), "?".to_owned(), None);
+            assert!(!shows_view(&world, "A"));
+            world.terminal.send_input("\x1b");
+            assert_eq!(
+                super::typed::poll(&mut confirm).map(Result::unwrap),
+                Some(false)
+            );
+            assert!(shows_view(&world, "A"));
+            assert!(views.view(0).focus.get());
+            views.complete(0, "kept").unwrap();
+            assert_eq!(view.await.unwrap().as_deref(), Some("kept"));
+            assert!(restored(&world, "saved"));
         },
     );
 }

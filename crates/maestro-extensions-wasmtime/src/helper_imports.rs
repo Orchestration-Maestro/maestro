@@ -14,6 +14,15 @@ pub(crate) fn add_to_linker(
         },
     )?;
     host.func_wrap(
+        "native-yaml",
+        |_store: StoreContextMut<'_, crate::lifecycle::State>, (content,): (String,)| {
+            let values = maestro_extensions::helpers::parse_yaml(&content)
+                .map_err(|error| error.to_string())
+                .and_then(tokens);
+            Ok((values,))
+        },
+    )?;
+    host.func_wrap(
         "native-frontmatter",
         |_store: StoreContextMut<'_, crate::lifecycle::State>, (content,): (String,)| {
             Ok((metadata(&content),))
@@ -24,7 +33,10 @@ pub(crate) fn add_to_linker(
         |store: StoreContextMut<'_, crate::lifecycle::State>,
          (operation, data): (String, String)| {
             let value = if operation == "version" {
-                serde_json::to_string(&store.data().installation_version)
+                serde_json::to_string(&store.data().installation.version)
+                    .map_err(|error| error.to_string())
+            } else if operation == "config.get_agent_dir" {
+                serde_json::to_string(&store.data().installation.agent_dir)
                     .map_err(|error| error.to_string())
             } else {
                 maestro_extensions::helpers::call(&operation, &data)
@@ -70,12 +82,18 @@ struct FrontmatterDocument {
 fn metadata(content: &str) -> Result<FrontmatterDocument, String> {
     let parsed = maestro_extensions::helpers::parse_frontmatter(content)
         .map_err(|error| error.to_string())?;
-    let mut values = Vec::new();
-    flatten(parsed.frontmatter, &mut values)?;
     Ok(FrontmatterDocument {
-        values,
+        values: tokens(parsed.frontmatter)?,
         body: parsed.body,
     })
+}
+/// Encodes one native value using the shared typed metadata framing.
+fn tokens(
+    value: maestro_extensions::helpers::FrontmatterValue,
+) -> Result<Vec<FrontmatterToken>, String> {
+    let mut values = Vec::new();
+    flatten(value, &mut values)?;
+    Ok(values)
 }
 /// Frames a native tree without converting its numbers to JSON.
 fn flatten(

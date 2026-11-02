@@ -780,7 +780,7 @@ fn render_route_owner(
                 items,
                 3,
                 crate::list_support::settings_theme(false, &Rc::default()),
-                (Rc::new(|_, _| {}), Rc::new(|| {})),
+                (Rc::new(|_, _| true), Rc::new(|| {})),
                 maestro_tui::components::settings_list::SettingsListOptions::default(),
             ));
             list.handle_input("\r");
@@ -862,4 +862,33 @@ fn fallible_components_keep_infallible_defaults() {
         "render failed"
     );
     assert_composed_render_routes();
+}
+
+/// A focusable whose setter has an immediate effect beyond its stored flag.
+#[derive(Default)]
+struct Setter {
+    /// The native focus flag.
+    flag: maestro_tui::FocusFlag,
+    /// Every setter call.
+    changes: RefCell<Vec<bool>>,
+}
+impl maestro_tui::Focusable for Setter {
+    fn focus_flag(&self) -> &maestro_tui::FocusFlag {
+        &self.flag
+    }
+    fn set_focused(&self, focused: bool) {
+        self.flag.set(focused);
+        self.changes.borrow_mut().push(focused);
+    }
+}
+
+#[test]
+fn focus_forwarding_invokes_the_component_setter_immediately() {
+    let field = Rc::new(Setter::default());
+    let parent = maestro_tui::FocusFlag::forwarding(field.clone());
+    parent.set(true);
+    parent.set(true);
+    parent.set(false);
+    assert_eq!(*field.changes.borrow(), [true, true, false]);
+    assert!(!field.flag.get());
 }

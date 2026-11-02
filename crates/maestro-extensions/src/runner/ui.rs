@@ -20,6 +20,7 @@ impl ExtensionUIContext {
         Self {
             port: Rc::new(NoUiContext(theme)),
             fallback: true,
+            error_reporter: None,
         }
     }
 }
@@ -31,6 +32,11 @@ impl<E: ExtensionExecution> ExtensionRunner<E> {
     /// Installs the supplied ownership of a host without forwarding its operations.
     pub fn set_ui_context_binding(&self, context: Option<ExtensionUIContextBinding>) {
         let context = context.unwrap_or_else(|| self.binding.no_ui.clone().into());
+        drop(
+            self.binding
+                .ui_error_reporter
+                .replace(Some(self.ui_error_reporter())),
+        );
         drop(self.binding.ui.replace(context));
     }
     /// Returns the current UI context; it keeps its host after later changes.

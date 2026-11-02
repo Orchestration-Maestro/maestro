@@ -331,7 +331,7 @@ ordered cancellable events through the ordinary invocation interface. See the
 ## Resolved request authentication
 
 `maestro-request::model_registry::ResolvedRequestAuth` owns the resolved key,
-ordered headers or denial string shared by the [native catalog](catalog.md#request-authentication)
+optional endpoint, ordered headers or denial string shared by the [native catalog](catalog.md#request-authentication)
 and [guest authoring library](extensions/guest.md). Both consumers re-export the
 same record; resolution policy remains with the producer.
 
@@ -352,6 +352,10 @@ strings, lists, maps and `false` stay as written.
 records (`ApiKeyCredential`, `AuthCredential`, `AuthStorageData`, `AuthSource` and
 `AuthStatus`) are the [credential owner's](credentials.md) typed records, defined
 once here and re-exported by models, credentials and the guest.
+`maestro-request::oauth` also owns `OAuthPrompt`, `OAuthAuthInfo`,
+`OAuthSelectOption` and `OAuthSelectPrompt`, re-exported by models and the guest.
+These are plain interaction data; callable login operations stay with their
+native or guest owners.
 
 ## Raw user-block text
 

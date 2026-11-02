@@ -182,3 +182,23 @@ const FIXTURE_GROUPS: &[&str] = &[
 fn typed_result_bindings_prepare_each_rebuild() {
     tool_row_support::ownership::typed_rebuilds();
 }
+
+#[test]
+fn self_rendered_empty_tool_rows_take_no_rows() {
+    tool_row_support::empty_self_rendered();
+}
+
+#[test]
+fn self_rendered_empty_rows_keep_caller_children() {
+    tool_row_support::empty_self_rendered_keeps_caller_children();
+}
+
+#[test]
+fn self_rendered_rows_walk_live_children() {
+    tool_row_support::self_rendered_rows_walk_live_children();
+}
+
+#[test]
+fn fallback_results_collapse_until_expanded() {
+    tool_row_support::collapsed_fallback();
+}

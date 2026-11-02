@@ -818,6 +818,182 @@
           }
         }
       ]
+    },
+    "custom-header-dark": {
+      "name": "dark",
+      "sourcePath": null,
+      "sourceInfo": null,
+      "mode": "truecolor",
+      "replies": [
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            "       ▄"
+          ],
+          "answer": {
+            "ok": "<dark accent>       ▄</accent>"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            "      ▀█▀"
+          ],
+          "answer": {
+            "ok": "<dark accent>      ▀█▀</accent>"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            "       ▀"
+          ],
+          "answer": {
+            "ok": "<dark accent>       ▀</accent>"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            "  █▄       ▄█"
+          ],
+          "answer": {
+            "ok": "<dark accent>  █▄       ▄█</accent>"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            "  █ ▀▄   ▄▀ █"
+          ],
+          "answer": {
+            "ok": "<dark accent>  █ ▀▄   ▄▀ █</accent>"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            "  █   ▀█▀   █"
+          ],
+          "answer": {
+            "ok": "<dark accent>  █   ▀█▀   █</accent>"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "muted",
+            "   Custom header"
+          ],
+          "answer": {
+            "ok": "<dark muted>   Custom header</muted>"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "dim",
+            " v9.8.7-host"
+          ],
+          "answer": {
+            "ok": "<dark dim> v9.8.7-host</dim>"
+          }
+        }
+      ]
+    },
+    "custom-header-alternate": {
+      "name": "alternate",
+      "sourcePath": null,
+      "sourceInfo": null,
+      "mode": "truecolor",
+      "replies": [
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            "       ▄"
+          ],
+          "answer": {
+            "ok": "<alternate accent>       ▄</accent>"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            "      ▀█▀"
+          ],
+          "answer": {
+            "ok": "<alternate accent>      ▀█▀</accent>"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            "       ▀"
+          ],
+          "answer": {
+            "ok": "<alternate accent>       ▀</accent>"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            "  █▄       ▄█"
+          ],
+          "answer": {
+            "ok": "<alternate accent>  █▄       ▄█</accent>"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            "  █ ▀▄   ▄▀ █"
+          ],
+          "answer": {
+            "ok": "<alternate accent>  █ ▀▄   ▄▀ █</accent>"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "accent",
+            "  █   ▀█▀   █"
+          ],
+          "answer": {
+            "ok": "<alternate accent>  █   ▀█▀   █</accent>"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "muted",
+            "   Custom header"
+          ],
+          "answer": {
+            "ok": "<alternate muted>   Custom header</muted>"
+          }
+        },
+        {
+          "method": "fg",
+          "operands": [
+            "dim",
+            " v9.8.7-host"
+          ],
+          "answer": {
+            "ok": "<alternate dim> v9.8.7-host</dim>"
+          }
+        }
+      ]
     }
   },
   "edited": {

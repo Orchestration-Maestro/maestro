@@ -29,6 +29,7 @@ impl<E: ExtensionExecution> Extension<E> {
             tools: IndexMap::new(),
             commands: IndexMap::new(),
             flags: IndexMap::new(),
+            initial_flag_values: IndexMap::new(),
             shortcuts: IndexMap::new(),
             message_renderers: IndexMap::new(),
         }
@@ -197,6 +198,10 @@ impl<E: ExtensionExecution> ExtensionAPI<E> {
             .flags
             .insert(name.clone(), Arc::new(RwLock::new(flag)));
         if let Some(value) = options.default {
+            owner
+                .initial_flag_values
+                .entry(name.clone())
+                .or_insert_with(|| value.clone());
             write(&self.runtime.flag_values)
                 .entry(name)
                 .or_insert(value);

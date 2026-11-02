@@ -71,18 +71,13 @@ pub(super) async fn observe(
         options.get_or_insert_default().signal = Some(AbortSignal::new(Rc::new(AlreadyAborted)));
     }
     let relay = if request.signal == Some(Signal::Relay) {
-        let relay = Relay {
-            inner: context.signal()?.ok_or("missing signal")?,
-            notified: Rc::default(),
-            capture: RefCell::new(
-                request
-                    .label
-                    .map(|label| super::signals::Released(api.clone(), label)),
-            ),
-        };
-        let observed = (relay.inner.clone(), Rc::clone(&relay.notified));
-        options.get_or_insert_default().signal = Some(AbortSignal::new(Rc::new(relay)));
-        Some(observed)
+        let inner = context.signal()?.ok_or("missing signal")?;
+        let capture = request
+            .label
+            .map(|label| super::signals::Released(api.clone(), label));
+        let (signal, notified) = relay(inner.clone(), capture);
+        options.get_or_insert_default().signal = Some(signal);
+        Some((inner, notified))
     } else {
         None
     };
@@ -101,6 +96,20 @@ pub(super) async fn observe(
         observed["after"] = signal.aborted().into();
     }
     Ok(observed.to_string())
+}
+
+/// Wraps a supplied signal in an arbitrary caller port with observable listener delivery.
+pub(super) fn relay(
+    inner: AbortSignal,
+    capture: Option<super::signals::Released>,
+) -> (AbortSignal, Rc<Cell<u32>>) {
+    let notified = Rc::default();
+    let signal = Relay {
+        inner,
+        notified: Rc::clone(&notified),
+        capture: RefCell::new(capture),
+    };
+    (AbortSignal::new(Rc::new(signal)), notified)
 }
 
 /// A caller-defined signal forwarding to the context signal and announcing each notification.

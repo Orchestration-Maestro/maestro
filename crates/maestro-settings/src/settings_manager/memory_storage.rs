@@ -2,6 +2,7 @@
 
 use std::sync::{Mutex, MutexGuard};
 
+use super::BaseSettingsLayer;
 use super::preferences::{SettingsScope, SettingsStorage, SettingsStorageError, SettingsUpdate};
 
 /// Storage that keeps each scope's raw text in memory. The callback runs on an
@@ -9,8 +10,17 @@ use super::preferences::{SettingsScope, SettingsStorage, SettingsStorageError, S
 /// the last write wins.
 #[derive(Debug, Default)]
 pub struct InMemorySettingsStorage {
-    /// Raw text per scope, in `[global, project]` order.
-    texts: Mutex<[Option<String>; 2]>,
+    /// Raw text and base records, guarded only during individual reads and writes.
+    state: Mutex<State>,
+}
+
+/// Stored values in global/project order.
+#[derive(Debug, Default)]
+struct State {
+    /// Raw preference text per scope.
+    texts: [Option<String>; 2],
+    /// Accepted base layers per scope.
+    layers: [Option<BaseSettingsLayer>; 2],
 }
 
 impl InMemorySettingsStorage {
@@ -23,27 +33,46 @@ impl InMemorySettingsStorage {
     /// Creates storage whose global scope already holds `text`.
     pub(super) fn seeded(text: String) -> Self {
         Self {
-            texts: Mutex::new([Some(text), None]),
+            state: Mutex::new(State {
+                texts: [Some(text), None],
+                ..State::default()
+            }),
         }
     }
 
-    /// Locks the texts for a single read or write, never across caller code.
-    fn locked(&self) -> MutexGuard<'_, [Option<String>; 2]> {
-        self.texts
+    /// Locks the state for a single read or write, never across caller code.
+    fn locked(&self) -> MutexGuard<'_, State> {
+        self.state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 }
 
 impl SettingsStorage for InMemorySettingsStorage {
+    fn read_base_layer(
+        &self,
+        scope: SettingsScope,
+    ) -> Result<Option<BaseSettingsLayer>, SettingsStorageError> {
+        Ok(self.locked().layers[scope as usize].clone())
+    }
+
+    fn write_base_layer(
+        &self,
+        scope: SettingsScope,
+        layer: Option<&BaseSettingsLayer>,
+    ) -> Result<(), SettingsStorageError> {
+        self.locked().layers[scope as usize] = layer.cloned();
+        Ok(())
+    }
+
     fn with_lock(
         &self,
         scope: SettingsScope,
         update: &mut dyn FnMut(Option<&str>) -> SettingsUpdate,
     ) -> Result<(), SettingsStorageError> {
-        let current = self.locked()[scope as usize].clone();
+        let current = self.locked().texts[scope as usize].clone();
         if let Some(next) = update(current.as_deref())? {
-            self.locked()[scope as usize] = Some(next);
+            self.locked().texts[scope as usize] = Some(next);
         }
         Ok(())
     }

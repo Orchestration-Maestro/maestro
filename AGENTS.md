@@ -32,18 +32,18 @@ Run `cargo hakari generate` after changing dependencies, their features or
 [development](docs/development.md#feature-unification)).
 Use `mise exec -- just <recipe>` if mise is not active in your shell.
 
-The commit hook formats the code, re-stages the staged files and names the
-selection, then runs the shared check recipe for the staged crates and every
-workspace crate that depends on them. A staged workspace-wide input runs the full
-workspace check instead: a manifest, the lockfile, `.cargo/`, the toolchain, the
-justfile, Clippy or mise settings, the hook configuration, the workspace
-inventory, CI files, root documentation or assets, or the conventions crate. The
-hook runs the full conventions suite when a staged path is under
-`crates/maestro-test-conventions/`, and the browser smoke check only when the
-selection compiles the browser entry. Unformatted code is fixed, never rejected.
-It also rejects merge-conflict markers, invalid TOML or YAML, and a secret in the
-staged change. Commit messages need a conventional header and every line must be
-at most 80 columns. `just check` and shared CI stay the full workspace checks.
+The commit hook formats only the crates holding staged paths, re-stages captured
+files that remain on disk and names the selection, then runs Clippy on those
+crates with `--all-targets --locked -- -D warnings`. Member manifests select their
+crate; root inputs select no crates and never widen a mixed change's selection.
+With no staged crate, the hook skips formatting and Clippy. The full conventions
+suite runs only for staged paths under `crates/maestro-test-conventions/`.
+Browser smoke runs only for staged paths in `maestro-models` or `maestro-web` when
+the browser entry is present. Unformatted code is fixed, never rejected.
+The hook also rejects merge-conflict markers, invalid TOML or YAML, and a secret
+in the staged change. The commit-msg hook enforces the message rule in
+[Git discipline](#test-and-git-discipline). `just check` and shared CI keep the full
+workspace checks, including dependents.
 
 The conventions check requires `workspace.dependencies.serde_json` to name
 `serde_json` and explicitly enable `float_roundtrip`. Normal member dependencies,
@@ -105,6 +105,10 @@ Every change has a clear conventional commit message (the squash commit)
 describing user-visible behavior. Pull requests never edit `CHANGELOG.md`.
 The changelog is generated from conventional commits at release time.
 
+Before committing, run the humanizer on every document a change adds or edits.
+Use Maestro's voice from the [identity guide](docs/identity.md) and
+[brand guide](docs/brand.md).
+
 Every crate root needs `//!` docs and every item, private included, needs
 `///` docs, enforced by Clippy.
 `just check` denies rustdoc warnings and missing documentation.
@@ -137,11 +141,14 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   layer, subject to the
   exclusions in the specification's [crate graph](docs/specs/maestro-port.md#crates-and-delivery-order).
   Shared path helpers take supplied directory observations
-  and add no global environment, filesystem service, directory cache, scheduler
-  or workspace dependency.
+  and add no filesystem service, directory cache, scheduler or workspace dependency.
+  `native_homedir` alone reads the native home environment and account entry.
+  Final-link traversal uses a supplied observation callback; the utility owns
+  relative-target joining and the forty-link bound, while callers retain native
+  link I/O and error interpretation.
 - `maestro-text` and `maestro-json` are declared core leaves below layer 0 with
   no workspace dependencies. Text owns common text operations (whitespace,
-  lexical comparison, markup escaping, CSS string serialization, locale construction, streaming UTF-8, terminal control cleaning, newline
+  lexical comparison, markup escaping, CSS string serialization, locale construction, streaming UTF-8, raw CR/LF byte-line framing, terminal control cleaning, newline
   normalization shared with `maestro-tools`); JSON owns JSON
   boundary semantics (JSON Pointer token escaping, object acceptance, canonical keys, truth, selected-value display, compact and
   pretty text, JSONL line framing). `maestro-entry` and `maestro-tool` define session (including generic compaction results) and tool
@@ -159,13 +166,15 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   never supplies a required edge. The crate is exempt from member `serde_json`
   inheritance (lint inheritance and the workspace precision entry still apply).
   Never hand-edit its generated manifest section.
-- `maestro-watch` and `maestro-lock` are declared core leaves below layer 0 with
-  no workspace dependencies, including the path utility. Only theme/application
-  may depend on watch; only settings/credentials/workspace/detection may depend on lock. Follow the
+- `maestro-watch` is a core leaf below layer 0 without workspace dependencies.
+  `maestro-lock` depends only on `maestro-path` for final-link resolution and uses
+  the existing external `sha2 =0.11.0` to shorten lock and record names for long
+  file names. Only theme/application may depend on watch; only
+  settings/credentials/workspace/detection/session/application may depend on lock. Follow the
   [shared filesystem effect contract](docs/specs/maestro-port.md#crates-and-delivery-order):
   watch owns creation/close helpers, injected watch/timer interfaces and native
-  notifications; lock owns bounded synchronous acquisition of caller-opened files and byte-oriented
-  atomic replacement. Workspace owns snapshot serialization and link-following policy.
+  notifications; lock owns waiting, bounded and single-attempt acquisition plus
+  recoverable in-place byte publication. Workspace owns snapshot serialization and link-following policy.
   Feature policies remain with their owners, including asynchronous credential
   acquisition. Add no common background runtime, scheduler or listener framework;
   existing theme paths may re-export moved types, not duplicate implementations.
@@ -184,7 +193,9 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   dependencies, including the path utility. It lists one directory's entries sorted
   by file name on every platform. Only resources, theme, the toolkit, tools,
   session and the application may depend on it, on native targets; callers keep
-  kind filtering, name decoding and further ordering.
+  kind filtering, name decoding and further ordering. Guest-authoring examples may
+  also use it through a portable development dependency from `maestro-extensions-wasm`,
+  never a normal or build dependency.
 - `maestro-listeners` is a declared core leaf below layer 0 with no workspace
   dependencies. It retains callbacks in live registration order and admits one per
   identity, or one per registration as an event-emitter listener list keeps them.
@@ -217,7 +228,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   `oauth::OAuthCredentials` and `auth_storage::{ApiKeyCredential, AuthCredential,
   AuthStorageData, AuthSource, AuthStatus}`, re-exported by models and credentials,
   and the provider registration records `provider_config::{ProviderConfig<C>,
-  ProviderModelConfig}`, specialized by the catalog and the guest, default zero usage, message-only diagnostic
+  ProviderModelConfig}`, specialized by the catalog and the guest, default zero usage, flat-rate `calculate_cost` arithmetic, message-only diagnostic
   construction and the shared optional-field helper. Only the crates that list it in the spec table
   (models, resources, theme, credentials, catalog, session, entry, tool and guest authoring)
   may depend on it; it depends only on the JSON leaf. Keep existing models/resources public paths as re-exports.
@@ -247,7 +258,7 @@ Pure retained session-tree ordering, geometry, content extraction/search and raw
 re-exported through `maestro-app`; frontend filter, fold and selection state stay
 with their frontend.
 
-The guest authoring crate may depend on the request, entry, tool and JSON
+The guest authoring crate may depend on the request, entry, tool, JSON and text
 owners and never imports native session, tool or catalog runtimes. The terminal
 adapter requires the toolkit and `maestro-text` as direct dependencies; `maestro-text` is
 created, and so is `maestro-json`; the other declared leaf owners stay policy rows until their
@@ -280,8 +291,10 @@ through the scripted provider, the native-only, non-optional `maestro-cli`
 to `maestro-listeners` development edge for the controlled print adapter,
 the native-only, non-optional `maestro-extensions-wasm` to `maestro-models`
 development edge for component tests of the native schema validator,
+the native-only, non-optional `maestro-extensions-wasm` to `maestro-extensions-wasmtime`
+development edge for the product's one engine configuration,
 and the native, non-optional dev-dependencies
-of the twenty-five declared callers on `maestro-test-process`, the owner of
+of the twenty-six declared callers on `maestro-test-process`, the owner of
 checked child tests (see
 [the spec](docs/specs/maestro-port.md#test-process-owner)); a caller declares it
 only when it uses it. Brand and theme remain forbidden as adapter normal/build
@@ -295,9 +308,10 @@ creation and cleanup. It has no internal edge except the native unifier, and no
 foundation utility permission. Only the crates its [directory
 contract](docs/specs/maestro-port.md#test-directory-owner) names may declare it,
 as a non-optional native development dependency when used. `Scratch::new`
-canonicalizes its chosen root; `Scratch::new_in` keeps native supplied-parent
-spelling. On Unix, `enter_removed` and `enter_unreadable` put a test process in a
-removed or unreadable working directory, and `deny(path, mode)` sets a mode and
+canonicalizes its chosen root, without the Windows verbatim drive prefix;
+`Scratch::new_in` keeps native supplied-parent spelling. On Unix, `enter_removed`
+and `enter_unreadable` put a test process in a removed or unreadable working
+directory, and `deny(path, mode)` sets a mode and
 returns its restoring guard, or `None` when the process is not refused, as in a
 privileged run. `keeps_distinct(names)` reports whether the running host keeps a set of
 leaf names apart, and `folded_names(paths)` reports every name group it does not keep
@@ -467,17 +481,19 @@ aside, restoring it on exit. Name regression cases after behavior without leadin
 issue numbers.
 
 Analyze remote PR metadata before checking it out. Commit only when authorized.
-Use a feature branch, signed `git commit -S`, protected PRs and the merge queue;
-never directly push to the default branch or bypass hooks/protection.
+Use a feature branch, protected PRs and the merge queue; never directly push to
+the default branch or bypass hooks/protection. Sign every commit from a message
+file (`git commit -S -F <file>`), with a conventional header, a subject of at most
+71 characters and lines of at most 80 columns.
 
 Stage only your own session files with `git add <specific-file-paths>`.
 Inspect `git status` and the staged diff before committing. Never use
 `git add .`, `git add -A`, `git reset --hard`, `git checkout .`, `git clean -fd`,
-blanket `git stash`, or `git commit --no-verify`. Rebase on current main;
-retain its behavior and assertions. Resolve conflicts only in owned files;
-abort and ask if an unrelated file conflicts. Force-push only with explicit
-standing approval and a fetched-hash lease. Ask for confirmation before an
-instruction overrides these safeguards.
+blanket `git stash`, or `git commit --no-verify`. Take current main into your
+branch with a signed merge commit (`git merge -S origin/main`); never rebase or
+force-push. Keep main's behavior and assertions, resolve conflicts only in files
+you own, and stop and ask if an unrelated file conflicts. Ask for confirmation
+before an instruction overrides these safeguards.
 
 ## Provider contribution checklist
 
@@ -535,7 +551,8 @@ next release's history from conventional commits. PRs never edit CHANGELOG.md.
 Approved libraries live in [docs/libraries/](docs/libraries/), one file per area.
 A ticket that adds a library adds or edits only its area's file.
 
-Tests wait for completion signals; shared CI bounds the job, not each test.
+Tests wait for completion signals; nextest bounds each test, and shared CI bounds
+the job.
 A test child that must answer a signal blocks it and takes it with `sigwait`:
 a handler can miss a signal that arrives just before a blocking call, and the
 test then waits forever.

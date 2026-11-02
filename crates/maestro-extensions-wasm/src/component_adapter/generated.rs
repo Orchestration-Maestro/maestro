@@ -12,17 +12,41 @@ use crate::{
     ExtensionWidgetOptions, FlagOptions, FlagValue, NotificationType, WorkingIndicatorOptions,
 };
 
+#[path = "generated_oauth.rs"]
+mod oauth;
 #[path = "generated_route.rs"]
 mod route;
 #[path = "generated_streams.rs"]
 mod streams;
 pub(crate) use streams::new_event_stream;
 
+#[path = "tools/builtin.rs"]
+#[macro_use]
+mod builtin;
+
 #[path = "generated_glue.rs"]
 mod glue;
 #[path = "generated_model_streams.rs"]
 pub(crate) mod model_streams;
 
+#[path = "generated_widgets.rs"]
+mod widgets;
+
+#[path = "generated_overlays.rs"]
+#[macro_use]
+mod overlays;
+
+#[path = "generated_widget_events.rs"]
+mod widget_events;
+
+#[path = "generated_writer.rs"]
+mod writer;
+
+#[path = "generated_keys.rs"]
+mod keys;
+
+#[path = "generated_editors.rs"]
+mod editors;
 #[path = "generated_provider_streams.rs"]
 pub(crate) mod provider_streams;
 
@@ -30,14 +54,67 @@ pub(crate) mod provider_streams;
 #[derive(Clone, Copy)]
 struct Generated;
 
+#[path = "generated_native.rs"]
+mod native;
+
 impl Imports for Generated {
+    builtin_tool_forwarding!();
+
+    type OAuthProvider = host::OauthProvider;
+    fn credentials_oauth_providers(
+        &self,
+        owner: &Self::Credentials,
+    ) -> ExtensionResult<Vec<Self::OAuthProvider>> {
+        owner.get_oauth_providers()
+    }
+    fn oauth_info(&self, provider: &Self::OAuthProvider) -> ExtensionResult<String> {
+        provider.info()
+    }
+    fn oauth_login<'a>(
+        &'a self,
+        provider: &'a Self::OAuthProvider,
+        handler: &'a Self::Callback,
+        (options, signal): ((bool, bool, bool), Option<&'a Self::Signal>),
+    ) -> ExtensionFuture<'a, String> {
+        Box::pin(provider.login(handler, options, signal))
+    }
+    fn credentials_login<'a>(
+        &'a self,
+        owner: &'a Self::Credentials,
+        provider: String,
+        handler: &'a Self::Callback,
+        (options, signal): ((bool, bool, bool), Option<&'a Self::Signal>),
+    ) -> ExtensionFuture<'a, ()> {
+        Box::pin(owner.login(provider, handler, options, signal))
+    }
+    fn oauth_refresh<'a>(
+        &'a self,
+        provider: &'a Self::OAuthProvider,
+        credentials: String,
+    ) -> ExtensionFuture<'a, String> {
+        Box::pin(provider.refresh_token(credentials))
+    }
+    fn oauth_models(&self, provider: &Self::OAuthProvider, data: &str) -> ExtensionResult<String> {
+        route::text(&provider.modify_models(data))
+    }
+    fn oauth_key(
+        &self,
+        provider: &Self::OAuthProvider,
+        credentials: &str,
+    ) -> ExtensionResult<String> {
+        route::text(&provider.get_api_key(credentials))
+    }
+
+    fn watch(&self, path: String, listener: &Self::Callback) -> ExtensionResult<Self::Watcher> {
+        host::watch(&path, listener)
+    }
     forward_resources! { routed {
         registry_refresh(resource: &Self::Registry) => refresh();
-        registry_register_provider(resource: &Self::Registry, name: &str, config: &str, stream: Option<&Self::Callback>) => register_provider(name, config, stream);
+        registry_register_provider(resource: &Self::Registry, name: &str, config: &str, callbacks: super::imports::ProviderRegistration<'_, Self::Callback>) => register_provider(name, config, callbacks);
         registry_unregister_provider(resource: &Self::Registry, name: &str) => unregister_provider(name);
     } }
     forward_resources! { routed functions {
-        register_provider(name: &str, config: &str, stream: Option<&Self::Callback>) => host::register_provider;
+        register_provider(name: &str, config: &str, callbacks: super::imports::ProviderRegistration<'_, Self::Callback>) => host::register_provider;
         unregister_provider(name: &str) => host::unregister_provider;
     } }
     fn registry_get_available(&self, owner: &Self::Registry) -> ExtensionResult<String> {
@@ -76,10 +153,7 @@ impl Imports for Generated {
         &self,
         backend: &Self::Callback,
     ) -> ExtensionResult<Self::Credentials> {
-        match route::value(&host::auth_storage_from_backend(backend))? {
-            host::RouteValue::Credentials(owner) => Ok(owner),
-            _ => Err("extension route result kind mismatch".into()),
-        }
+        route::credentials(&host::auth_storage_from_backend(backend))
     }
     fn credentials_set_fallback(
         &self,
@@ -103,6 +177,16 @@ impl Imports for Generated {
         route::text(&owner.get_auth_status(provider))
     }
     type Credentials = host::AuthStorage;
+    forward_resources! { routed values {
+        credentials_get(resource: &Self::Credentials, provider: &str) -> Option<String> => get(provider) via route::optional_text;
+        credentials_list(resource: &Self::Credentials) -> Vec<String> => list() via route::lines;
+        credentials_get_all(resource: &Self::Credentials) -> String => get_all() via route::text;
+        registry_is_using_oauth(resource: &Self::Registry, model: &str) -> bool => is_using_oauth(model) via route::boolean;
+    } }
+    forward_resources! { routed value functions {
+        create_model_registry(auth: &Self::Credentials, path: Option<&str>) -> Self::Registry => host::create_model_registry => route::registry;
+        in_memory_model_registry(auth: &Self::Credentials) -> Self::Registry => host::in_memory_model_registry => route::registry;
+    } }
     forward_resources! { routed {
         credentials_reload(resource: &Self::Credentials) => reload();
         credentials_set(resource: &Self::Credentials, provider: &str, credential: &str) => set(provider, credential);
@@ -112,8 +196,6 @@ impl Imports for Generated {
     forward_resources! { functions {
         create_auth_storage(path: Option<&str>) -> ExtensionResult<Self::Credentials> => host::create_auth_storage;
         auth_storage_in_memory(data: &str) -> ExtensionResult<Self::Credentials> => host::auth_storage_in_memory;
-        create_model_registry(auth: &Self::Credentials, path: Option<&str>) -> ExtensionResult<Self::Registry> => host::create_model_registry;
-        in_memory_model_registry(auth: &Self::Credentials) -> ExtensionResult<Self::Registry> => host::in_memory_model_registry;
     } }
 
     type JsonNode = host::JsonNode;
@@ -127,6 +209,18 @@ impl Imports for Generated {
                 .map(|b| (b.tool, b.pointer, b.handler, b.shape, b.local))
                 .collect(),
         ))
+    }
+
+    fn ui_get_editor_component(
+        &self,
+        ui: &host::ExtensionUiContext,
+    ) -> ExtensionResult<super::CurrentFactory> {
+        Ok(ui.get_editor_component()?.map(|current| match current {
+            host::CurrentEditorFactory::Authored(id) => Ok(id),
+            host::CurrentEditorFactory::Host(factory) => {
+                Err(std::rc::Rc::new(factory) as std::rc::Rc<dyn std::any::Any>)
+            }
+        }))
     }
 
     fn schema_invoke(
@@ -180,6 +274,8 @@ impl Imports for Generated {
         ui_set_widget_factory(resource: &Self::Ui, key: &str, factory: &Self::Callback, options: Option<ExtensionWidgetOptions>) => set_widget_factory(key, factory, options);
         ui_set_header(resource: &Self::Ui, factory: Option<&Self::Callback>) => set_header(factory);
         ui_set_footer(resource: &Self::Ui, factory: Option<&Self::Callback>) => set_footer(factory);
+        ui_set_editor_component(resource: &Self::Ui, factory: Option<&Self::Callback>) => set_editor_component(factory);
+        ui_add_autocomplete_provider(resource: &Self::Ui, factory: &Self::Callback) => add_autocomplete_provider(factory);
         ui_set_tools_expanded(resource: &Self::Ui, expanded: bool) => set_tools_expanded(expanded);
         abort(context: &Self::Context) => abort();
         shutdown(context: &Self::Context) => shutdown();
@@ -191,6 +287,7 @@ impl Imports for Generated {
     forward_resources! { functions {
         native_format_size(bytes: f64) -> ExtensionResult<String> => host::native_format_size;
         native_frontmatter(content: &str) -> ExtensionResult<host::FrontmatterDocument> => host::native_frontmatter;
+        native_yaml(content: &str) -> ExtensionResult<Vec<host::FrontmatterToken>> => host::native_yaml;
         native_helper(operation: &str, data: &str) -> ExtensionResult<String> => host::native_helper;
         get_session_name() -> ExtensionResult<Option<String>> => host::get_session_name;
         get_active_tools() -> ExtensionResult<Vec<String>> => host::get_active_tools;
@@ -204,6 +301,7 @@ impl Imports for Generated {
         on(event: &str, handler: &host::Callback) -> ExtensionResult<()> => host::on;
         register_command(name: &str, description: Option<&str>, completions: Option<&host::Callback>, handler: &host::Callback) -> ExtensionResult<()> => host::register_command;
         register_shortcut(shortcut: &str, description: Option<&str>, handler: &host::Callback) -> ExtensionResult<()> => host::register_shortcut;
+        contribute_load_time(contributions: &str) -> ExtensionResult<()> => host::contribute_load_time;
         register_flag(name: &str, options: &FlagOptions) -> ExtensionResult<()> => host::register_flag;
         get_flag(name: &str) -> ExtensionResult<Option<FlagValue>> => host::get_flag;
     } }
@@ -219,10 +317,7 @@ impl Imports for Generated {
         registry_auth_storage(resource: &Self::Registry) -> ExtensionResult<Self::Credentials> => auth_storage();
         credentials_set_runtime_api_key(resource: &Self::Credentials, provider: &str, key: &str) -> ExtensionResult<()> => set_runtime_api_key(provider, key);
         credentials_remove_runtime_api_key(resource: &Self::Credentials, provider: &str) -> ExtensionResult<()> => remove_runtime_api_key(provider);
-        credentials_get(resource: &Self::Credentials, provider: &str) -> ExtensionResult<Option<String>> => get(provider);
-        credentials_list(resource: &Self::Credentials) -> ExtensionResult<Vec<String>> => list();
         credentials_has(resource: &Self::Credentials, provider: &str) -> ExtensionResult<bool> => has(provider);
-        credentials_get_all(resource: &Self::Credentials) -> ExtensionResult<String> => get_all();
         credentials_drain_errors(resource: &Self::Credentials) -> ExtensionResult<String> => drain_errors();
         registry_get_all(resource: &Self::Registry) -> ExtensionResult<String> => get_all();
         bash_output(output: &Self::BashOutput, bytes: &[u8]) -> ExtensionResult<()> => on_data(bytes);
@@ -248,7 +343,6 @@ impl Imports for Generated {
         registry_find(resource: &Self::Registry, provider: &str, model_id: &str) -> ExtensionResult<Option<String>> => find(provider, model_id);
         registry_get_error(resource: &Self::Registry) -> ExtensionResult<Option<String>> => get_error();
         registry_get_provider_display_name(resource: &Self::Registry, provider: &str) -> ExtensionResult<String> => get_provider_display_name(provider);
-        registry_is_using_oauth(resource: &Self::Registry, model: &str) -> ExtensionResult<bool> => is_using_oauth(model);
         ui(context: &Self::Context) -> ExtensionResult<Self::Ui> => ui();
         theme_name(theme: &Self::Theme) -> ExtensionResult<Option<String>> => name();
         theme_source_path(theme: &Self::Theme) -> ExtensionResult<Option<String>> => source_path();
@@ -330,7 +424,11 @@ impl Imports for Generated {
     type Subscription = host::Subscription;
     type Emitter = host::CallbackEmitter;
     type Ui = host::ExtensionUiContext;
+    overlay_forwarding!();
     type Tui = host::Tui;
+    fn tui_full_redraws(&self, tui: &host::Tui) -> ExtensionResult<u64> {
+        tui.full_redraws()
+    }
     type Invalidator = host::ToolInvalidator;
     fn register_tool(
         &self,
@@ -377,6 +475,7 @@ impl Imports for Generated {
                 host::ResolvedRequestAuth::Ok(auth) => crate::ResolvedRequestAuth::Ok {
                     api_key: auth.api_key,
                     headers: auth.headers.map(|headers| headers.into_iter().collect()),
+                    base_url: auth.base_url,
                 },
                 host::ResolvedRequestAuth::Error(error) => {
                     crate::ResolvedRequestAuth::Error { error }
@@ -405,7 +504,6 @@ impl Imports for Generated {
     type Update = host::ToolUpdate;
     type Callback = host::Callback;
     type Theme = host::Theme;
-    type Signal = host::AbortSignal;
     type Context = host::Context;
     type CommandContext = host::CommandContext;
     type ReplacedContext = host::ReplacedSessionContext;

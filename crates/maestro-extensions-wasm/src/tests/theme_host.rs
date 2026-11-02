@@ -78,15 +78,20 @@ struct Control {
 }
 
 impl Bank {
+    /// Publishes a supplied palette under a theme key.
+    pub fn publish(&mut self, key: &str, palette: Palette) {
+        self.themes.insert(key.to_owned(), palette);
+    }
+
     /// Publishes a recorded palette under a theme key.
     pub fn control(&mut self, text: &str) {
         let control: Control = serde_json::from_str(text).unwrap();
         let palette = corpus().palettes.remove(&control.palette).unwrap();
-        self.themes.insert(control.theme, palette);
+        self.publish(&control.theme, palette);
     }
 
     /// The current state behind `key`.
-    fn theme(&mut self, key: &str) -> &mut Palette {
+    pub fn theme(&mut self, key: &str) -> &mut Palette {
         self.themes
             .entry(key.to_owned())
             .or_insert_with(|| corpus().palettes.remove(key).unwrap())

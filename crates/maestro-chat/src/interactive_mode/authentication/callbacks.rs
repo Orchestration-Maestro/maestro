@@ -62,6 +62,9 @@ fn answer<T: Send + 'static>(
 }
 
 impl OAuthLoginCallbacks for LoginCallbacks {
+    fn callback_presence(&self) -> (bool, bool, bool) {
+        (true, true, true)
+    }
     fn on_auth(&self, info: OAuthAuthInfo) -> Result<(), OAuthError> {
         Ok(self.dispatch.call(LoginEvent::Auth(info))?)
     }

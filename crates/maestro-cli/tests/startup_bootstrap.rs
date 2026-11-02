@@ -133,6 +133,45 @@ fn diagnostics_keep_context_styles_and_drain() {
 }
 
 #[test]
+fn settings_failures_name_their_scope_in_loading_order() {
+    let scratch = Scratch::new().unwrap();
+    let agent_dir = scratch.path().join("agent");
+    std::fs::create_dir_all(&agent_dir).unwrap();
+    std::fs::write(agent_dir.join("settings.json"), "{").unwrap();
+    let cwd = scratch.path().join("project");
+    std::fs::create_dir_all(cwd.join(".maestro")).unwrap();
+    std::fs::write(cwd.join(".maestro").join("settings.json"), "[").unwrap();
+    let mut settings = SettingsManager::create(
+        cwd.to_str().unwrap(),
+        agent_dir.to_str().unwrap(),
+        ".maestro",
+    );
+
+    let drained = collect_settings_diagnostics(&mut settings, "startup");
+    assert_eq!(
+        drained
+            .iter()
+            .map(|diagnostic| (
+                diagnostic.r#type,
+                diagnostic.message.split(')').next().unwrap()
+            ))
+            .collect::<Vec<_>>(),
+        vec![
+            (
+                AgentSessionRuntimeDiagnosticType::Warning,
+                "(startup, global settings"
+            ),
+            (
+                AgentSessionRuntimeDiagnosticType::Warning,
+                "(startup, project settings"
+            ),
+        ],
+        "each failure names its own scope, global before project"
+    );
+    assert!(collect_settings_diagnostics(&mut settings, "startup").is_empty());
+}
+
+#[test]
 fn parser_errors_end_before_runtime_creation() {
     let warning = || Diagnostic {
         r#type: DiagnosticType::Warning,

@@ -1,8 +1,8 @@
 //! Prepares the author components before nextest's guest-authoring tests.
 //!
 //! Nextest runs this example from the test run's own build output, so preparing the components
-//! compiles no second host. It builds the components, warms the compilation cache of the shared
-//! and context components and exports every component's path to the tests.
+//! compiles no second host. It builds the components in one Cargo invocation, warms their
+//! compilation cache and exports every component's path to the tests.
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
@@ -10,44 +10,66 @@
 )]
 
 #[cfg(not(target_arch = "wasm32"))]
+use std::fmt::Write as _;
+
+#[cfg(not(target_arch = "wasm32"))]
 #[path = "../src/tests/build.rs"]
 mod build;
+
+// The preparation module below reaches source discovery through this import, and so does the
+// listing of component names.
+#[cfg(not(target_arch = "wasm32"))]
+use build::cargo::components;
+
+#[cfg(not(target_arch = "wasm32"))]
+#[path = "../../maestro-tooling/src/example_files/preparation.rs"]
+mod example_files;
 
 /// Preparation runs the native host, which a WebAssembly build does not have.
 #[cfg(target_arch = "wasm32")]
 fn main() {}
 
-/// Builds and compiles the components, then hands their paths to nextest's environment file.
+/// Builds the components in one Cargo invocation, warms their compilation cache, then hands their
+/// paths to nextest's environment file.
 #[cfg(not(target_arch = "wasm32"))]
 fn main() -> Result<(), String> {
-    let path = build::author_component()?;
-    build::compile(path).map_err(|error| error.to_string())?;
-    let context = build::component("context_bridge", "MAESTRO_CONTEXT_COMPONENT")?;
-    build::compile(&context).map_err(|error| error.to_string())?;
-    let location = build::component("module_location_component", "MAESTRO_LOCATION_COMPONENT")?;
-    let helpers = build::component("helper_capabilities", "MAESTRO_HELPER_COMPONENT")?;
-    let hooks = build::component("hook_component", "MAESTRO_HOOK_COMPONENT")?;
-    let resources = build::component("resource_component", "MAESTRO_RESOURCE_COMPONENT")?;
-    let reloaded = build::component(
-        "resource_component_reloaded",
-        "MAESTRO_RESOURCE_RELOADED_COMPONENT",
-    )?;
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+    let folders = [
+        root.join("examples"),
+        root.join("../../examples/extensions"),
+    ];
+    let mut names: Vec<String> = components::FIXED_COMPONENTS
+        .iter()
+        .map(|(name, _, _)| (*name).to_owned())
+        .collect();
+    components::visit(&folders, |name, _| {
+        names.push(name.to_owned());
+        Ok(())
+    })
+    .map_err(|error| error.to_string())?;
+    let targets: Vec<&str> = names.iter().map(String::as_str).collect();
+    let built = build::cargo::example_components(root, &targets)?;
+    // Source discovery visits the markers in the order that produced the names above.
+    let Some((fixed, marked)) = built.split_at_checked(components::FIXED_COMPONENTS.len()) else {
+        return Err("the build returned fewer components than requested".to_owned());
+    };
+    let mut entries = String::new();
+    for ((_, _, variable), path) in components::FIXED_COMPONENTS.iter().zip(fixed) {
+        writeln!(entries, "{variable}={}", path.display()).map_err(|error| error.to_string())?;
+    }
+    let mut marked = marked.iter();
+    entries.push_str(
+        &example_files::prepare(&folders, |_, _| {
+            marked
+                .next()
+                .cloned()
+                .ok_or_else(|| std::io::Error::other("a marked component has no build"))
+        })
+        .map_err(|error| error.to_string())?,
+    );
+    build::warm(&built)?;
     if let Some(environment) = std::env::var_os("NEXTEST_ENV") {
-        std::fs::write(
-            environment,
-            format!(
-                "MAESTRO_AUTHOR_COMPONENT={}\nMAESTRO_CONTEXT_COMPONENT={}\n\
-                 MAESTRO_LOCATION_COMPONENT={}\nMAESTRO_HELPER_COMPONENT={}\nMAESTRO_HOOK_COMPONENT={}\nMAESTRO_RESOURCE_COMPONENT={}\nMAESTRO_RESOURCE_RELOADED_COMPONENT={}\n",
-                path.display(),
-                context.display(),
-                location.display(),
-                helpers.display(),
-                hooks.display(),
-                resources.display(),
-                reloaded.display()
-            ),
-        )
-        .map_err(|error| error.to_string())?;
+        std::fs::write(environment, entries).map_err(|error| error.to_string())?;
     }
     Ok(())
 }

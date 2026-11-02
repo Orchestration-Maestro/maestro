@@ -3,7 +3,7 @@ use crate::{
     guest_calls::Callback,
     local_resources::SignalEndpoint,
     read_imports::{ReadEndpoint, add_routed_operand, operand},
-    ui_reads::{Dialog, Endpoint, Request},
+    ui_reads::{Dialog, Endpoint, FactoryRequest, Request},
 };
 use wasmtime::{
     StoreContextMut,
@@ -49,6 +49,7 @@ pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
             Ok((crate::import_route::push(store.data_mut(), route)?,))
         },
     )?;
+    crate::custom_imports::add_to_linker(host)?;
     editor(host)?;
     dialogs(host)?;
     widget_factory(host)?;
@@ -184,30 +185,62 @@ fn widget_factory<T: crate::callback_imports::CallbackView + 'static>(
             let api = store.data().api().clone();
             let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
             let options = options.map(Into::into);
-            let route =
-                endpoint.route(|reply| Request::WidgetFactory(key, factory, api, options, reply));
+            let route = endpoint.route(|reply| {
+                Request::Factory(FactoryRequest::WidgetFactory(
+                    key, factory, api, options, reply,
+                ))
+            });
             Ok((crate::import_route::push(store.data_mut(), route)?,))
         },
     )?;
+    for (name, request) in [
+        ("footer", FactoryRequest::Footer as OptionalFactory),
+        ("header", FactoryRequest::Header),
+        ("editor-component", FactoryRequest::EditorComponent),
+    ] {
+        optional_factory(
+            host,
+            &format!("[method]extension-ui-context.set-{name}"),
+            request,
+        )?;
+    }
     host.func_wrap(
-        "[method]extension-ui-context.set-footer",
+        "[method]extension-ui-context.add-autocomplete-provider",
         |mut store: StoreContextMut<'_, T>,
-         (resource, factory): (Resource<Endpoint>, Option<Resource<Callback>>)| {
-            let factory = crate::callback_imports::optional(store.data_mut(), factory.as_ref())?;
+         (resource, factory): (Resource<Endpoint>, Resource<Callback>)| {
+            let factory = crate::callback_imports::retain(store.data_mut(), &factory)?;
             let api = store.data().api().clone();
             let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
-            let route = endpoint.route(|reply| Request::Footer(factory, api, reply));
+            let route = endpoint.route(|reply| {
+                Request::Factory(FactoryRequest::AutocompleteProvider(factory, api, reply))
+            });
             Ok((crate::import_route::push(store.data_mut(), route)?,))
         },
-    )?;
+    )
+}
+
+/// The request of a setter that installs or removes an authored factory.
+type OptionalFactory = fn(
+    Option<crate::guest_calls::Handle>,
+    crate::api_reads::Endpoint,
+    std::sync::mpsc::Sender<Result<(), String>>,
+) -> FactoryRequest;
+
+/// Installs one setter of an optional authored factory, which the native owner may run before
+/// the import returns.
+fn optional_factory<T: crate::callback_imports::CallbackView + 'static>(
+    host: &mut LinkerInstance<'_, T>,
+    name: &str,
+    request: OptionalFactory,
+) -> wasmtime::Result<()> {
     host.func_wrap(
-        "[method]extension-ui-context.set-header",
-        |mut store: StoreContextMut<'_, T>,
-         (resource, factory): (Resource<Endpoint>, Option<Resource<Callback>>)| {
+        name,
+        move |mut store: StoreContextMut<'_, T>,
+              (resource, factory): (Resource<Endpoint>, Option<Resource<Callback>>)| {
             let factory = crate::callback_imports::optional(store.data_mut(), factory.as_ref())?;
             let api = store.data().api().clone();
             let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
-            let route = endpoint.route(|reply| Request::Header(factory, api, reply));
+            let route = endpoint.route(|reply| Request::Factory(request(factory, api, reply)));
             Ok((crate::import_route::push(store.data_mut(), route)?,))
         },
     )

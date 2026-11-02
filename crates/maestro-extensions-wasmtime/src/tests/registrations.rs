@@ -23,7 +23,7 @@ fn registered_command_completion_and_shortcut_invoke_with_native_operands() {
 /// Runs native callbacks while the original pump consumes their context reads.
 async fn registrations() {
     let (owner, api) = super::api::api(maestro_extensions::create_extension_runtime::<Local>());
-    let (mut pump, admission) = Pump::new();
+    let (mut pump, admission) = Pump::new(crate::tests::support::widgets());
     let api = pump.registry().api(api).unwrap();
     let (calls, incoming) = tokio::sync::mpsc::unbounded_channel();
     let mut callbacks = Callbacks::new(calls.downgrade(), Replies::default());

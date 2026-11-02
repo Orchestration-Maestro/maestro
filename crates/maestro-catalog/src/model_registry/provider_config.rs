@@ -94,7 +94,7 @@ impl maestro_models::OAuthProviderInterface for RegisteredOAuth {
     fn get_api_key<'a>(
         &self,
         credentials: &'a maestro_models::OAuthCredentials,
-    ) -> Result<&'a str, OAuthError> {
+    ) -> Result<Cow<'a, str>, OAuthError> {
         self.inner.get_api_key(credentials)
     }
     fn modify_models<'m>(

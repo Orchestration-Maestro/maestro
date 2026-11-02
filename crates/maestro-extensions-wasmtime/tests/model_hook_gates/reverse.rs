@@ -61,7 +61,7 @@ fn start(
     server: Option<&http::Server>,
     common: StreamOptions<Local>,
 ) -> AssistantMessageEventStream {
-    let model = serde_json::from_value(json!({"id":"gated-model","name":"gated","api":"guest-owned-stream","provider":"compiled-stream", "baseUrl": server.map_or("http://127.0.0.1:1", |s| s.url.as_str()),"reasoning":false,"input":["text"],"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0},"contextWindow":1000,"maxTokens":100,"compat":{"maxTokensField":"max_tokens"}})).unwrap();
+    let model = serde_json::from_value(json!({"id":"gated-model","name":"gated","api":"guest-owned-stream","provider":"compiled-stream", "baseUrl": server.map_or("http://127.0.0.1:1", |s| s.url.as_str()),"reasoning":false,"input":["text"],"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0},"contextWindow":10000,"maxTokens":100,"compat":{"maxTokensField":"max_tokens"}})).unwrap();
     let context = maestro_models::Context {
         system_prompt: None,
         messages: vec![

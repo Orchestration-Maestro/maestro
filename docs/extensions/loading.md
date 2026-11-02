@@ -10,10 +10,11 @@ Turning a resolved path into a factory is the only step that depends on the
 module format, so the caller supplies it as a `ModuleLoader<E>`. It returns
 `Ok(Some(factory))` for a module that exports one, `Ok(None)` for a module that
 exports none, and `Err` when the module cannot be loaded. For built components,
-a loader that returns `artifact_factory(path, installation_version)` from
+a loader that returns `artifact_factory(path, widgets, installation)` from
 `maestro-extensions-wasmtime` loads each component through the path, discovery and registration rules below
 (see [native component execution](native-execution.md)). The executable supplies
-the installation version from application configuration. Like
+its host widgets and `Installation { version, agent_dir }` from application
+configuration. Like
 `ExtensionFactory<E>`, the loader is a shared pointer whose callable carries the
 execution family's bounds, so the default family keeps it `Send + Sync`.
 
@@ -25,8 +26,9 @@ loaded extensions share that runtime.
 
 Each path is resolved before its module loads:
 
-1. Every leading `~`, `~name` included, is replaced by the home directory,
-   and the rest is joined to it lexically. A `~` anywhere else is literal.
+1. A leading `~` reads as
+   [settings](../settings.md#home-directory-in-paths) describes, so `~name` stays a
+   relative path. A `~` anywhere else is literal.
 2. An absolute result is kept as written and reads no working directory. A
    relative result is resolved lexically against `cwd`.
 3. The path is resolved through

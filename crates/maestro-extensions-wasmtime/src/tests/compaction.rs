@@ -43,7 +43,7 @@ async fn compaction(command: bool) {
         )
         .unwrap();
     let (_owner, api) = super::api::api(maestro_extensions::create_extension_runtime::<Local>());
-    let (mut pump, admission) = Pump::new();
+    let (mut pump, admission) = Pump::new(crate::tests::support::widgets());
     let registry = pump.registry();
     let api = registry.api(api).unwrap();
     let context = if command {

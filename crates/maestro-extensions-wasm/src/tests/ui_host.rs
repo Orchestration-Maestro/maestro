@@ -5,7 +5,7 @@
     clippy::excessive_nesting
 )]
 
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::str::FromStr;
 
 use serde::Deserialize;
@@ -36,6 +36,9 @@ pub struct Footer {
     /// The custom footer the host shows, when there is one.
     #[serde(skip)]
     pub custom: Option<WidgetSlot>,
+    /// The identity of the factory that built the custom footer.
+    #[serde(skip)]
+    pub factory: Option<u32>,
     /// Current branch.
     #[serde(default)]
     branch: Option<String>,
@@ -66,6 +69,22 @@ pub struct WidgetSlot {
     pub component: u32,
     /// Identity of the component's disposal, when it has one.
     pub dispose: Option<u32>,
+    /// Identity of the retained expansion handler.
+    pub set_expanded: Option<u32>,
+    /// The supplied implicit width.
+    pub width: Option<f64>,
+}
+
+/// The editor an authored factory built, as the host shows it in place of its own.
+pub struct EditorSlot {
+    /// Identity of the factory.
+    pub factory: u32,
+    /// Host handle of the editor's component.
+    pub component: u32,
+    /// Host handle of the editor's operations.
+    pub editor: u32,
+    /// Key of the custom editor widget the editor extends.
+    pub custom: Option<u32>,
 }
 
 /// The header container the host keeps once its built-in header exists.
@@ -97,6 +116,15 @@ impl Header {
 
 /// What the result of a nested call the host made settles.
 pub enum Nested {
+    /// An authored component's invalidation.
+    Invalidate,
+    /// An authored widget callback of the list under this key; a submenu's answer opens at
+    /// the setting index.
+    Widget(u32, Option<usize>),
+    /// The scripted native caller's backend outcome, separate from accepted state.
+    CredentialBackend(Option<String>),
+    /// The exact result of the author's synchronous fallback.
+    CredentialFallback(Result<Option<String>, String>),
     /// A footer factory, whose component replaces the current footer.
     Footer,
     /// A header factory, whose component replaces the current header.
@@ -105,6 +133,13 @@ pub enum Nested {
     Dispose,
     /// A widget factory, whose component the host shows under this key.
     Factory(String),
+    /// The interceptor of an input of the editor under this key; input it did not consume
+    /// continues.
+    Shortcut(u32, String),
+    /// An editor factory with this identity, whose editor replaces the current one.
+    Editor(u32),
+    /// A provider factory, whose provider the host stacks.
+    Provider,
 }
 
 /// Host state the UI requests are served from.
@@ -112,18 +147,26 @@ pub enum Nested {
 pub struct Bank {
     /// Identity of the binding acquisitions currently resolve.
     binding: usize,
+    /// Working directory of the context each acquisition was made through, in order.
+    pub acquired: Vec<String>,
     /// Rejection supplied for the next request it applies to.
     error: Option<Refusal>,
     /// Method whose next request is rejected instead of the next request overall.
     method: Option<String>,
     /// Message the request of `method` is rejected with.
     message: Option<String>,
+    /// Rules a test arms for requests of one invocation.
+    rules: Rules,
     /// Editor text each binding keeps.
     editors: HashMap<usize, String>,
     /// Decision the next dialog answers with; absent dismisses it.
     answer: Option<Value>,
+    /// Ordered replies for a command that opens several dialogs.
+    answers: VecDeque<Value>,
     /// Recorded palette the UI's live theme reads; absent reads the dark palette.
     theme: Option<String>,
+    /// Supplied custom-view inputs and expected frames.
+    pub custom_script: Option<super::custom_host::Script>,
     /// Factory widgets in the order they were shown.
     pub widgets: Vec<WidgetSlot>,
     /// The header container.
@@ -132,6 +175,20 @@ pub struct Bank {
     pub footer: Footer,
     /// Whether tool output is expanded.
     tools: bool,
+    /// Host widgets the extension built.
+    pub hosted: super::widget_host::Bank,
+    /// The lists and loaders among them.
+    pub lists: super::widget_lists::Lists,
+    /// Keybindings managers.
+    pub keys: super::widget_keys::Managers,
+    /// The editors among the widgets.
+    pub widget_editors: super::widget_editors::Editors,
+    /// The authored editor shown in place of the host's own, when there is one.
+    pub editor: Option<EditorSlot>,
+    /// The authored completion providers stacked on the host's own.
+    pub providers: super::provider_host::Stack,
+    /// The editor factory another extension set.
+    pub foreign: super::foreign_host::Foreign,
 }
 
 /// The themes the host lists, in its order; one has no file.
@@ -175,6 +232,17 @@ pub fn themed(
     })
 }
 
+/// One-shot request rules a test arms directly, without a control document.
+#[derive(Default)]
+struct Rules {
+    /// Accepted requests before the next one is rejected, counted from the arming point.
+    reject_after: Option<usize>,
+    /// Identity of the binding that follows the next accepted request.
+    switch_after: Option<usize>,
+    /// Requests the host has accepted since the rule was armed.
+    accepted: usize,
+}
+
 /// A supplied refusal and the method it is limited to.
 struct Refusal {
     /// Method the refusal applies to; absent refuses the next request.
@@ -195,11 +263,16 @@ struct Control {
     binding: Option<usize>,
     /// Decision the next dialog answers with; absent dismisses it.
     answer: Option<Value>,
+    /// Ordered replies for successive dialogs; absent keeps the single-answer route.
+    #[serde(default)]
+    answers: VecDeque<Value>,
     /// Builds the built-in header: `ready` adds it after a banner, `detached` keeps only the
     /// banner.
     header: Option<String>,
     /// Replaces the footer metadata.
     footer: Option<Footer>,
+    /// Makes another extension's editor factory current, `custom` or `plain`.
+    foreign: Option<String>,
 }
 
 impl Bank {
@@ -209,10 +282,18 @@ impl Bank {
         if let Some(binding) = control.binding {
             self.binding = binding;
         }
+        if control.foreign.is_some() {
+            self.foreign.kind = control.foreign;
+        }
         self.answer = control.answer;
+        self.answers = control.answers;
         if let Some(footer) = control.footer {
-            let custom = self.footer.custom.take();
-            self.footer = Footer { custom, ..footer };
+            let (custom, factory) = (self.footer.custom.take(), self.footer.factory.take());
+            self.footer = Footer {
+                custom,
+                factory,
+                ..footer
+            };
         }
         if let Some(header) = control.header {
             let mut children = vec!["banner".to_owned()];
@@ -229,12 +310,12 @@ impl Bank {
         });
     }
 
-    /// Takes the refusal supplied for `method`, keeping one supplied for another method.
+    /// Takes a refusal supplied for exactly `method`, keeping one armed for every method.
     fn refusal(&mut self, method: &str) -> Option<String> {
         let supplied = self
             .error
             .as_ref()
-            .is_some_and(|refusal| refusal.method.as_deref().is_none_or(|it| it == method));
+            .is_some_and(|refusal| refusal.method.as_deref() == Some(method));
         if supplied {
             return self.error.take().map(|refusal| refusal.message);
         }
@@ -245,8 +326,17 @@ impl Bank {
         self.message.take()
     }
 
-    /// Hands out the identity of the binding current at acquisition time.
-    pub fn acquire(&self) -> usize {
+    /// Restores the state a fresh host starts from.
+    pub fn reset(&mut self) {
+        self.binding = 0;
+        self.error = None;
+        self.rules = Rules::default();
+    }
+
+    /// Hands out the identity of the binding current at acquisition time and records the
+    /// working directory of the context the acquisition was made through.
+    pub fn acquire(&mut self, owner: &str) -> usize {
+        self.acquired.push(owner.into());
         self.binding
     }
 
@@ -254,6 +344,42 @@ impl Bank {
     pub fn reject(&mut self, method: &str, message: &str) {
         self.method = Some(method.to_owned());
         self.message = Some(message.to_owned());
+    }
+
+    /// Rejects the next request after `index` accepted ones with `error`, once.
+    pub fn reject_at(&mut self, index: usize, error: &str) {
+        self.rules.reject_after = Some(index);
+        self.rules.accepted = 0;
+        self.error = Some(Refusal {
+            method: None,
+            message: error.to_owned(),
+        });
+    }
+
+    /// Resolves the binding `binding` for acquisitions after the next accepted request.
+    pub fn switch_after_first(&mut self, binding: usize) {
+        self.rules.switch_after = Some(binding);
+    }
+
+    /// Applies the armed rules to the request recorded next, taking a refusal armed for every method.
+    fn settle(&mut self) -> Result<(), String> {
+        let reject = self
+            .rules
+            .reject_after
+            .is_none_or(|index| index == self.rules.accepted);
+        let general = self.error.as_ref().is_some_and(|it| it.method.is_none());
+        if reject
+            && general
+            && let Some(refusal) = self.error.take()
+        {
+            self.rules.reject_after = None;
+            return Err(refusal.message);
+        }
+        self.rules.accepted += 1;
+        if let Some(binding) = self.rules.switch_after.take() {
+            self.binding = binding;
+        }
+        Ok(())
     }
 }
 
@@ -264,8 +390,17 @@ pub fn call(
     method: &str,
     operands: &Value,
 ) -> Result<(), String> {
+    let captured = observed
+        .stdout
+        .as_ref()
+        .map(|stdout| stdout.contents().len());
+    if let Some(captured) = captured {
+        observed.log(format!("captured {captured}"));
+    }
     observed.log(format!("ui {key} {method} {operands}"));
-    observed.ui.refusal(method).map_or(Ok(()), Err)
+    let error = observed.ui.settle().err();
+    let error = error.or_else(|| observed.ui.refusal(method));
+    error.map_or(Ok(()), Err)
 }
 
 /// Records one replacement against the acquisition `key` and keeps its text for that binding.
@@ -273,6 +408,52 @@ pub fn set_editor_text(observed: &mut Observed, key: usize, text: &str) -> Resul
     call(observed, key, "setEditorText", &json!([text]))?;
     observed.ui.editors.insert(key, text.to_owned());
     Ok(())
+}
+
+/// Records an editor factory request against the acquisition `key` and removes the current
+/// authored editor, returning it; the host builds the new one afterwards.
+pub fn set_editor_component(
+    observed: &mut Observed,
+    key: usize,
+    factory: Option<u32>,
+) -> Result<Option<EditorSlot>, String> {
+    call(
+        observed,
+        key,
+        "setEditorComponent",
+        &json!([factory.is_some()]),
+    )?;
+    observed.ui.foreign.kind = None;
+    Ok(observed.ui.editor.take())
+}
+
+/// Records the editor a factory built and the actions of the custom editor it extends.
+pub fn show_editor(observed: &mut Observed, slot: EditorSlot) {
+    let actions = slot.custom.map(|custom| {
+        super::widget_editors::editor(observed, custom).map(|editor| {
+            editor
+                .actions
+                .iter()
+                .map(|(action, _)| action.clone())
+                .collect::<Vec<_>>()
+        })
+    });
+    let actions = json!(actions.map(Result::unwrap_or_default));
+    observed.log(format!("editor built custom={actions}"));
+    observed.ui.editor = Some(slot);
+}
+
+/// Records a factory read against the acquisition `key` and answers the current factory: an
+/// authored one by identity, or another extension's with whether it builds a custom editor.
+pub fn get_editor_component(
+    observed: &mut Observed,
+    key: usize,
+) -> Result<Option<Result<u32, bool>>, String> {
+    call(observed, key, "getEditorComponent", &json!([]))?;
+    let authored = observed.ui.editor.as_ref().map(|slot| slot.factory);
+    Ok(authored
+        .map(Ok)
+        .or_else(|| super::foreign_host::current(observed).map(Err)))
 }
 
 /// Records one read against the acquisition `key` and answers the text its binding keeps.
@@ -378,7 +559,12 @@ pub fn set_result(result: &Value) -> host::ThemeSetResult {
 
 /// The decision supplied for the dialog that is settling.
 pub fn decision(observed: &mut Observed) -> Value {
-    observed.ui.answer.take().unwrap_or(Value::Null)
+    observed
+        .ui
+        .answers
+        .pop_front()
+        .or_else(|| observed.ui.answer.take())
+        .unwrap_or(Value::Null)
 }
 
 /// The text a dialog decision chooses; any other decision dismisses the dialog.
@@ -513,6 +699,10 @@ impl State {
         self.observed.ui.widgets = kept;
         let mut steps = std::collections::VecDeque::new();
         for slot in removed {
+            if let Some(handler) = slot.set_expanded {
+                self.observed
+                    .register(format!("expansion {handler}"), handler);
+            }
             self.observed
                 .register(format!("widget {}", slot.key), slot.component);
             steps.extend(self.dispose_step(slot.dispose)?);
@@ -566,10 +756,53 @@ impl State {
             return Ok(steps);
         };
         let (component, dispose) = (custom.component, custom.dispose);
+        if let Some(handler) = custom.set_expanded {
+            self.observed
+                .register(format!("expansion {handler}"), handler);
+        }
         self.observed
             .register(format!("header {component}"), component);
         steps.extend(self.dispose_step(dispose)?);
         Ok(steps)
+    }
+
+    /// Retains every optional capability of a factory component in its shown slot.
+    fn factory_slot(
+        &self,
+        key: String,
+        built: host::FactoryComponent,
+    ) -> wasmtime::Result<WidgetSlot> {
+        let dispose = built
+            .dispose
+            .map(|dispose| self.table.get(&dispose).map(|identity| identity.0))
+            .transpose()?;
+        Ok(WidgetSlot {
+            key,
+            component: built.component.rep(),
+            dispose,
+            set_expanded: built.set_expanded.as_ref().map(Resource::rep),
+            width: built.width,
+        })
+    }
+
+    /// Shows the editor a factory built, keeping the custom editor it extends.
+    fn show_built_editor(
+        &mut self,
+        factory: u32,
+        built: host::EditorBuilt,
+    ) -> wasmtime::Result<()> {
+        let custom = built
+            .custom
+            .map(|custom| self.table.delete(custom).map(|widget| widget.0))
+            .transpose()?;
+        let slot = EditorSlot {
+            factory,
+            component: built.component.rep(),
+            editor: built.editor.rep(),
+            custom,
+        };
+        show_editor(&mut self.observed, slot);
+        Ok(())
     }
 
     /// Shows a built widget, or returns the failure that ends its operation.
@@ -579,47 +812,55 @@ impl State {
         value: host::LocalResult,
     ) -> wasmtime::Result<Option<String>> {
         match (nested, value) {
+            (Nested::CredentialBackend(expected), host::LocalResult::Unit(actual)) => {
+                assert_eq!(actual.err(), expected);
+                Ok(None)
+            }
+            (Nested::CredentialFallback(expected), host::LocalResult::AuthFallback(actual)) => {
+                assert_eq!(actual, expected);
+                Ok(actual.err())
+            }
             (Nested::Footer, host::LocalResult::Factory(Ok(built))) => {
-                let dispose = built
-                    .dispose
-                    .map(|dispose| self.table.get(&dispose).map(|identity| identity.0))
-                    .transpose()?;
-                self.observed.ui.footer.custom = Some(WidgetSlot {
-                    key: "footer".to_owned(),
-                    component: built.component.rep(),
-                    dispose,
-                });
+                let slot = self.factory_slot("footer".to_owned(), built)?;
+                self.observed.ui.footer.custom = Some(slot);
                 Ok(None)
             }
             (Nested::Header, host::LocalResult::Factory(Ok(built))) => {
-                let dispose = built
-                    .dispose
-                    .map(|dispose| self.table.get(&dispose).map(|identity| identity.0))
-                    .transpose()?;
-                let slot = WidgetSlot {
-                    key: "header".to_owned(),
-                    component: built.component.rep(),
-                    dispose,
-                };
+                let slot = self.factory_slot("header".to_owned(), built)?;
                 self.observed.ui.header.install(Some(slot));
                 Ok(None)
             }
             (Nested::Factory(key), host::LocalResult::Factory(Ok(built))) => {
-                let dispose = built
-                    .dispose
-                    .map(|dispose| self.table.get(&dispose).map(|identity| identity.0))
-                    .transpose()?;
-                self.observed.ui.widgets.push(WidgetSlot {
-                    key,
-                    component: built.component.rep(),
-                    dispose,
-                });
+                let slot = self.factory_slot(key, built)?;
+                self.observed.ui.widgets.push(slot);
                 Ok(None)
             }
-            (
+            (Nested::Editor(factory), host::LocalResult::EditorFactory(Ok(built))) => {
+                self.show_built_editor(factory, built)?;
+                Ok(None)
+            }
+            (Nested::Provider, host::LocalResult::AutocompleteFactory(Ok(provider))) => {
+                self.stack_provider(&provider);
+                Ok(None)
+            }
+            (Nested::Editor(_), host::LocalResult::EditorFactory(Err(error)))
+            | (Nested::Provider, host::LocalResult::AutocompleteFactory(Err(error)))
+            | (
                 _,
                 host::LocalResult::Factory(Err(error)) | host::LocalResult::Synchronous(Err(error)),
-            ) => Ok(Some(error)),
+            )
+            | (Nested::Invalidate, host::LocalResult::Unit(Err(error)))
+            | (Nested::Widget(..) | Nested::Shortcut(..), host::LocalResult::Widget(Err(error))) => {
+                Ok(Some(error))
+            }
+            (Nested::Widget(key, Some(index)), host::LocalResult::Widget(Ok(answer))) => {
+                if let host::WidgetAnswer::Component(component) = answer {
+                    let id = self.table.get(&component)?.0;
+                    let list = super::widget_lists::list(&mut self.observed, key);
+                    list.map_err(wasmtime::Error::msg)?.submenu = Some((index, id));
+                }
+                Ok(None)
+            }
             _ => Ok(None),
         }
     }
@@ -755,6 +996,7 @@ impl host::HostExtensionUiContext for State {
         self.push(super::host::Route {
             steps,
             running: None,
+            rows: None,
             result: Some(Ok(host::RouteValue::Unit)),
         })
     }
@@ -771,6 +1013,10 @@ impl host::HostExtensionUiContext for State {
         }
         let mut steps = std::collections::VecDeque::new();
         if let Some(old) = self.observed.ui.footer.custom.take() {
+            if let Some(handler) = old.set_expanded {
+                self.observed
+                    .register(format!("expansion {handler}"), handler);
+            }
             self.observed
                 .register(format!("footer {}", old.component), old.component);
             steps.extend(self.dispose_step(old.dispose)?);
@@ -782,6 +1028,7 @@ impl host::HostExtensionUiContext for State {
         self.push(super::host::Route {
             steps,
             running: None,
+            rows: None,
             result: Some(Ok(host::RouteValue::Unit)),
         })
     }
@@ -810,6 +1057,7 @@ impl host::HostExtensionUiContext for State {
         self.push(super::host::Route {
             steps,
             running: None,
+            rows: None,
             result: Some(Ok(host::RouteValue::Unit)),
         })
     }
@@ -835,6 +1083,7 @@ impl host::HostExtensionUiContext for State {
         self.push(super::host::Route {
             steps,
             running: None,
+            rows: None,
             result: Some(Ok(host::RouteValue::Unit)),
         })
     }
@@ -951,6 +1200,71 @@ impl host::HostExtensionUiContext for State {
         Ok(get_editor_text(&mut self.observed, key))
     }
 
+    fn set_editor_component(
+        &mut self,
+        this: Resource<Ui>,
+        factory: Option<Resource<super::host::Identity>>,
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let key = self.table.get(&this)?.0;
+        let target = factory
+            .as_ref()
+            .map(|factory| self.table.get(factory).map(|identity| identity.0))
+            .transpose()?;
+        let old = match set_editor_component(&mut self.observed, key, target) {
+            Ok(old) => old,
+            Err(error) => return self.routed(Err(error)),
+        };
+        if let Some(old) = old {
+            self.observed
+                .register(format!("editor component {}", old.component), old.component);
+            self.observed
+                .register(format!("editor {}", old.editor), old.editor);
+        }
+        let mut steps = std::collections::VecDeque::new();
+        if let Some(target) = target {
+            let call = host::LocalEditorFactory {
+                target,
+                tui: self.push(Tui)?,
+                theme: self.lend_editor_theme()?,
+                keybindings: self.push(super::widget_component::KeybindingsResource(0))?,
+                emitter: self.table.push(super::bus_host::Emitter { key: 0 })?,
+            };
+            steps.push_back((host::LocalCall::EditorFactory(call), Nested::Editor(target)));
+        }
+        self.push(super::host::Route {
+            steps,
+            running: None,
+            rows: None,
+            result: Some(Ok(host::RouteValue::Unit)),
+        })
+    }
+
+    fn add_autocomplete_provider(
+        &mut self,
+        this: Resource<Ui>,
+        factory: Resource<super::host::Identity>,
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        self.add_provider(&this, &factory)
+    }
+
+    fn get_editor_component(
+        &mut self,
+        this: Resource<Ui>,
+    ) -> wasmtime::Result<Result<Option<host::CurrentEditorFactory>, String>> {
+        let key = self.table.get(&this)?.0;
+        let current = match get_editor_component(&mut self.observed, key) {
+            Ok(current) => current,
+            Err(error) => return Ok(Err(error)),
+        };
+        Ok(Ok(match current {
+            None => None,
+            Some(Ok(id)) => Some(host::CurrentEditorFactory::Authored(id)),
+            Some(Err(custom)) => Some(host::CurrentEditorFactory::Host(
+                self.push(super::editor_component::ForeignFactory(custom))?,
+            )),
+        }))
+    }
+
     fn drop(&mut self, this: Resource<Ui>) -> wasmtime::Result<()> {
         self.release(this)
     }
@@ -981,6 +1295,14 @@ async fn settled(
 }
 
 impl host::HostExtensionUiContextWithStore<State> for super::host::Imports {
+    async fn custom(
+        accessor: &Accessor<State, Self>,
+        this: Resource<Ui>,
+        factory: Resource<super::host::Identity>,
+        options: Option<host::CustomUiOptions>,
+    ) -> wasmtime::Result<Result<(), String>> {
+        super::custom_host::run(accessor, this, factory, options).await
+    }
     async fn select(
         accessor: &Accessor<State, Self>,
         this: Resource<Ui>,
@@ -1050,6 +1372,17 @@ impl host::HostExtensionUiContextWithStore<State> for super::host::Imports {
 }
 
 impl host::HostTui for State {
+    fn full_redraws(&mut self, _: Resource<Tui>) -> wasmtime::Result<Result<u64, String>> {
+        self.observed.log("tui fullRedraws");
+        Ok(Ok(17))
+    }
+    fn writer(
+        &mut self,
+        _: Resource<Tui>,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        // shortcut: redraw requests only; use a real frame writer for other requests.
+        Ok(Ok(self.push(super::widget_component::WidgetResource(0))?))
+    }
     fn drop(&mut self, this: Resource<Tui>) -> wasmtime::Result<()> {
         self.release(this)
     }

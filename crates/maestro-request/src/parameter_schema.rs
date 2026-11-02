@@ -39,7 +39,7 @@ pub enum SchemaKind {
     Tuple,
     /// Alternative members, selected in declaration order.
     Union,
-    /// A map whose keys all use one declared kind.
+    /// A map whose member values take the kind declared for each name pattern they match.
     Record,
     /// A single constant value.
     Literal,

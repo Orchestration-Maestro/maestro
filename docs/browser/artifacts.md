@@ -152,11 +152,10 @@ children; retained panel placement does not change that ownership rule.
 
 Inline layout reserves a left border outside the native body. Both layouts reserve
 the tab-bar divider outside that body. Overlay uses viewport geometry and toolkit modal
-input admission with transparent backdrop paint. **The full-viewport dimmed and
-blurred backdrop is not yet composed**; [#1145](https://github.com/Orchestration-Maestro/maestro/issues/1145)
-owns it. The target dims and blurs the underlying application, while the panel's
-header, tabs and content stay sharp and interactive. No canvas-fill blur substitute
-or partial content-only dimming is included.
+input admission with transparent backdrop paint; it composes no dimmed or blurred
+backdrop. The native panel gets that backdrop from the
+[chat screen](components.md#chat-screen), which dims and blurs the application
+behind it while the panel's header, tabs and content stay sharp and interactive.
 
 ## PDF artifacts
 

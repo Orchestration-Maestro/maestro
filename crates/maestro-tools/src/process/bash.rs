@@ -277,7 +277,7 @@ async fn observe(
     std::future::pending().await
 }
 
-/// Selects entries for native environment insertion.
+/// Selects native key identity before omitting explicitly unset values at process creation.
 fn command_env(env: &ShellEnv, windows: bool) -> Vec<(&std::ffi::OsString, &std::ffi::OsString)> {
     let mut entries: Vec<_> = env.iter().collect();
     if windows {
@@ -298,6 +298,9 @@ fn command_env(env: &ShellEnv, windows: bool) -> Vec<(&std::ffi::OsString, &std:
         });
     }
     entries
+        .into_iter()
+        .filter_map(|(key, value)| value.as_ref().map(|value| (key, value)))
+        .collect()
 }
 
 #[cfg(test)]

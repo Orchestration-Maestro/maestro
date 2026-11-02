@@ -412,7 +412,8 @@ async fn supplied_operations_run_the_command(directory: &Path) {
         "shell",
         &format!(": > {}\nprintf 'process output\\n'", marker.display()),
     );
-    let operations = maestro_app::create_local_bash_operations(String::new(), Some(script.clone()));
+    let operations =
+        maestro_app::local::create_local_bash_operations(String::new(), Some(script.clone()));
     let answer: Answer = Rc::new(move |_event: &mut maestro_app::UserBashEvent| {
         Some(Interception {
             operations: Some(operations.clone()),
@@ -433,7 +434,7 @@ async fn supplied_operations_run_the_command(directory: &Path) {
 /// A rejected execution completes the row as failed and records nothing.
 async fn rejected_execution_fails_the_row(directory: &Path) {
     let script = scripted(directory, "shell", "printf 'unused\\n'");
-    let missing = maestro_app::create_local_bash_operations(
+    let missing = maestro_app::local::create_local_bash_operations(
         String::new(),
         Some("/nonexistent/shell".to_owned()),
     );
@@ -478,7 +479,7 @@ fn through(operations: ShellOperations) -> Answer {
 
 /// An answer that runs the command through a shell that does not exist.
 fn failing() -> Answer {
-    through(maestro_app::create_local_bash_operations(
+    through(maestro_app::local::create_local_bash_operations(
         String::new(),
         Some("/nonexistent/shell".to_owned()),
     ))
@@ -506,7 +507,8 @@ struct Placement {
 /// in the pending area, never in the transcript, through every interception branch.
 async fn streaming_placement(directory: &Path, (text, excluded): (&'static str, bool)) {
     let script = scripted(directory, "streaming-shell", "printf 'ran\n'");
-    let supplied = maestro_app::create_local_bash_operations(String::new(), Some(script.clone()));
+    let supplied =
+        maestro_app::local::create_local_bash_operations(String::new(), Some(script.clone()));
     let cases = [
         Placement {
             answer: default_answer(),

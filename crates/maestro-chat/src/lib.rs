@@ -4,6 +4,8 @@ pub mod components;
 
 pub use components::dynamic_border::DynamicBorder;
 
+pub use components::extension_widgets::ExtensionWidgetHost;
+
 pub use components::countdown_timer::CountdownTimer;
 
 pub use components::bordered_loader::{BorderedLoader, BorderedLoaderOptions};
@@ -58,6 +60,9 @@ pub use components::login_dialog::{
 };
 
 pub use components::session_selector::*;
+
+#[cfg(test)]
+pub(crate) use components::session_selector::list::tests::platform_keys;
 
 #[cfg(test)]
 extern crate self as maestro_chat;

@@ -13,6 +13,9 @@ pub struct Reply {
     pub args: Vec<Value>,
     /// Host result in JSON form.
     pub value: Value,
+    /// Removes a scripted response after this exact call.
+    #[serde(default)]
+    pub once: bool,
     /// Optional raw selected-record payload.
     #[serde(default)]
     pub raw: Option<String>,
@@ -83,8 +86,25 @@ struct Control {
 }
 /// One retained host session.
 #[derive(Clone, Default)]
-pub struct Reader(pub Arc<Mutex<Data>>);
+pub struct Reader(pub Arc<Mutex<Data>>, pub Arc<Mutex<CredentialCallbacks>>);
+/// Authored callbacks attached to one controlled credential resource, not its scripted replies.
+#[derive(Default)]
+pub struct CredentialCallbacks {
+    /// Backend target retained by this resource.
+    pub backend: Option<u32>,
+    /// Currently selected fallback target.
+    pub fallback: Option<u32>,
+}
 impl Reader {
+    /// Supplies scripted replies with an independent resource callback identity.
+    pub fn from_data(data: Data) -> Self {
+        Self(Arc::new(Mutex::new(data)), Arc::default())
+    }
+    /// A constructor creates a new owner over the same host-supplied script.
+    pub fn fresh(&self) -> Self {
+        Self(self.0.clone(), Arc::default())
+    }
+
     /// Look up the actual route and operands, rejecting unintended calls.
     pub fn reply(&self, method: &str, args: &[Value]) -> Result<Reply, String> {
         let mut data = self.0.lock().unwrap();
@@ -95,16 +115,27 @@ impl Reader {
         if let Some(error) = &data.error {
             return Err(error.clone());
         }
-        let reply = data
+        let index = data
             .replies
             .iter()
-            .find(|reply| reply.method == method && reply.args == args)
-            .cloned()
+            .position(|reply| reply.method == method && reply.args == args)
             .ok_or_else(|| format!("unexpected reader query: {method}"))?;
+        let reply = if data.replies[index].once {
+            data.replies.remove(index)
+        } else {
+            data.replies[index].clone()
+        };
         match reply.error {
             Some(error) => Err(error),
             None => Ok(reply),
         }
+    }
+    /// Returns independently retained provider fixtures selected by this credential owner.
+    pub fn oauth_providers(&self) -> Result<Vec<Self>, String> {
+        let providers: Vec<Data> =
+            serde_json::from_value(self.reply("get_oauth_providers", &[])?.value)
+                .map_err(|error| error.to_string())?;
+        Ok(providers.into_iter().map(Self::from_data).collect())
     }
     /// The queries the guest made, in call order.
     pub fn queries(&self) -> Vec<Query> {
@@ -215,7 +246,7 @@ impl Bank {
     pub fn control(&mut self, text: &str) {
         let control: Control = serde_json::from_str(text).unwrap();
         if let Some(data) = control.bind {
-            self.current = Reader(Arc::new(Mutex::new(data)));
+            self.current = Reader::from_data(data);
             self.stale = None;
         }
         if let Some(data) = control.update {

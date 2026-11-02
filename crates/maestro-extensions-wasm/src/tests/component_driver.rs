@@ -71,6 +71,19 @@ impl ComponentDriver {
         }
     }
 
+    /// Publishes literal theme replies for the running component's renderer.
+    pub(super) fn publish_theme(
+        &mut self,
+        palette: super::theme_host::Palette,
+    ) -> Result<(), String> {
+        started(&mut self.harness)
+            .map_err(|error| error.to_string())?
+            .observed()
+            .themes
+            .publish("dark", palette);
+        Ok(())
+    }
+
     /// Reads what the host observed; nothing before the component started.
     fn observed<T: Default>(&self, read: impl FnOnce(&Observed) -> T) -> T {
         self.harness
@@ -526,6 +539,7 @@ impl Driver for ComponentDriver {
             render,
             theme,
             invalidator,
+            None,
             Resource::new_borrow(emitter.rep()),
         );
         let rendered = harness
@@ -620,6 +634,108 @@ impl Driver for ComponentDriver {
         let rep = slot.ok_or_else(|| format!("no widget {key}"))?;
         self.render_slot(rep, width).await
     }
+    async fn editor_request(
+        &mut self,
+        request: serde_json::Value,
+    ) -> Result<serde_json::Value, String> {
+        let op = super::editor_host::op(request)?;
+        let editor = self.observed(|observed| observed.ui.editor.as_ref().map(|slot| slot.editor));
+        let editor = editor.ok_or("no authored editor")?;
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        super::editor_driver::request(harness, editor, op)
+            .await
+            .map_err(|e| e.to_string())?
+    }
+    async fn provider_request(
+        &mut self,
+        request: serde_json::Value,
+    ) -> Result<serde_json::Value, String> {
+        let op = super::provider_host::op(request)?;
+        let top = self.observed(|observed| super::provider_host::top(observed).ok());
+        let top = top.ok_or("no authored provider")?;
+        let signal = match &op {
+            super::provider_host::ProviderOp::Suggestions { signal, .. } => {
+                Some(self.key(*signal).map_err(|e| e.to_string())?)
+            }
+            _ => None,
+        };
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        super::editor_driver::provider(harness, top, op, signal)
+            .await
+            .map_err(|e| e.to_string())?
+    }
+    async fn editor_component(
+        &mut self,
+        call: super::renderer_host::Call<'_>,
+    ) -> Result<super::renderer_host::Reply, String> {
+        let component =
+            self.observed(|observed| observed.ui.editor.as_ref().map(|slot| slot.component));
+        let rep = component.ok_or("no authored editor")?;
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        let emitter = harness
+            .store
+            .data_mut()
+            .table
+            .push(super::bus_host::Emitter { key: 0 })
+            .map_err(|e| e.to_string())?;
+        let reply = component_call(harness, Resource::new_borrow(rep), call, &emitter).await?;
+        harness
+            .store
+            .data_mut()
+            .table
+            .delete(emitter)
+            .map_err(|e| e.to_string())?;
+        reply
+    }
+    async fn widget_capabilities(
+        &mut self,
+        key: &str,
+        expanded: bool,
+    ) -> Result<(Option<f64>, bool), String> {
+        let (width, handler) = self.observed(|observed| {
+            let slot = observed
+                .ui
+                .widgets
+                .iter()
+                .find(|slot| slot.key == key)
+                .unwrap();
+            (slot.width, slot.set_expanded)
+        });
+        let Some(handler) = handler else {
+            return Ok((width, false));
+        };
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        let emitter = harness
+            .store
+            .data_mut()
+            .table
+            .push(super::bus_host::Emitter { key: 0 })
+            .map_err(|e| e.to_string())?;
+        let exports = harness.exports.clone();
+        let answer = harness
+            .store
+            .run_concurrent(async |accessor| {
+                exports
+                    .call_invoke_set_expanded(
+                        accessor,
+                        borrow(handler),
+                        expanded,
+                        Resource::new_borrow(emitter.rep()),
+                    )
+                    .await
+            })
+            .await
+            .map_err(|e| e.to_string())?
+            .map_err(|e| e.to_string())?;
+        harness
+            .store
+            .data_mut()
+            .table
+            .delete(emitter)
+            .map_err(|e| e.to_string())?;
+        answer?;
+        Ok((width, true))
+    }
     async fn terminal_input(&mut self, data: &str) -> Result<Vec<serde_json::Value>, String> {
         let listeners = self.observed(super::ui_host::terminal_listeners);
         let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
@@ -683,7 +799,7 @@ impl Driver for ComponentDriver {
             .table
             .delete(emitter)
             .map_err(|e| e.to_string())?;
-        result
+        result.and_then(|result| result.prepared)
     }
     fn reborrow(&mut self, id: u32) -> Result<u32, String> {
         started(&mut self.harness)
@@ -1182,10 +1298,8 @@ impl Driver for ComponentDriver {
         let Ok(harness) = started(&mut self.harness) else {
             return;
         };
-        loop {
-            let next = harness.observed().next_to_release();
-            let Some((name, key)) = next else { break };
-            if let Err(error) = harness.release(key).await {
+        for (name, outcome) in harness.release_all().await {
+            if let Err(error) = outcome {
                 harness
                     .observed()
                     .log(format!("release {name} failed: {error}"));
@@ -1315,7 +1429,7 @@ fn send_pair_phase(
 }
 
 /// Invokes the selected exported method with the same borrowed emitter.
-async fn component_call(
+pub(super) async fn component_call(
     harness: &mut Harness,
     component: Resource<super::host::Identity>,
     call: super::renderer_host::Call<'_>,
@@ -1392,4 +1506,6 @@ async fn shell_pending(
     proceed.send(()).unwrap();
 }
 
+mod custom_footer_example;
+mod message_renderer_example;
 pub(crate) mod schema_qualification;

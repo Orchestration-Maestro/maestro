@@ -2375,7 +2375,7 @@
     }
   },
   {
-    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "test": "tool_call_keeps_length_and_error_finish_reasons",
     "input": {
       "chunks": [
         "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"FINISH_REASON_UNSPECIFIED\"}]}"
@@ -2394,7 +2394,7 @@
             }
           }
         ],
-        "stopReason": "toolUse",
+        "stopReason": "error",
         "usage": {
           "input": 0,
           "output": 0,
@@ -2486,7 +2486,7 @@
     }
   },
   {
-    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "test": "tool_call_keeps_length_and_error_finish_reasons",
     "input": {
       "chunks": [
         "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"STOP\"}]}"
@@ -2597,7 +2597,7 @@
     }
   },
   {
-    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "test": "tool_call_keeps_length_and_error_finish_reasons",
     "input": {
       "chunks": [
         "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"MAX_TOKENS\"}]}"
@@ -2616,7 +2616,7 @@
             }
           }
         ],
-        "stopReason": "toolUse",
+        "stopReason": "length",
         "usage": {
           "input": 0,
           "output": 0,
@@ -2708,7 +2708,7 @@
     }
   },
   {
-    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "test": "tool_call_keeps_length_and_error_finish_reasons",
     "input": {
       "chunks": [
         "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"SAFETY\"}]}"
@@ -2727,7 +2727,7 @@
             }
           }
         ],
-        "stopReason": "toolUse",
+        "stopReason": "error",
         "usage": {
           "input": 0,
           "output": 0,
@@ -2819,7 +2819,7 @@
     }
   },
   {
-    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "test": "tool_call_keeps_length_and_error_finish_reasons",
     "input": {
       "chunks": [
         "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"RECITATION\"}]}"
@@ -2838,7 +2838,7 @@
             }
           }
         ],
-        "stopReason": "toolUse",
+        "stopReason": "error",
         "usage": {
           "input": 0,
           "output": 0,
@@ -2930,7 +2930,7 @@
     }
   },
   {
-    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "test": "tool_call_keeps_length_and_error_finish_reasons",
     "input": {
       "chunks": [
         "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"LANGUAGE\"}]}"
@@ -2949,7 +2949,7 @@
             }
           }
         ],
-        "stopReason": "toolUse",
+        "stopReason": "error",
         "usage": {
           "input": 0,
           "output": 0,
@@ -3041,7 +3041,7 @@
     }
   },
   {
-    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "test": "tool_call_keeps_length_and_error_finish_reasons",
     "input": {
       "chunks": [
         "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"OTHER\"}]}"
@@ -3060,7 +3060,7 @@
             }
           }
         ],
-        "stopReason": "toolUse",
+        "stopReason": "error",
         "usage": {
           "input": 0,
           "output": 0,
@@ -3152,7 +3152,7 @@
     }
   },
   {
-    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "test": "tool_call_keeps_length_and_error_finish_reasons",
     "input": {
       "chunks": [
         "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"BLOCKLIST\"}]}"
@@ -3171,7 +3171,7 @@
             }
           }
         ],
-        "stopReason": "toolUse",
+        "stopReason": "error",
         "usage": {
           "input": 0,
           "output": 0,
@@ -3263,7 +3263,7 @@
     }
   },
   {
-    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "test": "tool_call_keeps_length_and_error_finish_reasons",
     "input": {
       "chunks": [
         "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"PROHIBITED_CONTENT\"}]}"
@@ -3282,7 +3282,7 @@
             }
           }
         ],
-        "stopReason": "toolUse",
+        "stopReason": "error",
         "usage": {
           "input": 0,
           "output": 0,
@@ -3374,7 +3374,7 @@
     }
   },
   {
-    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "test": "tool_call_keeps_length_and_error_finish_reasons",
     "input": {
       "chunks": [
         "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"SPII\"}]}"
@@ -3393,7 +3393,7 @@
             }
           }
         ],
-        "stopReason": "toolUse",
+        "stopReason": "error",
         "usage": {
           "input": 0,
           "output": 0,
@@ -3485,7 +3485,7 @@
     }
   },
   {
-    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "test": "tool_call_keeps_length_and_error_finish_reasons",
     "input": {
       "chunks": [
         "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"MALFORMED_FUNCTION_CALL\"}]}"
@@ -3504,7 +3504,7 @@
             }
           }
         ],
-        "stopReason": "toolUse",
+        "stopReason": "error",
         "usage": {
           "input": 0,
           "output": 0,
@@ -3596,7 +3596,7 @@
     }
   },
   {
-    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "test": "tool_call_keeps_length_and_error_finish_reasons",
     "input": {
       "chunks": [
         "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"IMAGE_SAFETY\"}]}"
@@ -3615,7 +3615,7 @@
             }
           }
         ],
-        "stopReason": "toolUse",
+        "stopReason": "error",
         "usage": {
           "input": 0,
           "output": 0,
@@ -3707,7 +3707,7 @@
     }
   },
   {
-    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "test": "tool_call_keeps_length_and_error_finish_reasons",
     "input": {
       "chunks": [
         "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"UNEXPECTED_TOOL_CALL\"}]}"
@@ -3726,7 +3726,7 @@
             }
           }
         ],
-        "stopReason": "toolUse",
+        "stopReason": "error",
         "usage": {
           "input": 0,
           "output": 0,
@@ -3818,7 +3818,7 @@
     }
   },
   {
-    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "test": "tool_call_keeps_length_and_error_finish_reasons",
     "input": {
       "chunks": [
         "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"IMAGE_PROHIBITED_CONTENT\"}]}"
@@ -3837,7 +3837,7 @@
             }
           }
         ],
-        "stopReason": "toolUse",
+        "stopReason": "error",
         "usage": {
           "input": 0,
           "output": 0,
@@ -3929,7 +3929,7 @@
     }
   },
   {
-    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "test": "tool_call_keeps_length_and_error_finish_reasons",
     "input": {
       "chunks": [
         "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"NO_IMAGE\"}]}"
@@ -3948,7 +3948,7 @@
             }
           }
         ],
-        "stopReason": "toolUse",
+        "stopReason": "error",
         "usage": {
           "input": 0,
           "output": 0,
@@ -4040,7 +4040,7 @@
     }
   },
   {
-    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "test": "tool_call_keeps_length_and_error_finish_reasons",
     "input": {
       "chunks": [
         "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"IMAGE_RECITATION\"}]}"
@@ -4059,7 +4059,7 @@
             }
           }
         ],
-        "stopReason": "toolUse",
+        "stopReason": "error",
         "usage": {
           "input": 0,
           "output": 0,
@@ -4151,7 +4151,7 @@
     }
   },
   {
-    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "test": "tool_call_keeps_length_and_error_finish_reasons",
     "input": {
       "chunks": [
         "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"IMAGE_OTHER\"}]}"
@@ -4170,7 +4170,7 @@
             }
           }
         ],
-        "stopReason": "toolUse",
+        "stopReason": "error",
         "usage": {
           "input": 0,
           "output": 0,
@@ -4213,7 +4213,7 @@
     }
   },
   {
-    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "test": "tool_call_keeps_length_and_error_finish_reasons",
     "input": {
       "chunks": [
         "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"earlier-call\",\"name\":\"inspect\",\"args\":{\"which\":\"earlier\"}}}]}}]}",
@@ -4232,7 +4232,7 @@
             }
           }
         ],
-        "stopReason": "toolUse",
+        "stopReason": "length",
         "usage": {
           "input": 0,
           "output": 0,

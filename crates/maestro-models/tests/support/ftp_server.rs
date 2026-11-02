@@ -189,7 +189,7 @@ pub struct Scenario {
     pub replies: Option<(&'static [&'static str], Dribble)>,
     /// The completion reply of a transfer, sent in pieces.
     pub completion: Option<Dribble>,
-    /// Close the control connection right after the greeting.
+    /// End the control connection's output right after the greeting.
     pub hang_up: bool,
 }
 
@@ -255,10 +255,8 @@ pub struct Closed {
 /// A running scripted server.
 pub struct Peer {
     address: SocketAddr,
-    commands: Arc<watch::Sender<Vec<String>>>,
-    written: Arc<AtomicUsize>,
-    control_closed: Arc<AtomicBool>,
-    data_closed: Arc<AtomicBool>,
+    /// Observations shared with the server worker.
+    pub(super) observed: Arc<Observed>,
     stop: Arc<AtomicBool>,
     worker: Option<JoinHandle<std::io::Result<()>>>,
 }
@@ -271,21 +269,7 @@ impl Peer {
 
     /// Commands the server has read so far.
     pub fn commands(&self) -> Vec<String> {
-        self.commands.borrow().clone()
-    }
-
-    /// Wait until the server logged `count` lines starting with `line`.
-    pub async fn reached(&self, line: &str, count: usize) {
-        let mut log = self.commands.subscribe();
-        // The peer holds the sender, so the log stays open while it is awaited.
-        log.wait_for(|log| log.iter().filter(|seen| seen.starts_with(line)).count() >= count)
-            .await
-            .ok();
-    }
-
-    /// The bytes the server wrote to its connections so far.
-    pub fn written(&self) -> usize {
-        self.written.load(Ordering::SeqCst)
+        self.observed.commands.borrow().clone()
     }
 
     /// Stop accepting connections, wait until every admitted session ended, and report what the
@@ -304,8 +288,8 @@ impl Peer {
         let worker = self.worker.take().ok_or("server already finished")?;
         worker.join().map_err(|_| "server thread panicked")??;
         Ok(Closed {
-            control: self.control_closed.load(Ordering::SeqCst),
-            data: self.data_closed.load(Ordering::SeqCst),
+            control: self.observed.control_closed.load(Ordering::SeqCst),
+            data: self.observed.data_closed.load(Ordering::SeqCst),
         })
     }
 }
@@ -354,12 +338,16 @@ impl Write for Wire {
     }
 }
 
-/// Recorded observations of one admitted session.
-struct Observed {
-    commands: Arc<watch::Sender<Vec<String>>>,
-    written: Arc<AtomicUsize>,
-    control_closed: Arc<AtomicBool>,
-    data_closed: Arc<AtomicBool>,
+/// What the server observed about its connections, shared with the peer that reports it.
+pub(super) struct Observed {
+    /// Commands the server read, as its log.
+    pub(super) commands: watch::Sender<Vec<String>>,
+    /// The bytes the server wrote to every connection.
+    pub(super) written: Arc<AtomicUsize>,
+    /// Whether the client closed the control connection.
+    pub(super) control_closed: AtomicBool,
+    /// Whether the client closed a data connection.
+    pub(super) data_closed: AtomicBool,
 }
 
 impl Observed {
@@ -388,7 +376,7 @@ fn session(control: TcpStream, scenario: &Scenario, observed: &Observed) -> std:
         None => reply(&mut control, scenario.greeting)?,
     }
     if scenario.hang_up {
-        return Ok(());
+        return end_stream(&control.stream);
     }
     let mut data: Option<TcpListener> = None;
     loop {
@@ -476,11 +464,23 @@ fn close_data(stream: &mut Wire, observed: &Observed) -> std::io::Result<()> {
     // A client that closed the connection first ends the dialogue just as surely as one that
     // read every byte, so the observation covers both shapes.
     observed.data_closed.store(true, Ordering::SeqCst);
-    if let Err(error) = stream.stream.shutdown(std::net::Shutdown::Write) {
+    end_stream(&stream.stream)
+}
+
+/// Close the write side of `stream` and read what the client still sends until it closes.
+///
+/// Closing with the client's bytes unread would answer them with a reset, and some hosts,
+/// macOS among them, report that reset to the client before the end of stream it follows.
+///
+/// # Errors
+/// Returns the write shutdown or read failure, except the broken pipe, reset, aborted and
+/// not-connected errors of a peer that already closed, which end the stream normally.
+fn end_stream(mut stream: &TcpStream) -> std::io::Result<()> {
+    if let Err(error) = stream.shutdown(std::net::Shutdown::Write) {
         return if vanished(&error) { Ok(()) } else { Err(error) };
     }
     let mut exhausted = Vec::new();
-    match stream.stream.read_to_end(&mut exhausted) {
+    match stream.read_to_end(&mut exhausted) {
         Err(error) if vanished(&error) => Ok(()),
         other => other.map(drop),
     }
@@ -659,11 +659,9 @@ fn accept_until_stopped(
         let script = &scenarios[served.min(last)];
         served += 1;
         if let Err(error) = session(control, script, observed) {
-            // A client that went away mid-reply is a completed session, not a peer failure.
-            if !matches!(
-                error.kind(),
-                std::io::ErrorKind::BrokenPipe | std::io::ErrorKind::ConnectionReset
-            ) {
+            // A client that went away mid-reply is a completed session, not a peer failure;
+            // Windows reports the closed connection as aborted rather than reset.
+            if !vanished(&error) {
                 return Err(error);
             }
             // A client that closed its connection took its control connection with it.
@@ -680,27 +678,21 @@ fn accept_until_stopped(
 pub fn serve(scenarios: Vec<Scenario>) -> TestResult<Peer> {
     let listener = TcpListener::bind("127.0.0.1:0")?;
     let address = listener.local_addr()?;
-    let commands = Arc::new(watch::Sender::new(Vec::new()));
-    let written = Arc::new(AtomicUsize::new(0));
-    let control_closed = Arc::new(AtomicBool::new(false));
-    let data_closed = Arc::new(AtomicBool::new(false));
+    let observed = Arc::new(Observed {
+        commands: watch::Sender::new(Vec::new()),
+        written: Arc::new(AtomicUsize::new(0)),
+        control_closed: AtomicBool::new(false),
+        data_closed: AtomicBool::new(false),
+    });
     let stop = Arc::new(AtomicBool::new(false));
-    let observed = Observed {
-        commands: Arc::clone(&commands),
-        written: Arc::clone(&written),
-        control_closed: Arc::clone(&control_closed),
-        data_closed: Arc::clone(&data_closed),
-    };
     let stopping = Arc::clone(&stop);
+    let observing = Arc::clone(&observed);
     let worker = std::thread::spawn(move || {
-        accept_until_stopped(&listener, &stopping, &scenarios, &observed)
+        accept_until_stopped(&listener, &stopping, &scenarios, &observing)
     });
     Ok(Peer {
         address,
-        commands,
-        written,
-        control_closed,
-        data_closed,
+        observed,
         stop,
         worker: Some(worker),
     })

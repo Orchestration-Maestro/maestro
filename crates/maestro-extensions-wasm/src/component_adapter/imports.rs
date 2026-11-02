@@ -17,6 +17,21 @@ mod credentials;
 #[macro_use]
 mod catalog;
 
+/// Built-in constructors declared on the same canonical import trait.
+#[macro_use]
+mod builtin_tools;
+
+/// Native helper declarations on the same canonical import trait.
+#[macro_use]
+mod native_helpers;
+/// Custom component and overlay declarations on the same canonical import trait.
+#[macro_use]
+mod overlays;
+
+/// Declarations of the capabilities lent to component factories on the same import trait.
+#[macro_use]
+mod factories;
+
 /// The callbacks one tool registers beside its metadata.
 pub struct ToolCallbacks<'a, C> {
     /// Optional argument preparation.
@@ -37,20 +52,19 @@ pub struct Dialog<'a, S> {
     pub timeout: Option<f64>,
 }
 
+/// Optional retained OAuth implementation with its label and callback-server metadata.
+pub type ProviderOAuth<'a, C> = Option<(&'a C, &'a str, Option<bool>)>;
+
+/// Optional streaming and OAuth capabilities of the same provider registration.
+pub type ProviderRegistration<'a, C> = (Option<&'a C>, ProviderOAuth<'a, C>);
+
 /// The host's imports and resources at the wire level: the generated bindings inside a
 /// component, an in-process host where the same logic runs natively.
 ///
 /// Owner handles are released by dropping them. Each method stands for one host call.
-pub trait Imports: Clone + 'static {
-    /// Formats all floating-point byte counts directly.
-    fn native_format_size(&self, bytes: f64) -> ExtensionResult<String>;
-    /// Reads metadata numbers without passing them through JSON.
-    fn native_frontmatter(
-        &self,
-        content: &str,
-    ) -> ExtensionResult<crate::bindings::maestro::extension::host::FrontmatterDocument>;
-    /// Forwards ordinary helper operands synchronously.
-    fn native_helper(&self, operation: &str, data: &str) -> ExtensionResult<String>;
+pub trait Imports: super::native_imports::NativeImports + Clone + 'static {
+    builtin_tool_imports!();
+    native_helper_imports!();
     credential_imports!();
     /// Forwards fork through the owned host capability.
     fn fork<'a>(
@@ -301,6 +315,8 @@ pub trait Imports: Clone + 'static {
 
     /// Owner handle of a host-owned callback identity.
     type Callback: 'static;
+    /// Registers the borrowed callback identity on the supplied native path.
+    fn watch(&self, path: String, listener: &Self::Callback) -> ExtensionResult<Self::Watcher>;
     /// Independently retained theme owner.
     type Theme: 'static;
     /// Reads the theme name.
@@ -356,8 +372,6 @@ pub trait Imports: Clone + 'static {
     type BashOutput: 'static;
     /// Delivers one uninterpreted output chunk.
     fn bash_output(&self, output: &Self::BashOutput, bytes: &[u8]) -> ExtensionResult<()>;
-    /// Host-owned cancellation flag.
-    type Signal: 'static;
     /// Context with the live capabilities every callback receives.
     type Context: 'static;
     /// Context that also has the session-replacing operations.
@@ -395,6 +409,8 @@ pub trait Imports: Clone + 'static {
         description: Option<&str>,
         handler: &Self::Callback,
     ) -> ExtensionResult<()>;
+    /// Offers one JSON load-time input to the original host registration owner.
+    fn contribute_load_time(&self, contributions: &str) -> ExtensionResult<()>;
     /// Forwards flag options unchanged.
     fn register_flag(&self, name: &str, options: &FlagOptions) -> ExtensionResult<()>;
     /// Returns the host-resolved value.
@@ -524,32 +540,8 @@ pub trait Imports: Clone + 'static {
     /// The label timestamp retained by this node.
     fn node_label_timestamp(&self, resource: &Self::Node) -> ExtensionResult<Option<String>>;
 
-    /// Terminal handle lent to a component factory.
-    type Tui: 'static;
-    /// Redraw capability of one tool row.
-    type Invalidator: 'static;
-    /// Redraws the tool row behind `invalidator`.
-    fn invalidate(&self, invalidator: &Self::Invalidator) -> ExtensionResult<()>;
-    /// Footer metadata lent to a footer factory.
-    type FooterData: 'static;
-    /// Reads the current branch.
-    fn footer_get_git_branch(&self, footer: &Self::FooterData) -> ExtensionResult<Option<String>>;
-    /// Reads the extension statuses in insertion order.
-    fn footer_get_extension_statuses(
-        &self,
-        footer: &Self::FooterData,
-    ) -> ExtensionResult<Vec<(String, String)>>;
-    /// Reads the count of providers with available models.
-    fn footer_get_available_provider_count(
-        &self,
-        footer: &Self::FooterData,
-    ) -> ExtensionResult<f64>;
-    /// Adds the branch change listener under `listener`, returning its host remover.
-    fn footer_on_branch_change(
-        &self,
-        footer: &Self::FooterData,
-        listener: &Self::Callback,
-    ) -> ExtensionResult<Self::Subscription>;
+    overlay_imports!();
+    factory_imports!();
     /// Independently owned host capability.
     type Ui: 'static;
     /// Independently owned host capability.
@@ -627,6 +619,20 @@ pub trait Imports: Clone + 'static {
     fn ui_set_editor_text(&self, resource: &Self::Ui, text: &str) -> ExtensionResult<()>;
     /// Reads the host editor's current text.
     fn ui_get_editor_text(&self, resource: &Self::Ui) -> ExtensionResult<String>;
+    /// Forwards the editor factory, which the host runs before answering, or its removal.
+    fn ui_set_editor_component(
+        &self,
+        resource: &Self::Ui,
+        factory: Option<&Self::Callback>,
+    ) -> ExtensionResult<()>;
+    /// Reads the current editor factory.
+    fn ui_get_editor_component(&self, ui: &Self::Ui) -> ExtensionResult<super::CurrentFactory>;
+    /// Forwards a provider factory, which the host runs before answering.
+    fn ui_add_autocomplete_provider(
+        &self,
+        resource: &Self::Ui,
+        factory: &Self::Callback,
+    ) -> ExtensionResult<()>;
     /// Reads the UI's live theme.
     fn ui_theme(&self, resource: &Self::Ui) -> ExtensionResult<Self::Theme>;
     /// Lists every available theme.

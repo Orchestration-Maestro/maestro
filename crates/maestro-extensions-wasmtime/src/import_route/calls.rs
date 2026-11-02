@@ -2,10 +2,8 @@
 use crate::{
     context_imports::{CommandContext, Context},
     guest_calls::{
-        BashRequest, Call, Callback, RegisteredCall, SynchronousKind,
-        events::Returned,
-        renderers::{ComponentCall, ComponentMethod},
-        tools::ToolCall,
+        BashRequest, Call, Callback, RegisteredCall, SynchronousKind, events::Returned,
+        renderers::ComponentCall, tools::ToolCall,
     },
     guest_exports::{
         bash::Capabilities as BashResources,
@@ -15,11 +13,23 @@ use crate::{
     },
     local_resources::effects::{EmitterEndpoint, ThemeEndpoint},
 };
-use wasmtime::component::{ComponentType, Lift, Lower, Resource, ResourceTable};
+use wasmtime::component::{ComponentType, Lower, Resource, ResourceTable};
 
+mod component;
+use component::{LocalFocus, LocalKey, LocalRender, LocalUnit};
 mod credentials;
+mod file_operations;
+mod results;
+use file_operations::{LocalEdit, LocalFind, LocalGrep, LocalLs, LocalRead, LocalWrite};
+pub(super) use results::LocalResult;
+mod custom;
+mod editors;
+mod provider;
 mod ui;
-use ui::{LocalFactory, LocalTerminalInput, LocalToolRender};
+use ui::{
+    LocalExpanded, LocalFactory, LocalHighlight, LocalStyle, LocalTerminalInput, LocalToolRender,
+    LocalWidget,
+};
 mod tool;
 
 /// Owned operands of one nested renderer call.
@@ -34,40 +44,6 @@ pub(super) struct LocalRenderer {
     expanded: bool,
     /// Transferred theme capability.
     theme: Resource<ThemeEndpoint>,
-    /// Independent native invocation frame.
-    emitter: Resource<EmitterEndpoint>,
-}
-
-/// Owned operands of one nested component render.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(super) struct LocalRender {
-    /// Authored identity of the retained component.
-    target: u32,
-    /// Actual caller viewport width.
-    width: u32,
-    /// Independent native invocation frame.
-    emitter: Resource<EmitterEndpoint>,
-}
-
-/// Owned operands of one nested input or invalidation.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(super) struct LocalUnit {
-    /// Authored identity of the retained component.
-    target: u32,
-    /// Literal input, or absence for invalidation.
-    data: Option<String>,
-    /// Independent native invocation frame.
-    emitter: Resource<EmitterEndpoint>,
-}
-
-/// Owned operands of one nested key-release query.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(super) struct LocalKey {
-    /// Authored identity of the retained component.
-    target: u32,
     /// Independent native invocation frame.
     emitter: Resource<EmitterEndpoint>,
 }
@@ -200,36 +176,19 @@ pub(super) struct LocalBash {
     resources: BashResources,
 }
 
-/// Owned operands of one nested credential backend method.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(super) struct LocalBackend {
-    /// Authored backend identity.
-    target: u32,
-    /// Invocation-local native update.
-    update: Resource<crate::local_resources::credential_scope::Endpoint>,
-    /// Whether the author must await its update.
-    asynchronous: bool,
-}
-/// Owned operands of one nested fallback lookup.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(super) struct LocalFallback {
-    /// Authored resolver identity.
-    target: u32,
-    /// Literal provider.
-    provider: String,
-}
 /// The nested same-instance target and its owned operands.
 #[derive(ComponentType, Lower)]
 #[component(variant)]
 pub(super) enum LocalCall {
+    /// Original OAuth interaction.
+    #[component(name = "oauth")]
+    OAuth(credentials::LocalOAuth),
     /// Authored backend and still-borrowed native update.
     #[component(name = "auth-backend")]
-    AuthBackend(LocalBackend),
+    AuthBackend(credentials::LocalBackend),
     /// Authored fallback with its original optional result.
     #[component(name = "auth-fallback")]
-    AuthFallback(LocalFallback),
+    AuthFallback(credentials::LocalFallback),
     /// A message renderer.
     #[component(name = "renderer")]
     Renderer(LocalRenderer),
@@ -239,9 +198,18 @@ pub(super) enum LocalCall {
     /// A retained component input or invalidation.
     #[component(name = "unit")]
     Unit(LocalUnit),
+    /// A retained expansion callback.
+    #[component(name = "expanded")]
+    Expanded(LocalExpanded),
     /// A retained component key-release query.
     #[component(name = "key")]
     Key(LocalKey),
+    /// A retained component's optional focus state.
+    #[component(name = "focused")]
+    Focused(LocalKey),
+    /// A retained component's synchronous focus assignment.
+    #[component(name = "set-focused")]
+    SetFocused(LocalFocus),
     /// Tool argument preparation.
     #[component(name = "prepare")]
     Prepare(LocalPrepare),
@@ -293,69 +261,54 @@ pub(super) enum LocalCall {
     /// A component factory.
     #[component(name = "factory")]
     Factory(LocalFactory),
+    /// A custom factory's synchronous prefix.
+    #[component(name = "custom-factory")]
+    CustomFactory(custom::Prefix),
+    /// An independently owned custom factory continuation.
+    #[component(name = "custom-future")]
+    CustomFuture(u32),
     /// A tool rendering.
     #[component(name = "tool-render")]
     ToolRender(LocalToolRender),
-}
-
-/// The nested call's own result, returned to the native caller that asked for it.
-#[derive(ComponentType, Lift)]
-#[component(variant)]
-pub(super) enum LocalResult {
-    /// Exact optional fallback value or authored error.
-    #[component(name = "auth-fallback")]
-    AuthFallback(Result<Option<String>, String>),
-    /// Optional retained component identity, or the authored error.
-    #[component(name = "renderer")]
-    Renderer(Result<Option<Resource<Callback>>, String>),
-    /// Exact rendering lines or the authored error.
-    #[component(name = "render")]
-    Render(Result<Vec<String>, String>),
-    /// Unit result or the authored error.
-    #[component(name = "unit")]
-    Unit(Result<(), String>),
-    /// Key-release preference or the authored error.
-    #[component(name = "key")]
-    Key(Result<bool, String>),
-    /// Prepared argument document or the authored error.
-    #[component(name = "prepared")]
-    Prepared(Result<String, String>),
-    /// The terminal input listener's decision or its error.
-    #[component(name = "terminal-input")]
-    TerminalInput(Result<Option<crate::guest_calls::terminal::Decision>, String>),
-    /// Unit result of a synchronous prefix, or the authored error.
-    #[component(name = "synchronous")]
-    Synchronous(Result<(), String>),
-    /// The schema result with every authored diagnostic field.
-    #[component(name = "schema")]
-    Schema(Result<String, crate::schema_wire::Error>),
-    /// Selected terminal classification or retained result.
-    #[component(name = "stream")]
-    Stream(Result<crate::stream_calls::WireSelection, String>),
-    /// Original returned authored stream.
-    #[component(name = "provider")]
-    Provider(Result<Resource<Callback>, String>),
-    /// Ordinary returned-stream operation result.
-    #[component(name = "assistant")]
-    Assistant(Result<Option<String>, String>),
-    /// Event outcome, or the message rejecting the event before its handler ran.
-    #[component(name = "event")]
-    Event(Result<Returned, String>),
-    /// Optional ordered completion candidates, or the authored error.
-    #[component(name = "completion")]
-    Completion(Result<Option<Vec<Item>>, String>),
-    /// Tool result document, or the authored error.
-    #[component(name = "tool")]
-    Tool(Result<String, String>),
-    /// Optional exit status, or the authored error.
-    #[component(name = "bash")]
-    Bash(Result<Option<f64>, String>),
-    /// The built component identities, or the authored error.
-    #[component(name = "factory")]
-    Factory(Result<crate::guest_calls::factories::Built, String>),
-    /// The rendered component and new row state identities, or the authored error.
-    #[component(name = "tool-render")]
-    ToolRender(Result<crate::guest_calls::tool_renders::Rendered, String>),
+    /// A reverse read operation.
+    #[component(name = "read")]
+    Read(LocalRead),
+    /// A reverse write effect.
+    #[component(name = "write")]
+    Write(LocalWrite),
+    /// A reverse content search observation.
+    #[component(name = "grep")]
+    Grep(LocalGrep),
+    /// A reverse find observation.
+    #[component(name = "find")]
+    Find(LocalFind),
+    /// A reverse directory observation.
+    #[component(name = "ls")]
+    Ls(LocalLs),
+    /// A reverse edit effect.
+    #[component(name = "edit")]
+    Edit(LocalEdit),
+    /// An authored styling.
+    #[component(name = "style")]
+    Style(LocalStyle),
+    /// An authored highlighting.
+    #[component(name = "highlight")]
+    Highlight(LocalHighlight),
+    /// An authored widget callback.
+    #[component(name = "widget")]
+    Widget(LocalWidget),
+    /// An editor factory.
+    #[component(name = "editor-factory")]
+    EditorFactory(editors::LocalEditorFactory),
+    /// A request on an authored editor.
+    #[component(name = "editor")]
+    Editor(editors::LocalEditor),
+    /// A request on an authored completion provider.
+    #[component(name = "autocomplete")]
+    Autocomplete(editors::LocalAutocomplete),
+    /// A completion provider factory.
+    #[component(name = "autocomplete-factory")]
+    AutocompleteFactory(editors::LocalAutocompleteFactory),
 }
 
 /// Marshals owned operands without entering a new canonical guest activation.
@@ -364,6 +317,7 @@ pub(super) fn lower(
     call: &Call<Callback>,
 ) -> wasmtime::Result<LocalCall> {
     Ok(match call {
+        Call::OAuth(call) => credentials::oauth(table, call)?,
         Call::Credential(call) => credentials::lower(table, call)?,
         Call::Renderer(call) => LocalCall::Renderer(LocalRenderer {
             target: call.handler.id,
@@ -372,7 +326,7 @@ pub(super) fn lower(
             theme: table.push(call.theme.clone())?,
             emitter: table.push(call.emitter.clone())?,
         }),
-        Call::Component(call) => component(table, call)?,
+        Call::Component(call) => component::lower(table, call)?,
         Call::Tool(ToolCall::Prepare {
             handler,
             args,
@@ -383,31 +337,24 @@ pub(super) fn lower(
             args: args.clone(),
             emitter: table.push(emitter.clone())?,
         }),
-        Call::Provider(call) => LocalCall::Provider(crate::provider_calls::LocalProvider {
-            target: call.handler.id,
-            data: call.data.clone(),
-            input: call.input.lower(table)?,
-        }),
-        Call::Assistant(call) => LocalCall::Assistant(crate::provider_calls::LocalAssistant {
-            target: call.handler.id,
-            operation: call.operation,
-            data: call.data.clone(),
-            signal: call
-                .signal
-                .clone()
-                .map(|signal| table.push(signal))
-                .transpose()?,
-        }),
+        call @ (Call::Provider(_) | Call::Assistant(_)) => provider::lower(table, call)?,
         Call::Stream(call) => LocalCall::Stream(crate::stream_calls::Local::new(call)),
+        Call::Custom(call) => custom::lower(table, call)?,
         Call::Schema(call) => LocalCall::Schema(LocalSchema {
             target: call.handler.id,
             operation: call.operation.clone(),
             node: table.push(call.node.clone())?,
             emitter: table.push(call.emitter.clone())?,
         }),
-        call @ (Call::ToolRender(_) | Call::Factory(_) | Call::TerminalInput(_)) => {
-            ui::lower(table, call)?
-        }
+        call @ (Call::ToolRender(_)
+        | Call::Factory(_)
+        | Call::TerminalInput(_)
+        | Call::Paint(_)
+        | Call::Widget(_)) => ui::lower(table, call)?,
+        call @ (Call::EditorFactory(_)
+        | Call::Editor(_)
+        | Call::Autocomplete(_)
+        | Call::AutocompleteFactory(_)) => editors::lower(table, call)?,
         Call::Synchronous(call) => LocalCall::Synchronous(LocalSynchronous {
             target: call.handler.id,
             kind: call.kind,
@@ -416,32 +363,6 @@ pub(super) fn lower(
         }),
         Call::Registered(call) => registered(table, call)?,
         call => asynchronous(table, call)?,
-    })
-}
-
-/// Marshals one retained component method.
-fn component(
-    table: &mut ResourceTable,
-    call: &ComponentCall<Callback>,
-) -> wasmtime::Result<LocalCall> {
-    Ok(match call {
-        ComponentCall::Render(owner, width, emitter, _) => LocalCall::Render(LocalRender {
-            target: owner.id,
-            width: *width,
-            emitter: table.push(emitter.clone())?,
-        }),
-        ComponentCall::Unit(owner, method, emitter, _) => LocalCall::Unit(LocalUnit {
-            target: owner.id,
-            data: match method {
-                ComponentMethod::Input(data) => Some(data.clone()),
-                ComponentMethod::Invalidate => None,
-            },
-            emitter: table.push(emitter.clone())?,
-        }),
-        ComponentCall::WantsKeyRelease(owner, emitter, _) => LocalCall::Key(LocalKey {
-            target: owner.id,
-            emitter: table.push(emitter.clone())?,
-        }),
     })
 }
 
@@ -470,6 +391,12 @@ fn registered(
 /// Marshals the remaining asynchronous callbacks with their original capabilities.
 fn asynchronous(table: &mut ResourceTable, call: &Call<Callback>) -> wasmtime::Result<LocalCall> {
     Ok(match call {
+        call @ (Call::Read(_)
+        | Call::Write(_)
+        | Call::Edit(_)
+        | Call::Find(_)
+        | Call::Grep(_)
+        | Call::Ls(_)) => file_operations::lower(call)?,
         Call::Event(call) => LocalCall::Event(LocalEvent {
             target: call.handler.id,
             event: call.event.clone(),
@@ -515,7 +442,8 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
     value: LocalResult,
 ) -> wasmtime::Result<()> {
     match (call, value) {
-        (Call::Credential(call), value) => credentials::settle(call, value)?,
+        (Call::Custom(call), value) => custom::settle(store, call, value)?,
+        (call @ (Call::Credential(_) | Call::OAuth(_)), value) => credentials::settle(call, value)?,
         (Call::Renderer(call), LocalResult::Renderer(value)) => {
             let value = match value {
                 Ok(component) => Ok(component
@@ -529,6 +457,9 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
             let _ = reply.send(value);
         }
         (Call::Component(ComponentCall::Unit(_, _, _, reply)), LocalResult::Unit(value)) => {
+            let _ = reply.send(value);
+        }
+        (Call::Component(ComponentCall::Focused(_, _, reply)), LocalResult::Focused(value)) => {
             let _ = reply.send(value);
         }
         (Call::Component(ComponentCall::WantsKeyRelease(_, _, reply)), LocalResult::Key(value)) => {
@@ -547,26 +478,24 @@ pub(super) fn settle<T: crate::callback_imports::CallbackView>(
         (Call::Schema(call), LocalResult::Schema(value)) => {
             let _ = call.reply.send(Ok(value));
         }
-        (Call::TerminalInput(call), LocalResult::TerminalInput(value)) => {
-            let _ = call.reply.send(value);
-        }
-        (Call::ToolRender(call), LocalResult::ToolRender(value)) => {
-            let value = match value {
-                Ok(rendered) => Ok(crate::guest_exports::rendered_owners(store, rendered)?),
-                Err(error) => Err(error),
-            };
-            let _ = call.reply.send(value);
-        }
-        (Call::Factory(call), LocalResult::Factory(value)) => {
-            let value = match value {
-                Ok(built) => Ok(crate::guest_exports::retained(store, built)?),
-                Err(error) => Err(error),
-            };
-            let _ = call.reply.send(value);
-        }
         (Call::Synchronous(call), LocalResult::Synchronous(value)) => {
             let _ = call.completion.send(value);
         }
+        (
+            call @ (Call::TerminalInput(_)
+            | Call::ToolRender(_)
+            | Call::Factory(_)
+            | Call::Paint(_)
+            | Call::Widget(_)),
+            value,
+        ) => ui::settle(store, call, value)?,
+        (
+            call @ (Call::EditorFactory(_)
+            | Call::Editor(_)
+            | Call::Autocomplete(_)
+            | Call::AutocompleteFactory(_)),
+            value,
+        ) => editors::settle(store, call, value)?,
         (call, value) => settle_asynchronous(store, call, value)?,
     }
     Ok(())
@@ -618,6 +547,15 @@ fn settle_asynchronous<T: crate::callback_imports::CallbackView>(
         (Call::Tool(ToolCall::Execute { reply, .. }), LocalResult::Tool(value)) => {
             let _ = reply.send(value);
         }
+        (
+            call @ (Call::Read(_)
+            | Call::Write(_)
+            | Call::Edit(_)
+            | Call::Grep(_)
+            | Call::Find(_)
+            | Call::Ls(_)),
+            value,
+        ) => file_operations::settle(call, value)?,
         (Call::Bash(call), LocalResult::Bash(value)) => {
             let _ = call.reply.send(value);
         }

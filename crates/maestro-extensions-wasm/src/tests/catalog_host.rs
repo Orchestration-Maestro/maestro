@@ -2,8 +2,8 @@
 use super::reader_host::{Data as Replies, Reader};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
+use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
 /// Supplied usage, without integer conversion.
 #[derive(Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -98,13 +98,13 @@ impl Bank {
             self.data = state;
         }
         if let Some(data) = c.registry {
-            self.registry = Reader(Arc::new(Mutex::new(data)));
+            self.registry = Reader::from_data(data);
         }
         if let Some(data) = c.registry_update {
             *self.registry.0.lock().unwrap() = data;
         }
         if let Some(data) = c.model {
-            self.model = Reader(Arc::new(Mutex::new(data)));
+            self.model = Reader::from_data(data);
         }
         if let Some(data) = c.model_update {
             *self.model.0.lock().unwrap() = data;
@@ -174,6 +174,7 @@ pub fn resolved(value: &Value) -> maestro_request::model_registry::ResolvedReque
                 .map(|p| (p[0].as_str().unwrap().into(), p[1].as_str().unwrap().into()))
                 .collect()
         }),
+        base_url: None,
     }
 }
 
@@ -209,6 +210,7 @@ impl host::HostModelRegistry for State {
         self.push(super::host::Route {
             steps: std::collections::VecDeque::new(),
             running: None,
+            rows: None,
             result: Some(result),
         })
     }
@@ -249,6 +251,7 @@ impl host::HostModelRegistry for State {
         self.push(super::host::Route {
             steps: std::collections::VecDeque::new(),
             running: None,
+            rows: None,
             result: Some(result),
         })
     }
@@ -266,6 +269,7 @@ impl host::HostModelRegistry for State {
         self.push(super::host::Route {
             steps: std::collections::VecDeque::new(),
             running: None,
+            rows: None,
             result: Some(result),
         })
     }
@@ -284,15 +288,19 @@ impl host::HostModelRegistry for State {
         &mut self,
         this: Resource<Reader>,
         model: String,
-    ) -> wasmtime::Result<Result<bool, String>> {
-        Ok(self.table.get(&this)?.flag("isUsingOAuth", &[json!(model)]))
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let result = self.table.get(&this)?.flag("isUsingOAuth", &[json!(model)]);
+        self.routed_value(result.map(host::RouteValue::Boolean))
     }
     fn register_provider(
         &mut self,
         this: Resource<Reader>,
         name: String,
         config: String,
-        _stream: Option<Resource<super::host::Identity>>,
+        _callbacks: (
+            Option<Resource<super::host::Identity>>,
+            Option<(Resource<super::host::Identity>, String, Option<bool>)>,
+        ),
     ) -> wasmtime::Result<Resource<super::host::Route>> {
         let result = self
             .table
@@ -344,12 +352,13 @@ impl host::HostModelRegistryWithStore<State> for Imports {
         accessor.with(|mut a| {
             let s = a.get();
             let answer = auth(s.table.get(&this)?, &model).map(|v| match resolved(&v) {
-                crate::ResolvedRequestAuth::Ok { api_key, headers } => {
-                    host::ResolvedRequestAuth::Ok(host::RequestAuth {
-                        api_key,
-                        headers: headers.map(|h| h.into_iter().collect()),
-                    })
-                }
+                crate::ResolvedRequestAuth::Ok {
+                    api_key, headers, ..
+                } => host::ResolvedRequestAuth::Ok(host::RequestAuth {
+                    base_url: None,
+                    api_key,
+                    headers: headers.map(|h| h.into_iter().collect()),
+                }),
                 crate::ResolvedRequestAuth::Error { error } => {
                     host::ResolvedRequestAuth::Error(error)
                 }

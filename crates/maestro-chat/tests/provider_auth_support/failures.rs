@@ -220,6 +220,7 @@ pub fn bypasses() {
             rig.storage.set(
                 "maestro-custom-fallback",
                 maestro_app::AuthCredential::ApiKey(maestro_app::ApiKeyCredential {
+                    env: None,
                     key: String::new(),
                 }),
             );

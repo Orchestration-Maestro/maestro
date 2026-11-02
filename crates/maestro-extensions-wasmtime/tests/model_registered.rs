@@ -1,6 +1,7 @@
 //! Registered guest stream functions consume original native hooks and option variants.
 #![cfg(test)]
 mod affinity;
+mod oauth;
 mod retention;
 use maestro_models::*;
 use serde_json::{Value, json};

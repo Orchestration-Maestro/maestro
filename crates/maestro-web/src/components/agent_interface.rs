@@ -131,8 +131,6 @@ pub fn usage_totals<C: CustomAgentMessages>(messages: &[AgentMessage<C>]) -> Opt
 #[cfg(target_arch = "wasm32")]
 mod browser;
 #[cfg(target_arch = "wasm32")]
-mod connection;
-#[cfg(target_arch = "wasm32")]
 mod send;
 #[cfg(target_arch = "wasm32")]
 mod session;

@@ -34,7 +34,7 @@ impl<D: 'static> DomContent for ToolMessage<D> {
             .tool_call
             .as_deref()
             .ok_or_else(|| ToolUiError::Presentation("Missing tool call".into()))?;
-        let rendered = dispatch(self, call)?;
+        let rendered = dispatch(self, call, view)?;
         let placed = root
             .owner
             .as_ref()

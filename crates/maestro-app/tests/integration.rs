@@ -1,13 +1,22 @@
 //! Shared integration-test executable.
 #![cfg(test)]
 
+mod agent_session_auto_compaction_queue_checks;
+mod agent_session_branch_summary_checks;
 mod agent_session_branching_checks;
+mod agent_session_compaction_checks;
+mod agent_session_compaction_suite_checks;
 mod agent_session_concurrent_checks;
+mod agent_session_custom_message_checks;
+mod agent_session_input_checks;
 mod agent_session_model_extension_checks;
+mod agent_session_next_turn_checks;
 mod agent_session_prompt_checks;
 mod agent_session_queue_checks;
+mod agent_session_reload_checks;
 mod agent_session_retry_checks;
 mod agent_session_retry_events_checks;
+mod agent_session_run_checks;
 mod agent_session_runtime_checks;
 mod agent_session_runtime_events_checks;
 mod agent_session_stats_checks;
@@ -23,6 +32,7 @@ mod analysis_usage;
 mod application_keybindings;
 mod artifact_runtime_access;
 mod attachment_loading;
+mod base_package_loading;
 #[path = "docx_support/body_tree.rs"]
 mod body_tree;
 mod browser_contributions;
@@ -50,8 +60,11 @@ mod clipboard_status;
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "support/command_operations.rs"]
 mod command_operations;
+mod compaction_extensions_checks;
 mod configuration_paths;
 mod context_discovery;
+mod context_usage_estimates;
+mod daemon_connection;
 #[cfg(unix)]
 #[path = "support/default_configuration.rs"]
 mod default_configuration;
@@ -86,6 +99,7 @@ mod footer_metadata;
 mod footer_support;
 mod footer_watch;
 mod helper_launches;
+mod hold_unchecked_text_checks;
 mod install_reporting;
 mod installation_kind;
 #[cfg(not(target_arch = "wasm32"))]
@@ -194,6 +208,7 @@ mod support {
     pub mod attachments;
     pub mod browser_records;
     pub mod browser_storage_records;
+    pub mod compaction;
     #[cfg(not(target_arch = "wasm32"))]
     pub mod document_attachments;
     #[cfg(not(target_arch = "wasm32"))]
@@ -232,3 +247,5 @@ mod workbooks;
 mod artifact_presentation_support;
 
 mod executable_schemas;
+
+mod session_decisions;

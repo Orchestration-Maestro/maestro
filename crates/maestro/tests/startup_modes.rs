@@ -184,3 +184,46 @@ fn initial_resources(initial: &Value, root: &Root, base: &std::path::Path) {
     );
     assert!(initial["commands"].to_string().contains("resource-one"));
 }
+
+#[test]
+fn compiled_user_bash_operations_reach_the_interactive_shell_cursor() {
+    let root = Root::new();
+    root.models("http://127.0.0.1:1/v1");
+    std::fs::write(
+        root.path("agent/settings.json"),
+        r#"{"shellPath":"/missing/user-shell"}"#,
+    )
+    .unwrap();
+    let session = root.path("shell.jsonl");
+    std::fs::write(&session, json!({"type":"session","version":3,"id":"local-shell","timestamp":"2026-01-01T00:00:00.000Z","cwd":root.path("project")}).to_string()+"\n").unwrap();
+    let component = std::env::var("MAESTRO_LOCAL_SHELL_COMPONENT").unwrap();
+    let command = "exec 2>&1; printf '\\033[31mRAW\\033[0m\\000\\r\\n'; exit 7";
+    let output = crate::support::screen::shell(
+        &root,
+        &[
+            "--provider",
+            "startup",
+            "--model",
+            "controlled",
+            "--extension",
+            &component,
+            "--session",
+            session.to_str().unwrap(),
+        ],
+        &format!("!{command}"),
+    );
+    assert!(output.contains("RAW"));
+    let history = std::fs::read_to_string(session).unwrap();
+    let records: Vec<Value> = history
+        .lines()
+        .map(|line| serde_json::from_str::<Value>(line).unwrap())
+        .filter_map(|record| {
+            (record["message"]["role"] == "bashExecution").then(|| record["message"].clone())
+        })
+        .collect();
+    assert_eq!(records.len(), 1, "{history}");
+    assert_eq!(records[0]["command"], command);
+    assert_eq!(records[0]["output"], "RAW\n");
+    assert_eq!(records[0]["exitCode"], 7.0);
+    assert_eq!(records[0]["cancelled"], false);
+}

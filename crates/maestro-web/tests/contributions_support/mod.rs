@@ -43,6 +43,7 @@ pub(crate) fn view() -> Rc<DomView> {
         highlighter: Rc::new(maestro_theme::SyntectHighlighter::new().unwrap()),
         pack: Rc::new(crate::brand::pack("brand.json").unwrap()),
         mode: maestro_theme::BrandMode::Dark,
+        tool_renderers: Rc::default(),
     })
 }
 /// Replace only localization, keeping the supplied document, syntax engine and brand operands.

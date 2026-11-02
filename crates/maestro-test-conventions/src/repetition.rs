@@ -6,6 +6,12 @@ use syn::visit::Visit;
 
 use crate::source::{Member, Source, cfg_test, test_layout};
 
+#[cfg(test)]
+thread_local! {
+    /// Markdown parses performed by the documentation check on this thread.
+    pub(crate) static MARKDOWN_PARSES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
 /// Reject repeated documentation and invalid test source layouts.
 pub(super) fn check(members: &[Member]) -> Result<(), String> {
     for member in members {
@@ -79,6 +85,18 @@ impl Documentation {
 
     /// Compare physical lines, excluding parser-selected code block ranges.
     fn check(&self, source: &Source) -> Result<(), String> {
+        let mut previous = None;
+        if !self
+            .markdown
+            .lines()
+            .map(str::trim)
+            .filter(|line| !line.is_empty())
+            .any(|line| previous.replace(line) == Some(line))
+        {
+            return Ok(());
+        }
+        #[cfg(test)]
+        MARKDOWN_PARSES.set(MARKDOWN_PARSES.get() + 1);
         let document = parse_with_options(self.markdown.clone(), MarkedOptions::Documentation);
         let mut code = Vec::new();
         code_ranges(&document.nodes, &mut code);

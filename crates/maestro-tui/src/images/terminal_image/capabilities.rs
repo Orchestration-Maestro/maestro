@@ -1,11 +1,22 @@
 //! Environment-based terminal support detection.
 use super::{ImageProtocol, TerminalCapabilities, TerminalImage};
 
+/// Name of the variable through which a terminal announces its program.
+///
+/// Image and hyperlink detection reads it, and the workspace daemon sets it for pane children.
+pub const TERM_PROGRAM: &str = "TERM_PROGRAM";
+
+/// The terminal program name a workspace pane announces to its children.
+///
+/// The daemon writes it for pane children, and detection reads it before the markers a pane
+/// child can inherit from the terminal around the daemon.
+pub const PANE_TERM_PROGRAM: &str = "maestro";
+
 impl TerminalImage {
     /// Reads current terminal hints without populating the cache.
     #[must_use]
     pub fn detect_capabilities(&self) -> TerminalCapabilities {
-        let program = (self.environment)("TERM_PROGRAM")
+        let program = (self.environment)(TERM_PROGRAM)
             .unwrap_or_default()
             .to_lowercase();
         let term = (self.environment)("TERM")
@@ -20,6 +31,13 @@ impl TerminalImage {
             return TerminalCapabilities {
                 true_color,
                 ..TerminalCapabilities::default()
+            };
+        }
+        if program == PANE_TERM_PROGRAM {
+            return TerminalCapabilities {
+                images: None,
+                true_color,
+                hyperlinks: true,
             };
         }
         let images = if present("KITTY_WINDOW_ID")

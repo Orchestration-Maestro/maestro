@@ -5,7 +5,7 @@ use std::rc::Rc;
 use super::callbacks::Identity;
 use super::exports::encode_value;
 use super::imports::{Imports, ToolCallbacks};
-use super::signals::Mirror;
+use super::signals::Binding;
 use crate::types::{CommandOptions, ExtensionHandler, ExtensionHost, ExtensionResult};
 use crate::{FlagOptions, FlagValue, ShortcutOptions, ToolDefinition};
 
@@ -13,6 +13,187 @@ use crate::{FlagOptions, FlagValue, ShortcutOptions, ToolDefinition};
 pub(super) struct Host<I: Imports>(pub(super) I);
 
 impl<I: Imports> ExtensionHost for Host<I> {
+    fn create_coding_tools(
+        &self,
+        cwd: String,
+        options: crate::ToolsOptions,
+    ) -> ExtensionResult<Vec<crate::Tool>> {
+        self.0.create_coding_tools(cwd, options)
+    }
+    fn create_coding_tool_definitions(
+        &self,
+        cwd: String,
+        options: crate::ToolsOptions,
+    ) -> ExtensionResult<Vec<crate::ToolDef>> {
+        self.0.create_coding_tool_definitions(cwd, options)
+    }
+    fn create_read_only_tools(
+        &self,
+        cwd: String,
+        options: crate::ToolsOptions,
+    ) -> ExtensionResult<Vec<crate::Tool>> {
+        self.0.create_read_only_tools(cwd, options)
+    }
+    fn create_read_only_tool_definitions(
+        &self,
+        cwd: String,
+        options: crate::ToolsOptions,
+    ) -> ExtensionResult<Vec<crate::ToolDef>> {
+        self.0.create_read_only_tool_definitions(cwd, options)
+    }
+    fn create_all_tools(
+        &self,
+        cwd: String,
+        options: crate::ToolsOptions,
+    ) -> ExtensionResult<indexmap::IndexMap<crate::ToolName, crate::Tool>> {
+        self.0.create_all_tools(cwd, options)
+    }
+    fn create_all_tool_definitions(
+        &self,
+        cwd: String,
+        options: crate::ToolsOptions,
+    ) -> ExtensionResult<indexmap::IndexMap<crate::ToolName, crate::ToolDef>> {
+        self.0.create_all_tool_definitions(cwd, options)
+    }
+
+    fn create_tool(
+        &self,
+        tool_name: &str,
+        cwd: String,
+        options: crate::ToolsOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        self.0.create_tool(tool_name, cwd, options)
+    }
+    fn create_tool_definition(
+        &self,
+        tool_name: &str,
+        cwd: String,
+        options: crate::ToolsOptions,
+    ) -> ExtensionResult<crate::ToolDef> {
+        self.0.create_tool_definition(tool_name, cwd, options)
+    }
+    fn create_local_bash_operations(
+        &self,
+        shell_path: Option<String>,
+    ) -> ExtensionResult<crate::BashOperations> {
+        self.0.create_local_bash_operations(shell_path)
+    }
+    fn create_bash_tool(
+        &self,
+        cwd: String,
+        options: crate::BashToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        self.0.create_bash_tool(cwd, options)
+    }
+    fn create_bash_tool_definition(
+        &self,
+        cwd: String,
+        options: crate::BashToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        self.0.create_bash_tool_definition(cwd, options)
+    }
+    fn with_file_mutation_queue(
+        &self,
+        file_path: String,
+        operation: Box<dyn FnOnce() -> crate::ExtensionFuture<'static, ()>>,
+    ) -> crate::ExtensionFuture<'static, ()> {
+        self.0.with_file_mutation_queue(file_path, operation)
+    }
+
+    fn create_grep_tool(
+        &self,
+        cwd: String,
+        options: crate::GrepToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        self.0.create_grep_tool(cwd, options)
+    }
+
+    fn create_grep_tool_definition(
+        &self,
+        cwd: String,
+        options: crate::GrepToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        self.0.create_grep_tool_definition(cwd, options)
+    }
+
+    fn create_ls_tool(
+        &self,
+        cwd: String,
+        options: crate::LsToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        self.0.create_ls_tool(cwd, options)
+    }
+
+    fn create_ls_tool_definition(
+        &self,
+        cwd: String,
+        options: crate::LsToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        self.0.create_ls_tool_definition(cwd, options)
+    }
+
+    fn create_find_tool(
+        &self,
+        cwd: String,
+        options: crate::FindToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        self.0.create_find_tool(cwd, options)
+    }
+
+    fn create_find_tool_definition(
+        &self,
+        cwd: String,
+        options: crate::FindToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        self.0.create_find_tool_definition(cwd, options)
+    }
+
+    fn create_edit_tool(
+        &self,
+        cwd: String,
+        options: crate::EditToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        self.0.create_edit_tool(cwd, options)
+    }
+    fn create_edit_tool_definition(
+        &self,
+        cwd: String,
+        options: crate::EditToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        self.0.create_edit_tool_definition(cwd, options)
+    }
+    fn create_write_tool(
+        &self,
+        cwd: String,
+        options: crate::WriteToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        self.0.create_write_tool(cwd, options)
+    }
+    fn create_write_tool_definition(
+        &self,
+        cwd: String,
+        options: crate::WriteToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        self.0.create_write_tool_definition(cwd, options)
+    }
+    fn create_read_tool(
+        &self,
+        cwd: String,
+        options: crate::ReadToolOptions,
+    ) -> ExtensionResult<crate::Tool> {
+        self.0.create_read_tool(cwd, options)
+    }
+    fn create_read_tool_definition(
+        &self,
+        cwd: String,
+        options: crate::ReadToolOptions,
+    ) -> ExtensionResult<crate::ToolDefinition> {
+        self.0.create_read_tool_definition(cwd, options)
+    }
+
+    fn native_io(&self) -> std::rc::Rc<dyn crate::io::NativeIo> {
+        std::rc::Rc::new(super::io::Io(self.0.clone()))
+    }
     fn native_format_size(&self, bytes: f64) -> ExtensionResult<String> {
         self.0.native_format_size(bytes)
     }
@@ -21,6 +202,12 @@ impl<I: Imports> ExtensionHost for Host<I> {
         content: &str,
     ) -> ExtensionResult<crate::bindings::maestro::extension::host::FrontmatterDocument> {
         self.0.native_frontmatter(content)
+    }
+    fn native_yaml(
+        &self,
+        content: &str,
+    ) -> ExtensionResult<Vec<crate::bindings::maestro::extension::host::FrontmatterToken>> {
+        self.0.native_yaml(content)
     }
     fn native_helper(&self, operation: &str, data: &str) -> ExtensionResult<String> {
         self.0.native_helper(operation, data)
@@ -74,9 +261,9 @@ impl<I: Imports> ExtensionHost for Host<I> {
         Box::pin(async move {
             let data = encode_value(&(command, args, options.as_ref()))?;
             let caller = options.and_then(|options| options.signal);
-            let mirror = Mirror::new(&self.0, caller.as_ref())?;
-            let result = self.0.call("exec", data, mirror.signal()).await;
-            mirror
+            let binding = Binding::new(&self.0, caller.as_ref())?;
+            let result = self.0.call("exec", data, binding.signal()).await;
+            binding
                 .settle(result)
                 .and_then(|data| super::session::decode(&data))
         })
@@ -221,6 +408,9 @@ impl<I: Imports> ExtensionHost for Host<I> {
         identity.keep(options.handler);
         Ok(())
     }
+    fn contribute_load_time(&self, contributions: serde_json::Value) -> ExtensionResult<()> {
+        self.0.contribute_load_time(&encode_value(&contributions)?)
+    }
     fn register_flag(&self, name: &str, options: FlagOptions) -> ExtensionResult<()> {
         self.0.register_flag(name, &options)
     }
@@ -288,8 +478,8 @@ impl<I: Imports> ExtensionHost for Host<I> {
             .append_entry(custom_type, data.map(|data| data.to_string()).as_deref())
     }
     fn register_provider(&self, name: &str, config: crate::ProviderConfig) -> ExtensionResult<()> {
-        super::provider_streams::register(&self.0, config, |data, stream| {
-            self.0.register_provider(name, data, stream)
+        super::provider_registration::register(&self.0, config, |text, callbacks| {
+            self.0.register_provider(name, text, callbacks)
         })
     }
     fn unregister_provider(&self, name: &str) -> ExtensionResult<()> {

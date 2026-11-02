@@ -8,6 +8,10 @@ use std::{cell::RefCell, rc::Rc};
 
 #[cfg(target_arch = "wasm32")]
 mod adapters;
+#[cfg(target_arch = "wasm32")]
+mod builtins;
+#[cfg(target_arch = "wasm32")]
+pub(crate) use builtins::register_builtin_elements;
 mod failure;
 #[cfg(target_arch = "wasm32")]
 mod host;

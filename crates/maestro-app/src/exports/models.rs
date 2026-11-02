@@ -1,5 +1,8 @@
 //! Existing models owners exposed at the application root.
 
+#[cfg(not(target_arch = "wasm32"))]
+#[doc(inline)]
+pub use maestro_models::configure_http_dispatcher;
 pub use maestro_models::{ModelCost, Usage, UsageCost};
 
 /// The conversation owner and its construction, state, input and subscription records.
@@ -36,7 +39,8 @@ pub use maestro_catalog::{
 
 pub use maestro_models::models_are_equal;
 
-/// Provider identifier resolved when no model is chosen, shared with the catalog selector.
+/// Maps each provider identifier to its default model identifier, shared with the catalog
+/// selector.
 pub use maestro_catalog::DEFAULT_MODEL_PER_PROVIDER;
 
 /// Shipped provider labels, shared with registry display-name lookups.

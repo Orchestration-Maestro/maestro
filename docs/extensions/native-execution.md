@@ -1,20 +1,29 @@
 # Native component execution
 
-`maestro-extensions-wasmtime::artifact_factory(path, installation_version)` creates a local extension
-factory for an already-built component. Pass it to
+`maestro-extensions-wasmtime::artifact_factory(path, widgets, installation)` creates a
+local extension factory for an already-built component whose host widgets `widgets`, an
+`ExtensionWidgets`, builds. Pass it to
 `maestro_extensions::load_extension_from_factory` on a Tokio local task set.
-Construction does not discover files or compile source.
+The `Installation { version, agent_dir }` value comes from the application
+configuration owner. Construction does not discover files or compile source.
 
 Compiled artifacts use Wasmtime's user cache (`$XDG_CACHE_HOME/wasmtime`, or
 `~/.cache/wasmtime` by default on Linux); cache failures fall back to compilation,
 and each load creates a fresh Store.
+
+On x86-64, extension code is compiled for the baseline feature level, not for the exact CPU
+that loads it. Compiled code is therefore the same on every x86-64 host, and a cache filled
+on one machine serves the others. Code that relies on newer instructions, such as SIMD-heavy
+loops, runs slower than code tuned to the host. Other architectures keep Wasmtime's defaults.
 
 Each instance reads the artifact's path as the `MAESTRO_EXTENSION_PATH`
 environment variable, so a component can find files installed beside it. The
 value is the factory's `path` as supplied. Through `load_extensions` that is the
 module loader's lexically normalized absolute path, which keeps
 directory-symlink spelling. It is a host path, so keep the host's separator when
-deriving sibling paths. The instance does not receive the host's own environment.
+deriving sibling paths. Other native environment entries are inherited unchanged;
+see [component operating environment](host_io.md) for the delivered access and
+remaining filesystem limitations.
 
 Each extension has one component Store and one local request receiver. Native
 contexts, UI and session owners stay on their original thread. Typed requests
@@ -36,6 +45,15 @@ call's own result arrives. Asynchronous callbacks run through their first suspen
 before the native caller continues; their tails settle afterward without blocking
 that caller. A callback that does not suspend returns its result immediately.
 Calls into other components are unaffected.
+
+Component callbacks follow the [event bus](event_bus.md) delivery rules. These
+callbacks include listener prefixes, tool argument preparation, message renderers,
+retained view render, input, key-release and invalidate methods, and compaction
+notifications. Returned values reach their native consumer unchanged; prepared
+arguments pass model argument validation before the tool executes. A returned view
+keeps its state, outlives a replaced renderer and is released by its last owner.
+Removing a subscription leaves an admitted tail and its captures running until
+the tail settles.
 
 The adapter delegates registrations and actions to
 [the extension facade](registration.md). Its fixed UI imports forward notification,

@@ -1,6 +1,54 @@
 //! Authored daemon paths rooted in a supplied agent directory.
 
 use maestro_detection::agents::{Agent, agent_label};
+use std::path::PathBuf;
+
+/// The workspace home directory the daemon observes.
+///
+/// On Unix this is `HOME` as set, including an empty value, without an account fallback.
+/// On Windows, tries usable `USERPROFILE`, rooted `HOMEDRIVE` plus `HOMEPATH`, then `HOME`.
+/// Empty Windows values and `~` are unusable; no platform consults the account directory.
+#[must_use]
+pub fn home_directory() -> Option<PathBuf> {
+    select_home(
+        if cfg!(windows) {
+            Platform::Windows
+        } else {
+            Platform::Unix
+        },
+        |key| std::env::var_os(key),
+    )
+}
+
+/// Environment precedence used for workspace homes.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Platform {
+    /// Keep HOME exactly as supplied.
+    Unix,
+    /// Prefer profile and rooted drive/path observations before HOME.
+    Windows,
+}
+
+/// Select the platform's workspace home from supplied environment observations.
+fn select_home(
+    platform: Platform,
+    mut environment: impl FnMut(&str) -> Option<std::ffi::OsString>,
+) -> Option<PathBuf> {
+    if platform == Platform::Unix {
+        return environment("HOME").map(PathBuf::from);
+    }
+    let mut usable = |key| environment(key).filter(|value| !value.is_empty() && value != "~");
+    if let Some(profile) = usable("USERPROFILE") {
+        return Some(profile.into());
+    }
+    if let (Some(mut drive), Some(path)) = (usable("HOMEDRIVE"), usable("HOMEPATH"))
+        && path.to_string_lossy().starts_with(['\\', '/'])
+    {
+        drive.push(path);
+        return Some(drive.into());
+    }
+    usable("HOME").map(PathBuf::from)
+}
 
 /// Agent-wide resources and a validated optional daemon identity.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -217,3 +265,6 @@ fn has_windows_reserved_stem_for_path_component(value: &str) -> bool {
     let stem = value.split('.').next().unwrap_or(value);
     maestro_path::win32::is_reserved(stem)
 }
+
+#[cfg(test)]
+mod tests;

@@ -1,0 +1,444 @@
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	AM	PM	
+gregory	latn	h23	%y-%2M-%2d %2H:%2m:%2s			
+persian	latn	h23	%y-%2M-%2d %2H:%2m:%2s			
+buddhist	latn	h23	%y-%2M-%2d %2H:%2m:%2s			
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	vm.	nm.	
+gregory	latn	h23	%d/%M/%y %2H:%2m:%2s			
+persian	latn	h23	%d/%M/%y %2H:%2m:%2s			
+buddhist	latn	h23	%d/%M/%y %2H:%2m:%2s			
+gregory	latn	h12	%d/%M/%y %H:%2m:%2s %p	a.g	a.k	
+gregory	latn	h12	%y/%M/%d, %H:%2m:%2s %p	AN	ANW	
+gregory	latn	h23	%y/%M/%d, %2H:%2m:%2s			
+persian	latn	h23	%y/%M/%d, %2H:%2m:%2s			
+buddhist	latn	h23	%y/%M/%d, %2H:%2m:%2s			
+gregory	latn	h12	%d/%M/%y %p %H:%2m:%2s	ጥዋት	ከሰዓት	
+gregory	latn	h12	%d‏/%M‏/%y، %H:%2m:%2s %p	ص	م	
+gregory	arab	h12	%d‏/%M‏/%y، %H:%2m:%2s %p	ص	م	
+gregory	latn	h23	%d‏/%M‏/%y، %2H:%2m:%2s			
+gregory	arab	h23	%d‏/%M‏/%y، %2H:%2m:%2s			
+persian	latn	h23	%d‏/%M‏/%y، %2H:%2m:%2s			
+buddhist	latn	h23	%d‏/%M‏/%y، %2H:%2m:%2s			
+gregory	beng	h12	%2d-%2M-%y, %p %H:%2m:%2s	পূৰ্বাহ্ন	অপৰাহ্ন	
+gregory	beng	h23	%2d-%2M-%y, %2H:%2m:%2s			
+persian	beng	h23	%2d-%2M-%y, %2H:%2m:%2s			
+buddhist	beng	h23	%2d-%2M-%y, %2H:%2m:%2s			
+gregory	latn	h12	%d/%M/%y %H:%2m:%2s %p	icheheavo	ichamthi	
+gregory	latn	h12	%d/%M/%y %H:%2m:%2s %p	AM	PM	
+gregory	latn	h23	%2d.%2M.%y, %2H:%2m:%2s			
+gregory	latn	h23	%2d.%2M.%y %2H:%2m:%2s			
+persian	latn	h23	%2d.%2M.%y %2H:%2m:%2s			
+buddhist	latn	h23	%2d.%2M.%y %2H:%2m:%2s			
+gregory	latn	h12	%2d.%2M.%y %H:%2m:%2s %p	АМ	ПМ	
+persian	latn	h23	%2d.%2M.%y, %2H:%2m:%2s			
+buddhist	latn	h23	%2d.%2M.%y, %2H:%2m:%2s			
+gregory	latn	h12	%2d.%2M.%y, %H:%2m:%2s %p	AM	PM	
+gregory	latn	h12	%d/%M/%y %H:%2m:%2s %p	I bikɛ̂glà	I ɓugajɔp	
+gregory	latn	h23	%d.%M.%y, %2H:%2m:%2s			
+persian	latn	h23	%d.%M.%y, %2H:%2m:%2s			
+buddhist	latn	h23	%d.%M.%y, %2H:%2m:%2s			
+gregory	latn	h12	%d.%M.%y, %H:%2m:%2s %p	AM	PM	
+gregory	latn	h12	%d/%M/%y %H:%2m:%2s %p	uluchelo	akasuba	
+gregory	latn	h12	%d/%M/%y %H:%2m:%2s %p	pamilau	pamunyi	
+gregory	latn	h23	%d.%2M.%y г., %2H:%2m:%2s ч.			
+persian	latn	h23	%d.%2M.%y г., %2H:%2m:%2s ч.			
+buddhist	latn	h23	%d.%2M.%y г., %2H:%2m:%2s ч.			
+gregory	latn	h12	%d.%2M.%y г., %H:%2m:%2s ч. %p	am	pm	
+gregory	deva	h12	%y-%2M-%2d %H:%2m:%2s %p	AM	PM	
+gregory	deva	h23	%y-%2M-%2d %2H:%2m:%2s			
+persian	deva	h23	%y-%2M-%2d %2H:%2m:%2s			
+buddhist	deva	h23	%y-%2M-%2d %2H:%2m:%2s			
+gregory	latn	h23	%M/%d/%y, %2H:%2m:%2s			
+persian	latn	h23	%M/%d/%y, %2H:%2m:%2s			
+buddhist	latn	h23	%M/%d/%y, %2H:%2m:%2s			
+gregory	latn	h12	%M/%d/%y, %H:%2m:%2s %p	1ka	2ja	
+gregory	beng	h12	%d/%M/%y, %H:%2m:%2s %p	AM	PM	
+gregory	beng	h23	%d/%M/%y, %2H:%2m:%2s			
+persian	beng	h23	%d/%M/%y, %2H:%2m:%2s			
+buddhist	beng	h23	%d/%M/%y, %2H:%2m:%2s			
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	སྔ་དྲོ་	ཕྱི་དྲོ་	
+gregory	latn	h23	%2d/%2M/%y, %2H:%2m:%2s			
+persian	latn	h23	%2d/%2M/%y, %2H:%2m:%2s			
+buddhist	latn	h23	%2d/%2M/%y, %2H:%2m:%2s			
+gregory	latn	h12	%2d/%2M/%y, %H:%2m:%2s %p	A.M.	G.M.	
+gregory	latn	h12	%2d-%2M-%y, %H:%2m:%2s %p	फुं	बेलासे	
+gregory	latn	h23	%2d-%2M-%y, %2H:%2m:%2s			
+persian	latn	h23	%2d-%2M-%y, %2H:%2m:%2s			
+buddhist	latn	h23	%2d-%2M-%y, %2H:%2m:%2s			
+gregory	latn	h23	%d. %M. %y. u %2H:%2m:%2s			
+gregory	latn	h23	%2d.%2M.%y. %2H:%2m:%2s			
+persian	latn	h23	%2d.%2M.%y. %2H:%2m:%2s			
+buddhist	latn	h23	%2d.%2M.%y. %2H:%2m:%2s			
+gregory	latn	h12	%2d.%2M.%y. %H:%2m:%2s %p	пре подне	поподне	
+persian	latn	h23	%d. %M. %y. u %2H:%2m:%2s			
+buddhist	latn	h23	%d. %M. %y. u %2H:%2m:%2s			
+gregory	latn	h12	%d. %M. %y. u %2H:%2m:%2s %p	a. m.	p. m.	
+gregory	latn	h12	%2d.%2M.%y %H:%2m:%2s %p	AM	PM	
+gregory	latn	h23	%d/%M/%y %H:%2m:%2s			
+persian	latn	h23	%d/%M/%y %H:%2m:%2s			
+buddhist	latn	h23	%d/%M/%y %H:%2m:%2s			
+gregory	latn	h12	%d/%M/%y %H:%2m:%2s %p	a. m.	p. m.	
+gregory	cakm	h12	%d/%M/%y %H:%2m:%2s %p	AM	PM	
+gregory	cakm	h23	%d/%M/%y %2H:%2m:%2s			
+persian	cakm	h23	%d/%M/%y %2H:%2m:%2s			
+buddhist	cakm	h23	%d/%M/%y %2H:%2m:%2s			
+gregory	latn	h12	%M/%d/%y, %H:%2m:%2s %p	AM	PM	
+gregory	latn	h12	%M/%d/%y, %H:%2m:%2s %p	ᏌᎾᎴ	ᏒᎯᏱᎢ	
+gregory	arab	h12	%d/%M/%y %H:%2m:%2s %p	ب.ن	د.ن	
+gregory	arab	h23	%d/%M/%y %2H:%2m:%2s			
+persian	arab	h23	%d/%M/%y %2H:%2m:%2s			
+buddhist	arab	h23	%d/%M/%y %2H:%2m:%2s			
+gregory	latn	h23	%d. %M. %y %H:%2m:%2s			
+persian	latn	h23	%d. %M. %y %H:%2m:%2s			
+buddhist	latn	h23	%d. %M. %y %H:%2m:%2s			
+gregory	latn	h12	%d. %M. %y %H:%2m:%2s %p	dop.	odp.	
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	ᐊᒼ	ᐲᒼ	
+gregory	latn	h23	%y.%2M.%2d, %2H:%2m:%2s			
+persian	latn	h23	%y.%2M.%2d, %2H:%2m:%2s			
+buddhist	latn	h23	%y.%2M.%2d, %2H:%2m:%2s			
+gregory	latn	h12	%y.%2M.%2d, %p %H:%2m:%2s	к. у.	к. х.	
+gregory	latn	h23	%d/%M/%y, %2H:%2m:%2s			
+persian	latn	h23	%d/%M/%y, %2H:%2m:%2s			
+buddhist	latn	h23	%d/%M/%y, %2H:%2m:%2s			
+gregory	latn	h12	%d/%M/%y, %H:%2m:%2s %p	AM	PM	
+gregory	latn	h23	%d.%M.%y, %2H.%2m.%2s			
+persian	latn	h23	%d.%M.%y, %2H.%2m.%2s			
+buddhist	latn	h23	%d.%M.%y, %2H.%2m.%2s			
+gregory	latn	h12	%d.%M.%y, %H.%2m.%2s %p	AM	PM	
+gregory	latn	h12	%d/%M/%y %H:%2m:%2s %p	Luma lwa K	luma lwa p	
+gregory	latn	h12	%d/%M/%y %H:%2m:%2s %p	Subbaahi	Zaarikay b	
+gregory	latn	h12	%d/%M/%y, %H:%2m:%2s %p	सवेर	स’ञ	
+gregory	latn	h23	%d.%M.%y %H:%2m:%2s			
+persian	latn	h23	%d.%M.%y %H:%2m:%2s			
+buddhist	latn	h23	%d.%M.%y %H:%2m:%2s			
+gregory	latn	h12	%d.%M.%y %H:%2m:%2s %p	dop.	wótp.	
+gregory	latn	h12	%d/%M/%y %H:%2m:%2s %p	idiɓa	ebyámu	
+gregory	tibt	h12	%y-%M-%d %H:%2m:%2s %p	སྔ་ཆ་	ཕྱི་ཆ་	
+gregory	tibt	h23	%y-%M-%d %2H:%2m:%2s			
+persian	tibt	h23	%y-%M-%d %2H:%2m:%2s			
+buddhist	tibt	h23	%y-%M-%d %2H:%2m:%2s			
+gregory	latn	h12	%d/%M/%y %H:%2m:%2s %p	KI	UT	
+gregory	latn	h12	%p ga %H:%2m:%2s %M/%d/%y	ŋdi	ɣetrɔ	
+gregory	latn	h23	%2H:%2m:%2s %M/%d/%y			
+persian	latn	h23	%M/%d/%y %2H:%2m:%2s			
+buddhist	latn	h23	%M/%d/%y %2H:%2m:%2s			
+gregory	latn	h12	%d/%M/%y, %H:%2m:%2s %p	π.μ.	μ.μ.	
+gregory	latn	h12	%2d/%2M/%y, %H:%2m:%2s %p	am	pm	
+gregory	latn	h12	%2d/%2M/%y, %H:%2m:%2s %p	AM	PM	
+gregory	latn	h12	%y-%2M-%2d, %H:%2m:%2s %p	a.m.	p.m.	
+gregory	latn	h23	%2d/%2M/%y, %2H.%2m.%2s			
+gregory	latn	h23	%2d/%2M/%y, %H.%2m.%2s			
+gregory	latn	h12	%d/%M/%y, %H:%2m:%2s %p	am	pm	
+gregory	latn	h23	%2d/%2M/%y, %H:%2m:%2s			
+gregory	latn	h23	%y/%2M/%2d, %H:%2m:%2s			
+gregory	latn	h12	%d/%2M/%y, %H:%2m:%2s %p	am	pm	
+gregory	latn	h23	%y-%2M-%2d, %2H:%2m:%2s			
+gregory	latn	h23	%y/%2M/%2d, %2H:%2m:%2s			
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	atm	ptm	
+gregory	latn	h23	%d/%M/%y, %H:%2m:%2s			
+gregory	latn	h12	%d/%M/%y, %H:%2m:%2s %p	a.m.	p.m.	
+gregory	latn	h12	%d/%M/%y, %2H:%2m:%2s			
+gregory	latn	h12	%d/%M/%y, %H:%2m:%2s %p	a. m.	p. m.	
+gregory	latn	h12	%2d-%2M-%y, %H:%2m:%2s %p	a. m.	p. m.	
+persian	latn	h23	%d/%M/%y, %H:%2m:%2s			
+gregory	latn	h12	%2M/%2d/%y, %H:%2m:%2s %p	a. m.	p. m.	
+buddhist	latn	h23	%d/%M/%y, %H:%2m:%2s			
+gregory	latn	h23	%y/%M/%d (%2H:%2m:%2s)			
+gregory	latn	h12	%y/%M/%d (%H:%2m:%2s %p)	AM	PM	
+gregory	latn	h12	%d/%M/%y %H:%2m:%2s %p	kíkíríg	ngəgógəle	
+persian	arabext	h23	%y/%M/%d, %H:%2m:%2s			
+gregory	arabext	h23	%y/%M/%d, %H:%2m:%2s			
+buddhist	arabext	h23	%y/%M/%d, %H:%2m:%2s			
+gregory	arabext	h12	%y/%M/%d, %H:%2m:%2s %p	ق.ظ.	ب.ظ.	
+gregory	adlm	h23	%d-%M-%y %2H:%2m:%2s			
+gregory	adlm	h12	%d-%M-%y %H:%2m:%2s %p	𞤀𞤎	𞤇𞤎	
+persian	adlm	h23	%d-%M-%y %2H:%2m:%2s			
+buddhist	adlm	h23	%d-%M-%y %2H:%2m:%2s			
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	subaka	kikiiɗe	
+gregory	latn	h23	%d.%M.%y klo %H.%2m.%2s			
+persian	latn	h23	%d.%M.%y klo %H.%2m.%2s			
+buddhist	latn	h23	%d.%M.%y klo %H.%2m.%2s			
+gregory	latn	h12	%d.%M.%y klo %H.%2m.%2s %p	ap.	ip.	
+gregory	latn	h23	%2d/%2M/%y %2H:%2m:%2s			
+gregory	latn	h23	%y-%2M-%2d %2H h %2m min %2s s			
+gregory	latn	h12	%2d/%2M/%y %H:%2m:%2s %p	AM	PM	
+persian	latn	h23	%2d/%2M/%y %2H:%2m:%2s			
+buddhist	latn	h23	%2d/%2M/%y %2H:%2m:%2s			
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	a.	p.	
+gregory	latn	h23	%d-%M-%y %2H:%2m:%2s			
+persian	latn	h23	%d-%M-%y %2H:%2m:%2s			
+buddhist	latn	h23	%d-%M-%y %2H:%2m:%2s			
+gregory	latn	h12	%d-%M-%y %H:%2m:%2s %p	AM	PM	
+gregory	latn	h12	%2d/%2M/%y, %H:%2m:%2s %p	r.n.	i.n.	
+gregory	latn	h12	%M/%d/%y %H:%2m:%2s %p	AM	PM	
+gregory	latn	h23	%M/%d/%y %2H:%2m:%2s			
+gregory	latn	h12	%d/%M/%y, %H:%2m:%2s %p	m	f	
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	vorm.	nam.	
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	Ma	Mo	
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	a.m.	p.m.	
+gregory	latn	h12	%y-%2M-%2d, %H:%2m:%2s %p	SF	YM	
+persian	latn	h23	%y-%2M-%2d, %2H:%2m:%2s			
+buddhist	latn	h23	%y-%2M-%2d, %2H:%2m:%2s			
+gregory	latn	h23	%d.%M.%y, %H:%2m:%2s			
+persian	latn	h23	%d.%M.%y, %H:%2m:%2s			
+buddhist	latn	h23	%d.%M.%y, %H:%2m:%2s			
+gregory	latn	h23	%2d. %2M. %y. %2H:%2m:%2s			
+persian	latn	h23	%2d. %2M. %y. %2H:%2m:%2s			
+buddhist	latn	h23	%2d. %2M. %y. %2H:%2m:%2s			
+gregory	latn	h12	%2d. %2M. %y. %2H:%2m:%2s %p	AM	PM	
+gregory	latn	h12	%d.%M.%y %H:%2m:%2s %p	dop.	pop.	
+gregory	latn	h23	%y. %2M. %2d. %H:%2m:%2s			
+persian	latn	h23	%y. %2M. %2d. %H:%2m:%2s			
+buddhist	latn	h23	%y. %2M. %2d. %H:%2m:%2s			
+gregory	latn	h12	%y. %2M. %2d. %p %H:%2m:%2s	de.	du.	
+gregory	latn	h23	%2d.%2M.%y, %H:%2m:%2s			
+persian	latn	h23	%2d.%2M.%y, %H:%2m:%2s			
+buddhist	latn	h23	%2d.%2M.%y, %H:%2m:%2s			
+gregory	latn	h12	%2d-%2M-%y, %H:%2m:%2s %p	AM	PM	
+gregory	latn	h23	%d/%M/%y, %2H.%2m.%2s			
+persian	latn	h23	%d/%M/%y, %2H.%2m.%2s			
+buddhist	latn	h23	%d/%M/%y, %2H.%2m.%2s			
+gregory	latn	h12	%d/%M/%y, %H.%2m.%2s %p	AM	PM	
+gregory	latn	h23	%d.%M.%y %2H:%2m:%2s			
+persian	latn	h23	%d.%M.%y %2H:%2m:%2s			
+buddhist	latn	h23	%d.%M.%y %2H:%2m:%2s			
+gregory	latn	h12	%d.%M.%y %H:%2m:%2s %p	a.m.	p.m.	
+gregory	latn	h12	%d/%M/%y, %H:%2m:%2s %p	N’ụtụtụ	N’abalị	
+gregory	latn	h12	%y-%2M-%2d %p%H:%2m:%2s	ꎸꄑ	ꁯꋒ	
+gregory	latn	h12	%d.%M.%y, %H:%2m:%2s %p	f.h.	e.h.	
+gregory	latn	h23	%y/%M/%d %H:%2m:%2s			
+persian	latn	h23	%y/%M/%d %H:%2m:%2s			
+buddhist	latn	h23	%y/%M/%d %H:%2m:%2s			
+gregory	latn	h12	%y/%M/%d %p%H:%2m:%2s	午前	午後	
+gregory	latn	h23	%M.%d.%y %2H:%2m:%2s			
+persian	latn	h23	%M.%d.%y %2H:%2m:%2s			
+buddhist	latn	h23	%M.%d.%y %2H:%2m:%2s			
+gregory	latn	h12	%M.%d.%y %H:%2m:%2s %p	mbaꞌmbaꞌ	ŋka mbɔ́t nji	
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	utuko	kyiukonyi	
+gregory	latn	h12	%2d-%2M-%y, %H:%2m:%2s %p	Isuk	Wengi	
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	n tufat	n tmeddit	
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	Ĩyakwakya	Ĩyawĩoo	
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	Muhi	Chilo	
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	Adduha	Aluula	
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	Kiroko	Hwaĩ-inĩ	
+gregory	latn	h23	%y-%d-%M, %2H:%2m:%2s			
+persian	latn	h23	%y-%d-%M, %2H:%2m:%2s			
+buddhist	latn	h23	%y-%d-%M, %2H:%2m:%2s			
+gregory	latn	h12	%y-%d-%M, %H:%2m:%2s %p	ت د	ت ك	
+gregory	latn	h23	%2d/%2M %y %2H:%2m:%2s			
+persian	latn	h23	%2d/%2M %y %2H:%2m:%2s			
+buddhist	latn	h23	%2d/%2M %y %2H:%2m:%2s			
+gregory	latn	h12	%2d/%2M %y %H:%2m:%2s %p	AM	PM	
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	krn	koosk	
+gregory	latn	h12	%y. %M. %d. %p %H:%2m:%2s	오전	오후	
+gregory	latn	h23	%y. %M. %d. %H시 %m분 %s초			
+persian	latn	h23	%y. %M. %d. %H시 %m분 %s초			
+buddhist	latn	h23	%y. %M. %d. %H시 %m분 %s초			
+gregory	latn	h12	%d-%M-%y, %p %H:%2m:%2s	AM	PM	
+gregory	latn	h23	%d-%M-%y, %2H:%2m:%2s			
+persian	latn	h23	%d-%M-%y, %2H:%2m:%2s			
+buddhist	latn	h23	%d-%M-%y, %2H:%2m:%2s			
+gregory	arabext	h12	%M/%d/%y, %H:%2m:%2s %p	AM	PM	
+gregory	arabext	h23	%M/%d/%y, %2H:%2m:%2s			
+persian	arabext	h23	%M/%d/%y, %2H:%2m:%2s			
+buddhist	arabext	h23	%M/%d/%y, %2H:%2m:%2s			
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	makeo	nyiaghuo	
+gregory	latn	h12	%d/%M/%y %H:%2m:%2s %p	sárúwá	cɛɛ́nko	
+gregory	latn	h23	%y-%2M-%2d %H:%2m:%2s			
+persian	latn	h23	%y-%2M-%2d %H:%2m:%2s			
+buddhist	latn	h23	%y-%2M-%2d %H:%2m:%2s			
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	v.M.	n.M.	
+gregory	latn	h12	%2d.%2M.%y %H:%2m:%2s %p	BN	PN	
+gregory	latn	h12	%d/%M/%y, %H:%2m:%2s %p	ए एम	पी एम	
+gregory	latn	h12	%d/%M/%y, %H:%2m:%2s %p	ଏ ଏମ	ପି ଏମ	
+gregory	latn	h12	%d/%M/%y, %H:%2m:%2s %p	ఎ ఎమ్	పి ఎమ్	
+gregory	latn	h23	%y-%2d-%2M %2H:%2m:%2s			
+persian	latn	h23	%y-%2d-%2M %2H:%2m:%2s			
+buddhist	latn	h23	%y-%2d-%2M %2H:%2m:%2s			
+gregory	latn	h12	%y-%2d-%2M %H:%2m:%2s %p	тң	тк	
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	TOO	MUU	
+gregory	latn	h12	%d.%M.%y %H:%2m:%2s %p	moies	nomëttes	
+gregory	latn	h12	%d/%M/%y %H:%2m:%2s %p	ntɔ́ngɔ́	mpókwa	
+gregory	latn	h12	%d/%M/%y, %H:%2m:%2s %p	ກ່ອນທ່ຽງ	ຫຼັງທ່ຽງ	
+persian	arabext	h23	%e %y-%2M-%2d %2H:%2m:%2s			AP
+gregory	arabext	h23	%e %y-%2M-%2d %2H:%2m:%2s			CE
+gregory	arabext	h12	%y-%2M-%2d %H:%2m:%2s %p	AM	PM	
+buddhist	arabext	h23	%e %y-%2M-%2d %2H:%2m:%2s			BE
+gregory	arabext	h12	%e %y-%2M-%2d %H:%2m:%2s %p	AM	PM	CE
+gregory	latn	h12	%y-%2M-%2d %2H:%2m:%2s %p	priešpiet	popiet	
+gregory	latn	h12	%d/%M/%y %H:%2m:%2s %p	Dinda	Dilolo	
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	OD	OT	
+gregory	latn	h23	%d.%2M.%y. %2H:%2m:%2s			
+persian	latn	h23	%d.%2M.%y., %2H:%2m:%2s			
+buddhist	latn	h23	%d.%2M.%y., %2H:%2m:%2s			
+gregory	latn	h12	%d.%2M.%y. %H:%2m:%2s %p	priekšp.	pēcp.	
+gregory	latn	h12	%d/%M/%y, %H:%2m:%2s %p	भोर	सांझ	
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	Ɛnkakɛnyá	Ɛndámâ	
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	RŨ	ŨG	
+gregory	latn	h12	%d/%M/%y %H:%2m:%2s %p	wichishu	mchochil’l	
+gregory	latn	h12	%2d-%2M-%y %H:%2m:%2s %p	AM	PM	
+gregory	latn	h23	%2d-%2M-%y %2H:%2m:%2s			
+persian	latn	h23	%2d-%2M-%y %2H:%2m:%2s			
+buddhist	latn	h23	%2d-%2M-%y %2H:%2m:%2s			
+gregory	latn	h23	%d.%M.%y г., %2H:%2m:%2s			
+persian	latn	h23	%d.%M.%y г., %2H:%2m:%2s			
+buddhist	latn	h23	%d.%M.%y г., %2H:%2m:%2s			
+gregory	latn	h12	%d.%M.%y г., %H:%2m:%2s %p	претпл.	попл.	
+gregory	latn	h23	%y.%2M.%2d %2H:%2m:%2s			
+persian	latn	h23	%y.%2M.%2d %2H:%2m:%2s			
+buddhist	latn	h23	%y.%2M.%2d %2H:%2m:%2s			
+gregory	latn	h12	%y.%2M.%2d %H:%2m:%2s %p	ү.ө.	ү.х.	
+gregory	beng	h12	%d/%M/%y, %H:%2m:%2s %p	নুমাং	PM	
+gregory	deva	h12	%d/%M/%y, %H:%2m:%2s %p	AM	PM	
+gregory	deva	h23	%d/%M/%y, %H:%2m:%2s			
+persian	deva	h23	%d/%M/%y, %H:%2m:%2s			
+buddhist	deva	h23	%d/%M/%y, %H:%2m:%2s			
+gregory	latn	h12	%d/%M/%y, %H:%2m:%2s %p	PG	PTG	
+gregory	latn	h12	%d/%M/%y %H:%2m:%2s %p	comme	lilli	
+gregory	mymr	h23	%d/%M/%y %2H:%2m:%2s			
+persian	mymr	h23	%d/%M/%y %2H:%2m:%2s			
+buddhist	mymr	h23	%d/%M/%y %2H:%2m:%2s			
+gregory	mymr	h12	%d/%M/%y %p %H:%2m:%2s	နံနက်	ညနေ	
+gregory	arabext	h23	%e %y-%2M-%2d %2H:%2m:%2s			م.
+gregory	arabext	h12	%e %y-%2M-%2d %H:%2m:%2s %p	AM	PM	م.
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	ǁgoagas	ǃuias	
+gregory	latn	h12	%d.%M.%y, %H:%2m:%2s %p	a.m.	p.m.	
+gregory	latn	h23	%d.%M.%y Klock %H.%2m:%2s			
+persian	latn	h23	%d.%M.%y Klock %H.%2m:%2s			
+buddhist	latn	h23	%d.%M.%y Klock %H.%2m:%2s			
+gregory	latn	h12	%d.%M.%y Klock %H.%2m:%2s %p	AM	PM	
+gregory	deva	h23	%y-%2M-%2d, %2H:%2m:%2s			
+gregory	deva	h12	%y-%2M-%2d, %H:%2m:%2s %p	पूर्वाह्न	अपराह्न	
+persian	deva	h23	%y-%2M-%2d, %2H:%2m:%2s			
+buddhist	deva	h23	%y-%2M-%2d, %2H:%2m:%2s			
+gregory	latn	h12	%d-%M-%y, %H:%2m:%2s %p	a.m.	p.m.	
+gregory	latn	h12	%d/%M/%y %H:%2m:%2s %p	maná	kugú	
+gregory	latn	h12	%d.%M.%y, %H:%2m:%2s %p	f.m.	e.m.	
+gregory	latn	h12	%d/%M/%y %H:%2m:%2s %p	mbaʼámbaʼ	ncwònzém	
+gregory	nkoo	h23	%y / %2d / %2M %2H:%2m:%2s			
+persian	nkoo	h23	%y / %2d / %2M %2H:%2m:%2s			
+buddhist	nkoo	h23	%y / %2d / %2M %2H:%2m:%2s			
+gregory	nkoo	h12	%y / %2d / %2M %H:%2m:%2s %p	ߛ	ߥ	
+gregory	latn	h12	%d/%M/%y %H:%2m:%2s %p	RW	TŊ	
+gregory	latn	h23	%2d/%2M/%y %2Hh%2m %2s seg.			
+persian	latn	h23	%2d/%2M/%y %2Hh%2m %2s seg.			
+buddhist	latn	h23	%2d/%2M/%y %2Hh%2m %2s seg.			
+gregory	latn	h12	%2d/%2M/%y %Hh%2m:%2s %p	AM	PM	
+gregory	latn	h12	%M/%d/%y, %H:%2m:%2s %p	WD	WB	
+gregory	latn	h12	%y-%2M-%2d, %H:%2m:%2s %p	AM	PM	
+gregory	arabext	h23	%y-%2M-%2d %2H:%2m:%2s			
+persian	arabext	h23	%y-%2M-%2d %2H:%2m:%2s			
+buddhist	arabext	h23	%y-%2M-%2d %2H:%2m:%2s			
+gregory	latn	h12	%d/%M/%y, %H:%2m:%2s %p	FM	FI	
+gregory	latn	h23	%d.%2M.%y, %2H:%2m:%2s			
+persian	latn	h23	%d.%2M.%y, %2H:%2m:%2s			
+buddhist	latn	h23	%d.%2M.%y, %2H:%2m:%2s			
+gregory	latn	h12	%d.%2M.%y, %H:%2m:%2s %p	AM	PM	
+gregory	latn	h12	%d.%M.%y %H:%2m:%2s %p	AM	PM	
+persian	arabext	h23	%e %y-%2M-%2d %H:%2m:%2s			AP
+gregory	arabext	h23	%e %y-%2M-%2d %H:%2m:%2s			م.
+gregory	arabext	h12	%y-%2M-%2d %H:%2m:%2s %p	غ.م.	غ.و.	
+buddhist	arabext	h23	%e %y-%2M-%2d %H:%2m:%2s			BE
+gregory	arabext	h12	%e %y-%2M-%2d %H:%2m:%2s %p	غ.م.	غ.و.	م.
+gregory	latn	h12	%2d/%2M/%y, %H:%2m:%2s %p	a.m.	p.m.	
+gregory	latn	h12	%2d-%2M-%y, %H:%2m:%2s %p	a.m.	p.m.	
+gregory	latn	h12	%d-%M-%y, %H:%2m:%2s %p	AM	PM	
+gregory	latn	h12	%d/%M/%y %H:%2m:%2s %p	Z.MU.	Z.MW.	
+gregory	latn	h12	%2d.%2M.%y, %H:%2m:%2s %p	a.m.	p.m.	
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	kang’ama	kingoto	
+gregory	deva	h23	%d/%M/%y, %2H:%2m:%2s			
+persian	deva	h23	%d/%M/%y, %2H:%2m:%2s			
+buddhist	deva	h23	%d/%M/%y, %2H:%2m:%2s			
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	ЭИ	ЭК	
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	Tesiran	Teipa	
+gregory	olck	h12	%y-%2M-%2d %H:%2m:%2s %p	AM	PM	
+gregory	olck	h23	%y-%2M-%2d %2H:%2m:%2s			
+persian	olck	h23	%y-%2M-%2d %2H:%2m:%2s			
+buddhist	olck	h23	%y-%2M-%2d %2H:%2m:%2s			
+gregory	latn	h12	%M/%d/%y %H:%2m:%2s %p	Lwamilawu	Pashamihe	
+gregory	latn	h23	%d/%M/%y ê %2H:%2m:%2s			
+persian	latn	h23	%d/%M/%y ê %2H:%2m:%2s			
+buddhist	latn	h23	%d/%M/%y ê %2H:%2m:%2s			
+gregory	latn	h12	%d/%M/%y ê %H:%2m:%2s %p	AM	PM	
+gregory	arab	h12	%y-%2M-%2d %H:%2m:%2s %p	صبح	شام	
+gregory	arab	h23	%y-%2M-%2d %2H:%2m:%2s			
+persian	arab	h23	%y-%2M-%2d %2H:%2m:%2s			
+buddhist	arab	h23	%y-%2M-%2d %2H:%2m:%2s			
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	i.b.	e.b.	
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	ND	LK	
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	tifawt	tadggʷat	
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	ⵜⵉⴼⴰⵡⵜ	ⵜⴰⴷⴳⴳⵯⴰⵜ	
+buddhist	latn	h23	%e %y-%2M-%2d %2H:%2m:%2s			ပ.သ.
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	တၸ.	တလ.	
+gregory	latn	h23	%y-%M-%d, %2H.%2m.%2s			
+persian	latn	h23	%y-%M-%d, %2H.%2m.%2s			
+buddhist	latn	h23	%y-%M-%d, %2H.%2m.%2s			
+gregory	latn	h12	%y-%M-%d, %p %H.%2m.%2s	පෙ.ව.	ප.ව.	
+gregory	latn	h12	%d. %M. %y %H:%2m:%2s %p	AM	PM	
+gregory	latn	h23	%d. %M. %y, %2H:%2m:%2s			
+persian	latn	h23	%d. %M. %y, %2H:%2m:%2s			
+buddhist	latn	h23	%d. %M. %y, %2H:%2m:%2s			
+gregory	latn	h12	%d. %M. %y, %H:%2m:%2s %p	dop.	pop.	
+gregory	latn	h23	%d.%M.%y %H.%2m.%2s			
+persian	latn	h23	%d.%M.%y %H.%2m.%2s			
+buddhist	latn	h23	%d.%M.%y %H.%2m.%2s			
+gregory	latn	h12	%d.%M.%y %H.%2m.%2s %p	ip.	ep.	
+gregory	latn	h12	%M/%d/%y, %H:%2m:%2s %p	GH	GD	
+gregory	latn	h12	%d.%M.%y, %H:%2m:%2s %p	p.d.	m.d.	
+gregory	latn	h23	%d. %M. %y. %2H:%2m:%2s			
+persian	latn	h23	%d. %M. %y. %2H:%2m:%2s			
+buddhist	latn	h23	%d. %M. %y. %2H:%2m:%2s			
+gregory	latn	h12	%d. %M. %y. %H:%2m:%2s %p	AM	PM	
+gregory	latn	h23	%d.%M.%y %2H.%2m.%2s			
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	fm	em	
+gregory	latn	h12	%d/%M/%y، %H:%2m:%2s %p	܏ܩܛ‌	܏ܒܛ‌	
+gregory	latn	h23	%d/%M/%y، %2H:%2m:%2s			
+persian	latn	h23	%d/%M/%y، %2H:%2m:%2s			
+buddhist	latn	h23	%d/%M/%y، %2H:%2m:%2s			
+gregory	latn	h12	%2d.%2M.%y %H:%2m:%2s %p	do połedniŏ	po połedniu	
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	Taparachu	Ebongi	
+gregory	latn	h12	%M/%d/%y %H:%2m:%2s %p	ቅ.ቀ.	ድ.ቀ.	
+gregory	latn	h12	%2d.%2M.%y, %H:%2m:%2s %p	go.öň	go.soň	
+gregory	latn	h12	%d/%M/%y %H:%2m:%2s %p	HH	EA	
+gregory	latn	h23	#%y)#%M)#%d #%2H:%2m:%2s			
+persian	latn	h23	#%y)#%M)#%d #%2H:%2m:%2s			
+buddhist	latn	h23	#%y)#%M)#%d #%2H:%2m:%2s			
+gregory	latn	h12	#%y)#%M)#%d #%H:%2m:%2s %p	AM	PM	
+gregory	latn	h12	%2d.%2M.%y %p %H:%2m:%2s	ÖÖ	ÖS	
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	Zdat azal	Ḍeffir aza	
+gregory	latn	h23	%y-%d-%M، %2H:%2m:%2s			
+persian	latn	h23	%y-%d-%M، %2H:%2m:%2s			
+buddhist	latn	h23	%y-%d-%M، %2H:%2m:%2s			
+gregory	latn	h12	%y-%d-%M، %H:%2m:%2s %p	چ.ب	چ.ك	
+gregory	latn	h12	%2d.%2M.%y, %H:%2m:%2s %p	дп	пп	
+gregory	latn	h12	%d/%M/%y، %H:%2m:%2s %p	AM	PM	
+gregory	arabext	h12	%d/%M/%y، %H:%2m:%2s %p	AM	PM	
+gregory	latn	h12	%2d/%2M/%y %H:%2m:%2s %p	ТО	ТК	
+gregory	latn	h12	%2d/%2M/%y, %H:%2m:%2s %p	TO	TK	
+gregory	latn	h23	%2H:%2m:%2s %d/%M/%y			
+persian	latn	h23	%2H:%2m:%2s %d/%M/%y			
+buddhist	latn	h23	%2H:%2m:%2s %d/%M/%y			
+gregory	latn	h12	%H:%2m:%2s %p %d/%M/%y	SA	CH	
+gregory	latn	h23	%2d-%2M-%y - %2H:%2m:%2s			
+persian	latn	h23	%2d-%2M-%y - %2H:%2m:%2s			
+buddhist	latn	h23	%2d-%2M-%y - %2H:%2m:%2s			
+gregory	latn	h12	%2d-%2M-%y - %H:%2m:%2s %p	Sub	Ngo	
+gregory	latn	h12	%d/%M/%y, %H:%2m:%2s %p	भ्यागा	दपेहरा/संजा	
+gregory	latn	h12	%y-%2M-%2d %H:%2m:%2s %p	Munkyo	Eigulo	
+gregory	latn	h12	%d/%M/%y %H:%2m:%2s %p	kiɛmɛ́ɛm	kisɛ́ndɛ	
+gregory	latn	h12	%d-%M-%y %H:%2m:%2s %p	פֿאַרמיטאָג	נאָכמיטאָג	
+gregory	latn	h12	%d/%M/%y, %H:%2m:%2s %p	Àárọ̀	Ọ̀sán	
+gregory	latn	h12	%2d/%2M/%y %H:%2m:%2s %p	a. m.	p. m.	
+gregory	latn	h12	%y/%M/%d %p%H:%2m:%2s	上晝	下晝	
+gregory	latn	h23	%y/%M/%d %2H:%2m:%2s			
+gregory	latn	h23	%y/%M/%d %2H:%2m:%2s			
+persian	latn	h23	%y/%M/%d %2H:%2m:%2s			
+buddhist	latn	h23	%y/%M/%d %2H:%2m:%2s			
+gregory	latn	h12	%y/%M/%d %p%H:%2m:%2s	上昼	下昼	
+persian	latn	h23	%y/%M/%d %2H:%2m:%2s			
+buddhist	latn	h23	%y/%M/%d %2H:%2m:%2s			
+gregory	latn	h12	%y/%M/%d %p %H:%2m:%2s	AM	PM	
+gregory	latn	h12	%d/%M/%y %p%H:%2m:%2s	上午	下午	
+gregory	latn	h12	%y年%M月%d日 %p%H:%2m:%2s	上午	下午	
+gregory	latn	h12	%y/%M/%d %p%H:%2m:%2s	上午	下午	
+gregory	latn	h12	%y/%M/%d %p%H:%2m:%2s	上午	下午	
+gregory	latn	h12	%d/%M/%y %p%H:%2m:%2s	上午	下午	

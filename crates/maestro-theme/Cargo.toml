@@ -27,7 +27,7 @@ regress = { version = "=0.12.0", features = ["prohibit-unsafe"] }
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
 maestro-listing = { path = "../maestro-listing" }
-maestro-text = { path = "../maestro-text", features = ["collation"] }
+maestro-text = { path = "../maestro-text", features = ["collation", "date-time-format"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-test-directory.workspace = true

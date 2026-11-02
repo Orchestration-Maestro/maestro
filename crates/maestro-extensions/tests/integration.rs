@@ -1,6 +1,7 @@
 //! Shared integration-test executable.
 #![cfg(test)]
 
+mod application_keybindings;
 mod callback_delivery;
 mod channel_delivery;
 mod command_contexts;

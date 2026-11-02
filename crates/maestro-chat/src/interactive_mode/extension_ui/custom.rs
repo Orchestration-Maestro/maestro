@@ -1,5 +1,6 @@
 //! Extension custom views shown in place of the editor or as overlays.
 use super::super::InteractiveMode;
+use crate::components::extension_widgets::keybindings;
 use crate::whole_cell_width::whole_cell_width;
 use maestro_app::{
     CustomClose, CustomComponentFactory, CustomFactoryOutcome, CustomUIOptions, EventError,
@@ -102,7 +103,7 @@ impl InteractiveMode {
         view.release.replace(Some(Box::new(release)));
         let closing = Rc::clone(&view);
         let close: CustomClose = Rc::new(move || closing.close());
-        let keys = (*self.keybindings).clone();
+        let keys = keybindings(self.keybindings.clone());
         match factory.call((self.ui.as_ref().clone(), self.themes.theme(), keys, close)) {
             Ok(CustomFactoryOutcome::Ready(component)) => view.install(component),
             Ok(CustomFactoryOutcome::Async(building)) => {
@@ -130,16 +131,20 @@ impl InteractiveMode {
         Listeners::try_for_each_live(&self.custom_views, CustomView::abandon)
     }
 
-    /// Puts the current editor back in place of a custom view with `text`, focused.
+    /// Removes an inline custom view's `shown` component from the dialog stack, when it was
+    /// built, then puts `text` back in the current editor.
     ///
     /// # Errors
-    /// Returns the editor's original failure, after the editor is back in place.
-    fn restore_custom_editor(&self, text: &str) -> Result<(), EventError> {
-        let editor = self.current_editor();
-        self.editor_container.clear();
-        self.editor_container.add_child(editor.clone());
-        editor.try_set_text(text)?;
-        self.ui.set_focus(Some(editor as ComponentHandle));
+    /// Returns the editor's original failure, after the stack changed.
+    fn restore_custom_editor(
+        &self,
+        shown: Option<&ComponentHandle>,
+        text: &str,
+    ) -> Result<(), EventError> {
+        if let Some(shown) = shown {
+            self.remove_dialog(shown);
+        }
+        self.current_editor().try_set_text(text)?;
         self.ui.request_render(false);
         Ok(())
     }
@@ -202,7 +207,8 @@ impl CustomView {
         Ok(removed?)
     }
 
-    /// Removes the view's own overlay, or puts the editor back with the saved text.
+    /// Removes the view's own overlay, or takes an inline view off the dialog stack and puts
+    /// the saved text back in the editor.
     ///
     /// # Errors
     /// Returns the overlay's or the editor's failure.
@@ -211,7 +217,12 @@ impl CustomView {
             return Ok(());
         };
         if !self.overlay {
-            return mode.restore_custom_editor(&self.saved_text);
+            let shown = self
+                .component
+                .borrow()
+                .as_ref()
+                .map(|component| Rc::clone(&component.component));
+            return mode.restore_custom_editor(shown.as_ref(), &self.saved_text);
         }
         let handle = self.handle.borrow().clone();
         if let Some(handle) = handle {
@@ -231,8 +242,7 @@ impl CustomView {
         };
         self.component.replace(Some(Rc::clone(&component)));
         if !self.overlay {
-            let shown = Rc::clone(&component.component);
-            mode.show_panel(Rc::clone(&shown), shown);
+            mode.push_dialog(Rc::clone(&component.component), None);
         } else if let Err(error) = self.show_overlay(&mode, &component) {
             self.fail(error);
         }

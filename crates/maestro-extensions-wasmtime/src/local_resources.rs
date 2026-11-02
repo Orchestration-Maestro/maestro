@@ -8,16 +8,29 @@ use std::{cell::RefCell, collections::BTreeMap, rc::Rc, sync::Arc};
 use tokio::sync::mpsc::{UnboundedSender, WeakUnboundedSender};
 
 pub(crate) mod bash_output;
+pub(crate) mod builtin;
+pub(crate) mod builtin_bash;
+/// Exact-name native selection with independently retained effects.
+pub(crate) mod builtin_selection;
 pub(crate) mod credential_scope;
 mod dialogs;
 pub(crate) mod effects;
 mod footer;
+pub(crate) mod http;
+pub(crate) mod local_bash;
 pub(crate) mod model_streams;
+pub(crate) mod native_io;
+pub(crate) mod native_resources;
+mod overlays;
 pub(crate) mod provider_controls;
+mod providers;
+mod rendering;
 pub(crate) mod schema;
 mod signals;
 pub(crate) mod stream_reads;
 pub(crate) mod synchronous;
+pub(crate) mod watches;
+mod widgets;
 pub(crate) use synchronous::Completion;
 
 /// Local admitted work never moves to the component's Store thread.
@@ -58,6 +71,10 @@ pub(crate) enum Message {
     Read(u64, Request),
     /// Uses the original API's registration and runtime action owners.
     Api(u64, crate::api_reads::Request),
+    /// Reads or prepares an original native built-in definition.
+    Builtin(u64, crate::builtin_reads::Request),
+    /// Constructs, executes or renders through an original native built-in owner.
+    BuiltinOperation(builtin::Operation),
     /// Registers retained callbacks through the original facade.
     Registration(u64, crate::registration_reads::Request),
     /// Uses the original facade bus for listener registration and emission.
@@ -74,6 +91,12 @@ pub(crate) enum Message {
         u64,
         crate::exec::Request,
         tokio::sync::oneshot::Sender<Result<String, String>>,
+        Admission,
+    ),
+    /// Waits through the native owner without blocking other requests.
+    Sleep(
+        native_io::Wait,
+        tokio::sync::oneshot::Sender<Result<(), String>>,
         Admission,
     ),
     /// Starts an admitted command operation without blocking request consumption.
@@ -94,8 +117,34 @@ pub(crate) enum Message {
         u64,
         std::sync::mpsc::Sender<Result<crate::history_reads::Endpoint, String>>,
     ),
+    /// Runs the retained provider's native authorization with original interaction.
+    OAuthLogin(
+        u64,
+        crate::oauth_callbacks::Controls,
+        tokio::sync::oneshot::Sender<Result<String, String>>,
+        Admission,
+    ),
+    /// Awaits token rotation while retaining the originally selected provider.
+    OAuthRefresh(
+        u64,
+        String,
+        tokio::sync::oneshot::Sender<Result<String, String>>,
+        Admission,
+    ),
+    /// Uses native interaction callbacks on this same local owner.
+    OAuthInteraction(crate::oauth_interaction::Request),
+    /// Calls an independently retained OAuth implementation.
+    OAuthProvider(u64, crate::oauth_reads::Request),
     /// Uses independently retained accepted credentials.
     Credentials(u64, crate::credential_reads::Request),
+    /// Authorizes and persists through the retained credential owner.
+    CredentialLogin(
+        u64,
+        String,
+        crate::oauth_callbacks::Controls,
+        tokio::sync::oneshot::Sender<Result<(), String>>,
+        Admission,
+    ),
     /// Resolves a key while retaining the original owner through settlement.
     CredentialKey(
         u64,
@@ -142,6 +191,14 @@ pub(crate) enum Message {
     Theme(u64, crate::theme_reads::Request),
     /// Reads or subscribes to the footer metadata lent to a footer factory.
     Footer(u64, crate::footer_data::Request),
+    /// Builds, uses or lends host widgets and styles.
+    Widgets(crate::widget_reads::WidgetMessage),
+    /// Typed operations on original application-supplied native resources.
+    Native(u64, native_resources::Request),
+    /// HTTP operations retain their native response and signal.
+    Http(u64, http::Request),
+    /// Native watch registration and explicit close on the same owner.
+    Watch(u64, watches::Request),
     /// Final release of an independently retained capability.
     Release(u64),
 }
@@ -231,14 +288,34 @@ pub(crate) use signals::SignalEndpoint;
 
 /// Independently owned capabilities, never sent to the Store.
 enum Capability {
+    /// Independently retained OAuth implementation.
+    OAuthProvider(maestro_extensions::OAuthProviderHandle),
     /// Original native options and arbitrary selected author signal bindings.
     ProviderControls(Box<provider_controls::Owner>, crate::model_calls::Scopes),
+    /// Original native notification registration, closed on its final release.
+    NativeWatcher(Rc<dyn maestro_extensions::native_io::FsWatcher>),
+    /// Original native child, independently retained after its creating callback.
+    NativeChild(Rc<dyn maestro_extensions::native_io::ChildProcess>),
+    /// Original native response, never a body snapshot.
+    NativeResponse(Rc<dyn maestro_extensions::native_io::Response>),
+    /// Original native consuming output.
+    NativeReader(Rc<dyn maestro_extensions::native_io::Readable>),
+    /// Original native ordered input.
+    NativeWriter(Rc<dyn maestro_extensions::native_io::Writable>),
     /// An independently retained enumerated schema node.
     Schema(maestro_extensions::SchemaNode),
     /// Original native model invocation buffer.
     AssistantStream(maestro_extensions::AssistantMessageEventStream),
     /// Native event buffer with caller-local completion callbacks.
     Stream(crate::local_resources::stream_reads::Owner),
+    /// Original typed native definition behind the component's tool resource.
+    Builtin(Rc<dyn crate::builtin_tools::Definition>),
+    /// Original native local backend, retained independently of a returned guest operation.
+    LocalBash(Rc<dyn maestro_extensions::BashOperations<maestro_extensions::Local>>),
+    /// Original row context, including its environment and shared state.
+    NativeRow(crate::native_renders::Row),
+    /// Original native component, not a guest proxy.
+    NativeComponent(maestro_extensions::ComponentHandle),
     /// Original guarded base or command context.
     Context(Owner),
     /// Original registration facade; its domain owner remains weakly referenced.
@@ -283,16 +360,43 @@ enum Capability {
     Footer(Rc<dyn maestro_extensions::footer_data_provider::ReadonlyFooterDataProvider>),
     /// Original redraw capability of one tool row.
     Invalidate(Rc<dyn Fn()>),
-    /// Original terminal lent to a component factory.
-    Tui {
-        /// Ownership alone crosses the opaque canonical terminal resource.
-        _owner: maestro_extensions::TUI,
-    },
+    /// A host widget the extension built.
+    Widget(Rc<crate::widget_reads::Widget>),
+    /// A lent host style.
+    Style(maestro_extensions::widgets::BorderColor),
+    /// The lent host highlighting.
+    Highlighter(Rc<crate::guest_calls::paints::HighlightFn>),
+    /// Shared native overlay placement and its bound error reporter.
+    OverlayOptions(overlays::Placement),
+    /// A shown overlay's native handle, shared with the host.
+    OverlayHandle(overlays::SharedHandle),
+    /// Original custom-component close operation.
+    CustomClose(maestro_extensions::types::CustomClose),
+    /// Original terminal lent to a component factory, with the reporter of failures of the
+    /// callbacks it runs.
+    Tui(
+        maestro_extensions::TUI,
+        Option<maestro_extensions::types::UIErrorReporter>,
+    ),
+    /// A lent settings row style.
+    RowStyle(Rc<crate::widget_lists::RowStyleFn>),
+    /// Closes an open settings submenu.
+    SubmenuDone(Rc<dyn Fn(Option<String>)>),
+    /// A keybindings manager.
+    Keybindings(maestro_extensions::widgets::ExtensionKeybindings),
+    /// A native text callback lent to an authored editor.
+    Text(maestro_extensions::widgets::TextCallback),
+    /// A native completion provider lent to the guest.
+    Provider(crate::guest_calls::providers::Native),
+    /// An editor factory another extension set.
+    EditorFactory(maestro_extensions::types::EditorFactory),
 }
 
 /// Local entries and their monotonic identities.
 #[derive(Default)]
 pub(crate) struct Resources {
+    /// Native effects supplied by the application's composition, never reconstructed here.
+    pub(crate) native_io: Option<Rc<dyn maestro_extensions::native_io::NativeIo>>,
     /// Next identity; released identities are never reused.
     next: u64,
     /// Weak native callback identities by allocation address; each weak handle keeps its
@@ -313,9 +417,20 @@ pub(crate) struct Registry {
     requests: WeakUnboundedSender<Message>,
     /// Receiver access is weak until a synchronous invocation has been admitted.
     pump: std::rc::Weak<pump::State>,
+    /// Builds the widgets whose look depends on the host.
+    widgets: Rc<dyn maestro_extensions::ExtensionWidgets>,
 }
 
 impl Registry {
+    /// Retains the actual implementation selected by native provider enumeration.
+    pub(crate) fn oauth_provider(
+        &self,
+        provider: maestro_extensions::OAuthProviderHandle,
+    ) -> Result<crate::oauth_reads::Endpoint, String> {
+        self.insert(Capability::OAuthProvider(provider))
+            .map(crate::oauth_reads::Endpoint)
+    }
+
     /// Selects the retained credentials only when the supplied lease belongs to this pump.
     pub(crate) fn credential_owner(
         &self,
@@ -541,6 +656,18 @@ pub(crate) enum Identity {
     ),
     /// The original weak schema allocation and guest callback admission.
     Schema(crate::schema_registration::Identity),
+    /// A native editor factory and the identity of the authored factory it runs.
+    EditorFactory(
+        maestro_extensions::types::WeakUIHostCall<
+            (
+                maestro_extensions::TUI,
+                maestro_extensions::widgets::EditorTheme,
+                maestro_extensions::widgets::ExtensionKeybindings,
+            ),
+            maestro_extensions::types::EditorFactoryOutcome,
+        >,
+        u32,
+    ),
 }
 impl Identity {
     /// Whether the original callback still has a strong capture owner.
@@ -548,6 +675,7 @@ impl Identity {
         match self {
             Self::Listener(weak, _) => weak.strong_count() > 0,
             Self::Schema((weak, _)) => weak.strong_count() > 0,
+            Self::EditorFactory(weak, _) => weak.alive(),
         }
     }
 }

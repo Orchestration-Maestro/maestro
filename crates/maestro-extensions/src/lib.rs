@@ -50,6 +50,8 @@ pub mod footer_data_provider;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod helpers;
 mod loader;
+/// Native effects supplied to extension adapters.
+pub mod native_io;
 /// Owned registration records and callback types.
 pub mod types;
 pub use maestro_catalog::{
@@ -61,12 +63,14 @@ pub use maestro_catalog::{
 };
 pub use maestro_models::{
     AssistantMessageEvent, AssistantMessageEventStream, AssistantMessageEventStreamPort, Base,
-    BoxFuture, Context, DoneReason, ErrorReason, EventStream, FauxAssistantMessageOptions, Invoke,
-    OAuthError, ParameterSchema, PayloadHookInput, ProviderCall, ProviderExecution,
-    ProviderInvocation, ProviderResponse, ProviderSpawner, ProviderStreamOptions, Refinement,
-    SchemaCallback, SchemaCode, SchemaNode, SharedAssistantMessage, SimpleStreamOptions,
-    StopReason, StreamFunction, StreamOptions, StreamOptionsInput, Threaded,
-    faux_assistant_message, schema_transport, stream_for, stream_simple_for,
+    BoxFuture, Context, DoneReason, ErrorReason, EventStream, FauxAssistantMessageOptions, Fetch,
+    Invoke, OAuthAuthInfo, OAuthCallbacks, OAuthCredentials, OAuthError, OAuthLoginCallbacks,
+    OAuthPrompt, OAuthProviderHandle, OAuthProviderInterface, OAuthSelectPrompt, ParameterSchema,
+    PayloadHookInput, ProviderCall, ProviderExecution, ProviderInvocation, ProviderResponse,
+    ProviderSpawner, ProviderStreamOptions, Refinement, SchemaCallback, SchemaCode, SchemaNode,
+    SharedAssistantMessage, SimpleStreamOptions, StopReason, StreamFunction, StreamOptions,
+    StreamOptionsInput, Threaded, faux_assistant_message, schema_transport, stream_for,
+    stream_simple_for,
 };
 pub use maestro_resources::SourceInfo;
 pub use maestro_session::messages::CustomMessageInput;
@@ -91,9 +95,9 @@ pub use types::{
     EditorFactory, Extension, ExtensionAPI, ExtensionCommandContext,
     ExtensionCommandContextActions, ExtensionContext, ExtensionContextActions, ExtensionExecution,
     ExtensionFlag, ExtensionShortcut, ExtensionUIContext, ExtensionUIContextBinding,
-    ExtensionUIDialogOptions, ExtensionWidgetOptions, ForkHandler, MessageRenderOptions,
-    MessageRenderer, MessageRendererCall, NavigateTreeHandler, NewSessionHandler,
-    RegisteredCommand, ReplacedSessionContext, ResolvedCommand, ShutdownHandler,
+    ExtensionUIDialogOptions, ExtensionWidgetOptions, ExtensionWidgets, ForkHandler,
+    MessageRenderOptions, MessageRenderer, MessageRendererCall, NavigateTreeHandler,
+    NewSessionHandler, RegisteredCommand, ReplacedSessionContext, ResolvedCommand, ShutdownHandler,
     SwitchSessionHandler, TerminalInputHandler, UIHostCall, WidgetPlacement,
     WorkingIndicatorOptions,
 };
@@ -102,6 +106,8 @@ pub mod runner;
 pub use runner::ExtensionRunner;
 
 pub use loader::CatalogConstruction;
+#[cfg(not(target_arch = "wasm32"))]
+pub use loader::ToolConstruction;
 pub use loader::runtime::create_extension_runtime;
 pub use maestro_models::{
     Cancellation, Local, Model, ModelThinkingLevel, SharedHandle, ToolInfo,
@@ -145,15 +151,81 @@ pub use maestro_resources::{SlashCommandInfo, SlashCommandSource};
 pub use maestro_tools::ToolRenderResultOptions;
 /// Native tool framing retained by extension registrations.
 pub use maestro_tools::ToolRenderShell;
+/// Native per-file mutation ordering shared with built-in edit and write.
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_tools::with_file_mutation_queue;
 /// Caller-local tool definitions with their original tools-owned types.
-pub use maestro_tools::types::local;
+pub mod local {
+    #[cfg(not(target_arch = "wasm32"))]
+    pub use maestro_tools::edit::local::create_edit_tool_definition;
+    #[cfg(not(target_arch = "wasm32"))]
+    pub use maestro_tools::process::bash::local::{
+        BashSpawnHook, BashToolOptions, create_bash_tool_definition, create_local_bash_operations,
+    };
+    #[cfg(not(target_arch = "wasm32"))]
+    pub use maestro_tools::read::local::create_read_tool_definition;
+    #[cfg(not(target_arch = "wasm32"))]
+    pub use maestro_tools::search::find::local::create_find_tool_definition;
+    #[cfg(not(target_arch = "wasm32"))]
+    pub use maestro_tools::search::grep::local::create_grep_tool_definition;
+    #[cfg(not(target_arch = "wasm32"))]
+    pub use maestro_tools::search::ls::local::create_ls_tool_definition;
+    pub use maestro_tools::tool_definition_wrapper::local::wrap_tool_definition;
+    #[cfg(not(target_arch = "wasm32"))]
+    pub use maestro_tools::tools::local::{
+        ToolDef, ToolsOptions, create_all_tool_definitions, create_coding_tool_definitions,
+        create_read_only_tool_definitions, create_tool_definition,
+    };
+    pub use maestro_tools::types::local::*;
+    #[cfg(not(target_arch = "wasm32"))]
+    pub use maestro_tools::write::local::create_write_tool_definition;
+}
+/// Native glob constraints forwarded to replacement find operations.
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_tools::search::find::FindGlobOptions;
+/// Retained native definitions accepted by the tools-owned execution wrapper.
+pub use maestro_tools::tool_definition_wrapper::ToolDefinitionInput;
 /// Native raw shell operands and execution family used by returned extension operations.
 #[cfg(not(target_arch = "wasm32"))]
-pub use maestro_tools::{BashError, BashExecOptions, BashExecResult, BashOperations, BashResult};
+pub use maestro_tools::{
+    BashError, BashExecOptions, BashExecResult, BashOperations, BashResult, BashSpawnContext,
+};
+/// Native file configuration and the model observation a read definition consumes.
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_tools::{
+    EditOperations, EditToolOptions, FindOperations, FindToolOptions, GrepOperations,
+    GrepToolOptions, LsOperations, LsToolOptions, ReadContext, ReadOperations, ReadToolOptions,
+    SearchTool, ToolRendererBinding, ToolsManager, WriteOperations, WriteToolOptions,
+};
 /// Native tool renderers, the row context they read and the result they render.
 pub use maestro_tools::{
     ToolRenderCall, ToolRenderContext, ToolRenderEnvironment, ToolRenderPhase, ToolRenderResult,
     ToolRenderResultCallback, ToolRendererState, output::render_utils::ToolRenderResultLike,
 };
 pub use maestro_tui::tui::{Component, ComponentHandle, InputHandler};
+/// Toolkit widgets an extension host builds, and the capability that builds the ones whose
+/// look depends on the host.
+pub mod widgets {
+    pub use crate::types::{
+        ExtensionEditor, ExtensionKeybindings, ExtensionLoader, ExtensionWidgets,
+    };
+    pub use maestro_tools::key_text;
+    pub use maestro_tui::{
+        AutocompleteProvider, AutocompleteSuggestions,
+        autocomplete::{CompletionError, CompletionOptions, CompletionResult, CursorPosition},
+    };
+    pub use maestro_tui::{
+        Box, Container, DefaultTextStyle, Markdown, MarkdownOptions, MarkdownTheme, SelectItem,
+        SelectList, SelectListLayoutOptions, SelectListTheme, SelectListTruncatePrimaryContext,
+        SettingItem, SettingsList, SettingsListTheme, Spacer, Text, TextDecoration,
+        components::settings_list::SettingsListOptions,
+        editor_component::{BorderColor, EditorComponent, EditorError, TextCallback},
+    };
+    pub use maestro_tui::{
+        Editor, EditorOptions, EditorTheme, FocusFlag, Focusable, KeybindingConflict,
+        KeybindingDefinition, KeybindingDefinitions, KeybindingKeys, KeybindingsConfig,
+        OverlayAnchor, OverlayHandle, OverlayMargin, OverlayMarginValue, OverlayOptions, SizeValue,
+        get_keybindings,
+    };
+}
 pub use maestro_tui::{AutocompleteItem, Keybinding as AppKeybinding, KeybindingsManager, TUI};

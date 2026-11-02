@@ -18,11 +18,13 @@ pub(crate) enum Request {
     RegisterProvider(
         String,
         String,
-        Option<crate::guest_calls::Handle>,
+        crate::provider_registration::Callbacks,
         Reply<()>,
     ),
     /// Removes every queued occurrence or the bound provider.
     UnregisterProvider(String, Reply<()>),
+    /// Offers JSON input through the original base registration owner's load-time channel.
+    ContributeLoadTime(String, Reply<()>),
     /// Registers metadata and seeds only the native owner's missing flag value.
     RegisterFlag(String, ExtensionFlagOptions, Reply<()>),
     /// Reads the host-resolved value for a flag registered by this extension.
@@ -63,8 +65,8 @@ impl ApiRequest for Request {
     /// Calls the real API after the pump releases its capability-table borrow.
     fn answer(self, api: &ExtensionAPI<Local>, registry: &crate::local_resources::Registry) {
         match self {
-            Self::RegisterProvider(name, config, stream, reply) => {
-                let result = crate::provider_registration::config(&config, stream, registry)
+            Self::RegisterProvider(name, config, callbacks, reply) => {
+                let result = crate::provider_registration::config(&config, callbacks, registry)
                     .and_then(|config| {
                         api.register_provider(name, config)
                             .map_err(|e| e.to_string())
@@ -72,6 +74,13 @@ impl ApiRequest for Request {
                 let _ = reply.send(result);
             }
             Self::UnregisterProvider(name, reply) => send(&reply, api.unregister_provider(&name)),
+            Self::ContributeLoadTime(payload, reply) => {
+                let result = decode(&payload).and_then(|inputs| {
+                    api.contribute_load_time(inputs)
+                        .map_err(|error| error.to_string())
+                });
+                let _ = reply.send(result);
+            }
             Self::RegisterFlag(name, options, reply) => {
                 send(&reply, api.register_flag(name, options));
             }
@@ -118,6 +127,7 @@ impl ApiRequest for Request {
             Self::RegisterProvider(_, _, _, reply)
             | Self::UnregisterProvider(_, reply)
             | Self::RegisterFlag(_, _, reply)
+            | Self::ContributeLoadTime(_, reply)
             | Self::Append(_, _, reply)
             | Self::SendMessage(_, _, reply)
             | Self::SendUserMessage(_, _, reply)

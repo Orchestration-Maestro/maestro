@@ -39,10 +39,10 @@ fn over_memory(input: &'static str) -> (Vec<String>, RpcConnectionOutcome) {
         let runtime = runtime(&local, Vec::new()).await;
         let lines = Rc::new(RefCell::new(Vec::new()));
         let written = Rc::clone(&lines);
-        let output: RpcOutput = Rc::new(move |line: &RpcLine| {
+        let output = RpcOutput::synchronous(Rc::new(move |line: &RpcLine| {
             written.borrow_mut().push(line.as_str().to_owned());
             Ok(())
-        });
+        }));
         let mut options = options(
             Rc::clone(&local),
             Rc::new(runtime),
@@ -328,10 +328,10 @@ fn native_process_reopens_and_shares_termination_delivery() {
 fn raise_termination(signal: maestro_app::TerminationSignal) {
     assert!(
         std::process::Command::new("kill")
+            // `kill -s` takes only names on some hosts; every host takes `-<number>`.
             .args([
-                "-s",
-                &signal.as_raw().to_string(),
-                &std::process::id().to_string()
+                format!("-{}", signal.as_raw()),
+                std::process::id().to_string()
             ])
             .status()
             .unwrap()

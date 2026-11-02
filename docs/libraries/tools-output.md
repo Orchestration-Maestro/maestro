@@ -134,12 +134,13 @@ It adds no runtime dependency. The BSD-3-Clause attribution is retained in
 
 ## Search program acquisition
 
-Native `maestro-tools` uses `zip =9.0.3` (MIT), default features disabled,
+Native `maestro-tools` uses `zip =9.0.5` (MIT), default features disabled,
 with `deflate-flate2`, and `owo-colors =4.2.1` (MIT, no optional features).
 Tar extraction stays the system `tar` command. HTTP uses the existing models
 transport rather than a second client. The shared
 [archive closure](document-formats.md) retains the spreadsheet parser's deflate
-features; the direct tool edge adds no codecs.
+features; the direct tool edge adds no codecs. ZIP installation uses
+`ZipArchive` for extraction, with no handoff to a streaming ZIP reader.
 
 Default ZIP extraction strips SUID, SGID and sticky bits, rejects symlink targets
 that escape the extraction destination (including through an intermediate
@@ -150,6 +151,17 @@ symlinks remain supported. These upstream security fixes are covered by
 [RUSTSEC-2026-0369](https://rustsec.org/advisories/RUSTSEC-2026-0369.html), including
 the subsequent non-streaming permission fix in ZIP 9.0.1. Installer staging and
 publication ownership are unchanged; no whole-filesystem atomicity is promised.
+
+## File search
+
+Native `maestro-tools` uses workspace-pinned `globset =0.4.20` (MIT or Unlicense;
+use MIT) with default features disabled, and workspace-pinned `regex-syntax =0.8.11`
+(MIT or Apache-2.0) with only `std`. fd matches a full-path glob against the native
+absolute path, which Windows spells with `\`, so on Windows the find tool compiles
+the glob with globset as fd does, parses that regex with regex-syntax, widens every
+separator it matches to `/` or `\`, and passes the printed regex to fd. Other hosts
+pass the glob unchanged. The closure adds `bstr =1.13.1` (MIT or Apache-2.0);
+`aho-corasick`, `regex-automata` and `regex-syntax` were already locked.
 
 ## Local shell operations
 

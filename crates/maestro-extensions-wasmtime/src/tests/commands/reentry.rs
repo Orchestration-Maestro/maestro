@@ -21,7 +21,7 @@ fn nested_admission_starts_before_native_callback_returns_and_wakes_after_stagin
         .unwrap()
         .block_on(async {
             let runner = runner("/nested-admission");
-            let (mut pump, admission) = Pump::new();
+            let (mut pump, admission) = Pump::new(crate::tests::support::widgets());
             let (start, started) = oneshot::channel();
             let (release, released) = oneshot::channel();
             let (actions, incoming, finished) =

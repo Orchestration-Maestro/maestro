@@ -7,6 +7,10 @@ pub(super) mod context_actions;
 
 pub(crate) mod api;
 mod bash_output;
+mod builtin_author;
+mod builtin_factories;
+mod builtin_local_shell;
+mod builtin_operations;
 mod callbacks;
 mod catalog;
 mod commands;

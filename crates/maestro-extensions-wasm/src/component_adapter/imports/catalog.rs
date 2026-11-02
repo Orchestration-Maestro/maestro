@@ -8,7 +8,7 @@ macro_rules! catalog_imports {
             &self,
             name: &str,
             config: &str,
-            stream: Option<&Self::Callback>,
+            callbacks: ProviderRegistration<'_, Self::Callback>,
         ) -> ExtensionResult<()>;
         /// Unregisters a provider.
         fn unregister_provider(&self, name: &str) -> ExtensionResult<()>;
@@ -64,7 +64,7 @@ macro_rules! catalog_imports {
             resource: &Self::Registry,
             name: &str,
             config: &str,
-            stream: Option<&Self::Callback>,
+            callbacks: ProviderRegistration<'_, Self::Callback>,
         ) -> ExtensionResult<()>;
         /// Forwards the corresponding host capability call.
         fn registry_unregister_provider(

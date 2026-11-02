@@ -2,21 +2,39 @@
 use std::rc::Rc;
 
 use super::renderers::with_emitter;
-use super::{Exports, Imports, callbacks};
+use super::{Exports, Imports, callbacks, widget_imports::WidgetImports};
 use crate::{
     BranchChangeListener, ComponentFactory, ExtensionComponent, ExtensionResult, FooterData,
-    FooterDataPort, FooterFactory, Subscription, TUI, TuiPort,
+    FooterDataPort, FooterFactory, Subscription, TUI,
 };
 
-/// Host terminal behind the facade.
-struct Terminal<I: Imports> {
-    /// The host the terminal belongs to.
-    _imports: I,
-    /// The lent host terminal.
-    _tui: I::Tui,
+/// Host frame writer behind the facade.
+pub(super) struct Terminal<I: WidgetImports> {
+    /// The adapter serving this frame writer.
+    pub(super) imports: I,
+    /// The lent host frame writer.
+    pub(super) tui: I::Tui,
+    /// The frame writer as a container widget, built on first use.
+    pub(super) writer: std::cell::OnceCell<Rc<super::widgets::HostWidget<I>>>,
+    /// Authored components lent as focus or overlay targets, held weakly, with their
+    /// identities.
+    pub(super) lent: std::cell::RefCell<Vec<(std::rc::Weak<dyn crate::ComponentView>, u32)>>,
+    /// Input listeners added through this frame writer, each once, with their host removers.
+    pub(super) listeners: Rc<super::writer::InputListeners>,
 }
 
-impl<I: Imports> TuiPort for Terminal<I> {}
+impl<I: WidgetImports> Terminal<I> {
+    /// The facade of a lent host frame writer.
+    pub(super) fn lent(imports: &I, tui: I::Tui) -> TUI {
+        TUI::supplied(Rc::new(Self {
+            imports: imports.clone(),
+            tui,
+            writer: std::cell::OnceCell::new(),
+            lent: std::cell::RefCell::default(),
+            listeners: Rc::default(),
+        }))
+    }
+}
 
 /// What a factory's host lends it: the terminal, the live theme and, for a footer, its
 /// metadata.
@@ -61,7 +79,7 @@ impl<I: Imports> FooterDataPort for Footer<I> {
     }
 }
 
-impl<I: Imports> Exports<I> {
+impl<I: WidgetImports> Exports<I> {
     /// Runs the factory under this identity with the lent terminal and theme, and with the
     /// footer metadata when the factory builds a footer.
     pub(crate) fn invoke_component_factory(
@@ -70,10 +88,7 @@ impl<I: Imports> Exports<I> {
         lent: Lent<I>,
         emitter: &I::Emitter,
     ) -> ExtensionResult<ExtensionComponent> {
-        let tui = TUI::new(Rc::new(Terminal {
-            _imports: self.imports.clone(),
-            _tui: lent.tui,
-        }));
+        let tui = Terminal::lent(&self.imports, lent.tui);
         let theme = super::theme::theme(self.imports.clone(), lent.theme);
         let Some(footer) = lent.footer else {
             let factory = callbacks::find::<ComponentFactory>(handler)?;
@@ -90,6 +105,20 @@ impl<I: Imports> Exports<I> {
             factory(tui, theme, footer, emitter)
         })
     }
+}
+
+impl<I: Imports> Exports<I> {
+    /// Runs the retained expansion callback with this invocation's borrowed emitter.
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) fn invoke_set_expanded(
+        &self,
+        handler: u32,
+        expanded: bool,
+        emitter: &I::Emitter,
+    ) -> ExtensionResult<()> {
+        let handler = callbacks::find::<crate::ComponentExpansionHandler>(handler)?;
+        with_emitter(&self.imports, emitter, |emitter| handler(expanded, emitter))
+    }
 
     /// Runs the disposal under this identity once, with its borrowed emitter; a disposal
     /// shares the one-shot table kind of a cancellation listener, whose type it has.
@@ -100,7 +129,7 @@ impl<I: Imports> Exports<I> {
     }
 }
 
-/// Transfers a built component and its disposal to the host as their identities.
+/// Transfers a built component and its callbacks to the host as owned identities.
 #[cfg(target_arch = "wasm32")]
 pub(super) fn transfer<
     I: Imports<Callback = crate::bindings::maestro::extension::host::Callback>,
@@ -109,10 +138,14 @@ pub(super) fn transfer<
     built: ExtensionComponent,
 ) -> crate::bindings::maestro::extension::host::FactoryComponent {
     let component = callbacks::Identity::<I>::new(imports).transfer(built.component);
-    let dispose = built
-        .dispose
-        .map(|dispose| callbacks::Identity::<I>::new(imports).transfer(dispose));
-    crate::bindings::maestro::extension::host::FactoryComponent { component, dispose }
+    let dispose = super::renderers::retain(imports, built.dispose);
+    let set_expanded = super::renderers::retain(imports, built.set_expanded);
+    crate::bindings::maestro::extension::host::FactoryComponent {
+        component,
+        dispose,
+        set_expanded,
+        width: built.width,
+    }
 }
 
 /// Runs the branch change listener under this identity.

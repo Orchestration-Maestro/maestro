@@ -18,6 +18,12 @@ pub struct Rpc {
     pub events: Vec<Value>,
 }
 impl Rpc {
+    /// The actual root process whose inherited descriptors a child receives.
+    #[cfg(target_os = "linux")]
+    pub fn pid(&self) -> u32 {
+        self.child.id()
+    }
+
     /// Start RPC over the production startup entry and concrete adapter.
     pub fn start(root: &Root) -> Self {
         Self::command(&mut root.command(&[
@@ -50,9 +56,7 @@ impl Rpc {
         self.next += 1;
         let id = self.next.to_string();
         command["id"] = id.clone().into();
-        let input = self.child.stdin.as_mut().unwrap();
-        writeln!(input, "{command}").unwrap();
-        input.flush().unwrap();
+        self.send(&command);
         loop {
             let record = self.read();
             if record["type"] == "response" && record["id"] == id {
@@ -62,14 +66,27 @@ impl Rpc {
             self.events.push(record);
         }
     }
+    /// Sends a supplied correlated command or extension UI reply without awaiting it.
+    pub fn send(&mut self, record: &Value) {
+        let input = self.child.stdin.as_mut().unwrap();
+        let line = maestro_app::serialize_json_line(record).unwrap();
+        input.write_all(line.as_bytes()).unwrap();
+        input.flush().unwrap();
+    }
     /// Read one actual framed record, failing on premature process exit.
     pub fn read(&mut self) -> Value {
         let mut line = String::new();
-        assert_ne!(
-            self.output.read_line(&mut line).unwrap(),
-            0,
-            "RPC ended before a record"
-        );
+        if self.output.read_line(&mut line).unwrap() == 0 {
+            let status = self.child.wait().unwrap();
+            let mut errors = String::new();
+            self.child
+                .stderr
+                .take()
+                .unwrap()
+                .read_to_string(&mut errors)
+                .unwrap();
+            panic!("RPC ended before a record: {status}: {errors}");
+        }
         serde_json::from_str(&line).unwrap()
     }
     /// Complete one prompt and observe the following session command as a persistence barrier.

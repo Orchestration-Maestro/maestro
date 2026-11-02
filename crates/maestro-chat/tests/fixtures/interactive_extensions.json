@@ -1809,6 +1809,11 @@
             "description": "Select model (opens selector UI)"
           },
           {
+            "value": "thinking",
+            "label": "thinking",
+            "description": "<level> — Set thinking level"
+          },
+          {
             "value": "scoped-models",
             "label": "scoped-models",
             "description": "Enable/disable models for Ctrl+P cycling"
@@ -1995,6 +2000,11 @@
             "description": "Select model (opens selector UI)"
           },
           {
+            "value": "thinking",
+            "label": "thinking",
+            "description": "<level> — Set thinking level"
+          },
+          {
             "value": "scoped-models",
             "label": "scoped-models",
             "description": "Enable/disable models for Ctrl+P cycling"
@@ -2141,6 +2151,11 @@
             "description": "Select model (opens selector UI)"
           },
           {
+            "value": "thinking",
+            "label": "thinking",
+            "description": "<level> — Set thinking level"
+          },
+          {
             "value": "scoped-models",
             "label": "scoped-models",
             "description": "Enable/disable models for Ctrl+P cycling"
@@ -2283,6 +2298,11 @@
             "description": "Select model (opens selector UI)"
           },
           {
+            "value": "thinking",
+            "label": "thinking",
+            "description": "<level> — Set thinking level"
+          },
+          {
             "value": "scoped-models",
             "label": "scoped-models",
             "description": "Enable/disable models for Ctrl+P cycling"
@@ -2410,6 +2430,11 @@
             "value": "model",
             "label": "model",
             "description": "Select model (opens selector UI)"
+          },
+          {
+            "value": "thinking",
+            "label": "thinking",
+            "description": "<level> — Set thinking level"
           },
           {
             "value": "scoped-models",

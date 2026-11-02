@@ -177,3 +177,16 @@ pub(super) fn shell(api: &ExtensionAPI) -> ExtensionResult<()> {
         }),
     )
 }
+
+/// Registers the tool, painter or prefix callbacks selected by the author command.
+pub(super) fn command(
+    api: &ExtensionAPI,
+    context: &maestro_extensions_wasm::ExtensionCommandContext,
+    args: &str,
+) -> Option<ExtensionResult<()>> {
+    match args {
+        "register-tool" | "register-painter" => Some(register_tool(api, args)),
+        "register-prefixes" => Some(super::prefixes::register(api, context.clone())),
+        _ => None,
+    }
+}

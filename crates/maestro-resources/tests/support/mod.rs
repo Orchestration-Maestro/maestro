@@ -18,7 +18,7 @@ impl Directory {
     /// Panics when a fixture has no parent or its directory/file cannot be written.
     #[must_use]
     pub fn file(&self, path: &str, content: &str) -> PathBuf {
-        let path = self.0.path().join(path);
+        let path = under(self.0.path(), path);
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
         std::fs::write(&path, content).unwrap();
         path
@@ -74,6 +74,15 @@ pub fn denied_link(dir: &Directory, link: &Path) -> Option<Restore> {
 #[must_use]
 pub fn text(path: &Path) -> &str {
     path.to_str().unwrap()
+}
+
+/// The authored `/` path `relative` below `root`, joined by component, so a Windows path
+/// keeps one separator throughout.
+#[must_use]
+pub fn under(root: &Path, relative: &str) -> PathBuf {
+    relative
+        .split('/')
+        .fold(root.to_path_buf(), |path, part| path.join(part))
 }
 
 /// Convert supplied filesystem fixture paths to authored loader inputs.

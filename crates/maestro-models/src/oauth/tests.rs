@@ -3,36 +3,12 @@
 #[cfg(not(target_arch = "wasm32"))]
 use super::*;
 #[cfg(not(target_arch = "wasm32"))]
+use crate::tests::oauth_admission::Admission;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::tests::runtime::run;
 #[cfg(not(target_arch = "wasm32"))]
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Arc, Mutex};
 
-#[cfg(not(target_arch = "wasm32"))]
-/// Serialize observations of this binary's registry.
-static ADMISSION: Mutex<()> = Mutex::new(());
-#[cfg(not(target_arch = "wasm32"))]
-/// Reset membership after observations, including unwinding.
-struct Admission {
-    /// Retain admission until cleanup.
-    _guard: MutexGuard<'static, ()>,
-}
-#[cfg(not(target_arch = "wasm32"))]
-impl Admission {
-    /// Prepare an isolated registry.
-    fn enter() -> Self {
-        let guard = ADMISSION
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        reset_oauth_providers();
-        Self { _guard: guard }
-    }
-}
-#[cfg(not(target_arch = "wasm32"))]
-impl Drop for Admission {
-    fn drop(&mut self) {
-        reset_oauth_providers();
-    }
-}
 #[cfg(not(target_arch = "wasm32"))]
 /// Provider recording completed selection phases.
 struct Provider {
@@ -65,9 +41,12 @@ impl OAuthProviderInterface for Provider {
         record.expires = f64::NAN;
         Box::pin(async move { Ok(record) })
     }
-    fn get_api_key<'a>(&self, record: &'a OAuthCredentials) -> Result<&'a str, OAuthError> {
+    fn get_api_key<'a>(
+        &self,
+        record: &'a OAuthCredentials,
+    ) -> Result<std::borrow::Cow<'a, str>, OAuthError> {
         self.events.lock().unwrap().push("key");
-        Ok(&record.refresh)
+        Ok(std::borrow::Cow::Borrowed(&record.refresh))
     }
 }
 #[cfg(not(target_arch = "wasm32"))]

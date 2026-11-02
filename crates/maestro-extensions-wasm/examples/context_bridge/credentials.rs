@@ -4,6 +4,7 @@
     clippy::too_many_arguments,
     clippy::excessive_nesting
 )]
+use super::{oauth, providers};
 use maestro_extensions_wasm::{
     AsyncLockUpdate, AuthStorage, AuthStorageBackend, ExtensionAPI, ExtensionFuture,
     ExtensionResult,
@@ -37,6 +38,9 @@ struct Backend {
     _capture: Option<PendingCapture>,
     /// An awaited acquisition or write may fail independently of synchronous reload.
     failure: &'static str,
+    /// Text another writer stores right after the next synchronous read, so the owner decides
+    /// on the document it read before.
+    swap: RefCell<Option<String>>,
 }
 
 /// A native-owned callback capture, counted when its author object is released.
@@ -55,6 +59,9 @@ impl AuthStorageBackend for Backend {
         let next = update(current.as_deref())?;
         if let Some(next) = next {
             self.raw.replace(Some(next));
+        }
+        if let Some(text) = self.swap.take() {
+            self.raw.replace(Some(text));
         }
         Ok(())
     }
@@ -94,6 +101,7 @@ pub(super) fn backend(api: &ExtensionAPI) -> ExtensionResult<Value> {
             raw: raw.clone(),
             _capture: None,
             failure: "",
+            swap: RefCell::default(),
         }),
     )?;
     owner.reload()?;
@@ -102,6 +110,7 @@ pub(super) fn backend(api: &ExtensionAPI) -> ExtensionResult<Value> {
         "other",
         maestro_extensions_wasm::AuthCredential::ApiKey(
             maestro_extensions_wasm::ApiKeyCredential {
+                env: None,
                 key: "second".into(),
             },
         ),
@@ -218,18 +227,17 @@ fn retain_pending(api: &ExtensionAPI, request: &str) -> ExtensionResult<Value> {
     let raw = Rc::new(RefCell::new(Some(r#"{"author-pending":{"type":"oauth","refresh":"original-refresh","access":"old","expires":0},"unknown":[null,false,2]}"#.into())));
     PENDING_DROPS.with(|drops| drops.borrow_mut().clear());
     PENDING_UPDATES.with(|updates| updates.borrow_mut().clear());
-    let owner = AuthStorage::from_storage(
-        api,
-        Rc::new(Backend {
-            raw: raw.clone(),
-            _capture: Some(PendingCapture("backend")),
-            failure: match request {
-                "create-acquire" => "awaited acquisition failed",
-                "create-write" => "awaited write failed",
-                _ => "",
-            },
-        }),
-    )?;
+    let backend = Rc::new(Backend {
+        raw: raw.clone(),
+        _capture: Some(PendingCapture("backend")),
+        failure: match request {
+            "create-acquire" => "awaited acquisition failed",
+            "create-write" => "awaited write failed",
+            _ => "",
+        },
+        swap: RefCell::default(),
+    });
+    let owner = AuthStorage::from_storage(api, backend.clone())?;
     let capture = PendingCapture("fallback");
     owner.set_fallback_resolver(Rc::new(move |_| {
         let _capture = &capture;
@@ -237,8 +245,54 @@ fn retain_pending(api: &ExtensionAPI, request: &str) -> ExtensionResult<Value> {
     }))?;
     PENDING.with(|slot| slot.replace(Some(owner)));
     if request == "create-reread" {
-        raw.replace(Some(" \n{\"unknown\":[null,false,2]} \n".into()));
+        backend
+            .swap
+            .replace(Some(" \n{\"unknown\":[null,false,2]} \n".into()));
     }
     RAW.with(|slot| slot.replace(Some(raw)));
     Ok(json!("retained"))
+}
+
+/// Runs the shared retained-owner composition through either host transport.
+pub(super) async fn composition(api: &ExtensionAPI, request: &str) -> ExtensionResult<Value> {
+    state::composition(api, request).await
+}
+
+/// Runs native credential login over the controlled raw backend.
+pub(super) async fn login(
+    api: &ExtensionAPI,
+    mode: &str,
+    callbacks: Rc<maestro_extensions_wasm::OAuthLoginCallbacks>,
+) -> ExtensionResult<Value> {
+    state::login(api, mode, callbacks).await
+}
+
+/// Dispatches exact credential observations after parameterized routes are selected.
+pub(super) async fn observation(
+    api: &ExtensionAPI,
+    context: &maestro_extensions_wasm::ExtensionContext,
+    request: &str,
+) -> Result<serde_json::Value, String> {
+    match request {
+        request if request.starts_with("credential oauth login ") => {
+            oauth::login(
+                api,
+                context,
+                request.trim_start_matches("credential oauth login "),
+            )
+            .await
+        }
+        "credential oauth pending create" => oauth::pending_create(context),
+        "credential oauth pending complete" => oauth::pending_complete().await,
+        "credential oauth providers" => oauth::providers(context),
+        "credential oauth registration" => oauth::registration(api, context).await,
+        "credential oauth operations" => oauth::operations(context).await,
+        "credential oauth retain" | "credential oauth key" | "credential oauth release" => {
+            oauth::retained(context, request.trim_start_matches("credential oauth "))
+        }
+        "credential fallback" => fallback(api).await,
+        "credential backend" => backend(api),
+        "credential state" => state(api).await,
+        _ => providers::command(api, context, request).await,
+    }
 }

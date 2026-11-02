@@ -39,10 +39,40 @@ pub struct ControlledDriver {
 }
 
 impl ControlledDriver {
+    /// Delivers input to the factory widget the host shows under `key`.
+    pub(super) fn widget_input(&self, key: &str, data: &str) -> Result<(), String> {
+        let component = self
+            .host
+            .widget(key)
+            .ok_or_else(|| format!("no widget {key}"))?;
+        super::renderer_host::invoke(
+            &component,
+            super::renderer_host::Call::Input(data),
+            &self.host,
+            0,
+        )
+        .map(drop)
+    }
+    /// Starts a shipped factory with the existing controlled widget host installed.
+    pub(super) async fn example<E: Extension>() -> Result<Self, String> {
+        let driver = Self::new();
+        driver.exports().start::<E>().await?;
+        Ok(driver)
+    }
+
+    /// Publishes literal theme replies for a shipped factory's renderer.
+    pub(super) fn publish_theme(&self, palette: super::theme_host::Palette) {
+        self.host.observe().themes.publish("dark", palette);
+    }
+
     /// A driver with a fresh host.
     pub fn new() -> Self {
+        let host = Controlled::default();
+        crate::component_adapter::install(std::rc::Rc::new(crate::component_adapter::Builder(
+            host.clone(),
+        )));
         Self {
-            host: Controlled::default(),
+            host,
             components: Vec::new(),
             bash: Vec::new(),
             last_bash: None,
@@ -164,7 +194,7 @@ impl ControlledDriver {
             info,
             result: run.result.map(ToString::to_string),
         };
-        let lent = (self.host.theme("dark"), self.host.invalidator(&id));
+        let lent = (self.host.theme("dark"), self.host.invalidator(&id), None);
         let emitter = super::bus_host::Emitter { key: 0 };
         let (component, row) = self
             .exports()
@@ -467,6 +497,44 @@ impl Driver for ControlledDriver {
             _ => Err("expected rendered lines".to_owned()),
         }))
     }
+    fn editor_request(
+        &mut self,
+        request: serde_json::Value,
+    ) -> impl Future<Output = Result<serde_json::Value, String>> {
+        std::future::ready(self.host.authored_editor(request))
+    }
+    async fn provider_request(
+        &mut self,
+        request: serde_json::Value,
+    ) -> Result<serde_json::Value, String> {
+        self.host.provider_request(request, &self.flags).await
+    }
+    fn editor_component(
+        &mut self,
+        call: super::renderer_host::Call<'_>,
+    ) -> impl Future<Output = Result<super::renderer_host::Reply, String>> {
+        std::future::ready(self.host.editor_component(call))
+    }
+    fn widget_capabilities(
+        &mut self,
+        key: &str,
+        expanded: bool,
+    ) -> impl Future<Output = Result<(Option<f64>, bool), String>> {
+        let answer = (|| {
+            let built = self.host.widget_built(key).ok_or("no factory component")?;
+            let present = built.set_expanded.is_some();
+            if let Some(handler) = built.set_expanded {
+                let emitter = super::bus_host::Emitter { key: 0 };
+                crate::component_adapter::renderers::with_emitter(
+                    &self.host,
+                    &emitter,
+                    |emitter| handler(expanded, emitter),
+                )?;
+            }
+            Ok((built.width, present))
+        })();
+        std::future::ready(answer)
+    }
     fn terminal_input(
         &mut self,
         data: &str,
@@ -490,11 +558,11 @@ impl Driver for ControlledDriver {
         handler: u32,
         args: &str,
     ) -> impl Future<Output = Result<String, String>> {
-        std::future::ready(self.exports().invoke_prepare(
-            handler,
-            args,
-            &super::bus_host::Emitter { key: 0 },
-        ))
+        std::future::ready(
+            self.exports()
+                .invoke_prepare(handler, args, &super::bus_host::Emitter { key: 0 })
+                .and_then(|result| result.prepared),
+        )
     }
     fn reborrow(&mut self, id: u32) -> Result<u32, String> {
         Ok(id)

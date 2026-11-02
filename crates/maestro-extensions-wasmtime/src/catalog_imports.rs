@@ -57,13 +57,16 @@ pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
     Ok(())
 }
 
-/// Canonical successful authentication retains optional empty key and header values.
+/// Canonical authentication retains optional key, endpoint and header values.
 #[derive(ComponentType, Lower)]
 #[component(record)]
 struct RequestAuth {
     /// Selected key, absent when no source supplies one.
     #[component(name = "api-key")]
     api_key: Option<String>,
+    /// Resolved provider endpoint.
+    #[component(name = "base-url")]
+    base_url: Option<String>,
     /// Supplied ordered headers, retaining the absent/present distinction.
     headers: Option<Vec<(String, String)>>,
 }
@@ -83,12 +86,15 @@ enum ResolvedRequestAuth {
 impl From<maestro_extensions::ResolvedRequestAuth> for ResolvedRequestAuth {
     fn from(result: maestro_extensions::ResolvedRequestAuth) -> Self {
         match result {
-            maestro_extensions::ResolvedRequestAuth::Ok { api_key, headers } => {
-                Self::Ok(RequestAuth {
-                    api_key,
-                    headers: headers.map(|headers| headers.into_iter().collect()),
-                })
-            }
+            maestro_extensions::ResolvedRequestAuth::Ok {
+                api_key,
+                headers,
+                base_url,
+            } => Self::Ok(RequestAuth {
+                api_key,
+                base_url,
+                headers: headers.map(|headers| headers.into_iter().collect()),
+            }),
             maestro_extensions::ResolvedRequestAuth::Error { error } => Self::Error(error),
         }
     }
@@ -122,7 +128,7 @@ fn add_metadata<T: crate::callback_imports::CallbackView + 'static>(
         Request::HasConfiguredAuth,
         operand::<T, Endpoint, String>,
     )?;
-    add_operand(
+    add_routed_operand(
         host,
         "[method]model-registry.is-using-oauth",
         Request::IsUsingOAuth,
@@ -149,17 +155,16 @@ fn add_mutations<T: crate::callback_imports::CallbackView + 'static>(
     host.func_wrap(
         "[method]model-registry.register-provider",
         |mut store: StoreContextMut<'_, T>,
-         (resource, name, config, stream): (
+         (resource, name, config, callbacks): (
             Resource<Endpoint>,
             String,
             String,
-            Option<Resource<crate::guest_calls::Callback>>,
+            crate::provider_registration::Wire,
         )| {
-            let stream = stream
-                .map(|stream| crate::callback_imports::retain(store.data_mut(), &stream))
-                .transpose()?;
+            let callbacks =
+                crate::provider_registration::retain(store.data_mut(), &name, callbacks)?;
             let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
-            let route = endpoint.route(|reply| Request::Register(name, config, stream, reply));
+            let route = endpoint.route(|reply| Request::Register(name, config, callbacks, reply));
             Ok((crate::import_route::push(store.data_mut(), route)?,))
         },
     )

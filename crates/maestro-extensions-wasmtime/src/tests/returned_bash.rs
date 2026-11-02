@@ -30,16 +30,19 @@ fn returned_operations_overlap_with_exact_operands_and_independent_sinks() {
         .build()
         .unwrap()
         .block_on(async {
-            let (pump, admission) = Pump::new();
+            let (pump, admission) = Pump::new(crate::tests::support::widgets());
             let (calls, incoming) = tokio::sync::mpsc::unbounded_channel();
             let mut callbacks = Callbacks::new(calls.downgrade(), Replies::default());
             let (id, owner) = operations(&mut callbacks, admission.clone());
             let operations = ReturnedBash::new(owner, pump.registry());
             let signal = Cancellation::new();
             signal.abort();
-            let env = [(OsString::from("雪"), OsString::from("literal=\0value"))]
-                .into_iter()
-                .collect();
+            let env = [(
+                OsString::from("雪"),
+                Some(OsString::from("literal=\0value")),
+            )]
+            .into_iter()
+            .collect();
             let worker = std::thread::spawn(move || serve(incoming, id));
             let client = async {
                 let (mut first, mut second) = (Vec::new(), Vec::new());
@@ -126,7 +129,7 @@ fn nonunicode_environment_is_rejected_before_guest_admission_without_lossy_conve
         .build()
         .unwrap()
         .block_on(async {
-            let (pump, admission) = Pump::new();
+            let (pump, admission) = Pump::new(crate::tests::support::widgets());
             let (calls, mut incoming) = tokio::sync::mpsc::unbounded_channel();
             let mut callbacks = Callbacks::new(calls.downgrade(), Replies::default());
             let (_, owner) = operations(&mut callbacks, admission.clone());
@@ -137,7 +140,7 @@ fn nonunicode_environment_is_rejected_before_guest_admission_without_lossy_conve
                     (invalid.clone(), OsString::from("value"), "key"),
                     (OsString::from("key"), invalid, "value"),
                 ] {
-                    let env = [(key, value)].into_iter().collect();
+                    let env = [(key, Some(value))].into_iter().collect();
                     let mut sink = |_: &[u8]| panic!("invalid operands produced output");
                     let result = operations
                         .exec(

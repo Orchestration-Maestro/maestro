@@ -8,6 +8,8 @@ This page describes what is delivered so far: registration, 29 events and thirte
 families, tool callbacks, command completions, shortcuts, flags, command contexts, session continuations, session readers,
 event channels, live context observations, model catalog queries, ordinary actions, compaction notifications and custom message components.
 
+Native waits, child processes, raw HTTP bodies and file watches are described in
+[native operations](guest_operations.md).
 Shared [model invocation options](guest_streams.md) keep native and guest data in one owner.
 
 ## Build a component
@@ -98,8 +100,11 @@ completion matching.
 ## Tools
 
 `ToolDefinition` combines `ToolMetadata`, optional synchronous `prepare_arguments` and
-asynchronous `execute`. Preparation receives one JSON value and a callback-scoped `CallbackEmitter`; its returned
-value can be passed to execution. The emitter forwards synchronous emission during preparation. The adapter does not perform argument validation or schedule tools.
+asynchronous `execute`. Preparation receives `&mut Value` and a callback-scoped
+`CallbackEmitter`. In-place changes remain in the retained assistant arguments,
+including when the callback fails. The returned value is separate: the tool caller
+validates it before execution. The emitter forwards synchronous emission during
+preparation. The adapter does not perform argument validation or schedule tools.
 Execution receives the invocation ID, arguments, ordinary context and optional signal
 and progress callback. A progress callback sends one `AgentToolResult` synchronously;
 execution returns its final `AgentToolResult`. Callback failures retain their supplied messages.
@@ -155,7 +160,9 @@ not apply to these author-supplied declarations.
 `render_call` and `render_result` are optional and independent. Each returns a `Component`
 that the host shows in the tool's row. A call renderer gets the arguments as they stand,
 the live theme, a `ToolRenderContext` and a `CallbackEmitter`. A result renderer also gets
-the `AgentToolResult` and the current `ToolRenderResultOptions` (`expanded`, `is_partial`).
+a `ToolRenderResultLike` and the current `ToolRenderResultOptions` (`expanded`, `is_partial`).
+The rendering result contains the existing `AgentToolResult` in `result` and the independent
+`is_error` observation. Execution results are unchanged.
 
 `ToolRenderContext` holds the row's `tool_call_id`, arguments, working directory,
 `ToolRenderPhase`, expansion, image visibility and error flag. `last_component` is the
@@ -164,6 +171,11 @@ host to redraw the row. `state::<S>()` returns the row's state of type `S`. It i
 with its default the first time it is read and shared by both renderers of the row on
 every rendering, so a value set by the call renderer is visible to the result renderer.
 The row keeps its state and previous components until the host releases the row.
+
+A native factory also lends an opaque `native_row`. Delegating to its renderer preserves
+the native environment and state while forwarding the wrapper's public row observations,
+ordinary operands and exact previous component. See [native tool operations](guest_operations.md)
+for read construction, replacement file callbacks and renderer delegation.
 
 ### Executable schema nodes
 
@@ -266,6 +278,13 @@ the host invokes the tail separately. Releasing the listener does not release a 
 already announced. The callback emitter cannot be retained by that tail: capture an
 owned `EventBus` for later asynchronous emissions instead.
 
+A component has no task of its own that outlives a callback. `Background::new(api.events())`
+registers one listener that turns announced work into tails, and
+`background.spawn(work).await` announces `work` and returns its `BackgroundTask`. The host
+polls the work on that tail until the work ends; dropping the task stops it, dropping any
+pending wait, and settles the tail. A refused announcement fails the start, and the work
+never runs. A failure of the work goes to the host's event-bus reporter.
+
 ## Session readers
 
 Ordinary and command contexts expose `session_manager()`, which acquires the currently
@@ -325,7 +344,7 @@ differs from a result whose properties are all omitted.
 | `session_shutdown` | `SessionShutdownEvent` | `reason` (`quit`, `reload`, `new`, `resume`, `fork`), `targetSessionFile?` |
 | `before_provider_request` | `BeforeProviderRequestEvent` | `payload` |
 | `after_provider_response` | `AfterProviderResponseEvent` | `status`, `headers` |
-| `input` | `InputEvent` | `text`, `images?`, `source` (`interactive`, `rpc`, `extension`) |
+| `input` | `InputEvent` | `text`, `images?`, `source` (`interactive`, `rpc`, `extension`), `streamingBehavior?` (`steer`, `followUp`) |
 
 Before-compaction `preparation` holds `firstKeptEntryId`, `messagesToSummarize`,
 `turnPrefixMessages`, `isSplitTurn`, `tokensBefore`, `previousSummary?`, `fileOps` and
@@ -419,8 +438,8 @@ an acquisition or retained query is allowed remains the host's decision.
 sort or deduplicate the supplied lists. `get_api_key_and_headers` awaits the host
 operation for the supplied descriptor, without checking catalog membership.
 `ResolvedRequestAuth` is re-exported from the [shared request owner](../records.md#resolved-request-authentication),
-`maestro_request::model_registry`. `ResolvedRequestAuth::Ok` preserves optional keys and ordered headers, including
-present empty strings; `Error` carries a structured denial, distinct from an
+`maestro_request::model_registry`. `ResolvedRequestAuth::Ok` preserves optional keys,
+endpoints and ordered headers, including present empty strings; `Error` carries a structured denial, distinct from an
 outer host-call failure.
 
 `ModelRegistry` also forwards `refresh`, `get_error`, `has_configured_auth`,
@@ -433,9 +452,17 @@ before the call; `AuthStatus` and `AuthSource` are the
 `ModelRegistry::auth_storage()` returns the catalog's live credential owner, not
 copied credentials. Its `AuthStorage` handle can outlive the creating callback.
 Reads, runtime key overrides, stored credential changes, reload, logout and error
-draining reach that same owner. `get_api_key` uses its original credential-command
+draining reach that same owner. `get`, `list`, `get_all`, `has_auth`, `get_auth_status`
+and `get_api_key` first reread the stored document through the owner's backend, so
+they see what another process wrote, and an authored backend runs inside the read as it
+does inside `reload`. `get_api_key` uses its original credential-command
 effects; `GetApiKeyOptions::include_fallback` defaults to true. Persistence failures
 remain in `drain_errors` rather than rolling back accepted state.
+
+A stale registration facade does not invalidate credentials acquired earlier.
+Malformed host input and nonfinite authored numbers fail before provider or
+credential mutation; another valid resource remains callable. Rejections preserve
+the host's supplied error text.
 
 The guest currently acquires credentials from a catalog or wraps a supplied
 `AuthStoragePort`. `AuthStorage::create(&api, path)` and
@@ -456,6 +483,45 @@ callback's error text. Backend and fallback callbacks may call back into the sam
 host, including from synchronous credential and catalog metadata reads. Callback
 resources stay typed; their identities are never placed in JSON. Callable provider
 stream and OAuth fields remain separate from the provider data record.
+
+### Native OAuth providers
+
+`AuthStorage::get_oauth_providers()` returns callable native implementations in
+registration order. Each retained `OAuthProviderInterface` exposes its literal
+`id`, login `name` and optional `uses_callback_server` value. An absent value is
+not changed to false. Removing a provider from the native registry does not
+replace an already retained implementation; its final guest alias releases it.
+
+`get_api_key` and `modify_models` are synchronous. `refresh_token` awaits the
+native token exchange without adding an expiry decision or persisting the
+returned credentials. Its future retains the provider after the initiating
+handler and facade are released. `modify_models` returns `None` when the provider has no
+modifier. The guest forwards complete credentials and model descriptors,
+including open credential fields, and rejects authored nonfinite numbers before
+encoding them. Provider failures retain their messages.
+
+`login` returns an owned future over the same native provider. Supply
+`Rc<OAuthLoginCallbacks>` with synchronous `on_auth` and optional `on_progress`
+notifications, an awaited `on_prompt`, and optional awaited manual-code and
+selection callbacks. An absent selection callback differs from a supplied
+callback returning `None` on cancel. Prompt records keep supplied text, optional
+fields and choice order. Callback failures retain their messages, and synchronous
+notifications may call back into the host before returning.
+
+The optional caller signal follows live cancellation, including a prior abort.
+Native callback aliases retain the interaction and its signal binding after the
+initiating login future ends; the final native release drops their captures.
+Pending input does not block other host requests. These methods reuse the native
+OAuth implementations; provider methods do not store login credentials.
+
+`AuthStorage::login(provider_id, callbacks)` instead delegates authorization and
+persistence to the retained native credential owner. It returns an owned future,
+so dropping the initiating facade does not end the operation. Successful login
+accepts the complete OAuth record and persists it through the original backend;
+other provider records stay unchanged. Unknown providers and interaction failures
+return their original messages. As with `AuthStorage::set`, persistence failures
+leave accepted state available and are reported by `drain_errors`, not as a failed
+login.
 
 `model` and the catalog queries reuse the [shared model records](../records.md).
 `ContextUsage` carries optional token and percentage estimates and the supplied
@@ -493,8 +559,26 @@ schema and details text with semantic JSON serialization.
 
 `ExtensionAPI::register_provider` sends a literal name and a `ProviderConfig` to the
 host, and `unregister_provider` sends a name. `ProviderConfig` and
-`ProviderModelConfig` are the [shared provider records](../records.md#provider-registration-records),
-carrying data only. Absent fields are omitted; empty strings, lists and maps and
+`ProviderModelConfig` use the [shared provider records](../records.md#provider-registration-records).
+`ProviderConfig` specializes its callback slot with the guest's `ProviderCallbacks`.
+Serialized metadata carries data only. Set `callbacks.oauth` to `Some(Rc<dyn OAuthProviderInterface>)` to register
+an authored OAuth implementation through the same API or catalog operation. The
+registration name supplies its installed identifier; its login label and optional
+callback-server value remain as authored. The native catalog retains the actual
+guest implementation, including independently owned login and refresh futures,
+synchronous computed keys and optional model transformation. Login receives the
+original native interaction through retained capabilities, preserving callback
+presence, synchronous notifications, awaited input and live cancellation. The guest
+may keep the callback record or an input future after login ends; its last alias
+releases the original native captures. Pending input leaves the host available,
+and synchronous native notifications may reenter the same guest implementation.
+
+An authored login that uses a proof key calls `generate_pkce(&api)`. The host draws
+32 secure random bytes and returns a `Pkce` record: the verifier is their unpadded
+URL-safe Base64 and the challenge is that text's SHA-256 digest in the same encoding.
+Entropy failure returns the host's error. The guest links no hashing or encoding crate.
+
+Absent fields are omitted; empty strings, lists and maps and
 `false` are sent as written, header, model and input order is kept, and signed zero
 survives. A nonfinite number fails with the finite-number error before the host
 sees the call. Queuing during loading, validation and replacement stay host policy.
@@ -582,9 +666,10 @@ Other extension-assigned Infinity or NaN fails encoding with
 failure or other encoded part is retained. Numeric-looking text remains text.
 
 The request body of `before_provider_request`, its replacement, tool-execution arguments
-and results, tool-result input, tool schemas and arbitrary `details` use `JsonText`.
+and results, tool-result input and arbitrary `details` use `JsonText`.
 It exposes compact JSON text to Rust while serializing the semantic JSON value on the wire.
-Tool schemas are values inside metadata, not quoted JSON documents. Thinking levels
+Tool schemas are `maestro_request::parameter_schema::ParameterSchema` values inside the
+tool metadata, not quoted JSON documents. Thinking levels
 cross the component interface as JSON string literals in both directions.
 Object key order and numbers are preserved; whitespace and duplicate keys are not retained.
 Construct authored values from valid JSON text with `.into()`. A replacement `null` differs
@@ -845,6 +930,19 @@ component in a controlled host, and `examples/extensions/README.md` holds the
 build and controlled-run commands. Reloading a running application is not part
 of that controlled run.
 
+### An input transform hook
+
+[`examples/extensions/input_transform.rs`](../../examples/extensions/input_transform.rs)
+registers `input` and bypasses extension-injected messages. It rewrites a nonempty
+`?quick <question>` as a brief-answer request, warns and handles an empty question,
+and handles `ping` and `time` with local notifications. Every other input returns
+an explicit continuation. Rewrites omit replacement images and leave the event
+unchanged.
+
+The example is opt-in and needs a component-enabled host with notification UI.
+The [example index](../../examples/extensions/README.md) gives its build and
+controlled-run commands and the time-format limit.
+
 ### A protected-paths tool-call hook
 
 [`examples/extensions/protected_paths.rs`](../../examples/extensions/protected_paths.rs)
@@ -905,6 +1003,28 @@ It is opt-in like the other shipped extensions: its crate's tests run the built
 component in a controlled host with a supplied wall clock, and
 `examples/extensions/README.md` holds the build and controlled-run commands.
 
+### Dynamic tools
+
+[`examples/extensions/dynamic_tools.rs`](../../examples/extensions/dynamic_tools.rs)
+sets up an `echo_session` tool from its `session_start` handler, and adds
+`/add-echo-tool <tool_name>` as a command that registers more echo tools after
+initialization. The argument is trimmed and lowercased with the standard
+library's whitespace and case rules, then admitted only when what remains is
+nonempty ASCII lowercase letters, digits and underscores. Anything else answers
+`Usage: /add-echo-tool <tool_name> (lowercase, numbers, underscores)`.
+
+Each admitted name becomes an `Echo <name>` tool whose description names its
+prefix, and whose execution answers `<prefix><message>` with the registered name
+and prefix as details. The factory keeps one set of admitted names, inserts a
+name before asking the host to register it, and keeps that name when the request
+fails. A refused request admits no tool, so a retry reports
+`Tool already registered: <name>` without asking the host again. It never asks
+whether the host reports UI availability before requesting a notification.
+
+It is opt-in like the other shipped extensions: its crate's tests replay the
+recorded sequences through the built component in a controlled host, and
+`examples/extensions/README.md` holds the build and controlled-run commands.
+
 ### A custom working message on session start
 
 [`examples/extensions/working_message_test.rs`](../../examples/extensions/working_message_test.rs)
@@ -920,6 +1040,22 @@ that an interactive host keeps them across agent turns or loader recreation, whi
 belongs to the host's own working-loader operations. Loading the component into an
 application is opt-in and needs that application's component runtime.
 
+### Widgets above and below the editor
+
+[`examples/extensions/widget_placement.rs`](../../examples/extensions/widget_placement.rs)
+handles `session_start`. It reads `has_ui` once per start and requests nothing
+when the host has no UI. With a UI it requests the `widget-above` widget holding
+the single line `Above editor widget`, then the `widget-below` widget holding
+`Below editor widget` with the explicit below placement. The first request
+passes no options, so the host's own above-editor default applies.
+
+The callback acquires the UI context once per request, so a host that binds a
+different UI after the first accepted request serves the second one there. A
+rejected request ends the callback with that message; the example retries
+nothing and removes no widget the host already accepted. Loading it into an
+application is opt-in, and `examples/extensions/README.md` holds the build and
+controlled-run commands.
+
 ### User message delivery
 
 [`examples/extensions/send_user_message.rs`](../../examples/extensions/send_user_message.rs)
@@ -927,7 +1063,7 @@ sends user messages the way a user types them. `/ask` sends an ordinary message,
 which starts a turn, and reports `Agent is busy. Use /steer or /followup
 instead.` while the agent is working. `/steer` sends an ordinary message while
 idle and a steering message while the agent is working, so that message reaches
-the request in flight. `/followup` sends an ordinary message while idle and
+the next model request. `/followup` sends an ordinary message while idle and
 otherwise queues a follow-up, reporting `Follow-up queued` once the host admitted
 it. `/askwith` sends two text blocks, `User request: <arguments>` and `Please
 respond concisely.`, so the second instruction arrives with the request.
@@ -1023,6 +1159,25 @@ and the style algorithms, so every call reads its current state:
 
 The styled text is the owner's bytes, unchanged. An unknown color name is an error carrying the
 owner's message. A theme kept past its renderer call observes later theme changes and provenance
-edits made through any of its clones. Widget composition is not exposed here.
+edits made through any of its clones.
 
 See [native helpers](guest_operations.md) for synchronous terminal operations.
+
+## Standard operating-system interfaces
+
+`tools::path_utils::make_temp_dir(&api, prefix)` creates a distinct directory
+under the host's temporary root, with mode `0700` on Unix and the default
+Windows ACL. The prefix must be a nonempty leaf name; the caller owns cleanup.
+
+Rust standard-library environment, file and byte I/O use the host's WASI 0.2
+baseline. `maestro_extensions_wasm::wasi` also exposes the pinned standard WASI
+0.3 asynchronous interfaces, including sockets, name lookup, filesystem streams
+and `wit_stream` byte-stream construction. Both generations use the same host
+context; neither introduces an extension-specific permission list. See
+[component operating environment](host_io.md) for access and platform limits.
+
+### Portable provider primitives
+
+`calculate_cost` re-exports the request owner's flat-rate arithmetic over supplied
+model and usage records. `ByteLineDecoder` re-exports the text owner's raw CR/LF
+framing; callers keep their UTF-8, BOM and event-dispatch policies.

@@ -82,6 +82,11 @@ pub struct ExtensionActions<E: ExtensionExecution = Threaded> {
 pub struct ExtensionRuntime<E: ExtensionExecution = Threaded> {
     /// Application-supplied constructor defaults, installed before factory loading.
     pub(crate) construction: RwLock<Option<crate::CatalogConstruction>>,
+    /// Application-supplied native search and shell construction owners.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(crate) tool_construction: RwLock<Option<crate::ToolConstruction>>,
+    /// The single host-admitted channel open only while base factories load.
+    pub(crate) load_time: RwLock<Option<crate::loader::LoadTimeState>>,
     /// Flag values and the registration activity guard.
     pub(crate) state: ExtensionRuntimeState,
     /// The bound operations; not-initialized until a runner binds.
@@ -115,3 +120,6 @@ pub struct ExtensionError {
 
 /// Receives each attributed extension failure.
 pub type ExtensionErrorListener = Rc<dyn Fn(&ExtensionError) -> Result<(), crate::EventError>>;
+/// Reports a retained UI callback's failure under its event name, attributed to the extension
+/// that registered it.
+pub type UIErrorReporter = Rc<dyn Fn(&str, &crate::EventError) -> Result<(), crate::EventError>>;

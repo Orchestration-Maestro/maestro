@@ -74,8 +74,7 @@ enum Step {
         /// How many steps to skip.
         steps: usize,
     },
-    /// Returns the event's system prompt, input text or tool result content followed by this
-    /// text.
+    /// Appends text to the event's prompt, input or tool-result content.
     Suffix(String),
 }
 
@@ -93,12 +92,12 @@ enum Observation {
     ContextPrompt,
     /// The prompt, images and prompt options of an agent start.
     Agent,
+    /// The input text, images and source.
+    Input,
     /// The tool call's path argument.
     ToolPath,
     /// Whether the event's signal is aborted.
     Aborted,
-    /// The text, images and source of an input.
-    Input,
 }
 
 /// A field replacement, decoded into the field's own type.
@@ -296,6 +295,7 @@ fn observe(
             "images": encoded(&start.images)?,
             "options": encoded(&start.system_prompt_options)?,
         })),
+        (Observation::Input, ExtensionEvent::Input(input)) => encoded(input),
         (Observation::ToolPath, ExtensionEvent::ToolCall(call)) => {
             Ok(call.input.decode::<Value>().map_err(|e| e.to_string())?["path"].clone())
         }
@@ -305,7 +305,6 @@ fn observe(
         (Observation::Aborted, ExtensionEvent::Session(SessionEvent::BeforeTree(tree))) => {
             Ok(json!(tree.signal.aborted()))
         }
-        (Observation::Input, ExtensionEvent::Input(input)) => encoded(input),
         _ => Err("observation does not apply to this event".into()),
     }
 }
@@ -369,24 +368,23 @@ fn skipping(event: &ExtensionEvent, prompt: &str, steps: usize) -> usize {
     }
 }
 
-/// The event's own system prompt, input text or tool result content followed by `suffix`,
-/// returned as its result.
+/// Appends `suffix` to the prompt, input text or tool-result content and returns it.
 fn suffixed(event: &ExtensionEvent, suffix: &str) -> ExtensionResult<ExtensionEventResult> {
-    use ExtensionEventResult as Result;
-    Ok(match event {
-        ExtensionEvent::BeforeAgentStart(start) => Result::BeforeAgentStart(decoded(
-            json!({ "systemPrompt": format!("{}{suffix}", start.system_prompt) }),
-        )?),
-        ExtensionEvent::Input(input) => Result::Input(decoded(
-            json!({ "action": "transform", "text": format!("{}{suffix}", input.text) }),
-        )?),
+    let value = match event {
+        ExtensionEvent::BeforeAgentStart(start) => {
+            json!({ "systemPrompt": format!("{}{suffix}", start.system_prompt) })
+        }
+        ExtensionEvent::Input(input) => {
+            json!({ "action": "transform", "text": format!("{}{suffix}", input.text) })
+        }
         ExtensionEvent::ToolResult(tool) => {
             let mut content = tool.content.clone();
             content.push(decoded(json!({ "type": "text", "text": suffix }))?);
-            Result::ToolResult(decoded(json!({ "content": encoded(&content)? }))?)
+            json!({ "content": content })
         }
-        _ => return Err("nothing to suffix for this event".into()),
-    })
+        _ => return Err("event has no text to extend".into()),
+    };
+    result(event, value)
 }
 
 /// The event's own message, payload or messages, returned as its result.

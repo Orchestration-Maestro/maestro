@@ -20,6 +20,22 @@ fn host_signal(host: &Controlled, flag: &Flag) -> AbortSignal {
     signal(host, host.signal(flag))
 }
 
+/// A caller-defined cancellation port without a retained component resource.
+struct Authored(AbortSignal);
+impl crate::SignalPort for Authored {
+    fn aborted(&self) -> bool {
+        self.0.aborted()
+    }
+    fn subscribe(&self, listener: AbortListener) -> ExtensionResult<crate::Subscription> {
+        self.0.subscribe(listener)
+    }
+}
+
+/// Supplies an author-defined port so forwarding must retain a temporary mirror.
+pub(super) fn authored(signal: AbortSignal) -> AbortSignal {
+    AbortSignal::new(Rc::new(Authored(signal)))
+}
+
 /// A listener that counts its runs.
 fn counting(runs: &Rc<Cell<usize>>) -> AbortListener {
     let runs = Rc::clone(runs);
@@ -108,7 +124,7 @@ fn dropped_execution_removes_its_signal_listener() -> ExtensionResult<()> {
     let (hold, _started, _open) = gate();
     host.observe().hold_next_idle(hold);
     let options = ExecOptions {
-        signal: Some(host_signal(&host, &Flag::default())),
+        signal: Some(authored(host_signal(&host, &Flag::default()))),
         ..ExecOptions::default()
     };
     let mut execution = api.exec("held", &[], Some(options));

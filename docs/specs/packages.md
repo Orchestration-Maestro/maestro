@@ -109,6 +109,8 @@ agents' hook files, and runtime mechanics ([list](#runtime-mechanics-not-copied)
 - **Allowed dependencies.** A package crate may depend on `maestro-extensions-wasm`, other package crates,
   `maestro-request`, `maestro-entry`, `maestro-tool`, `maestro-json`, and approved libraries that build for
   `wasm32-wasip2`.
+- **Enforcement.** The conventions checker reads package classifications from the inventory, checks declared
+  and host-resolved dependencies, and checks component targets and export locations in member sources.
 - **One export per component.** The library is an `rlib` exposing `factory`. The component is the cdylib example
   target `component` at `src/component.rs`, which holds the one `export_extension!` line. A library never exports,
   because two export sets in one component fail to link. Conventions check both rules.
@@ -141,8 +143,9 @@ algorithm, and the facades add no crate-graph edge (delivery 1).
 ### Guest network and processes
 
 The full-user host gives components the user's network (name lookup, connect, listen) and detached child processes.
-It writes component stdout without splitting a host frame. Local sockets arrive through `maestro-ipc`, the one
-local-socket owner (delivery 59).
+While the native terminal's queued output runs, component stdout goes through the same ordered queue,
+so it never splits a host frame. Other modes and regular-file destinations inherit stdout.
+Local sockets arrive through `maestro-ipc`, the one local-socket owner (delivery 59).
 
 ### Shared libraries
 
@@ -284,6 +287,10 @@ Every package except plan review is a base package. Plan review is the only opti
 sources. The application lists those sources as the lowest default `packages` source. The reference's
 missing-source install installs them on first run, and a user's object-form filter entry turns one off
 (delivery 61). The skill pack has no component. Its package directory is published as content.
+Base packages load before every other extension but keep their ordinary place in the extension list, and a base
+package may publish the base layer and decision hook of
+[manifest mode](manifest-mode.md#core-hooks) (H1, H2, H4). The manifest base package is
+specified there.
 
 ### Libraries
 

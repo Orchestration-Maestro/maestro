@@ -29,13 +29,13 @@ struct Script {
     release: Mutex<Option<oneshot::Receiver<()>>>,
 }
 
-impl BashOperations for Script {
+impl BashOperations<maestro_app::Local> for Script {
     fn exec<'a>(
         &'a self,
         _command: &'a str,
         _cwd: &'a str,
-        options: BashExecOptions<'a>,
-    ) -> Pin<Box<dyn Future<Output = Result<BashExecResult, BashError>> + Send + 'a>> {
+        options: BashExecOptions<'a, dyn FnMut(&[u8]) + 'a>,
+    ) -> Pin<Box<dyn Future<Output = Result<BashExecResult, BashError>> + 'a>> {
         Box::pin(async move {
             let data = options.on_data;
             for chunk in &self.before {
@@ -58,11 +58,11 @@ impl BashOperations for Script {
 }
 
 /// An answer supplying `script` as the command's operations.
-fn scripting(script: &Arc<Script>) -> Answer {
-    let operations = Arc::clone(script) as Arc<dyn BashOperations + Send + Sync>;
+fn scripting(script: &Rc<Script>) -> Answer {
+    let operations = Rc::clone(script) as Rc<dyn BashOperations<maestro_app::Local>>;
     Rc::new(move |_event: &mut maestro_app::UserBashEvent| {
         Some(Interception {
-            operations: Some(Arc::clone(&operations)),
+            operations: Some(Rc::clone(&operations)),
             result: None,
         })
     })
@@ -243,7 +243,7 @@ fn acknowledged_shell_drain_before_completion() {
         async |directory| {
             let (parked, parked_reached) = oneshot::channel();
             let (release, released) = oneshot::channel();
-            let script = Arc::new(Script {
+            let script = Rc::new(Script {
                 before: vec!["first\n"],
                 after: vec!["last\n"],
                 parked: Mutex::new(Some(parked)),
@@ -269,7 +269,7 @@ fn acknowledged_shell_pending_teardown_releases_row() {
     isolated(
         "acknowledged_shell_pending_teardown_releases_row",
         async |directory| {
-            let script = Arc::new(Script {
+            let script = Rc::new(Script {
                 before: vec!["first\n", "last\n"],
                 after: Vec::new(),
                 parked: Mutex::default(),

@@ -168,6 +168,22 @@ fn cleared_children_keep_the_temporary_directory() {
     }
 }
 
+#[test]
+fn cleared_children_open_sockets() {
+    let test = "cleared_children_open_sockets";
+    if maestro_test_process::selection().is_child() {
+        std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        return;
+    }
+    let output = TestProcess::current(test)
+        .unwrap()
+        .env_clear()
+        .case("*")
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+}
+
 /// Selection transport names that callers must never read or write.
 const SELECTION_VARIABLES: &[&str] = &[
     "MAESTRO_CHILD_CASE",

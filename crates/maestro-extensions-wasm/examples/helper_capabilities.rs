@@ -1,4 +1,5 @@
 //! An author fixture that observes helpers through the installed host.
+// maestro-component: MAESTRO_HELPER_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
@@ -84,6 +85,11 @@ fn observe(api: &ExtensionAPI, request: &Value) -> ExtensionResult<Value> {
         .is_some_and(|op| op.starts_with("msg.") || op.starts_with("co."))
     {
         return conversation::observe(api, request);
+    }
+    if request["operation"] == "config.getAgentDir" {
+        return Ok(serde_json::json!(
+            maestro_extensions_wasm::config::get_agent_dir(api)?
+        ));
     }
     if request["operation"] == "config.VERSION" {
         return Ok(serde_json::json!(maestro_extensions_wasm::config::version(

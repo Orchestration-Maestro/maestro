@@ -253,6 +253,10 @@ fn native_and_supplied_file_operations_have_the_same_contract() {
             // The fatal cases leave the process; they have their own witnesses.
             continue;
         }
+        if cfg!(windows) && file_names(&case).iter().any(|name| name.contains('"')) {
+            // Windows cannot store a double quote in a name, so it has no such fixture.
+            continue;
+        }
         assert_prepared(&case, scratch.path(), &native);
         let supplied = SuppliedFileOperations::new();
         assert_prepared(&case, scratch.path(), &supplied);
@@ -321,12 +325,13 @@ fn text_decoding_and_authored_file_names_are_not_rewritten() {
 fn read_path_variants_reach_the_existing_path_owner() {
     let scratch = scratch();
     let native = NativeFileArgumentOperations::new(false);
-    let absolute = format!("{}/first.txt", scratch.path().display());
+    let absolute = scratch.path().join("first.txt").display().to_string();
     let resolved = native.resolve_path(&absolute).unwrap();
     assert_eq!(resolved, absolute);
     for authored in ["./first.txt", "first.txt", "first.txt"] {
         let variant = native.resolve_path(authored).unwrap();
-        assert!(variant.ends_with("/first.txt"), "{authored}: {variant}");
+        let leaf = format!("{}first.txt", std::path::MAIN_SEPARATOR);
+        assert!(variant.ends_with(&leaf), "{authored}");
     }
 }
 
@@ -350,7 +355,7 @@ fn file_failure_phases_keep_their_diagnostics_and_exit_status() {
         assert_eq!(output.status.code(), Some(1), "{case}");
         let expected = recorded.expected["stderr"].as_str().unwrap().replace(
             "missing.txt",
-            &format!("{}/missing.txt", scratch.path().display()),
+            &scratch.path().join("missing.txt").display().to_string(),
         );
         assert_eq!(
             String::from_utf8_lossy(&output.stderr),
@@ -379,8 +384,8 @@ fn a_supplied_text_read_refusal_keeps_the_native_diagnostic_and_status() {
     assert_eq!(
         String::from_utf8_lossy(&output.stderr),
         format!(
-            "Error: Could not read file {}/first.txt: refused by the test route\n",
-            scratch.path().display()
+            "Error: Could not read file {}: refused by the test route\n",
+            scratch.path().join("first.txt").display()
         ),
         "a refused text read reports its path and cause"
     );

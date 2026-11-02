@@ -1,6 +1,6 @@
 [
   {
-    "test": "hotkeys_capitalize_extension_word_starts",
+    "test": "hotkeys_capitalize_the_start_of_each_extension_key_part",
     "input": {
       "key": ""
     },
@@ -9,7 +9,7 @@
     }
   },
   {
-    "test": "hotkeys_capitalize_extension_word_starts",
+    "test": "hotkeys_capitalize_the_start_of_each_extension_key_part",
     "input": {
       "key": "ctrl+alt+x"
     },
@@ -18,7 +18,7 @@
     }
   },
   {
-    "test": "hotkeys_capitalize_extension_word_starts",
+    "test": "hotkeys_capitalize_the_start_of_each_extension_key_part",
     "input": {
       "key": "alt+_word"
     },
@@ -27,7 +27,7 @@
     }
   },
   {
-    "test": "hotkeys_capitalize_extension_word_starts",
+    "test": "hotkeys_capitalize_the_start_of_each_extension_key_part",
     "input": {
       "key": "alt+9word"
     },
@@ -36,7 +36,7 @@
     }
   },
   {
-    "test": "hotkeys_capitalize_extension_word_starts",
+    "test": "hotkeys_capitalize_the_start_of_each_extension_key_part",
     "input": {
       "key": "ctrl++a//"
     },
@@ -45,30 +45,30 @@
     }
   },
   {
-    "test": "hotkeys_capitalize_extension_word_starts",
+    "test": "hotkeys_capitalize_the_start_of_each_extension_key_part",
     "input": {
       "key": "éclair+ßeta"
     },
     "expected": {
-      "result": "éClair+ßEta"
+      "result": "Éclair+SSeta"
     }
   },
   {
-    "test": "hotkeys_capitalize_extension_word_starts",
+    "test": "hotkeys_capitalize_the_start_of_each_extension_key_part",
     "input": {
       "key": "éclair"
     },
     "expected": {
-      "result": "ÉClair"
+      "result": "Éclair"
     }
   },
   {
-    "test": "hotkeys_capitalize_extension_word_starts",
+    "test": "hotkeys_capitalize_the_start_of_each_extension_key_part",
     "input": {
       "key": "foo-bar.baz/_word"
     },
     "expected": {
-      "result": "Foo-Bar.Baz/_word"
+      "result": "Foo-bar.baz/_word"
     }
   }
 ]

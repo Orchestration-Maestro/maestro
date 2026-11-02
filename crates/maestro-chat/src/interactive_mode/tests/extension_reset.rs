@@ -445,9 +445,18 @@ fn hidden_dialog_completion_preserves_the_active_panel() {
                 "a hidden dialog cannot replace the active input"
             );
             let mut next = ui.input("next".into(), None, None);
-            assert_eq!(super::typed::poll(&mut input).unwrap().unwrap(), None);
+            assert!(
+                super::typed::poll(&mut input).is_none(),
+                "the covered input stays open"
+            );
             active.input_handler().unwrap().handle_input("\r");
+            assert_eq!(
+                super::typed::poll(&mut input).unwrap().unwrap(),
+                Some(String::new())
+            );
             assert!(super::typed::poll(&mut next).is_none());
+            let shown = world.mode.editor_container.children().borrow()[0].clone();
+            assert!(!Rc::ptr_eq(&shown, &active), "the shown dialog stays");
             world.terminal.send_input("\x1b");
             assert_eq!(next.await.unwrap(), None);
             let shown = world.mode.editor_container.children().borrow()[0].clone();
@@ -500,6 +509,30 @@ fn loader_customizations_survive_multiple_prompt_turns() {
             assert!(!row.contains('@'), "{row}");
             let default = crate::AssistantMessageOptions::default().hidden_thinking_label;
             assert_eq!(*world.mode.working.hidden_thinking_label.borrow(), default);
+        },
+    );
+}
+
+#[test]
+fn reset_shows_the_default_message_on_a_running_loader() {
+    isolated(
+        "reset_shows_the_default_message_on_a_running_loader",
+        async |directory| {
+            let world = super::started(directory).await;
+            port(&world.mode)
+                .set_working_message(Some("Busy".into()))
+                .unwrap();
+            let (before, after) = with_held_response(&world, async |_| {
+                let before = working_row(&world);
+                world.mode.reset_extension_ui().unwrap();
+                (before, working_row(&world))
+            })
+            .await;
+            assert!(before.contains("Busy"), "{before}");
+            let interrupt = maestro_app::key_text("app.interrupt");
+            let message = format!("Working... ({interrupt} to interrupt)");
+            assert!(after.contains(&message), "{after}");
+            assert!(!after.contains("Busy"), "{after}");
         },
     );
 }

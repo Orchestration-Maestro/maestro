@@ -170,6 +170,10 @@ disposal the host calls when it removes the component, `set_expanded` for a head
 that follows tool expansion, and `width`, which an overlay uses when no overlay
 options are supplied. A plain component leaves them `None`.
 
+Editor and custom-component factories receive `ExtensionKeybindings`, retaining the
+application manager and its reload after the factory returns. Pass its `manager`
+field only when constructing a toolkit `CustomEditor`.
+
 An editor factory returns an `EditorFactoryOutcome`: `Editor` for a plain
 `EditorComponent`, or `CustomEditor` for an editor that also implements
 `CustomEditorComponent`. That capability exposes the live `ActionHandlers` map and
@@ -183,6 +187,27 @@ The `try_` forms of text, history, insertion, expanded text, completion provider
 padding and completion height call the plain operation by default. An editor backed
 by an extension component overrides them to return its original failure, and a
 wrapping editor forwards them rather than calling the plain operations.
+
+## Host widgets
+
+`ExtensionWidgets` builds the widgets whose look depends on the host: Markdown laid out
+for the host terminal, the live theme's Markdown styles with the host's code
+highlighting, and the application's dynamic border. Every mode supplies one, so an
+extension can build widgets without an interactive UI; only showing them goes through
+the UI context. Text, boxes, containers and spacers need nothing from the host and come
+from the toolkit directly. `maestro_extensions::widgets` re-exports those toolkit
+widgets beside the capability, and the chat crate's `ExtensionWidgetHost` implements it.
+The capability also lends the live theme's selection and settings list styles and builds the
+application's bordered loader as an `ExtensionLoader`, whose signal, abort notification,
+disposal and rows the extension keeps. It builds the application's keybindings managers as
+`ExtensionKeybindings`. Its `reload()` uses the supplied application reload; a pathless
+manager keeps its runtime overrides. `get_effective_config()` returns an owned snapshot
+of resolved known actions, not raw user overrides. Clones share the manager and its reload;
+ordinary toolkit operations such as `get_keys()` and `set_user_bindings()` remain available.
+`create_keybindings(agent_dir)` loads through the host's existing application manager.
+The capability formats keybinding hints and editor styles with the live theme. It builds
+the application's custom editor as an `ExtensionEditor`, whose toolkit editor answers
+the editor requests.
 
 ## Custom components
 
@@ -208,3 +233,5 @@ later extensions are not consulted. A renderer receives the shared
 `CustomMessage<T>`, the `MessageRenderOptions` and the live theme, and returns a
 component or `None` to keep the default rendering. Registration follows the
 same activity rules as other registrations.
+The [message renderer example](../../examples/extensions/message_renderer.md)
+registers one from a component and sends the messages it draws.

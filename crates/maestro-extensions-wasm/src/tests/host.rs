@@ -1,14 +1,16 @@
 //! A test-only native host: it instantiates the built author component and implements the
 //! imports the component calls.
-use std::path::Path;
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
-use std::sync::{Arc, OnceLock};
+use std::sync::{Arc, LazyLock, Mutex, OnceLock};
 use std::time::Duration;
 
 use tokio::sync::oneshot;
 use wasmtime::component::{Accessor, Component, HasData, Linker, Resource, ResourceTable};
 use wasmtime::{Engine, Store};
 use wasmtime_wasi::clocks::HostWallClock;
+use wasmtime_wasi::p2::pipe::MemoryOutputPipe;
 use wasmtime_wasi::{WasiCtx, WasiCtxBuilder, WasiCtxView, WasiView};
 
 use super::observed::{Observed, Session, pause};
@@ -32,6 +34,140 @@ pub use super::schema_host::JsonNode;
 pub struct Flag(pub std::sync::Arc<std::sync::atomic::AtomicBool>);
 /// Progress resource owned by one execution.
 pub struct Update;
+
+/// Native tool resources are created only by the production runtime, not this fixture.
+pub enum BuiltinTool {}
+/// Local shell operations exist only on the production host.
+pub enum LocalBashOperations {}
+impl host::HostLocalBashOperations for State {
+    fn drop(&mut self, _: Resource<LocalBashOperations>) -> wasmtime::Result<()> {
+        wasmtime::bail!("local shell operations require the production host")
+    }
+}
+impl host::HostLocalBashOperationsWithStore<State> for Imports {
+    fn exec(
+        _: &Accessor<State, Self>,
+        _: Resource<LocalBashOperations>,
+        _: host::BashRequest,
+        _: Option<Resource<Flag>>,
+        _: Resource<Identity>,
+    ) -> impl std::future::Future<Output = wasmtime::Result<Result<Option<f64>, String>>> {
+        std::future::ready(Err(wasmtime::format_err!(
+            "local shell operations require the production host"
+        )))
+    }
+}
+/// Queue futures exist only on the production host.
+pub enum FileMutation {}
+impl host::HostFileMutation for State {
+    fn drop(&mut self, _: Resource<FileMutation>) -> wasmtime::Result<()> {
+        wasmtime::bail!("file mutation queues require the production host")
+    }
+}
+impl host::HostFileMutationWithStore<State> for Imports {
+    fn wait(
+        _: &Accessor<State, Self>,
+        _: Resource<FileMutation>,
+    ) -> impl std::future::Future<Output = wasmtime::Result<Result<(), String>>> {
+        std::future::ready(Err(wasmtime::format_err!(
+            "file mutation queues require the production host"
+        )))
+    }
+}
+
+/// Native row resources are lent only by the production host.
+pub enum NativeRow {}
+/// Native component resources are returned only by the production host.
+pub enum NativeComponent {}
+impl host::HostNativeRow for State {
+    fn drop(&mut self, _: Resource<NativeRow>) -> wasmtime::Result<()> {
+        wasmtime::bail!("native rendering requires the production host")
+    }
+}
+impl host::HostNativeComponent for State {
+    fn render(
+        &mut self,
+        _: Resource<NativeComponent>,
+        _: u32,
+    ) -> wasmtime::Result<Resource<Route>> {
+        wasmtime::bail!("native rendering requires the production host")
+    }
+    fn handle_input(
+        &mut self,
+        _: Resource<NativeComponent>,
+        _: String,
+    ) -> wasmtime::Result<Resource<Route>> {
+        wasmtime::bail!("native rendering requires the production host")
+    }
+    fn invalidate(&mut self, _: Resource<NativeComponent>) -> wasmtime::Result<Resource<Route>> {
+        wasmtime::bail!("native rendering requires the production host")
+    }
+    fn wants_key_release(
+        &mut self,
+        _: Resource<NativeComponent>,
+    ) -> wasmtime::Result<Resource<Route>> {
+        wasmtime::bail!("native rendering requires the production host")
+    }
+    fn drop(&mut self, _: Resource<NativeComponent>) -> wasmtime::Result<()> {
+        wasmtime::bail!("native rendering requires the production host")
+    }
+}
+impl host::HostBuiltinTool for State {
+    fn render_call(
+        &mut self,
+        _: Resource<BuiltinTool>,
+        _: Option<String>,
+        _: host::ToolRenderInfo,
+        _: Resource<super::renderer_host::Theme>,
+        _: Option<Resource<NativeRow>>,
+        _: Option<Resource<NativeComponent>>,
+        _: Option<Resource<Identity>>,
+    ) -> wasmtime::Result<Resource<Route>> {
+        wasmtime::bail!("native rendering requires the production host")
+    }
+    fn render_result(
+        &mut self,
+        _: Resource<BuiltinTool>,
+        _: String,
+        _: host::ToolRenderResultOptions,
+        _: host::ToolRenderInfo,
+        _: Resource<super::renderer_host::Theme>,
+        _: Option<Resource<NativeRow>>,
+        _: Option<Resource<NativeComponent>>,
+        _: Option<Resource<Identity>>,
+    ) -> wasmtime::Result<Resource<Route>> {
+        wasmtime::bail!("native rendering requires the production host")
+    }
+
+    fn metadata(&mut self, _: Resource<BuiltinTool>) -> wasmtime::Result<Result<String, String>> {
+        wasmtime::bail!("built-in tools require the production host")
+    }
+    fn prepare(
+        &mut self,
+        _: Resource<BuiltinTool>,
+        _: String,
+    ) -> wasmtime::Result<Result<host::PreparedArguments, String>> {
+        wasmtime::bail!("built-in tools require the production host")
+    }
+    fn drop(&mut self, _: Resource<BuiltinTool>) -> wasmtime::Result<()> {
+        wasmtime::bail!("built-in tools require the production host")
+    }
+}
+impl host::HostBuiltinToolWithStore<State> for Imports {
+    fn execute(
+        _: &Accessor<State, Self>,
+        _: Resource<BuiltinTool>,
+        _: String,
+        _: String,
+        _: Option<String>,
+        _: Option<Resource<Flag>>,
+        _: Option<Resource<Identity>>,
+    ) -> impl std::future::Future<Output = wasmtime::Result<Result<String, String>>> {
+        std::future::ready(Err(wasmtime::format_err!(
+            "built-in tools require the production host"
+        )))
+    }
+}
 
 /// Host type of the ordinary context resource.
 pub struct Ordinary(Session, super::reader_host::Reader);
@@ -96,6 +232,8 @@ pub struct State {
     clock: Option<Clock>,
     /// Host-side resources by handle.
     pub table: ResourceTable,
+    /// Reports delivery of caller-owned cancellation to a pending component dialog.
+    pub abort_notice: Option<oneshot::Sender<()>>,
     /// What the host observed.
     pub observed: Observed,
     /// The guest, once instantiated, so imports can call back into it.
@@ -174,7 +312,21 @@ impl State {
 
     /// A state with no registrations whose standard library reads `clock`.
     fn with_clock(clock: Option<Clock>) -> Self {
+        Self::with_wasi(clock, WasiCtxBuilder::new())
+    }
+
+    /// A state whose standard output the guest writes into `stdout`.
+    fn capturing(stdout: &MemoryOutputPipe) -> Self {
         let mut builder = WasiCtxBuilder::new();
+        builder.stdout(stdout.clone());
+        let mut state = Self::with_wasi(None, builder);
+        state.observed.stdout = Some(stdout.clone());
+        state
+    }
+
+    /// A state with no registrations served by `builder`, reading `clock` when the test
+    /// supplies one.
+    fn with_wasi(clock: Option<Clock>, mut builder: WasiCtxBuilder) -> Self {
         if let Some(clock) = &clock {
             builder.wall_clock(clock.clone());
         }
@@ -182,6 +334,7 @@ impl State {
             wasi: builder.build(),
             clock,
             table: ResourceTable::new(),
+            abort_notice: None,
             observed: Observed::default(),
             guest: None,
             schema_origin: None,
@@ -194,6 +347,9 @@ impl State {
             .get_mut(&Resource::<Flag>::new_borrow(flag))?
             .0
             .store(true, std::sync::atomic::Ordering::SeqCst);
+        if let Some(notice) = self.abort_notice.take() {
+            let _ = notice.send(());
+        }
         Ok(())
     }
 
@@ -308,11 +464,11 @@ macro_rules! context_methods {
             &mut self,
             this: Resource<$kind>,
         ) -> wasmtime::Result<Result<Resource<super::ui_host::Ui>, String>> {
-            let _ = &this;
             if let Err(e) = self.observed.catalog.check() {
                 return Ok(Err(e));
             }
-            let key = self.observed.ui.acquire();
+            let cwd = &self.table.get(&this)?.0.cwd;
+            let key = self.observed.ui.acquire(cwd);
             Ok(Ok(self.push(super::ui_host::Ui(key))?))
         }
         fn has_ui(&mut self, this: Resource<$kind>) -> wasmtime::Result<Result<bool, String>> {
@@ -539,6 +695,8 @@ pub struct Route {
     pub(super) running: Option<super::ui_host::Nested>,
     /// The operation's own result.
     pub(super) result: Option<Result<host::RouteValue, String>>,
+    /// A rendering's pieces, which its nested results complete into its rows.
+    pub(super) rows: Option<super::widget_component::Rows>,
 }
 
 /// A deferred nested call; the test host never makes one.
@@ -559,10 +717,18 @@ impl State {
         &mut self,
         result: Result<(), String>,
     ) -> wasmtime::Result<Resource<Route>> {
+        self.routed_value(result.map(|()| host::RouteValue::Unit))
+    }
+    /// Preserves a non-unit routed result for a controlled resource operation.
+    pub(super) fn routed_value(
+        &mut self,
+        result: Result<host::RouteValue, String>,
+    ) -> wasmtime::Result<Resource<Route>> {
         self.push(Route {
             steps: std::collections::VecDeque::new(),
             running: None,
-            result: Some(result.map(|()| host::RouteValue::Unit)),
+            rows: None,
+            result: Some(result),
         })
     }
 }
@@ -586,12 +752,34 @@ impl host::HostImportRoute for State {
             route.running = Some(nested);
             return Ok(host::RouteStep::Invoke(call));
         }
+        if let Some(rows) = route.rows.as_mut() {
+            return Ok(host::RouteStep::Done(
+                rows.rows().map(host::RouteValue::Lines),
+            ));
+        }
         Ok(host::RouteStep::Done(
             route.result.take().unwrap_or(Ok(host::RouteValue::Unit)),
         ))
     }
     fn resume(&mut self, this: Resource<Route>, value: host::LocalResult) -> wasmtime::Result<()> {
-        let nested = self.table.get_mut(&this)?.running.take();
+        let route = self.table.get_mut(&this)?;
+        let nested = route.running.take();
+        if let Some(rows) = route.rows.as_mut() {
+            rows.results.push_back(value);
+            return Ok(());
+        }
+        if let Some(super::ui_host::Nested::Shortcut(key, data)) = &nested
+            && let host::LocalResult::Widget(Ok(host::WidgetAnswer::Consumed(false))) = &value
+        {
+            let continued = super::widget_editors::proceed(&mut self.observed, *key, data);
+            match continued {
+                Ok(calls) => {
+                    let steps = self.steps(*key, calls)?;
+                    self.table.get_mut(&this)?.steps.extend(steps);
+                }
+                Err(error) => self.table.get_mut(&this)?.result = Some(Err(error)),
+            }
+        }
         let failure = match nested {
             Some(nested) => self.settle_nested(nested, value)?,
             None => None,
@@ -610,6 +798,272 @@ impl host::HostImportRoute for State {
 }
 
 impl host::Host for State {
+    fn create_local_bash_operations(
+        &mut self,
+        _: Option<String>,
+    ) -> wasmtime::Result<Result<Resource<LocalBashOperations>, String>> {
+        wasmtime::bail!("local shell operations require the production host")
+    }
+    fn with_file_mutation_queue(
+        &mut self,
+        _: String,
+    ) -> wasmtime::Result<Result<Resource<FileMutation>, String>> {
+        wasmtime::bail!("file mutation queues require the production host")
+    }
+
+    fn new_overlay_options(
+        &mut self,
+        encoded: String,
+    ) -> wasmtime::Result<Result<Resource<super::overlay_host::Options>, String>> {
+        super::overlay_host::create(self, &encoded)
+    }
+    fn new_text(
+        &mut self,
+        text: String,
+        padding_x: u32,
+        padding_y: u32,
+        background: Option<host::StyleSource>,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        let paint = self.paints(background.as_ref())?;
+        self.build_widget(super::widget_host::Build {
+            kind: "text",
+            text,
+            padding: (padding_x, padding_y),
+            paint,
+            ..Default::default()
+        })
+    }
+    fn new_box(
+        &mut self,
+        padding_x: u32,
+        padding_y: u32,
+        background: Option<host::StyleSource>,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        let paint = self.paints(background.as_ref())?;
+        self.build_widget(super::widget_host::Build {
+            kind: "box",
+            padding: (padding_x, padding_y),
+            paint,
+            ..Default::default()
+        })
+    }
+    fn new_container(
+        &mut self,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        self.build_widget(super::widget_host::Build {
+            kind: "container",
+            ..Default::default()
+        })
+    }
+    fn new_spacer(
+        &mut self,
+        lines: u32,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        self.build_widget(super::widget_host::Build {
+            kind: "spacer",
+            lines,
+            ..Default::default()
+        })
+    }
+    fn new_markdown(
+        &mut self,
+        text: String,
+        padding_x: u32,
+        padding_y: u32,
+        theme: host::MarkdownStyles,
+        style: Option<host::DefaultTextStyle>,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        self.build_markdown(text, (padding_x, padding_y), &theme, style.as_ref())
+    }
+    fn new_dynamic_border(
+        &mut self,
+        color: Option<host::StyleSource>,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        let paint = self.paints(color.as_ref())?;
+        self.build_widget(super::widget_host::Build {
+            kind: "border",
+            paint,
+            ..Default::default()
+        })
+    }
+    fn global_theme(
+        &mut self,
+    ) -> wasmtime::Result<Result<Resource<super::renderer_host::Theme>, String>> {
+        Ok(Ok(self
+            .table
+            .push(super::renderer_host::Theme("dark".into()))?))
+    }
+    fn get_markdown_theme(&mut self) -> wasmtime::Result<Result<host::MarkdownTheme, String>> {
+        self.markdown_theme().map(Ok)
+    }
+    fn new_select_list(
+        &mut self,
+        items: Vec<host::SelectItem>,
+        max_visible: u32,
+        theme: host::SelectListStyles,
+        layout: host::SelectLayout,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        self.build_select_list(items, max_visible, &theme, &layout)
+    }
+    fn new_settings_list(
+        &mut self,
+        items: Vec<host::SettingItem>,
+        max_visible: u32,
+        theme: host::SettingsListStyles,
+        on_change: Resource<Identity>,
+        on_cancel: Resource<Identity>,
+        enable_search: bool,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        let callbacks = (self.table.get(&on_change)?.0, self.table.get(&on_cancel)?.0);
+        self.build_settings_list((items, max_visible), &theme, callbacks, enable_search)
+    }
+    fn new_editor(
+        &mut self,
+        _: Resource<super::ui_host::Tui>,
+        theme: host::EditorStyles,
+        options: host::EditorOptions,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        self.build_editor(&theme, None, options)
+    }
+    fn new_custom_editor(
+        &mut self,
+        _: Resource<super::ui_host::Tui>,
+        theme: host::EditorStyles,
+        keybindings: Resource<super::widget_component::KeybindingsResource>,
+        options: host::EditorOptions,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        let keys = self.table.get(&keybindings)?.0;
+        self.build_editor(&theme, Some(keys), options)
+    }
+    fn new_bordered_loader(
+        &mut self,
+        _: Resource<super::ui_host::Tui>,
+        theme: Resource<super::renderer_host::Theme>,
+        message: String,
+        cancellable: Option<bool>,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::WidgetResource>, String>> {
+        self.build_loader(&theme, message, cancellable)
+    }
+    fn get_select_list_theme(&mut self) -> wasmtime::Result<Result<host::SelectListTheme, String>> {
+        self.observed.log("getSelectListTheme");
+        let mut role =
+            |name: &str| self.push(super::widget_component::StyleResource(name.to_owned()));
+        Ok(Ok(host::SelectListTheme {
+            selected_prefix: role("selectedPrefix")?,
+            selected_text: role("selectedText")?,
+            description: role("description")?,
+            scroll_info: role("scrollInfo")?,
+            no_match: role("noMatch")?,
+        }))
+    }
+    fn new_keybindings_manager(
+        &mut self,
+        user_bindings: Vec<(String, Option<host::KeybindingKeys>)>,
+        config_path: Option<String>,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::KeybindingsResource>, String>>
+    {
+        let user = super::widget_component::config(user_bindings);
+        self.keep_keys(None, user, config_path)
+    }
+    fn create_keybindings_manager(
+        &mut self,
+        agent_dir: Option<String>,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::KeybindingsResource>, String>>
+    {
+        let path = format!(
+            "{}/keybindings.json",
+            agent_dir.as_deref().unwrap_or("/agent")
+        );
+        self.keep_keys(None, Vec::new(), Some(path))
+    }
+    fn new_keybindings_with_definitions(
+        &mut self,
+        definitions: Vec<(String, host::KeybindingDefinition)>,
+        user_bindings: Vec<(String, Option<host::KeybindingKeys>)>,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::KeybindingsResource>, String>>
+    {
+        let definitions = super::widget_component::definitions(definitions);
+        let user = super::widget_component::config(user_bindings);
+        self.keep_keys(Some(definitions), user, None)
+    }
+    fn get_keybindings(
+        &mut self,
+    ) -> wasmtime::Result<Result<Resource<super::widget_component::KeybindingsResource>, String>>
+    {
+        self.observed.log("getKeybindings");
+        Ok(Ok(
+            self.push(super::widget_component::KeybindingsResource(0))?
+        ))
+    }
+    fn key_text(&mut self, keybinding: String) -> wasmtime::Result<Result<String, String>> {
+        Ok(Ok(super::widget_keys::hint(
+            &mut self.observed,
+            Some(&keybinding),
+            None,
+            None,
+        )))
+    }
+    fn key_hint(
+        &mut self,
+        keybinding: String,
+        description: String,
+    ) -> wasmtime::Result<Result<String, String>> {
+        let hint = super::widget_keys::hint(
+            &mut self.observed,
+            Some(&keybinding),
+            None,
+            Some(&description),
+        );
+        Ok(Ok(hint))
+    }
+    fn raw_key_hint(
+        &mut self,
+        key: String,
+        description: String,
+    ) -> wasmtime::Result<Result<String, String>> {
+        let hint =
+            super::widget_keys::hint(&mut self.observed, None, Some(&key), Some(&description));
+        Ok(Ok(hint))
+    }
+    fn get_editor_theme(&mut self) -> wasmtime::Result<Result<host::EditorTheme, String>> {
+        self.editor_theme().map(Ok)
+    }
+    fn get_settings_list_theme(
+        &mut self,
+    ) -> wasmtime::Result<Result<host::SettingsListTheme, String>> {
+        self.observed.log("getSettingsListTheme");
+        Ok(Ok(host::SettingsListTheme {
+            label: self.push(super::widget_component::RowStyleResource(
+                "label".to_owned(),
+            ))?,
+            value: self.push(super::widget_component::RowStyleResource(
+                "value".to_owned(),
+            ))?,
+            description: self.push(super::widget_component::StyleResource(
+                "description".to_owned(),
+            ))?,
+            cursor: "→ ".to_owned(),
+            hint: self.push(super::widget_component::StyleResource("hint".to_owned()))?,
+        }))
+    }
+
+    fn watch(
+        &mut self,
+        path: String,
+        listener: Resource<Identity>,
+    ) -> wasmtime::Result<Result<Resource<super::native_watch_host::Watcher>, String>> {
+        match self
+            .observed
+            .native_watch
+            .component_watch(path, listener.rep())
+        {
+            Ok(watcher) => Ok(Ok(self.push(watcher)?)),
+            Err(error) => Ok(Err(error)),
+        }
+    }
+    fn kill(&mut self, pid: i32, signal: Option<String>) -> wasmtime::Result<Result<(), String>> {
+        Ok(self.observed.native_io.kill(pid, signal))
+    }
     fn model_stream(
         &mut self,
         _: bool,
@@ -627,6 +1081,74 @@ impl host::Host for State {
         Ok(Err(super::stream_host::PRODUCTION_HOST.into()))
     }
 
+    fn create_grep_tool(
+        &mut self,
+        _: String,
+        _: Option<Resource<Identity>>,
+    ) -> wasmtime::Result<Result<Resource<BuiltinTool>, String>> {
+        wasmtime::bail!("built-in tools require the production host")
+    }
+    fn create_ls_tool(
+        &mut self,
+        _: String,
+        _: Option<Resource<Identity>>,
+    ) -> wasmtime::Result<Result<Resource<BuiltinTool>, String>> {
+        wasmtime::bail!("built-in tools require the production host")
+    }
+    fn create_find_tool(
+        &mut self,
+        _: String,
+        _: Option<Resource<Identity>>,
+    ) -> wasmtime::Result<Result<Resource<BuiltinTool>, String>> {
+        wasmtime::bail!("built-in tools require the production host")
+    }
+    fn create_write_tool(
+        &mut self,
+        _: String,
+        _: Option<Resource<Identity>>,
+    ) -> wasmtime::Result<Result<Resource<BuiltinTool>, String>> {
+        wasmtime::bail!("built-in tools require the production host")
+    }
+    fn create_edit_tool(
+        &mut self,
+        _: String,
+        _: Option<Resource<Identity>>,
+    ) -> wasmtime::Result<Result<Resource<BuiltinTool>, String>> {
+        wasmtime::bail!("built-in tools require the production host")
+    }
+    fn create_bash_tool(
+        &mut self,
+        _: String,
+        _: host::BashToolControls,
+        _: Option<Resource<Identity>>,
+        _: Option<Resource<Identity>>,
+    ) -> wasmtime::Result<Result<Resource<BuiltinTool>, String>> {
+        wasmtime::bail!("built-in tools require the production host")
+    }
+    fn create_tool_preset(
+        &mut self,
+        _: host::ToolPreset,
+        _: String,
+        _: host::ToolFactoryOptions,
+    ) -> wasmtime::Result<Result<Vec<(host::ToolName, Resource<BuiltinTool>)>, String>> {
+        wasmtime::bail!("built-in tools require the production host")
+    }
+    fn create_tool(
+        &mut self,
+        _: String,
+        _: String,
+        _: host::ToolFactoryOptions,
+    ) -> wasmtime::Result<Result<Resource<BuiltinTool>, String>> {
+        wasmtime::bail!("built-in tools require the production host")
+    }
+    fn create_read_tool(
+        &mut self,
+        _: String,
+        _: Option<bool>,
+        _: Option<Resource<Identity>>,
+    ) -> wasmtime::Result<Result<Resource<BuiltinTool>, String>> {
+        wasmtime::bail!("built-in tools require the production host")
+    }
     fn native_format_size(&mut self, _bytes: f64) -> wasmtime::Result<Result<String, String>> {
         Ok(self
             .observed
@@ -649,12 +1171,21 @@ impl host::Host for State {
             body: "body".into(),
         }))
     }
+    fn native_yaml(
+        &mut self,
+        _content: String,
+    ) -> wasmtime::Result<Result<Vec<host::FrontmatterToken>, String>> {
+        Ok(Err("raw YAML requires the production helper host".into()))
+    }
     fn native_helper(
         &mut self,
         operation: String,
-        _data: String,
+        data: String,
     ) -> wasmtime::Result<Result<String, String>> {
-        Ok(self.observed.actions.record_for(&operation))
+        self.observed
+            .helper_calls
+            .push((operation.clone(), data.clone()));
+        Ok(self.observed.actions.helper(&operation, &data))
     }
     fn callback_emit(
         &mut self,
@@ -806,14 +1337,22 @@ impl host::Host for State {
     }
     fn get_active_tools(&mut self) -> wasmtime::Result<Result<Vec<String>, String>> {
         Ok(self.observed.actions.check().and_then(|()| {
-            serde_json::from_value(self.observed.actions.value.clone()).map_err(|e| e.to_string())
+            serde_json::from_value(
+                self.observed
+                    .actions
+                    .value
+                    .get("getActiveTools")
+                    .unwrap_or(&self.observed.actions.value)
+                    .clone(),
+            )
+            .map_err(|e| e.to_string())
         }))
     }
     fn get_commands(&mut self) -> wasmtime::Result<Result<String, String>> {
         Ok(self.observed.actions.record())
     }
     fn get_thinking_level(&mut self) -> wasmtime::Result<Result<String, String>> {
-        Ok(self.observed.actions.record())
+        Ok(self.observed.actions.record_for("getThinkingLevel"))
     }
 
     fn event_on(
@@ -905,6 +1444,13 @@ impl host::Host for State {
             .register(format!("shortcut {shortcut}"), handler.rep());
         Ok(Ok(()))
     }
+    fn contribute_load_time(
+        &mut self,
+        contributions: String,
+    ) -> wasmtime::Result<Result<(), String>> {
+        self.observed.log(format!("load-time {contributions}"));
+        Ok(Ok(()))
+    }
     fn register_flag(
         &mut self,
         name: String,
@@ -944,65 +1490,80 @@ impl host::Host for State {
 
     fn auth_storage_from_backend(
         &mut self,
-        _backend: Resource<Identity>,
+        backend: Resource<Identity>,
     ) -> wasmtime::Result<Resource<Route>> {
-        let result = self.observed.readers.acquire().and_then(|reader| {
-            reader.unit("auth_storage_from_backend", &[])?;
-            self.table
-                .push(reader)
-                .map(host::RouteValue::Credentials)
-                .map_err(|error| error.to_string())
-        });
-        self.push(Route {
-            steps: std::collections::VecDeque::new(),
-            running: None,
-            result: Some(result),
-        })
+        let reader = match self.observed.readers.acquire() {
+            Ok(reader) => reader.fresh(),
+            Err(error) => return self.routed(Err(error)),
+        };
+        if let Err(error) = reader.unit("auth_storage_from_backend", &[]) {
+            return self.routed(Err(error));
+        }
+        reader.1.lock().unwrap().backend = Some(self.table.get(&backend)?.0);
+        self.observed
+            .register("credential-backend".into(), backend.rep());
+        let owner = self.push(reader.clone())?;
+        self.credential_backend_route(&reader, Ok(host::RouteValue::Credentials(owner)))
     }
     fn create_auth_storage(
         &mut self,
         path: Option<String>,
     ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
-        let result = self.observed.readers.acquire().and_then(|reader| {
-            reader.unit("create_auth_storage", &[serde_json::json!(path)])?;
-            self.table.push(reader).map_err(|error| error.to_string())
-        });
+        let result = self
+            .observed
+            .readers
+            .acquire()
+            .map(|reader| reader.fresh())
+            .and_then(|reader| {
+                reader.unit("create_auth_storage", &[serde_json::json!(path)])?;
+                self.table.push(reader).map_err(|error| error.to_string())
+            });
         Ok(result)
     }
     fn auth_storage_in_memory(
         &mut self,
         data: String,
     ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
-        let result = self.observed.readers.acquire().and_then(|reader| {
-            reader.unit("auth_storage_in_memory", &[serde_json::json!(data)])?;
-            self.table.push(reader).map_err(|error| error.to_string())
-        });
+        let result = self
+            .observed
+            .readers
+            .acquire()
+            .map(|reader| reader.fresh())
+            .and_then(|reader| {
+                reader.unit("auth_storage_in_memory", &[serde_json::json!(data)])?;
+                self.table.push(reader).map_err(|error| error.to_string())
+            });
         Ok(result)
     }
     fn create_model_registry(
         &mut self,
         auth: Resource<super::reader_host::Reader>,
         path: Option<String>,
-    ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
+    ) -> wasmtime::Result<Resource<Route>> {
         let reader = self.table.get(&auth)?.clone();
-        Ok(reader
+        let registry = reader
             .unit("create_model_registry", &[serde_json::json!(path)])
-            .and_then(|()| self.table.push(reader).map_err(|error| error.to_string())))
+            .and_then(|()| self.table.push(reader).map_err(|error| error.to_string()));
+        self.routed_value(registry.map(host::RouteValue::Catalog))
     }
     fn in_memory_model_registry(
         &mut self,
         auth: Resource<super::reader_host::Reader>,
-    ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
+    ) -> wasmtime::Result<Resource<Route>> {
         let reader = self.table.get(&auth)?.clone();
-        Ok(reader
+        let registry = reader
             .unit("in_memory_model_registry", &[])
-            .and_then(|()| self.table.push(reader).map_err(|error| error.to_string())))
+            .and_then(|()| self.table.push(reader).map_err(|error| error.to_string()));
+        self.routed_value(registry.map(host::RouteValue::Catalog))
     }
     fn register_provider(
         &mut self,
         name: String,
         config: String,
-        _stream: Option<Resource<Identity>>,
+        _callbacks: (
+            Option<Resource<super::host::Identity>>,
+            Option<(Resource<super::host::Identity>, String, Option<bool>)>,
+        ),
     ) -> wasmtime::Result<Resource<Route>> {
         self.observed
             .log(format!("provider register {name} {config}"));
@@ -1019,6 +1580,9 @@ impl host::Host for State {
         custom_type: String,
         data: Option<String>,
     ) -> wasmtime::Result<Resource<Route>> {
+        if let Some(error) = self.observed.actions.entry_error.take() {
+            return self.routed(Err(error));
+        }
         if custom_type == "state Ω"
             && let Err(error) = self.observed.actions.check()
         {
@@ -1283,12 +1847,22 @@ pub struct Harness {
     pub exports: Guest,
 }
 
-/// Shares an engine within a process and cached compilation beside the built artifact.
-pub(super) fn compiled(path: &Path) -> wasmtime::Result<&'static (Engine, Component)> {
-    static COMPILED: OnceLock<Result<(Engine, Component), String>> = OnceLock::new();
-    COMPILED
-        .get_or_init(|| super::build::compile(path).map_err(|error| error.to_string()))
+/// Shares one engine within a process and caches each component by its artifact path.
+pub(super) fn compiled(path: &Path) -> wasmtime::Result<(Engine, Component)> {
+    static ENGINE: OnceLock<Result<Engine, String>> = OnceLock::new();
+    static COMPONENTS: LazyLock<Mutex<HashMap<PathBuf, Result<Component, String>>>> =
+        LazyLock::new(Mutex::default);
+    let engine = ENGINE
+        .get_or_init(|| super::build::engine().map_err(|error| error.to_string()))
         .as_ref()
+        .map_err(|message| wasmtime::format_err!("{message}"))?;
+    COMPONENTS
+        .lock()
+        .unwrap()
+        .entry(path.to_path_buf())
+        .or_insert_with(|| Component::from_file(engine, path).map_err(|error| error.to_string()))
+        .as_ref()
+        .map(|component| (engine.clone(), component.clone()))
         .map_err(|message| wasmtime::format_err!("{message}"))
 }
 
@@ -1296,6 +1870,7 @@ pub(super) fn compiled(path: &Path) -> wasmtime::Result<&'static (Engine, Compon
 fn component_linker(engine: &Engine) -> wasmtime::Result<Linker<State>> {
     let mut linker = Linker::new(engine);
     wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
+    wasmtime_wasi::p3::add_to_linker(&mut linker)?;
     Extension::add_to_linker::<State, Imports>(&mut linker, |state| state)?;
     Ok(linker)
 }
@@ -1315,7 +1890,7 @@ impl Harness {
     /// Instantiates the component and runs its factory.
     pub async fn start(path: &Path) -> wasmtime::Result<Self> {
         let (engine, component) = compiled(path)?;
-        Self::from_compiled(engine, component).await
+        Self::from_compiled(&engine, &component).await
     }
 
     /// Instantiates one registered example and runs its factory.
@@ -1334,6 +1909,30 @@ impl Harness {
         Self::start_on(engine, component, State::new()).await
     }
 
+    /// Instantiates a component with explicitly supplied host replies and standard capabilities.
+    pub async fn from_compiled_with_inputs(
+        engine: &Engine,
+        component: &Component,
+        observed: Observed,
+        wasi: WasiCtx,
+    ) -> wasmtime::Result<Self> {
+        let mut state = State::new();
+        state.observed = observed;
+        state.wasi = wasi;
+        Self::start_on(engine, component, state).await
+    }
+
+    /// Instantiates a supplied component with controlled standard environment and streams.
+    pub async fn from_compiled_with_wasi(
+        engine: &Engine,
+        component: &Component,
+        wasi: WasiCtx,
+    ) -> wasmtime::Result<Self> {
+        let mut state = State::new();
+        state.wasi = wasi;
+        Self::start_on(engine, component, state).await
+    }
+
     /// Instantiates a supplied compiled component whose standard library reads `clock`.
     pub async fn from_compiled_with_clock(
         engine: &Engine,
@@ -1343,12 +1942,48 @@ impl Harness {
         Self::start_on(engine, component, State::with_clock(Some(clock))).await
     }
 
-    /// Instantiates a component on `state` and runs its factory.
+    /// Instantiates a supplied compiled component with the guest's standard output captured
+    /// into a pipe of `size` bytes, which the harness also returns.
+    pub async fn from_compiled_capturing(
+        engine: &Engine,
+        component: &Component,
+        size: usize,
+    ) -> wasmtime::Result<(Self, MemoryOutputPipe)> {
+        let stdout = MemoryOutputPipe::new(size);
+        let harness = Self::start_on(engine, component, State::capturing(&stdout)).await?;
+        Ok((harness, stdout))
+    }
+
+    /// Instantiates a supplied compiled component whose host refuses every registration with
+    /// `error`, and returns the harness beside the outcome of the factory's start.
+    pub async fn from_compiled_refusing(
+        engine: &Engine,
+        component: &Component,
+        error: &str,
+    ) -> wasmtime::Result<(Self, Result<(), String>)> {
+        let mut state = State::new();
+        state.observed.registrations.error = Some(error.to_owned());
+        Box::pin(Self::start_reporting(engine, component, state)).await
+    }
+
+    /// Instantiates a component on `state` and runs its factory, failing when the factory fails.
     async fn start_on(
         engine: &Engine,
         component: &Component,
         state: State,
     ) -> wasmtime::Result<Self> {
+        let (harness, outcome) = Box::pin(Self::start_reporting(engine, component, state)).await?;
+        reported(outcome)?;
+        Ok(harness)
+    }
+
+    /// Instantiates a component on `state` and runs its factory, returning the harness beside
+    /// the factory's own outcome so a refused start can still be observed.
+    async fn start_reporting(
+        engine: &Engine,
+        component: &Component,
+        state: State,
+    ) -> wasmtime::Result<(Self, Result<(), String>)> {
         let origin = Arc::new(OnceLock::new());
         let linker = component_linker(engine)?;
         let mut store = Store::new(engine, state);
@@ -1358,12 +1993,10 @@ impl Harness {
         store.data_mut().schema_origin = Some(origin);
         store.data_mut().guest = Some(exports.clone());
         let started = exports.clone();
-        reported(
-            store
-                .run_concurrent(async |accessor| started.call_start(accessor).await)
-                .await??,
-        )?;
-        Ok(Self { store, exports })
+        let outcome = store
+            .run_concurrent(async |accessor| started.call_start(accessor).await)
+            .await??;
+        Ok((Self { store, exports }, outcome))
     }
 
     /// Start another author instance using the same host resources and store.
@@ -1371,7 +2004,7 @@ impl Harness {
         let (_, component) = compiled(path)?;
         let origin = Arc::new(OnceLock::new());
         let linker = component_linker(self.store.engine())?;
-        let extension = Extension::instantiate_async(&mut self.store, component, &linker).await?;
+        let extension = Extension::instantiate_async(&mut self.store, &component, &linker).await?;
         let exports = extension.maestro_extension_guest().clone();
         let _ = origin.set(exports.clone());
         self.store.data_mut().schema_origin = Some(origin);
@@ -1483,6 +2116,31 @@ impl Harness {
             })
             .await?
     }
+
+    /// Releases every registration in the order the host received it, reporting each name with
+    /// the outcome of its own release.
+    pub async fn release_all(&mut self) -> Vec<(String, wasmtime::Result<()>)> {
+        let mut released = Vec::new();
+        while let Some((name, key)) = self.store.data_mut().observed.next_to_release() {
+            let outcome = self.release(key).await;
+            released.push((name, outcome));
+        }
+        released
+    }
+}
+
+/// Emits `data` on `channel` through the host bus operation, reaching every registered
+/// listener of that channel.
+pub fn bus_emit(harness: &mut Harness, channel: &str, data: &str) -> Result<(), String> {
+    let channel = channel.to_owned();
+    let data = data.to_owned();
+    super::block_on(harness.store.run_concurrent(async |accessor| {
+        // The concurrent accessor projects the state as itself; the import runs as Imports.
+        let imports = accessor.with_getter::<Imports>(|state| state);
+        host::HostWithStore::event_emit(&imports, channel, data).await
+    }))
+    .map_err(|error| error.to_string())?
+    .map_err(|error| error.to_string())?
 }
 
 /// Cancels the retained tool signal after its entered barrier and releases execution.
@@ -1502,6 +2160,61 @@ pub async fn cancel_held(
 }
 
 impl host::HostWithStore<State> for Imports {
+    fn fetch(
+        accessor: &Accessor<State, Self>,
+        request: host::HttpRequest,
+        signal: Option<Resource<Flag>>,
+    ) -> impl Future<
+        Output = wasmtime::Result<Result<Resource<super::native_http_host::Response>, String>>,
+    > {
+        std::future::ready(super::native_http_host::fetch(accessor, request, signal))
+    }
+    fn spawn(
+        accessor: &Accessor<State, Self>,
+        command: String,
+        args: Vec<String>,
+        options: host::SpawnOptions,
+    ) -> impl Future<Output = wasmtime::Result<Result<Resource<super::native_io_host::Child>, String>>>
+    {
+        std::future::ready(super::native_io_host::spawn(
+            accessor, command, args, options,
+        ))
+    }
+
+    async fn sleep(
+        accessor: &Accessor<State, Self>,
+        duration: (u64, u32),
+        signal: Option<Resource<Flag>>,
+    ) -> wasmtime::Result<Result<(), String>> {
+        let aborted = |a: &Accessor<State, Self>| {
+            a.with(|mut a| {
+                signal
+                    .as_ref()
+                    .is_some_and(|s| a.get().table.get(s).unwrap().0.load(Ordering::SeqCst))
+            })
+        };
+        if aborted(accessor) {
+            return Ok(Err("Aborted".into()));
+        }
+        let hold = accessor.with(|mut a| {
+            a.get()
+                .observed
+                .log(format!("native-wait {} {}", duration.0, duration.1));
+            a.get().observed.take_hold()
+        });
+        let clock = accessor.with(|mut access| access.get().observed.tick_clock.clone());
+        if let Some(clock) = clock {
+            clock.wait().await;
+        } else {
+            pause(hold).await;
+        }
+        Ok(if aborted(accessor) {
+            Err("Aborted".into())
+        } else {
+            Ok(())
+        })
+    }
+
     async fn call(
         accessor: &Accessor<State, Self>,
         operation: String,
@@ -1573,15 +2286,7 @@ impl host::HostWithStore<State> for Imports {
                 "setModel",
                 &serde_json::json!([serde_json::from_str::<serde_json::Value>(&model).unwrap()]),
             )?;
-            state.observed.actions.value.as_bool().ok_or_else(|| {
-                state
-                    .observed
-                    .actions
-                    .value
-                    .as_str()
-                    .unwrap_or("missing boolean reply")
-                    .to_owned()
-            })
+            state.observed.actions.boolean("setModel")
         }))
     }
 

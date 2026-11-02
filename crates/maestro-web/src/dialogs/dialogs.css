@@ -181,6 +181,10 @@
   line-height: 1rem;
   white-space: nowrap;
 }
+.maestro-badge-default {
+  background: var(--maestro-color-accent);
+  color: var(--maestro-color-on-accent);
+}
 .maestro-badge-outline {
   border-color: var(--maestro-color-border);
   color: var(--maestro-color-muted);

@@ -5,34 +5,56 @@ use std::io;
 use std::num::NonZeroUsize;
 use std::os::fd::AsFd;
 use std::rc::{Rc, Weak};
+use std::task::{Context, Poll};
 
 use maestro_process::byte_queue::{WriteStatus, Writes};
 use rustix::event::{PollFd, PollFlags, poll};
 use rustix::io::{Errno, write};
 use rustix::stdio::stdout;
 use tokio::io::Interest;
-use tokio::sync::Notify;
+use tokio::sync::mpsc;
 use tokio::task::{JoinHandle, LocalSet};
 
 use super::descriptor::Source;
 use crate::output_errors::FailureSource;
-use crate::terminal::Shared;
+use crate::terminal::{Shared, output::OutputWriter};
 
 /// Largest request sent to a terminal in one syscall.
 const MAX_TTY_WRITE_CHUNK_BYTES: NonZeroUsize = NonZeroUsize::MIN.saturating_add(16_383);
 
 /// Retained data, independent of any suspended writer future.
-#[derive(Default)]
 struct Inner {
     /// Ordered bytes and exact partial-front accounting.
     queue: RefCell<Writes>,
     /// Whether a permanent failure has ended delivery.
     dead: Cell<bool>,
-    /// Wakes the idle writer after admission.
-    notify: Notify,
+    /// The one ingress receives both host frames and foreign-thread writes.
+    incoming: RefCell<mpsc::UnboundedReceiver<Vec<u8>>>,
 }
 
 impl Inner {
+    /// Moves every currently admitted message once into retained byte advancement.
+    fn receive(&self) {
+        while let Ok(bytes) = self.incoming.borrow_mut().try_recv() {
+            self.queue.borrow_mut().enqueue(bytes);
+        }
+    }
+
+    /// Checks retained work before parking, including bytes moved by backlog observation.
+    fn poll_receive(&self, cx: &mut Context<'_>) -> Poll<bool> {
+        if !self.queue.borrow().is_empty() {
+            return Poll::Ready(true);
+        }
+        match self.incoming.borrow_mut().poll_recv(cx) {
+            Poll::Ready(Some(bytes)) => {
+                self.queue.borrow_mut().enqueue(bytes);
+                Poll::Ready(true)
+            }
+            Poll::Ready(None) => Poll::Ready(false),
+            Poll::Pending => Poll::Pending,
+        }
+    }
+
     /// Advances the same retained queue for asynchronous and final synchronous writes.
     fn advance(&self, source: &impl AsFd) -> io::Result<()> {
         let status = self
@@ -45,6 +67,8 @@ impl Inner {
     /// Discards the failed queue and refuses later admission.
     fn fail(&self) {
         self.dead.set(true);
+        self.incoming.borrow_mut().close();
+        while self.incoming.borrow_mut().try_recv().is_ok() {}
         *self.queue.borrow_mut() = Writes::default();
     }
 }
@@ -67,6 +91,8 @@ pub(super) struct TtyWriter {
     inner: Rc<Inner>,
     /// The task to revoke before final drain.
     task: JoinHandle<()>,
+    /// Every producer admits through the same ordered ingress.
+    sender: OutputWriter,
 }
 
 impl TtyWriter {
@@ -76,35 +102,52 @@ impl TtyWriter {
         if source.reactor().is_none() {
             return Ok(None);
         }
-        let inner = Rc::new(Inner::default());
-        let task = local.spawn_local(pump(Rc::clone(&source), Rc::clone(&inner), shared));
+        let (sender, incoming) = mpsc::unbounded_channel();
+        let sender = OutputWriter::new(sender);
+        let inner = Rc::new(Inner {
+            queue: RefCell::default(),
+            dead: Cell::new(false),
+            incoming: RefCell::new(incoming),
+        });
+        let task = local.spawn_local(pump(
+            Rc::clone(&source),
+            Rc::clone(&inner),
+            shared,
+            sender.clone(),
+        ));
         Ok(Some(Self {
             source,
             inner,
             task,
+            sender,
         }))
     }
 
     /// Admits owned bytes before waking the writer; failed queues accept no more data.
-    pub(super) fn write(&self, data: &str) {
+    pub(super) fn write(&self, data: &str) -> io::Result<()> {
         if data.is_empty() || self.inner.dead.get() {
-            return;
+            return Ok(());
         }
-        self.inner
-            .queue
-            .borrow_mut()
-            .enqueue(data.as_bytes().to_vec());
-        self.inner.notify.notify_one();
+        self.sender.admit(data.as_bytes())
+    }
+
+    /// Clones the sendable admission handle without sharing the local queue.
+    pub(super) fn output_writer(&self) -> crate::terminal::output::OutputWriter {
+        self.sender.clone()
     }
 
     /// Accepted bytes not yet written, including a partially drained front.
     pub(super) fn pending(&self) -> usize {
+        self.inner.receive();
         self.inner.queue.borrow().pending()
     }
 
     /// Revokes asynchronous delivery and drains before restoring descriptor flags.
     pub(super) fn finish(&self) -> io::Result<()> {
         self.task.abort();
+        self.sender.close();
+        self.inner.incoming.borrow_mut().close();
+        self.inner.receive();
         let drained = flush_sync(&self.inner, &self.source);
         drained.and(self.source.restore())
     }
@@ -146,7 +189,12 @@ fn flush_sync(inner: &Inner, source: &impl AsFd) -> io::Result<()> {
 
 /// Uses the same advancement owner for output without a live reactor writer.
 pub(super) fn write_sync(text: &str) -> io::Result<()> {
-    let inner = Inner::default();
+    let (_, incoming) = mpsc::unbounded_channel();
+    let inner = Inner {
+        queue: RefCell::default(),
+        dead: Cell::new(false),
+        incoming: RefCell::new(incoming),
+    };
     inner.queue.borrow_mut().enqueue(text.as_bytes().to_vec());
     flush_sync(&inner, &stdout())
 }
@@ -158,9 +206,10 @@ impl Drop for TtyWriter {
 }
 
 /// Waits without holding the queue borrow, leaving admission and input runnable.
-async fn pump(source: Rc<Source>, inner: Rc<Inner>, shared: Weak<Shared>) {
+async fn pump(source: Rc<Source>, inner: Rc<Inner>, shared: Weak<Shared>, sender: OutputWriter) {
     let result = drain(&source, &inner).await;
     if let Err(error) = result {
+        sender.close();
         inner.fail();
         if let Some(shared) = shared.upgrade() {
             shared.fail(FailureSource::Output, error);
@@ -174,7 +223,10 @@ async fn drain(source: &Source, inner: &Inner) -> io::Result<()> {
         return Ok(());
     };
     loop {
-        inner.notify.notified().await;
+        if !std::future::poll_fn(|cx| inner.poll_receive(cx)).await {
+            return Ok(());
+        }
+        inner.receive();
         while !inner.queue.borrow().is_empty() {
             let mut ready = descriptor.writable().await?;
             if let Ok(result) = ready.try_io(|_| inner.advance(source)) {

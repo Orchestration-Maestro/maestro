@@ -29,6 +29,30 @@ pub(super) fn storage<I: Imports>(imports: I, resource: I::Credentials) -> AuthS
     storage
 }
 impl<I: Imports> AuthStoragePort for Owner<I> {
+    fn login(
+        &self,
+        provider: &str,
+        callbacks: Rc<crate::OAuthLoginCallbacks>,
+    ) -> ExtensionFuture<'static, ()> {
+        let (imports, resource, provider) = (
+            self.imports.clone(),
+            self.resource.clone(),
+            provider.to_owned(),
+        );
+        Box::pin(async move {
+            let login = super::oauth::Login::new(&imports, callbacks)?;
+            let result = imports
+                .credentials_login(
+                    &resource,
+                    provider,
+                    &login.handler.handle,
+                    (login.options, login.signal.signal()),
+                )
+                .await;
+            login.handler.settle(true);
+            result
+        })
+    }
     fn set_fallback_resolver(&self, resolver: crate::FallbackResolver) -> ExtensionResult<()> {
         let identity = super::callbacks::Identity::new(&self.imports);
         identity.stage(resolver);
@@ -62,6 +86,13 @@ impl<I: Imports> AuthStoragePort for Owner<I> {
     }
     fn remove(&self, provider: &str) -> ExtensionResult<()> {
         self.imports.credentials_remove(&self.resource, provider)
+    }
+    fn get_oauth_providers(&self) -> ExtensionResult<Vec<Rc<dyn crate::OAuthProviderInterface>>> {
+        self.imports
+            .credentials_oauth_providers(&self.resource)?
+            .into_iter()
+            .map(|resource| super::oauth::provider(self.imports.clone(), resource))
+            .collect()
     }
     fn list(&self) -> ExtensionResult<Vec<String>> {
         self.imports.credentials_list(&self.resource)
@@ -133,7 +164,7 @@ pub(super) async fn invoke_backend_async<I: Imports>(
         .await
 }
 /// Delivers the exact authored fallback result, including absent and empty values.
-pub(super) fn invoke_fallback(target: u32, provider: &str) -> ExtensionResult<Option<String>> {
+pub(crate) fn invoke_fallback(target: u32, provider: &str) -> ExtensionResult<Option<String>> {
     super::callbacks::find::<crate::FallbackResolver>(target)?(provider)
 }
 

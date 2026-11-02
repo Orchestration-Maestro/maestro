@@ -12,6 +12,21 @@ use std::rc::Rc;
 pub use crate::bindings::maestro::extension::host::{ColorMode, ThemeInfo, ThemeSetResult};
 use crate::{ExtensionResult, ModelThinkingLevel, SourceInfo};
 
+/// A foreground color key; unknown keys keep the host's lookup error.
+pub type ThemeColor = str;
+/// A background color key; unknown keys keep the host's lookup error.
+pub type ThemeBg = str;
+
+/// The host's live theme, available without an interactive UI.
+///
+/// Retained aliases observe later palette and metadata publications.
+///
+/// # Errors
+/// Returns the host acquisition failure. Theme methods report an unpublished palette.
+pub fn theme() -> ExtensionResult<Theme> {
+    crate::tui::widget_host()?.theme()
+}
+
 /// Independently retained theme capability; clones share its host owner.
 #[derive(Clone)]
 pub struct Theme {
@@ -70,9 +85,9 @@ port! {
         /// Replaces the theme's provenance, or clears it.
         fn set_source_info(source: Option<SourceInfo>) -> ();
         /// Wraps text in a foreground color, restoring only the foreground.
-        fn fg(color: &str, text: &str) -> String;
+        fn fg(color: &ThemeColor, text: &str) -> String;
         /// Wraps text in a background color, restoring only the background.
-        fn bg(color: &str, text: &str) -> String;
+        fn bg(color: &ThemeBg, text: &str) -> String;
         /// Styles text bold.
         fn bold(text: &str) -> String;
         /// Styles text italic.
@@ -84,9 +99,9 @@ port! {
         /// Strikes text through.
         fn strikethrough(text: &str) -> String;
         /// The escape that selects a foreground color.
-        fn get_fg_ansi(color: &str) -> String;
+        fn get_fg_ansi(color: &ThemeColor) -> String;
         /// The escape that selects a background color.
-        fn get_bg_ansi(color: &str) -> String;
+        fn get_bg_ansi(color: &ThemeBg) -> String;
         /// The color depth the theme renders at.
         fn get_color_mode() -> ColorMode;
         /// Colors text with the border color of a thinking level.

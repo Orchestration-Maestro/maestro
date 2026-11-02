@@ -5,9 +5,24 @@ use crate::read_imports::{add_read, add_routed_operand};
 use maestro_extensions::types;
 use wasmtime::{
     StoreContextMut,
-    component::{ComponentType, Lift, LinkerInstance, Lower, Resource},
+    component::{ComponentType, Lift, LinkerInstance, Lower},
 };
 use wasmtime_wasi::WasiView;
+
+/// Installs the one synchronous load-time input route on the original local API.
+fn add_load_time<T: crate::callback_imports::CallbackView + 'static>(
+    host: &mut LinkerInstance<'_, T>,
+) -> wasmtime::Result<()> {
+    host.func_wrap(
+        "contribute-load-time",
+        |store: StoreContextMut<'_, T>, (payload,): (String,)| {
+            Ok((store
+                .data()
+                .api()
+                .read(|reply| Request::ContributeLoadTime(payload, reply)),))
+        },
+    )
+}
 
 /// Store access to its original API endpoint, never to a local registration facade.
 pub(crate) trait ApiView: WasiView {
@@ -20,6 +35,7 @@ pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
     add_values(host)?;
+    add_load_time(host)?;
     add_providers(host)?;
     for (name, request) in [
         ("append-entry", Request::Append as fn(_, _, _) -> _),
@@ -194,18 +210,13 @@ fn add_providers<T: crate::callback_imports::CallbackView + 'static>(
     host.func_wrap(
         "register-provider",
         |mut store: StoreContextMut<'_, T>,
-         (name, config, stream): (
-            String,
-            String,
-            Option<Resource<crate::guest_calls::Callback>>,
-        )| {
-            let stream = stream
-                .map(|stream| crate::callback_imports::retain(store.data_mut(), &stream))
-                .transpose()?;
+         (name, config, callbacks): (String, String, crate::provider_registration::Wire)| {
+            let callbacks =
+                crate::provider_registration::retain(store.data_mut(), &name, callbacks)?;
             let route = store
                 .data()
                 .api()
-                .route(|reply| Request::RegisterProvider(name, config, stream, reply));
+                .route(|reply| Request::RegisterProvider(name, config, callbacks, reply));
             Ok((crate::import_route::push(store.data_mut(), route)?,))
         },
     )?;
