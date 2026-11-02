@@ -137,11 +137,7 @@ fn inherited_components(names: impl Iterator<Item = OsString>) -> Vec<OsString> 
 fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::Result<()> {
     std::fs::create_dir_all(output)?;
     let artifacts = Artifacts::read(cargo, checkout)?;
-    let base = std::env::var_os(BASE).and_then(|list| {
-        std::env::split_paths(&list)
-            .filter(|name| !name.as_os_str().is_empty())
-            .find_map(|name| Base::read(&checkout.join(name), &artifacts.shared))
-    });
+    let base = read_base(checkout, &artifacts.shared);
     remove(&output.join(MANIFEST))?;
     remove(&environment_file(target))?;
     remove_directory(&cache_home(target))?;
@@ -196,6 +192,15 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
     };
     std::fs::write(output.join(MANIFEST), serde_json::to_vec(&manifest)?)?;
     writeln!(io::stdout(), "components: {reused} reused, {built} built")
+}
+
+/// Read the first bundle in `TEST_PREPARE_BASE` prepared from the same shared inputs.
+fn read_base(checkout: &Path, shared: &Inputs) -> Option<Base> {
+    std::env::var_os(BASE).and_then(|list| {
+        std::env::split_paths(&list)
+            .filter(|name| !name.as_os_str().is_empty())
+            .find_map(|name| Base::read(&checkout.join(name), shared))
+    })
 }
 
 /// The file the setup example writes its component paths to.
