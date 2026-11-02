@@ -1,5 +1,6 @@
 //! Insertion-ordered renderer registration and shared tool headers.
-use super::types::{ToolRenderer, ToolRendererBinding, ToolResultMessageView};
+use super::types::{ToolRenderer, ToolRendererBinding};
+#[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
 use maestro_app::{
     JsonObject,
     browser::tools::{
@@ -7,6 +8,7 @@ use maestro_app::{
         javascript_repl::{JavaScriptReplParams, JavaScriptReplToolResult},
     },
 };
+#[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
 use serde_json::Value;
 use std::{cell::RefCell, rc::Rc};
 thread_local! {
@@ -14,6 +16,7 @@ thread_local! {
     pub static TOOL_RENDERERS: RefCell<indexmap::IndexMap<String, ToolRendererBinding>> = RefCell::new(default_renderers());
 }
 /// Install the built-in callbacks once; explicit replacement and removal stay effective.
+#[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
 fn default_renderers() -> indexmap::IndexMap<String, ToolRendererBinding> {
     let mut renderers = indexmap::IndexMap::new();
     let repl = Rc::new(super::javascript_repl::JAVASCRIPT_REPL_RENDERER);
@@ -35,6 +38,11 @@ fn default_renderers() -> indexmap::IndexMap<String, ToolRendererBinding> {
         )),
     );
     renderers
+}
+/// Native production builds have no page representation for the built-in cards.
+#[cfg(not(any(target_arch = "wasm32", test, feature = "test-support")))]
+fn default_renderers() -> indexmap::IndexMap<String, ToolRendererBinding> {
+    indexmap::IndexMap::new()
 }
 /// Register a name, retaining its original position on replacement.
 pub fn register_tool_renderer(tool_name: &str, renderer: ToolRendererBinding) {
@@ -79,7 +87,10 @@ pub enum ToolHeaderState {
     Error,
 }
 /// Join every raw text block in order, without terminal display normalization.
-pub(crate) fn get_text_output<D>(result: Option<&ToolResultMessageView<'_, D>>) -> String {
+#[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
+pub(crate) fn get_text_output<D>(
+    result: Option<&super::types::ToolResultMessageView<'_, D>>,
+) -> String {
     result.map_or_else(String::new, |result| {
         maestro_app::UserBlock::text_output(result.content())
     })
@@ -87,4 +98,6 @@ pub(crate) fn get_text_output<D>(result: Option<&ToolResultMessageView<'_, D>>) 
 
 /// Shared tool header content.
 pub mod header;
-pub use header::{ToolHeaderRefs, ToolHeaderText, render_collapsible_header, render_header};
+pub use header::{ToolHeaderRefs, ToolHeaderText};
+#[cfg(target_arch = "wasm32")]
+pub use header::{render_collapsible_header, render_header};

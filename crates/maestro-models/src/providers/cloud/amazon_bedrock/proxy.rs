@@ -35,13 +35,6 @@ impl Environment {
             .or_else(|| self.get(&name.to_uppercase()))
     }
 
-    /// Whether any of the six variables that turn proxying on is set.
-    pub(super) fn names_proxy(&self) -> bool {
-        ["HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"]
-            .into_iter()
-            .any(|name| self.variable(name).is_some())
-    }
-
     /// The proxy for `destination`, or none when the destination is excluded or no variable
     /// names one. A proxy written without a scheme takes the destination's.
     ///

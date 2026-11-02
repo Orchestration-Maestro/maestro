@@ -86,10 +86,12 @@ impl ToolRendererBinding {
         binding
     }
     /// Retain an output-only callback without restricting callers' native details.
+    #[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
     pub(crate) fn from_details_agnostic(renderer: Rc<dyn ToolRenderer<JsonObject, ()>>) -> Self {
         Self::output_only(renderer)
     }
     /// Store an output-only callback in the selected content representation.
+    #[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
     fn output_only<C: 'static>(renderer: Rc<dyn ToolRenderer<JsonObject, (), C>>) -> Self {
         let binding = Self {
             owner: ToolRendererState::default(),

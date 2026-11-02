@@ -1,16 +1,10 @@
 //! Literal artifact filenames that open the captured panel.
+#[cfg(target_arch = "wasm32")]
 use crate::dom::PreparedContent;
 use maestro_app::browser::tools::artifacts::LocalArtifactsPanel;
 use std::rc::Rc;
 
 /// Owned display and identity; malformed display values have no artifact identity.
-#[cfg_attr(
-    not(target_arch = "wasm32"),
-    allow(
-        dead_code,
-        reason = "native targets prepare records only the browser mounts"
-    )
-)]
 #[derive(Clone)]
 pub(in crate::tools) struct Pill {
     /// Literal display-only text.
@@ -21,6 +15,7 @@ pub(in crate::tools) struct Pill {
     pub(in crate::tools) panel: Option<Rc<LocalArtifactsPanel>>,
 }
 /// Prepare a selectable literal filename, capturing the supplied panel handle.
+#[cfg(target_arch = "wasm32")]
 #[must_use]
 pub fn artifact_pill(
     filename: String,

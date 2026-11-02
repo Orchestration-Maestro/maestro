@@ -4,6 +4,7 @@ use std::ffi::OsString;
 use std::io;
 use std::path::{Path, PathBuf};
 
+mod author;
 mod cargo;
 mod echo;
 mod editor;
@@ -25,6 +26,8 @@ enum Request {
     Editor(editor::Record, Vec<OsString>),
     /// Print one authored line and end.
     Echo(echo::Record),
+    /// Run a copied preparation example against its checkout-local declaration.
+    Author(author::Record, Vec<OsString>),
     /// Exchange raw application RPC records.
     #[cfg(unix)]
     Rpc(rpc::Record),
@@ -37,6 +40,14 @@ impl Request {
     /// Parse a private operation or the installed alias's sibling record.
     fn read(args: Vec<OsString>) -> io::Result<Self> {
         let executable = std::env::current_exe()?;
+        // Copied preparation examples receive their record through an explicit caller selector.
+        if executable
+            .file_stem()
+            .is_some_and(|name| name == "prepare_author_component")
+            && let Some(record) = std::env::var_os("MAESTRO_NATIVE_RECORD")
+        {
+            return Self::record(Path::new(&record), args);
+        }
         if executable
             .file_stem()
             .is_none_or(|name| name != "native_fixture")
@@ -66,6 +77,7 @@ impl Request {
             Some("tooling-cargo") => Ok(Self::Cargo(cargo::Record::parse(&text)?, operands)),
             Some("editor") => Ok(Self::Editor(editor::Record::parse(&text)?, operands)),
             Some("echo") => Ok(Self::Echo(echo::Record::parse(&text)?)),
+            Some("tooling-author") => Ok(Self::Author(author::Record::parse(&text)?, operands)),
             #[cfg(unix)]
             Some("rpc-peer") => Ok(Self::Rpc(rpc::Record::parse(&text)?)),
             #[cfg(unix)]
@@ -83,6 +95,7 @@ pub(super) fn run() -> io::Result<()> {
         Request::Cargo(record, operands) => cargo::run(&record, &operands),
         Request::Editor(record, operands) => editor::run(&record, &operands),
         Request::Echo(record) => echo::run(&record, &[]),
+        Request::Author(record, operands) => author::run(&record, &operands),
         #[cfg(unix)]
         Request::Rpc(record) => rpc::run(&record),
         #[cfg(unix)]
