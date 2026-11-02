@@ -4,13 +4,6 @@ use maestro_app::browser::tools::artifacts::LocalArtifactsPanel;
 use std::rc::Rc;
 
 /// Owned display and identity; malformed display values have no artifact identity.
-#[cfg_attr(
-    not(target_arch = "wasm32"),
-    allow(
-        dead_code,
-        reason = "native targets prepare records only the browser mounts"
-    )
-)]
 #[derive(Clone)]
 pub(in crate::tools) struct Pill {
     /// Literal display-only text.

@@ -8,13 +8,6 @@ use crate::tools::{
 use maestro_app::{JsonObject, display_truthy};
 use std::borrow::Cow;
 /// Private localized or authored caption representation.
-#[cfg_attr(
-    not(target_arch = "wasm32"),
-    allow(
-        dead_code,
-        reason = "native targets prepare records only the browser mounts"
-    )
-)]
 pub(in crate::tools) enum Caption {
     /// Caller-authored text.
     Literal(String),
@@ -38,13 +31,6 @@ impl Caption {
     }
 }
 /// One mutually exclusive below-header branch.
-#[cfg_attr(
-    not(target_arch = "wasm32"),
-    allow(
-        dead_code,
-        reason = "native targets prepare records only the browser mounts"
-    )
-)]
 pub(in crate::tools) enum Body {
     /// Header only.
     Empty,
@@ -54,13 +40,6 @@ pub(in crate::tools) enum Body {
     Error(String),
 }
 /// One owned card recipe shared by the three stateless renderer modules.
-#[cfg_attr(
-    not(target_arch = "wasm32"),
-    allow(
-        dead_code,
-        reason = "native targets prepare records only the browser mounts"
-    )
-)]
 pub(in crate::tools) struct CardContent {
     /// Result status, independent of argument streaming.
     pub(in crate::tools) state: ToolHeaderState,
@@ -119,3 +98,6 @@ impl CardOutput for PreparedContent {
 }
 #[cfg(target_arch = "wasm32")]
 pub(super) mod dom;
+/// Rendered-value projections for native tests.
+#[cfg(all(not(target_arch = "wasm32"), any(test, feature = "test-support")))]
+pub(in crate::tools) mod view;

@@ -32,8 +32,12 @@ custom renderers can retain their own shared data in the returned recipe.
 
 `ToolRenderer<P, D, C>` and `ToolRenderResult<C>` take the produced content as a
 third type parameter. In the browser build its default is `Box<dyn DomContent>`
-(see [page content](frontend.md#page-content)); native builds prepare the same
-owned records for type checking and tests, with nothing to paint.
+(see [page content](frontend.md#page-content)). A native build has nothing to
+paint, so it keeps registration and lookup but leaves out the built-in renderers,
+the default card, `ToolParams` and `render_tool`. The crate's own tests compile
+them natively through its `test-support` feature, where
+`test_support::prepared_view` reports the values the browser would render from a
+prepared card.
 `ToolRendererBinding::from_dom` retains a renderer that names that content type
 explicitly. `tools::dom::render_tool` is the same function as `render_tool`.
 
