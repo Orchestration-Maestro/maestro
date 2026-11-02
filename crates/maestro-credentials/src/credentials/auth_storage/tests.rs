@@ -1,4 +1,4 @@
-//! Expiry boundaries decided by the substituted clock.
+//! Credential expiry and acquisition boundaries under controlled clocks and waits.
 #![cfg(not(target_arch = "wasm32"))]
 use super::AuthStorage;
 use super::types::{AuthCredential, AuthStorageData, stored_record};

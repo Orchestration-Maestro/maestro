@@ -1,6 +1,6 @@
 //! Credential wire replies through the existing controlled reader resource.
 use super::{
-    host::{Imports, State},
+    host::{Imports, Route, State},
     reader_host::Reader,
 };
 use crate::bindings::host_side::maestro::extension::host;
@@ -27,7 +27,7 @@ impl host::HostAuthStorage for State {
         &mut self,
         this: Resource<Reader>,
         resolver: Resource<super::host::Identity>,
-    ) -> wasmtime::Result<Resource<super::host::Route>> {
+    ) -> wasmtime::Result<Resource<Route>> {
         let reader = self.table.get(&this)?.clone();
         let result = reader.unit("set_fallback_resolver", &[]);
         if result.is_ok() {
@@ -58,7 +58,7 @@ impl host::HostAuthStorage for State {
             .get(&this)?
             .unit("remove_runtime_api_key", &[json!(provider)]))
     }
-    fn reload(&mut self, this: Resource<Reader>) -> wasmtime::Result<Resource<super::host::Route>> {
+    fn reload(&mut self, this: Resource<Reader>) -> wasmtime::Result<Resource<Route>> {
         let reader = self.table.get(&this)?.clone();
         let result = reader.unit("reload", &[]).map(|()| host::RouteValue::Unit);
         self.credential_backend_route(&reader, result)
@@ -67,7 +67,7 @@ impl host::HostAuthStorage for State {
         &mut self,
         this: Resource<Reader>,
         provider: String,
-    ) -> wasmtime::Result<Resource<super::host::Route>> {
+    ) -> wasmtime::Result<Resource<Route>> {
         let result = self.table.get(&this)?.record("get", &[json!(provider)]);
         self.routed_value(result.map(host::RouteValue::OptionalText))
     }
@@ -76,7 +76,7 @@ impl host::HostAuthStorage for State {
         this: Resource<Reader>,
         provider: String,
         credential: String,
-    ) -> wasmtime::Result<Resource<super::host::Route>> {
+    ) -> wasmtime::Result<Resource<Route>> {
         let result = self
             .table
             .get(&this)?
@@ -88,11 +88,11 @@ impl host::HostAuthStorage for State {
         &mut self,
         this: Resource<Reader>,
         provider: String,
-    ) -> wasmtime::Result<Resource<super::host::Route>> {
+    ) -> wasmtime::Result<Resource<Route>> {
         let result = self.table.get(&this)?.unit("remove", &[json!(provider)]);
         self.routed(result)
     }
-    fn list(&mut self, this: Resource<Reader>) -> wasmtime::Result<Resource<super::host::Route>> {
+    fn list(&mut self, this: Resource<Reader>) -> wasmtime::Result<Resource<Route>> {
         let result = self
             .table
             .get(&this)?
@@ -107,7 +107,7 @@ impl host::HostAuthStorage for State {
         &mut self,
         this: Resource<Reader>,
         provider: String,
-    ) -> wasmtime::Result<Resource<super::host::Route>> {
+    ) -> wasmtime::Result<Resource<Route>> {
         let result = self.table.get(&this)?.flag("has", &[json!(provider)]);
         self.routed_value(result.map(host::RouteValue::Boolean))
     }
@@ -115,7 +115,7 @@ impl host::HostAuthStorage for State {
         &mut self,
         this: Resource<Reader>,
         provider: String,
-    ) -> wasmtime::Result<Resource<super::host::Route>> {
+    ) -> wasmtime::Result<Resource<Route>> {
         let reader = self.table.get(&this)?.clone();
         let result = reader
             .flag("has_auth", &[json!(provider)])
@@ -126,7 +126,7 @@ impl host::HostAuthStorage for State {
         &mut self,
         this: Resource<Reader>,
         provider: String,
-    ) -> wasmtime::Result<Resource<super::host::Route>> {
+    ) -> wasmtime::Result<Resource<Route>> {
         let reader = self.table.get(&this)?.clone();
         let result = reader
             .record("get_auth_status", &[json!(provider)])
@@ -134,10 +134,7 @@ impl host::HostAuthStorage for State {
             .map(host::RouteValue::Text);
         self.credential_fallback_route(&reader, provider, result)
     }
-    fn get_all(
-        &mut self,
-        this: Resource<Reader>,
-    ) -> wasmtime::Result<Resource<super::host::Route>> {
+    fn get_all(&mut self, this: Resource<Reader>) -> wasmtime::Result<Resource<Route>> {
         let result = self
             .table
             .get(&this)?
@@ -156,7 +153,7 @@ impl host::HostAuthStorage for State {
         &mut self,
         this: Resource<Reader>,
         provider: String,
-    ) -> wasmtime::Result<Resource<super::host::Route>> {
+    ) -> wasmtime::Result<Resource<Route>> {
         let result = self.table.get(&this)?.unit("logout", &[json!(provider)]);
         self.routed(result)
     }
@@ -247,7 +244,7 @@ impl host::HostOauthProvider for State {
         &mut self,
         this: Resource<Reader>,
         data: String,
-    ) -> wasmtime::Result<Resource<super::host::Route>> {
+    ) -> wasmtime::Result<Resource<Route>> {
         let result = self
             .table
             .get(&this)?
@@ -263,7 +260,7 @@ impl host::HostOauthProvider for State {
         &mut self,
         this: Resource<Reader>,
         credentials: String,
-    ) -> wasmtime::Result<Resource<super::host::Route>> {
+    ) -> wasmtime::Result<Resource<Route>> {
         let result = self
             .table
             .get(&this)?
@@ -328,7 +325,7 @@ impl host::HostOauthInteraction for State {
         _this: Resource<Reader>,
         _phase: host::OauthCallback,
         _data: String,
-    ) -> wasmtime::Result<Resource<super::host::Route>> {
+    ) -> wasmtime::Result<Resource<Route>> {
         Err(wasmtime::format_err!(
             "unexpected controlled OAuth interaction"
         ))
@@ -368,7 +365,7 @@ impl State {
         &mut self,
         reader: &Reader,
         result: Result<host::RouteValue, String>,
-    ) -> wasmtime::Result<Resource<super::host::Route>> {
+    ) -> wasmtime::Result<Resource<Route>> {
         let mut steps = std::collections::VecDeque::new();
         let target = reader.1.lock().unwrap().backend;
         if let Some(target) = target {
@@ -385,7 +382,7 @@ impl State {
                 super::ui_host::Nested::CredentialBackend(expected),
             ));
         }
-        self.push(super::host::Route {
+        self.push(Route {
             steps,
             running: None,
             rows: None,
@@ -398,7 +395,7 @@ impl State {
         reader: &Reader,
         provider: String,
         result: Result<host::RouteValue, String>,
-    ) -> wasmtime::Result<Resource<super::host::Route>> {
+    ) -> wasmtime::Result<Resource<Route>> {
         let mut steps = std::collections::VecDeque::new();
         if scripted_fallback(reader, &provider) {
             let resource = reader.1.lock().unwrap().fallback.unwrap();
@@ -412,7 +409,7 @@ impl State {
                 super::ui_host::Nested::CredentialFallback(expected),
             ));
         }
-        self.push(super::host::Route {
+        self.push(Route {
             steps,
             running: None,
             rows: None,

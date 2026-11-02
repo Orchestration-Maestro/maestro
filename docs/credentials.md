@@ -88,8 +88,8 @@ an empty fallback key, while request lookup preserves `Some("")`.
 An expired token is refreshed through the backend's `with_lock_async` (the file adapter
 holds the write lock beside the canonical file meanwhile; the memory adapter
 serializes awaited callbacks, see below). Lock acquisition uses the same randomly
-lengthened schedule as stored rereads. The stored text is reread and accepted,
-publishing it and clearing a recorded load failure.
+lengthened schedule as stored rereads. The stored text is reread and its records
+are accepted, clearing a recorded load failure.
 A record that is then absent, no longer `oauth` or no longer complete gives an empty
 result, and the lookup continues with the environment and the fallback resolver as
 they are at that moment. A token with `now < expires` is reused. Otherwise the
