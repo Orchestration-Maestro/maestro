@@ -4,7 +4,9 @@ use super::{AgentSession, selection::saved_level};
 use crate::utils::lock::read;
 use maestro_extensions::ExtensionExecution;
 use maestro_models::{DiagnosticErrorInfo, Model, ModelThinkingLevel, clamp_thinking_level};
-use maestro_settings::{DecisionRequest, PreparedSettingsEdit, SettingsChange, SettingsScope};
+use maestro_settings::{
+    DecisionRequest, PreparedSettingsEdit, SettingsChange, SettingsEdit, SettingsScope,
+};
 use serde_json::json;
 use std::sync::{Arc, RwLock};
 
@@ -63,20 +65,9 @@ impl<E: ExtensionExecution> AgentSession<E> {
         value: serde_json::Value,
     ) -> Result<PreparedSettingsEdit, DiagnosticErrorInfo> {
         let settings = self.settings_manager.borrow();
-        let changes = vec![SettingsChange {
-            path: path.iter().map(|part| (*part).into()).collect(),
-            value: Some(value),
-        }];
         let scope = SettingsScope::Global;
         settings
-            .prepare_operation(
-                &DecisionRequest::SettingsEdit {
-                    scope,
-                    changes: &changes,
-                },
-                scope,
-                changes.clone(),
-            )
+            .admit_settings_edit(SettingsEdit::new(path, value))
             .map_err(|message| {
                 settings.report_refusal(scope, message.clone());
                 refusal(message)
