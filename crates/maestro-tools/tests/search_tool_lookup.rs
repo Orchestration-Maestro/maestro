@@ -16,22 +16,15 @@ use std::{
 };
 use tokio::io::AsyncReadExt;
 
-/// Install a shell probe through a child, with no inherited writable executable descriptor.
-fn script(root: &Path, name: &str, code: i32) {
-    let source = root.join(format!("{name}.source"));
-    let body = format!(
-        "#!/bin/sh\nprintf '%s %s\\n' '{name}' \"$*\" >> '{}'\n[ \"$#\" = 1 ] && [ \"$1\" = --version ] || exit 99\nexit {code}\n",
-        root.join("probes.log").display()
-    );
-    std::fs::write(&source, body).unwrap();
-    assert!(
-        std::process::Command::new("install")
-            .args(["-m", "0700"])
-            .arg(source)
-            .arg(root.join(name))
-            .status()
-            .unwrap()
-            .success()
+/// Install a native probe that records its literal version operands.
+fn probe(root: &Path, name: &str, code: i32) {
+    crate::find_support::alias(
+        root,
+        name,
+        &serde_json::json!({
+            "scenario":"probe", "log":root.join("probes.log"), "name":name,
+            "stdout":[], "code":code
+        }),
     );
 }
 
@@ -44,7 +37,7 @@ fn probe_log(root: &Path) -> Option<String> {
     }
 }
 
-/// Run one child with the supplied scripts and offline flag.
+/// Run one child with the supplied native aliases and offline flag.
 fn child(test: &str, mode: &str, root: &Path, offline: &str) -> bool {
     isolated_os(
         test,
@@ -57,7 +50,7 @@ fn child(test: &str, mode: &str, root: &Path, offline: &str) -> bool {
     )
 }
 
-/// The scripts directory captured by the parent.
+/// The native aliases directory captured by the parent.
 fn child_root() -> std::path::PathBuf {
     std::env::var_os("MAESTRO_SEARCH_ROOT").unwrap().into()
 }
@@ -68,7 +61,7 @@ fn binary_directory_entry_wins_before_any_probe() {
         if !maestro_test_process::selection().is_child() {
             for mode in ["entries", "dangling"] {
                 let scripts = Scratch::new().unwrap();
-                probe_scripts(scripts.path(), mode);
+                probe_aliases(scripts.path(), mode);
                 assert!(!child(
                     "binary_directory_entry_wins_before_any_probe",
                     mode,
@@ -153,13 +146,25 @@ async fn existing_entries(manager: &ToolsManager, bin: &Scratch) {
     }
 }
 
+/// Discovery cases shared by parent preparation and isolated-child selection.
+const PROBE_MODES: &[&str] = &[
+    "none",
+    "alias",
+    "failed-fd",
+    "fd",
+    "rg",
+    "mismatch",
+    "nonutf8",
+    "denied",
+];
+
 #[test]
 fn path_probes_try_aliases_in_order_whatever_the_exit_status() {
     run(async {
         if !maestro_test_process::selection().is_child() {
-            for mode in ["none", "alias", "failed-fd", "fd", "rg"] {
+            for &mode in PROBE_MODES {
                 let scripts = Scratch::new().unwrap();
-                probe_scripts(scripts.path(), mode);
+                probe_aliases(scripts.path(), mode);
                 assert!(!child(
                     "path_probes_try_aliases_in_order_whatever_the_exit_status",
                     mode,
@@ -169,52 +174,58 @@ fn path_probes_try_aliases_in_order_whatever_the_exit_status() {
             }
             return;
         }
-        let mode = ["none", "alias", "failed-fd", "fd", "rg"]
-            .into_iter()
+        let mode = PROBE_MODES
+            .iter()
+            .copied()
             .find(|mode| maestro_test_process::selection().runs_case(mode))
             .expect("selected probe mode");
-        let root = child_root();
-        let bin = Scratch::new().unwrap();
-        let calls = Arc::new(AtomicUsize::new(0));
-        let manager = ToolsManager::new(bin.text(), Some(counting_fetch(&calls)));
-        let expected = match mode {
-            "alias" => Some("fdfind"),
-            "fd" | "failed-fd" => Some("fd"),
-            _ => None,
-        };
-        assert_eq!(
-            manager.get_tool_path(SearchTool::Fd).await.as_deref(),
-            expected
-        );
-        assert_eq!(
-            probe_log(&root),
-            expected.map(|name| format!("{name} --version\n"))
-        );
-        if expected.is_some() {
-            std::fs::remove_file(root.join("probes.log")).unwrap();
-        }
-        let expected = (mode == "rg").then_some("rg");
-        assert_eq!(
-            manager.get_tool_path(SearchTool::Rg).await.as_deref(),
-            expected
-        );
-        assert_eq!(
-            probe_log(&root),
-            expected.map(|name| format!("{name} --version\n"))
-        );
-        assert_eq!(calls.load(Ordering::SeqCst), 0);
-        if mode == "alias" {
-            let selected = ToolsManager::new(bin.text(), Some(counting_fetch(&calls)))
-                .with_offline(Some(true));
-            assert_eq!(
-                selected.ensure_tool(SearchTool::Fd, None).await.as_deref(),
-                Some("fdfind"),
-                "an offline selection still uses the program a probe finds"
-            );
-            assert_eq!(probe_log(&root), Some("fdfind --version\n".to_owned()));
-            assert_eq!(calls.load(Ordering::SeqCst), 0);
-        }
+        check_path_probes(mode).await;
     });
+}
+
+/// Assert native lookup and offline reuse inside the selected isolated child.
+async fn check_path_probes(mode: &str) {
+    let root = child_root();
+    let bin = Scratch::new().unwrap();
+    let calls = Arc::new(AtomicUsize::new(0));
+    let manager = ToolsManager::new(bin.text(), Some(counting_fetch(&calls)));
+    let expected = match mode {
+        "alias" | "denied" => Some("fdfind"),
+        "fd" | "failed-fd" | "mismatch" | "nonutf8" => Some("fd"),
+        _ => None,
+    };
+    assert_eq!(
+        manager.get_tool_path(SearchTool::Fd).await.as_deref(),
+        expected
+    );
+    assert_eq!(
+        probe_log(&root),
+        expected.map(|name| format!("{name} --version\n"))
+    );
+    if expected.is_some() {
+        std::fs::remove_file(root.join("probes.log")).unwrap();
+    }
+    let expected = (mode == "rg").then_some("rg");
+    assert_eq!(
+        manager.get_tool_path(SearchTool::Rg).await.as_deref(),
+        expected
+    );
+    assert_eq!(
+        probe_log(&root),
+        expected.map(|name| format!("{name} --version\n"))
+    );
+    assert_eq!(calls.load(Ordering::SeqCst), 0);
+    if mode == "alias" {
+        let selected =
+            ToolsManager::new(bin.text(), Some(counting_fetch(&calls))).with_offline(Some(true));
+        assert_eq!(
+            selected.ensure_tool(SearchTool::Fd, None).await.as_deref(),
+            Some("fdfind"),
+            "an offline selection still uses the program a probe finds"
+        );
+        assert_eq!(probe_log(&root), Some("fdfind --version\n".to_owned()));
+        assert_eq!(calls.load(Ordering::SeqCst), 0);
+    }
 }
 
 #[test]
@@ -273,14 +284,27 @@ fn offline_flag_stops_a_missing_install_with_advice() {
 }
 
 /// Configure one ordered probe scenario.
-fn probe_scripts(root: &Path, mode: &str) {
+fn probe_aliases(root: &Path, mode: &str) {
     match mode {
-        "alias" => script(root, "fdfind", 0),
+        "alias" => probe(root, "fdfind", 0),
         "failed-fd" | "fd" | "entries" => {
-            script(root, "fd", if mode == "fd" { 0 } else { 7 });
-            script(root, "fdfind", 0);
+            probe(root, "fd", if mode == "fd" { 0 } else { 7 });
+            probe(root, "fdfind", 0);
         }
-        "rg" => script(root, "rg", 9),
+        "rg" => probe(root, "rg", 9),
+        "mismatch" | "nonutf8" => crate::find_support::alias(
+            root,
+            "fd",
+            &serde_json::json!({
+                "scenario":"probe", "log":root.join("probes.log"), "name":"fd",
+                "stdout":if mode == "mismatch" {b"fd 0.0.1\n".as_slice()} else {b"fd \xff\n".as_slice()},
+                "code":0
+            }),
+        ),
+        "denied" => {
+            std::fs::write(root.join("fd"), b"not executable").unwrap();
+            probe(root, "fdfind", 0);
+        }
         _ => {}
     }
 }
@@ -290,14 +314,12 @@ fn dropping_discovery_kills_the_running_probe() {
     run(async {
         if !maestro_test_process::selection().is_child() {
             let scripts = Scratch::new().unwrap();
-            let source = scripts.file("probe.source", b"#!/usr/bin/python3\nimport os, socket\ns = socket.socket(socket.AF_UNIX)\ns.connect(os.environ['MAESTRO_SEARCH_ROOT'] + '/probe.sock')\ns.sendall(b'ready')\ns.recv(1)\n");
-            assert!(
-                std::process::Command::new("install")
-                    .args(["-m", "0700", &source])
-                    .arg(scripts.path().join("fd"))
-                    .status()
-                    .unwrap()
-                    .success()
+            crate::find_support::alias(
+                scripts.path(),
+                "fd",
+                &serde_json::json!({
+                    "scenario":"probe-wait", "socket":scripts.path().join("probe.sock")
+                }),
             );
             assert!(!child(
                 "dropping_discovery_kills_the_running_probe",
