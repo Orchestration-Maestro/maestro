@@ -465,14 +465,15 @@ fn list_naming_leaves_out_unnamed_tags_and_keeps_every_other_failure() {
         read(r#"{"items":[{"type":"image","url":"gone"},{"type":"text","text":"kept"}]}"#).unwrap(),
         kept
     );
-    // Each kept entry is decoded from its own text, so a repeated member still reaches the
-    // family's decoder instead of being collapsed into one value.
+    // Repeated known fields still reach the family's decoder.
     assert!(read(r#"{"items":[{"type":"text","text":"one","text":"two"}]}"#).is_err());
     // A repeated tag is refused as well, rather than skipped on its last value.
     assert!(read(r#"{"items":[{"type":"image","type":"image"}]}"#).is_err());
-    // A member repeated inside a nested object is refused too, before the entry is skipped.
-    assert!(read(r#"{"items":[{"type":"text","text":"kept","meta":{"a":1,"a":2}}]}"#).is_err());
-    assert!(read(r#"{"items":[{"type":"image","meta":{"a":1,"a":2}}]}"#).is_err());
+    // Ignored members keep their ordinary decoder semantics, including repeated keys.
+    assert_eq!(
+        read(r#"{"items":[{"type":"text","text":"kept","meta":{"a":1,"a":2}},{"type":"image","meta":{"a":1,"a":2}}]}"#).unwrap(),
+        kept
+    );
     assert!(read(r#"{"items":[{"type":"text"}]}"#).is_err());
     assert!(read(r#"{"items":[{"text":"no tag"}]}"#).is_err());
     assert!(read(r#"{"items":[{"type":5,"text":"not a tag"}]}"#).is_err());

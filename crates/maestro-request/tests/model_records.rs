@@ -573,6 +573,49 @@ fn malformed_tags_and_bodies_still_fail() {
 }
 
 #[test]
+fn open_json_and_ignored_fields_keep_their_duplicate_member_policy() {
+    use maestro_request::types::{Context, Message};
+
+    let assistant = assistant_with(json!([{
+        "type": "toolCall", "id": "c", "name": "t", "arguments": null
+    }]));
+    let assistant = serde_json::to_string(&assistant).unwrap().replace(
+        "\"arguments\":null",
+        r#""arguments":{"x":1,"x":2,"nested":[{"k":0,"k":3}]}"#,
+    );
+    let result = r#"{"role":"toolResult","toolCallId":"c","toolName":"t","content":[],"details":{"x":1,"x":2,"nested":[{"k":0,"k":3}]},"isError":false,"timestamp":1}"#;
+    let user = r#"{"role":"user","content":[{"type":"text","text":"kept","extra":{"x":1,"x":2}}],"timestamp":1,"extra":{"x":1,"x":2},"extra":false}"#;
+    for text in [assistant, result.into(), user.into()] {
+        // Ordinary JSON values retain the last occurrence of each open-object key.
+        let value: serde_json::Value = serde_json::from_str(&text).unwrap();
+        let expected: Message = serde_json::from_value(value).unwrap();
+        let request = format!(r#"{{"messages":[{text}]}}"#);
+        let context: Context = serde_json::from_str(&request).unwrap();
+        assert_eq!(context.messages, vec![expected.clone()]);
+        let value: serde_json::Value = serde_json::from_str(&request).unwrap();
+        let context: Context = serde_json::from_value(value).unwrap();
+        assert_eq!(context.messages, vec![expected]);
+    }
+}
+
+#[test]
+fn unknown_entries_with_repeated_body_members_are_left_out() {
+    use maestro_request::types::Context;
+
+    let request = r#"{"messages":[{"role":"other","extra":{"x":1,"x":2}},{"role":"user","content":[{"type":"unknown","extra":{"x":1,"x":2}},{"type":"text","text":"kept"}],"timestamp":1}]}"#;
+    let expected: Context = serde_json::from_value(json!({"messages": [{
+        "role": "user", "content": [{"type": "text", "text": "kept"}], "timestamp": 1
+    }]}))
+    .unwrap();
+
+    assert_eq!(serde_json::from_str::<Context>(request).unwrap(), expected);
+    assert_eq!(
+        serde_json::from_value::<Context>(serde_json::from_str(request).unwrap()).unwrap(),
+        expected
+    );
+}
+
+#[test]
 fn repeated_members_still_fail_when_the_request_is_read_from_text() {
     use maestro_request::types::Context;
 
