@@ -1121,13 +1121,35 @@ An unknown or malformed record fails before connecting or writing the optional
 installed aliases leave all operands untouched. Add cohesive finite Rust fixture
 families to this one target, never a script evaluator or another launcher.
 
-The preparation tests also use a `tooling-cargo` record with the real Cargo path
-and an existing setup-example template path. That scenario forwards metadata,
-accepts the existing Clippy probe and stages the two preparation examples. On Unix,
-metadata replaces the fixture process, keeping its native PID and signal delivery. The
-remaining setup-example templates still use their existing shell fixtures until
-their owning conversion lands. Typed isolated native setup is planned; current
-Unix `shell_setup` remains available during that conversion.
+The preparation tests use a `tooling-cargo` record with the real Cargo path and
+an author-record template path. It forwards metadata, accepts the Clippy probe
+and stages native copies of both preparation examples. On Unix, metadata replaces
+the fixture process, keeping its native PID and signal delivery.
+
+The author example reads a `tooling-author` line followed by one JSON scenario.
+For example:
+
+```text
+tooling-author
+{"scenario":"cached","engine":"fixture"}
+```
+
+`cached` exports supplied component paths and writes compiled-code observations;
+`engine` is `fixture` or `newer`. `plain` exports without writing compiled code.
+`malformed` writes an invalid environment entry, and `unstable` changes a source
+after export. `misplaced` writes a cache namespace with the wrong executable time;
+`split` writes two namespaces. `marked` builds only unsupplied components and
+writes their dependency files. Unknown scenarios, engines and fields fail before
+preparation effects.
+
+`prepare_author_component --cache-directory` reports one absolute JSON path and
+creates no environment file, component, cache entry or observation log. The built
+alias has a sibling record. When a test exercises product copying or relocation,
+set `MAESTRO_NATIVE_RECORD` on the child command to select the author record
+explicitly; the product does not copy fixture sidecars. Only the author-example
+alias reads this selector, so nested Cargo and other aliases retain their own
+records. Other tooling fixture families and Unix `shell_setup` keep their existing
+contracts.
 
 #### Application RPC peers
 
